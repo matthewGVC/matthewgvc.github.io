@@ -35,7 +35,7 @@
      schools  District structure confirmed against the districts' own
               published material and the NJ DOE record.
      crime    NJ State Police Uniform Crime Report, 2023 (the most
-              recent full year published) — total index-crime offences
+              recent full year published) — total index-crime offenses
               per 100,000 people, for the municipality's own police
               agency. The statewide figure for the same year is 1,755
               per 100,000, and every line quotes it so the number has
@@ -49,7 +49,7 @@
    one.
 
    TWO CRIME FIGURES ARE DELIBERATELY NOT PRINTED AS RATES. Matawan's
-   agency reported one index offence for all of 2023, which is a
+   agency reported one index offense for all of 2023, which is a
    reporting gap rather than a crime rate, so its line says that instead.
    Beach Haven's rate is computed on 1,275 year-round residents against
    a summer population many times that, so its line says that too.
@@ -99,8 +99,8 @@
       'A rebuilt beach city — music, restaurants and the most walkable boardwalk on the Jersey Shore.',
       '$895K', '$11,178', '1.76%', '≈ 95 min',
       'North Jersey Coast Line from Asbury Park, direct to Penn Station',
-      'Asbury Park School District, PreK-12 · heavy charter and private enrolment, so ask what neighbours actually do',
-      '5,273 per 100K in 2023 — three times the state\'s 1,755, and the highest on this list.',
+      'Asbury Park School District, PreK-12 · the district also hosts several charter schools, so confirm which school a given address feeds',
+      '5,273 per 100K in 2023, against the state\'s 1,755.',
       ['Condo and multi-family stock you will not find elsewhere at the shore.',
        'Year-round nightlife and dining, not a summer-only town.',
        'Flood zone matters near Wesley Lake and the boardwalk — check the map, not the listing.']),
@@ -180,7 +180,7 @@
       '$600K', '$8,985', '1.94%', '≈ 40 min',
       'Seastreak ferry from the Highlands dock — 40 min to the Battery Maritime Building',
       'Highlands Elementary PreK-6 · consolidated with Atlantic Highlands into the Henry Hudson Regional K-12 district in July 2024',
-      '493 per 100K in 2023, the lowest rate of any town on this list bar Sea Bright.',
+      '493 per 100K in 2023, well under the state\'s 1,755.',
       ['Much of the town was raised or rebuilt after 2012 — ask what year, and how high.',
        'Flood insurance is the first question here, not the last one.',
        'Walk to Sandy Hook, the bridge and the Henry Hudson Trail.']),
@@ -189,7 +189,7 @@
       'A square mile across the river, and the shortest commute in New Jersey.',
       '$999K', '$9,531', '1.07%', '≈ 10 min',
       'PATH to the World Trade Center · NY Waterway ferry to Midtown',
-      'Hoboken Public Schools · heavy charter and private enrolment, so ask what neighbours actually do',
+      'Hoboken Public Schools · the district also hosts several charter schools, so confirm which school a given address feeds',
       '1,627 per 100K in 2023 — below the state\'s 1,755, in the densest square mile in the state.',
       ['Almost entirely condo and co-op — read the offering plan and the reserves.',
        'Parking is a monthly cost, not something that comes with the unit.',
@@ -210,7 +210,7 @@
       '$1.3M', '$16,481', '1.64%', '≈ 80 min',
       'North Jersey Coast Line from Little Silver — 78 to 85 min on the peak trains',
       'Little Silver K-8, among the best regarded in the county · Red Bank Regional High School, which it co-founded with Red Bank and Shrewsbury in 1969',
-      '887 per 100K in 2023, half the state\'s 1,755, with no violent index offences reported.',
+      '887 per 100K in 2023, half the state\'s 1,755, with no violent index offenses reported.',
       ['Bought for the elementary schools, and priced accordingly.',
        'Walk to the Shrewsbury River, the train and Sickles Market.',
        'Very little turnover — when something good lists, expect company.']),
@@ -220,7 +220,7 @@
       '$760K', '$12,635', '1.37%', '≈ 90 min',
       'North Jersey Coast Line from Long Branch — the end of the electrified track',
       'Long Branch Public Schools · a large, diverse PreK-12 district with strong specialized programs',
-      '1,718 per 100K in 2023, level with the state\'s 1,755 — but it varies sharply by neighbourhood.',
+      '1,718 per 100K in 2023, level with the state\'s 1,755.',
       ['New oceanfront condos standing next to hundred-year-old cottages.',
        'Pier Village dining, shops and beach access without a beach-club membership.',
        'The most rental-friendly beach market in the county.']),
@@ -230,7 +230,7 @@
       '$615K', '$11,571', '2.26%', '≈ 60 min',
       'Aberdeen-Matawan — 56 to 65 min to Penn Station, the quickest in the county',
       'Matawan-Aberdeen Regional School District, K-12',
-      'Matawan\'s agency reported one index offence for all of 2023. That is a reporting gap, not a crime rate, so no rate is quoted here.',
+      'Matawan\'s agency reported one index offense for all of 2023. That is a reporting gap, not a crime rate, so no rate is quoted here.',
       ['The best value per commuting minute anywhere in the county.',
        'The highest effective tax rate on this list — 2.26% of market value.',
        'The park-and-ride fills early; older stock near Main Street, newer on the Aberdeen side.']),
@@ -270,8 +270,8 @@
       '$850K', '$9,767', '1.44%', '≈ 120 min',
       'North Jersey Coast Line from Point Pleasant Beach — the far end of the line',
       'Point Pleasant Borough Schools, PreK-12 in one district',
-      '454 per 100K in the borough in 2023 — a quarter of the state\'s 1,755. Point Pleasant Beach next door reports 2,524.',
-      ['Point Pleasant Borough and Point Pleasant Beach are two towns — the Beach has the boardwalk, and five times the crime rate.',
+      '454 per 100K in the borough in 2023, a quarter of the state\'s 1,755.',
+      ['Point Pleasant Borough and Point Pleasant Beach are two separate towns — the Beach has the boardwalk, and its own taxes and figures.',
        'Manasquan River dockage, minutes from the inlet.',
        'The commute is the trade-off: two hours each way on the train.']),
 
@@ -300,7 +300,7 @@
       '$860K', '$10,002', '0.87%', '≈ 40 min',
       'Seastreak ferry from Highlands, a short drive north',
       'K-8 through Oceanport · Shore Regional High School. The borough won a NJ Supreme Court ruling in 2025 letting it petition to leave both — worth watching',
-      '227 per 100K in 2023, the lowest on this list, on 1,323 year-round residents.',
+      '227 per 100K in 2023, on 1,323 year-round residents, against the state\'s 1,755.',
       ['The second-lowest effective tax rate on this list, at 0.87%.',
        'Rebuilt and raised after Sandy — ask for the elevation certificate every time.',
        'One road in and one road out, which matters in a storm and at 5pm.']),
@@ -310,7 +310,7 @@
       '$1.2M', '$14,198', '1.79%', '≈ 75 min',
       'Little Silver or Red Bank, both a few minutes away',
       'Shrewsbury Borough K-8, a single well-regarded school · Red Bank Regional High School, which it co-founded',
-      '2,780 per 100K in 2023 looks alarming until you see it is almost entirely retail larceny at The Grove; violent offences were two.',
+      '2,780 per 100K in 2023, almost entirely retail larceny at The Grove; violent offenses were two.',
       ['The Grove shopping district and the Route 35 corridor are both in town.',
        'A colonial-era center at Broad and Sycamore, and real history to go with it.',
        'The borough is tiny — 4,000 people — so inventory is always thin.']),

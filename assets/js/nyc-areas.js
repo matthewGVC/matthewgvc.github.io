@@ -16,7 +16,7 @@
 
      price    StreetEasy Data Dashboard, median sale price, July
               2026 — the operator's own published CSV, using
-              StreetEasy's own borough and neighbourhood
+              StreetEasy's own borough and neighborhood
               boundaries. Not asking price; recorded sales.
      tax      NYC Dept. of Finance assessment roll, FY2025/26,
               via NYC Open Data (dataset 8y4t-faws). For every
@@ -42,7 +42,7 @@
      schools  NYC DOE community school district, and how
               admission works — which in this city matters far
               more than the district number.
-     crime    NYPD, seven major felony offences by precinct,
+     crime    NYPD, seven major felony offenses by precinct,
               full-year 2025, against 2020 Census population for
               the same precincts. The citywide figure is 1,376
               per 100,000, and every line quotes it as a yardstick.
@@ -71,7 +71,7 @@
    this over.
 
    THREE CRIME FIGURES CARRY A CAVEAT AND SAY SO ON THE PAGE.
-   A precinct rate is offences divided by RESIDENTS, so anywhere
+   A precinct rate is offenses divided by RESIDENTS, so anywhere
    with far more daytime visitors than residents reads high:
    Midtown West (Times Square, 96,000 residents), Tribeca and the
    Financial District (both the 1st Precinct). The lines say so.
@@ -131,7 +131,7 @@
       '1,786 per 100K in 2025, against the city\'s 1,376.',
       ['The tax figure is the median condo unit. A Class 1 house here runs $32,000, and there are only 12,400 of them.',
        'Common charges or maintenance are the bigger monthly number, and they are not in any figure on this page.',
-       'Co-ops are billed to the building and sold with a board interview; condos are neither. That choice comes before the neighbourhood.']),
+       'Co-ops are billed to the building and sold with a board interview; condos are neither. That choice comes before the neighborhood.']),
 
     A('Brooklyn', 'New York City',
       'Now the second-priciest borough, and the one with real houses at the top of the market.',
@@ -147,7 +147,7 @@
       'The city\'s house market: more one- to three-family homes than any other borough, by a wide margin.',
       '$810K', '$7,810', '62 days', '16–18 min',
       'E/F express, M, R — measured from Jackson Hts-Roosevelt Av',
-      'Community school districts 24 through 30 · zoned high schools, and the most-used school-choice programmes in the city',
+      'Community school districts 24 through 30 · zoned high schools, and the most-used school-choice programs in the city',
       '1,098 per 100K in 2025, the second-lowest of the five boroughs.',
       ['557,000 Class 1 houses — more than Brooklyn and Staten Island put together.',
        'Sixteen minutes to Bryant Park on the F from Jackson Heights, which is faster than most of Manhattan north of 96th.',
@@ -209,7 +209,7 @@
       '$995K', '$17,632', '87 days', '2 min',
       '1/C/E at 50 St, plus every line at Times Square and Port Authority',
       'Community school district 2 · no zoned high schools in Manhattan',
-      '6,061 per 100K in 2025 — but that is Times Square\'s offences divided by 96,000 residents. Read it as a daytime figure, not a residential one.',
+      '6,061 per 100K in 2025 — but that is Times Square\'s offenses divided by 96,000 residents. Read it as a daytime figure, not a residential one.',
       ['The crime rate here is a measurement artefact: the 14th and 18th Precincts police the busiest tourist district in America.',
        'New construction dominates, so expect 421-a tax abatements with expiry dates — ask when it burns off.',
        'Ninth and Tenth Avenue west of the towers is a completely different, quieter market.']),
@@ -260,7 +260,7 @@
       '2/3 and 4/5 at Wall St, plus the Fulton Center complex',
       'Community school district 2 · no zoned high schools in Manhattan',
       '2,120 per 100K in 2025 — the same 1st Precinct figure as Tribeca, and likewise a daytime-population artefact.',
-      ['The slowest market on this list — 92 days — and the largest discount to its own neighbourhood.',
+      ['The slowest market on this list — 92 days — and the largest discount to its own neighborhood.',
        'Mostly conversions, so ask what the building was and when: layouts, light and column spacing all follow from it.',
        'Battery Park City next door is on ground-lease land, which changes the maths entirely.']),
 

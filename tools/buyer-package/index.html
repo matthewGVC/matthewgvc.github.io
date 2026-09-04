@@ -38,8 +38,8 @@
 .why{display:flex;gap:.42in;flex:1;min-height:0;}
 .why .ph{width:2.85in;flex:none;align-self:stretch;}
 .why .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
-.why .copy{font-size:11.5pt;line-height:17.5pt;}
-.why .copy p + p{margin-top:.17in;}
+.why .copy{font-size:11.5pt;line-height:.2in;}
+.why .copy p + p{margin-top:.2in;}
 /* the team's standing line, set as a display rule between the blurb and
    the numbers */
 .why .tag{margin:.3in 0 0;padding-top:.24in;border-top:.75pt solid var(--rule);
@@ -73,6 +73,86 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .pg[data-key="offer"] .card{text-align:center;}
 .pg[data-key="offer"] .card .ci{margin:0 auto .1in;}
 
+
+/* The three states, in page 2's treatment rather than the closing page's:
+   bigger (.875in against .5in), unlabelled, on white, and with a hairline
+   dash between each pair. Each silhouette gets its own width - measured off
+   the artwork at 1.143 / .405 / 1.120in - because the three SVGs carry
+   different amounts of their own padding, and a shared box would push New
+   Jersey off the centre the artwork balances the row on. */
+.why .wstates{flex:none;display:flex;align-items:center;justify-content:center;
+  gap:.145in;margin:.44in 0 0;}
+.why .wstates i{display:block;height:.875in;background:var(--mesh) center/cover;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain;}
+.why .wstates i.ny{width:1.143in;}
+.why .wstates i.nj{width:.405in;}
+.why .wstates i.fl{width:1.12in;}
+.why .wstates u{display:block;flex:none;width:.232in;height:1pt;background:var(--sky);}
+
+/* ============================================================
+   THE DRAWN PAGES, MEASURED
+
+   Pages 2-8 were flattened to 400dpi pictures for a while and are live
+   HTML again. The deck's own page furniture already matched the artwork
+   to within half a point - the heading rule lands on 1.062in against a
+   computed 1.0575, and both margins measure 0.62in - so only the bodies
+   below needed reconciling. Every number is measured off the artwork.
+   ============================================================ */
+
+/* Step circles run a ramp from sky to navy rather than the flat navy the
+   shared .step carries. Sampled at the centre of each drawn circle.
+   NOTE: white numerals on the first five of these measure 2.6-3.2:1, which
+   is under WCAG AA. Matching the artwork is why they are here; setting
+   .sn colour to var(--navy) on the first five fixes it without moving a
+   pixel of layout. */
+.pg[data-key="process"] .step:nth-child(1) .sn{background:#5AB9CE;}
+.pg[data-key="process"] .step:nth-child(2) .sn{background:#53B9D0;}
+.pg[data-key="process"] .step:nth-child(3) .sn{background:#46B6CE;}
+.pg[data-key="process"] .step:nth-child(4) .sn{background:#28ADCA;}
+.pg[data-key="process"] .step:nth-child(5) .sn{background:#0A9DBD;}
+.pg[data-key="process"] .step:nth-child(6) .sn{background:#01708C;}
+.pg[data-key="process"] .step:nth-child(7) .sn{background:#015872;}
+
+/* The team photograph under the seven steps: full body width, and its top
+   edge measured at 6.678in with the page bottom at 10.220in. */
+.pg[data-key="process"] .steps{flex:none;}
+.pg[data-key="process"] .ph{flex:none;height:3.542in;margin-top:auto;}
+
+/* The two spot illustrations. Both are drawn OVER the card grid above them
+   and both bleed off the left page edge, so they hang off .pg itself rather
+   than off .pg-body, whose overflow would clip them. Boxes measured off the
+   artwork; the art was cut from it and snapped back to the two brand inks. */
+.pg[data-key="options"]::after,
+.pg[data-key="offer"]::after{content:'';position:absolute;left:0;z-index:4;
+  pointer-events:none;background-position:left top;background-repeat:no-repeat;
+  background-size:100% 100%;}
+.pg[data-key="options"]::after{top:6.888in;width:8.5in;height:3.413in;
+  background-image:url(static/p4-keys.png);}
+.pg[data-key="offer"]::after{top:6.803in;width:8.16in;height:3.493in;
+  background-image:url(static/p8-phone.png);}
+
+/* ============================================================
+   REPRESENTATION — the three terms of the agreement across the top,
+   then what each side owes the other in two columns under it. The
+   rhythm is the tearsheet's on purpose (hairline, tracked label, text
+   under it) so the page reads as part of the deck rather than as a
+   contract that wandered into it. The bullets are .ts-n, the deck's
+   own list style, shared with the tearsheets.
+   ============================================================ */
+.rep-lede{margin:0;font:300 11pt/17pt var(--body);color:rgba(0,39,58,.85);}
+.rep-g{display:flex;gap:.3in;margin:.32in 0 0;}
+.rep-c{flex:1;min-width:0;border-top:1.4pt solid var(--sky);padding-top:.11in;}
+.rep-c b{display:block;font:800 6.4pt var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(0,39,58,.5);margin-bottom:.07in;}
+.rep-c span{font:300 9.5pt/14pt var(--body);color:var(--navy);}
+.rep-b{display:flex;gap:.42in;margin-top:.34in;}
+.rep-l{flex:1;min-width:0;}
+.rep-l b{display:block;font:800 6.4pt var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(0,39,58,.5);padding-bottom:.08in;margin-bottom:.05in;
+  border-bottom:.75pt solid var(--rule);}
+
 /* ============================================================
    TOWN TEARSHEETS — two towns per page, each taking half the body.
    The data is assets/js/nj-towns.js; nothing about the layout is
@@ -81,6 +161,10 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .tsheet{display:flex;flex-direction:column;flex:1;min-height:0;}
 .ts{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;}
 .ts + .ts{border-top:.75pt solid var(--rule);padding-top:.3in;}
+/* The last page of an odd-numbered list carries one town, and a lone .ts
+   centred itself in the full body — two inches of white above it, which
+   reads as a mistake rather than as air. On its own it sits at the top. */
+.tsheet .ts:only-child{flex:none;justify-content:flex-start;}
 .ts-h{display:flex;align-items:baseline;gap:.16in;}
 .ts-h h3{margin:0;font:700 21pt/1.05 var(--serif);color:var(--navy);}
 .ts-h .co{flex:none;margin-left:auto;font:800 7pt var(--sans);letter-spacing:.16em;
@@ -94,6 +178,11 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .ts-stats{display:flex;gap:.3in;margin:.2in 0;}
 .ts-stats .s{flex:1;min-width:0;border-top:1.4pt solid var(--sky);padding-top:.09in;}
 .ts-stats .s .v{font:700 15pt/1 var(--serif);color:var(--navy);font-variant-numeric:tabular-nums;}
+/* Playfair draws its dollar sign to ascender height while its figures are
+   cap height, so a bare $895K prints with the symbol standing a third of a
+   line taller than the number it belongs to. Setting the symbol back to the
+   figures' own cap height is the whole fix; the markup is in tearsheet(). */
+.ts-stats .s .v .cur{font-size:.74em;vertical-align:.085em;margin-right:.005em;}
 .ts-stats .s .l{margin-top:.05in;font:800 6.2pt var(--sans);letter-spacing:.14em;
   text-transform:uppercase;color:rgba(0,39,58,.55);}
 .ts-b{display:flex;gap:.42in;}
@@ -117,16 +206,11 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 /* A flat picture of the artwork with the live page number over it. The
    number sits where the printed one sat: right edge flush to the 567pt
    margin, baseline on 764.5pt, both measured off the artwork at 600dpi. */
-.stpg{position:absolute;inset:0;background:#fff;overflow:hidden;}
-.stpg img{width:100%;height:100%;display:block;}
 /* Flush right and on the artwork's baseline. `right` is 45pt less the
    trailing letter-space CSS adds after the last glyph; `bottom` is the
    27.48pt to the baseline less the 2.28pt a zero line-height puts between
    the box edge and where the glyphs actually sit — both measured off a
    print of this page against the artwork, not derived. */
-.stpg-n{position:absolute;right:44.28pt;bottom:25.2pt;line-height:0;
-  font:200 7.2pt 'Nunito Sans',system-ui,sans-serif;color:#4c6774;
-  letter-spacing:.1em;font-variant-numeric:tabular-nums;}
 
 </style>
 </head>
@@ -276,11 +360,12 @@ const MARKETS = {
     panel:'New Jersey towns', page:'New Jersey Towns', noun:'town',
     eyebrow: t => t.county,
     sub: t => t.county.replace(' County', '') + ' · ' + t.price,
-    stats: [['price','Median sale'], ['tax','Taxes / yr'],
+    stats: [['price','Median sale'], ['tax','Avg tax bill'],
             ['rate','Tax rate'],    ['mins','To Manhattan']],
     rows:  [['transit','Getting there'], ['schools','Schools'], ['crime','Index crime']],
     src: 'Prices and tax figures move every quarter and the crime data is a full year behind ' +
-         '— confirm anything a decision rests on.',
+         '— confirm anything a decision rests on. The tax bill is the town-wide average ' +
+         'rather than the tax on the median sale, so the two will not multiply out.',
     note: '<b>Every figure traces to a source.</b> Prices are Redfin medians (Jul 2026), tax bill ' +
           'and effective rate are NJ DCA (2025), commutes are read off the NJ TRANSIT and Seastreak ' +
           'timetables, and crime is the NJSP Uniform Crime Report (2023) &mdash; all listed per ' +
@@ -291,7 +376,7 @@ const MARKETS = {
     panel:'New York City areas', page:'New York City Areas', noun:'area',
     eyebrow: t => t.county,
     sub: t => (t.county === 'New York City' ? 'Borough' : t.county) + ' · ' + t.price,
-    stats: [['price','Median sale'], ['tax','Taxes / yr'],
+    stats: [['price','Median sale'], ['tax','Median tax'],
             ['days','Days on market'], ['mins','To Midtown']],
     rows:  [['transit','Getting there'], ['schools','Schools'], ['crime','Major felonies']],
     src: 'Prices and days on market move every month, the tax figure is a median condo unit ' +
@@ -364,12 +449,139 @@ const ROLES = [
   ['auto',    'Auto'],
   ['cover',   'Cover'],
   ['portrait','Why us'],
+  ['process', 'Buying process'],
   ['exclude', 'Unused']
 ];
-const SLOTS = ['cover','portrait'];
+const SLOTS = ['cover','portrait','process'];
 let assign = {}, uid = 0;
 function reassign() { assign = P.assignRoles(state.photos, SLOTS); }
 function slot(name) { return assign[name] ? assign[name].url : null; }
+
+/* ============================================================
+   PAGE COPY - everything a buyer reads on the seven interior pages.
+   It lives here rather than in the panel, the same way the Seller
+   Pitch keeps its marketing plan and prep checklist in its own file.
+   Edit it here and every printed packet changes together.
+   ============================================================ */
+/* Title | detail, one step per line. */
+const STEPS = [
+  'Consultation | We sit down, agree on what you are looking for, and set a realistic budget and timeline.',
+  'Pre-approval | You speak to a lender and get a written pre-approval. Nothing else happens until this does.',
+  'The search | Curated listings, private showings, and honest opinions about the ones that are wrong for you.',
+  'The offer | We price the offer against real comparables and structure the terms to make it competitive.',
+  'Negotiation | Counter-offers, contingencies and repairs. This is where having done it a thousand times pays.',
+  'Contract & diligence | Attorney review, inspection, board package if applicable, and the appraisal.',
+  'Closing | Final walkthrough, wire, signatures, keys.'
+];
+
+/* icon | heading | what it means for the buyer */
+const LOANS = [
+  ['home','Conventional','Three to twenty percent down, and the best rates on offer if your credit is strong. Under twenty percent you carry mortgage insurance until you have the equity to drop it.'],
+  ['building','FHA','As little as 3.5% down and far more forgiving on credit. The trade is mortgage insurance that stays for the life of most FHA loans.'],
+  ['check','VA','Nothing down and no mortgage insurance for eligible service members, veterans and surviving spouses. The strongest terms in the market, and badly under-used.'],
+  ['chart','Jumbo','Anything above the county conforming limit. Tighter underwriting, larger reserves, and worth using a lender who writes them every week.'],
+  ['ruler','Fixed or adjustable','A fixed rate buys thirty years of certainty. An adjustable one only makes sense if you genuinely know you are gone before it resets.'],
+  ['box','All cash','The fastest and strongest offer on the table. You can still put a mortgage on the house afterwards and take the money back out.']
+];
+
+/* Group, then Item | when it is due or what it is | typical range.
+   Ranges, not quotes: this packet is not written against a price, and the
+   real numbers come from the attorney and the lender on the actual deal. */
+const COSTS = [
+  ['Before you close', [
+    ['Home inspection', 'Booked the day attorney review starts', '$500 – $900'],
+    ['Specialty inspections', 'Radon, oil tank, sewer, termite — each', '$100 – $500'],
+    ['Appraisal', 'Ordered by your lender, paid by you', '$600 – $1,000'],
+    ['Deposit', 'At contract — credited back to you at closing', '5 – 10% of price']
+  ]],
+  ['At the closing table', [
+    ['Attorney', 'Contract through closing, flat fee', '$1,500 – $3,500'],
+    ['Title search & insurance', 'One-time, and it protects your title, not the lender’s', '0.4 – 0.6% of price'],
+    ['Lender fees & points', 'Origination, underwriting, any rate buy-down', '0.5 – 1.5% of loan'],
+    ['Survey', 'Usually required in New Jersey', '$600 – $1,200'],
+    ['Recording & transfer fees', 'County and municipal', '$300 – $1,200'],
+    ['Mansion tax', 'On sales of $1M and above', '1% of price'],
+    ['Escrow set-up', 'Prepaid property taxes and insurance', '2 – 6 months'],
+    ['First year of insurance', 'Homeowner’s, due at closing', '$900 – $2,500']
+  ]],
+  ['Optional, but budget for it', [
+    ['Staging', 'Only if you are selling a home to buy this one', '$1,500 – $5,000'],
+    ['Movers', 'A local move, two bedrooms or so', '$1,200 – $4,000'],
+    ['Repairs and paint', 'What you want done before you move in', 'Varies'],
+    ['Reserves', 'What lenders like to see left over afterwards', '2 – 6 months of payments']
+  ]]
+];
+
+/* Group | icon | items, semicolon-separated. Printed with empty boxes —
+   this page is meant to be taken to showings and ticked with a pen. */
+const QUESTIONS = [
+  ['At every showing', 'home',
+   'Why are they selling, and how soon?;How long has it been listed, and at what prices?;' +
+   'What are the taxes, insurance and monthly fees?;How old are the roof, furnace and water heater?;' +
+   'What is not staying with the house?;Has there ever been water in the basement?'],
+  ['About the building or HOA', 'building',
+   'What does the monthly fee actually cover?;Is an assessment planned or being discussed?;' +
+   'How healthy are the reserves?;What are the rules on pets, rentals and renovations?;' +
+   'What share of the units are owner-occupied?'],
+  ['About the town', 'pin',
+   'What is the tax rate, and when was the last reassessment?;Is any part of the lot in a flood zone?;' +
+   'Which schools does this address actually feed?;What is the commute at 7am, not at noon?;' +
+   'What is approved to be built nearby?'],
+  ['Ask your lender', 'chart',
+   'What is the rate, and what would it take to lock it?;What do the fees add up to, all in?;' +
+   'Which loan types do I qualify for?;What could change my approval before closing?;' +
+   'How long do you need once we are under contract?'],
+  ['What we will ask you', 'users',
+   'What has to be true on day one?;What would you trade, and what will you not?;' +
+   'Where is the down payment coming from?;Who else has a say in the decision?;' +
+   'What would make you walk away?'],
+  ['Before you sign', 'pen',
+   'Have I read the inspection report myself?;Is my deposit in escrow, and with whom?;' +
+   'When does attorney review end?;What happens if the appraisal comes in low?']
+];
+
+/* icon | heading | body — offer & negotiation */
+const OFFER = [
+  ['check','Price is only one term','Closing date, contingencies and financing type routinely matter more to a seller than the last $10,000.'],
+  ['home','Know the competition','We check what else is in contract on the block before we name a number, not after.'],
+  ['box','Contingencies protect you','Inspection, financing and appraisal contingencies are your exits. We waive them deliberately, never casually.'],
+  ['phone','Move fast, decide slowly','We will see it the day it lists. That does not mean you have to decide the same day.'],
+  ['users','Escalation, carefully','Escalation clauses can win a bidding war or reveal your ceiling. We use them situationally.'],
+  ['mail','Everything in writing','Verbal agreements are not agreements. Every accepted term goes into the contract.']
+];
+
+/* WHY WORK WITH US.
+
+   The blurb and the standing line under it are the team's own words, given
+   to us for this page. Do not paraphrase them — if the team's boilerplate
+   changes, replace these strings with the new boilerplate.
+
+   The review at the foot is a real client review, excerpted and never
+   reworded, the same rule the Seller Pitch's reviews page follows. */
+const WHY_COPY = [
+  'The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
+  'innovation, and collaboration. Specializing in luxury residential, commercial, and new ' +
+  'development transactions, the team serves high-net-worth clients across New York, New Jersey, ' +
+  'and Florida.',
+  'The GVC Team is strengthened by a diverse group of talented professionals, and collaborates ' +
+  'with a wide network of skilled agents across NYC, New Jersey, and Florida, all of whom share ' +
+  'the team’s core values and client-focused approach.'
+];
+/* The three silhouettes under the stat row. Same artwork the closing page
+   masks its little state marks out of, at page 2's size. */
+const WHY_STATES = [
+  ['ny', '../../assets/img/states/new-york.svg'],
+  ['nj', '../../assets/img/states/new-jersey.svg'],
+  ['fl', '../../assets/img/states/florida.svg']
+];
+const WHY_TAG = 'The Premier Luxury Real Estate Team Across NY, NJ, & FL';
+const WHY_REVIEW = [
+  'She was incredibly attentive, always responsive, and extremely professional & helpful ' +
+  'throughout the entire process. She took the time to explain every step in detail, making what ' +
+  'could have been a stressful experience feel smooth and manageable. I always felt informed and ' +
+  'supported in every decision.',
+  'Andrya M., Buyer'
+];
 
 /* ============================================================
    PHOTOS — drag one onto the slot you want it in.
@@ -446,13 +658,14 @@ const qrSvg = window.GVC_QR;
    deck ends before its closing page. */
 const SPINE = [
   { key:'cover',     title:'Cover' },
-  { key:'why',       title:'Why Work With Us',    st:0 },
-  { key:'process',   title:'The Buying Process',  st:1, opt:'The seven steps, start to keys' },
-  { key:'options',   title:'Financing Options',   st:2, opt:'Conventional, FHA, VA, jumbo, cash' },
-  { key:'costs',     title:'What It Costs',       st:3, opt:'Every cost in the deal, with ranges' },
-  { key:'criteria',  title:'Your Search Criteria',st:4, opt:'A worksheet you fill in together' },
-  { key:'questions', title:'Questions to Ask',    st:5, opt:'A checklist for the buyer and for us' },
-  { key:'offer',     title:'Offer & Negotiation', st:6, opt:'Winning the house on terms, not price' },
+  { key:'why',       title:'Why Work With Us' },
+  { key:'process',   title:'The Buying Process', opt:'The seven steps, start to keys' },
+  { key:'represent', title:'How We Represent You',      opt:'Agency, term and fee, in plain English' },
+  { key:'options',   title:'Financing Options', opt:'Conventional, FHA, VA, jumbo, cash' },
+  { key:'costs',     title:'What It Costs', opt:'Every cost in the deal, with ranges' },
+  { key:'criteria',  title:'Your Search Criteria', opt:'A worksheet you fill in together' },
+  { key:'questions', title:'Questions to Ask', opt:'A checklist for the buyer and for us' },
+  { key:'offer',     title:'Offer & Negotiation', opt:'Winning the house on terms, not price' },
   { key:'towns',     title:'Area Tearsheets',     towns:true },
   { key:'next',      title:'Thank You' }
 ];
@@ -502,10 +715,189 @@ function pgCover() {
 
 
 
+function pgWhy(n) {
+  const body =
+    '<div class="why">' +
+      '<div class="ph" data-drop="portrait"' + (slot('portrait') ? ' data-pos="portrait"' : '') + '>' + (slot('portrait')
+        ? '<img src="' + slot('portrait') + '" alt="" style="object-position:' + posFor('portrait').x + '% ' + posFor('portrait').y + '%">'
+        : '<img src="static/p2-skyline.jpg" alt="">') + '</div>' +
+      '<div class="txt">' +
+      '<div class="copy">' + WHY_COPY.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
+      '<div class="tag">' + esc(WHY_TAG) + '</div>' +
+      '<div class="stat-row" style="margin-top:.3in">' +
+        '<div class="stat"><div class="v">$3B+</div><div class="l">Sold to date</div></div>' +
+        '<div class="stat"><div class="v">3</div><div class="l">States licensed</div></div>' +
+        '<div class="stat"><div class="v">50+</div><div class="l">Years combined experience</div></div>' +
+      '</div>' +
+      '<div class="wstates">' + WHY_STATES.map(([cls, art], i) =>
+        (i ? '<u></u>' : '') +
+        '<i class="' + cls + '" style="-webkit-mask-image:url(' + art +
+        ');mask-image:url(' + art + ')"></i>').join('') + '</div>' +
+      '<div class="quote"><p>' + esc(WHY_REVIEW[0]) + '</p>' +
+        '<div class="who">' + esc(WHY_REVIEW[1]) + '</div></div>' +
+      '</div>' +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Why Work With Us', body });
+}
+
+function pgProcess(n) {
+  const body = '<div class="steps">' + pairs(STEPS).map(([t, d], i) =>
+    '<div class="step"><div class="sn">' + (i + 1) + '</div><div>' +
+      '<div class="st">' + esc(t) + '</div>' +
+      (d ? '<div class="sd">' + esc(d) + '</div>' : '') +
+    '</div></div>').join('') + '</div>' +
+    '<div class="ph" data-drop="process"' + (slot('process') ? ' data-pos="process"' : '') + '>' +
+      (slot('process')
+        ? '<img src="' + slot('process') + '" alt="" style="object-position:' +
+          posFor('process').x + '% ' + posFor('process').y + '%">'
+        : '<img src="static/p3-team.jpg" alt="">') + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'The Buying Process', body });
+}
+
+/* What a buyer can borrow and how, without naming a price — the amounts
+   belong to the deal, the shapes belong here. */
+function pgOptions(n) {
+  const body =
+    '<div class="cards c2">' + LOANS.map(([g, h, p]) =>
+      '<div class="card">' + ic(g, 'ci') + '<h3>' + esc(h) + '</h3><p>' + esc(p) + '</p></div>').join('') +
+    '</div>' +
+    '<div class="foot-note"><strong>What every lender will ask you for:</strong> two years of tax ' +
+    'returns, recent pay stubs, two months of bank statements, and a list of your debts. Gather it ' +
+    'once and a written pre-approval takes days rather than weeks &mdash; and nothing else in this ' +
+    'packet happens before that pre-approval exists.</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Financing Options', body });
+}
+
+/* One page for the whole cost of buying: the money before closing, the
+   money at closing, and the money people forget. Financing and closing
+   costs used to be two pages and there was never enough between them. */
+function pgCosts(n) {
+  const rows = COSTS.map(([group, items]) =>
+    '<tr class="grp"><td colspan="3">' + esc(group) + '</td></tr>' +
+    items.map(([item, when, range]) =>
+      '<tr><td class="adr">' + esc(item) + '</td>' +
+      '<td>' + esc(when) + '</td>' +
+      '<td class="num">' + esc(range) + '</td></tr>').join('')).join('');
+  const body =
+    '<div class="stat-row">' +
+      '<div class="stat"><div class="v">2 – 5%</div><div class="l">Closing costs &middot; share of price</div></div>' +
+      '<div class="stat"><div class="v">20%</div><div class="l">Down payment that avoids PMI</div></div>' +
+      '<div class="stat"><div class="v">$2k – 4k</div><div class="l">Spent before you own anything</div></div>' +
+    '</div>' +
+    '<table class="tbl"><tbody>' + rows + '</tbody></table>' +
+    '<div class="foot-note">Ranges for budgeting, not quotes. Percentages bill against the purchase ' +
+    'price unless the line says otherwise, and the real figures come from your attorney and your ' +
+    'lender once there is an actual house and an actual loan.</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'What It Costs', body });
+}
+
+function pgCriteria(n) {
+  const field = lab => '<div class="wf"><span>' + esc(lab) + '</span><i></i></div>';
+  const body =
+    '<div class="ws">' +
+      '<div class="wl">The essentials</div>' +
+      field('Budget') + field('Timeline') + field('Bedrooms') + field('Bathrooms') +
+      field('Min. sq ft') + field('Property type') +
+      '<div class="wl">Location</div>' +
+      field('Towns') + field('Commute to') + field('Schools') + field('Must be near') +
+      '<div class="wl">Non-negotiable</div>' +
+      field('1') + field('2') + field('3') + field('4') +
+      '<div class="wl">Nice to have</div>' +
+      field('1') + field('2') + field('3') + field('4') +
+      '<div class="wl">Deal breakers</div>' +
+      field('1') + field('2') +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Your Search Criteria', body });
+}
+
+/* The checklist both sides of the table need: what the buyer asks at a
+   showing, and what we will ask them. Same page furniture as the Seller
+   Pitch's prep checklist — assets/css/pitch.css, .chk. */
+function pgQuestions(n) {
+  const body =
+    '<div class="chk tight">' + QUESTIONS.map(([name, glyph, items]) =>
+      '<div class="cgrp"><div class="cgrp-h">' + ic(glyph, 'ci') +
+        '<span>' + esc(name) + '</span></div><ul>' +
+        items.split(';').map(t => '<li><i></i><span>' + esc(t) + '</span></li>').join('') +
+      '</ul></div>').join('') + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Questions to Ask', body });
+}
+
+function pgOffer(n) {
+  const body =
+    '<div class="cards c2">' + OFFER.map(([g, h, p]) =>
+      '<div class="card">' + ic(g, 'ci') + '<h3>' + esc(h) + '</h3><p>' + esc(p) + '</p></div>').join('') +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Offer & Negotiation', body });
+}
+
+/* ============================================================
+   HOW WE REPRESENT YOU
+
+   A buyer signs a written agreement with their agent before touring a
+   home, and that agreement has to state what the agent is paid. The
+   packet used to run from the team page straight into the seven steps,
+   which left the first thing a buyer actually signs as the one thing
+   the book never mentioned. This page is that conversation on paper.
+
+   THE THREE TERMS ARE PLACEHOLDERS. The bracketed figures are shaped
+   like real ones so the layout is right, but they are not ours. Put the
+   team's own term, area and rate in, then set REP_DRAFT to false — the
+   watermark and the warning under it both come off with it.
+   ============================================================ */
+const REP_DRAFT = true;
+
+function pgRep(n, p) {
+  const card = (h, b) => '<div class="rep-c"><b>' + h + '</b><span>' + b + '</span></div>';
+  const col = (h, items) => '<div class="rep-l"><b>' + h + '</b><ul class="ts-n">' +
+    items.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>';
+  const body =
+    (REP_DRAFT ? '<div class="stamp">Draft terms</div>' : '') +
+    '<p class="rep-lede">Every buyer working with an agent now signs a written agreement ' +
+      'before touring a home, and that agreement has to say what we are paid. We would ' +
+      'rather that be a conversation than a signature on somebody’s doorstep — so we ' +
+      'read it through with you at the consultation, before you have set foot in anything.</p>' +
+    '<div class="rep-g">' +
+      card('Who we work for', 'You, and only you. As your buyer’s agent we owe you loyalty, ' +
+        'confidentiality and honest advice — including telling you when a house is wrong ' +
+        'for you.') +
+      card('How long it runs', '[90 days], covering [Monmouth and Ocean County]. It expires ' +
+        'on its own, and you can end it earlier in writing.') +
+      card('What it costs', '[2.5%] of the purchase price. Where the seller offers ' +
+        'compensation it credits against that figure, and you will know the out-of-pocket ' +
+        'number before you tour — not at the closing table.') +
+    '</div>' +
+    '<div class="rep-b">' +
+      col('What we owe you', [
+        'Every property that fits, whoever has it listed — including the ones that pay us less.',
+        'Comparable sales behind every number we put into an offer.',
+        'The problems with a house in writing, before you are attached to it.',
+        'Your budget, your timing and your motivation stay between us.',
+        'A straight answer on what a house is worth, not what it is listed at.'
+      ]) +
+      col('What we ask of you', [
+        'Work with one agent at a time, so nobody is running the same search twice.',
+        'Tell us the real number rather than the comfortable one.',
+        'Tour with us rather than alone, so who represents you is never in question.',
+        'Tell us when something moves — a job, a rate lock, a co-buyer.',
+        'Sign nothing at a property until we have read it.'
+      ]) +
+    '</div>' +
+    '<div class="foot-note">' + (REP_DRAFT
+      ? 'The bracketed terms above are placeholders. Replace them with the team’s own ' +
+        'term, area and rate, then set REP_DRAFT to false in this file.'
+      : 'This page describes the agreement in plain English. The signed agreement is what ' +
+        'governs, and your copy of it is yours to keep.') + '</div>';
+  return P.page({ deck:DECK, key:p.key, n, of:OF, site:SITE, title:p.title, body });
+}
+
+
 /* Two town tearsheets to a page. Everything printed here comes from the
    town's own record in assets/js/nj-towns.js. */
 function tearsheet(t) {
-  const stat = (v, l) => '<div class="s"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
+  /* The currency symbol is set separately - see .ts-stats .s .v .cur. */
+  const cur = v => v.charAt(0) === '$' ? '<span class="cur">$</span>' + v.slice(1) : v;
+  const stat = (v, l) => '<div class="s"><div class="v">' + cur(v) + '</div><div class="l">' + l + '</div></div>';
   const row = (l, v) => '<div class="ts-r"><b>' + l + '</b><span>' + esc(v) + '</span></div>';
   return '<div class="ts">' +
     '<div class="ts-h"><h3>' + esc(t.name) + '</h3>' +
@@ -562,34 +954,11 @@ function pgNext(n) {
   '</div>';
 }
 
-/* One of the seven drawn pages. Nothing here is a rebuild of it: the page
-   is a 400dpi picture of Matt's artwork, rendered from his PDF, and it is
-   the same picture on screen and on paper.
-
-   It is a picture rather than the PDF page itself because everything that
-   would have kept it vector turned out to damage something else. Copying
-   the real page in meant photographing OUR pages to sit around it, and
-   html2canvas draws text below its own box — it slid the cover photo over
-   the title and sheared the descenders off the closing page. Converting
-   the pages to SVG kept them vector but MuPDF's SVG writer mishandles the
-   custom colour space on the photographs and threw a blue cast over them.
-   A 400dpi picture is the one option where nothing is misdrawn, and it
-   leaves the browser's own printer to render the pages that are ours.
-
-   The page number is the one exception. It was stripped out of the
-   artwork so the deck can renumber when a page is switched off or
-   tearsheets are added, so it is drawn back on: here for the preview, and
-   again in the export at the baseline it was measured off. */
-function pgStatic(n, p) {
-  return '<div class="stpg" data-key="' + p.key + '">' +
-    '<img src="static/p' + (p.st + 2) + '.jpg" alt="">' +
-    '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
-  '</div>';
-}
 
 const RENDER = {
-  cover:pgCover, why:pgStatic, process:pgStatic, options:pgStatic, costs:pgStatic,
-  criteria:pgStatic, questions:pgStatic, offer:pgStatic, towns:pgTowns, next:pgNext
+  cover:pgCover, why:pgWhy, process:pgProcess, options:pgOptions, costs:pgCosts,
+  criteria:pgCriteria, questions:pgQuestions, offer:pgOffer, represent:pgRep,
+  towns:pgTowns, next:pgNext
 };
 
 /* ---------- wiring ---------- */

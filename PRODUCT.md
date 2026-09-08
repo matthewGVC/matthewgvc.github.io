@@ -6,7 +6,7 @@ brand
 
 ## Users
 
-Matt Bloomfield — graphic/design assistant for The GVC Team (Gasdaska Verdiglione Conlon) at Douglas Elliman. The site is both his portfolio and a hub for the production tools he built for the team. Two audiences: (1) people evaluating his work — real-estate colleagues, collaborators, prospective employers — browsing on any device; (2) GVC team members who actually use the tools (showsheet generator, feet-and-inches calculator, 3D map studio, floorplan converter) during listing and marketing prep, mostly on desktop.
+Matt Bloomfield — graphic/design assistant for The GVC Team (Gasdaska Verdiglione Conlon) at Douglas Elliman. The site — GVC Workspace — is both a showcase of his work and a hub for the production tools he built for the team. Two audiences: (1) people evaluating his work — real-estate colleagues, collaborators, prospective employers — browsing on any device; (2) GVC team members who actually use the tools (showsheet generator, feet-and-inches calculator, 3D map studio, floorplan converter) during listing and marketing prep, mostly on desktop.
 
 ## Product Purpose
 

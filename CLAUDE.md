@@ -27,7 +27,7 @@ developer.** Treat that as your default unless they tell you otherwise. That mea
 
 ## 2. What this project is (say this to them if they ask)
 
-- It is **Matt Bloomfield's portfolio + tools site** for The GVC Team (Douglas Elliman).
+- It is **GVC Workspace** — Matt Bloomfield's work + tools site for The GVC Team (Douglas Elliman).
 - It is a **plain static website** — just HTML, CSS, and JavaScript files. **There is no build
   step, no installation, nothing to compile.** You change a file, refresh the browser, done.
 - The code lives on GitHub at: **https://github.com/matthewGVC/matthewgvc.github.io**

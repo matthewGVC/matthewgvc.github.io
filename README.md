@@ -1,6 +1,6 @@
 # matthewgvc.github.io
 
-Portfolio + tool hub. Matt Bloomfield, for The GVC Team (Douglas Elliman).
+GVC Workspace — tool hub. Matt Bloomfield, for The GVC Team (Douglas Elliman).
 
 Static site, no build step. GSAP via CDN.
 

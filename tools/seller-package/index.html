@@ -244,6 +244,22 @@
     <div id="propBar"></div>
     <div class="ed-body">
 
+      <details class="ed-sec" open>
+        <summary>Market <span class="hint">plan page &middot; videos page</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <div class="seg pick" id="marketPick" role="group" aria-label="Market">
+              <button type="button" data-market="nyc">New York</button>
+              <button type="button" data-market="nj">New Jersey</button>
+            </div>
+          </div>
+          <div class="sec-note">Sets the verbiage that is market-specific: four rows of the
+            Marketing Plan, and the prose beside the videos. It follows the State field on
+            the property, so it is usually right without being touched. The cover, the About
+            page and the testimonials name all three markets and do not change.</div>
+        </div>
+      </details>
+
       <details class="ed-sec">
         <summary>Photos <span class="hint">cover &middot; property &middot; strategy &middot; videos</span></summary>
         <div class="sec-in">
@@ -340,6 +356,33 @@
       </details>
 
       <details class="ed-sec">
+        <summary>Professional videos <span class="hint" id="vidHint">3 of 3</span></summary>
+        <div class="sec-in">
+          <div class="sec-note" id="vidMode"></div>
+          <div class="field"><label>New York</label><div id="vidPickNyc"></div></div>
+          <div class="field"><label>New Jersey</label><div id="vidPickNj"></div></div>
+          <div class="tick-bar">
+            <button class="btn sm ghost" type="button" id="vidAllNyc">All NYC</button>
+            <button class="btn sm ghost" type="button" id="vidAllNj">All NJ</button>
+            <button class="btn sm ghost" type="button" id="vidFollow">Reset to market</button>
+          </div>
+          <div class="warn" id="warnVideos" hidden></div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Client testimonials <span class="hint" id="revHint">4 of 4</span></summary>
+        <div class="sec-in">
+          <div class="sec-note" id="revMode"></div>
+          <div id="revPick"></div>
+          <div class="tick-bar">
+            <button class="btn sm ghost" type="button" id="revFollow">Reset to my agents</button>
+          </div>
+          <div class="warn" id="warnReviews" hidden></div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
         <summary>Agents <span class="hint">max 2 &middot; cover + closing</span></summary>
         <div class="sec-in">
           <div id="rosterPick"></div>
@@ -413,47 +456,124 @@ const state = {
   priceLow:'', priceMid:'', priceHigh:'', recBand:'mid',
   showProperty:true,
   agents:[],
+  /* Which market's verbiage the deck speaks - 'nj' or 'nyc'. Defaults from
+     the State field typed on the property; 'nyc' for a deck with no property
+     yet, the firm being New York-headquartered. */
+  market:'nyc',
+  /* Both null mean "follow": the video selection follows the market, the
+     testimonials follow the Agents section. An array of ids means the agent
+     has taken the choice over by hand. */
+  videos:null,
+  reviews:null,
   pos:{}
 };
 
 /* Default copy — the parts that are GVC boilerplate rather than
    per-client. Overwrite in the panel; these are only a starting point.
    Plan rows are Phase | Group | Title | detail — the phase groups the row
-   into one of the three columns on the page. */
-const DEFAULT_PLAN = [
+   into one of the three columns on the page.
+
+   Four of the eighteen rows are market-specific, and used to print New York
+   institutions to New Jersey sellers: REBNY is the Real Estate Board of *New
+   York*, StreetEasy does not cover New Jersey, a New Jersey house has no
+   offering plan to check against, and "targeted buildings" is a city idea.
+   Those four carry an object of variants keyed by market; the other fourteen
+   are plain strings and stay written once.
+
+   The New Jersey rows name "the MLS" generically rather than a board.
+   Monmouth Ocean would match the Fair Haven office and every NJ film, but
+   naming an institution invites being wrong or going stale, and the generic
+   reads correctly for any NJ listing. */
+const PLAN_ROWS = [
   'Pre-Launch | Media Creation | Custom photography | A full shoot with our in-house photographer, timed to the property at its best.',
   'Pre-Launch | Media Creation | Professional floor plan | Produced in-house for every listing.',
   'Pre-Launch | Media Creation | Property video | A cinematic walkthrough cut for the launch and for social.',
-  'Pre-Launch | Property Info | Verify all pertinent information | Confirmed against the deed, offering plan and building records before anything goes out.',
-  'Pre-Launch | Pre-Launch Marketing | Elliman &amp; REBNY notice | Immediate notice to all Elliman brokers, REBNY members and co-broke firms.',
+  { nyc:'Pre-Launch | Property Info | Verify all pertinent information | Confirmed against the deed, offering plan and building records before anything goes out.',
+    nj: 'Pre-Launch | Property Info | Verify all pertinent information | Confirmed against the deed, survey and tax records before anything goes out.' },
+  { nyc:'Pre-Launch | Pre-Launch Marketing | Elliman &amp; REBNY notice | Immediate notice to all Elliman brokers, REBNY members and co-broke firms.',
+    nj: 'Pre-Launch | Pre-Launch Marketing | Elliman &amp; MLS notice | Immediate notice to all Elliman brokers, MLS members and co-broke firms.' },
   'Pre-Launch | Pre-Launch Marketing | Teaser announcement | Social teaser ahead of the public listing date.',
   'Launch | Digital Launch | Elliman.com listing | Posted with professional photos, floor plan, description and all marketing information.',
   'Launch | Digital Launch | Brokerage &amp; contact announcement | Emailed to the entire brokerage community and our private contact lists.',
-  'Launch | Digital Launch | StreetEasy syndication | Posted with full professional details and marketing information.',
+  { nyc:'Launch | Digital Launch | StreetEasy syndication | Posted with full professional details and marketing information.',
+    nj: 'Launch | Digital Launch | MLS syndication | Posted to the MLS with full professional details, and syndicated to the major search portals.' },
   'Launch | Print Marketing | Marketing sheet | A professional sheet detailing the property, distributed to agents and prospective buyers.',
   'Launch | Print Marketing | Print placements | Placed in appropriate print publications.',
-  'Launch | Print Marketing | Just Listed cards | Sent to targeted buildings in the surrounding area.',
+  { nyc:'Launch | Print Marketing | Just Listed cards | Sent to targeted buildings in the surrounding area.',
+    nj: 'Launch | Print Marketing | Just Listed cards | Sent to targeted streets and neighborhoods in the surrounding area.' },
   'On-Going | Communication | Weekly seller updates | Market traffic feedback, both buyer and web, delivered on a weekly cadence.',
   'On-Going | Communication | Offer qualification | Every offer qualified before it is presented.',
   'On-Going | Communication | Showings &amp; open houses | Scheduled as needed, public or broker-specific.',
   'On-Going | Communication | Comparable tracking | Continued tracking of similar sales, so pricing stays defensible.',
   'On-Going | Ongoing Marketing | Bi-weekly email blasts | Sent to the entire brokerage community.',
   'On-Going | Ongoing Marketing | Continued print &amp; web ads | As needed through the life of the listing.'
-].join('\n');
+];
+/* One market's eighteen rows, as the newline-joined text planRows() reads. */
+const defaultPlan = m => PLAN_ROWS.map(r => typeof r === 'string' ? r : r[m]).join('\n');
 
-/* Client testimonials — static GVC boilerplate, not editor-driven.
+/* Client testimonials — the library the page picks four from.
 
-   Three of the four are Marli's, excerpted from the full reviews on the
-   team site: this is a listing presentation, so the two seller reviews
-   lead on the things a seller is actually deciding between — pricing and
-   whether anyone will look after the sale. The quotes are trimmed to fit
-   the page, never reworded. */
-const DEFAULT_REVIEWS = [
-  'This is my third closing with Marli and she is the best realtor I have ever worked with — and trust me, I have worked with quite a few. She makes finding and buying a home very easy, and her real estate expertise is outstanding. | Melinda B., Buyer',
-  'Marli was absolutely fantastic. We were selling a property in New Jersey while living in Florida, and she was instrumental in reducing the stress of a long-distance sale — incredibly responsive, and very open and honest about our expectations. | Lenny Z., Seller',
-  'Marli has great knowledge of the area and is skilled in determining a strategic asking price. She is incredibly responsive in helping to work through any challenge that comes up along the way. The process was smooth and quick. | Jeff B., Seller',
-  'John and his associates at Gasdaska Conlon are top notch professionals. It was a very smooth, easy and overall enjoyable experience working with them to buy and sell our apartment in NYC. | Conor Hagen, Buyer & Seller'
-].join('\n');
+   Each entry names the agents it credits, so the page can follow the Agents
+   section: pick John and Marli and the fill takes two of each, which reads
+   better in a listing presentation than four of one voice. `agents: []`
+   marks a review that names nobody, usable with any presenter.
+
+   Order within an agent matters, because the fill takes reviews in library
+   order: seller-side reviews go first. A listing presentation should lead on
+   what a seller is actually deciding between — pricing, and whether anyone
+   will look after the sale — and several of the best-written reviews on the
+   team site are buyer-side, which makes them weaker here.
+
+   Sources: Marli's three were already in this file, abbreviated. The rest
+   come from the carousel on gvcrealestateteam.com/about, which publishes
+   them under full client names, so they keep those names here. Long ones are
+   trimmed to fit the page, never reworded.
+
+   Three reviews are deliberately absent and should not be reinstated without
+   asking Matt: one names Jessica Wolf, who has left the team, and two name a
+   Daniel Champoli, who is not on the roster. All three are strong, and the
+   loss of the Jessica one is real — it is seller-side. But a client-facing
+   deck cannot name someone it has no way to introduce, and cutting the name
+   out of a quote is rewording rather than trimming.
+
+   TJ Verdiglione has no publicly attributed review, so he has no group in
+   the picker. That waits on text from Matt: a fabricated client quote in a
+   listing presentation is a different order of risk from a placeholder
+   photo. */
+const REVIEWS = [
+  { id:'lenny-z', agents:['marli-silver'],
+    quote:'Marli was absolutely fantastic. We were selling a property in New Jersey while living in Florida, and she was instrumental in reducing the stress of a long-distance sale — incredibly responsive, and very open and honest about our expectations.',
+    who:'Lenny Z., Seller' },
+  { id:'jeff-b', agents:['marli-silver'],
+    quote:'Marli has great knowledge of the area and is skilled in determining a strategic asking price. She is incredibly responsive in helping to work through any challenge that comes up along the way. The process was smooth and quick.',
+    who:'Jeff B., Seller' },
+  { id:'melinda-b', agents:['marli-silver'],
+    quote:'This is my third closing with Marli and she is the best realtor I have ever worked with — and trust me, I have worked with quite a few. She makes finding and buying a home very easy, and her real estate expertise is outstanding.',
+    who:'Melinda B., Buyer' },
+  { id:'sally-siebold', agents:['john-gasdaska'],
+    quote:'I have had many experiences buying and selling real estate. My experience with the GVC Real Estate team was by far the best. They were honest and very experienced from start to finish. They handled everything, from the listing, pictures, to staging the apartment for us.',
+    who:'Sally Siebold, Seller' },
+  { id:'edward-whittemore', agents:['john-gasdaska','jonathan-conlon'],
+    quote:'My family worked with the GVC Team over the course of 2+ years to successfully sell two apartments in a small UES co-op in the East 70s. John and Jonathan and their entire team were professional, very responsive and outcome oriented. Top rate!',
+    who:'Edward Whittemore, Seller' },
+  { id:'conor-hagen', agents:['john-gasdaska'],
+    quote:'John and his associates at Gasdaska Conlon are top notch professionals. It was a very smooth, easy and overall enjoyable experience working with them to buy and sell our apartment in NYC.',
+    who:'Conor Hagen, Buyer & Seller' },
+  { id:'gary-watson', agents:['john-gasdaska','jonathan-conlon'],
+    quote:'John Gasdaska and Jonathan Conlon are truly outstanding. When we needed to move on, they achieved an excellent outcome for us in a very short time, despite a challenging market. We could not recommend them more highly.',
+    who:'Gary Watson, Buyer & Seller' },
+  { id:'bardia-fd', agents:['john-gasdaska'],
+    quote:'I am a realtor in Orange County, California and I referred a client to John Gasdaska to work with. I knew John was the right recommendation for my client based on his knowledge and his style. He successfully navigated my buyer to a successful closing.',
+    who:'Bardia Fd, Referring Agent' },
+  { id:'jenny-kane', agents:[],
+    quote:'The whole team is a pleasure to work with. Super responsive, knowledgeable and helpful. They helped us with both buying and selling and did a fantastic job. Highly recommend!',
+    who:'Jenny Sharfstein Kane, Buyer & Seller' },
+  { id:'megan-grant', agents:[],
+    quote:'Simply the best real estate team in NYC! Charismatic and treats you like family. Goes above and beyond for clients and expects nothing in return. I never thought buying a home could be so stress free and FUN!',
+    who:'Megan Grant, Buyer' }
+];
+/* How many quotes page 10 has room for. */
+const REVIEW_SLOTS = 4;
 
 /* Where the closing page's QR sends a reader: the team's property page
    rather than the homepage, so a scan lands on the listings. */
@@ -492,76 +612,126 @@ const PREP = [
 ];
 
 /* ============================================================
-   PROFESSIONAL VIDEOS  (page 12)  —  EDIT THIS BLOCK
+   PROFESSIONAL VIDEOS  (page 11)  —  EDIT THIS BLOCK
    ------------------------------------------------------------
-   One entry per card, top to bottom. All four fields are optional
-   except `title`.
+   The library the page picks three cards from, three New Jersey films and
+   three New York. Fields:
 
-     title  The address printed on the band across the bottom.
-     photo  Path to the listing photo, relative to this file.
-            e.g. '../../photos/videos/200-e-57th.jpg'
-            Leave '' to fall back to a photo dropped into the
-            "Video N still" slot in the Photos panel.
-     qr     Path to a QR image you already have, same style of path.
-            Use this if you would rather drop in your own PNGs.
-     url    A video link. If `qr` is empty and this is set, the page
-            draws the QR itself as vector art, which stays sharp at
-            any print size — this is the better option of the two.
+     id      Stable key. This is what the panel's ticks and a saved deck
+             store, so renaming one drops it out of any deck that had it.
+     market  'nj' or 'nyc'. Groups the picker, and sets which three the
+             deck offers when the video selection is still following the
+             market toggle.
+     title   The address printed on the band across the bottom.
+     photo   Path to the listing still, relative to this file.
+     qr      Path to a QR image you already have, same style of path.
+             Use this if you would rather drop in your own PNGs.
+     url     A video link. If `qr` is empty and this is set, the page draws
+             the QR itself as vector art, which stays sharp at any print
+             size — this is the better option of the two.
 
    With neither `qr` nor `url`, the card prints a "video link needed"
    placeholder rather than a dead code.
 
-   ------------------------------------------------------------
-   THESE THREE ARE PLACEHOLDERS AND THE PAGE SAYS SO.
+   Paths must be repo-relative, not G:\ paths — the published site is served
+   from GitHub Pages, where nobody has the shared drive mounted, and a
+   browser cannot read a local drive from an http page anyway. All six
+   stills are committed in assets/videos/ at 1600x1067, cropped so the
+   top-right stays light (the QR sits there) and the bottom third is floor
+   (the address band sits there). Note the Sea Bright file is named for its
+   town while its id is its address.
 
-   The page carries a "SWAP THESE OUT" stamp until the three films below
-   are the ones the team actually wants leading a listing presentation.
-   Replace a card by editing its row: drop the new still into
-   assets/videos/ alongside the others and point `photo` at it, and put
-   the video link in `url`. Delete the stamp line in pgVideos() once all
-   three are the real thing.
+   `url` is used rather than `qr` throughout: these strings were decoded
+   from the team's own QR PNGs, so they scan to exactly the same place, but
+   drawn as vector they stay sharp at any print size. Three of the original
+   PNGs are committed alongside if you would rather use them — set `qr` and
+   clear `url`.
 
-   Picking the three from a longer list is the next step, not this one:
-   with only three films on hand a picker would be three ticks that can
-   never be anything but all on. Add a fourth row here and the panel
-   section becomes worth building.
+   All six are real films the team chose, which is why the page no longer
+   carries a "swap these out" stamp. Add a seventh by adding a row here: it
+   appears in the picker under its market with no other change.
+
+   The two New York ZIPs, 10019 and 10022, are inferred from the street
+   addresses rather than confirmed. Worth a check.
    ============================================================ */
-/* Paths must be repo-relative, not G:\ paths — the published site is served
-   from GitHub Pages, where nobody has the shared drive mounted, and a browser
-   cannot read a local drive from an http page anyway. The six assets have been
-   copied into assets/videos/ and compressed for print.
-
-   `url` is used rather than `qr`: these strings were decoded from the team's
-   own QR PNGs, so they scan to exactly the same place, but drawn as vector
-   they stay sharp at any print size. The original PNGs are committed
-   alongside if you would rather use them — set `qr` and clear `url`. */
 const VIDEOS = [
-  { title:'14 Ridge Road, Rumson, NJ 07760',
+  { id:'14-ridge-road', market:'nj',
+    title:'14 Ridge Road, Rumson, NJ 07760',
     photo:'../../assets/videos/14-ridge-road.jpg',
     qr:'', url:'https://youtube.com/shorts/CHApl_TPuz0?feature=shared' },
-  { title:'205 Parkway, Point Pleasant Beach, NJ 08742',
+  { id:'205-parkway', market:'nj',
+    title:'205 Parkway, Point Pleasant Beach, NJ 08742',
     photo:'../../assets/videos/205-parkway.jpg',
     qr:'', url:'https://www.youtube.com/shorts/pvdRa6qlZ0U' },
-  { title:'105 Norfolk Street, Tower 15, NY 10002',
+  { id:'50-north-way', market:'nj',
+    title:'50 North Way, Sea Bright, NJ 07760',
+    photo:'../../assets/videos/sea-bright.jpg',
+    qr:'', url:'https://www.youtube.com/watch?v=S0PWmtKhpDE' },
+  { id:'105-norfolk', market:'nyc',
+    title:'105 Norfolk Street, Tower 15, NY 10002',
     photo:'../../assets/videos/105-norfolk.jpg',
-    qr:'', url:'https://www.youtube.com/watch?v=ENtscLOAae8' }
+    qr:'', url:'https://www.youtube.com/watch?v=ENtscLOAae8' },
+  { id:'555-w59th', market:'nyc',
+    title:'555 W59th Street, PHC, NY 10019',
+    photo:'../../assets/videos/555-w59th.jpg',
+    qr:'', url:'https://www.youtube.com/watch?v=ZfUhrrHpiPY' },
+  { id:'200-e-57th', market:'nyc',
+    title:'200 E 57th Street, 17A, NY 10022',
+    photo:'../../assets/videos/200-e-57th.jpg',
+    qr:'', url:'https://www.youtube.com/watch?v=PhLajvl1p7M' }
 ];
+/* How many video cards page 11 has room for. Picking fewer is fine — .vid
+   is flex:1, so the cards simply grow. */
+const VIDEO_SLOTS = 3;
 
-const VIDEO_COPY = [
-  'In the competitive landscape of the New Jersey real estate market, buyers have a wealth of media ' +
-  'to sift through, and there are only a few ways to stand out. Price, photography, and copy writing ' +
-  'are all important, but high-quality, professional video content has shown time and time again to ' +
-  'be the most impactful.',
-  'From center-hall colonials on tree-lined streets to waterfront homes with Manhattan skyline views, ' +
-  'each property tells a unique story.',
+/* The prose beside the cards. Paragraph 3 is market-neutral and shared;
+   1, 2 and 4 name a market, which is what the NJ/NYC toggle is for — a
+   Manhattan selection under New Jersey copy contradicts itself.
+
+   The New Jersey text is the approved marketing copy, verbatim, including
+   "Bergen, Hudson and Essex County". Those are North Jersey counties, and
+   GVC's New Jersey office is in Fair Haven with every NJ film in
+   Monmouth/Ocean — Rumson, Point Pleasant Beach, Sea Bright. The line is
+   wrong and is flagged for Matt as a content decision; the toggle only
+   stops it reaching New York sellers. Do not quietly fix it here.
+
+   The New York paragraph 4 says Manhattan rather than listing boroughs.
+   All three NYC films are Manhattan, and naming boroughs GVC may not list
+   in would repeat the mistake the county line already makes. */
+const VIDEO_COPY_SHARED =
   'Our team works with professional videographers whose skill and expertise capture the essence of ' +
   'these spaces, utilizing cutting-edge equipment and techniques to highlight every architectural ' +
   'detail and luxurious amenity. But don&rsquo;t take our word for it, watch examples of our listing ' +
-  'videos by scanning the QR codes on this page.',
-  'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
-  'necessity for sellers looking to stand out across Bergen, Hudson and Essex County, ultimately ' +
-  'attracting discerning buyers and maximizing property value.'
-];
+  'videos by scanning the QR codes on this page.';
+const VIDEO_COPY = {
+  nj: [
+    'In the competitive landscape of the New Jersey real estate market, buyers have a wealth of media ' +
+    'to sift through, and there are only a few ways to stand out. Price, photography, and copy writing ' +
+    'are all important, but high-quality, professional video content has shown time and time again to ' +
+    'be the most impactful.',
+    'From center-hall colonials on tree-lined streets to waterfront homes with Manhattan skyline views, ' +
+    'each property tells a unique story.',
+    VIDEO_COPY_SHARED,
+    'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
+    'necessity for sellers looking to stand out across Bergen, Hudson and Essex County, ultimately ' +
+    'attracting discerning buyers and maximizing property value.'
+  ],
+  nyc: [
+    'In the competitive landscape of the New York City real estate market, buyers have a wealth of media ' +
+    'to sift through, and there are only a few ways to stand out. Price, photography, and copy writing ' +
+    'are all important, but high-quality, professional video content has shown time and time again to ' +
+    'be the most impactful.',
+    'From prewar co-ops on Park Avenue to full-floor lofts and penthouses with skyline and river views, ' +
+    'each property tells a unique story.',
+    VIDEO_COPY_SHARED,
+    'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
+    'necessity for sellers looking to stand out across Manhattan, ultimately attracting discerning ' +
+    'buyers and maximizing property value.'
+  ]
+};
+
+/* The two markets, in the order the toggle prints them. */
+const MARKETS = [['nyc', 'New York'], ['nj', 'New Jersey']];
 
 /* ============================================================
    HELPERS
@@ -578,6 +748,58 @@ const planRows = txt => listOf(txt).map(l => l.split('|').map(s => s.trim()));
    can always read state.pos.<key>.x/.y even before the drag helper wires
    the box after paint. */
 function posFor(key) { return state.pos[key] || (state.pos[key] = { x: 50, y: 50 }); }
+
+/* ---------- the three selections ----------
+   All three answer the same question: given what the agent has ticked, and
+   what they have left alone, what does this page print? Each degrades
+   quietly past a stale id — a film or a review dropped from the library
+   above should not throw in a deck that still names it, so every lookup
+   ends in .filter(Boolean), the discipline P.agentsOf() already uses.
+
+   Selections are always rebuilt in library order rather than click order,
+   so a deck comes out the same however its ticks were reached. */
+
+/* Page 11's cards. state.videos === null means the selection is still
+   following the market toggle, which offers that market's three films. */
+function videoIds() {
+  return state.videos === null
+    ? VIDEOS.filter(v => v.market === state.market).map(v => v.id)
+    : state.videos;
+}
+function chosenVideos() {
+  const ids = videoIds();
+  return VIDEOS.filter(v => ids.indexOf(v.id) > -1).slice(0, VIDEO_SLOTS);
+}
+
+/* Page 10's quotes. state.reviews === null means the selection is still
+   following the Agents section.
+
+   Following fills round-robin across the picked agents in roster order,
+   taking each agent's reviews in library order, then tops up from the
+   reviews that name nobody, then from whatever is left. Round-robin rather
+   than agent-by-agent because John and Marli together should print two of
+   each: four quotes in one voice reads like one agent's page, and this one
+   is titled What Our Clients Say. Most of the roster has no attributed
+   review at all, so picking one of them fills from the team reviews and
+   then the remainder — which is right rather than awkward. */
+function followedReviewIds() {
+  const picked = agents().map(a => a.id);
+  const queues = picked.map(id => REVIEWS.filter(r => r.agents.indexOf(id) > -1));
+  const out = [];
+  const take = r => { if (r && out.indexOf(r.id) < 0) out.push(r.id); };
+  for (let i = 0; out.length < REVIEW_SLOTS && i < REVIEWS.length; i++)
+    queues.forEach(q => { if (out.length < REVIEW_SLOTS) take(q[i]); });
+  REVIEWS.filter(r => !r.agents.length).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  REVIEWS.forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  return out;
+}
+function reviewIds() {
+  return state.reviews === null ? followedReviewIds() : state.reviews;
+}
+function chosenReviews() {
+  const ids = reviewIds();
+  return REVIEWS.filter(r => ids.indexOf(r.id) > -1).slice(0, REVIEW_SLOTS);
+}
 
 /* QR as vector SVG — shared by all four builders, assets/js/qr.js */
 const qrSvg = window.GVC_QR;
@@ -927,9 +1149,10 @@ function pgStrategy(n) {
 }
 
 /* Static GVC boilerplate — pre-launch, launch and on-going, grouped from
-   DEFAULT_PLAN (Phase | Group | Title | detail). Not editor-driven. */
+   PLAN_ROWS (Phase | Group | Title | detail). Not editor-driven, but four of
+   its rows follow the market toggle — see PLAN_ROWS for which and why. */
 function pgPlan(n) {
-  const rows = planRows(DEFAULT_PLAN);
+  const rows = planRows(defaultPlan(state.market));
   const phases = ['Pre-Launch', 'Launch', 'On-Going'];
   /* p1/p2/p3 carry the phase accent — navy, mid, then light */
   const col = (phase, i) => {
@@ -972,9 +1195,12 @@ function pgPrep(n) {
 
 const REVIEWS_URL = 'https://gvcrealestateteam.com/about';
 
-/* Static GVC boilerplate — curated from client testimonials, not editor-driven. */
+/* Four slots, filled from the REVIEWS library by the Client testimonials
+   panel section — which follows the Agents section until the agent ticks
+   something themselves. Picking fewer than four still looks right: .quotes
+   is space-evenly, so the quotes simply grow. */
 function pgReviews(n) {
-  const rs = pairs(DEFAULT_REVIEWS);
+  const rs = chosenReviews().map(r => [r.quote, r.who]);
   const revQr = qrSvg(REVIEWS_URL);
   const body =
     '<div class="rev-badge">' +
@@ -992,16 +1218,25 @@ function pgReviews(n) {
     title:'What Our Clients Say', body });
 }
 
-/* Three real listing films — all three cards are driven by the VIDEOS block
-   near the top of this file. Photo falls back to the panel's Video N slot so a
-   dropped photo still works; QR prefers a supplied image, else draws itself
-   from the url, else prints a placeholder rather than a dead code. */
+/* Up to three of the six real listing films, picked in the Professional
+   videos panel section — which follows the market toggle until the agent
+   ticks something themselves. Picking fewer still looks right: .vid is
+   flex:1, so the cards simply grow.
+
+   The prose beside them follows the market outright; it is not editable, so
+   there is nothing to protect from being overwritten.
+
+   Photo falls back to the panel's Video N slot so a dropped photo still
+   works. Those three slots stay positional rather than keyed per film:
+   every library film ships with a real still, so the drop is now a
+   rarely-used escape hatch and re-keying it would only complicate the photo
+   tray. QR prefers a supplied image, else draws itself from the url, else
+   prints a placeholder rather than a dead code. */
 function pgVideos(n) {
   const body =
-    '<div class="stamp">Swap these out</div>' +
     '<div class="vids">' +
-      '<div class="vids-copy">' + VIDEO_COPY.map(p => '<p>' + p + '</p>').join('') + '</div>' +
-      '<div class="vids-list">' + VIDEOS.slice(0, 3).map((v, i) => {
+      '<div class="vids-copy">' + VIDEO_COPY[state.market].map(p => '<p>' + p + '</p>').join('') + '</div>' +
+      '<div class="vids-list">' + chosenVideos().map((v, i) => {
         const key = 'video' + (i + 1), img = v.photo || slot(key);
         const code = v.qr
           ? '<img src="' + v.qr + '" alt="">'
@@ -1073,7 +1308,9 @@ function redraw() {
 const RULES = [
   { key:'comps',    box:'warnComps',   msg:'Comparable sales run past the page — remove one, or shorten the longest address.' },
   { key:'property', box:'warnProperty',msg:'The property page is over-full — shorten the description or cut a feature.' },
-  { key:'strategy', box:'warnStrategy',msg:'The strategy page is over-full — a price is running onto a second line.' }
+  { key:'strategy', box:'warnStrategy',msg:'The strategy page is over-full — a price is running onto a second line.' },
+  { key:'videos',   box:'warnVideos',  msg:'Video cards run past the page — untick one.' },
+  { key:'reviews',  box:'warnReviews', msg:'Testimonials run past the page — untick one, or pick shorter quotes.' }
 ];
 /* Runs after the pages are in the DOM and again once the webfonts have
    landed. Both matter to the cover — see Pitch.fitCover() for why. */
@@ -1082,11 +1319,23 @@ function checkAll() {
   P.checkOverflow(document.getElementById('pages'), RULES, 'warnGeneral');
 }
 
+/* Set by the property library's mount, below — the State field has to be
+   able to move the market toggle, and bindFields runs before that exists. */
+let syncMarketToState = () => {};
+
 function bindFields() {
   document.querySelectorAll('[data-f]').forEach(el => {
     const k = el.dataset.f;
     el.value = state[k] || '';
-    el.addEventListener('input', () => { state[k] = el.value; redraw(); });
+    el.addEventListener('input', () => {
+      state[k] = el.value;
+      /* Typing NJ in the State field lands the toggle on New Jersey without
+         it having to be found. Only the State field does this, and only
+         while it reads as one of the two — clearing it leaves the toggle
+         where it was rather than snapping back. */
+      if (k === 'state') syncMarketToState();
+      redraw();
+    });
   });
 }
 
@@ -1115,6 +1364,10 @@ function renderThumbs(hostId, arr, onRemove) {
    can be re-synced with state after a property is loaded rather than being
    left showing the last document's answer. */
 let paintRoster = () => {}, paintRec = () => {}, paintProp = () => {};
+/* The market seg, and the two grouped tick lists. The tick lists are rebuilt
+   rather than merely repainted when their groups change — the testimonial
+   groups follow whichever agents are picked, so the subheads themselves move. */
+let paintMarket = () => {}, paintVideoPick = () => {}, wireReviewPick = () => {};
 
 document.addEventListener('DOMContentLoaded', () => {
   bindFields();
@@ -1129,7 +1382,11 @@ document.addEventListener('DOMContentLoaded', () => {
     paintMap(); redraw(); GVC_UNSAVED.touch();
   });
 
-  paintRoster = P.wireRoster(document.getElementById('rosterPick'), state, 2, redraw);
+  /* A following testimonial selection is derived from the agents, so the
+     roster has to rebuild the picker rather than just redraw the page. A
+     manual selection is left alone, which is the whole point of the mode. */
+  paintRoster = P.wireRoster(document.getElementById('rosterPick'), state, 2,
+    () => { wireReviewPick(); paintPickModes(); redraw(); });
 
   document.getElementById('addComp').addEventListener('click', () => {
     state.comps.push(P.blankComp());
@@ -1141,6 +1398,78 @@ document.addEventListener('DOMContentLoaded', () => {
   paintProp = P.segPick(document.getElementById('propPick'), 'on',
     () => (state.showProperty ? '1' : '0'),
     v => { state.showProperty = v === '1'; redraw(); });
+
+  /* ---------- the market toggle ----------
+     Changing it repaints the video ticks, because the films on offer are
+     that market's three whenever the selection is still following. A manual
+     selection is left exactly as it is. */
+  paintMarket = P.segPick(document.getElementById('marketPick'), 'market',
+    () => state.market,
+    v => { state.market = v; paintVideoPick(); paintPickModes(); redraw(); });
+
+  /* ---------- which films print ----------
+     One tick list per market, so the panel reads the way the library does.
+     Ticking anything at all takes the selection off the market toggle: the
+     ticks become the answer, and "Reset to market" hands it back. */
+  const wireVideoGroup = (hostId, market) => P.tickList(document.getElementById(hostId),
+    VIDEOS.filter(v => v.market === market).map(v => [v.id, v.title]),
+    id => videoIds().indexOf(id) > -1,
+    (id, on) => {
+      const now = videoIds();
+      state.videos = VIDEOS
+        .filter(v => (v.id === id ? on : now.indexOf(v.id) > -1))
+        .map(v => v.id);
+      paintVideoPick(); paintPickModes(); redraw();
+    });
+  const paintNyc = wireVideoGroup('vidPickNyc', 'nyc');
+  const paintNj  = wireVideoGroup('vidPickNj', 'nj');
+  paintVideoPick = () => { paintNyc(); paintNj(); };
+
+  const setVideos = ids => { state.videos = ids; paintVideoPick(); paintPickModes(); redraw(); };
+  document.getElementById('vidAllNyc').addEventListener('click',
+    () => setVideos(VIDEOS.filter(v => v.market === 'nyc').map(v => v.id)));
+  document.getElementById('vidAllNj').addEventListener('click',
+    () => setVideos(VIDEOS.filter(v => v.market === 'nj').map(v => v.id)));
+  document.getElementById('vidFollow').addEventListener('click', () => setVideos(null));
+
+  /* ---------- which testimonials print ----------
+     Grouped by agent, an agent per subhead, with the reviews that name
+     nobody under Team. Only the picked agents get a group: the whole roster
+     would be twelve subheads, most of them empty. Rebuilt rather than
+     repainted whenever the agents change, since the subheads move with them. */
+  wireReviewPick = () => {
+    const host = document.getElementById('revPick');
+    host.replaceChildren();
+    const groups = agents()
+      .map(a => [a.name, REVIEWS.filter(r => r.agents.indexOf(a.id) > -1)])
+      .concat([['Team', REVIEWS.filter(r => !r.agents.length)]])
+      .filter(g => g[1].length);
+    /* Whatever a picked agent has no group for still has to be reachable,
+       or a following selection could show ticks the panel cannot untick. */
+    const shown = groups.reduce((all, g) => all.concat(g[1]), []);
+    const rest = REVIEWS.filter(r => shown.indexOf(r) < 0);
+    if (rest.length) groups.push(['Other reviews', rest]);
+    groups.forEach(([name, rs]) => {
+      const field = document.createElement('div'); field.className = 'field';
+      const lab = document.createElement('label'); lab.textContent = name;
+      const box = document.createElement('div');
+      field.append(lab, box); host.appendChild(field);
+      P.tickList(box, rs.map(r => [r.id, r.who, r.quote.slice(0, 72) + '…']),
+        id => reviewIds().indexOf(id) > -1,
+        (id, on) => {
+          const now = reviewIds();
+          state.reviews = REVIEWS
+            .filter(r => (r.id === id ? on : now.indexOf(r.id) > -1))
+            .map(r => r.id);
+          wireReviewPick(); paintPickModes(); redraw();
+        });
+    });
+  };
+  wireReviewPick();
+  document.getElementById('revFollow').addEventListener('click', () => {
+    state.reviews = null; wireReviewPick(); paintPickModes(); redraw();
+  });
+  paintPickModes();
 
   builder = Builder.init({
     pages: PAGES.length,
@@ -1168,8 +1497,27 @@ document.addEventListener('DOMContentLoaded', () => {
      bring to a seller who has not set a price yet, so low/mid/high stays
      in this document and never becomes the property's asking price.
      ============================================================ */
+  /* market is the arguable one: a listing's market looks like a fact about
+     the house. It stays document-only deliberately, because what it selects
+     is verbiage for one presentation, and the property record already
+     carries the real fact in its state field — which is what the toggle
+     derives its default from. */
   const DOC_ONLY = ['client','date','photos','map','priceLow','priceMid','priceHigh',
-                    'recBand','showProperty','pos','agents'];
+                    'recBand','showProperty','pos','agents','market','videos','reviews'];
+
+  /* NY gives New York, NJ gives New Jersey, anything else leaves the toggle
+     where it is. A deck with no property yet starts on New York: the firm is
+     New York-headquartered and the plan page already reads that way. */
+  const marketFromState = () => {
+    const st = String(state.state || '').trim().toUpperCase();
+    return st === 'NJ' ? 'nj' : st === 'NY' ? 'nyc' : null;
+  };
+  syncMarketToState = () => {
+    const m = marketFromState();
+    if (!m || m === state.market) return;
+    state.market = m;
+    paintMarket(); paintVideoPick(); paintPickModes();
+  };
 
   /* the features box is one per line; P.lines() renders them, it does not
      split them */
@@ -1199,8 +1547,12 @@ document.addEventListener('DOMContentLoaded', () => {
       state.features = (core.features || []).join(String.fromCharCode(10));
       if (core.comps && core.comps.length) state.comps = core.comps;
       if (core.agentIds && core.agentIds.length) state.agents = core.agentIds.slice(0, 2);
+      /* The market is not set here: setDoc runs immediately after this and
+         owns it, so that a deck saved with a deliberate market keeps it
+         rather than being snapped back to whatever the State field says. */
       document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
-      renderComps(); paintRoster(); redraw();
+      renderComps(); paintRoster(); paintMarket(); paintVideoPick();
+      wireReviewPick(); paintPickModes(); redraw();
     },
 
     getDoc: () => DOC_ONLY.reduce((doc, k) => { doc[k] = state[k]; return doc; }, {}),
@@ -1211,14 +1563,42 @@ document.addEventListener('DOMContentLoaded', () => {
          should start with the page in rather than inheriting whatever the
          last document loaded said. */
       state.showProperty = true;
+      /* Same reasoning for the three new ones: a deck saved before they
+         existed has no answer, and neither has a property with no deck yet.
+         Both should start following rather than inheriting whatever the last
+         document was set to. The market falls back to the property's own
+         State field, which is the answer the toggle would have derived. */
+      state.market = marketFromState() || 'nyc';
+      state.videos = null;
+      state.reviews = null;
       if (doc) DOC_ONLY.forEach(k => { if (k in doc) state[k] = doc[k]; });
       else { state.photos = []; state.map = null; state.pos = {}; }
       uid = Math.max(uid, ...state.photos.map(p => p.id || 0), 0);
       document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
-      paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp(); redraw();
+      paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp();
+      paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw();
     }
   });
 });
+
+/* The two pickers say which mode they are in, because "3 of 3" alone does
+   not tell you whether the answer will move when you change market or
+   agents. Both hints count what will actually print, so a selection with a
+   stale id in it reads honestly. */
+function paintPickModes() {
+  const nV = chosenVideos().length, nR = chosenReviews().length;
+  document.getElementById('vidHint').textContent = nV + ' of ' + VIDEO_SLOTS;
+  document.getElementById('revHint').textContent = nR + ' of ' + REVIEW_SLOTS;
+  const market = (MARKETS.filter(m => m[0] === state.market)[0] || MARKETS[0])[1];
+  document.getElementById('vidMode').textContent = state.videos === null
+    ? 'Following the market — showing the ' + market + ' films.'
+    : 'Manual. Reset to market hands the choice back to the ' + market + ' films.';
+  document.getElementById('revMode').textContent = state.reviews === null
+    ? (agents().length
+        ? 'Following your agents — changing them refills these.'
+        : 'Following your agents — pick some, or these fill from the team reviews.')
+    : 'Manual. Changing your agents no longer moves these.';
+}
 
 function paintPhotos() {
   PD.tray(document.getElementById('imgList'), state.photos, {

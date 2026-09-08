@@ -28,5 +28,5 @@ http (fetch can't read `file://` siblings).
 
 ## Docs
 
-- Spec: `docs/superpowers/specs/2026-06-10-portfolio-site-design.md`
-- Plans: `docs/superpowers/plans/`
+- Design spec: `docs/superpowers/specs/2026-06-10-gvc-workspace-site-design.md`
+  (local only — `docs/` is gitignored, so it does not ship with a clone)

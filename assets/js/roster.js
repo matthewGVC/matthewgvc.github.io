@@ -35,7 +35,6 @@
 
     /* New York */
     {id:'katie-cook',        name:'Katie Cook',        title:'Licensed Real Estate Salesperson',      phone:'516.319.9732', mobile:'',    email:'katie.cook@elliman.com', instagram:''},
-    {id:'jessica-wolf',      name:'Jessica Wolf',      title:'Licensed Real Estate Salesperson',      phone:'847.414.7841', mobile:'',    email:'jessica.wolf@elliman.com', instagram:''},
     {id:'nicole-sobol',      name:'Nicole Sobol',      title:'Licensed Real Estate Salesperson',      phone:'201.240.7544', mobile:'',    email:'nicole.sobol@elliman.com', instagram:''},
     {id:'gary-kasparov',     name:'Gary Kasparov',     title:'Licensed Real Estate Salesperson',      phone:'718.980.8777', mobile:'',    email:'gary.kasparov@elliman.com', instagram:''},
     {id:'ayuen-gai',         name:'Ayuen Gai',         title:'Licensed Real Estate Salesperson',      phone:'315.679.0088', mobile:'',    email:'ayuen.gai@elliman.com', instagram:''},

@@ -199,6 +199,34 @@
    quotes measure the same. */
 .quotes{justify-content:space-evenly;flex:1;min-height:0;}
 
+/* ------------------------------------------------------------
+   PROOFING — text nobody has signed off yet.
+
+   Anything drafted here rather than lifted from approved copy carries
+   .tocheck, and the To check panel section turns the highlight on and off by
+   putting .proofing on <body>. It is a reading aid on screen only: the
+   print rule below strips it, so a deck printed with proofing left on
+   comes out exactly as it would with it off. That matters more than it
+   sounds — the whole point of this page is the printed sheet, and a
+   highlight that reached the PDF would be worse than no highlight.
+
+   Amber rather than the deck's own navy and sky, so a flag can never be
+   mistaken for part of the design.
+   ------------------------------------------------------------ */
+.tocheck{border-radius:2pt;}
+body.proofing .tocheck{background:rgba(198,124,10,.16);
+  box-shadow:0 0 0 1.5pt rgba(198,124,10,.42);}
+/* the address band is navy with white type, so it wants a lighter wash */
+body.proofing .vt .tocheck{background:rgba(255,190,80,.32);
+  box-shadow:0 0 0 1.5pt rgba(255,190,80,.55);}
+/* a flagged quote gets the wash on the text, not the whole indented block */
+body.proofing .quote.tocheck{background:none;box-shadow:none;}
+body.proofing .quote.tocheck p{background:rgba(198,124,10,.16);
+  box-shadow:0 0 0 1.5pt rgba(198,124,10,.42);border-radius:2pt;}
+@media print{
+  .tocheck,.quote.tocheck p{background:none !important;box-shadow:none !important;}
+}
+
 /* p12 — professional videos: copy column beside three listing films.
    Named .vids, not .pv: p9's QR handles are .pv too (shared verbatim with
    the Brochure's marketing page), and a bare .pv{display:flex} here turned
@@ -243,6 +271,22 @@
     <!-- the property library mounts here, identically in all four builders -->
     <div id="propBar"></div>
     <div class="ed-body">
+
+      <details class="ed-sec" open>
+        <summary>To check <span class="hint" id="chkHint"></span></summary>
+        <div class="sec-in">
+          <div class="field"><label>Highlight the copy nobody has approved</label>
+            <div class="seg pick" id="proofPick" role="group" aria-label="Highlight the copy nobody has approved">
+              <button type="button" data-proof="1">Show</button>
+              <button type="button" data-proof="0">Hide</button>
+            </div>
+          </div>
+          <div class="sec-note" id="chkList"></div>
+          <div class="sec-note">The highlight never prints, so you can leave it on and still
+            save a clean PDF. Once you have read a passage, tell me and I will take its flag
+            off in the code &mdash; the highlight is the to-do list, so it should empty out.</div>
+        </div>
+      </details>
 
       <details class="ed-sec" open>
         <summary>Market <span class="hint">plan page &middot; videos page</span></summary>
@@ -465,6 +509,10 @@ const state = {
      has taken the choice over by hand. */
   videos:null,
   reviews:null,
+  /* A reading aid, not a document decision — it highlights the copy nobody
+     has approved and never prints. Deliberately absent from DOC_ONLY: it
+     describes how the deck is being read, not what it says. */
+  proof:true,
   pos:{}
 };
 
@@ -483,24 +531,30 @@ const state = {
    The New Jersey rows name "the MLS" generically rather than a board.
    Monmouth Ocean would match the Fair Haven office and every NJ film, but
    naming an institution invites being wrong or going stale, and the generic
-   reads correctly for any NJ listing. */
+   reads correctly for any NJ listing.
+
+   `check` names the variant that was drafted rather than approved. The four
+   New York ones are this file's existing wording; the four New Jersey ones
+   were written to match and nobody has read them on the page yet, so they
+   carry a proofing highlight until Matt says otherwise. Delete the flag
+   when he has signed one off. */
 const PLAN_ROWS = [
   'Pre-Launch | Media Creation | Custom photography | A full shoot with our in-house photographer, timed to the property at its best.',
   'Pre-Launch | Media Creation | Professional floor plan | Produced in-house for every listing.',
   'Pre-Launch | Media Creation | Property video | A cinematic walkthrough cut for the launch and for social.',
   { nyc:'Pre-Launch | Property Info | Verify all pertinent information | Confirmed against the deed, offering plan and building records before anything goes out.',
-    nj: 'Pre-Launch | Property Info | Verify all pertinent information | Confirmed against the deed, survey and tax records before anything goes out.' },
+    nj: 'Pre-Launch | Property Info | Verify all pertinent information | Confirmed against the deed, survey and tax records before anything goes out.', check:'nj' },
   { nyc:'Pre-Launch | Pre-Launch Marketing | Elliman &amp; REBNY notice | Immediate notice to all Elliman brokers, REBNY members and co-broke firms.',
-    nj: 'Pre-Launch | Pre-Launch Marketing | Elliman &amp; MLS notice | Immediate notice to all Elliman brokers, MLS members and co-broke firms.' },
+    nj: 'Pre-Launch | Pre-Launch Marketing | Elliman &amp; MLS notice | Immediate notice to all Elliman brokers, MLS members and co-broke firms.', check:'nj' },
   'Pre-Launch | Pre-Launch Marketing | Teaser announcement | Social teaser ahead of the public listing date.',
   'Launch | Digital Launch | Elliman.com listing | Posted with professional photos, floor plan, description and all marketing information.',
   'Launch | Digital Launch | Brokerage &amp; contact announcement | Emailed to the entire brokerage community and our private contact lists.',
   { nyc:'Launch | Digital Launch | StreetEasy syndication | Posted with full professional details and marketing information.',
-    nj: 'Launch | Digital Launch | MLS syndication | Posted to the MLS with full professional details, and syndicated to the major search portals.' },
+    nj: 'Launch | Digital Launch | MLS syndication | Posted to the MLS with full professional details, and syndicated to the major search portals.', check:'nj' },
   'Launch | Print Marketing | Marketing sheet | A professional sheet detailing the property, distributed to agents and prospective buyers.',
   'Launch | Print Marketing | Print placements | Placed in appropriate print publications.',
   { nyc:'Launch | Print Marketing | Just Listed cards | Sent to targeted buildings in the surrounding area.',
-    nj: 'Launch | Print Marketing | Just Listed cards | Sent to targeted streets and neighborhoods in the surrounding area.' },
+    nj: 'Launch | Print Marketing | Just Listed cards | Sent to targeted streets and neighborhoods in the surrounding area.', check:'nj' },
   'On-Going | Communication | Weekly seller updates | Market traffic feedback, both buyer and web, delivered on a weekly cadence.',
   'On-Going | Communication | Offer qualification | Every offer qualified before it is presented.',
   'On-Going | Communication | Showings &amp; open houses | Scheduled as needed, public or broker-specific.',
@@ -508,8 +562,12 @@ const PLAN_ROWS = [
   'On-Going | Ongoing Marketing | Bi-weekly email blasts | Sent to the entire brokerage community.',
   'On-Going | Ongoing Marketing | Continued print &amp; web ads | As needed through the life of the listing.'
 ];
-/* One market's eighteen rows, as the newline-joined text planRows() reads. */
-const defaultPlan = m => PLAN_ROWS.map(r => typeof r === 'string' ? r : r[m]).join('\n');
+/* One market's eighteen rows as Phase | Group | Title | detail cells, each
+   carrying whether this market's wording is the drafted one. */
+const planFor = m => PLAN_ROWS.map(r => ({
+  cells: (typeof r === 'string' ? r : r[m]).split('|').map(x => x.trim()),
+  check: typeof r !== 'string' && r.check === m
+}));
 
 /* Client testimonials — the library the page picks four from.
 
@@ -539,7 +597,12 @@ const defaultPlan = m => PLAN_ROWS.map(r => typeof r === 'string' ? r : r[m]).jo
    TJ Verdiglione has no publicly attributed review, so he has no group in
    the picker. That waits on text from Matt: a fabricated client quote in a
    listing presentation is a different order of risk from a placeholder
-   photo. */
+   photo.
+
+   `check: true` marks a review taken off the site and trimmed here, so it
+   carries a proofing highlight until Matt has read the trim on the page.
+   Marli's three and Conor Hagen's were already in this file and are not
+   flagged. Clear the flag once a quote has been read. */
 const REVIEWS = [
   { id:'lenny-z', agents:['marli-silver'],
     quote:'Marli was absolutely fantastic. We were selling a property in New Jersey while living in Florida, and she was instrumental in reducing the stress of a long-distance sale — incredibly responsive, and very open and honest about our expectations.',
@@ -550,25 +613,25 @@ const REVIEWS = [
   { id:'melinda-b', agents:['marli-silver'],
     quote:'This is my third closing with Marli and she is the best realtor I have ever worked with — and trust me, I have worked with quite a few. She makes finding and buying a home very easy, and her real estate expertise is outstanding.',
     who:'Melinda B., Buyer' },
-  { id:'sally-siebold', agents:['john-gasdaska'],
+  { id:'sally-siebold', check:true, agents:['john-gasdaska'],
     quote:'I have had many experiences buying and selling real estate. My experience with the GVC Real Estate team was by far the best. They were honest and very experienced from start to finish. They handled everything, from the listing, pictures, to staging the apartment for us.',
     who:'Sally Siebold, Seller' },
-  { id:'edward-whittemore', agents:['john-gasdaska','jonathan-conlon'],
+  { id:'edward-whittemore', check:true, agents:['john-gasdaska','jonathan-conlon'],
     quote:'My family worked with the GVC Team over the course of 2+ years to successfully sell two apartments in a small UES co-op in the East 70s. John and Jonathan and their entire team were professional, very responsive and outcome oriented. Top rate!',
     who:'Edward Whittemore, Seller' },
   { id:'conor-hagen', agents:['john-gasdaska'],
     quote:'John and his associates at Gasdaska Conlon are top notch professionals. It was a very smooth, easy and overall enjoyable experience working with them to buy and sell our apartment in NYC.',
     who:'Conor Hagen, Buyer & Seller' },
-  { id:'gary-watson', agents:['john-gasdaska','jonathan-conlon'],
+  { id:'gary-watson', check:true, agents:['john-gasdaska','jonathan-conlon'],
     quote:'John Gasdaska and Jonathan Conlon are truly outstanding. When we needed to move on, they achieved an excellent outcome for us in a very short time, despite a challenging market. We could not recommend them more highly.',
     who:'Gary Watson, Buyer & Seller' },
-  { id:'bardia-fd', agents:['john-gasdaska'],
+  { id:'bardia-fd', check:true, agents:['john-gasdaska'],
     quote:'I am a realtor in Orange County, California and I referred a client to John Gasdaska to work with. I knew John was the right recommendation for my client based on his knowledge and his style. He successfully navigated my buyer to a successful closing.',
     who:'Bardia Fd, Referring Agent' },
-  { id:'jenny-kane', agents:[],
+  { id:'jenny-kane', check:true, agents:[],
     quote:'The whole team is a pleasure to work with. Super responsive, knowledgeable and helpful. They helped us with both buying and selling and did a fantastic job. Highly recommend!',
     who:'Jenny Sharfstein Kane, Buyer & Seller' },
-  { id:'megan-grant', agents:[],
+  { id:'megan-grant', check:true, agents:[],
     quote:'Simply the best real estate team in NYC! Charismatic and treats you like family. Goes above and beyond for clients and expects nothing in return. I never thought buying a home could be so stress free and FUN!',
     who:'Megan Grant, Buyer' }
 ];
@@ -651,8 +714,10 @@ const PREP = [
    carries a "swap these out" stamp. Add a seventh by adding a row here: it
    appears in the picker under its market with no other change.
 
-   The two New York ZIPs, 10019 and 10022, are inferred from the street
-   addresses rather than confirmed. Worth a check.
+   `check` is a run of the title that wants a human eye, highlighted on the
+   card while proofing is on. The two New York ZIPs, 10019 and 10022, were
+   inferred from the street addresses rather than confirmed, so both carry
+   one. Clear the field once a ZIP is confirmed.
    ============================================================ */
 const VIDEOS = [
   { id:'14-ridge-road', market:'nj',
@@ -671,11 +736,11 @@ const VIDEOS = [
     title:'105 Norfolk Street, Tower 15, NY 10002',
     photo:'../../assets/videos/105-norfolk.jpg',
     qr:'', url:'https://www.youtube.com/watch?v=ENtscLOAae8' },
-  { id:'555-w59th', market:'nyc',
+  { id:'555-w59th', market:'nyc', check:'10019',
     title:'555 W59th Street, PHC, NY 10019',
     photo:'../../assets/videos/555-w59th.jpg',
     qr:'', url:'https://www.youtube.com/watch?v=ZfUhrrHpiPY' },
-  { id:'200-e-57th', market:'nyc',
+  { id:'200-e-57th', market:'nyc', check:'10022',
     title:'200 E 57th Street, 17A, NY 10022',
     photo:'../../assets/videos/200-e-57th.jpg',
     qr:'', url:'https://www.youtube.com/watch?v=PhLajvl1p7M' }
@@ -688,12 +753,12 @@ const VIDEO_SLOTS = 3;
    1, 2 and 4 name a market, which is what the NJ/NYC toggle is for — a
    Manhattan selection under New Jersey copy contradicts itself.
 
-   The New Jersey text is the approved marketing copy, verbatim, including
-   "Bergen, Hudson and Essex County". Those are North Jersey counties, and
-   GVC's New Jersey office is in Fair Haven with every NJ film in
-   Monmouth/Ocean — Rumson, Point Pleasant Beach, Sea Bright. The line is
-   wrong and is flagged for Matt as a content decision; the toggle only
-   stops it reaching New York sellers. Do not quietly fix it here.
+   The New Jersey text is the approved marketing copy verbatim, with one
+   correction Matt authorised: its closing line used to name "Bergen, Hudson
+   and Essex County", which are North Jersey. GVC's New Jersey office is in
+   Fair Haven and every NJ film is Monmouth or Ocean — Rumson, Point
+   Pleasant Beach, Sea Bright — so the line now names those two counties.
+   It carries a proofing highlight until Matt has read it on the page.
 
    The New York paragraph 4 says Manhattan rather than listing boroughs.
    All three NYC films are Manhattan, and naming boroughs GVC may not list
@@ -703,6 +768,11 @@ const VIDEO_COPY_SHARED =
   'these spaces, utilizing cutting-edge equipment and techniques to highlight every architectural ' +
   'detail and luxurious amenity. But don&rsquo;t take our word for it, watch examples of our listing ' +
   'videos by scanning the QR codes on this page.';
+/* Which paragraphs of each market carry the proofing highlight. New Jersey
+   flags only its closing line, the one whose counties were corrected; New
+   York flags the three that were drafted from scratch — 3 is the shared
+   paragraph and was never touched. */
+const VIDEO_COPY_CHECK = { nj:[3], nyc:[0, 1, 3] };
 const VIDEO_COPY = {
   nj: [
     'In the competitive landscape of the New Jersey real estate market, buyers have a wealth of media ' +
@@ -713,7 +783,7 @@ const VIDEO_COPY = {
     'each property tells a unique story.',
     VIDEO_COPY_SHARED,
     'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
-    'necessity for sellers looking to stand out across Bergen, Hudson and Essex County, ultimately ' +
+    'necessity for sellers looking to stand out across Monmouth and Ocean County, ultimately ' +
     'attracting discerning buyers and maximizing property value.'
   ],
   nyc: [
@@ -742,12 +812,21 @@ const pairs = txt => String(txt || '').split('\n')
   .map(l => l.trim()).filter(Boolean)
   .map(l => { const i = l.indexOf('|'); return i < 0 ? [l, ''] : [l.slice(0, i).trim(), l.slice(i + 1).trim()]; });
 const listOf = txt => String(txt || '').split('\n').map(l => l.trim()).filter(Boolean);
-/* plan rows are Phase | Group | Title | detail */
-const planRows = txt => listOf(txt).map(l => l.split('|').map(s => s.trim()));
 /* Lazily creates the crop position for a photo slot, so a render function
    can always read state.pos.<key>.x/.y even before the drag helper wires
    the box after paint. */
 function posFor(key) { return state.pos[key] || (state.pos[key] = { x: 50, y: 50 }); }
+
+/* Wraps one run of a string — a ZIP, say — in the proofing highlight, and
+   escapes the whole thing either way. A run that is not present, or not
+   asked for, escapes to exactly what it would have been. */
+function flagRun(text, run) {
+  const i = run ? String(text).indexOf(run) : -1;
+  if (i < 0) return esc(text);
+  return esc(String(text).slice(0, i)) +
+    '<span class="tocheck">' + esc(run) + '</span>' +
+    esc(String(text).slice(i + run.length));
+}
 
 /* ---------- the three selections ----------
    All three answer the same question: given what the agent has ticked, and
@@ -1152,20 +1231,22 @@ function pgStrategy(n) {
    PLAN_ROWS (Phase | Group | Title | detail). Not editor-driven, but four of
    its rows follow the market toggle — see PLAN_ROWS for which and why. */
 function pgPlan(n) {
-  const rows = planRows(defaultPlan(state.market));
+  const rows = planFor(state.market);
   const phases = ['Pre-Launch', 'Launch', 'On-Going'];
   /* p1/p2/p3 carry the phase accent — navy, mid, then light */
   const col = (phase, i) => {
-    const rs = rows.filter(r => r[0] === phase);
+    const rs = rows.filter(r => r.cells[0] === phase);
     const groups = [];
     rs.forEach(r => {
-      let g = groups.filter(x => x.name === r[1])[0];
-      if (!g) { g = { name: r[1], items: [] }; groups.push(g); }
-      g.items.push(r[2] + (r[3] ? ' — ' + r[3] : ''));
+      const c = r.cells;
+      let g = groups.filter(x => x.name === c[1])[0];
+      if (!g) { g = { name: c[1], items: [] }; groups.push(g); }
+      g.items.push({ text: c[2] + (c[3] ? ' — ' + c[3] : ''), check: r.check });
     });
     return '<div class="ph3 p' + (i + 1) + '"><div class="ph3-h">' + phase + '</div>' +
       groups.map(g => '<div class="grp"><div class="grp-t">' + g.name + '</div><ul>' +
-        g.items.map(t => '<li>' + t + '</li>').join('') + '</ul></div>').join('') + '</div>';
+        g.items.map(it => '<li' + (it.check ? ' class="tocheck"' : '') + '>' + it.text + '</li>').join('') +
+        '</ul></div>').join('') + '</div>';
   };
   const social = '<div class="plan-social">' + PLAN_SOCIAL.map(([label, handle, url]) => {
     const code = qrSvg(url);
@@ -1200,7 +1281,7 @@ const REVIEWS_URL = 'https://gvcrealestateteam.com/about';
    something themselves. Picking fewer than four still looks right: .quotes
    is space-evenly, so the quotes simply grow. */
 function pgReviews(n) {
-  const rs = chosenReviews().map(r => [r.quote, r.who]);
+  const rs = chosenReviews();
   const revQr = qrSvg(REVIEWS_URL);
   const body =
     '<div class="rev-badge">' +
@@ -1211,9 +1292,9 @@ function pgReviews(n) {
         '<div class="rb-l">5-star reviews</div>' +
       '</div>' +
     '</div>' +
-    '<div class="quotes">' + rs.map(([q, who]) =>
-    '<div class="quote"><p>' + esc(q) + '</p>' +
-    (who ? '<div class="who">' + esc(who) + '</div>' : '') + '</div>').join('') + '</div>';
+    '<div class="quotes">' + rs.map(r =>
+    '<div class="quote' + (r.check ? ' tocheck' : '') + '"><p>' + esc(r.quote) + '</p>' +
+    (r.who ? '<div class="who">' + esc(r.who) + '</div>' : '') + '</div>').join('') + '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE,
     title:'What Our Clients Say', body });
 }
@@ -1235,7 +1316,9 @@ function pgReviews(n) {
 function pgVideos(n) {
   const body =
     '<div class="vids">' +
-      '<div class="vids-copy">' + VIDEO_COPY[state.market].map(p => '<p>' + p + '</p>').join('') + '</div>' +
+      '<div class="vids-copy">' + VIDEO_COPY[state.market].map((p, i) =>
+        '<p' + (VIDEO_COPY_CHECK[state.market].indexOf(i) > -1 ? ' class="tocheck"' : '') + '>' + p + '</p>'
+      ).join('') + '</div>' +
       '<div class="vids-list">' + chosenVideos().map((v, i) => {
         const key = 'video' + (i + 1), img = v.photo || slot(key);
         const code = v.qr
@@ -1246,7 +1329,7 @@ function pgVideos(n) {
             ? '<img src="' + img + '" alt="" style="object-position:' + posFor(key).x + '% ' + posFor(key).y + '%">'
             : '<div class="empty-note on-white">Tag a photo &ldquo;' + esc('Video ' + (i + 1) + ' still') + '&rdquo;</div>') +
           '<div class="vqr' + (code ? '' : ' todo') + '">' + (code || 'Video<br>link<br>needed') + '</div>' +
-          '<div class="vt">' + esc(v.title) + '</div>' +
+          '<div class="vt">' + flagRun(v.title, v.check) + '</div>' +
         '</div>';
       }).join('') + '</div>' +
     '</div>';
@@ -1368,6 +1451,7 @@ let paintRoster = () => {}, paintRec = () => {}, paintProp = () => {};
    rather than merely repainted when their groups change — the testimonial
    groups follow whichever agents are picked, so the subheads themselves move. */
 let paintMarket = () => {}, paintVideoPick = () => {}, wireReviewPick = () => {};
+let paintProof = () => {};
 
 document.addEventListener('DOMContentLoaded', () => {
   bindFields();
@@ -1398,6 +1482,15 @@ document.addEventListener('DOMContentLoaded', () => {
   paintProp = P.segPick(document.getElementById('propPick'), 'on',
     () => (state.showProperty ? '1' : '0'),
     v => { state.showProperty = v === '1'; redraw(); });
+
+  /* ---------- the proofing highlight ----------
+     A class on <body> rather than a re-render: the flags are always in the
+     markup, and the stylesheet decides whether they show. So turning it on
+     and off costs nothing and cannot disturb a selection. */
+  paintProof = P.segPick(document.getElementById('proofPick'), 'proof',
+    () => (state.proof ? '1' : '0'),
+    v => { state.proof = v === '1'; applyProof(); });
+  applyProof();
 
   /* ---------- the market toggle ----------
      Changing it repaints the video ticks, because the films on offer are
@@ -1598,6 +1691,46 @@ function paintPickModes() {
         ? 'Following your agents — changing them refills these.'
         : 'Following your agents — pick some, or these fill from the team reviews.')
     : 'Manual. Changing your agents no longer moves these.';
+  paintCheckList();
+}
+
+/* Reflects state.proof onto <body>, where the stylesheet reads it. */
+function applyProof() {
+  document.body.classList.toggle('proofing', !!state.proof);
+}
+
+/* What is flagged on the deck as it currently stands. Built from the same
+   data the pages render from rather than written out by hand, so it cannot
+   drift from what is actually highlighted — and it empties itself as flags
+   come off in the code. */
+function checkList() {
+  const out = [];
+  const plan = planFor(state.market).filter(r => r.check).length;
+  if (plan) out.push([8, plan + ' marketing plan row' + (plan > 1 ? 's' : ''),
+    'drafted to match the ' + (state.market === 'nj' ? 'New York' : 'New Jersey') +
+    ' wording, never read back to you']);
+  const copy = VIDEO_COPY_CHECK[state.market].length;
+  if (copy) out.push([11, copy + ' paragraph' + (copy > 1 ? 's' : '') + ' of video copy',
+    state.market === 'nj'
+      ? 'the closing line, its counties corrected from Bergen, Hudson and Essex to Monmouth and Ocean'
+      : 'written from scratch for New York']);
+  const zips = chosenVideos().filter(v => v.check).length;
+  if (zips) out.push([11, zips + ' ZIP code' + (zips > 1 ? 's' : ''),
+    'inferred from the street address, not confirmed']);
+  const revs = chosenReviews().filter(r => r.check).length;
+  if (revs) out.push([10, revs + ' testimonial' + (revs > 1 ? 's' : ''),
+    'taken off the team site and trimmed to fit']);
+  return out;
+}
+
+function paintCheckList() {
+  const list = checkList();
+  const n = list.reduce((t, r) => t + parseInt(r[1], 10), 0);
+  document.getElementById('chkHint').textContent = n
+    ? n + ' to read' : 'all read';
+  document.getElementById('chkList').textContent = list.length
+    ? list.map(([pg, what, why]) => 'Page ' + pg + ' — ' + what + ', ' + why + '.').join(' ')
+    : 'Nothing on this deck is waiting on you.';
 }
 
 function paintPhotos() {

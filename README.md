@@ -13,10 +13,22 @@ Static site, no build step. GSAP via CDN.
 
 Push to `main`. GitHub Pages serves the repo root.
 
-## Content updates (added by later plans)
+## Scripts
 
-- `scripts/build_photos.py` — regenerate web-optimized property photos
-- `scripts/build_icons.py` — regenerate the icon library from the scan pipeline
+Python — `pip install -r scripts/requirements.txt`:
+
+- `build_photos.py` — regenerate web-optimized property galleries from the
+  sibling Personal Photo Editing Project folder
+- `publish_photos.py` — build the galleries, then commit and push to `main`
+- `test_build_photos.py` — unit tests for the gallery builder
+
+Node + Playwright — `cd scripts && npm install`:
+
+- `shoot-heroes.js` — re-screenshot both project heroes into `projects/*/hero.webp`
+- `reshoot-gvc.js` — the same, for the GVC team site only
+- `make-png.js` — regenerate the monogram PNG favicons from `assets/logos/monogram.svg`
+- `check-svgs.js` — render-check the monogram and lockup SVGs
+- `verify-local.js` — load the site on localhost:8080 and report console/SRI errors
 
 ## Showsheet tool
 

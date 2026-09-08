@@ -2,7 +2,7 @@
 .claude/
 _verify/
 docs/
-.tmp-pw/
 __pycache__/
+node_modules/
 *.pyc
 exports/

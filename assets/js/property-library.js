@@ -142,8 +142,72 @@
 
   /* ---------------- properties ---------------- */
 
-  /* One address is one property, so the address is the identity. Unit
-     numbers are part of the address line by design — "45 Crosby St, PH". */
+  /* ---------------- address and unit ---------------- */
+
+  /* A unit is part of the address in the library — one address is one property
+     — but every builder keeps it in its own field, so it is joined on the way
+     out and split on the way back.
+
+     unitDisplay() and splitUnit() are inverses. They have to be: whatever one
+     writes, the other must be able to read, or a unit disappears off the sheet
+     on the next load. That pairing was broken for years — unitDisplay() wrote
+     "Residence 4B" and splitUnit() could not parse it — so the two are defined
+     together here and tested against each other. */
+
+  function unitDisplay(unit) {
+    var u = String(unit || '').trim();
+    if (!u) return '';
+    return /^[\w-]{1,7}$/.test(u) ? 'Residence ' + u : u;
+  }
+
+  /* Words that make the tail of an address line a unit rather than a town.
+     "residence" leads the list because unitDisplay() puts it there. The list
+     is deliberately closed: "Sea Bright, NJ" is a town, not apartment NJ. */
+  var UNIT_WORD = /^(?:residence|apartment|apt\.?|unit|suite|ste\.?|penthouse|ph)$/i;
+
+  function looksLikeUnit(tail) {
+    if (/^#\s*[\w-]+$/.test(tail)) return true;        // #7
+    if (/^[0-9]+[A-Za-z]?$/.test(tail)) return true;   // 12, 4B
+    var m = tail.match(/^([A-Za-z.]+)\s*([\w-]*)$/);   // Residence 4B, Apt. 3, PH C
+    return !!(m && UNIT_WORD.test(m[1]));
+  }
+
+  /* "Residence 4B" was written by unitDisplay(); hand back the "4B" it started
+     as, so a round trip does not accumulate the word. Every other spelling is
+     what the agent typed and is returned untouched. */
+  function stripUnitWord(tail) {
+    var m = tail.match(/^residence\s+(.+)$/i);
+    return m ? m[1].trim() : tail;
+  }
+
+  function splitUnit(full) {
+    var s = String(full || '').trim();
+    var at = s.lastIndexOf(',');
+    if (at === -1) return { address: s, unit: '' };
+    var head = s.slice(0, at).trim();
+    var tail = s.slice(at + 1).trim();
+    if (!head || !tail || !looksLikeUnit(tail)) return { address: s, unit: '' };
+    return { address: head, unit: stripUnitWord(tail) };
+  }
+
+  function joinUnit(address, unit) {
+    var a = String(address || '').trim();
+    var u = String(unit || '').trim();
+    return [a, u && unitDisplay(u)].filter(Boolean).join(', ');
+  }
+
+  /* One place decides what a record means, so three builders cannot disagree:
+     trust core.unit when it is there, otherwise read the joined line an older
+     record still carries. */
+  function unitOf(core) {
+    core = core || {};
+    var u = String(core.unit || '').trim();
+    if (u) return { address: String(core.address || '').trim(), unit: u };
+    return splitUnit(core.address);
+  }
+
+  /* ---------------- identity ---------------- */
+
   function slugOf(address) {
     return String(address || '')
       .toLowerCase()
@@ -152,10 +216,22 @@
       .slice(0, 120) || 'untitled';
   }
 
+  /* Identity is the address and the unit together, so two apartments in one
+     building are two properties. Known limit: city and state are not in it, so
+     the same street address in two towns collides. Changing that now cannot
+     fix a single existing row — a slug is stamped once by create() and never
+     rewritten — so it would only mean old and new records are identified two
+     different ways. Left alone deliberately. */
+  function slugOfCore(core) {
+    core = core || {};
+    return slugOf(joinUnit(core.address, core.unit));
+  }
+
   function labelOf(core) {
     core = core || {};
     var where = [core.city, core.state].filter(Boolean).join(', ');
-    return [core.address, where].filter(Boolean).join(', ') || 'Untitled property';
+    return [joinUnit(core.address, core.unit), where].filter(Boolean).join(', ') ||
+           'Untitled property';
   }
 
   /* The dropdown: active first, sold last, archived left out unless asked
@@ -209,8 +285,9 @@
       });
   }
 
-  /* The address is the identity, so this is how a tool asks "is this
-     listing already in the library?" */
+  /* The address and unit together are the identity, so this is how a tool asks
+     "is this listing already in the library?". Takes the joined line — callers
+     hand it joinUnit(address, unit). */
   function findByAddress(address) {
     return rest('/properties?slug=eq.' + encodeURIComponent(slugOf(address)) +
                 '&select=id,label,status,core')
@@ -225,20 +302,32 @@
     return rest('/properties', {
       method: 'POST',
       prefer: 'return=representation',
-      body: JSON.stringify({ slug: slugOf(core.address), label: labelOf(core), core: core })
+      body: JSON.stringify({ slug: slugOfCore(core), label: labelOf(core), core: core })
     }).then(function (rows) { return rows[0]; });
   }
 
-  /* Facts only, and only the ones worth writing: an empty value never
-     overwrites something a colleague typed. The caller decides about
-     genuine conflicts — see changesAgainst(). */
+  /* Facts only. The keys a tool sends are the facts it is responsible for, and
+     it sends them whether or not they are filled in — so an empty value here
+     means the agent cleared the box, not that the tool has nothing to say, and
+     it is written. A key the tool does not send is left alone, so saving a
+     Showsheet cannot blank the sqft only the Seller Package collects.
+
+     What protects a colleague's typing is confirmChanges() in property-bar,
+     which now runs before this and shows a clear as "was → (empty)". Skipping
+     empties here instead — which is what this did — meant a wrong price could
+     not be removed at all, and the dialog never mentioned it. */
+  /* The merge itself, kept separate so it can be tested without a network:
+     the keys the tool owns replace, everything else is left standing. */
+  function mergeCore(current, incoming) {
+    var merged = Object.assign({}, current || {});
+    Object.keys(incoming || {}).forEach(function (k) { merged[k] = incoming[k]; });
+    return merged;
+  }
+
   function saveCore(id, core) {
+    core = core || {};
     return rest('/properties?id=eq.' + id + '&select=core').then(function (rows) {
-      var current = (rows[0] && rows[0].core) || {};
-      var merged = Object.assign({}, current);
-      Object.keys(core || {}).forEach(function (k) {
-        if (!isEmpty(core[k])) merged[k] = core[k];
-      });
+      var merged = mergeCore((rows[0] && rows[0].core) || {}, core);
       return rest('/properties?id=eq.' + id, {
         method: 'PATCH',
         prefer: 'return=representation',
@@ -263,10 +352,12 @@
   /* What saving would change about the shared facts. The tool shows this
      before it writes, so a price never quietly changes in three other
      documents. */
+  /* What the agent is asked about before a save overwrites shared facts. An
+     empty incoming value is reported like any other: clearing a price is a
+     change, and used to be the one change this stayed silent about. */
   function changesAgainst(core, incoming) {
     var out = [];
     Object.keys(incoming || {}).forEach(function (k) {
-      if (isEmpty(incoming[k])) return;
       var was = core ? core[k] : undefined;
       if (isEmpty(was)) return;                       // filling a gap is not a change
       if (same(was, incoming[k])) return;
@@ -562,11 +653,18 @@
     TOOLS: TOOLS, STATUSES: STATUSES,
     signIn: signIn, signOut: signOut, signedIn: signedIn,
     list: list, load: load, create: create, findByAddress: findByAddress,
-    saveCore: saveCore, saveDoc: saveDoc, saveDocument: saveDocument,
+    saveCore: saveCore, mergeCore: mergeCore, saveDoc: saveDoc, saveDocument: saveDocument,
     hydrate: hydrate, retokenize: retokenize, docSavedAt: docSavedAt,
     setStatus: setStatus, rename: rename, changesAgainst: changesAgainst,
     putPhoto: putPhoto, photoUrls: photoUrls, removePhoto: removePhoto,
     stripPhotos: stripPhotos,
-    slugOf: slugOf, labelOf: labelOf
+    slugOf: slugOf, slugOfCore: slugOfCore, labelOf: labelOf,
+    joinUnit: joinUnit, splitUnit: splitUnit,
+    unitDisplay: unitDisplay, unitOf: unitOf
   };
-})(window);
+
+  /* Node can require this file to test the pure helpers — the address and unit
+     pairing especially, which is where the round trip used to break. Nothing
+     else in here runs outside a browser. */
+  if (typeof module === 'object' && module.exports) module.exports = global.GVC_PROPS;
+})(typeof window !== 'undefined' ? window : globalThis);

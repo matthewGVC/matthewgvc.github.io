@@ -144,6 +144,13 @@
         .then(function (prop) {
           return P.photoUrls(prop.photos).then(function (urls) {
             current = prop;
+            /* A load starts from a blank sheet. The builder puts every
+               document field back to its default before the property's facts
+               land on it, so nothing from the last listing can reach the next
+               one's collateral — a hand-listed reset in each setDoc is how a
+               previous listing's Web ID, assessments and financing limit used
+               to print on the following property. */
+            if (opts.blank) opts.blank();
             opts.fromCore(prop.core || {});
             // retokenize first: a document saved before the token round trip was
             // fixed holds expired signed URLs, and they still name their photos
@@ -165,10 +172,18 @@
       var diffs = P.changesAgainst(current.core, core);
       if (!diffs.length) return true;
       var lines = diffs.map(function (d) {
-        return '  ' + d.field + ':  ' + JSON.stringify(d.was) + '  →  ' + JSON.stringify(d.now);
+        return '  ' + d.field + ':  ' + shown(d.was) + '  →  ' + shown(d.now);
       }).join('\n');
       return global.confirm('Update the property with these changes?\n\n' + lines +
                             '\n\nCancel keeps the property as it is and still saves your ' + tool + '.');
+    }
+
+    /* An emptied field reads as "(empty)" rather than "" — clearing a price is
+       now a change the agent can be asked about, and a bare pair of quotes is
+       not an obvious way to say so. */
+    function shown(v) {
+      if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '(empty)';
+      return JSON.stringify(v);
     }
 
     function doSave() {
@@ -179,27 +194,34 @@
         busy = true; paint(); say('Saving…');
 
         var isNew = !current;
-        var first = current ? Promise.resolve(current) : startProperty(core);
 
-        first
-          .then(function () {
-            // a property just created from this very form has nothing to
+        /* Every question that could stop the save is asked before anything is
+           written: first whether someone else has moved this document, then
+           whether shared facts would change. Cancel at either and the library
+           is exactly as it was — which is what "Nothing saved" has always
+           claimed, and did not used to be true: the facts had already gone up
+           by the time the second prompt appeared. */
+        Promise.resolve(isNew ? true : warnIfSavedElsewhere())
+          .then(function (go) {
+            if (!go) throw new Error('Nothing saved.');
+            // a property created from this very form has nothing to
             // reconcile — asking would be theatre
-            if (isNew || !current.core) return null;
-            return confirmChanges(core) ? P.saveCore(current.id, core) : null;
+            var writeCore = !isNew && current.core && confirmChanges(core);
+            return (isNew ? startProperty(core) : Promise.resolve(current))
+              .then(function () { return writeCore ? P.saveCore(current.id, core) : null; });
           })
           .then(function (updated) {
             if (updated) { current.core = updated.core; current.label = updated.label; }
-            return warnIfSavedElsewhere();
-          })
-          .then(function (go) {
-            if (!go) { say('Nothing saved.', 'warn'); return null; }
             return P.saveDocument(current.id, tool, opts.getDoc(), function (done, total) {
               say(total > 1 ? 'Saving — photo ' + done + ' of ' + total + '…' : 'Saving…');
             });
           })
           .then(function (saved) {
             if (!saved) return;
+            /* This session now holds the newest version, so the next save
+               compares against what it just wrote rather than accusing the
+               agent of editing from somewhere else. */
+            if (saved.saved_at) current.docSavedAt = saved.saved_at;
             if (global.GVC_UNSAVED) GVC_UNSAVED.clear();
             var missed = (saved.skipped || []).length;
             say('Saved to ' + current.label + '.' +
@@ -220,7 +242,9 @@
         .then(adopt)
         .catch(function (e) {
           if (e.status !== 409) throw e;
-          return P.findByAddress(core.address).then(function (row) {
+          // the identity is the address and the unit together, so the
+          // duplicate check has to ask about the joined line
+          return P.findByAddress(P.joinUnit(core.address, core.unit)).then(function (row) {
             if (!row) throw e;
             if (!global.confirm('“' + row.label + '” is already in the library.\n\n' +
                                 'Save this ' + tool + ' into that property?')) {

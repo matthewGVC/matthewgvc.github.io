@@ -468,6 +468,13 @@ const state = {
   pos:{}
 };
 
+/* What a deck looks like before any property is loaded. The reset a property
+   switch performs is derived from this rather than hand-listed, so a field
+   added above is covered the day it is added — a hand-list is how the previous
+   seller's name, recommended price and price band came to survive onto the
+   next listing's deck. */
+const BLANK = JSON.parse(JSON.stringify(state));
+
 /* Default copy — the parts that are GVC boilerplate rather than
    per-client. Overwrite in the panel; these are only a starting point.
    Plan rows are Phase | Group | Title | detail — the phase groups the row
@@ -1504,6 +1511,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const DOC_ONLY = ['client','date','photos','map','priceLow','priceMid','priceHigh',
                     'recBand','showProperty','pos','agents','market','videos','reviews'];
 
+  const clone = v => (v == null || typeof v !== 'object') ? v : JSON.parse(JSON.stringify(v));
+
+  /* Called before a property's facts are applied — see property-bar's open().
+     Every document field goes back to blank; fromCore then re-establishes the
+     roster from the property, falling back to this deck's own default rather
+     than to whoever was on the last one. */
+  const resetDocFields = () => {
+    DOC_ONLY.forEach(k => { state[k] = clone(BLANK[k]); });
+    // a shared fact the next property may not carry at all: comps for the
+    // wrong listing is the worst thing this deck can print
+    state.comps = [];
+  };
+
   /* NY gives New York, NJ gives New Jersey, anything else leaves the toggle
      where it is. A deck with no property yet starts on New York: the firm is
      New York-headquartered and the plan page already reads that way. */
@@ -1526,26 +1546,44 @@ document.addEventListener('DOMContentLoaded', () => {
     host: document.getElementById('propBar'),
     tool: 'seller',
 
-    toCore: () => ({
-      address: state.address, city: state.city, state: state.state, zip: state.zip,
-      beds: state.beds, baths: state.baths, sqft: state.sqft,
-      propertyType: state.ptype, yearBuilt: state.year,
-      taxesMonthly: state.taxes, commonCharges: state.cc,
-      description: state.blurb, features: splitLines(state.features),
-      agentIds: state.agents.slice(), comps: state.comps
-    }),
+    blank: resetDocFields,
+
+    /* This deck has one address box and no unit box, so the unit travels
+       inside the line the agent typed. Splitting it out here keeps the stored
+       record in the same shape the Showsheet writes — one property, address
+       and unit in their own keys — without changing anything on the cover.
+       The Unit field itself is queued in the address/unit spec. */
+    toCore: () => {
+      const u = GVC_PROPS.splitUnit(state.address);
+      return {
+        address: u.address, unit: u.unit,
+        city: state.city, state: state.state, zip: state.zip,
+        beds: state.beds, baths: state.baths, sqft: state.sqft,
+        propertyType: state.ptype, yearBuilt: state.year,
+        taxesMonthly: state.taxes, commonCharges: state.cc,
+        description: state.blurb, features: splitLines(state.features),
+        agentIds: state.agents.slice(), comps: state.comps
+      };
+    },
 
     fromCore: core => {
+      // the unit goes back into the address line this deck prints from
+      const u = GVC_PROPS.unitOf(core);
       Object.assign(state, {
-        address: core.address || '', city: core.city || '', state: core.state || '',
+        address: GVC_PROPS.joinUnit(u.address, u.unit),
+        city: core.city || '', state: core.state || '',
         zip: core.zip || '', beds: core.beds || '', baths: core.baths || '',
         sqft: core.sqft || '', ptype: core.propertyType || '', year: core.yearBuilt || '',
         taxes: core.taxesMonthly || '', cc: core.commonCharges || '',
         blurb: core.description || ''
       });
       state.features = (core.features || []).join(String.fromCharCode(10));
-      if (core.comps && core.comps.length) state.comps = core.comps;
-      if (core.agentIds && core.agentIds.length) state.agents = core.agentIds.slice(0, 2);
+      /* assigned, not merged: a property with no comps has to show none. The
+         guard that used to be here left the last listing's comparable sales
+         standing under the new seller's name. */
+      state.comps = (core.comps && core.comps.length) ? core.comps : [];
+      state.agents = (core.agentIds && core.agentIds.length)
+        ? core.agentIds.slice(0, 2) : BLANK.agents.slice();
       /* The market is not set here: setDoc runs immediately after this and
          owns it, so that a deck saved with a deliberate market keeps it
          rather than being snapped back to whatever the State field says. */
@@ -1557,21 +1595,17 @@ document.addEventListener('DOMContentLoaded', () => {
     getDoc: () => DOC_ONLY.reduce((doc, k) => { doc[k] = state[k]; return doc; }, {}),
 
     setDoc: doc => {
-      /* A deck saved before the property page became optional has no
-         answer for it, and neither does a property with no deck yet. Both
-         should start with the page in rather than inheriting whatever the
-         last document loaded said. */
+      /* blank() has already put every document field back, so this only lays a
+         saved deck on top. The market is the one field that cannot come from
+         the blank: it is derived from the property's State, which fromCore has
+         just filled in. A deck saved before these four existed has no answer
+         for them either, so they are set here and then overridden by the
+         document if it carries one. */
       state.showProperty = true;
-      /* Same reasoning for the three new ones: a deck saved before they
-         existed has no answer, and neither has a property with no deck yet.
-         Both should start following rather than inheriting whatever the last
-         document was set to. The market falls back to the property's own
-         State field, which is the answer the toggle would have derived. */
       state.market = marketFromState() || 'nyc';
       state.videos = null;
       state.reviews = null;
       if (doc) DOC_ONLY.forEach(k => { if (k in doc) state[k] = doc[k]; });
-      else { state.photos = []; state.map = null; state.pos = {}; }
       uid = Math.max(uid, ...state.photos.map(p => p.id || 0), 0);
       document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
       paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp();

@@ -1007,6 +1007,13 @@ const state = {
   paper: 'letter',
 };
 
+/* What a brochure looks like before any property is loaded. The reset a
+   property switch performs is derived from this rather than hand-listed, so a
+   field added above is covered the day it is added — a hand-list is how the
+   previous listing's marketing strategy and floor-plan note came to survive
+   onto the next one. */
+const BLANK = JSON.parse(JSON.stringify(state));
+
 let uid = 0, builder = null;
 let assign = { hero: null, infoTop: null, gallery: [] };
 
@@ -2520,27 +2527,58 @@ GVC_UNSAVED.watch();
 const DOC_KEYS = ['images', 'gallery', 'galCaptions', 'galPage', 'strategy',
                   'floorplans', 'fpNote', 'coverPos', 'infoTopPos', 'paper'];
 
+/* Paper size belongs to the person printing, not to the listing, so it is
+   saved with the brochure but not wiped when the property changes. */
+const KEEP_ON_SWITCH = ['paper'];
+
+const clone = v => (v == null || typeof v !== 'object') ? v : JSON.parse(JSON.stringify(v));
+
+/* Called before a property's facts are applied — see property-bar's open(). */
+const resetDocFields = () => {
+  DOC_KEYS.forEach(k => {
+    if (KEEP_ON_SWITCH.includes(k)) return;
+    state[k] = clone(BLANK[k]);
+  });
+  state.galSel = null;
+};
+
 GVC_PROPBAR.mount({
   host: $('#propBar'),
   tool: 'brochure',
 
-  toCore: () => ({
-    address: state.address, city: state.city, state: state.state, zip: state.zip,
-    price: state.price, beds: state.beds, baths: state.baths,
-    sqft: state.sqft, parking: state.parking,
-    listingUrl: state.listingUrl, description: state.blurb,
-    features: featureLines(state.features), agentIds: state.agents.slice()
-  }),
+  blank: resetDocFields,
+
+  /* One address box and no unit box, so the unit travels inside the line the
+     agent typed. Splitting it out here keeps the stored record in the shape
+     the Showsheet writes without changing anything on the cover; the Unit
+     field itself is queued in the address/unit spec. */
+  toCore: () => {
+    const u = GVC_PROPS.splitUnit(state.address);
+    return {
+      address: u.address, unit: u.unit,
+      city: state.city, state: state.state, zip: state.zip,
+      price: state.price, beds: state.beds, baths: state.baths,
+      sqft: state.sqft, parking: state.parking,
+      listingUrl: state.listingUrl, description: state.blurb,
+      features: featureLines(state.features), agentIds: state.agents.slice()
+    };
+  },
 
   fromCore: core => {
+    // the unit goes back into the address line this cover prints from
+    const u = GVC_PROPS.unitOf(core);
     Object.assign(state, {
-      address: core.address || '', city: core.city || '', state: core.state || '',
+      address: GVC_PROPS.joinUnit(u.address, u.unit),
+      city: core.city || '', state: core.state || '',
       zip: core.zip || '', price: core.price || '', beds: core.beds || '',
       baths: core.baths || '', sqft: core.sqft || '', parking: core.parking || '',
       listingUrl: core.listingUrl || '', blurb: core.description || '',
       features: (core.features || []).join('\n')
     });
-    if (core.agentIds && core.agentIds.length) state.agents = core.agentIds.slice(0, MAX_AGENTS);
+    // assigned, not merged: a property with no agents falls back to this
+    // builder's own default, never to whoever was on the last listing
+    state.agents = (core.agentIds && core.agentIds.length)
+      ? core.agentIds.slice(0, MAX_AGENTS) : BLANK.agents.slice();
     document.querySelectorAll('[data-field]').forEach(el => {
       const k = el.dataset.field;
       if (k in state) el.value = state[k];
@@ -2550,11 +2588,11 @@ GVC_PROPBAR.mount({
 
   getDoc: () => DOC_KEYS.reduce((doc, k) => { doc[k] = state[k]; return doc; }, {}),
 
-  /* null means the property has no brochure yet, which is normal: keep the
-     facts that were just filled in and start the deck itself empty. */
+  /* blank() has already emptied the deck, so this only lays a saved brochure
+     on top. null means the property has no brochure yet, which is normal: the
+     facts fromCore just filled in stay, and the deck stays empty. */
   setDoc: doc => {
     DOC_KEYS.forEach(k => { if (doc && k in doc) state[k] = doc[k]; });
-    if (!doc) { state.images = []; state.gallery = []; state.floorplans = []; }
     state.galSel = null;
     uid = Math.max(uid, ...state.images.map(i => i.id || 0), ...state.floorplans.map(f => f.id || 0), 0);
     document.querySelectorAll('[data-field]').forEach(el => {

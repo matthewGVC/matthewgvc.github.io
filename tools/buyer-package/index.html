@@ -128,6 +128,24 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   font:200 7.2pt 'Nunito Sans',system-ui,sans-serif;color:#4c6774;
   letter-spacing:.1em;font-variant-numeric:tabular-nums;}
 
+/* The mansion-tax row on "What It Costs", redrawn over the artwork.
+   See mansionRow() for why. Measured off the 400dpi picture: the row's
+   hairlines sit at 462.60pt and 486.54pt, so the patch runs between them
+   without covering either; the label column starts at 45pt, the description
+   at 179.8pt, and the amount is flush right at 558.8pt (612 - 53.2).
+   Raleway 400 at 9pt matches the drawn table: set against the artwork, the
+   label "Mansion tax" measures 49.5pt of ink there and 49.7pt here, where
+   the 300 the rest of the deck uses for body copy comes out visibly lighter
+   and 0.4pt narrow. Checked by magnifying this row against the drawn ones
+   above and below it, not by eye at page size. */
+.stpg-fix{position:absolute;left:0;right:0;top:462.96pt;height:23.22pt;
+  background:#fff;font:400 9pt/23.22pt 'Raleway','Segoe UI',sans-serif;
+  color:#00273A;}
+.stpg-fix span{position:absolute;white-space:nowrap;}
+.stpg-fix .f-l{left:45pt;}
+.stpg-fix .f-d{left:179.8pt;}
+.stpg-fix .f-a{right:53.2pt;}
+
 </style>
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
@@ -580,9 +598,46 @@ function pgNext(n) {
    artwork so the deck can renumber when a page is switched off or
    tearsheets are added, so it is drawn back on: here for the preview, and
    again in the export at the baseline it was measured off. */
+/* ---------- the mansion tax ----------
+   The drawn page carries one line for both markets — "Mansion tax · On sales
+   of $1M and above · 1% of price" — filed under what the BUYER pays at the
+   closing table. It is wrong in both markets, and differently wrong in each,
+   which is why it is corrected here rather than in the artwork: the picture
+   is one page serving New Jersey and New York, and the honest answer is not
+   the same sentence.
+
+   New Jersey moved this fee to the SELLER on 10 July 2025 and made it
+   graduated, 1% to 3.5%, charged on the whole price rather than the amount
+   over $1M. It is not a buyer cost there at all, so putting a figure in this
+   column would overstate a New Jersey buyer's cash to close by a full 1%.
+
+   New York still charges the buyer, but a flat 1% only holds below $2M — the
+   city's rate steps up through eight brackets to 3.9% at $25M, so a flat 1%
+   understates every purchase above $2M.
+
+   Redrawn the same way the page number is: measured off the artwork and
+   printed from this DOM, because the export is a print of this page.
+
+   Rates change. Re-check both before a season's packets go out —
+   nj.gov/treasury/taxation/realty.shtml and tax.ny.gov/bus/transfer. */
+const MANSION = {
+  nj:  { note: 'Paid by the seller in New Jersey — not a buyer cost', amt: 'None' },
+  nyc: { note: 'On purchases of $1M and above; the rate climbs above $2M', amt: '1 – 3.9% of price' }
+};
+
+function mansionRow() {
+  const m = MANSION[state.market] || MANSION.nyc;
+  return '<div class="stpg-fix">' +
+           '<span class="f-l">Mansion tax</span>' +
+           '<span class="f-d">' + esc(m.note) + '</span>' +
+           '<span class="f-a">' + esc(m.amt) + '</span>' +
+         '</div>';
+}
+
 function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
-    '<img src="static/p' + (p.st + 2) + '.jpg" alt="">' +
+    '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
+    (p.key === 'costs' ? mansionRow() : '') +
     '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';
 }

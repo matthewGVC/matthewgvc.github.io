@@ -46,7 +46,6 @@
     const btnZoom = document.getElementById('btnZoom');
     const btnPrint = document.getElementById('btnPrint');
     const zoomInfo = document.getElementById('zoomInfo');
-    const pageInput = document.getElementById('pageCount');
     if (!host) return null;
 
     const state = {
@@ -133,13 +132,6 @@
       }
       window.print();
     });
-    if (pageInput) pageInput.addEventListener('change', () => {
-      const n = Math.max(1, Math.min(40, parseInt(pageInput.value, 10) || 1));
-      pageInput.value = String(n);
-      state.pages = n;
-      build();
-    });
-
     let t;
     window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(fit, 120); });
 
@@ -149,7 +141,7 @@
       state,
       rebuild: build,
       fit,
-      setPages(n) { state.pages = Math.max(1, n); if (pageInput) pageInput.value = String(state.pages); build(); }
+      setPages(n) { state.pages = Math.max(1, n); build(); }
     };
   }
 

@@ -11,7 +11,6 @@
   const divider = document.getElementById("ph-divider");
   const range = document.getElementById("ph-range");
   const meta = document.getElementById("ph-meta");
-  const count = document.getElementById("ph-count");
   const shuffleBtn = document.getElementById("ph-shuffle");
 
   let pairs = [];
@@ -78,8 +77,6 @@
     .then((data) => {
       pairs = Array.isArray(data) ? data : [];
       if (!pairs.length) throw new Error("no pairs");
-      const props = new Set(pairs.map((p) => p.slug)).size;
-      if (count) count.textContent = pairs.length + " photos · " + props + " properties";
       show(pickIndex());
     })
     .catch((err) => {
@@ -87,6 +84,5 @@
       console.warn("photo shuffle unavailable", err);
       meta.textContent = "";
       shuffleBtn.hidden = true;
-      if (count) count.textContent = "Before / after";
     });
 })();

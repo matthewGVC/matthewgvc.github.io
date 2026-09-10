@@ -43,18 +43,13 @@ h1,h2,h3{font-weight:300;font-family:var(--serif);letter-spacing:-0.02em}
   min-height:var(--mast-h);padding:0 var(--pad-x);
   background:var(--paper);border-bottom:1px solid var(--rule);
 }
-.mast-lockup{display:flex;align-items:center;gap:11px;min-width:0}
+.mast-lockup{display:flex;align-items:center;min-width:0}
 .mast-lockup .monogram{width:28px;height:28px;flex-shrink:0}
 /* Constrain the inlined SVG to the box; without a height it renders at the
    viewBox's portrait ratio (~47px tall) and overflows low. */
 .mast-lockup .monogram svg{display:block;width:100%;height:100%}
-.mast-lockup .names{display:flex;flex-direction:column;line-height:1.15}
-.mast-lockup .who{font-family:var(--serif);font-size:14px;white-space:nowrap}
-.mast-lockup .for{font-family:var(--mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft)}
 .mast-lockup:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
 @media (max-width:640px){
-  .mast-lockup .who{font-size:13px}
-  .mast-lockup .for{display:none}
   /* ≥40px tap targets: invisible hit-area extension, no visual shift */
   .mast-lockup,.site-foot .right a{position:relative}
   .mast-lockup::after,.site-foot .right a::after{

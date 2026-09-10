@@ -154,6 +154,16 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   overflow:hidden;background:#fff;}
 .stpg-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 
+/* The sixth panel heading on the FAQ page — see faqHeading(). Measured off
+   the artwork: the drawn run sits at x 348.12pt and y 519.30pt with a 6.12pt
+   cap, so the patch spans the full drawn width and sets the replacement on
+   the same left edge. The colour is sampled from the drawn headings rather
+   than taken from --sky, because it is matching a JPEG of them. */
+.stpg-faq{position:absolute;left:348.12pt;top:516.4pt;width:160pt;height:11.5pt;
+  background:#fff;color:#31b5ca;
+  font:700 8.5pt/11.5pt 'Nunito Sans','Segoe UI',sans-serif;
+  letter-spacing:.111em;text-transform:uppercase;white-space:nowrap;}
+
 </style>
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
@@ -668,11 +678,26 @@ function whyPhoto() {
          '</div>';
 }
 
+/* The FAQ page has six panels and two of them are headed "ABOUT THE BUILDING
+   OR HOA". The second one's questions are not about a building at all — they
+   are the inspection report, the deposit in escrow, when attorney review ends
+   and a low appraisal — so the heading was pasted from the panel above it and
+   the icon beside it, which is not the building icon, was not.
+
+   Unlike the other two copy errors on these pages, this one does not need
+   anything written: the list underneath says what the heading should be. The
+   other two are named in the branch notes and left for the artwork, because
+   they need new copy rather than a corrected label. */
+function faqHeading() {
+  return '<div class="stpg-faq">Once under contract</div>';
+}
+
 function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
     '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
     (p.key === 'costs' ? mansionRow() : '') +
     (p.key === 'why' ? whyPhoto() : '') +
+    (p.key === 'questions' ? faqHeading() : '') +
     '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';
 }

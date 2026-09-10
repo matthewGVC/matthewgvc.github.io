@@ -28,15 +28,20 @@ Node + Playwright — `cd scripts && npm install`:
 - `reshoot-gvc.js` — the same, for the GVC team site only
 - `make-png.js` — regenerate the monogram PNG favicons from `assets/logos/monogram.svg`
 - `check-svgs.js` — render-check the monogram and lockup SVGs
-- `verify-local.js` — load the site on localhost:8080 and report console/SRI errors
+- `verify-local.js` — load every page on localhost:8080 and fail on console errors,
+  uncaught errors, SRI blocks, missing files, missing chrome or sideways scroll.
+  Needs `cd scripts && npm install` once; exits non-zero, so it is worth running
+  before a publish
 
 ## Showsheet tool
 
 `tools/showsheet/` is a self-contained listing-showsheet generator (drop a `.docx`,
-photo, and floorplan → print-ready A5). The bottom "Load preview" button loads the
-bundled sample in `tools/showsheet/sample/` (555 W59th PHC) through the real import
-pipeline, so the demo always reflects the current code. Needs the site served over
-http (fetch can't read `file://` siblings).
+photo, and floorplan → print-ready A5). A sample listing lives in
+`tools/showsheet/sample/` (555 W59th PHC — `listing.docx`, `hero.jpg`,
+`floorplan.jpg`); drop those three onto the tool to see a fully populated sheet.
+There is no button that loads them for you: one is described in older notes but
+was never wired up. Needs the site served over http (fetch can't read `file://`
+siblings).
 
 ## Docs
 

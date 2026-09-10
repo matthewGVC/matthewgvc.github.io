@@ -172,6 +172,29 @@ body.is-dragging-photo .photo-secondary.is-empty{display:block;}
 /* compact segmented control for the bar (paper size) */
 #stageBar .seg{flex:none;width:auto;}
 #stageBar .seg button{flex:none;padding:7px 15px;}
+
+/* ---- narrow screens ----
+   Below the threshold the shell stops filling the viewport (see the guard at
+   the top of this file), but the grid did not: a fixed 430px editor beside a
+   minmax(0,1fr) preview meant that on a 375px phone the panel ran 55px off
+   the side, the preview column collapsed to nothing, and the print controls
+   went with it — the tool was unusable rather than merely cramped.
+
+   Stack them and let the page scroll. The sheet is a fixed 11in design
+   canvas, so on a phone it is something you scroll and pinch, not something
+   that reflows; what matters is that the preview and the print button are
+   both reachable. */
+@media screen and (max-width:1100px){
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;
+       height:auto;overflow:visible;}
+  #editor{grid-column:1;grid-row:1;width:auto;min-width:0;overflow:visible;
+          border-right:0;border-bottom:1px solid var(--ui-rule);}
+  #stage{grid-column:1;grid-row:2;min-height:70vh;}
+  /* keeps Print reachable without scrolling back down past the whole sheet */
+  #stageBar{grid-column:1;grid-row:3;position:sticky;bottom:0;z-index:5;
+            flex-wrap:wrap;padding:10px 16px;}
+  #stageBar .sp{flex-basis:100%;height:0;}
+}
 .pg-tag{font:400 10px var(--ui-mono);letter-spacing:.14em;color:var(--ui-ink-soft);text-transform:uppercase;margin:20px 0 8px 2px;}
 /* paper scrollbars (tool UI only) */
 #editor::-webkit-scrollbar,#stage::-webkit-scrollbar{width:10px;height:10px;}
@@ -701,10 +724,10 @@ const qrSvg = window.GVC_QR;
 /* ============================================================
    SHEET RENDERING
    ============================================================ */
-function unitDisplay(u){
-  if(!u) return '';
-  return (/^[\w-]{1,7}$/.test(u.trim()) ? 'Residence ' + u.trim() : u.trim());
-}
+/* Wording a unit is shared with the Seller Package and the Brochure, and lives
+   in property-library.js next to the split that has to read it back — the two
+   are inverses and drifted apart once already. */
+function unitDisplay(u){ return GVC_PROPS.unitDisplay(u); }
 function ownLabel(){
   return {'co-op':'CO-OP', 'condo':'CONDO', 'new-con':'NEW CONSTRUCTION', 'none':''}[state.ownership] ?? 'CO-OP';
 }
@@ -728,8 +751,11 @@ function statCells(){
   return cells;
 }
 function photoCell(p, cls, drop){
-  const pos = `${p.fx??50}% ${p.fy??50}%`;
-  return `<div class="${cls}" data-drop="${drop}"><img src="${p.src}" style="object-position:${pos}" alt=""></div>`;
+  // the focal point is a number the drag sets, but it arrives from a saved
+  // document too — coerce it rather than trusting what is in the blob
+  const num = v => Number.isFinite(+v) ? +v : 50;
+  const pos = `${num(p.fx)}% ${num(p.fy)}%`;
+  return `<div class="${cls}" data-drop="${drop}"><img src="${esc(p.src)}" style="object-position:${pos}" alt=""></div>`;
 }
 function renderFront(){
   const heroP = frontPhoto();
@@ -750,7 +776,7 @@ function renderFront(){
   // the building — sits to the right of the asking price
   const b = state.building;
   const scale = [b.stories, b.residences].some(v=>!blankish(v))
-    ? [!blankish(b.stories)? `${b.stories} stories`:null, !blankish(b.residences)? `${b.residences} residences`:null].filter(Boolean).join(' · ') : '';
+    ? [!blankish(b.stories)? `${esc(b.stories)} stories`:null, !blankish(b.residences)? `${esc(b.residences)} residences`:null].filter(Boolean).join(' · ') : '';
   // Built shares its row with stories/residences so the facts below get more space
   const built = [b.builtYear, scale].filter(v=>!blankish(v)).map(v=>String(v).trim()).join(' · ');
   const bSpecs = specRow('Built', built) + specRow('Architect', b.architect) +
@@ -763,7 +789,10 @@ function renderFront(){
   const cells = statCells();
   const strip = cells.length ? `<div class="strip">${cells.map(c=>
     `<div class="scell"><span class="slb">${c.ic}<span class="sv">${c.v}</span></span><span class="lead"></span><span class="slabel">${c.l}</span></div>`).join('')}</div>` : '';
-  const askBlock = state.price ? `<div class="ft-r"><div class="al">Asking Price</div><div class="av">${displayPrice(state.price)}</div></div>` : '';
+  // displayPrice is a formatter, not a sanitiser: a price it cannot read as a
+  // number — "Call for price", or anything pasted out of a Word doc — comes
+  // back as typed, so it is escaped here like every other field
+  const askBlock = state.price ? `<div class="ft-r"><div class="al">Asking Price</div><div class="av">${esc(displayPrice(state.price))}</div></div>` : '';
   $('#sheetFront').innerHTML = `
     <div class="trim">
       <div class="sh-head">
@@ -800,7 +829,8 @@ function renderFront(){
 }
 function ledgerRows(){
   const L = [];
-  L.push({lab:'Asking Price', val: state.price ? displayPrice(state.price) : '—', lead:true});
+  // every val in this list is escaped here, because renderBack writes them raw
+  L.push({lab:'Asking Price', val: state.price ? esc(displayPrice(state.price)) : '—', lead:true});
   if(state.ownership === 'co-op'){
     if(!blankish(state.maintenance)){
       L.push({lab:'Maintenance', val: esc(state.maintenance)});
@@ -855,7 +885,7 @@ function renderBack(){
 
   const fp = state.floorplan
     ? `<div class="fp-area">
-         <div class="fp-wrap"><img src="${state.floorplan}" alt="Floorplan"></div>
+         <div class="fp-wrap"><img src="${esc(state.floorplan)}" alt="Floorplan"></div>
          <div class="fp-note">${GVC_LEGAL.FLOORPLAN_SHORT}</div>
        </div>`
     : `<div class="fp-empty">Floorplan available upon request</div>`;
@@ -1098,8 +1128,11 @@ function render(){
 let zoom100 = false;
 function layoutPreview(){
   const stage = $('#stage');
-  const avail = stage.clientWidth - 72;
-  const availH = stage.clientHeight - 84; // page tag + margins (control bar now docks below the stage)
+  /* Floored, because a stage that has not been laid out yet — or one squeezed
+     to nothing on a narrow screen — made these negative, and a negative scale
+     turns the sheet inside out and prints "-19% · fit width" in the corner. */
+  const avail = Math.max(160, stage.clientWidth - 72);
+  const availH = Math.max(200, stage.clientHeight - 84); // page tag + margins (control bar docks below the stage)
   const w = $('.sheet').offsetWidth, h = $('.sheet').offsetHeight;
   // the preview fills whatever space the window gives it: side by side only when
   // that still yields big pages; stacked pages grow past 100% to fill the stage
@@ -1583,11 +1616,18 @@ function applyParsedDocx(blocks){
       newUnit = m[m.length-1].trim();
     } else newAddress = firstP.text.trim();
   }
-  // A different address means a different unit: start clean so nothing
-  // from the previous listing leaks onto printed collateral. Agents and
-  // the disclaimer are team-level, so they carry over.
+  /* A different address OR a different unit is a different listing: start
+     clean so nothing from the previous one leaks onto printed collateral.
+     Comparing the address alone treated 4B and 3A in the same building as the
+     same listing, and the second import inherited the first one's assessment,
+     financing limit and photo. Agents, paper size and the disclaimer are not
+     property facts and carry over. */
   const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  if(newAddress && state.address && norm(newAddress)!==norm(state.address)){
+  // only compare a unit the document actually named: a DOCX with no parseable
+  // unit must not read as "unit cleared" and wipe a sheet mid-edit
+  const moved = (newAddress && state.address && norm(newAddress)!==norm(state.address)) ||
+                (newUnit    && state.unit    && norm(newUnit)   !==norm(state.unit));
+  if(moved){
     state = Object.assign(blankUnit(), {agentIds:[...state.agentIds], paper:state.paper, bleed:state.bleed});
     found.push('(new unit — form reset)');
   }
@@ -1700,6 +1740,32 @@ function applyParsedDocx(blocks){
 }
 wireDrop($('#docxDrop'), $('#docxFile'), importDocx, false);
 
+/* Every field in the panel is a plain <label> sitting beside its control:
+   correct on screen, and silent to a screen reader, because not one of the
+   29 carried a `for`. Tying them together from the markup already here beats
+   hand-writing 29 id/for pairs that the next field added would forget. */
+function linkFieldLabels(){
+  $$('.field').forEach(f => {
+    const label = f.querySelector(':scope > label');
+    if(!label || label.htmlFor) return;
+    const controls = f.querySelectorAll('input, select, textarea');
+    if(controls.length === 1){
+      const c = controls[0];
+      if(!c.id) c.id = 'fld-' + String(c.dataset.field || c.name || '').replace(/[^\w]+/g, '-');
+      label.htmlFor = c.id;
+      return;
+    }
+    /* Ownership is a row of buttons rather than one control, so its label
+       names the group instead of pointing at whichever button came first. */
+    const seg = f.querySelector('.seg');
+    if(seg && !seg.getAttribute('aria-label')){
+      seg.setAttribute('role', 'group');
+      seg.setAttribute('aria-label', label.textContent.trim());
+    }
+  });
+}
+linkFieldLabels();
+
 /* ============================================================
    OUTPUT — print, bleed, download
    ============================================================ */
@@ -1764,13 +1830,26 @@ const CORE_ONLY = ['address','unit','borough','neighborhood','price','beds','bat
                    'listingUrl','positioning','maintenance','commonCharges','taxesMonthly',
                    'ownership','agentIds'];
 
-function addressWithUnit(){
-  const u = String(state.unit||'').trim();
-  return [String(state.address||'').trim(), u && unitDisplay(u)].filter(Boolean).join(', ');
-}
-function splitUnit(full){
-  const m = String(full||'').match(/^(.*?),\s*((?:apt|unit|ph|#)[^,]*|[0-9]+[A-Za-z]?)$/i);
-  return m ? { address: m[1].trim(), unit: m[2].trim() } : { address: String(full||'').trim(), unit: '' };
+/* What a sheet looks like before any property is loaded. The reset is derived
+   from blankUnit() rather than hand-listed, so a field added there is covered
+   the day it is added — a hand-list is exactly how webId, assessments,
+   maxFinancing and the flip tax came to survive a property switch and print on
+   the next listing's sheet. */
+const BLANK_DOC = blankUnit();
+
+/* Paper size and bleed belong to the person printing, not to the listing, so
+   they are saved with the sheet but not wiped when the property changes. */
+const KEEP_ON_SWITCH = ['paper','bleed'];
+
+function resetDocFields(){
+  Object.keys(state).forEach(k => {
+    if(CORE_ONLY.includes(k) || k === 'disclaimer' || KEEP_ON_SWITCH.includes(k)) return;
+    // a key an older saved sheet left behind that blankUnit() no longer knows
+    // about goes entirely; migratePhotos folds the ones that still matter back in
+    // (cloned, or photos and amenities would be shared with the blank)
+    if(k in BLANK_DOC) state[k] = structuredClone(BLANK_DOC[k]);
+    else delete state[k];
+  });
 }
 
 /* Nothing is kept in this browser any more, so the tab has to ask before it
@@ -1782,8 +1861,11 @@ GVC_PROPBAR.mount({
   host: $('#propBar'),
   tool: 'showsheet',
 
+  blank: resetDocFields,
+
   toCore: () => ({
-    address: addressWithUnit(),
+    address: String(state.address || '').trim(),
+    unit: String(state.unit || '').trim(),
     borough: state.borough, neighborhood: state.neighborhood,
     price: state.price, beds: state.beds, baths: state.baths,
     ownership: state.ownership, listingUrl: state.listingUrl,
@@ -1796,7 +1878,9 @@ GVC_PROPBAR.mount({
   }),
 
   fromCore: core => {
-    const split = splitUnit(core.address);
+    /* One place decides what a record means — an older one still carries its
+       unit inside the address line, a newer one keeps it in its own key. */
+    const split = GVC_PROPS.unitOf(core);
     state.address = split.address;
     state.unit = split.unit;
     state.borough = core.borough || core.city || '';
@@ -1808,7 +1892,10 @@ GVC_PROPBAR.mount({
       .forEach(k => { state[k] = core[k] || ''; });
     state.positioning = core.description || '';
     state.building.builtYear = core.yearBuilt || '';
-    if (core.agentIds && core.agentIds.length) state.agentIds = core.agentIds.slice();
+    // the roster is team-level and carries between listings on purpose; a
+    // property with no agents falls back to the default pair, not the last one's
+    state.agentIds = (core.agentIds && core.agentIds.length)
+      ? core.agentIds.slice() : BLANK_DOC.agentIds.slice();
     hydrateForm(); render();
   },
 
@@ -1821,15 +1908,13 @@ GVC_PROPBAR.mount({
     return doc;
   },
 
+  /* blank() has already put every document field back to its default, so this
+     only lays a saved sheet on top of it. A property with no showsheet yet
+     needs nothing further — it already has the blank. */
   setDoc: doc => {
     if (doc) {
       Object.keys(doc).forEach(k => { if (CORE_ONLY.indexOf(k) === -1) state[k] = doc[k]; });
       migratePhotos();
-    } else {
-      const blank = blankUnit();
-      state.photos = []; state.heroIndex = 0; state.secondaryIndex = null;
-      state.floorplan = null;
-      state.building = blank.building; state.residence = blank.residence;
     }
     state.disclaimer = DEFAULT_DISCLAIMER;
     hydrateForm(); render();
@@ -1841,6 +1926,12 @@ window.__test = {
   get state(){ return state; },
   set state(s){ state = s; hydrateForm(); render(); },
   render, hydrateForm,
+  /* what property-bar calls before a property's facts are applied — exposed so
+     a test can prove a switch leaves nothing of the last listing behind */
+  resetDocFields, BLANK_DOC, CORE_ONLY,
+  /* takes parsed blocks rather than a .docx, so the reset rule can be tested
+     without building a Word file */
+  applyParsedDocx,
   async addPhotoDataUrl(dataUrl){
     state.photos = [{src:dataUrl, fx:50, fy:50, name:'Photo'}];
     state.heroIndex = 0; state.secondaryIndex = null;

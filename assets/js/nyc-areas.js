@@ -140,7 +140,7 @@
       'Community school districts 13 through 23 and 32 · zoned high schools exist here, unlike Manhattan',
       '1,133 per 100K in 2025, below the city\'s 1,376.',
       ['The tax figure is the median Class 1 house — 405,000 of them, against 82,500 condo units at a $10,611 median.',
-       'The fastest homes in the city: 55 days to contract, against 78 in Manhattan.',
+       'Second-fastest in the city at 55 days to contract, against 78 in Manhattan — only Staten Island moves quicker.',
        'A brownstone and a new condo three blocks apart are taxed under completely different rules.']),
 
     A('Queens', 'New York City',
@@ -169,7 +169,7 @@
       'NYC DOT ferry, St George to Whitehall, free, every 15–20 min at peak · then the 1 or R north',
       'Community school district 31, the only one on the island · zoned high schools',
       '643 per 100K in 2025, less than half the city\'s 1,376 and the lowest by a distance.',
-      ['The safest borough and the fastest-selling after Brooklyn — 49 days to contract.',
+      ['The safest borough, and the fastest-selling anywhere in the city — 49 days to contract, against 78 in Manhattan.',
        'The ferry is free and takes 25 minutes; the subway on the far side is the part people forget to count.',
        '221,000 Class 1 houses and only 5,700 condo units, so this is a house market and prices like one.']),
 
@@ -260,7 +260,7 @@
       '2/3 and 4/5 at Wall St, plus the Fulton Center complex',
       'Community school district 2 · no zoned high schools in Manhattan',
       '2,120 per 100K in 2025 — the same 1st Precinct figure as Tribeca, and likewise a daytime-population artefact.',
-      ['The slowest market on this list — 92 days — and the largest discount to its own neighbourhood.',
+      ['Slow to trade at 92 days — only Central Harlem and Washington Heights sit longer — and the largest discount to its own neighbourhood.',
        'Mostly conversions, so ask what the building was and when: layouts, light and column spacing all follow from it.',
        'Battery Park City next door is on ground-lease land, which changes the maths entirely.']),
 
@@ -270,7 +270,7 @@
       '6 at Astor Pl, L at First Avenue, F at Second Avenue',
       'Community school district 1, one of three districts in the city with no zoned elementary or middle schools — every family applies',
       '1,760 per 100K in 2025, above the city\'s 1,376.',
-      ['57 days to contract, the fastest on this list — demand here is deep and year-round.',
+      ['57 days to contract, the fastest anywhere in Manhattan — demand here is deep and year-round.',
        'The lowest median condo tax in Manhattan south of Harlem, at $14,007.',
        'District 1 has no zoned schools at any level. Families should understand the match before they buy.']),
 

@@ -1,68 +1,123 @@
+/* ============================================================
+   Load every page on the local site and fail if any of them is broken.
+
+     python -m http.server 8080          (from the repo root)
+     cd scripts && npm install           (once — playwright)
+     node scripts/verify-local.js
+
+   This used to visit the homepage and the 404 page, print what it found, and
+   exit 0 regardless — console errors and missing elements were reported to a
+   human who had to notice them. It now visits every page and returns a real
+   exit code, so it can be trusted in a hurry and before a publish.
+
+   What it will not catch: anything behind the property library, which needs a
+   Supabase session. These are the checks that need no account.
+   ============================================================ */
 const { chromium } = require('playwright');
 
 const BASE = 'http://localhost:8080';
 
-async function loadAndCheck(page, url, label) {
-  const consoleErrors = [];
-  const pageErrors = [];
-  const sriBlocked = [];
+const PAGES = [
+  ['Homepage',        '/'],
+  ['404',             '/404.html'],
+  ['Showsheet',       '/tools/showsheet/'],
+  ['Seller Pitch',    '/tools/seller-package/'],
+  ['Brochure',        '/tools/brochure/'],
+  ['Buyer Package',   '/tools/buyer-package/'],
+  ['Properties',      '/tools/properties/'],
+  ['Calculator',      '/tools/calculator/'],
+  ['Floorplan',       '/tools/floorplan/'],
+  ['CMA',             '/tools/cma/'],
+  ['Map Studio',      '/tools/map-studio/'],
+  ['Watermark',       '/tools/watermark/']
+];
+
+/* Some browsers ask for these on their own whether or not a page links an
+   icon, and every page here declares its real ones in <head>, so a 404 for
+   one is the browser's doing rather than a broken reference. Headless
+   Chromium does not currently request them — checked by turning this off and
+   watching all 13 still pass — but a headed run does, and this is cheaper
+   than a confusing failure. Nothing else is forgiven: a 404 for something a
+   page actually references is a failure. */
+const BROWSER_PROBES = [/\/favicon\.ico$/, /\/apple-touch-icon(-precomposed)?\.png$/];
+const isProbe = url => BROWSER_PROBES.some(re => re.test(url));
+
+async function check(page, label, path) {
+  const consoleErrors = [], pageErrors = [], sriBlocked = [], notFound = [];
+
   page.removeAllListeners('console');
   page.removeAllListeners('pageerror');
   page.removeAllListeners('requestfailed');
-  page.on('console', m => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.removeAllListeners('response');
+
+  page.on('console', m => {
+    if (m.type() !== 'error') return;
+    // a failed request is logged against the resource, not the page
+    if (isProbe(m.location().url || '')) return;
+    consoleErrors.push(m.text());
+  });
   page.on('pageerror', e => pageErrors.push(e.message));
   page.on('requestfailed', r => {
     const f = r.failure();
     if (f && /integrity|blocked/i.test(f.errorText)) sriBlocked.push(r.url() + ' :: ' + f.errorText);
   });
+  page.on('response', r => {
+    if (r.status() === 404 && !isProbe(r.url())) notFound.push(r.url());
+  });
 
+  const url = BASE + path;
   await page.goto(url, { waitUntil: 'networkidle' });
-  // give chrome.js fetch + motion.js a beat
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(600);           // chrome.js fetch + motion.js
 
   const r = await page.evaluate(() => ({
-    gsap: typeof window.gsap !== 'undefined',
-    gsapVer: (window.gsap && window.gsap.version) || null,
+    title: document.title,
     masthead: !!document.querySelector('.masthead'),
-    footer: !!document.querySelector('.site-foot'),
-    monogramSvg: !!document.querySelector('#mast-monogram svg'),
-    monogramPaths: document.querySelectorAll('#mast-monogram svg path').length,
-    // asset hrefs as they appear in DOM
-    cssHrefs: [...document.querySelectorAll('link[rel="stylesheet"]')].map(l => l.getAttribute('href')),
-    iconHrefs: [...document.querySelectorAll('link[rel*="icon"]')].map(l => l.getAttribute('href')),
-    gsapSrc: (document.querySelector('script[src*="gsap"]') || {}).getAttribute ? document.querySelector('script[src*="gsap"]').getAttribute('integrity') : null,
-    btnHref: (document.querySelector('a.btn') || {}).getAttribute ? document.querySelector('a.btn').getAttribute('href') : null,
+    monogram: !!document.querySelector('#mast-monogram svg'),
     h1: (document.querySelector('h1') || {}).textContent || null,
+    // a page that renders nothing still passes every listener check above
+    bodyText: (document.body.innerText || '').trim().length,
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1
   }));
 
-  console.log(`\n===== ${label} (${url}) =====`);
-  console.log('GSAP defined         :', r.gsap, '(version', r.gsapVer + ')');
-  console.log('SRI integrity attr   :', r.gsapSrc ? r.gsapSrc.slice(0, 24) + '...' : null);
-  console.log('SRI-blocked requests :', sriBlocked.length, sriBlocked);
-  console.log('masthead injected    :', r.masthead);
-  console.log('footer injected      :', r.footer);
-  console.log('monogram SVG present :', r.monogramSvg, '| paths:', r.monogramPaths);
-  console.log('h1 text              :', JSON.stringify(r.h1));
-  console.log('.btn href            :', r.btnHref);
-  console.log('CSS hrefs            :', r.cssHrefs);
-  console.log('icon hrefs           :', r.iconHrefs);
-  console.log('console errors       :', consoleErrors.length, consoleErrors);
-  console.log('uncaught pageerrors  :', pageErrors.length, pageErrors);
-  return { r, consoleErrors, pageErrors, sriBlocked };
+  const problems = [];
+  if (pageErrors.length)    problems.push(pageErrors.length + ' uncaught error(s): ' + pageErrors.join(' | '));
+  if (consoleErrors.length) problems.push(consoleErrors.length + ' console error(s): ' + consoleErrors.join(' | '));
+  if (sriBlocked.length)    problems.push(sriBlocked.length + ' SRI-blocked: ' + sriBlocked.join(' | '));
+  if (notFound.length)      problems.push(notFound.length + ' missing file(s): ' + notFound.join(' | '));
+  if (!r.masthead)          problems.push('no masthead — chrome.js did not run');
+  if (!r.monogram)          problems.push('monogram SVG missing from the masthead');
+  if (r.bodyText < 40)      problems.push('page rendered almost no text (' + r.bodyText + ' chars)');
+  if (r.horizontalOverflow) problems.push('page scrolls sideways at this width');
+
+  const ok = problems.length === 0;
+  console.log((ok ? '  ok   ' : '  FAIL ') + label.padEnd(15) + path);
+  if (!ok) problems.forEach(p => console.log('         - ' + p));
+  return ok;
 }
 
 (async () => {
   const browser = await chromium.launch();
-  const page = await browser.newPage();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
-  await loadAndCheck(page, BASE + '/', 'HOMEPAGE');
-  const f = await loadAndCheck(page, BASE + '/404.html', '404 PAGE');
+  console.log('\nChecking ' + PAGES.length + ' pages on ' + BASE + '\n');
+  let failed = 0;
+  for (const [label, path] of PAGES) {
+    if (!await check(page, label, path)) failed++;
+  }
 
-  // Click "Back to home" and confirm navigation to root
+  /* The 404 page's one job is to get somebody back to the site. */
+  await page.goto(BASE + '/404.html', { waitUntil: 'networkidle' });
   await page.click('a.btn');
   await page.waitForLoadState('networkidle');
-  console.log('\n[404] after clicking Back to home → URL:', page.url());
-  console.log('[404] landed on homepage h1:', JSON.stringify(await page.evaluate(() => document.querySelector('h1') && document.querySelector('h1').textContent)));
+  const home = new URL(page.url()).pathname === '/';
+  console.log((home ? '  ok   ' : '  FAIL ') + '404 "back to home" lands on ' + page.url());
+  if (!home) failed++;
 
   await browser.close();
+
+  if (failed) {
+    console.error('\n  ' + failed + ' of ' + (PAGES.length + 1) + ' checks failed\n');
+    process.exit(1);
+  }
+  console.log('\n  all ' + (PAGES.length + 1) + ' checks passed\n');
 })().catch(e => { console.error(e); process.exit(1); });

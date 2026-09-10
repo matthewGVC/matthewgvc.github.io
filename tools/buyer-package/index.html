@@ -16,6 +16,19 @@
 <!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
+
+<!-- ⚠ THREE THINGS ARE DRAWN OVER THE ARTWORK IN static/, and they will be wrong
+     the moment the artwork is redrawn with any of them fixed at source:
+
+       mansionRow()  corrects the mansion tax on p5, per market
+       whyPhoto()    draws the agent's second photo onto p2
+       faqHeading()  renames the duplicated sixth panel heading on p7
+
+     Each is positioned by numbers measured off the 400dpi pictures, so a
+     re-export at a different size or with the page furniture moved will also
+     put them in the wrong place. If you regenerate static/, check all three.
+     Two further copy errors on p4 and p8 are NOT patched here and still need
+     fixing at source — see faqHeading() for what they are. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">

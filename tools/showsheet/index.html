@@ -728,8 +728,11 @@ function statCells(){
   return cells;
 }
 function photoCell(p, cls, drop){
-  const pos = `${p.fx??50}% ${p.fy??50}%`;
-  return `<div class="${cls}" data-drop="${drop}"><img src="${p.src}" style="object-position:${pos}" alt=""></div>`;
+  // the focal point is a number the drag sets, but it arrives from a saved
+  // document too — coerce it rather than trusting what is in the blob
+  const num = v => Number.isFinite(+v) ? +v : 50;
+  const pos = `${num(p.fx)}% ${num(p.fy)}%`;
+  return `<div class="${cls}" data-drop="${drop}"><img src="${esc(p.src)}" style="object-position:${pos}" alt=""></div>`;
 }
 function renderFront(){
   const heroP = frontPhoto();
@@ -750,7 +753,7 @@ function renderFront(){
   // the building — sits to the right of the asking price
   const b = state.building;
   const scale = [b.stories, b.residences].some(v=>!blankish(v))
-    ? [!blankish(b.stories)? `${b.stories} stories`:null, !blankish(b.residences)? `${b.residences} residences`:null].filter(Boolean).join(' · ') : '';
+    ? [!blankish(b.stories)? `${esc(b.stories)} stories`:null, !blankish(b.residences)? `${esc(b.residences)} residences`:null].filter(Boolean).join(' · ') : '';
   // Built shares its row with stories/residences so the facts below get more space
   const built = [b.builtYear, scale].filter(v=>!blankish(v)).map(v=>String(v).trim()).join(' · ');
   const bSpecs = specRow('Built', built) + specRow('Architect', b.architect) +
@@ -763,7 +766,10 @@ function renderFront(){
   const cells = statCells();
   const strip = cells.length ? `<div class="strip">${cells.map(c=>
     `<div class="scell"><span class="slb">${c.ic}<span class="sv">${c.v}</span></span><span class="lead"></span><span class="slabel">${c.l}</span></div>`).join('')}</div>` : '';
-  const askBlock = state.price ? `<div class="ft-r"><div class="al">Asking Price</div><div class="av">${displayPrice(state.price)}</div></div>` : '';
+  // displayPrice is a formatter, not a sanitiser: a price it cannot read as a
+  // number — "Call for price", or anything pasted out of a Word doc — comes
+  // back as typed, so it is escaped here like every other field
+  const askBlock = state.price ? `<div class="ft-r"><div class="al">Asking Price</div><div class="av">${esc(displayPrice(state.price))}</div></div>` : '';
   $('#sheetFront').innerHTML = `
     <div class="trim">
       <div class="sh-head">
@@ -800,7 +806,8 @@ function renderFront(){
 }
 function ledgerRows(){
   const L = [];
-  L.push({lab:'Asking Price', val: state.price ? displayPrice(state.price) : '—', lead:true});
+  // every val in this list is escaped here, because renderBack writes them raw
+  L.push({lab:'Asking Price', val: state.price ? esc(displayPrice(state.price)) : '—', lead:true});
   if(state.ownership === 'co-op'){
     if(!blankish(state.maintenance)){
       L.push({lab:'Maintenance', val: esc(state.maintenance)});
@@ -855,7 +862,7 @@ function renderBack(){
 
   const fp = state.floorplan
     ? `<div class="fp-area">
-         <div class="fp-wrap"><img src="${state.floorplan}" alt="Floorplan"></div>
+         <div class="fp-wrap"><img src="${esc(state.floorplan)}" alt="Floorplan"></div>
          <div class="fp-note">${GVC_LEGAL.FLOORPLAN_SHORT}</div>
        </div>`
     : `<div class="fp-empty">Floorplan available upon request</div>`;

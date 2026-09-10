@@ -28,7 +28,10 @@ Node + Playwright — `cd scripts && npm install`:
 - `reshoot-gvc.js` — the same, for the GVC team site only
 - `make-png.js` — regenerate the monogram PNG favicons from `assets/logos/monogram.svg`
 - `check-svgs.js` — render-check the monogram and lockup SVGs
-- `verify-local.js` — load the site on localhost:8080 and report console/SRI errors
+- `verify-local.js` — load every page on localhost:8080 and fail on console errors,
+  uncaught errors, SRI blocks, missing files, missing chrome or sideways scroll.
+  Needs `cd scripts && npm install` once; exits non-zero, so it is worth running
+  before a publish
 
 ## Showsheet tool
 

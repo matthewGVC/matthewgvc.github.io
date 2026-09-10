@@ -107,17 +107,13 @@ a.tile,button.tile{cursor:pointer}
 }
 .home-sec + .home-sec{margin-top:clamp(44px,6vw,68px)}
 
-/* editorial section header: label + hairline rule to the edge + a count */
+/* editorial section header: label + a hairline rule out to the edge */
 .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:22px}
 .sec-label{
   font-family:var(--sans-display);font-weight:800;font-size:11px;
   letter-spacing:0.24em;text-transform:uppercase;color:var(--ink);
 }
 .sec-rule{flex:1;height:1px;background:var(--rule)}
-.sec-count{
-  font-family:var(--mono);font-size:10px;letter-spacing:0.12em;
-  text-transform:uppercase;color:var(--ink-soft);
-}
 
 /* a section that folds. The summary is the same editorial header, plus a
    Show/Hide word on the end; the marker is dropped because the header

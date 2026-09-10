@@ -9,12 +9,8 @@
   const mast = document.createElement("header");
   mast.className = "masthead";
   mast.innerHTML = `
-    <a class="mast-lockup" href="${root}.">
+    <a class="mast-lockup" href="${root}." aria-label="Matt Bloomfield — GVC Workspace, home">
       <span class="monogram" id="mast-monogram"></span>
-      <span class="names">
-        <span class="who">Matt Bloomfield</span>
-        <span class="for">for The GVC Team</span>
-      </span>
     </a>`;
   document.body.prepend(mast);
 
@@ -36,8 +32,6 @@
   foot.innerHTML = `
     <span class="left">Matt Bloomfield — The GVC Team, Douglas Elliman</span>
     <span class="right">
-      <a href="mailto:matthew@gvcrealestateteam.com">matthew@gvcrealestateteam.com</a>
-      <a href="https://github.com/mattbloom1" target="_blank" rel="noopener">github/mattbloom1</a>
       <a href="https://github.com/matthewGVC" target="_blank" rel="noopener">github/matthewGVC</a>
       <a href="https://gvcrealestateteam.com" target="_blank" rel="noopener">gvcrealestateteam.com</a>
     </span>`;

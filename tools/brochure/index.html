@@ -1013,7 +1013,7 @@ const state = {
    field added above is covered the day it is added — a hand-list is how the
    previous listing's marketing strategy and floor-plan note came to survive
    onto the next one. */
-const BLANK = JSON.parse(JSON.stringify(state));
+const BLANK = structuredClone(state);
 
 let uid = 0, builder = null;
 let assign = { hero: null, infoTop: null, gallery: [] };
@@ -2532,13 +2532,12 @@ const DOC_KEYS = ['images', 'gallery', 'galCaptions', 'galPage', 'strategy',
    saved with the brochure but not wiped when the property changes. */
 const KEEP_ON_SWITCH = ['paper'];
 
-const clone = v => (v == null || typeof v !== 'object') ? v : JSON.parse(JSON.stringify(v));
-
-/* Called before a property's facts are applied — see property-bar's open(). */
+/* Called before a property's facts are applied — see property-bar's open().
+   Cloned, or images and gallery pages would be shared with the blank. */
 const resetDocFields = () => {
   DOC_KEYS.forEach(k => {
     if (KEEP_ON_SWITCH.includes(k)) return;
-    state[k] = clone(BLANK[k]);
+    state[k] = structuredClone(BLANK[k]);
   });
   state.galSel = null;
 };

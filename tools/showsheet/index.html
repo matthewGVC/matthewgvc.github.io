@@ -1841,14 +1841,13 @@ const BLANK_DOC = blankUnit();
    they are saved with the sheet but not wiped when the property changes. */
 const KEEP_ON_SWITCH = ['paper','bleed'];
 
-const clone = v => (v == null || typeof v !== 'object') ? v : JSON.parse(JSON.stringify(v));
-
 function resetDocFields(){
   Object.keys(state).forEach(k => {
     if(CORE_ONLY.includes(k) || k === 'disclaimer' || KEEP_ON_SWITCH.includes(k)) return;
     // a key an older saved sheet left behind that blankUnit() no longer knows
     // about goes entirely; migratePhotos folds the ones that still matter back in
-    if(k in BLANK_DOC) state[k] = clone(BLANK_DOC[k]);
+    // (cloned, or photos and amenities would be shared with the blank)
+    if(k in BLANK_DOC) state[k] = structuredClone(BLANK_DOC[k]);
     else delete state[k];
   });
 }

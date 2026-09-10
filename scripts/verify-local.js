@@ -32,9 +32,13 @@ const PAGES = [
   ['Watermark',       '/tools/watermark/']
 ];
 
-/* The browser asks for these on its own whether or not a page links to one,
-   and every page here declares its real icons in <head>. Nothing else is
-   forgiven — a 404 for something a page actually references is a failure. */
+/* Some browsers ask for these on their own whether or not a page links an
+   icon, and every page here declares its real ones in <head>, so a 404 for
+   one is the browser's doing rather than a broken reference. Headless
+   Chromium does not currently request them — checked by turning this off and
+   watching all 13 still pass — but a headed run does, and this is cheaper
+   than a confusing failure. Nothing else is forgiven: a 404 for something a
+   page actually references is a failure. */
 const BROWSER_PROBES = [/\/favicon\.ico$/, /\/apple-touch-icon(-precomposed)?\.png$/];
 const isProbe = url => BROWSER_PROBES.some(re => re.test(url));
 
@@ -48,8 +52,8 @@ async function check(page, label, path) {
 
   page.on('console', m => {
     if (m.type() !== 'error') return;
-    // Chrome logs a console error for every failed request, probes included
-    if (isProbe(m.location().url || '') || isProbe(m.text())) return;
+    // a failed request is logged against the resource, not the page
+    if (isProbe(m.location().url || '')) return;
     consoleErrors.push(m.text());
   });
   page.on('pageerror', e => pageErrors.push(e.message));

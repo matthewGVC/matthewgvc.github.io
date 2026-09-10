@@ -473,7 +473,7 @@ const state = {
    added above is covered the day it is added — a hand-list is how the previous
    seller's name, recommended price and price band came to survive onto the
    next listing's deck. */
-const BLANK = JSON.parse(JSON.stringify(state));
+const BLANK = structuredClone(state);
 
 /* Default copy — the parts that are GVC boilerplate rather than
    per-client. Overwrite in the panel; these are only a starting point.
@@ -1511,14 +1511,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const DOC_ONLY = ['client','date','photos','map','priceLow','priceMid','priceHigh',
                     'recBand','showProperty','pos','agents','market','videos','reviews'];
 
-  const clone = v => (v == null || typeof v !== 'object') ? v : JSON.parse(JSON.stringify(v));
-
   /* Called before a property's facts are applied — see property-bar's open().
      Every document field goes back to blank; fromCore then re-establishes the
      roster from the property, falling back to this deck's own default rather
-     than to whoever was on the last one. */
+     than to whoever was on the last one. Cloned, or photos and comps would be
+     shared with the blank and edited through it. */
   const resetDocFields = () => {
-    DOC_ONLY.forEach(k => { state[k] = clone(BLANK[k]); });
+    DOC_ONLY.forEach(k => { state[k] = structuredClone(BLANK[k]); });
     // a shared fact the next property may not carry at all: comps for the
     // wrong listing is the worst thing this deck can print
     state.comps = [];

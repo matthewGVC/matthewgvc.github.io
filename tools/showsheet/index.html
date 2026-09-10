@@ -1714,6 +1714,32 @@ function applyParsedDocx(blocks){
 }
 wireDrop($('#docxDrop'), $('#docxFile'), importDocx, false);
 
+/* Every field in the panel is a plain <label> sitting beside its control:
+   correct on screen, and silent to a screen reader, because not one of the
+   29 carried a `for`. Tying them together from the markup already here beats
+   hand-writing 29 id/for pairs that the next field added would forget. */
+function linkFieldLabels(){
+  $$('.field').forEach(f => {
+    const label = f.querySelector(':scope > label');
+    if(!label || label.htmlFor) return;
+    const controls = f.querySelectorAll('input, select, textarea');
+    if(controls.length === 1){
+      const c = controls[0];
+      if(!c.id) c.id = 'fld-' + String(c.dataset.field || c.name || '').replace(/[^\w]+/g, '-');
+      label.htmlFor = c.id;
+      return;
+    }
+    /* Ownership is a row of buttons rather than one control, so its label
+       names the group instead of pointing at whichever button came first. */
+    const seg = f.querySelector('.seg');
+    if(seg && !seg.getAttribute('aria-label')){
+      seg.setAttribute('role', 'group');
+      seg.setAttribute('aria-label', label.textContent.trim());
+    }
+  });
+}
+linkFieldLabels();
+
 /* ============================================================
    OUTPUT — print, bleed, download
    ============================================================ */

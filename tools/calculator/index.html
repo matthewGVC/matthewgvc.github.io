@@ -306,7 +306,9 @@
     removeBtn.className = 'remove-btn';
     removeBtn.type = 'button';
     removeBtn.title = 'Remove row';
-    removeBtn.tabIndex = -1;
+    /* It used to be tabIndex -1, which kept it out of the way of tabbing
+       between feet and inches but left removing a row as something only a
+       mouse could do. renumber() gives it a name that says which row. */
     removeBtn.textContent = '×';
     row.appendChild(removeBtn);
 
@@ -332,7 +334,15 @@
   function renumber() {
     const rows = Array.from(rowsEl.children);
     rows.forEach((r, i) => {
-      r.querySelector('.num').textContent = (i + 1) + '.';
+      const n = i + 1;
+      r.querySelector('.num').textContent = n + '.';
+      /* The row number and the ft/in suffixes are the visible labels, and a
+         bare number input carries neither to a screen reader. Named here
+         rather than where the row is built, so they stay right as rows are
+         added and removed. */
+      r.querySelector('input.feet').setAttribute('aria-label', 'Row ' + n + ', feet');
+      r.querySelector('input.inches').setAttribute('aria-label', 'Row ' + n + ', inches');
+      r.querySelector('.remove-btn').setAttribute('aria-label', 'Remove row ' + n);
     });
     if (rows.length === 1) {
       rows[0].querySelector('.remove-btn').disabled = true;

@@ -421,9 +421,17 @@
 
   /* ---------------- photos ---------------- */
 
-  /* Downscaled before it ever leaves the browser: the long edge is capped,
-     which is past what a Letter page prints at 300dpi and keeps a property
-     near 7 MB rather than 120. */
+  /* Downscaled before it ever leaves the browser: the long edge is capped at
+     2000px, which keeps a property near 7 MB rather than 120.
+
+     What that buys, stated honestly, because the note here used to claim it
+     was "past what a Letter page prints at 300dpi" and it is not — a full
+     Letter page at 300dpi is 2550 x 3300. Across the full 8.5in width 2000px
+     is about 235dpi. It is comfortably past 300dpi for the boxes these sheets
+     actually put a photo in: the Showsheet's hero runs about 5in, which is
+     400dpi. A full-bleed Letter cover is the case that falls short, so a
+     photo meant to fill a page edge to edge wants a higher cap than this —
+     CFG.photoMaxEdge is there to raise. */
   function shrink(file) {
     return createImageBitmap(file).then(function (bmp) {
       var max = CFG.photoMaxEdge || 2000;

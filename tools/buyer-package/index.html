@@ -462,11 +462,18 @@ const qrSvg = window.GVC_QR;
    `opt` marks a page the panel can switch off, and doubles as the one-line
    description shown beside its tick.
    ============================================================ */
-/* `st` is the page's index inside static/buyer-pages-2-8.pdf — the seven
-   pages Matt drew in Illustrator. They are not rebuilt here: the preview
-   shows a flat picture of each one and the export copies the real PDF page
-   through untouched. Only their page number is ours, drawn back on at
-   export because the printed one was stripped out of the artwork.
+/* `st` is the page's index among the seven Matt drew in Illustrator, which
+   ship as static/p2.jpg … p8.jpg — st + 2 is the file. There is no PDF in
+   static/; an earlier design copied the real PDF page through at export and
+   this note still described it, but what actually happens is that the same
+   400dpi picture is used on screen and on paper (see pgStatic for why that
+   won). The Illustrator source lives in exports/, which is gitignored so the
+   public site does not serve it.
+
+   Only the page number is ours, drawn back on because the printed one was
+   stripped out of the artwork — and, since they are pictures rather than
+   markup, two corrections are drawn over them the same way: see mansionRow()
+   and whyPhoto().
 
    The tearsheets follow Offer & Negotiation because that is where the drawn
    deck ends before its closing page. */

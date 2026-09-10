@@ -21,7 +21,6 @@ main p a{text-decoration:underline;text-underline-offset:2px}
 h1,h2,h3{font-weight:300;font-family:var(--serif);letter-spacing:-0.02em}
 
 /* type utilities */
-.t-serif{font-family:var(--serif);font-weight:300}
 .t-label{
   font-family:var(--sans-display);font-weight:800;
   font-size:11px;letter-spacing:0.22em;text-transform:uppercase;

@@ -1,73 +1,3 @@
-/* ---------- bento ---------- */
-.bento{
-  display:grid;gap:14px;
-  grid-template-columns:repeat(4,1fr);
-  grid-auto-rows:190px;
-  grid-auto-flow:dense;
-  padding:32px 0 0;
-}
-.tile{
-  position:relative;overflow:hidden;border-radius:8px;
-  background:var(--paper-2);border:1px solid var(--rule);
-  display:flex;flex-direction:column;justify-content:flex-end;
-  padding:18px;
-  transition:border-color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease);
-}
-.tile:hover{border-color:var(--ink)}
-.tile:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
-a.tile,button.tile{cursor:pointer}
-.tile.w2{grid-column:span 2}
-.tile.h2{grid-row:span 2}
-
-/* navy color-block tile (fallback + websites) — the GVC color-block accent */
-.tile.navy{background:var(--ink);border:none;color:var(--bone)}
-.tile.navy::before{
-  content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;background:var(--sky);
-  transition:background-color var(--dur-1) var(--ease);
-}
-.tile.navy .t-mono{color:var(--sky);transition:color var(--dur-1) var(--ease)}
-/* navy tiles have no border to tint, so hover lifts the ground + accent instead */
-.tile.navy:hover{background:#00354E}
-.tile.navy:hover::before{background:var(--bone)}
-.tile.navy:hover .t-mono{color:var(--bone)}
-
-.tile .tile-img{
-  position:absolute;inset:0;z-index:0;
-}
-.tile .tile-img img{
-  width:100%;height:100%;object-fit:cover;
-  transform:scale(1.04);            /* headroom for pointer parallax */
-  transition:transform var(--dur-2) var(--ease);
-}
-.tile.crop-top .tile-img img{object-position:top} /* website tiles: keep the site wordmark (top of screenshot) in frame */
-.tile .tile-cap{
-  position:relative;z-index:1;
-  display:flex;flex-direction:column;gap:4px;
-}
-.tile.has-img .tile-cap{
-  background:linear-gradient(transparent, rgba(0,39,58,0.78) 30%);
-  margin:-18px;padding:34px 18px 16px;color:var(--bone); /* -18px mirrors .tile padding — keep in sync */
-}
-.tile.has-img .tile-cap .t-mono{color:var(--bone)}
-.tile .tile-name{font-family:var(--serif);font-size:22px;line-height:1.1}
-.tile.h2 .tile-name{font-size:30px}
-
-/* type-set glyph decoration (no screenshot tiles, e.g. calculator) */
-.tile .tile-glyph{
-  position:absolute;top:2px;right:14px;z-index:0;
-  font-family:var(--serif);font-style:italic;font-weight:300;
-  font-size:72px;line-height:1.2;color:var(--sky);opacity:.55;
-  user-select:none;pointer-events:none;
-}
-@media (max-width:560px){.tile .tile-glyph{display:none}}
-
-@media (max-width:980px){ .bento{grid-template-columns:repeat(2,1fr)} }
-@media (max-width:560px){
-  .bento{grid-template-columns:1fr;grid-auto-rows:150px}
-  .tile.w2,.tile.h2{grid-column:span 1;grid-row:span 1}
-  .tile.h2.feature{grid-row:span 2}
-}
-
 /* ---------- buttons ---------- */
 .btn{
   display:inline-flex;align-items:center;gap:8px;
@@ -78,8 +8,6 @@ a.tile,button.tile{cursor:pointer}
 }
 .btn:hover{background:var(--ink);color:var(--bone)}
 .btn:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
-.btn.on-navy{border-color:var(--bone)}
-.btn.on-navy:hover{background:var(--bone);color:var(--ink)}
 
 /* ---------- case study ---------- */
 .case-hero{margin:32px 0 0;border:1px solid var(--rule);border-radius:8px;overflow:hidden}

@@ -118,7 +118,6 @@
 .pg.rev .lede{color:var(--ow);}
 .copy{font:300 9.5pt/14pt var(--body);color:var(--navy);}
 .pg.rev .copy{color:var(--ow);}
-.cols2{columns:2;column-gap:.42in;}
 
 /* A diagonal stamp across a page whose contents are illustrative or are
    waiting on somebody: "verify figures", "swap these out". Deliberately
@@ -151,7 +150,6 @@
 .chk.tight li{font-size:10pt;line-height:14pt;padding:.07in 0;}
 .chk.tight .cgrp{margin-bottom:.28in;}
 
-.stat-row{display:flex;gap:.3in;margin:.1in 0 .26in;}
 .stat{flex:1;min-width:0;border-top:1.4pt solid var(--sky);padding-top:.11in;}
 .stat .v{font:700 23pt/1 var(--serif);color:var(--navy);}
 .stat .l{margin-top:.06in;font:800 6.8pt var(--sans);letter-spacing:.15em;text-transform:uppercase;color:rgba(0,39,58,.55);line-height:1.5;}
@@ -171,21 +169,6 @@
 .pg.rev .card p{color:rgba(229,229,229,.8);}
 
 /* numbered process steps */
-/* flex:none on the children is load-bearing: flex items shrink by default,
-   so an over-long list would quietly squash itself instead of overflowing,
-   and the overflow warning would never fire. */
-.steps{display:flex;flex-direction:column;gap:.16in;}
-.step{flex:none;display:flex;gap:.2in;align-items:flex-start;padding-bottom:.16in;border-bottom:.75pt solid var(--rule);}
-.step:last-child{border-bottom:0;}
-.step .sn{flex:none;width:.42in;height:.42in;border-radius:50%;background:var(--navy);color:#fff;
-  display:flex;align-items:center;justify-content:center;font:800 11pt var(--sans);}
-.step .st{font:800 9.5pt var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--navy);}
-.step .sd{margin-top:.05in;font:300 9.5pt/14pt var(--body);color:rgba(0,39,58,.75);}
-.pg.rev .step{border-color:var(--rule-rev);}
-.pg.rev .step .sn{background:var(--sky);color:var(--navy);}
-.pg.rev .step .st{color:#fff;}
-.pg.rev .step .sd{color:rgba(229,229,229,.8);}
-
 /* data table — comps, closing costs, net sheet */
 table.tbl{width:100%;border-collapse:collapse;font:400 9pt var(--body);}
 table.tbl th{font:800 6.8pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(0,39,58,.55);
@@ -202,10 +185,8 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .band.mid{background:var(--navy);border-color:var(--navy);}
 .band .bl{font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:rgba(0,39,58,.55);}
 .band .bv{margin-top:.08in;font:700 21pt/1 var(--serif);color:var(--navy);}
-.band .bn{margin-top:.1in;font:300 8.5pt/12.5pt var(--body);color:rgba(0,39,58,.7);}
 .band.mid .bl{color:var(--sky);}
-.band.mid .bv,.band.mid .bn{color:#fff;}
-.band.mid .bn{color:rgba(229,229,229,.82);}
+.band.mid .bv{color:#fff;}
 
 /* ---------- client testimonials ----------
    A quote is framed by a pair of display marks, not by a rule down its
@@ -232,7 +213,6 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
   text-transform:uppercase;color:rgba(0,39,58,.55);}
 .pg.rev .quote p{color:var(--ow);}
 .pg.rev .quote .who{color:rgba(229,229,229,.65);}
-.stars{color:var(--sky2);letter-spacing:.06em;font-size:10pt;}
 
 /* photo blocks — draggable to reframe when they hold an image (data-pos) */
 .ph{position:relative;overflow:hidden;background:rgba(0,39,58,.06);}
@@ -256,18 +236,6 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
    below, so the page reads as a close, not one more numbered section */
 .pg.close .pg-h{display:none;}
 .pg.close .pg-body{justify-content:space-between;padding-top:.5in;}
-
-/* kicker + headline, with the team-site QR docked top-right against this
-   block rather than the whole page */
-.cx-top{position:relative;flex:none;text-align:center;margin-bottom:.34in;padding-bottom:.28in;
-  border-bottom:1pt solid var(--rule-rev);}
-.cx-top .cx-kicker{font:800 8pt var(--sans);letter-spacing:.28em;text-transform:uppercase;color:var(--sky);}
-.cx-top .cx-thanks{margin-top:.1in;font:700 34pt/1.1 var(--serif);color:#fff;}
-.cx-qr{position:absolute;top:0;right:0;width:.85in;text-align:center;}
-.cx-qr .qbox{width:.85in;height:.85in;background:#fff;padding:.045in;}
-.cx-qr .qbox svg{width:100%;height:100%;display:block;}
-.cx-qr .qcap{margin-top:.06in;font:800 5.6pt var(--sans);letter-spacing:.1em;
-  text-transform:uppercase;color:rgba(229,229,229,.6);}
 
 /* ---- agent cards ----
    One solid card per agent, holding the cutout AND the name, title and
@@ -322,7 +290,6 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .ag-meta .nums b{font:700 9pt var(--serif);color:var(--navy);}
 
 /* ---- contact footer: two link columns ---- */
-.contact-foot{flex:none;padding-top:.26in;border-top:1pt solid var(--rule-rev);}
 .lcols{display:grid;grid-template-columns:1fr 1fr;gap:.42in;}
 .lcol{min-width:0;}
 .lcol-t{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;
@@ -354,27 +321,9 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
    four builders print the same words. */
 .legal{flex:none;margin-top:.2in;padding-top:.16in;border-top:.75pt solid var(--rule-rev);
   font:300 6.5pt/1.5 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
-.states{flex:none;display:flex;justify-content:center;gap:.55in;margin-top:.26in;margin-bottom:.34in;
-  padding-top:.22in;border-top:1pt solid var(--rule-rev);}
-.states .stc{text-align:center;}
-/* Each state mark is cut out of the brand mesh gradient instead of printed as
-   flat white: the state's own SVG masks a gradient fill, so the silhouette is a
-   window onto the artwork. builder.css sets print-color-adjust:exact globally,
-   so the fill survives the PDF. */
-.states .stc .stc-art{display:block;margin:0 auto .08in;height:.5in;width:.8in;
-  background:var(--mesh) center/cover;
-  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
-  -webkit-mask-position:center;mask-position:center;
-  -webkit-mask-size:contain;mask-size:contain;}
-.states .stc span{font:800 7.5pt var(--sans);letter-spacing:.18em;
-  text-transform:uppercase;color:rgba(229,229,229,.72);}
-
-/* map + marker legend */
+/* map */
 .map-wrap{flex:1;min-height:0;position:relative;overflow:hidden;background:rgba(0,39,58,.06);}
 .map-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
-.legend{flex:none;display:flex;flex-wrap:wrap;gap:.1in .3in;margin-top:.18in;}
-.legend span{font:300 8.5pt var(--body);color:rgba(0,39,58,.75);display:flex;align-items:baseline;gap:.07in;}
-.legend i{width:.09in;height:.09in;border-radius:50%;background:var(--sky2);display:block;flex:none;transform:translateY(-.01in);}
 
 /* ============================================================
    EDITOR-SIDE BITS (left panel) — screen only

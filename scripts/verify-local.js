@@ -29,7 +29,8 @@ const PAGES = [
   ['Floorplan',       '/tools/floorplan/'],
   ['CMA',             '/tools/cma/'],
   ['Map Studio',      '/tools/map-studio/'],
-  ['Watermark',       '/tools/watermark/']
+  ['Watermark',       '/tools/watermark/'],
+  ['Listing Rules',   '/listing-rules/']
 ];
 
 /* Some browsers ask for these on their own whether or not a page links an

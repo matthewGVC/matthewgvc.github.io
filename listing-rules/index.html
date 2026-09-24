@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listing Media Rules — Matt Bloomfield</title>
+<meta name="description" content="Advertising, photo, floor plan and rendering rules for listing media in New York, Florida and New Jersey.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/logos/apple-touch-icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=Nunito+Sans:wght@800;900&family=Raleway:wght@300;400;500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<style>
+  /* A reading page: one column of prose, the tables allowed to scroll
+     sideways inside their own box on a phone rather than push the page. */
+  .rules { max-width: 860px; padding: 8px 0 96px; font-weight: 400; line-height: 1.6; }
+  .rules h2 { font-size: clamp(26px, 3vw, 34px); margin: 56px 0 14px; }
+  .rules h3 { font-family: var(--sans-display); font-weight: 800; font-size: 12px;
+              letter-spacing: .18em; text-transform: uppercase; margin: 28px 0 8px; }
+  .rules p, .rules li { max-width: 68ch; }
+  .rules ul, .rules ol { padding-left: 1.3em; margin: 0; }
+  .rules li { margin: 6px 0; }
+  .rules li ul { margin-top: 4px; }
+  .rules a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--sky);
+             text-underline-offset: 3px; }
+  .rules a:hover { text-decoration-thickness: 2px; }
+
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 28px 0 0; padding: 0; list-style: none; }
+  .toc a { font-family: var(--mono); font-size: 13px; }
+
+  .warn { margin: 32px 0 0; padding: 16px 20px; border-left: 3px solid var(--danger);
+          background: var(--paper-2); max-width: 68ch; }
+  .warn b { color: var(--danger); }
+
+  .table-wrap { overflow-x: auto; margin: 8px 0; border: 1px solid var(--rule); border-radius: 6px;
+                background: #fff; }
+  table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 14px; line-height: 1.45; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  tr:last-child td { border-bottom: 0; }
+  thead th { font-family: var(--sans-display); font-weight: 800; font-size: 11px; letter-spacing: .16em;
+             text-transform: uppercase; color: var(--ink-soft); }
+  tbody th { font-weight: 500; width: 22%; }
+  .note { font-size: 13px; color: var(--ink-soft); }
+
+  .sources li { font-size: 14px; margin: 4px 0; }
+</style>
+</head>
+<body data-root="../" data-nav="">
+<main class="page">
+  <div class="page-head">
+    <h1>Listing Media Rules</h1>
+    <span class="t-mono">New York · Florida · New Jersey</span>
+  </div>
+
+  <article class="rules">
+    <ul class="toc">
+      <li><a href="#compare">Side-by-side</a></li>
+      <li><a href="#ny">New York</a></li>
+      <li><a href="#fl">Florida</a></li>
+      <li><a href="#nj">New Jersey</a></li>
+      <li><a href="#standard">One standard</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ul>
+
+    <p class="warn"><b>Watch out:</b> in Florida, a team name can't include the words "Real Estate"
+      (FREC rule 61J2-10.026). If GVC Real Estate Team operates in Florida as a team under a
+      brokerage, check that with the broker.</p>
+
+    <h2 id="compare">Side-by-side</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Topic</th><th scope="col">New York</th><th scope="col">Florida</th><th scope="col">New Jersey</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Brokerage name on ads</th>
+            <td>Required</td>
+            <td>Required, placed next to the contact info on web ads</td>
+            <td>Required, and larger than the agent's name</td></tr>
+          <tr><th scope="row">Logos or contact info on listing photos</th>
+            <td>Not allowed (REBNY, StreetEasy)</td>
+            <td>Not allowed (BeachesMLS, Stellar MLS)</td>
+            <td>Not allowed (GSMLS)*</td></tr>
+          <tr><th scope="row">Logos on floor plans</th>
+            <td>No agent info</td>
+            <td>No branding. The floor plan artist's copyright is OK on Stellar</td>
+            <td>Follow the photo rules</td></tr>
+          <tr><th scope="row">Virtual staging disclosure</th>
+            <td>Required by law only if pending bills pass. The honest-depiction rule applies now</td>
+            <td>BeachesMLS: say it within the first 180 characters of the remarks and photo captions. Stellar: not allowed on pre-construction</td>
+            <td>Pending bill A4728 would require it, with fines</td></tr>
+          <tr><th scope="row">Renderings (new developments)</th>
+            <td>Must be labeled "artist's rendering" and be accurate</td>
+            <td>BeachesMLS allows them on pre-construction listings; disclose if they differ from the actual home</td>
+            <td>Developer ads must be accurate and provable. Renderings labeled right next to the image (for properties registered with NJ)</td></tr>
+          <tr><th scope="row">Floor plans (new developments)</th>
+            <td>Must be to scale</td>
+            <td>Must not be misleading (developers can be sued)</td>
+            <td>Must be accurate and provable</td></tr>
+          <tr><th scope="row">Square footage</th>
+            <td>No standard; label it "approx."</td>
+            <td>Courts hold listing agents responsible for wrong numbers</td>
+            <td>No standard; label it "approx."</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">*The GSMLS rules come from a secondary source. Confirm them against the official GSMLS rulebook.</p>
+
+    <h2 id="ny">New York</h2>
+    <h3>REBNY</h3>
+    <ul>
+      <li>No agent name, contact info or links on floor plans, photos or descriptions.</li>
+      <li>The brokerage is responsible for inaccurate photos or media.</li>
+      <li>Never use "Off-Market," and check copy against REBNY's Fair Housing word list.</li>
+      <li>The 2026 rule changes left media untouched.</li>
+    </ul>
+    <h3>StreetEasy</h3>
+    <ul>
+      <li>No name, logo, URL, phone or email on photos or video, including as a watermark.</li>
+      <li>Representative photos must come from the same building and be disclosed.</li>
+      <li>Only legal bedrooms count, and the unit must be shown as it is today.</li>
+      <li>Floor plans: JPG, PNG or GIF, 2MB max.</li>
+    </ul>
+    <h3>NY Department of State</h3>
+    <ul>
+      <li>Ads must be honest and accurate. A November 2025 alert applies this to AI images, with possible license discipline and fines.</li>
+      <li>The brokerage name or logo is required, and "team" must appear in team names.</li>
+      <li>The Fair Housing Notice must be displayed on websites.</li>
+    </ul>
+    <h3>NY Attorney General (new developments)</h3>
+    <ul>
+      <li>Required legend: "THE COMPLETE OFFERING TERMS ARE IN AN OFFERING PLAN AVAILABLE FROM SPONSOR. FILE NO. CD-__."</li>
+      <li>Floor plans must be to scale.</li>
+      <li>Renderings must be labeled and accurate.</li>
+      <li>Common charges must say "projected" or "estimated."</li>
+    </ul>
+    <h3>Pending</h3>
+    <ul>
+      <li>State bills S9584 and A.11635 would require disclosure of staging and AI edits.</li>
+      <li>NYC has announced an AI-disclosure rule for rentals but set no date.</li>
+    </ul>
+
+    <h2 id="fl">Florida</h2>
+    <h3>FREC advertising rule 61J2-10.025</h3>
+    <ul>
+      <li>The brokerage's licensed name goes on every ad. On web ads it sits above, below or next to the contact info.</li>
+      <li>Nothing false or misleading.</li>
+    </ul>
+    <h3>FREC team rule 61J2-10.026</h3>
+    <ul>
+      <li>Team names can't include Real Estate, Realty, Properties, Group-type entity words (Inc., LLC and so on), Brokers or Agency.</li>
+      <li>The team name can't be larger than the brokerage's name or logo.</li>
+    </ul>
+    <h3>BeachesMLS (Palm Beach and Broward), rules updated 4/24/25</h3>
+    <ul>
+      <li>Every listing needs at least one front-exterior photo.</li>
+      <li>None of these on media: watermarks (including the photographer's), frames, text or overlays, agent, team or broker branding, collages, QR codes or URLs, or people.</li>
+      <li>Virtual staging must be disclosed within the first 180 characters of the public remarks and photo descriptions.</li>
+      <li>Pre-construction listings may use a rendering, with a disclosure if it differs from the actual home.</li>
+      <li>Fines go up to $15,000.</li>
+    </ul>
+    <h3>Stellar MLS (Central Florida)</h3>
+    <ul>
+      <li>No logos, agent photos, contact info, text or graphics on photos, attachments or tours.</li>
+      <li>Floor plans: no branding, but the artist's copyright is allowed.</li>
+      <li>Virtual staging is banned on pre-construction and under-construction listings.</li>
+      <li>Staging can't remove permanent fixtures, change paint, remove power lines or add landscaping.</li>
+      <li>No people in photos.</li>
+    </ul>
+    <h3>Condo developers (§718.506)</h3>
+    <ul>
+      <li>A buyer who relied on false or misleading info in a brochure or ad can cancel the contract or sue the developer.</li>
+    </ul>
+    <h3>Square footage</h3>
+    <ul>
+      <li>The court case <i>Miller v. Sullivan</i> held that the listing agent can be liable for a wrong square footage number. Say where the number came from and whether it's air-conditioned space or total area.</li>
+    </ul>
+    <h3>Pending</h3>
+    <ul>
+      <li>No AI photo bill passed in the 2026 session.</li>
+    </ul>
+
+    <h2 id="nj">New Jersey</h2>
+    <h3>NJ Real Estate Commission (N.J.A.C. 11:5-6.1, amended 8/19/2024)</h3>
+    <ul>
+      <li>The brokerage name must be larger or more prominent than the agent's name.</li>
+      <li>Nothing false or misleading.</li>
+      <li>Any mention of commission requires "In New Jersey commissions are negotiable."</li>
+    </ul>
+    <h3>New developments (planned-development rules, N.J.A.C. 5:26-5)</h3>
+    <ul>
+      <li>All developer ads must be "accurate, provable, truthful and not misleading."</li>
+      <li>Amenities not built yet must be labeled as proposed, with a completion date.</li>
+      <li>Prices must be the full price.</li>
+      <li>Model units must match what actually gets built.</li>
+    </ul>
+    <h3>Out-of-state developments marketed to NJ buyers (N.J.A.C. 11:5-9.14)</h3>
+    <ul>
+      <li>Renderings must be labeled right next to the image.</li>
+      <li>If the property isn't registered with the NJ Real Estate Commission, the ad must say so and that it's not an offer to NJ residents. This matters when marketing Florida projects to NJ buyers.</li>
+    </ul>
+    <h3>GSMLS (North and Central NJ)</h3>
+    <ul>
+      <li>No watermarks, logos or text overlays on photos.</li>
+      <li>Photos must be of the actual property, with at least one exterior photo.</li>
+      <li class="note">This comes from a secondary source, so confirm with GSMLS.</li>
+    </ul>
+    <h3>Pending, bill A4728</h3>
+    <ul>
+      <li>AI and photo editing couldn't alter listing images, except disclosed virtual staging.</li>
+      <li>Photos couldn't be more than 5 years old.</li>
+      <li>Fines would be $500, then up to $1,000.</li>
+      <li>It cleared committee in June 2026.</li>
+    </ul>
+
+    <h2 id="standard">One standard that works in all three states</h2>
+    <ol>
+      <li>Keep listing photos and floor plans free of logos, contact info, text and watermarks. Save branding for the website, brochures and emails.</li>
+      <li>Basic edits are fine everywhere: exposure, color, straightening, cropping and sky.</li>
+      <li>Label every virtually staged photo on the image and in the caption, and keep the original photo.</li>
+      <li>Never remove permanent features, defects or power lines, never add landscaping, and never change paint.</li>
+      <li>Label renderings "Artist's Rendering." Keep floor plans to scale, with "approx." square footage and its source. Label bedrooms by the legal definition.</li>
+      <li>For new developments, add the NY legend, confirm Florida and NJ disclosures with the developer's lawyer, and make every claim provable.</li>
+    </ol>
+
+    <h2 id="sources">Sources</h2>
+    <ul class="sources">
+      <li><a href="https://www.rebny.com/compliance/">REBNY compliance</a></li>
+      <li><a href="https://www.rebny.com/rls-update/2026-ucba-changes/">REBNY: 2026 rule changes</a></li>
+      <li><a href="https://streeteasy.com/business/listing-quality-policy/">StreetEasy Listings Quality Policy</a></li>
+      <li><a href="https://dos.ny.gov/real-estate-advertising-regulations">NY DOS §175.25</a></li>
+      <li><a href="https://dos.ny.gov/news/new-york-department-state-issues-new-trend-alert-warning-homebuyers-ai-generated-home-listings">NY DOS AI alert</a></li>
+      <li><a href="https://regulations.justia.com/states/new-york/title-13/chapter-ii/subchapter-b/part-20/section-20-6">NY Attorney General condo advertising rules (13 NYCRR §20.6)</a></li>
+      <li><a href="https://www.nysenate.gov/legislation/bills/2025/S9584">NY Senate bill S9584</a></li>
+      <li><a href="https://northeasttimes.com/2026/07/19/new-york-city-targets-deceptive-ai-images-in-rental-listings/">Northeast Times: NYC AI rule</a></li>
+      <li><a href="https://www.floridarealtors.org/law-ethics/library/realtor-advertising-rules-florida">Florida Realtors advertising rules</a></li>
+      <li><a href="https://flrules.elaws.us/fac/61j2-10.025">Florida rule 61J2-10.025</a></li>
+      <li><a href="https://www.theorlandolawgroup.com/blog/all/new-frec-team-advertising-rules-need-know/">Orlando Law Group: FREC team rule</a></li>
+      <li><a href="https://static1.squarespace.com/static/5dd6e5c4baf69652ee450b55/t/681389368b09c8298cabb7a4/1746110775608/BeachesMLS+Rules+and+Regulations+2025.pdf">BeachesMLS Rules 2025 (PDF)</a></li>
+      <li><a href="https://rules.stellarmls.com/hc/en-us/articles/14692960072087-Article-04-05-Listing-Content-and-Virtual-Tours">Stellar MLS listing content rules</a></li>
+      <li><a href="https://rules.stellarmls.com/hc/en-us/articles/14692987795095-Article-04-04-Virtually-Staged-Photos">Stellar MLS virtual staging rules</a></li>
+      <li><a href="https://www.flsenate.gov/Laws/Statutes/2023/718.506">Florida Statute §718.506</a></li>
+      <li><a href="https://aboutfloridalaw.com/2015/08/04/misrepresentation-by-real-estate-agent-wrong-square-footage-in-mls-listing/">About Florida Law: square footage case</a></li>
+      <li><a href="https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-11-5-6-1">N.J.A.C. 11:5-6.1</a></li>
+      <li><a href="https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-11-5-9-14">N.J.A.C. 11:5-9.14</a></li>
+      <li><a href="https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-5-26-5-1">N.J.A.C. 5:26-5.1</a></li>
+      <li><a href="https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-5-26-5-2">N.J.A.C. 5:26-5.2</a></li>
+      <li><a href="https://www.homes.com/news/new-jersey-moves-to-rein-in-ai-use-for-property-listings/188016008/">Homes.com: NJ bill A4728</a></li>
+      <li><a href="https://bright-shot.com/blog/what-is-gsmls-garden-state-mls-complete-guide/">Bright-Shot: GSMLS guide</a></li>
+    </ul>
+  </article>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="../assets/js/chrome.js"></script>
+<script src="../assets/js/motion.js"></script>
+</body>
+</html>

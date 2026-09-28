@@ -1096,7 +1096,8 @@ const TEXT_SECTIONS = [
   {key:'numbers',   label:'The Numbers',      side:'Back',  sel:'.num-fit',  probe:'#sheetBack .num-fit'},
   {key:'agents',    label:'Agents',           side:'Back',  sel:'.ag-cards', probe:'#sheetBack .ag-card .ac'},
 ];
-const TS_MIN = 70, TS_MAX = 130, TS_STEP = 5;
+/* up to double: a request past what fits still stops at the largest size that does */
+const TS_MIN = 70, TS_MAX = 200, TS_STEP = 5;
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function textPct(key){
   const v = Math.round(Number(state.textScale && state.textScale[key]));
@@ -1125,8 +1126,9 @@ function scaleHeading(el, auto, k){
   return fitHeading(el, auto, auto * k) / auto;
 }
 let warnedTrim = false;
+const NUM_MIN = 7;       // the ledger's smallest autofit size, in pt
 let cutFeatures = 0;   // feature lines the last render had to leave off the sheet
-function fitFrontBody(){
+function fitFrontBody(trial){
   // The residence (left column) and the building band (right, beneath the hero) share
   // ONE body size — var(--t-body) — so a residence bullet and a building bullet always
   // match. We take the largest size where the residence column fits; the hero photo
@@ -1136,12 +1138,17 @@ function fitFrontBody(){
   // can't make it fit is the hero dropped and the building given the right column.
   // Features/amenities are trimmed only as a last resort, when even the minimum
   // size overflows.
+  //
+  // trial: fit without cutting anything, and say whether this layout would
+  // have to — {cutFree, photo}. fitSheets() asks this while it decides how far
+  // the header sizes may grow; removing feature lines during a trial would make
+  // every later trial look roomier than the sheet really is.
   const MIN_HERO_IN = 1.5, PX = 96, MIN = 6.8, MAX = 14;
   const trim  = document.querySelector('#sheetFront .trim');
   const res   = document.querySelector('#sheetFront .res-fit');
   const right = document.querySelector('#sheetFront .f-right');
   const bld   = right && right.querySelector('.bld-fit');
-  if(!trim) return;
+  if(!trim) return {cutFree:true, photo:true};
   if(right) right.classList.remove('no-photo');  // reset to the photo-on-top state each render
   cutFeatures = 0;
   // the autofit runs at the agent's neutral size; their own sizes go on after
@@ -1197,6 +1204,8 @@ function fitFrontBody(){
   const body = parseFloat(trim.style.getPropertyValue('--t-body')) || 10;
   textFit.residence = res ? {want:kR, got:gotR, pt: body * gotR} : null;
   textFit.building  = bld ? {want:kB, got:gotB, pt: body * gotB} : null;
+  const noPhoto = !!right && right.classList.contains('no-photo');
+  if(trial) return { cutFree: fits(res) && !(noPhoto && !fits(bld)), photo: !noPhoto };
 
   // 3) last resort — trim residence features, then building amenities, if MIN still overflows
   if(res && !fits(res)){
@@ -1282,28 +1291,50 @@ function fitSheets(){
     textFit[key] = present ? {want, got, pt: null} : null;
   };
 
-  // Sizes that are not fitted go on first: they change how much room is left
-  // for everything that is. The price and the one-liner have no limit of their
-  // own — the header and the columns below give way to them.
-  setK(front, '--k-price')(textK('price'));
-  report('price', textK('price'), textK('price'), !!(front && front.querySelector('.ft-r')));
-  setK(front, '--k-lede')(textK('lede'));
-  report('lede', textK('lede'), textK('lede'), !!(front && front.querySelector('.f-lede')));
-  // beds & baths grow only while each box still holds its line
-  const cells = front ? [...front.querySelectorAll('.scell')] : [];
-  report('stats', textK('stats'),
-    cells.length ? growTo(setK(front, '--k-stats'), noSpill(cells), textK('stats')) : 1, cells.length > 0);
-
-  const kA = textK('address');
   const addr = document.querySelector('#sheetFront .addr');
-  const gotA = scaleHeading(addr, fitHeading(addr, 16, 30), kA);
-  report('address', kA, gotA, !!addr);
   const unit = document.querySelector('#sheetFront .unit-lt');
-  if(addr && unit){
-    // the unit line tracks the fitted address so the pairing keeps its hierarchy
-    const pt = parseFloat(addr.style.fontSize) || 30;
-    unit.style.fontSize = Math.max(9.5 * Math.min(1, kA), Math.min(14 * Math.max(1, kA), pt * .47)).toFixed(2) + 'pt';
-  }
+  const cells = front ? [...front.querySelectorAll('.scell')] : [];
+  let kA = 1;   // the address multiplier currently applied
+  // the address fitted to its line and scaled by kA; returns what it managed
+  const header = () => {
+    const got = scaleHeading(addr, fitHeading(addr, 16, 30), kA);
+    if(addr && unit){
+      // the unit line tracks the fitted address so the pairing keeps its hierarchy
+      const pt = parseFloat(addr.style.fontSize) || 30;
+      unit.style.fontSize = Math.max(9.5 * Math.min(1, kA), Math.min(14 * Math.max(1, kA), pt * .47)).toFixed(2) + 'pt';
+    }
+    return got;
+  };
+  const setPrice = setK(front, '--k-price'), setLede = setK(front, '--k-lede'), setStats = setK(front, '--k-stats');
+
+  /* The header sizes — price, one-liner, beds & baths, address — are not fitted
+     themselves, but everything around them is: each takes room from the columns
+     below (and the price from the address beside it), which shrink to give it.
+     They may grow only while the front, refitted around them, loses nothing it
+     had at 100% — no feature or amenity cut, no photo dropped, no address
+     pushed off its line. The trial layouts cost a refit each, so they only run when
+     one of these was asked to grow. */
+  setPrice(1); setLede(1); setStats(1);
+  const growing = ['price', 'lede', 'stats', 'address'].some(k => textK(k) > 1);
+  // the address has to keep its one line too — a wide price takes its width
+  const oneLine = () => !addr || (addr.style.whiteSpace === 'nowrap' && addr.scrollWidth <= addr.clientWidth + 1);
+  const layout = () => { header(); return Object.assign(fitFrontBody(true), { line: oneLine() }); };
+  const base = growing ? layout() : null;
+  const keeps = () => {
+    const r = layout();
+    return (r.cutFree || !base.cutFree) && (r.photo || !base.photo) && (r.line || !base.line);
+  };
+  const hasFt = !!(front && front.querySelector('.ft-r')), hasLede = !!(front && front.querySelector('.f-lede'));
+  report('price', textK('price'), hasFt ? growTo(setPrice, keeps, textK('price')) : 1, hasFt);
+  report('lede', textK('lede'), hasLede ? growTo(setLede, keeps, textK('lede')) : 1, hasLede);
+  // beds & baths also have to keep each box holding its line
+  report('stats', textK('stats'),
+    cells.length ? growTo(setStats, () => noSpill(cells)() && keeps(), textK('stats')) : 1, cells.length > 0);
+  // and the address has to stay on one line
+  report('address', textK('address'),
+    addr ? growTo(k => { kA = k; }, () => header() >= kA - .005 && keeps(), textK('address')) : 1, !!addr);
+
+  header();
   const ba = document.querySelector('#sheetBack .b-head .ba');
   scaleHeading(ba, fitHeading(ba, 13, 19), kA);
 
@@ -1320,13 +1351,20 @@ function fitSheets(){
     const room = parseFloat(getComputedStyle(card).paddingRight) - .06 * 96;
     return !ct || ct.scrollWidth - ct.clientWidth <= Math.max(room, 0) + 1;
   });
-  report('agents', textK('agents'),
-    cards.length ? growTo(setK(back, '--k-ag'), cardsHold, textK('agents')) : 1, cards.length > 0);
-
-  // the back-page ledger never clips — it shrinks to fit its column (10pt is full size)
+  // A taller band also takes height from the ledger column beside it, which
+  // shrinks to make room — down to its own smallest size and no further.
   const num = document.querySelector('#sheetBack .num-fit');
   const kN = textK('numbers');
-  const autoN = fitBlock(num, 7, 10);
+  const ledgerHolds = () => {
+    if(!num) return true;
+    num.style.fontSize = (NUM_MIN * Math.min(1, kN)).toFixed(2) + 'pt';
+    return num.scrollHeight <= num.clientHeight + 1 && num.scrollWidth <= num.clientWidth + 1;
+  };
+  report('agents', textK('agents'),
+    cards.length ? growTo(setK(back, '--k-ag'), () => cardsHold() && ledgerHolds(), textK('agents')) : 1, cards.length > 0);
+
+  // the back-page ledger never clips — it shrinks to fit its column (10pt is full size)
+  const autoN = fitBlock(num, NUM_MIN, 10);
   let gotN = 1;
   if(num && kN !== 1){
     if(kN < 1){ num.style.fontSize = (autoN * kN).toFixed(2) + 'pt'; gotN = kN; }

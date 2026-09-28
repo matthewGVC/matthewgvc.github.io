@@ -136,6 +136,28 @@ details.ed-sec summary .hint{margin-left:auto;font:400 10px var(--ui-mono);lette
   flex:none;display:none;}
 body.is-dragging-photo .photo-secondary.is-empty{display:block;}
 @media print{ .photo-secondary.is-empty{display:none !important;} }
+/* text size — one row per sheet section */
+.ts-group{font:800 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-ink-soft);margin:14px 0 2px;}
+.ts-group:first-child{margin-top:8px;}
+.ts-row{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:10px;padding:5px 0;border-bottom:1px solid var(--ui-rule);}
+.ts-row:last-of-type{border-bottom:0;}
+.ts-row label{font:600 12px var(--body);color:var(--navy);min-width:0;}
+.ts-ctl{display:flex;align-items:center;gap:6px;}
+.ts-ctl input[type=range]{width:108px;accent-color:var(--navy);margin:0;}
+.ts-ctl input[type=range]:focus-visible{outline:2px solid var(--sky);outline-offset:3px;}
+.ts-step{width:22px;height:22px;border:1px solid var(--ui-rule);border-radius:50%;background:#fff;color:var(--navy);font:700 13px/1 var(--sans);cursor:pointer;padding:0;flex:none;}
+.ts-step:hover{border-color:var(--navy);}
+.ts-step:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
+.ts-step:disabled{opacity:.35;cursor:default;border-color:var(--ui-rule);}
+.ts-val{font:400 10px var(--ui-mono);color:var(--ui-ink-soft);width:34px;text-align:right;}
+.ts-val.set{color:var(--navy);font-weight:700;}
+.ts-note{grid-column:1 / -1;font:400 10px var(--ui-mono);color:var(--ui-ink-soft);line-height:1.5;}
+.ts-note:empty{display:none;}
+/* information, not an error: the section is simply as big as its space allows */
+.ts-note.warn{color:var(--navy);font-weight:700;}
+.ts-row.absent label{color:var(--ui-ink-soft);}
+/* hovering a row outlines its section on the sheet (screen only) */
+@media screen{ .ts-hl{outline:1.5px dashed var(--sky2);outline-offset:3px;} }
 /* agent picker */
 #agentPick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
 .ag-chip{display:flex;align-items:center;gap:9px;border:1px solid var(--ui-rule);border-radius:8px;background:#fff;padding:7px 9px;cursor:pointer;position:relative;text-align:left;font:inherit;transition:border-color .12s,box-shadow .12s;}
@@ -249,22 +271,26 @@ body.bleed .safe{display:block;}
    building band always share one body size; the in-block labels/values ride off it in
    em, so they match across the two columns too. */
 .trim{--t-h1:30pt;--t-sub:9.5pt;--t-body:10pt;--t-cap:8pt;}
+/* ===== MANUAL TEXT SIZE — one multiplier per section, set by fitSheets() =====
+   1 is whatever the autofit chose. The agent's Text size panel asks for a
+   percentage; fitSheets() turns that into the largest multiplier up to it that
+   still fits, and writes it here. The address and the ledger are sized in JS
+   directly, so they have no variable of their own. */
+.trim{--k-price:1;--k-lede:1;--k-stats:1;--k-res:1;--k-bld:1;--k-ag:1;}
 /* header — GVC logo + address lockup on the left, asking price on the right
    (the asking price now sits where the navy condo/co-op chip used to) */
 .sh-head{display:flex;justify-content:space-between;align-items:flex-end;gap:.3in;padding-bottom:.12in;border-bottom:2.6pt solid var(--navy);position:relative;}
 .sh-logo{flex:none;}
 .sh-logo svg{height:.6in;width:auto;display:block;}
 .sh-id{flex:1;min-width:0;}
-.eyebrow{font:900 var(--t-cap) var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--sky2);line-height:1;margin-bottom:.06in;}
-.eyebrow .dotsep{color:rgba(0,39,58,.4);padding:0 .3em;}
 .addr{font-family:var(--serif);font-weight:700;color:var(--navy);line-height:1.02;font-size:var(--t-h1);letter-spacing:.002em;white-space:nowrap;}
 .unit-lt{font:300 14pt var(--sans);color:rgba(0,39,58,.58);margin-top:.03in;letter-spacing:.012em;}
 .sh-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:.05in;text-align:right;}
-.ft-r .al{font:900 var(--t-cap) var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(0,39,58,.7);}
-.ft-r .av{font:900 26pt var(--sans);color:var(--navy);letter-spacing:.01em;margin-top:.02in;line-height:1;white-space:nowrap;}
+.ft-r .al{font:900 calc(var(--t-cap) * var(--k-price)) var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(0,39,58,.7);}
+.ft-r .av{font:900 calc(26pt * var(--k-price)) var(--sans);color:var(--navy);letter-spacing:.01em;margin-top:.02in;line-height:1;white-space:nowrap;}
 .webid{font:300 8pt var(--sans);letter-spacing:.22em;text-transform:uppercase;color:rgba(0,39,58,.66);}
 /* the marketing one-liner spans the full width just under the header rule */
-.f-lede{font:300 11pt var(--body);font-style:italic;color:rgba(0,39,58,.72);line-height:1.4;margin-top:.1in;max-width:8.2in;}
+.f-lede{font:300 calc(11pt * var(--k-lede)) var(--body);font-style:italic;color:rgba(0,39,58,.72);line-height:1.4;margin-top:.1in;max-width:8.2in;}
 /* ownership box — back-page header, solid navy with white text */
 .b-own{background:var(--navy);color:#fff;font:900 8.5pt var(--sans);letter-spacing:.08em;text-transform:uppercase;padding:.055in .13in .05in;}
 .b-own .dotsep{color:var(--sky);padding:0 .32em;}
@@ -274,8 +300,8 @@ body.bleed .safe{display:block;}
 .f-left .col-h{margin-bottom:.08in;}
 /* fit blocks — JS sets the container font-size so content fills its space; children scale in em */
 .fitblk{min-height:0;overflow:hidden;}
-.res-fit{flex:1;font-size:var(--t-body);display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;}
-.bld-fit{flex:1;font-size:var(--t-body);}
+.res-fit{flex:1;font-size:calc(var(--t-body) * var(--k-res));display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;}
+.bld-fit{flex:1;font-size:calc(var(--t-body) * var(--k-bld));}
 /* the condo / co-op statement — a boxed callout at the top of The Residence */
 .r-note{align-self:flex-start;font:600 .82em var(--body);font-style:italic;color:var(--navy);border:1.2pt solid rgba(83,199,220,.7);background:rgba(83,199,220,.09);padding:.3em .6em;margin:0 0 .5em;}
 .r-spec{display:flex;gap:1em;padding:.3em 0;border-bottom:.6pt solid var(--hairline);align-items:baseline;}
@@ -298,11 +324,12 @@ body.bleed .safe{display:block;}
 .f-right.no-photo .f-bldg{flex:1;min-height:0;border-top:0;margin-top:0;padding-top:0;}
 /* stat strip — one box per stat: icon + label left, a dotted leader, value pinned right */
 .strip{display:flex;border-top:.8pt solid var(--hairline);border-bottom:.8pt solid var(--hairline);margin-bottom:.13in;flex:none;}
-.scell{flex:1;display:flex;align-items:center;gap:.09in;padding:.11in .14in;border-left:.8pt solid var(--hairline);min-width:0;font-size:15.5pt;}
+.scell{flex:1;display:flex;align-items:center;gap:.09in;padding:.11in .14in;border-left:.8pt solid var(--hairline);min-width:0;font-size:calc(15.5pt * var(--k-stats));}
 .scell:first-child{border-left:0;padding-left:.02in;}
 .scell .slb{display:flex;align-items:center;gap:.1in;flex:none;}
 .scell .slb svg{width:1.1em;height:1.1em;color:var(--sky2);flex:none;}
-.scell .lead{flex:1;min-width:.16in;align-self:center;border-bottom:1.6pt dotted rgba(0,39,58,.3);}
+/* the leader gives way first: at .16in a long label (4 BATHROOMS) pushed its box 3px past the column */
+.scell .lead{flex:1;min-width:.05in;align-self:center;border-bottom:1.6pt dotted rgba(0,39,58,.3);}
 .scell .sv{flex:none;font:900 1em var(--sans);color:var(--navy);white-space:nowrap;}
 .scell .slabel{flex:none;font:800 .88em var(--sans);letter-spacing:.1em;text-transform:uppercase;color:rgba(0,39,58,.6);}
 /* QR (back page) */
@@ -355,8 +382,29 @@ body.bleed .safe{display:block;}
 .amen-run .adot{color:var(--sky2);font-weight:700;padding:0 .35em;}
 /* floorplan — no title, image fills the column; the note runs vertically up the right edge */
 .fp-area{flex:1;min-height:0;display:flex;align-items:stretch;gap:.07in;}
-.fp-wrap{flex:1;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;background:#fff;border:.6pt solid rgba(0,39,58,.18);padding:.08in;}
-.fp-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+/* The frame is the crop. At zoom 1 the whole plan is contained in it; zoomed in,
+   the image scales about its transform-origin, which is the pan position (x%/y%
+   behaves exactly like object-position), and the frame clips what falls outside.
+   A transform never changes layout, so cropping cannot disturb the autofit. */
+.fp-wrap{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;background:#fff;border:.6pt solid rgba(0,39,58,.18);}
+.fp-wrap img{position:absolute;left:.05in;top:.05in;width:calc(100% - .1in);height:calc(100% - .1in);object-fit:contain;display:block;user-select:none;-webkit-user-drag:none;}
+@media screen{
+  .fp-wrap.is-zoomed{cursor:grab;}
+  .fp-wrap.is-panning{cursor:grabbing;}
+  .fp-wrap:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
+  /* the crop controls — hover or keyboard focus shows them; they never print */
+  .fp-tools{position:absolute;top:7px;left:7px;z-index:6;display:none;align-items:center;gap:2px;
+    background:rgba(0,39,58,.78);border-radius:6px;padding:2px;}
+  .fp-wrap:hover .fp-tools,.fp-wrap:focus-within .fp-tools{display:flex;}
+  .fp-tools button{width:24px;height:24px;border:0;border-radius:4px;background:transparent;color:#fff;
+    font:700 14px/1 var(--sans);cursor:pointer;padding:0;}
+  .fp-tools button.fit{width:auto;padding:0 7px;font:800 9px var(--sans);letter-spacing:.12em;text-transform:uppercase;}
+  .fp-tools button:hover{background:var(--sky);color:var(--navy);}
+  .fp-tools button:focus-visible{outline:2px solid var(--sky);outline-offset:1px;}
+  .fp-tools button:disabled{opacity:.35;cursor:default;background:transparent;color:#fff;}
+  .fp-tools .fp-z{min-width:38px;text-align:center;font:400 10px var(--ui-mono);color:#fff;}
+}
+@media print{ .fp-tools{display:none !important;} }
 .fp-note{flex:none;align-self:center;writing-mode:vertical-rl;transform:rotate(180deg);font:300 7pt var(--body);font-style:italic;letter-spacing:.02em;color:rgba(0,39,58,.55);}
 .fp-empty{flex:1;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(0,39,58,.2);color:rgba(0,39,58,.4);font:300 9pt var(--body);font-style:italic;}
 /* agents band — square headshots, serif names, hairline dividers */
@@ -370,27 +418,27 @@ body.bleed .safe{display:block;}
 .ag-card:first-child{padding-left:0;border-left:0;}
 .ag-card img{object-fit:cover;flex:none;width:1.3in;height:1.3in;}
 .ag-ct{min-width:0;}
-.ag-card .an{font-family:var(--serif);font-weight:700;font-size:16pt;color:var(--navy);line-height:1.12;}
-.ag-card .at{font:800 7.2pt var(--sans);letter-spacing:.15em;text-transform:uppercase;color:rgba(0,39,58,.6);margin:.045in 0 .055in;line-height:1.35;}
-.ag-card .ac{font:500 9pt var(--body);color:var(--navy);line-height:1.55;}
+.ag-card .an{font-family:var(--serif);font-weight:700;font-size:calc(16pt * var(--k-ag));color:var(--navy);line-height:1.12;}
+.ag-card .at{font:800 calc(7.2pt * var(--k-ag)) var(--sans);letter-spacing:.15em;text-transform:uppercase;color:rgba(0,39,58,.6);margin:.045in 0 .055in;line-height:1.35;}
+.ag-card .ac{font:500 calc(9pt * var(--k-ag)) var(--body);color:var(--navy);line-height:1.55;}
 .ag-band[data-n="1"] .ag-card img{width:1.4in;height:1.4in;}
-.ag-band[data-n="1"] .ag-card .an{font-size:18pt;}
-.ag-band[data-n="1"] .ag-card .at{font-size:8pt;}
-.ag-band[data-n="1"] .ag-card .ac{font-size:10pt;}
+.ag-band[data-n="1"] .ag-card .an{font-size:calc(18pt * var(--k-ag));}
+.ag-band[data-n="1"] .ag-card .at{font-size:calc(8pt * var(--k-ag));}
+.ag-band[data-n="1"] .ag-card .ac{font-size:calc(10pt * var(--k-ag));}
 .ag-band[data-n="3"] .ag-card{gap:.12in;padding:0 .15in;}
 .ag-band[data-n="3"] .ag-card img{width:.78in;height:.78in;}
-.ag-band[data-n="3"] .ag-card .an{font-size:10pt;}
-.ag-band[data-n="3"] .ag-card .at{font-size:5.6pt;}
-.ag-band[data-n="3"] .ag-card .ac{font-size:7.2pt;}
+.ag-band[data-n="3"] .ag-card .an{font-size:calc(10pt * var(--k-ag));}
+.ag-band[data-n="3"] .ag-card .at{font-size:calc(5.6pt * var(--k-ag));}
+.ag-band[data-n="3"] .ag-card .ac{font-size:calc(7.2pt * var(--k-ag));}
 /* three agents — the QR matches the headshot height so the photos stay flush on the footer */
 .ag-band[data-n="3"] .ag-qr .qr-box{width:.78in;height:.78in;}
 /* four agents — badge layout: headshot stacked over the text */
 .ag-band[data-n="4"] .ag-card{flex-direction:column;justify-content:flex-end;text-align:center;gap:.07in;padding:0 .1in;}
 .ag-band[data-n="4"] .ag-ct{width:100%;}
 .ag-band[data-n="4"] .ag-card img{width:.8in;height:.8in;}
-.ag-band[data-n="4"] .ag-card .an{font-size:10pt;}
+.ag-band[data-n="4"] .ag-card .an{font-size:calc(10pt * var(--k-ag));}
 .ag-band[data-n="4"] .ag-card .at{display:none;}
-.ag-band[data-n="4"] .ag-card .ac{font-size:7.2pt;line-height:1.5;margin-top:.03in;}
+.ag-band[data-n="4"] .ag-card .ac{font-size:calc(7.2pt * var(--k-ag));line-height:1.5;margin-top:.03in;}
 /* (the taller 4-agent band squeezes the columns above; the numbers autofit absorbs it) */
 .ag-qr{flex:none;display:flex;align-items:center;gap:.14in;border-left:.6pt solid var(--hairline);padding-left:.26in;}
 .ag-qr .qr-box{width:.9in;height:.9in;}
@@ -457,7 +505,7 @@ body.bleed .crop{display:block;}
     <summary>Listing files <span class="hint">the Word doc fills the sections below</span></summary>
     <div class="sec-in">
       <div class="qb-stack">
-        <div class="drop" id="docxDrop">
+        <div class="drop" id="docxDrop" tabindex="0" role="button" aria-label="Add the listing Word document">
           <div class="d-idle">
             <div class="d-big">Drop the Word document</div>
             <div class="d-sub">or click to browse</div>
@@ -467,17 +515,17 @@ body.bleed .crop{display:block;}
         <div class="note" id="docxStatus"></div>
       </div>
       <div class="qb-pair">
-        <div class="drop" id="phDrop">
+        <div class="drop" id="phDrop" tabindex="0" role="button" aria-label="Add photos">
           <div class="d-idle">
             <div class="d-big">Photos</div>
             <div class="d-sub">drag one onto the sheet to place it</div>
           </div>
           <div class="d-loaded"><span class="d-check">&#10003;</span><span class="d-name" id="phCount">Photos</span><button class="d-x" data-clear="photo" title="Remove all photos">&#10005;</button></div>
         </div>
-        <div class="drop" id="fpDrop">
+        <div class="drop" id="fpDrop" tabindex="0" role="button" aria-label="Add the floorplan">
           <div class="d-idle">
             <div class="d-big">Floorplan</div>
-            <div class="d-sub">header strip auto-cropped</div>
+            <div class="d-sub">margins trimmed &middot; crop it on the sheet</div>
           </div>
           <div class="d-loaded"><span class="d-check">&#10003;</span><span class="d-name">Floorplan</span><button class="d-x" data-clear="floorplan" title="Remove floorplan">&#10005;</button></div>
         </div>
@@ -558,13 +606,23 @@ body.bleed .crop{display:block;}
         <div class="field"><label>Ceilings</label><input type="text" data-field="residence.ceiling" placeholder="High beamed"></div>
         <div class="field"><label>Climate</label><input type="text" data-field="residence.climate" placeholder="Central heat &amp; AC"></div>
       </div>
-      <div class="field"><label>Features — one per line</label><textarea data-field="residence.features" rows="8" placeholder="Windowed chef's kitchen&#10;Custom cabinetry&#10;Wine chiller"></textarea></div>
+      <div class="field"><label>Features — one per line</label><textarea data-field="residence.features" rows="8" placeholder="Windowed chef's kitchen&#10;Custom cabinetry&#10;Wine chiller"></textarea>
+        <div class="note" id="featNote" aria-live="polite"></div></div>
     </div>
   </details>
 
   <details class="ed-sec">
     <summary>Agents <span class="hint">1&ndash;4, in order</span></summary>
     <div class="sec-in"><div id="agentPick"></div></div>
+  </details>
+
+  <details class="ed-sec" id="textSec">
+    <summary>Text size <span class="hint">per section &middot; 100% is auto-fit</span></summary>
+    <div class="sec-in">
+      <div id="tsRows"></div>
+      <div class="field"><div class="note">Sizes are relative to what the sheet picks on its own, so they keep working as the text changes. A section only grows as far as it still fits &mdash; making text bigger never cuts anything to make room.</div></div>
+      <div class="btn-row"><button type="button" class="btn sm ghost" id="tsReset">Reset all to auto</button></div>
+    </div>
   </details>
 
   </div>
@@ -606,17 +664,17 @@ body.bleed .crop{display:block;}
 </div><!-- /app -->
 
 <div id="warnOverlay" hidden>
-  <div class="warn-box">
-    <div class="w-title">Hold on &mdash; this sheet is missing:</div>
+  <div class="warn-box" role="alertdialog" aria-modal="true" aria-labelledby="warnTitle" aria-describedby="warnList">
+    <div class="w-title" id="warnTitle">Hold on &mdash; this sheet is missing:</div>
     <ul id="warnList"></ul>
-    <div class="w-sub">Add what&rsquo;s missing in the Every Listing bar, or print anyway.</div>
+    <div class="w-sub">Add what&rsquo;s missing under Listing files, or print anyway.</div>
     <div class="btn-row">
       <button class="btn ghost" id="warnBack">Go back</button>
       <button class="btn" id="warnPrint">Print anyway</button>
     </div>
   </div>
 </div>
-<div id="toasts"></div>
+<div id="toasts" role="status" aria-live="polite"></div>
 </main>
 <script src="../../assets/js/photo-dnd.js"></script>
 <script src="../../assets/js/qr.js"></script>
@@ -666,6 +724,12 @@ function blankUnit(){
        folds those into the tray. */
     photos:[], heroIndex:0, secondaryIndex:null,
     floorplan:null,
+    /* the floorplan's crop inside its frame: zoom 1 shows the whole plan; once
+       zoomed in, x/y (0–100) say where the view sits, like object-position */
+    floorplanView:{zoom:1, x:50, y:50},
+    /* manual text size per section, in percent of the autofit (see TEXT_SECTIONS);
+       a section left out is at 100 — auto */
+    textScale:{},
     price:'', beds:'', baths:'',
     maintenance:'', commonCharges:'', taxesMonthly:'', taxDeductible:'',
     maxFinancing:'', assessments:'', capitalContributions:'', flipTax:'',
@@ -705,11 +769,29 @@ function displayPrice(s){
   if(n!=null && /^[\s$\d,.]+$/.test(String(s).trim())) return fmtMoney(n);
   return s;
 }
+/* A bare figure, optionally with its period: "5,588", "5,588/mo", "$22,080 per year". */
+const BARE_MONEY = /^\s*\$?\s*\d[\d,]*(\.\d+)?\s*(\/\s*(mo|month|yr|year)\.?|per\s+(month|year)|monthly|annually|a\s+(month|year))?\s*$/i;
+/* The monthly figure in a free-text money field, or null.
+   "$220.35/mo through July 2027" gives 220.35. The $ is optional when the
+   field is nothing but a figure: requiring it meant real estate taxes typed as
+   "5,588/mo" were silently left out of Est. Monthly Carrying — the sample
+   listing printed $6,128 where the carrying cost is $11,716. Without a $, a
+   number inside a sentence ("through July 2027") is not read as money.
+   A yearly figure counts as a twelfth; a one-time or total amount is not a
+   monthly cost and gives null. */
 function monthlyAmount(s){
-  // pull the first $x(,xxx)(.xx) figure out of a free-text field like "$220.35/mo thru July 2027"
-  if(!s) return null;
-  const m = String(s).replace(/,/g,'').match(/\$\s*(\d+(?:\.\d+)?)/);
-  return m ? parseFloat(m[1]) : null;
+  if(blankish(s)) return null;
+  const t = String(s).replace(/,/g,'');
+  if(/one[\s-]?time|lump|in\s+full|\btotal\b/i.test(t)) return null;
+  const m = t.match(/\$\s*(\d+(?:\.\d+)?)/) || (BARE_MONEY.test(s) && t.match(/(\d+(?:\.\d+)?)/));
+  if(!m) return null;
+  const n = parseFloat(m[1]);
+  return /\/\s*(yr|year)|per\s+year|annual|yearly|a\s+year/i.test(t) ? n / 12 : n;
+}
+/* the ledger prints money as typed, but a bare figure gets its $ */
+function moneyText(s){
+  const t = String(s).trim();
+  return BARE_MONEY.test(t) && !/^\$/.test(t) ? '$' + t : t;
 }
 function blankish(v){
   const t = String(v==null?'':v).trim();
@@ -833,31 +915,33 @@ function ledgerRows(){
   L.push({lab:'Asking Price', val: state.price ? esc(displayPrice(state.price)) : '—', lead:true});
   if(state.ownership === 'co-op'){
     if(!blankish(state.maintenance)){
-      L.push({lab:'Maintenance', val: esc(state.maintenance)});
+      L.push({lab:'Maintenance', val: esc(moneyText(state.maintenance))});
       L.push({note:'Real estate taxes are included in the monthly maintenance.'});
       if(!blankish(state.taxDeductible)) L.push({note:`Approximately ${esc(state.taxDeductible)} of maintenance is tax-deductible.`});
     }
   } else {
-    if(!blankish(state.commonCharges)) L.push({lab:'Common Charges', val: esc(state.commonCharges)});
-    if(!blankish(state.taxesMonthly)) L.push({lab:'Real Estate Taxes', val: esc(state.taxesMonthly)});
+    if(!blankish(state.commonCharges)) L.push({lab:'Common Charges', val: esc(moneyText(state.commonCharges))});
+    if(!blankish(state.taxesMonthly)) L.push({lab:'Real Estate Taxes', val: esc(moneyText(state.taxesMonthly))});
   }
   if(!blankish(state.maxFinancing)) L.push({lab:'Max Financing', val: esc(state.maxFinancing)});
-  L.push({lab:'Assessments', val: blankish(state.assessments) ? 'None' : esc(state.assessments)});
+  L.push({lab:'Assessments', val: blankish(state.assessments) ? 'None' : esc(moneyText(state.assessments))});
   if(!blankish(state.capitalContributions)) L.push({lab:'Capital Contribution', val: esc(state.capitalContributions)});
   if(!blankish(state.flipTax)) L.push({lab:'Flip Tax', val: esc(state.flipTax)});
   return L;
 }
+/* Est. Monthly Carrying, and the names of what went into it — the footnote
+   lists exactly those, so it never claims taxes or an assessment the total
+   does not contain. */
 function carrying(){
   const items = [];
-  if(state.ownership === 'co-op'){
-    const m = monthlyAmount(state.maintenance); if(m) items.push(m);
-  } else {
-    const c = monthlyAmount(state.commonCharges); if(c) items.push(c);
-    const t = monthlyAmount(state.taxesMonthly); if(t) items.push(t);
-  }
-  const a = monthlyAmount(state.assessments); if(a) items.push(a);
+  const add = (v, what) => { const n = monthlyAmount(v); if(n) items.push({n, what}); };
+  if(state.ownership === 'co-op') add(state.maintenance, 'maintenance');
+  else { add(state.commonCharges, 'common charges'); add(state.taxesMonthly, 'taxes'); }
+  add(state.assessments, 'assessments');
   if(!items.length) return null;
-  return items.reduce((x,y)=>x+y,0);
+  const names = items.map(i => i.what);
+  const said = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names[0];
+  return { total: items.reduce((x, i) => x + i.n, 0), what: said.charAt(0).toUpperCase() + said.slice(1) };
 }
 function specRow(lab, val){
   return blankish(val) ? '' : `<div class="r-spec"><span class="sl">${lab}</span><span class="sv">${esc(val)}</span></div>`;
@@ -879,13 +963,14 @@ function renderBack(){
   const carry = carrying();
   const carryHtml = carry ? `
     <div class="lg-total">
-      <div class="lg-row"><span class="lg-lab">Est. Monthly Carrying</span><span class="lg-val">${fmtMoney(carry)}</span></div>
-      <div class="lg-foot">${state.ownership==='co-op'?'Maintenance & assessments':'Common charges, taxes & assessments'}; excludes mortgage financing.</div>
+      <div class="lg-row"><span class="lg-lab">Est. Monthly Carrying</span><span class="lg-val">${fmtMoney(carry.total)}</span></div>
+      <div class="lg-foot">${carry.what}; excludes mortgage financing.</div>
     </div>` : '';
 
   const fp = state.floorplan
     ? `<div class="fp-area">
-         <div class="fp-wrap"><img src="${esc(state.floorplan)}" alt="Floorplan"></div>
+         <div class="fp-wrap${state.floorplanView.zoom > 1 ? ' is-zoomed' : ''}" tabindex="0" role="group"
+              aria-label="Floorplan crop. Drag to move it, plus and minus to zoom, 0 to fit."><img src="${esc(state.floorplan)}" alt="Floorplan" draggable="false" style="${fpTransform(state.floorplanView)}"></div>
          <div class="fp-note">${GVC_LEGAL.FLOORPLAN_SHORT}</div>
        </div>`
     : `<div class="fp-empty">Floorplan available upon request</div>`;
@@ -954,11 +1039,12 @@ function fitLogos(){
    TEXT AUTOFIT — type scales so content fills its allotted space
    ============================================================ */
 function fitBlock(el, minPt, maxPt){
-  // largest container font-size where nothing overflows (children scale in em)
-  if(!el) return true;
+  // largest container font-size where nothing overflows (children scale in em);
+  // returns the size it settled on, in pt
+  if(!el) return null;
   const fits = ()=> el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
   el.style.fontSize = maxPt + 'pt';
-  if(fits()) return true;
+  if(fits()) return maxPt;
   let lo = minPt, hi = maxPt;
   for(let k=0;k<7;k++){
     const mid = (lo+hi)/2;
@@ -966,23 +1052,80 @@ function fitBlock(el, minPt, maxPt){
     if(fits()) lo = mid; else hi = mid;
   }
   el.style.fontSize = lo.toFixed(2) + 'pt';
-  return fits();
+  return lo;
 }
 function fitHeading(el, minPt, maxPt){
-  // one-line heading sized to fill its column; wraps only if the minimum still overflows
-  if(!el) return;
+  // one-line heading sized to fill its column; wraps only if the minimum still overflows.
+  // Returns the size it settled on, in pt.
+  if(!el) return null;
   el.style.whiteSpace = 'nowrap';
   const avail = el.clientWidth;
-  let lo = minPt, hi = maxPt;
-  for(let k=0;k<7;k++){
-    const mid = (lo+hi)/2;
-    el.style.fontSize = mid.toFixed(2) + 'pt';
-    if(el.scrollWidth <= avail) lo = mid; else hi = mid;
+  const at = pt => { el.style.fontSize = pt.toFixed(2) + 'pt'; return el.scrollWidth <= avail; };
+  let lo = minPt;
+  if(at(maxPt)) lo = maxPt;
+  else {
+    let hi = maxPt;
+    for(let k=0;k<7;k++){ const mid = (lo+hi)/2; if(at(mid)) lo = mid; else hi = mid; }
+    at(lo);
   }
-  el.style.fontSize = lo.toFixed(2) + 'pt';
   if(el.scrollWidth > avail) el.style.whiteSpace = 'normal';
+  return lo;
+}
+
+/* ============================================================
+   MANUAL TEXT SIZE — per section, on top of the autofit.
+
+   The autofit still decides every size first, exactly as it always has; a
+   section's percentage then scales the size it picked. So 100% is today's
+   sheet, and 90% stays "a little smaller than it would be" as the text
+   changes, rather than pinning a point size that stops fitting the moment a
+   feature is added.
+
+   Smaller always fits. Bigger is honoured only as far as the section still
+   fits its space — the largest multiplier up to the one asked for — and the
+   panel says when it had to stop short. Growing text never trims content.
+   ============================================================ */
+const TEXT_SECTIONS = [
+  // probe: the text whose size the panel reports
+  {key:'address',   label:'Address',          side:'Front', sel:'.addr, .unit-lt, .b-head .ba', probe:'#sheetFront .addr'},
+  {key:'price',     label:'Asking price',     side:'Front', sel:'.ft-r',     probe:'#sheetFront .ft-r .av'},
+  {key:'lede',      label:'Positioning line', side:'Front', sel:'.f-lede',   probe:'#sheetFront .f-lede'},
+  {key:'stats',     label:'Beds & baths',     side:'Front', sel:'.strip',    probe:'#sheetFront .scell'},
+  {key:'residence', label:'The Residence',    side:'Front', sel:'.res-fit',  probe:'#sheetFront .res-fit'},
+  {key:'building',  label:'The Building',     side:'Front', sel:'.bld-fit',  probe:'#sheetFront .bld-fit'},
+  {key:'numbers',   label:'The Numbers',      side:'Back',  sel:'.num-fit',  probe:'#sheetBack .num-fit'},
+  {key:'agents',    label:'Agents',           side:'Back',  sel:'.ag-cards', probe:'#sheetBack .ag-card .ac'},
+];
+const TS_MIN = 70, TS_MAX = 130, TS_STEP = 5;
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function textPct(key){
+  const v = Math.round(Number(state.textScale && state.textScale[key]));
+  return Number.isFinite(v) && v ? clampN(v, TS_MIN, TS_MAX) : 100;
+}
+const textK = key => textPct(key) / 100;
+/* what the last fit actually managed, per section — the panel reads this */
+let textFit = {};
+
+/* The largest multiplier up to `want` at which ok() still holds, applied via
+   apply(). Shrinking always fits, so only growth is searched; the autofit's
+   own size (1) is the known-good floor. */
+function growTo(apply, ok, want){
+  apply(want);
+  if(want <= 1 || ok()) return want;
+  let lo = 1, hi = want;
+  for(let k=0;k<7;k++){ const m = (lo+hi)/2; apply(m); if(ok()) lo = m; else hi = m; }
+  apply(lo);
+  return lo;
+}
+/* a heading that the autofit sized to `auto` pt, scaled by k — growth only
+   as far as it still fits on one line */
+function scaleHeading(el, auto, k){
+  if(!el || auto == null || k === 1) return 1;
+  if(k < 1){ el.style.fontSize = (auto * k).toFixed(2) + 'pt'; return k; }
+  return fitHeading(el, auto, auto * k) / auto;
 }
 let warnedTrim = false;
+let cutFeatures = 0;   // feature lines the last render had to leave off the sheet
 function fitFrontBody(){
   // The residence (left column) and the building band (right, beneath the hero) share
   // ONE body size — var(--t-body) — so a residence bullet and a building bullet always
@@ -1000,6 +1143,11 @@ function fitFrontBody(){
   const bld   = right && right.querySelector('.bld-fit');
   if(!trim) return;
   if(right) right.classList.remove('no-photo');  // reset to the photo-on-top state each render
+  cutFeatures = 0;
+  // the autofit runs at the agent's neutral size; their own sizes go on after
+  const setR = k => trim.style.setProperty('--k-res', k.toFixed(3));
+  const setB = k => trim.style.setProperty('--k-bld', k.toFixed(3));
+  setR(1); setB(1);
   const set  = pt => trim.style.setProperty('--t-body', pt.toFixed(2) + 'pt');
   const fits = el => !el || (el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
 
@@ -1027,6 +1175,29 @@ function fitFrontBody(){
     }
   }
 
+  // 2b) the agent's own sizes, as multiples of that shared fit. Each column
+  //     answers to its own limit: the residence must fit its column; the
+  //     building must leave the photo its minimum (or, with the photo already
+  //     gone, fit the column it took over). Smaller building text can hand
+  //     the photo back its room, so that case is tried first.
+  const kR = textK('residence'), kB = textK('building');
+  let gotR = 1, gotB = 1;
+  if(res && kR !== 1) gotR = growTo(setR, () => fits(res), kR);
+  if(bld && kB !== 1){
+    if(right.classList.contains('no-photo') && kB < 1){
+      setB(kB); gotB = kB;
+      right.classList.remove('no-photo');
+      if(!(photo && heroOK())) right.classList.add('no-photo');
+    }else if(right.classList.contains('no-photo')){
+      gotB = growTo(setB, () => fits(bld), kB);
+    }else{
+      gotB = growTo(setB, () => heroOK(), kB);
+    }
+  }
+  const body = parseFloat(trim.style.getPropertyValue('--t-body')) || 10;
+  textFit.residence = res ? {want:kR, got:gotR, pt: body * gotR} : null;
+  textFit.building  = bld ? {want:kB, got:gotB, pt: body * gotB} : null;
+
   // 3) last resort — trim residence features, then building amenities, if MIN still overflows
   if(res && !fits(res)){
     const feats = [...res.querySelectorAll('.r-feat')];
@@ -1044,6 +1215,7 @@ function fitFrontBody(){
       warnedTrim = true;
       toast(`${removed} feature line${removed>1?'s':''} didn't fit — trim the Residence list in the editor to choose what shows.`);
     }
+    cutFeatures = removed;
   }
   if(right && right.classList.contains('no-photo') && bld && !fits(bld)){
     const run = bld.querySelector('.amen-run');
@@ -1089,23 +1261,85 @@ function sayBackRoom(fits){
   const el = $('#backNote');
   if(!el) return;
   el.textContent = (!fits && backPhoto())
-    ? 'No room for the back photo on this sheet — shorten the residence text or trim a feature.'
+    ? 'No room for the back photo on this sheet — shorten the residence text, trim a feature, or make The Residence smaller under Text size.'
+    : '';
+}
+/* The toast about cut features fires once a session; this stays for as long
+   as it is true, beside the list it is about. */
+function sayCutFeatures(){
+  const el = $('#featNote');
+  if(el) el.textContent = cutFeatures
+    ? `${cutFeatures} feature line${cutFeatures > 1 ? 's' : ''} did not fit and are left off the sheet — trim the list, or make The Residence smaller under Text size.`
     : '';
 }
 function fitSheets(){
+  textFit = {};
+  const front = document.querySelector('#sheetFront .trim');
+  const back  = document.querySelector('#sheetBack .trim');
+  const setK = (el, name) => k => el && el.style.setProperty(name, k.toFixed(3));
+  const noSpill = els => () => els.every(e => e.scrollWidth <= e.clientWidth + 1);
+  const report = (key, want, got, present) => {
+    textFit[key] = present ? {want, got, pt: null} : null;
+  };
+
+  // Sizes that are not fitted go on first: they change how much room is left
+  // for everything that is. The price and the one-liner have no limit of their
+  // own — the header and the columns below give way to them.
+  setK(front, '--k-price')(textK('price'));
+  report('price', textK('price'), textK('price'), !!(front && front.querySelector('.ft-r')));
+  setK(front, '--k-lede')(textK('lede'));
+  report('lede', textK('lede'), textK('lede'), !!(front && front.querySelector('.f-lede')));
+  // beds & baths grow only while each box still holds its line
+  const cells = front ? [...front.querySelectorAll('.scell')] : [];
+  report('stats', textK('stats'),
+    cells.length ? growTo(setK(front, '--k-stats'), noSpill(cells), textK('stats')) : 1, cells.length > 0);
+
+  const kA = textK('address');
   const addr = document.querySelector('#sheetFront .addr');
-  fitHeading(addr, 16, 30);
+  const gotA = scaleHeading(addr, fitHeading(addr, 16, 30), kA);
+  report('address', kA, gotA, !!addr);
   const unit = document.querySelector('#sheetFront .unit-lt');
   if(addr && unit){
     // the unit line tracks the fitted address so the pairing keeps its hierarchy
     const pt = parseFloat(addr.style.fontSize) || 30;
-    unit.style.fontSize = Math.max(9.5, Math.min(14, pt * .47)).toFixed(2) + 'pt';
+    unit.style.fontSize = Math.max(9.5 * Math.min(1, kA), Math.min(14 * Math.max(1, kA), pt * .47)).toFixed(2) + 'pt';
   }
-  fitHeading(document.querySelector('#sheetBack .b-head .ba'), 13, 19);
+  const ba = document.querySelector('#sheetBack .b-head .ba');
+  scaleHeading(ba, fitHeading(ba, 13, 19), kA);
+
   fitFrontBody();
   fitSecondary();
+
+  // the agents band sits under the ledger's column, so it is sized first. Its
+  // longest line is an email, which cannot wrap; it may run into its card's own
+  // right padding (a long one already does, at 100%, beside a QR code) but has
+  // to stop .06in short of the divider to the next card or the QR.
+  const cards = back ? [...back.querySelectorAll('.ag-card')] : [];
+  const cardsHold = () => cards.every(card => {
+    const ct = card.querySelector('.ag-ct');
+    const room = parseFloat(getComputedStyle(card).paddingRight) - .06 * 96;
+    return !ct || ct.scrollWidth - ct.clientWidth <= Math.max(room, 0) + 1;
+  });
+  report('agents', textK('agents'),
+    cards.length ? growTo(setK(back, '--k-ag'), cardsHold, textK('agents')) : 1, cards.length > 0);
+
   // the back-page ledger never clips — it shrinks to fit its column (10pt is full size)
-  fitBlock(document.querySelector('#sheetBack .num-fit'), 7, 10);
+  const num = document.querySelector('#sheetBack .num-fit');
+  const kN = textK('numbers');
+  const autoN = fitBlock(num, 7, 10);
+  let gotN = 1;
+  if(num && kN !== 1){
+    if(kN < 1){ num.style.fontSize = (autoN * kN).toFixed(2) + 'pt'; gotN = kN; }
+    else gotN = fitBlock(num, autoN, autoN * kN) / autoN;
+  }
+  report('numbers', kN, gotN, !!num);
+
+  // what each section actually printed at, for the panel
+  TEXT_SECTIONS.forEach(s => {
+    const f = textFit[s.key]; if(!f) return;
+    const el = document.querySelector(s.probe);
+    f.pt = el ? parseFloat(getComputedStyle(el).fontSize) * 72 / 96 : null;
+  });
 }
 let renderQueued = false;
 function render(){
@@ -1115,6 +1349,9 @@ function render(){
     renderQueued = false;
     renderFront(); renderBack(); fitLogos(); fitSheets(); layoutPreview();
     paintSlotTools();     // the slots were just rebuilt
+    paintFloorplanTools();
+    paintTextPanel();     // reports what each section managed, and re-lights a hovered one
+    sayCutFeatures();
   };
   // rAF is suspended while the tab is not rendering, so a sheet built in a
   // background tab would sit empty until the agent came back to it. The
@@ -1155,7 +1392,18 @@ window.addEventListener('resize', layoutPreview);
 /* ============================================================
    FORM BINDING
    ============================================================ */
+/* The Web ID is the final group of digits in the listing URL — derived, never
+   typed. It used to be worked out only while typing in the URL box, so a
+   property loaded from the library (its URL comes from the shared facts)
+   printed no Web ID at all, or the one saved with an older copy of the sheet
+   beside a newer link. Every path that changes the sheet comes through here. */
+function webIdOf(url){
+  const m = String(url || '').replace(/[?#].*$/,'').match(/(\d+)\/?\s*$/);
+  return m ? m[1] : '';
+}
 function hydrateForm(){
+  normalizeLayout();
+  state.webId = webIdOf(state.listingUrl);
   $$('[data-field]').forEach(el=>{
     const v = getPath(state, el.dataset.field);
     if(el.tagName==='TEXTAREA' && Array.isArray(v)) el.value = v.join('\n');
@@ -1167,6 +1415,7 @@ function hydrateForm(){
   renderAgentPicker();
   renderTray();
   syncDropZones();
+  syncTextPanel();
 }
 function syncDropZones(){
   $('#docxDrop').classList.toggle('loaded', !!state.docxName);
@@ -1181,7 +1430,7 @@ document.addEventListener('click', e=>{
   e.preventDefault(); e.stopPropagation();
   const what = x.dataset.clear;
   if(what==='photo'){ state.photos=[]; state.heroIndex=0; state.secondaryIndex=null; renderTray(); }
-  if(what==='floorplan'){ state.floorplan=null; }
+  if(what==='floorplan'){ state.floorplan=null; state.floorplanView = normFpView(null); }
   if(what==='docx'){
     // dropping the doc means starting the next listing — clear everything unit-specific
     state = Object.assign(blankUnit(), {agentIds:[...state.agentIds], paper:state.paper, bleed:state.bleed});
@@ -1241,11 +1490,7 @@ document.addEventListener('input', e=>{
   let v = e.target.value;
   if(e.target.tagName==='TEXTAREA' && (f==='building.amenities' || f==='residence.features')) v = v.split('\n');
   setPath(state, f, v);
-  if(f==='listingUrl'){
-    // the Web ID lives in the backend — it's the final grouping of digits in the listing URL
-    const m = String(v).replace(/[?#].*$/,'').match(/(\d+)\/?\s*$/);
-    state.webId = m ? m[1] : '';
-  }
+  if(f==='listingUrl') state.webId = webIdOf(v);
   render();
 });
 $('#ownSeg').addEventListener('click', e=>{
@@ -1275,16 +1520,50 @@ function fileToImage(file){
     img.src = url;
   });
 }
-function reencode(img, maxEdge, quality, srcY){
-  srcY = srcY || 0;
-  const sw = img.naturalWidth, sh = img.naturalHeight - srcY;
-  const r = Math.min(1, maxEdge / Math.max(sw, sh));
-  const w = Math.round(sw*r), h = Math.round(sh*r);
+function reencode(img, maxEdge, quality, crop){
+  // crop: the source rectangle to keep, {x, y, w, h}; the whole image by default
+  const c = crop || {x:0, y:0, w:img.naturalWidth, h:img.naturalHeight};
+  const r = Math.min(1, maxEdge / Math.max(c.w, c.h));
+  const w = Math.round(c.w*r), h = Math.round(c.h*r);
   const cv = document.createElement('canvas'); cv.width=w; cv.height=h;
   const cx = cv.getContext('2d');
   cx.fillStyle='#fff'; cx.fillRect(0,0,w,h);   // flatten transparency, normalize CMYK→RGB
-  cx.drawImage(img, 0, srcY, sw, sh, 0, 0, w, h);
+  cx.drawImage(img, c.x, c.y, c.w, c.h, 0, 0, w, h);
   return cv.toDataURL('image/jpeg', quality);
+}
+/* The drawing's own bounding box inside the rows from srcY down. Plan exports
+   carry wide white margins, and in a frame sized to the whole image those
+   margins are what the page prints — trimming them is the single biggest gain
+   in how large the plan itself appears. Measured on a small copy, which also
+   averages away JPEG specks; anything clearly darker than paper counts,
+   so a compass, a scale bar or a caption is kept. Returns null when there is
+   nothing worth trimming (under 3% a side). */
+function contentBox(img, srcY){
+  try{
+    const W = img.naturalWidth, H = img.naturalHeight - srcY;
+    const s = Math.min(1, 500 / Math.max(W, H));
+    const w = Math.max(1, Math.round(W*s)), h = Math.max(1, Math.round(H*s));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);
+    cx.drawImage(img, 0, srcY, W, H, 0, 0, w, h);
+    const d = cx.getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for(let y=0; y<h; y++) for(let x=0; x<w; x++){
+      const i = (y*w + x) * 4;
+      if(.299*d[i] + .587*d[i+1] + .114*d[i+2] < 232){
+        if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y;
+      }
+    }
+    if(x1 < 0) return null;                          // a blank page: leave it alone
+    const pad = Math.round(Math.max(w, h) * .015);   // a little air around the lines
+    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+    x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+    // worth it when either axis gets back at least 3%
+    if(Math.max(1 - (x1 - x0 + 1) / w, 1 - (y1 - y0 + 1) / h) < .03) return null;
+    return { x: Math.floor(x0 / s), y: srcY + Math.floor(y0 / s),
+             w: Math.min(W, Math.ceil((x1 - x0 + 1) / s)), h: Math.min(H, Math.ceil((y1 - y0 + 1) / s)) };
+  }catch(e){ return null; }
 }
 function floorplanHeaderY(img){
   // GVC floorplan exports lead with a full-width navy title band; find the white
@@ -1319,6 +1598,7 @@ async function addPhotoFiles(files){
   const imgs = [...(files||[])].filter(x=>/^image\//.test(x.type));
   if(!imgs.length) return;
   let added = 0, failed = 0;
+  const first = state.photos.length;
   for(const f of imgs){
     try{
       const img = await fileToImage(f);
@@ -1326,7 +1606,9 @@ async function addPhotoFiles(files){
       added++;
     }catch(e){ failed++; }
   }
-  if(state.heroIndex == null || !state.photos[state.heroIndex]) state.heroIndex = 0;
+  // an empty front takes the first of the photos just dropped — not photo 0,
+  // which may be the one already on the back
+  if((state.heroIndex == null || !state.photos[state.heroIndex]) && state.photos[first]) state.heroIndex = first;
   renderTray(); syncDropZones(); render();
   if(added) toast(added === 1 ? 'Photo added.' : `${added} photos added.`);
   if(failed) toast(`Couldn't read ${failed} ${failed===1?'file':'files'}.`, true);
@@ -1335,13 +1617,25 @@ async function setFloorplanFile(f){
   try{
     const img = await fileToImage(f);
     const cropY = floorplanHeaderY(img);
-    state.floorplan = reencode(img, 2400, .9, cropY);
+    const box = contentBox(img, cropY);
+    state.floorplan = reencode(img, 2400, .9,
+      box || {x:0, y:cropY, w:img.naturalWidth, h:img.naturalHeight - cropY});
+    state.floorplanView = normFpView(null);   // a new plan starts uncropped
     syncDropZones();
-    render(); toast(cropY ? 'Floorplan added — header strip cropped off.' : 'Floorplan added.');
+    render();
+    edited();
+    const did = [cropY && 'header strip cropped off', box && 'margins trimmed'].filter(Boolean).join(', ');
+    toast(did ? `Floorplan added — ${did}. Hover it on the sheet to zoom and move it.`
+              : 'Floorplan added. Hover it on the sheet to zoom and move it.');
   }catch(e){ toast('Could not read the floorplan image.', true); }
 }
 function wireDrop(zone, input, handler, multiple){
   zone.addEventListener('click', ()=>input.click());
+  // the zones are buttons to a keyboard too; the ✕ inside one keeps its own keys
+  zone.addEventListener('keydown', e=>{
+    if(e.target !== zone || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault(); input.click();
+  });
   input.addEventListener('change', ()=>{ handler(multiple ? [...input.files] : input.files[0]); input.value=''; });
   ;['dragover','dragenter'].forEach(ev=>zone.addEventListener(ev, e=>{e.preventDefault(); zone.classList.add('over');}));
   ;['dragleave','drop'].forEach(ev=>zone.addEventListener(ev, e=>{e.preventDefault(); zone.classList.remove('over');}));
@@ -1398,14 +1692,19 @@ function migratePhotos(){
     state.secondaryIndex = state.photos.length - 1;
   }
   delete state.secondaryPhoto;
-  // a sheet with photos but no front one chosen shows the first, as it always did
-  if(state.heroIndex == null && state.photos.length) state.heroIndex = 0;
-  if(state.heroIndex != null && !state.photos[state.heroIndex]){
-    state.heroIndex = state.photos.length ? 0 : null;
-  }
-  if(state.secondaryIndex != null && !state.photos[state.secondaryIndex]){
-    state.secondaryIndex = null;
-  }
+  const valid = i => (i != null && state.photos[i]) ? i : null;
+  state.secondaryIndex = valid(state.secondaryIndex);
+  /* A null front is the agent's own choice ("Unused") and is kept — filling
+     it with photo 0 here put the back photo in both slots whenever photo 0
+     was the back one. A sheet saved before heroIndex existed never reaches
+     this as null: blankUnit() gives it 0 first. */
+  if(state.heroIndex != null && !state.photos[state.heroIndex]) state.heroIndex = firstFreePhoto();
+  if(state.heroIndex != null && state.heroIndex === state.secondaryIndex) state.secondaryIndex = null;
+}
+/* the first photo not already holding the back slot */
+function firstFreePhoto(){
+  const i = state.photos.findIndex((p, j) => p && j !== state.secondaryIndex);
+  return i === -1 ? null : i;
 }
 
 function frontPhoto(){ return state.photos[state.heroIndex] || null; }
@@ -1443,9 +1742,12 @@ function deletePhoto(i){
   i = Number(i);
   state.photos.splice(i, 1);
   const shift = idx => idx == null ? null : (idx === i ? null : (idx > i ? idx - 1 : idx));
+  const wasFront = state.heroIndex === i;
   state.heroIndex = shift(state.heroIndex);
   state.secondaryIndex = shift(state.secondaryIndex);
-  if(state.heroIndex == null && state.photos.length) state.heroIndex = 0;
+  // deleting the front photo refills the front — from a photo that is not on
+  // the back; a front the agent had emptied on purpose stays empty
+  if(wasFront) state.heroIndex = firstFreePhoto();
   renderTray(); syncDropZones(); render();
 }
 
@@ -1510,7 +1812,7 @@ function paintSlotTools(){
       if(ev.target.closest('.ph-grip, .ph-kill')) return;
       PD.reframe(ev, box, { x: p.fx ?? 50, y: p.fy ?? 50 }, Object.assign({}, REFRAME, {
         onMove: pos => { p.fx = Math.round(pos.x); p.fy = Math.round(pos.y); },
-        onEnd: () => { GVC_UNSAVED.touch(); }
+        onEnd: () => { edited(); }
       }));
     });
     PD.grip(box, {
@@ -1519,6 +1821,229 @@ function paintSlotTools(){
       offTitle: 'Take this photo off the sheet'
     });
   });
+}
+
+/* A click or a drag fires no input event, so neither the unsaved-work guard
+   nor the property bar's "Unsaved changes" mark hears about it. Tell both the
+   way they already listen: an input event at the document, which the form
+   binding ignores because the document carries no data-field. */
+function edited(){ document.dispatchEvent(new Event('input')); }
+
+/* ============================================================
+   FLOORPLAN CROP — zoom into the plan and move it inside its frame.
+
+   Saved with the sheet as floorplanView {zoom, x, y}. Everything is a CSS
+   transform on the image (see .fp-wrap), so cropping never changes layout
+   and needs no re-render: the drag and the buttons repaint the one image.
+   ============================================================ */
+const FP_MAX_ZOOM = 3, FP_STEP = 0.1;
+const finiteOr = (v, d) => (v === null || v === '' || !Number.isFinite(+v)) ? d : +v;
+function normFpView(v){
+  v = v && typeof v === 'object' ? v : {};
+  return { zoom: clampN(finiteOr(v.zoom, 1), 1, FP_MAX_ZOOM),
+           x: clampN(finiteOr(v.x, 50), 0, 100), y: clampN(finiteOr(v.y, 50), 0, 100) };
+}
+function fpTransform(v){
+  v = normFpView(v);
+  return v.zoom > 1
+    ? `transform:scale(${v.zoom.toFixed(3)});transform-origin:${v.x.toFixed(2)}% ${v.y.toFixed(2)}%`
+    : '';
+}
+function paintFloorplanTools(){
+  const wrap = document.querySelector('#sheetBack .fp-wrap');
+  const img = wrap && wrap.querySelector('img');
+  if(!img) return;
+  const v = state.floorplanView;
+  wrap.title = 'Zoom with + and − (or pinch / Ctrl + scroll), then drag to move the plan';
+  const tools = document.createElement('div');
+  tools.className = 'fp-tools';
+  tools.innerHTML =
+    '<button type="button" data-fz="-1" aria-label="Zoom out" title="Zoom out">&minus;</button>' +
+    '<span class="fp-z" aria-live="polite"></span>' +
+    '<button type="button" data-fz="1" aria-label="Zoom in" title="Zoom in">+</button>' +
+    '<button type="button" class="fit" data-fz="0" title="Show the whole plan again">Fit</button>';
+  wrap.appendChild(tools);
+
+  const show = () => {
+    img.style.cssText = fpTransform(v);
+    wrap.classList.toggle('is-zoomed', v.zoom > 1);
+    tools.querySelector('.fp-z').textContent = Math.round(v.zoom * 100) + '%';
+    tools.querySelector('[data-fz="-1"]').disabled = v.zoom <= 1;
+    tools.querySelector('[data-fz="0"]').disabled = v.zoom <= 1;
+    tools.querySelector('[data-fz="1"]').disabled = v.zoom >= FP_MAX_ZOOM;
+  };
+  const zoomTo = z => {
+    const was = v.zoom;
+    v.zoom = clampN(Math.round(z * 100) / 100, 1, FP_MAX_ZOOM);
+    if(v.zoom === 1){ v.x = 50; v.y = 50; }
+    if(v.zoom !== was){ show(); edited(); }
+  };
+  const panBy = (dx, dy) => {
+    if(v.zoom <= 1) return;
+    v.x = clampN(v.x + dx, 0, 100); v.y = clampN(v.y + dy, 0, 100);
+    show(); edited();
+  };
+  show();
+
+  // the controls sit on the plan, so a press on them must not start a pan
+  tools.addEventListener('pointerdown', e => e.stopPropagation());
+  tools.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    const d = Number(b.dataset.fz);
+    zoomTo(d === 0 ? 1 : v.zoom + d * FP_STEP);
+  });
+  // a pinch on a trackpad arrives as ctrl + wheel; a plain wheel still scrolls the preview
+  wrap.addEventListener('wheel', e => {
+    if(!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    zoomTo(v.zoom * Math.exp(-e.deltaY * 0.0025));
+  }, {passive:false});
+  wrap.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 15 : 5;
+    const k = e.key;
+    if(k === '+' || k === '=') zoomTo(v.zoom + FP_STEP);
+    else if(k === '-' || k === '_') zoomTo(v.zoom - FP_STEP);
+    else if(k === '0') zoomTo(1);
+    // arrows move the plan the way it moves under a drag
+    else if(k === 'ArrowLeft')  panBy(step, 0);
+    else if(k === 'ArrowRight') panBy(-step, 0);
+    else if(k === 'ArrowUp')    panBy(0, step);
+    else if(k === 'ArrowDown')  panBy(0, -step);
+    else return;
+    e.preventDefault();
+  });
+
+  /* transform-origin p% maps a point q to p + z(q - p), so moving the origin
+     by Δ shifts the picture by Δ(1 - z) of the frame: to follow the pointer
+     by d px, the origin moves by -d / ((z - 1) × width). Pointer deltas are
+     screen px, divided by the preview's scale to get design px. */
+  wrap.addEventListener('pointerdown', e => {
+    if(v.zoom <= 1 || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault();
+    const page = wrap.closest('.trim');
+    const scale = page ? page.getBoundingClientRect().width / (11 * 96) : 1;
+    const W = img.offsetWidth, H = img.offsetHeight;
+    const start = { x: e.clientX, y: e.clientY, px: v.x, py: v.y };
+    let moved = false;
+    wrap.classList.add('is-panning');
+    try { wrap.setPointerCapture(e.pointerId); } catch(_){}
+    const move = ev => {
+      const dx = (ev.clientX - start.x) / scale, dy = (ev.clientY - start.y) / scale;
+      v.x = Math.round(clampN(start.px - dx / ((v.zoom - 1) * W) * 100, 0, 100) * 10) / 10;
+      v.y = Math.round(clampN(start.py - dy / ((v.zoom - 1) * H) * 100, 0, 100) * 10) / 10;
+      moved = true;
+      img.style.transformOrigin = v.x.toFixed(2) + '% ' + v.y.toFixed(2) + '%';
+    };
+    const done = ev => {
+      wrap.removeEventListener('pointermove', move);
+      wrap.removeEventListener('pointerup', done);
+      wrap.removeEventListener('pointercancel', done);
+      try { wrap.releasePointerCapture(ev.pointerId); } catch(_){}
+      wrap.classList.remove('is-panning');
+      if(moved) edited();
+    };
+    wrap.addEventListener('pointermove', move);
+    wrap.addEventListener('pointerup', done);
+    wrap.addEventListener('pointercancel', done);
+  });
+}
+
+/* ============================================================
+   TEXT SIZE PANEL — one row per TEXT_SECTIONS entry
+   ============================================================ */
+let tsLit = null;   // the section whose row is hovered or focused
+function buildTextPanel(){
+  const host = $('#tsRows');
+  let side = null, html = '';
+  TEXT_SECTIONS.forEach(s => {
+    if(s.side !== side){ side = s.side; html += `<div class="ts-group">${side}</div>`; }
+    html += `<div class="ts-row" data-ts="${s.key}">
+      <label for="ts-${s.key}">${s.label}</label>
+      <div class="ts-ctl">
+        <button type="button" class="ts-step" data-step="-1" aria-label="${s.label}: smaller">&minus;</button>
+        <input type="range" id="ts-${s.key}" min="${TS_MIN}" max="${TS_MAX}" step="${TS_STEP}" value="100">
+        <button type="button" class="ts-step" data-step="1" aria-label="${s.label}: larger">+</button>
+        <output class="ts-val" for="ts-${s.key}"></output>
+      </div>
+      <div class="ts-note" aria-live="polite"></div>
+    </div>`;
+  });
+  host.innerHTML = html;
+
+  host.addEventListener('input', e => {
+    const row = e.target.closest('.ts-row');
+    if(!row || e.target.type !== 'range') return;
+    const v = clampN(Math.round(Number(e.target.value) / TS_STEP) * TS_STEP, TS_MIN, TS_MAX);
+    if(v === 100) delete state.textScale[row.dataset.ts]; else state.textScale[row.dataset.ts] = v;
+    syncTextPanel(); render();
+  });
+  // the steppers move the slider and let its input event do the rest, so
+  // the unsaved-work guard sees them exactly as it sees a drag of the slider
+  host.addEventListener('click', e => {
+    const b = e.target.closest('.ts-step'); if(!b) return;
+    const range = b.closest('.ts-row').querySelector('input[type=range]');
+    range.value = Number(range.value) + Number(b.dataset.step) * TS_STEP;
+    range.dispatchEvent(new Event('input', {bubbles:true}));
+  });
+  const lightFrom = e => { const row = e.target.closest && e.target.closest('.ts-row'); lightSection(row ? row.dataset.ts : null); };
+  host.addEventListener('pointerover', lightFrom);
+  host.addEventListener('focusin', lightFrom);
+  host.addEventListener('pointerleave', () => lightSection(null));
+  host.addEventListener('focusout', e => { if(!host.contains(e.relatedTarget)) lightSection(null); });
+
+  $('#tsReset').addEventListener('click', () => {
+    if(!Object.keys(state.textScale).length) return;
+    state.textScale = {};
+    syncTextPanel(); render(); edited();
+  });
+}
+/* outline a section on the sheet while its row is in use (screen only) */
+function lightSection(key){
+  tsLit = key;
+  $$('#sheets .ts-hl').forEach(el => el.classList.remove('ts-hl'));
+  const s = TEXT_SECTIONS.find(x => x.key === key);
+  if(s) $$(s.sel.split(',').map(x => '#sheets ' + x.trim()).join(',')).forEach(el => el.classList.add('ts-hl'));
+}
+/* the controls, from state — after a load, a reset, or a change */
+function syncTextPanel(){
+  TEXT_SECTIONS.forEach(s => {
+    const row = document.querySelector(`.ts-row[data-ts="${s.key}"]`); if(!row) return;
+    const pct = textPct(s.key);
+    row.querySelector('input[type=range]').value = pct;
+    const val = row.querySelector('.ts-val');
+    val.textContent = pct === 100 ? 'Auto' : pct + '%';
+    val.classList.toggle('set', pct !== 100);
+    const [down, up] = row.querySelectorAll('.ts-step');
+    down.disabled = pct <= TS_MIN; up.disabled = pct >= TS_MAX;
+  });
+}
+/* after each render: what each section actually managed */
+function paintTextPanel(){
+  TEXT_SECTIONS.forEach(s => {
+    const row = document.querySelector(`.ts-row[data-ts="${s.key}"]`); if(!row) return;
+    const f = textFit[s.key], want = textPct(s.key);
+    const note = row.querySelector('.ts-note');
+    row.classList.toggle('absent', !f);
+    const got = f ? Math.round(f.got * 100) : 100;
+    const capped = !!f && got < want - 1;
+    note.textContent = !f ? 'Not on this sheet' : capped ? `Largest that fits here: ${got}%` : '';
+    note.classList.toggle('warn', capped);
+    row.querySelector('.ts-val').title = f && f.pt ? `Prints at ${f.pt.toFixed(1)}pt` : '';
+  });
+  if(tsLit) lightSection(tsLit);   // the sheet was rebuilt under the outline
+}
+/* A saved sheet is data from a network: keep only the shapes this build
+   understands, so a stray value can neither break the layout nor come back
+   out on the next save. */
+function normalizeLayout(){
+  const ts = state.textScale && typeof state.textScale === 'object' && !Array.isArray(state.textScale) ? state.textScale : {};
+  const clean = {};
+  TEXT_SECTIONS.forEach(s => {
+    const v = Math.round(Number(ts[s.key]));
+    if(Number.isFinite(v) && v && v !== 100) clean[s.key] = clampN(Math.round(v / TS_STEP) * TS_STEP, TS_MIN, TS_MAX);
+  });
+  state.textScale = clean;
+  state.floorplanView = normFpView(state.floorplanView);
 }
 /* ============================================================
    AGENTS PICKER
@@ -1681,7 +2206,8 @@ function applyParsedDocx(blocks){
   const everything = [...interior, ...buildingL].join(' \n ');
   // ownership
   const hasCondo = /\bcondo(minium)?\b/i.test(everything);
-  const hasCoop = /co-?op(erative)?\b/i.test(everything) || /cooperative/i.test(everything);
+  // word-bounded, or "scoop" in a feature line would read as co-op
+  const hasCoop = /\bco-?op(erative)?\b/i.test(everything);
   if(hasCoop && !hasCondo) state.ownership='co-op';
   else if(hasCondo && !hasCoop) state.ownership='condo';
   if(hasCoop||hasCondo) found.push('ownership');
@@ -1794,9 +2320,20 @@ $('#btnPrint').onclick = ()=>{
   if(!missing.length){ printSheet(); return; }
   $('#warnList').innerHTML = missing.map(m=>`<li>${m}</li>`).join('');
   $('#warnOverlay').hidden = false;
+  $('#warnBack').focus();
 };
-$('#warnBack').onclick = ()=>{ $('#warnOverlay').hidden = true; };
-$('#warnPrint').onclick = ()=>{ $('#warnOverlay').hidden = true; printSheet(); };
+/* a modal: focus goes in when it opens, back to Print when it closes, stays
+   between its two buttons while open, and Escape is "Go back" */
+function closeWarn(){ $('#warnOverlay').hidden = true; $('#btnPrint').focus(); }
+$('#warnBack').onclick = closeWarn;
+$('#warnPrint').onclick = ()=>{ closeWarn(); printSheet(); };
+$('#warnOverlay').addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){ e.preventDefault(); closeWarn(); return; }
+  if(e.key !== 'Tab') return;
+  const first = $('#warnBack'), last = $('#warnPrint');
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
 $('#btnZoom').onclick = ()=>{
   zoom100 = !zoom100;
   $('#btnZoom').textContent = zoom100 ? 'Zoom: Fit' : 'Zoom 100%';
@@ -1807,6 +2344,7 @@ $('#btnZoom').onclick = ()=>{
    the property library is the only way work comes back.
    ============================================================ */
 (function boot(){
+  buildTextPanel();
   hydrateForm();
   render();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>render());
@@ -1857,10 +2395,8 @@ function resetDocFields(){
    property-bar clears the marker after a save and after a load. */
 GVC_UNSAVED.watch();
 
-GVC_PROPBAR.mount({
-  host: $('#propBar'),
-  tool: 'showsheet',
-
+/* named, so the test hooks can run a save and a load without a network */
+const LIBRARY = {
   blank: resetDocFields,
 
   toCore: () => ({
@@ -1892,6 +2428,9 @@ GVC_PROPBAR.mount({
       .forEach(k => { state[k] = core[k] || ''; });
     state.positioning = core.description || '';
     state.building.builtYear = core.yearBuilt || '';
+    // the other builders read the shared feature list; a showsheet started on
+    // a property made elsewhere should too (a saved sheet's own list still wins)
+    if (Array.isArray(core.features) && core.features.length) state.residence.features = core.features.slice();
     // the roster is team-level and carries between listings on purpose; a
     // property with no agents falls back to the default pair, not the last one's
     state.agentIds = (core.agentIds && core.agentIds.length)
@@ -1913,13 +2452,29 @@ GVC_PROPBAR.mount({
      needs nothing further — it already has the blank. */
   setDoc: doc => {
     if (doc) {
+      /* fromCore has just filled these from the shared facts. They live inside
+         building and residence, which the saved sheet carries whole, so laying
+         the sheet down would put back whatever year was typed when it was last
+         saved — a Year Built corrected in another tool reverted every time this
+         sheet was opened. The property's value wins; an older property that
+         never had one keeps the sheet's. */
+      const built = state.building.builtYear;
+      const coreFeats = state.residence.features;
       Object.keys(doc).forEach(k => { if (CORE_ONLY.indexOf(k) === -1) state[k] = doc[k]; });
+      // merged over the blank so a sheet saved before a key existed still has it
+      state.building = Object.assign(structuredClone(BLANK_DOC.building), state.building);
+      state.residence = Object.assign(structuredClone(BLANK_DOC.residence), state.residence);
+      if (built) state.building.builtYear = built;
+      if (!(state.residence.features || []).some(f => String(f).trim()) && coreFeats.length) {
+        state.residence.features = coreFeats.slice();
+      }
       migratePhotos();
     }
     state.disclaimer = DEFAULT_DISCLAIMER;
     hydrateForm(); render();
   }
-});
+};
+GVC_PROPBAR.mount(Object.assign({ host: $('#propBar'), tool: 'showsheet' }, LIBRARY));
 
 /* test hooks (harmless in production) */
 window.__test = {
@@ -1928,7 +2483,7 @@ window.__test = {
   render, hydrateForm,
   /* what property-bar calls before a property's facts are applied — exposed so
      a test can prove a switch leaves nothing of the last listing behind */
-  resetDocFields, BLANK_DOC, CORE_ONLY,
+  resetDocFields, BLANK_DOC, CORE_ONLY, LIBRARY,
   /* takes parsed blocks rather than a .docx, so the reset rule can be tested
      without building a Word file */
   applyParsedDocx,
@@ -1939,6 +2494,8 @@ window.__test = {
   },
   placePhoto, unusePhoto, renderTray, migratePhotos,
   setFloorplanDataUrl(dataUrl){ state.floorplan = dataUrl; render(); },
+  /* the real upload path — header crop and margin trim included */
+  setFloorplanFile, contentBox, textFit: () => textFit, TEXT_SECTIONS,
   async importDocxBuffer(buf){
     const {value:html} = await mammoth.convertToHtml({arrayBuffer:buf});
     const found = applyParsedDocx(parseDocxHtml(html));

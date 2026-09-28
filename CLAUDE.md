@@ -170,7 +170,7 @@ keeps the live site safe and keeps you from clobbering Matt's work.
 ## 6. Previewing the site locally (so you can SEE changes before publishing)
 
 The site must be viewed through a small local web server — **not** by double-clicking the HTML
-file. (Opening it as a `file://` page breaks the Showsheet's sample loader and image handling,
+file. (Opening it as a `file://` page breaks the Showsheet's Word-doc reader and image handling,
 which use `fetch`.)
 
 **You (Claude) start the server yourself** from the project folder. Use whatever is available:
@@ -180,8 +180,10 @@ python -m http.server 8080        # if Python is installed (most common)
 npx serve -l 8080                 # if Node.js is installed
 ```
 Then open **http://localhost:8080** in the browser. For the showsheet specifically, open
-**http://localhost:8080/tools/showsheet/** and use its on-page **"Load preview — 555 W59th
-(sample)"** button to see a fully populated sheet.
+**http://localhost:8080/tools/showsheet/**, open the **"Listing files"** section in the left
+panel, and drop the three sample files from `tools/showsheet/sample/` — `listing.docx`,
+`hero.jpg` and `floorplan.jpg` — onto its three drop zones (Word document, Photos, Floorplan) to
+see a fully populated sheet. (There is no "load sample" button; an older one was retired.)
 
 If neither Python nor Node is installed and they want to preview, the simplest fix is to install
 Python from https://www.python.org/downloads/ (check "Add to PATH" during install).
@@ -205,8 +207,12 @@ then run the publish script.
   JavaScript all inside it). Everything you need to restyle it is in that file.
 - It outputs a two-sided listing sheet and can print to **A5 or US Letter** (there's a paper-size
   toggle under the preview).
+- The panel has a **Text size** section (per-section sizes, 100% = the automatic fit) and the
+  floorplan can be **cropped on the sheet itself** — hover the plan to zoom, then drag to move it.
+  Both are saved with the sheet.
 - Typical loop: edit `tools/showsheet/index.html` → refresh `localhost:8080/tools/showsheet/`
-  → click "Load preview" → check it → repeat. Then follow §5 to commit and send for review.
+  → drop the three sample files onto "Listing files" (see above) → check it → repeat. Then
+  follow §5 to commit and send for review.
 - The print layout is a fixed **11in-wide design canvas**; A5 prints it scaled down, Letter prints
   it at full size. If you change page geometry, test **both** paper sizes via the toggle, and use
   the browser's Print dialog → "Save as PDF" to confirm the printed result, not just the screen.

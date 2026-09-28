@@ -36,7 +36,7 @@ developer.** Treat that as your default unless they tell you otherwise. That mea
   `main`, GitHub puts it on the real, public website within about a minute. This is why we are
   strict about git (§7). **`main` is production. Protect it.**
 - The headline tool is the **Showsheet Generator** at `tools/showsheet/index.html` — a
-  self-contained listing-sheet maker. If the teammate wants to "redesign the showsheet," that is
+  listing-sheet maker. If the teammate wants to "redesign the showsheet," that is
   almost always the file they mean. See §6.
 
 ---
@@ -190,8 +190,9 @@ Python from https://www.python.org/downloads/ (check "Add to PATH" during instal
 
 ### Adding a photo gallery — Matt's one-command publish
 Matt (the repo owner) publishes new property galleries with a single command — **no branch, no
-PR, no account switching.** This owner fast path is the one sanctioned exception to §5/§7, for
-Matt only; teammates helping with photos still follow §5.
+PR, no account switching.** Matt also publishes his own code changes straight to `main` once
+they have been verified locally (still never a force-push). Both are owner-only exceptions to
+§5/§7: teammates — including when helping with photos — still follow §5 and send a PR.
 
 1. Drop the photos into `"<Property Name>/Raw/"` and `"<Property Name>/Edited/"` inside the
    **Personal Photo Editing Project** folder on the Desktop (it sits next to this repo).
@@ -210,8 +211,10 @@ then run the publish script.
   `assets/logos/sheet/`.
 - It outputs a two-sided listing sheet and can print to **A5 or US Letter** (there's a paper-size
   toggle under the preview).
-- The panel has a **Text size** section (per-section sizes, 100% = the automatic fit) and the
-  floorplan can be **cropped on the sheet itself** — hover the plan to zoom, then drag to move it.
+- The panel has a **Text size** section: one control per section, 70–200%, where 100% is the
+  automatic fit. A section only grows while it and its neighbours still fit, and the panel says
+  "Largest that fits here" when it stops short. The floorplan can be **cropped on the sheet
+  itself** — hover the plan to zoom, then drag to move it.
   Both are saved with the sheet.
 - Typical loop: edit `tools/showsheet/index.html` → refresh `localhost:8080/tools/showsheet/`
   → drop the three sample files onto "Listing files" (see above) → check it → repeat. Then

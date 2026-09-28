@@ -44,13 +44,15 @@ Node + Playwright — `cd scripts && npm install`:
 `tools/showsheet/` is a listing-showsheet generator (drop a `.docx`, photo, and
 floorplan → print-ready A5 or US Letter). The page is `index.html`; what it reads
 out of a listing — the Word document and the money fields — is `listing.js`, kept
-apart so `scripts/test-listing.js` can run it without a browser. It shares the
-editor styles (`assets/css/builder.css`), image handling (`assets/js/images.js`)
-and the logo files in `assets/logos/sheet/` with the other builders. A sample listing lives in
-`tools/showsheet/sample/` (555 W59th PHC — `listing.docx`, `hero.jpg`,
-`floorplan.jpg`); drop those three onto the tool to see a fully populated sheet.
-There is no button that loads them for you: one is described in older notes but
-was never wired up. Needs the site served over http (fetch can't read `file://`
+apart so `scripts/test-listing.js` can run it without a browser. Its editor panel
+uses the builders' shared `assets/css/builder.css`; photo and floorplan handling is
+`assets/js/images.js`, shared with the Brochure; its logos are files in
+`assets/logos/sheet/`, read once at startup and placed inline.
+
+A sample listing lives in `tools/showsheet/sample/` (555 W59th PHC — `listing.docx`,
+`hero.jpg`, `floorplan.jpg`); open "Listing files" and drop those three onto the tool
+to see a fully populated sheet. There is no button that loads them for you (an older
+one was retired). Needs the site served over http (fetch can't read `file://`
 siblings).
 
 ## Docs

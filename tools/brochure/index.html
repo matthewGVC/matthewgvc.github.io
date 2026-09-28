@@ -832,6 +832,7 @@ body.paper-half .ag.solo .ag-hero{padding:1.2in 0 1.9in;}
      pitch.css is deliberately not loaded alongside it — see the closing-page
      CSS above. -->
 <script src="../../assets/js/photo-dnd.js"></script>
+<script src="../../assets/js/images.js"></script>
 <script src="../../assets/js/pitch.js"></script>
 <script src="../../assets/js/icons.js"></script>
 <script src="../../assets/js/qr.js"></script>
@@ -2323,104 +2324,14 @@ function addFiles(files) {
   });
 }
 
-function fileToImage(file) {
-  return new Promise((res, rej) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => { URL.revokeObjectURL(url); res(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Could not read image')); };
-    img.src = url;
-  });
-}
-/* rect is a source-pixel crop box; omit it for the whole image */
-function reencode(img, maxEdge, quality, rect) {
-  const sx = rect ? rect.x : 0, sy = rect ? rect.y : 0;
-  const sw = rect ? rect.w : img.naturalWidth, sh = rect ? rect.h : img.naturalHeight;
-  const r = Math.min(1, maxEdge / Math.max(sw, sh));
-  const w = Math.round(sw * r), h = Math.round(sh * r);
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  const cx = cv.getContext('2d');
-  cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);   // flatten transparency, normalize CMYK -> RGB
-  cx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
-  return cv.toDataURL('image/jpeg', quality);
-}
-/* Same header-band detection as the Showsheet: GVC floorplan exports lead
-   with a full-width navy title band, so find the white gap right below it
-   and crop it off. Returns 0 (no crop) when no band is present. */
-function floorplanHeaderY(img) {
-  try {
-    const W = img.naturalWidth, H = img.naturalHeight;
-    const scanH = Math.floor(H * 0.35);
-    const cv = document.createElement('canvas'); cv.width = W; cv.height = scanH;
-    const cx = cv.getContext('2d');
-    cx.drawImage(img, 0, 0, W, scanH, 0, 0, W, scanH);
-    const data = cx.getImageData(0, 0, W, scanH).data;
-    const darkFrac = y => {
-      let dark = 0, n = 0;
-      for (let x = 0; x < W; x += 8) {
-        const i = (y * W + x) * 4;
-        if (.299 * data[i] + .587 * data[i + 1] + .114 * data[i + 2] < 200) dark++;
-        n++;
-      }
-      return dark / n;
-    };
-    if (darkFrac(2) < .85 || darkFrac(Math.floor(H * 0.015)) < .85) return 0; // no navy band on top
-    for (let y = Math.floor(H * 0.02); y < scanH; y += 3) {
-      if (darkFrac(y) < .08) return y; // first white row after the band
-    }
-  } catch (e) {}
-  return 0;
-}
-
-/* Auto-crop: floor-plan exports are mostly white margin, which makes the
-   drawing print small inside its frame. Find the bounding box of anything
-   that isn't paper-white, keep a hair of margin, and crop to that.
-
-   The scan runs on a downsampled copy — a 4000px plan does not need
-   per-pixel accuracy to find its own edges, and the full-size read is slow.
-   If the box comes back implausibly tight (a stray speck, a blank scan) the
-   crop is abandoned and the plan comes through whole. */
-function autoTrimRect(img, startY) {
-  const W = img.naturalWidth, y0 = startY || 0, H = img.naturalHeight - y0;
-  const whole = { x: 0, y: y0, w: W, h: H };
-  if (W < 8 || H < 8) return whole;
-  try {
-    const s = Math.min(1, 700 / Math.max(W, H));
-    const w = Math.max(1, Math.round(W * s)), h = Math.max(1, Math.round(H * s));
-    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-    const cx = cv.getContext('2d', { willReadFrequently: true });
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);
-    cx.drawImage(img, 0, y0, W, H, 0, 0, w, h);
-    const d = cx.getImageData(0, 0, w, h).data;
-    let minX = w, minY = h, maxX = -1, maxY = -1;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = (y * w + x) * 4;
-        if (.299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2] < 242) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-        }
-      }
-    }
-    if (maxX < 0) return whole;                       // nothing but paper
-    const pad = Math.round(Math.max(w, h) * .012);
-    minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
-    maxX = Math.min(w - 1, maxX + pad); maxY = Math.min(h - 1, maxY + pad);
-    const rx = Math.floor(minX / s), ry = Math.floor(minY / s);
-    const rw = Math.min(W - rx, Math.ceil((maxX - minX + 1) / s));
-    const rh = Math.min(H - ry, Math.ceil((maxY - minY + 1) / s));
-    if (rw < W * .25 || rh < H * .25) return whole;   // too tight to trust
-    return { x: rx, y: y0 + ry, w: rw, h: rh };
-  } catch (e) { return whole; }
-}
+/* reading a dropped plan is shared with the Showsheet — assets/js/images.js */
+const { fileToImage, reencode, floorplanHeaderY, trimRect } = window.GVC_IMAGES;
 
 async function addFloorplans(files) {
   for (const f of [...files].filter(f => f.type.startsWith('image/'))) {
     try {
       const img = await fileToImage(f);
-      const rect = autoTrimRect(img, floorplanHeaderY(img));
+      const rect = trimRect(img, floorplanHeaderY(img));
       const url = reencode(img, 2400, .9, rect);
       state.floorplans.push({ id: ++uid, name: f.name, url, label: '', zoom: 1, tx: 0, ty: 0 });
       renderFpList(); redraw();

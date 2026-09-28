@@ -203,8 +203,11 @@ before publishing, run `python scripts/build_photos.py` first, preview via §6's
 then run the publish script.
 
 ### Redesigning the Showsheet — the most common request
-- The entire tool is **one self-contained file:** `tools/showsheet/index.html` (HTML + CSS +
-  JavaScript all inside it). Everything you need to restyle it is in that file.
+- The sheet's look — its layout, type and colours — is all in **`tools/showsheet/index.html`**
+  (HTML + CSS + JavaScript). That is the file to edit to restyle it. Beside it, `listing.js`
+  reads the Word document and does the money math (tested by `node scripts/test-listing.js`);
+  the editor panel's shared styles are `assets/css/builder.css`, and the logos are files in
+  `assets/logos/sheet/`.
 - It outputs a two-sided listing sheet and can print to **A5 or US Letter** (there's a paper-size
   toggle under the preview).
 - The panel has a **Text size** section (per-section sizes, 100% = the automatic fit) and the

@@ -22,6 +22,12 @@ Python — `pip install -r scripts/requirements.txt`:
 - `publish_photos.py` — build the galleries, then commit and push to `main`
 - `test_build_photos.py` — unit tests for the gallery builder
 
+Plain Node, no install — each exits non-zero on a failure:
+
+- `test-property-model.js` — the shared property model (units, merges, resets)
+- `test-area-data.js` — the ranking claims in the area datasets ("fastest", "slowest") against their own figures
+- `test-listing.js` — the Showsheet's Word-document reader and its money math
+
 Node + Playwright — `cd scripts && npm install`:
 
 - `shoot-heroes.js` — re-screenshot both project heroes into `projects/*/hero.webp`
@@ -35,8 +41,12 @@ Node + Playwright — `cd scripts && npm install`:
 
 ## Showsheet tool
 
-`tools/showsheet/` is a self-contained listing-showsheet generator (drop a `.docx`,
-photo, and floorplan → print-ready A5). A sample listing lives in
+`tools/showsheet/` is a listing-showsheet generator (drop a `.docx`, photo, and
+floorplan → print-ready A5 or US Letter). The page is `index.html`; what it reads
+out of a listing — the Word document and the money fields — is `listing.js`, kept
+apart so `scripts/test-listing.js` can run it without a browser. It shares the
+editor styles (`assets/css/builder.css`), image handling (`assets/js/images.js`)
+and the logo files in `assets/logos/sheet/` with the other builders. A sample listing lives in
 `tools/showsheet/sample/` (555 W59th PHC — `listing.docx`, `hero.jpg`,
 `floorplan.jpg`); drop those three onto the tool to see a fully populated sheet.
 There is no button that loads them for you: one is described in older notes but

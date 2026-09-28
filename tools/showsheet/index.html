@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="../../assets/css/fonts.css">
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css?v=2">
 <link rel="stylesheet" href="../../assets/css/photo-dnd.css">
 <link rel="stylesheet" href="../../assets/css/property-bar.css">
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
@@ -30,35 +31,22 @@
    Brand: Navy #00273A · Sky #53C7DC · Sky II #00A1C4 · Off-White #E5E5E5
    Type: Nunito Sans (Black/Light, caps, tracking 50) · Raleway · Playfair (Superior Title fallback)
    ============================================================ */
+/* The editor chrome — shell, panel sections, fields, drop zones, buttons,
+   agent chips, stage bar, scrollbars — comes from assets/css/builder.css,
+   which the other builders share and which was written as a copy of this
+   page's. Only what the Showsheet does differently is set here. */
 :root{
-  --navy:#00273A; --sky:#53C7DC; --sky2:#00A1C4; --ow:#E5E5E5;
-  --page:#EFEDE8;            /* editor bg: GVC paper */
   --hairline:rgba(83,199,220,.55);
   --bleed:0in;
   --ch:7.7524in;            /* design-canvas height (11in wide). A5 aspect by default;
                               Letter is proportionally taller — see body.paper-letter. */
   --serif:'Playfair Display','Superior Title',Georgia,serif;  /* SHEET serif — stays */
-  --sans:'Nunito Sans','Segoe UI',sans-serif;
-  --body:'Raleway','Segoe UI',sans-serif;
-  /* tool-UI tokens (mirror the GVC Workspace system) */
-  --ui-paper-2:#E7E4DC; --ui-rule:#D3D4D0; --ui-ink-soft:#33525F; --ui-danger:var(--danger);
-  --ui-mono:'JetBrains Mono',ui-monospace,monospace;
+  --ui-danger:var(--danger);
 }
-*{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
-html,body{margin:0;padding:0;background:var(--page);}
-body{font-family:var(--body);color:var(--navy);}
-/* the shell fills the viewport exactly: masthead + #app, no footer. Only the
-   editor panel and the preview well scroll, and they scroll separately.
-   Guarded like builder.css so a narrow screen can still scroll normally. */
-@media screen and (min-width:1101px){html,body{height:100%;overflow:hidden;}body>main{min-height:0;overflow:hidden;}}
 
 /* ================= EDITOR (screen only) ================= */
-/* sidebar runs the full height at left; the quick bar sits beside it, above the preview */
-#app{display:grid;grid-template-columns:430px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;height:calc(100vh - var(--mast-h, 64px));overflow:hidden;line-height:normal;}
 #main{display:contents;}
-#editor{grid-column:1;grid-row:1 / 3;width:430px;min-width:430px;min-height:0;overflow-y:auto;background:var(--page);border-right:1px solid var(--ui-rule);display:flex;flex-direction:column;}
-.ed-body{flex:1;}
-/* every-listing quick bar — the only fully manual inputs live here */
+details.ed-sec summary::before{transition:transform .26s cubic-bezier(.34,1.45,.45,1),border-color .18s;}
 /* The listing files live in the panel with everything else — same as the other
    builders. The photo and floorplan sit side by side; the rest stacks. */
 #quickBar .qb-pair{display:flex;gap:10px;}
@@ -67,46 +55,7 @@ body{font-family:var(--body);color:var(--navy);}
 #quickBar .qb-stack .drop{margin-top:0;}
 #quickBar .note{margin-top:4px;}
 #quickBar #imgList:empty,#quickBar #imgNote:empty{display:none;}
-details.ed-sec{border-bottom:1px solid var(--ui-rule);}
-details.ed-sec summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:13px 20px;font:800 11px var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--navy);user-select:none;transition:background .18s,box-shadow .18s;}
-details.ed-sec summary:hover{background:#fff;box-shadow:inset 3px 0 0 var(--sky);}
-details.ed-sec summary:focus-visible{outline:2px solid var(--sky);outline-offset:-2px;}
-details.ed-sec summary::-webkit-details-marker{display:none;}
-details.ed-sec summary::before{content:'';width:7px;height:7px;border-right:2px solid var(--navy);border-bottom:2px solid var(--navy);transform:rotate(-45deg);transform-origin:60% 60%;transition:transform .26s cubic-bezier(.34,1.45,.45,1),border-color .18s;flex:none;}
-details.ed-sec summary:hover::before{transform:rotate(-45deg) scale(1.3);}
-details.ed-sec[open] summary::before{transform:rotate(45deg);}
-details.ed-sec[open] summary:hover::before{transform:rotate(45deg) scale(1.3);}
-/* opening: the panel slides out from underneath the header; closing reverses it */
-@supports (interpolate-size: allow-keywords){
-  :root{interpolate-size:allow-keywords;}
-  details.ed-sec::details-content{height:0;overflow:clip;opacity:0;transform:translateY(-12px);transition:height .32s cubic-bezier(.4,0,.2,1),opacity .24s ease,transform .32s cubic-bezier(.4,0,.2,1),content-visibility .32s allow-discrete;}
-  details.ed-sec[open]::details-content{height:auto;opacity:1;transform:none;}
-}
-@media (prefers-reduced-motion: reduce){
-  details.ed-sec summary,details.ed-sec summary::before,details.ed-sec::details-content{transition:none;}
-}
-details.ed-sec summary .hint{margin-left:auto;font:400 10px var(--ui-mono);letter-spacing:.03em;color:var(--ui-ink-soft);text-transform:none;}
-.sec-in{padding:2px 20px 18px;}
-.f-row{display:flex;gap:10px;}
-.f-row > *{flex:1;min-width:0;}
-.field{margin-top:10px;}
-.field label{display:block;font:800 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-ink-soft);margin-bottom:4px;}
-.field input[type=text],.field input[type=number],.field select,.field textarea{
-  width:100%;border:1px solid var(--ui-rule);background:#fff;padding:7px 9px;font:500 12.5px var(--body);color:var(--navy);outline:none;border-radius:6px;}
-.field input::placeholder,.field textarea::placeholder{color:var(--ui-ink-soft);opacity:.8;}
-.field textarea{resize:vertical;min-height:64px;line-height:1.45;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--sky);outline:2px solid var(--sky);outline-offset:1px;}
-.field .note{font:400 10px var(--ui-mono);color:var(--ui-ink-soft);margin-top:4px;line-height:1.5;}
-.seg{display:flex;border:1px solid var(--ui-rule);border-radius:999px;background:#fff;overflow:hidden;}
-.seg button{flex:1;border:0;background:transparent;padding:8px 0;font:800 10px var(--sans);letter-spacing:.18em;color:var(--ui-ink-soft);cursor:pointer;text-transform:uppercase;transition:background .18s,color .18s;}
-.seg button:focus-visible{outline:2px solid var(--sky);outline-offset:-2px;}
-.seg button.on{background:var(--navy);color:var(--ow);}
-.drop{margin-top:10px;border:1.5px dashed var(--ui-rule);background:#fff;border-radius:8px;padding:16px 12px;text-align:center;cursor:pointer;transition:.15s;}
-.drop:hover,.drop.over{border-color:var(--sky);background:rgba(83,199,220,.08);}
-.drop:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
-.drop .d-big{font:800 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;}
-.drop .d-sub{font:300 10.5px var(--body);color:var(--ui-ink-soft);margin-top:3px;}
-/* loaded state — check + name + X to remove */
+/* a drop zone's loaded state — check + name + X to remove */
 .drop .d-loaded{display:none;}
 .drop.loaded{border-style:solid;border-color:var(--sky);}
 .drop.loaded .d-idle{display:none;}
@@ -116,12 +65,6 @@ details.ed-sec summary .hint{margin-left:auto;font:400 10px var(--ui-mono);lette
 .d-x{border:1px solid var(--ui-rule);background:#fff;color:var(--ui-ink-soft);font:800 11px/1 var(--sans);width:20px;height:20px;border-radius:50%;cursor:pointer;flex:none;padding:0;transition:background .15s,border-color .15s,color .15s;}
 .d-x:hover{background:var(--ui-danger);border-color:var(--ui-danger);color:#fff;}
 .d-x:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--navy);border-radius:999px;background:transparent;color:var(--navy);font:800 11px var(--sans);letter-spacing:.18em;text-transform:uppercase;padding:10px 18px;cursor:pointer;transition:background .18s,color .18s,border-color .18s;}
-.btn:hover{background:var(--navy);color:var(--ow);}
-.btn:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
-.btn.ghost{border-color:var(--ui-rule);color:var(--ui-ink-soft);}
-.btn.ghost:hover{border-color:var(--navy);background:var(--navy);color:var(--ow);}
-.btn.sm{padding:7px 13px;font-size:10px;}
 .btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 .btn-row .btn{flex:1;white-space:nowrap;}
 /* the photo tray — rows come from assets/css/photo-dnd.css */
@@ -158,16 +101,9 @@ body.is-dragging-photo .photo-secondary.is-empty{display:block;}
 .ts-row.absent label{color:var(--ui-ink-soft);}
 /* hovering a row outlines its section on the sheet (screen only) */
 @media screen{ .ts-hl{outline:1.5px dashed var(--sky2);outline-offset:3px;} }
-/* agent picker */
-#agentPick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
-.ag-chip{display:flex;align-items:center;gap:9px;border:1px solid var(--ui-rule);border-radius:8px;background:#fff;padding:7px 9px;cursor:pointer;position:relative;text-align:left;font:inherit;transition:border-color .12s,box-shadow .12s;}
-.ag-chip:hover{border-color:var(--sky);}
-.ag-chip:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
-.ag-chip img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;}
-.ag-chip .nm{font:800 10.5px var(--sans);letter-spacing:.03em;line-height:1.25;color:var(--navy);}
-.ag-chip .tt{font:300 8.5px var(--body);color:var(--ui-ink-soft);line-height:1.3;}
-.ag-chip.sel{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy);background:#fff;}
-.ag-chip .ord{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:var(--navy);color:var(--ow);font:800 9.5px var(--sans);display:flex;align-items:center;justify-content:center;}
+/* agent picker — a <button>, so it has to be told to use the page font */
+.ag-chip{font:inherit;}
+.ag-chip.sel{background:#fff;}
 /* toasts */
 #toasts{position:fixed;bottom:18px;left:18px;z-index:99;display:flex;flex-direction:column;gap:8px;}
 .toast{background:#fff;color:var(--navy);border:1px solid var(--ui-rule);border-left:3px solid var(--navy);border-radius:8px;font:600 12px var(--body);padding:10px 16px;box-shadow:0 6px 24px rgba(0,39,58,.18);animation:tIn .2s;max-width:360px;}
@@ -183,21 +119,10 @@ body.is-dragging-photo .photo-secondary.is-empty{display:block;}
 .warn-box .w-sub{font:300 11px var(--body);color:var(--ui-ink-soft);line-height:1.5;margin-top:4px;}
 
 /* ================= STAGE / PREVIEW ================= */
-#stage{grid-column:2;grid-row:1;min-height:0;overflow:auto;position:relative;}
-@media screen{#stage{background:var(--ui-paper-2);}} /* preview well — screen only, never prints */
-/* preview controls — pinned bar along the bottom of the screen */
-#stageBar{grid-column:2;grid-row:2;display:flex;align-items:center;gap:10px;background:rgba(239,237,232,.96);backdrop-filter:blur(6px);padding:10px 26px;border-top:1px solid var(--ui-rule);box-shadow:0 -6px 20px rgba(0,39,58,.06);}
-#stageBar .sp{flex:1;}
-#stageBar .zlab{font:400 10px var(--ui-mono);letter-spacing:.14em;color:var(--ui-ink-soft);text-transform:uppercase;}
-.btn.lg{padding:11px 22px;}
 .btn.lg svg{width:15px;height:15px;flex:none;}
-/* compact segmented control for the bar (paper size) */
-#stageBar .seg{flex:none;width:auto;}
-#stageBar .seg button{flex:none;padding:7px 15px;}
-
 /* ---- narrow screens ----
-   Below the threshold the shell stops filling the viewport (see the guard at
-   the top of this file), but the grid did not: a fixed 430px editor beside a
+   Below the threshold the shell stops filling the viewport (see the guard in
+   builder.css), but the grid did not: a fixed 430px editor beside a
    minmax(0,1fr) preview meant that on a 375px phone the panel ran 55px off
    the side, the preview column collapsed to nothing, and the print controls
    went with it — the tool was unusable rather than merely cramped.
@@ -217,15 +142,10 @@ body.is-dragging-photo .photo-secondary.is-empty{display:block;}
             flex-wrap:wrap;padding:10px 16px;}
   #stageBar .sp{flex-basis:100%;height:0;}
 }
-.pg-tag{font:400 10px var(--ui-mono);letter-spacing:.14em;color:var(--ui-ink-soft);text-transform:uppercase;margin:20px 0 8px 2px;}
-/* paper scrollbars (tool UI only) */
-#editor::-webkit-scrollbar,#stage::-webkit-scrollbar{width:10px;height:10px;}
-#editor::-webkit-scrollbar-track,#stage::-webkit-scrollbar-track{background:transparent;}
-#editor::-webkit-scrollbar-thumb{background:var(--ui-rule);border-radius:999px;border:2px solid var(--page);}
-#stage::-webkit-scrollbar-thumb{background:var(--ui-rule);border-radius:999px;border:2px solid var(--ui-paper-2);}
-#editor::-webkit-scrollbar-thumb:hover,#stage::-webkit-scrollbar-thumb:hover{background:var(--ui-ink-soft);}
+.pg-tag{margin:20px 0 8px 2px;}
 #sheets{padding:6px 26px 26px;display:flex;flex-wrap:wrap;justify-content:safe center;align-items:flex-start;column-gap:26px;}
-.pg-col{flex:none;min-width:0;}
+/* builder.css stacks a page column as a centred flex column; the sheets sit in plain blocks */
+.pg-col{display:block;flex:none;min-width:0;}
 .sheet-wrap{position:relative;margin:0 auto;}
 .sheet{background:#fff;box-shadow:0 8px 40px rgba(10,40,55,.18);transform-origin:0 0;position:relative;}
 
@@ -253,14 +173,6 @@ body.bleed .trim::after{content:'';position:absolute;inset:calc(-1 * var(--bleed
 /* safe area — keep important content inside this dashed guide (screen only, never prints) */
 .safe{display:none;position:absolute;left:calc(var(--bleed) + .3in);top:calc(var(--bleed) + .3in);right:calc(var(--bleed) + .3in);bottom:calc(var(--bleed) + .3in);border:.5pt dashed rgba(0,161,196,.55);pointer-events:none;z-index:6;}
 body.bleed .safe{display:block;}
-/* color block accent */
-.cblock{position:relative;display:block;width:3.62em;height:2.36em;flex:none;}
-.cblock i{position:absolute;display:block;}
-.cblock .c1{width:1.4em;height:1.4em;background:var(--navy);left:0;top:0;}
-.cblock .c2{width:1em;height:1em;background:var(--sky);left:1.4em;top:.7em;}
-.cblock .c3{width:.7em;height:.7em;background:var(--sky2);left:2.4em;top:1.18em;}
-.cblock .c4{width:.5em;height:.5em;background:var(--ow);left:3.1em;top:1.86em;}
-.cblock.inline{display:inline-block;vertical-align:baseline;}
 /* ===== TYPE SCALE — four sheet-wide sizes, consistent within each sheet =====
    Everything keys off four roles so matching text always matches in size:
      --t-h1   display      → the address
@@ -302,8 +214,6 @@ body.bleed .safe{display:block;}
 .fitblk{min-height:0;overflow:hidden;}
 .res-fit{flex:1;font-size:calc(var(--t-body) * var(--k-res));display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;}
 .bld-fit{flex:1;font-size:calc(var(--t-body) * var(--k-bld));}
-/* the condo / co-op statement — a boxed callout at the top of The Residence */
-.r-note{align-self:flex-start;font:600 .82em var(--body);font-style:italic;color:var(--navy);border:1.2pt solid rgba(83,199,220,.7);background:rgba(83,199,220,.09);padding:.3em .6em;margin:0 0 .5em;}
 .r-spec{display:flex;gap:1em;padding:.3em 0;border-bottom:.6pt solid var(--hairline);align-items:baseline;}
 .r-spec .sl{font:900 .76em var(--sans);letter-spacing:.05em;text-transform:uppercase;color:rgba(0,39,58,.7);width:10em;flex:none;}
 .r-spec .sv{font:500 .92em var(--body);color:var(--navy);flex:1;line-height:1.35;}
@@ -467,12 +377,10 @@ body.bleed .crop{display:block;}
 #pagesize{display:none;}
 @media print{
   html,body{background:#fff !important;margin:0 !important;padding:0 !important;height:auto !important;overflow:visible !important;}
-  #app{display:block;height:auto;overflow:visible;}
   #main{display:block;height:auto;}
   #editor,#stageBar,#toasts,#warnOverlay,.pg-tag,.masthead{display:none !important;}
   #stage{height:auto;overflow:visible;}
   #sheets{padding:0 !important;display:block !important;}
-  .pg-col{display:block;}
   /* the 11in-wide design canvas prints scaled onto a true A5 landscape page */
   .sheet-wrap{margin:0 !important;width:210mm !important;height:148mm !important;overflow:hidden;}
   .sheet{transform:scale(.75161) !important;transform-origin:0 0 !important;box-shadow:none !important;}
@@ -677,6 +585,7 @@ body.bleed .crop{display:block;}
 <div id="toasts" role="status" aria-live="polite"></div>
 </main>
 <script src="../../assets/js/photo-dnd.js"></script>
+<script src="../../assets/js/images.js"></script>
 <script src="../../assets/js/qr.js"></script>
 <script src="../../assets/js/legal.js"></script>
 <script src="../../assets/js/unsaved.js"></script>
@@ -684,6 +593,7 @@ body.bleed .crop{display:block;}
 <script src="../../assets/js/property-library.js"></script>
 <script src="../../assets/js/property-bar.js"></script>
 <script src="../../assets/js/roster.js"></script>
+<script src="listing.js"></script>
 <script>
 'use strict';
 /* ============================================================
@@ -691,12 +601,25 @@ body.bleed .crop{display:block;}
    ============================================================ */
 const ROSTER = window.GVC_ROSTER;
 
-const LOGO_DE_NAVY = `<svg fill="#00273A" data-name="GVC All Integrated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000"> <g> <g> <path d="M337.43,898.24l-2.3-6.66c13.73-5.6,28.67-8.59,43.98-8.59,9.58,0,18.7.9,27.15,2.47,2.68.5,5.29,1.07,7.83,1.69,10.45,2.59,19.67,6.23,27.23,10.44l-8.76,47.6-4.1-.58c-3.04-18.82-10.17-32.75-20.06-42.02-2.04-1.91-4.2-3.62-6.46-5.14-8.92-5.98-19.49-8.91-31-8.91-12.17,0-23.57,3.31-33.51,9.7Z"/> <path d="M435.48,1043.02l3.22,1.17c-11.98,28.32-34.17,51.69-73.88,51.69-55.78,0-97.25-45.85-97.25-103.67,0-31.5,12.21-57.89,31.36-76.84l8.48,23.69c-4.39,12.76-6.84,27.81-6.84,44.98,0,57.53,30.66,91.7,74.17,91.7,28.62,0,49.94-15.19,60.74-32.71Z"/> </g> <path d="M392.15,899.1l-43.8,118.25c-.18.48-.64.8-1.15.8h-3.55c-.52,0-.98-.33-1.16-.81l-61.72-171.77c-7.67-21.29-18.91-29.91-30.54-31.74-.6-.09-1.05-.6-1.05-1.21v-.34c0-.68.55-1.23,1.23-1.23h74.47c.68,0,1.23.55,1.23,1.23v.19c0,.67-.54,1.21-1.21,1.23-15.17.4-20.56,8.36-14.29,26.6l46.25,133.62c.38,1.09,1.92,1.11,2.32.02l27.81-76.82"/> <path d="M394.12,877.43l5.71-15.77c10.91-30.72.4-47.35-20.73-47.95-.67-.02-1.21-.55-1.21-1.22v-.2c0-.68.55-1.23,1.23-1.23h67.8v2.63c-16.97,1.46-30.13,18.72-40.37,46.51l-6.62,17.88"/> <path d="M389.83,774.11h-80.32c-.68,0-1.23.55-1.23,1.23h0c0,.64.47,1.16,1.08,1.23,11.52,1.39,29.92,6.88,29.92,24.45v32.77c0,12.18-5.23,21.6-14.7,27.15l2.51,7.29c15.47-3.48,29.32-9.18,39.34-14.5.4-.22.65-.63.65-1.08v-51.62c0-17.64,9.95-23.09,22.88-24.46.63-.07,1.1-.59,1.1-1.22,0-.68-.55-1.23-1.23-1.23ZM221.83,747.08c3.62-49.7,30.35-84.71,72.7-84.71,31.06,0,53.18,20.75,60.38,57.93.1.51.51.91,1.02.99l2.06.3c.65.09,1.26-.35,1.38-1l8.42-47.97c.09-.52-.15-1.05-.62-1.3-12.85-6.88-38.42-13.62-66.51-13.62-63.77,0-112.91,43.88-112.91,107.35,0,52.53,38.3,98.17,95.11,105.46l-2.47-6.9c-35.48-10.76-59-50.17-59-104.7,0-1.78.03-3.54.08-5.29.07-2.21.19-4.38.35-6.53Z"/> </g> <g> <g> <path d="M537.13,939.63l-56.25-123.54h34.17l40.48,93.57h-9.81l40.48-93.57h32.77l-56.07,123.54h-25.76Z"/> <path d="M635.26,939.63v-123.54h87.26v24.88h-56.6v23.48h52.74v24.88h-52.74v25.41h56.6v24.88h-87.26Z"/> <path d="M751.96,939.63v-123.54h59.58c13.9,0,24.65,3.42,32.24,10.25,7.59,6.83,11.39,16.33,11.39,28.47,0,7.95-1.69,14.78-5.08,20.5-3.39,5.73-8.35,10.14-14.89,13.23-6.54,3.1-14.43,4.64-23.66,4.64l1.23-3.15h8.59c4.91,0,9.29,1.2,13.14,3.59,3.86,2.4,7.07,6.05,9.64,10.95l19.28,35.05h-35.22l-21.55-39.43c-.94-1.63-2.05-2.95-3.33-3.94-1.29-.99-2.69-1.69-4.21-2.1-1.52-.41-3.27-.61-5.26-.61h-9.64v46.09h-32.24ZM784.2,870.77h21.38c6.19,0,10.89-1.23,14.11-3.68,3.21-2.45,4.82-6.19,4.82-11.21s-1.61-8.94-4.82-11.39c-3.21-2.45-7.92-3.68-14.11-3.68h-21.38v29.96Z"/> <path d="M884.78,939.63v-123.54h50.99c14.37,0,26.57,2.45,36.62,7.36,10.05,4.91,17.7,11.95,22.95,21.12,5.26,9.17,7.89,20.24,7.89,33.21s-2.63,24.09-7.89,33.38c-5.26,9.29-12.91,16.36-22.95,21.2-10.05,4.85-22.25,7.27-36.62,7.27h-50.99ZM917.03,913.52h16.82c12.15,0,21.2-2.98,27.16-8.94,5.96-5.96,8.94-14.89,8.94-26.81s-2.98-20.97-8.94-26.81c-5.96-5.84-15.01-8.76-27.16-8.76h-16.82v71.32Z"/> <path d="M1031.63,939.63v-123.54h32.24v123.54h-32.24Z"/> <path d="M1158.49,941.73c-14.14,0-26.14-2.66-36.01-7.97-9.87-5.31-17.41-12.7-22.6-22.17-5.2-9.46-7.8-20.5-7.8-33.12s2.72-24.44,8.15-34.08c5.43-9.64,13.26-17.11,23.48-22.43,10.22-5.31,22.52-7.97,36.89-7.97,5.72,0,11.33.56,16.82,1.66,5.49,1.11,10.54,2.6,15.16,4.47,4.61,1.87,8.56,4.09,11.83,6.66l-9.81,24.88c-5.37-3.5-10.81-6.05-16.3-7.62-5.49-1.58-11.27-2.37-17.35-2.37-11.92,0-20.79,3.15-26.63,9.46-5.84,6.31-8.76,15.42-8.76,27.34s2.95,20.91,8.85,26.99c5.9,6.08,14.57,9.11,26.02,9.11,3.5,0,7.3-.35,11.39-1.05,4.09-.7,8.29-1.75,12.62-3.15l-5.96,12.27v-29.96h-24.71v-22.6h50.99v61.86c-4.44,2.1-9.17,3.89-14.19,5.34-5.02,1.46-10.25,2.57-15.68,3.33-5.43.76-10.89,1.14-16.38,1.14Z"/> <path d="M1235.42,939.63v-123.54h32.24v96.73h54.85v26.81h-87.09Z"/> <path d="M1347.03,939.63v-123.54h32.24v123.54h-32.24Z"/> <path d="M1470.39,941.73c-9.46,0-18.05-1.55-25.76-4.64-7.71-3.09-14.31-7.45-19.8-13.05-5.49-5.61-9.76-12.35-12.79-20.24-3.04-7.89-4.56-16.62-4.56-26.2s1.49-18.25,4.47-26.02c2.98-7.77,7.27-14.43,12.88-19.98,5.61-5.55,12.27-9.87,19.98-12.97,7.71-3.09,16.24-4.64,25.58-4.64s17.87,1.52,25.58,4.56c7.71,3.04,14.34,7.36,19.89,12.97,5.55,5.61,9.81,12.3,12.79,20.06,2.98,7.77,4.47,16.44,4.47,26.02s-1.49,18.46-4.47,26.28c-2.98,7.83-7.24,14.54-12.79,20.15-5.55,5.61-12.18,9.96-19.89,13.05s-16.24,4.64-25.58,4.64ZM1470.57,914.57c6.07,0,11.27-1.46,15.6-4.38,4.32-2.92,7.65-7.12,9.99-12.62,2.34-5.49,3.5-12.09,3.5-19.8s-1.17-14.31-3.5-19.8c-2.34-5.49-5.7-9.66-10.08-12.53-4.38-2.86-9.61-4.29-15.68-4.29s-11.3,1.43-15.68,4.29c-4.38,2.86-7.77,7.04-10.16,12.53-2.4,5.49-3.59,12.09-3.59,19.8s1.2,14.31,3.59,19.8c2.39,5.49,5.78,9.7,10.16,12.62,4.38,2.92,9.66,4.38,15.86,4.38Z"/> <path d="M1561.34,939.63v-123.54h23.66l61.68,76.93h-4.91v-76.93h29.96v123.54h-23.66l-61.68-77.1h4.91v77.1h-29.96Z"/> <path d="M1703.27,939.63v-123.54h87.26v24.88h-56.6v23.48h52.74v24.88h-52.74v25.41h56.6v24.88h-87.26Z"/> </g> <g> <path d="M796.45,787.58c-14.14,0-26.14-2.66-36.01-7.97-9.87-5.31-17.41-12.7-22.6-22.17-5.2-9.46-7.8-20.5-7.8-33.12s2.72-24.44,8.15-34.08c5.43-9.64,13.26-17.11,23.48-22.43,10.22-5.31,22.52-7.97,36.89-7.97,5.72,0,11.33.56,16.82,1.66,5.49,1.11,10.54,2.6,15.16,4.47,4.61,1.87,8.56,4.09,11.83,6.66l-9.81,24.88c-5.37-3.5-10.81-6.05-16.3-7.62-5.49-1.58-11.27-2.37-17.35-2.37-11.92,0-20.79,3.15-26.63,9.46-5.84,6.31-8.76,15.42-8.76,27.34s2.95,20.91,8.85,26.99c5.9,6.08,14.57,9.11,26.02,9.11,3.5,0,7.3-.35,11.39-1.05,4.09-.7,8.29-1.75,12.62-3.15l-5.96,12.27v-29.96h-24.71v-22.6h50.99v61.86c-4.44,2.1-9.17,3.89-14.19,5.34-5.02,1.46-10.25,2.57-15.68,3.33-5.43.76-10.89,1.14-16.38,1.14Z"/> <path d="M858.66,785.48l57.48-123.54h25.58l57.83,123.54h-32.24l-14.54-33.99,12.44,9.11h-72.37l12.27-9.11-14.54,33.99h-31.89ZM928.75,695.59l-20.33,48.54-4.91-8.41h50.99l-5.08,8.41-20.33-48.54h-.35Z"/> <path d="M1062.27,787.58c-6.54,0-12.88-.56-19.01-1.66-6.13-1.11-11.86-2.66-17.17-4.64-5.32-1.98-9.9-4.38-13.76-7.18l8.94-24.88c3.62,2.34,7.65,4.41,12.09,6.22,4.44,1.81,9.11,3.21,14.02,4.21,4.91.99,9.87,1.49,14.89,1.49,7.59,0,12.94-1.08,16.03-3.24,3.09-2.16,4.64-4.7,4.64-7.62,0-1.75-.47-3.3-1.4-4.64-.94-1.34-2.48-2.51-4.64-3.5-2.16-.99-5.05-1.84-8.67-2.54l-20.5-4.38c-11.33-2.45-19.71-6.57-25.15-12.35-5.43-5.78-8.15-13.29-8.15-22.52,0-8.18,2.19-15.27,6.57-21.29,4.38-6.02,10.51-10.72,18.4-14.11,7.88-3.39,16.97-5.08,27.25-5.08,5.72,0,11.27.56,16.65,1.66,5.37,1.11,10.31,2.66,14.81,4.64,4.5,1.99,8.32,4.38,11.48,7.18l-8.94,23.66c-4.44-3.39-9.61-6.02-15.51-7.89-5.9-1.87-12.18-2.8-18.84-2.8-4.32,0-8,.53-11.04,1.58-3.04,1.05-5.34,2.51-6.92,4.38-1.58,1.87-2.37,4.03-2.37,6.48s1.05,4.53,3.15,6.22c2.1,1.69,5.84,3.07,11.21,4.12l20.33,4.38c11.33,2.45,19.8,6.51,25.41,12.18,5.61,5.67,8.41,13,8.41,21.99,0,7.95-2.16,14.92-6.48,20.94-4.32,6.02-10.4,10.69-18.22,14.02-7.83,3.33-17,4.99-27.51,4.99Z"/> <path d="M1139.37,785.48v-123.54h50.99c14.37,0,26.57,2.45,36.62,7.36,10.05,4.91,17.7,11.95,22.95,21.12,5.26,9.17,7.89,20.24,7.89,33.21s-2.63,24.09-7.89,33.38c-5.26,9.29-12.91,16.36-22.95,21.2-10.05,4.85-22.25,7.27-36.62,7.27h-50.99ZM1171.61,759.37h16.82c12.15,0,21.2-2.98,27.16-8.94,5.96-5.96,8.94-14.89,8.94-26.81s-2.98-20.97-8.94-26.81c-5.96-5.84-15.01-8.76-27.16-8.76h-16.82v71.32Z"/> <path d="M1271.49,785.48l57.48-123.54h25.58l57.83,123.54h-32.24l-14.54-33.99,12.44,9.11h-72.37l12.27-9.11-14.54,33.99h-31.89ZM1341.58,695.59l-20.33,48.54-4.91-8.41h50.99l-5.08,8.41-20.33-48.54h-.35Z"/> <path d="M1475.1,787.58c-6.54,0-12.88-.56-19.01-1.66-6.13-1.11-11.86-2.66-17.17-4.64-5.32-1.98-9.9-4.38-13.76-7.18l8.94-24.88c3.62,2.34,7.65,4.41,12.09,6.22,4.44,1.81,9.11,3.21,14.02,4.21,4.91.99,9.87,1.49,14.89,1.49,7.59,0,12.94-1.08,16.03-3.24,3.09-2.16,4.64-4.7,4.64-7.62,0-1.75-.47-3.3-1.4-4.64-.94-1.34-2.48-2.51-4.64-3.5-2.16-.99-5.05-1.84-8.67-2.54l-20.5-4.38c-11.33-2.45-19.71-6.57-25.15-12.35s-8.15-13.29-8.15-22.52c0-8.18,2.19-15.27,6.57-21.29,4.38-6.02,10.51-10.72,18.4-14.11,7.88-3.39,16.97-5.08,27.25-5.08,5.72,0,11.27.56,16.65,1.66,5.37,1.11,10.31,2.66,14.81,4.64,4.5,1.99,8.32,4.38,11.48,7.18l-8.94,23.66c-4.44-3.39-9.61-6.02-15.51-7.89-5.9-1.87-12.18-2.8-18.84-2.8-4.32,0-8,.53-11.04,1.58-3.04,1.05-5.34,2.51-6.92,4.38-1.58,1.87-2.37,4.03-2.37,6.48s1.05,4.53,3.15,6.22c2.1,1.69,5.84,3.07,11.21,4.12l20.33,4.38c11.33,2.45,19.8,6.51,25.41,12.18,5.61,5.67,8.41,13,8.41,21.99,0,7.95-2.16,14.92-6.48,20.94-4.32,6.02-10.4,10.69-18.22,14.02-7.83,3.33-17,4.99-27.51,4.99Z"/> <path d="M1552.2,785.48v-123.54h32.24v52.92h.35l47.84-52.92h38.2l-60.8,65.19.17-13.32,62.73,71.67h-38.55l-49.59-55.9h-.35v55.9h-32.24Z"/> <path d="M1671.35,785.48l57.48-123.54h25.58l57.83,123.54h-32.24l-14.54-33.99,12.44,9.11h-72.37l12.27-9.11-14.54,33.99h-31.89ZM1741.45,695.59l-20.33,48.54-4.91-8.41h50.99l-5.08,8.41-20.33-48.54h-.35Z"/> </g> <g> <path d="M490.4,785.48v-58.87h-23.66v-15.91h66.94v15.91h-23.76v58.87h-19.52Z"/> <path d="M546.63,785.48v-74.79h19.52v28.96h30.87v-28.96h19.41v74.79h-19.41v-29.91h-30.87v29.91h-19.52Z"/> <path d="M635.52,785.48v-74.79h52.83v15.06h-34.26v14.21h31.93v15.06h-31.93v15.38h34.26v15.06h-52.83Z"/> </g> <g> <path d="M635.75,1095.88c-13.67,0-25.41-2.66-35.22-7.97-9.81-5.31-17.38-12.73-22.69-22.25-5.32-9.52-7.97-20.76-7.97-33.73s2.66-24.18,7.97-33.64c5.31-9.46,12.88-16.85,22.69-22.17,9.81-5.31,21.55-7.97,35.22-7.97,8.06,0,15.89,1.29,23.48,3.86,7.59,2.57,13.73,5.96,18.4,10.16l-9.64,25.23c-5.02-3.74-10.14-6.48-15.33-8.24-5.2-1.75-10.54-2.63-16.03-2.63-10.86,0-19.01,3.04-24.44,9.11-5.43,6.08-8.15,14.84-8.15,26.28s2.72,20.24,8.15,26.37c5.43,6.13,13.58,9.2,24.44,9.2,5.49,0,10.83-.88,16.03-2.63,5.2-1.75,10.31-4.5,15.33-8.24l9.64,25.23c-4.67,4.21-10.81,7.6-18.4,10.16-7.6,2.57-15.42,3.86-23.48,3.86Z"/> <path d="M762.27,1095.88c-9.46,0-18.05-1.55-25.76-4.64s-14.31-7.45-19.8-13.05c-5.49-5.61-9.76-12.35-12.79-20.24-3.04-7.89-4.56-16.62-4.56-26.2s1.49-18.25,4.47-26.02c2.98-7.77,7.27-14.43,12.88-19.98,5.61-5.55,12.27-9.87,19.98-12.97,7.71-3.09,16.24-4.64,25.58-4.64s17.87,1.52,25.58,4.56c7.71,3.04,14.34,7.36,19.89,12.97,5.55,5.61,9.81,12.3,12.79,20.06,2.98,7.77,4.47,16.44,4.47,26.02s-1.49,18.46-4.47,26.28c-2.98,7.83-7.24,14.54-12.79,20.15-5.55,5.61-12.18,9.96-19.89,13.05s-16.24,4.64-25.58,4.64ZM762.44,1068.72c6.07,0,11.27-1.46,15.6-4.38,4.32-2.92,7.65-7.12,9.99-12.62,2.34-5.49,3.5-12.09,3.5-19.8s-1.17-14.31-3.5-19.8c-2.34-5.49-5.7-9.66-10.08-12.53-4.38-2.86-9.61-4.29-15.68-4.29s-11.3,1.43-15.68,4.29c-4.38,2.86-7.77,7.04-10.16,12.53-2.4,5.49-3.59,12.09-3.59,19.8s1.2,14.31,3.59,19.8c2.39,5.49,5.78,9.7,10.16,12.62,4.38,2.92,9.66,4.38,15.86,4.38Z"/> <path d="M853.21,1093.78v-123.54h23.66l61.68,76.93h-4.91v-76.93h29.96v123.54h-23.66l-61.68-77.1h4.91v77.1h-29.96Z"/> <path d="M995.14,1093.78v-123.54h32.24v96.73h54.85v26.81h-87.09Z"/> <path d="M1166.34,1095.88c-9.46,0-18.05-1.55-25.76-4.64s-14.31-7.45-19.8-13.05c-5.49-5.61-9.76-12.35-12.79-20.24-3.04-7.89-4.56-16.62-4.56-26.2s1.49-18.25,4.47-26.02c2.98-7.77,7.27-14.43,12.88-19.98,5.61-5.55,12.27-9.87,19.98-12.97,7.71-3.09,16.24-4.64,25.58-4.64s17.87,1.52,25.58,4.56c7.71,3.04,14.34,7.36,19.89,12.97,5.55,5.61,9.81,12.3,12.79,20.06,2.98,7.77,4.47,16.44,4.47,26.02s-1.49,18.46-4.47,26.28c-2.98,7.83-7.24,14.54-12.79,20.15-5.55,5.61-12.18,9.96-19.89,13.05-7.71,3.09-16.24,4.64-25.58,4.64ZM1166.51,1068.72c6.07,0,11.27-1.46,15.6-4.38,4.32-2.92,7.65-7.12,9.99-12.62,2.34-5.49,3.5-12.09,3.5-19.8s-1.17-14.31-3.5-19.8c-2.34-5.49-5.7-9.66-10.08-12.53-4.38-2.86-9.61-4.29-15.68-4.29s-11.3,1.43-15.68,4.29c-4.38,2.86-7.77,7.04-10.16,12.53-2.4,5.49-3.59,12.09-3.59,19.8s1.2,14.31,3.59,19.8c2.39,5.49,5.78,9.7,10.16,12.62,4.38,2.92,9.66,4.38,15.86,4.38Z"/> <path d="M1257.28,1093.78v-123.54h23.66l61.68,76.93h-4.91v-76.93h29.96v123.54h-23.66l-61.68-77.1h4.91v77.1h-29.96Z"/> </g> <g> <path d="M1414.15,1049.85v-58.87h-23.66v-15.91h66.94v15.91h-23.76v58.87h-19.52Z"/> <path d="M1470.37,1049.85v-74.79h52.83v15.06h-34.26v14.21h31.93v15.06h-31.93v15.38h34.26v15.06h-52.83Z"/> <path d="M1532.11,1049.85l34.79-74.79h15.49l35.01,74.79h-19.52l-8.8-20.58,7.53,5.52h-43.81l7.43-5.52-8.8,20.58h-19.31ZM1574.54,995.43l-12.3,29.38-2.97-5.09h30.87l-3.08,5.09-12.3-29.38h-.21Z"/> <path d="M1627.68,1049.85v-74.79h16.23l25.67,46.25h-3.61l25.67-46.25h15.81v74.79h-17.61v-44.45h2.23l-19.31,33.31h-10.5l-19.52-33.41h2.55v44.55h-17.61Z"/> </g> </g> <g data-name="Layer 1-2"> <path d="M1607.25,1292.91h-50.38c1.19-2.34,3.28-1.36,4.81-1.53,7.19-.82,10.9-3.35,11.17-10.27.73-18.71,1.66-37.52-.36-56.14-1.77-16.36-12.48-22.52-28.57-18.2-3.19.85-6.06,2.34-8.88,4.07-5.04,3.08-7.68,6.19-7.18,13.29,1.16,16.28.38,32.72.42,49.09,0,2.36-.06,4.75.25,7.08,1.03,7.68,3.93,10.37,11.64,11.05,1.41.12,2.81.28,4.6.46-3.33,1.79-40.49,2.4-50.52.98,1.68-2.31,4.11-1.34,5.95-1.51,5.28-.47,9.07-3.12,9.43-8.19,1.52-21.01,3.09-42.19-.94-62.99-2.6-13.44-15.42-18.04-30.17-12.45-1.52.58-2.97,1.37-4.44,2.07-5.73,2.67-8.64,6.38-8.36,13.46.64,16.7.19,33.46.22,50.2,0,2.54.06,5.11.48,7.6,1.3,7.57,3.92,9.84,11.62,10.38,2.41.17,4.83.24,7.16,1.47h-198.7c-.05-.33-.1-.66-.14-.99,1.83-.21,3.66-.54,5.49-.62,5.53-.24,8.62-3.16,9.91-8.41.75-3.06.82-6.11.82-9.21,0-33.83,0-67.67-.01-101.5,0-2.36-.01-4.75-.37-7.07-1.19-7.66-3.37-9.69-11.2-10.88-1.03-.16-2.26.06-2.82-1.48,1.44-2.25,4.13-1.77,6.24-2.3,6.88-1.74,13.93-2.83,20.75-4.79,4.39-1.26,5.09-.1,5.06,4.08-.15,35.83-.09,71.67-.09,107.5,0,6.92-.14,13.83.11,20.74.36,10.26,4.11,13.55,14.87,13.54,10.81,0,14.7-3.18,14.76-13.54.2-36.38.21-72.76.04-109.13-.05-10.98-1.78-12.48-13.02-14.86-.46-.1-.84-.56-1.21-.82.28-1.89,1.77-1.67,2.94-1.94,8.17-1.84,16.43-3.38,24.47-5.64,4.49-1.26,4.78.46,4.78,4.07-.09,37.11-.05,74.22-.05,111.32,0,4,.06,8.01,0,12-.36,18.36,5.04,20.28,24.66,17.76,3.5-.45,5.43-3.49,6.4-6.82.87-2.98,1.15-6.05,1.14-9.17-.04-18.37-.01-36.75-.01-55.11v-.54c-.21-12.26-2.51-15-14.37-17.46,10.12-3.95,20.95-5.23,31.96-8.1v81.09c0,3.28.06,6.55,1.14,9.7,1.36,3.97,3.97,6.24,8.28,6.85,16.7,2.39,21.29-1.51,21.32-18.34.01-17.1,0-34.2,0-51.3v-1.09c-.05-13.61-1.48-15.47-14.33-18.56.66-2.41,2.97-1.84,4.47-2.2,7.78-1.88,15.68-3.32,23.45-5.26,3.14-.79,4.26-.42,4.07,3.03-.25,4.47-.06,8.97-.06,14.48,6.2-5.52,11.49-10.64,17.97-14.28,12.35-6.92,28.71-4.37,37.43,5.91,2.5,2.94,3.66,6.55,5.43,10.25,4-3.72,7.71-7.44,11.69-10.84,8.13-6.94,17.5-10.53,28.29-8.79,14.66,2.38,23.44,12.44,23.88,28.06.46,16.54.2,33.1.26,49.65,0,2.36-.06,4.74.19,7.09.95,9.11,3.56,11.63,12.6,12.5,1.13.11,2.52-.45,3.58,1.48h-.01Z"/> <path d="M1806.96,1291.3c-7.15-.67-10.06-3.27-11.15-10.32-.36-2.33-.3-4.71-.3-7.08-.04-16.18.21-32.38-.11-48.57-.36-18.09-9.18-28.66-25.81-31.21-10.83-1.66-20.59,1.29-29.11,8.14-3.59,2.88-7.05,5.93-11.2,9.42v-15.07c0-1.44.24-3.19-2.15-2.67-10.02,2.23-20.03,4.52-30.05,6.77,12.6,3.64,14.3,5.58,14.43,18.57.12,13.46.06,26.92.02,40.37-.02,6.9.05,13.82-.32,20.73-.27,5.02-2.25,9.65-7.83,10.44-15.66,2.23-20.01-1.16-20.4-15.71-.06-2.36,0-4.73-.01-7.09-.07-15.28.22-30.56-.32-45.82-.43-12-6.06-21.27-17.68-25.85-19.72-7.8-43.76,1.62-53.09,20.63-.54,1.1-2.28,2.65-.35,3.74,1.99,1.13,2.31-1.14,2.96-2.23,4.34-7.35,10.54-12.34,18.65-15.11,18.26-6.26,30.91,2.08,32.03,21.18.66,11.23.68,11.3-9.79,15.39-4.9,1.92-9.91,3.56-14.89,5.32-8.55,3.06-17.37,5.58-24.71,11.23-7.54,5.8-10.13,15.33-6.99,25.06,2.61,8.08,10.31,13.31,19.72,13.77,11.45.56,20.24-4.96,28.5-11.87,2.67-2.23,5.18-4.64,8.34-7.5,0,5.13.2,9.33-.06,13.49-.25,3.8.95,5.13,4.94,4.86,23.51-1.66,47.07-.79,70.61-1.03,1.48-.01,3.18.69,4.8-.94-1.62-1.5-3.55-.85-5.18-1.03-6.99-.78-9.96-3.59-10.73-10.67-.31-2.88-.4-5.82-.4-8.71-.04-15.27-.01-30.55-.01-45.83,0-12.15,1.1-13.8,12.58-18.13,2.2-.83,4.49-1.56,6.79-1.99,16.06-3.06,26.73,4.17,28.45,20.33,1.89,17.74.71,35.6.54,53.42,0,1.06-.41,2.14-.66,3.2-1.18,4.97-4.12,7.82-9.43,8.33-1.91.19-4.23-.57-6.2,1.37,7.55,1.4,46.99.97,50.85-.75-2.15-.24-3.71-.42-5.28-.57v-.04ZM1665.29,1269.75c0,.85-.06,1.99-.58,2.52-6.71,6.81-13.64,13.31-24.17,12.95-5.78-.2-10.91-2.03-13.31-7.78-2.51-6.03-2.5-12.04,1.77-17.47,2.97-3.77,6.77-6.56,11.04-8.71,8.07-4.06,16.13-8.12,25.28-12.71,0,11.25,0,21.22-.02,31.19h0Z"/> <path d="M612.46,1186.08c-13.13-24.52-35.73-34.99-62.09-37.91-25.06-2.77-50.31-.66-75.47-1.1-.99-.02-2.28-.36-2.59,1.2.35.84,1.1.74,1.77.79,10.94.77,13.21,2.93,14.2,13.7.19,1.99.21,4,.21,5.99,0,34.53.02,69.08,0,103.61,0,2.72-.14,5.46-.51,8.15-1.03,7.55-3.72,10.02-11.17,10.85-1.42.16-3.23-.62-4.42,1.08,1.09,1.4,2.44.85,3.58.85,21.34,0,42.69-.01,64.03-.09,9.9-.04,19.6-1.61,29.04-4.54,52.6-16.36,61.77-68.3,43.42-102.59h-.01ZM597.05,1247.08c-7.16,25.39-27.64,40.87-54.94,41.67-10.02.28-20.06-.02-30.08.26-3.58.1-4.58-.9-4.55-4.5.17-21.63.09-43.24.09-64.87s.15-42.16-.12-63.23c-.05-4.44,1.31-5.41,5.46-5.25,12.92.51,25.92-.97,38.74,1.48,24.46,4.69,39.69,19.33,45.86,43.28,4.39,17.05,4.34,34.19-.45,51.14h0Z"/> <path d="M917.46,1280.67c-10.67-1.88-21.49-.53-32.24-.82-4.74-.12-9.5.16-14.19-.79-4.57-.94-7.16-3.54-6.62-8.4.64-5.82,11.05-13.05,16.82-11.67,7.05,1.7,14.09,1.65,21.16.16,15.28-3.2,26.7-14.82,27.91-28.35,1.4-15.76-6.37-27.88-21.78-33.88-.24-.28-.83-.53-.77-.56.73-.36,1.87-.88,2.86-.57,7.63.59,15.28,1.2,22.93,1.79,1.7.14,4.01,1.14,3.9-1.97-.15-4.05.72-8.18-.53-12.19-3.77,1.37-7.18,2.62-10.59,3.87-12.15,4.45-25.03,4.66-37.63,6.51-14.41,2.12-26.96,7.39-32.63,22.02-6.1,15.75,1.04,31.49,18.19,41.01-2.02,1.2-3.84,2.34-5.72,3.38-5.61,3.12-10.95,6.56-14.98,11.67-6.36,8.06-3.79,17.48,5.79,21.16,2.13.82,4.33,1.46,7.03,2.36-6.15,3.81-11.77,7.2-16.09,12.24-8.62,10.06-6.38,22.58,5.2,28.93,2.88,1.58,5.94,2.72,9.16,3.48,11.54,2.7,23.2,2.96,34.78.85,13.38-2.43,25.65-7.35,34.15-18.67,13.08-17.41,5.21-37.79-16.09-41.56h-.01ZM872.08,1222.9c-.24-3.85.2-8.5,1.87-13,2.28-6.15,6.03-10.83,12.92-11.85,7.07-1.05,13.36.53,18.18,6.22,8.36,9.87,10.33,32.73,3.76,43.91-6.53,11.14-22.31,11.42-30.22.43-5.32-7.4-6.47-15.97-6.51-25.71h0ZM930.66,1317.48c-3.85,4.64-8.9,7.47-14.43,9.48-14.8,5.37-29.94,6.16-45.15,2.31-10.37-2.62-15.34-9.4-14.08-17.78,1.19-7.91,11.12-16.17,19.48-16.18h18.98c8.54.19,18.07-.71,27.44,1.15,4.44.88,9.5,1.39,11.31,6.38,1.96,5.41.02,10.31-3.55,14.64h0Z"/> <path d="M1285.37,1267.22c-1.98,6.79-3.89,13.6-5.95,20.35-1.1,3.59-3.29,5.78-7.52,5.77-32.67-.09-65.34-.05-98.01-.07-.46,0-.93-.28-1.83-.57,1.83-1.94,3.9-1.09,5.67-1.26,5.99-.57,8.91-2.97,10.05-8.88.54-2.83.75-5.77.75-8.66.05-35.28.04-70.57.02-105.84,0-1.82,0-3.64-.16-5.44-.93-10.29-3.59-12.86-13.88-13.56-.78-.05-1.53-.32-2.56-.53,1.65-2.31,3.64-1.41,5.26-1.41,31.21-.06,62.42.04,93.63-.14,4.22-.02,5.75.9,5.47,5.35-.41,6.43-.11,12.91-.11,19.33-1.94.12-1.86-.89-1.94-1.76-1.19-11.53-4.84-16.33-16.49-17.09-15.81-1.03-31.74-.46-47.6-.62-2.34-.02-2.59,1.24-2.59,3.11.04,19.09.06,38.18-.02,57.29,0,2.36.72,3.16,3.11,3.13,11.68-.11,23.37.26,35.03-.22,10.37-.42,14.39-4.47,16.49-14.76.24-1.13-.12-2.59,1.74-3.25v40.84c-2.35-.92-1.58-3.04-1.93-4.59-1.82-8.18-5.17-11.58-13.43-12.81-12.71-1.91-25.51-.46-38.26-.92-2.19-.07-2.76.85-2.76,2.9.05,21.1.06,42.19,0,63.29,0,2.21.9,2.8,2.93,2.78,15.52-.14,31.04.32,46.52-.48,11.28-.58,19.98-6.31,24.62-17.12.79-1.83,1.71-3.6,2.57-5.41,1.05-.17,1.55.16,1.16,1.29h.01Z"/> <path d="M848.07,1293.02c-10.63.43-21.02.89-31.43,1.27-2.34.09-2.47-1.62-2.46-3.38.01-4.28,0-8.56,0-13.49-4.84,3.92-8.9,7.46-13.21,10.68-10.07,7.51-21.32,8.97-33.2,5.53-11.31-3.28-18.91-12.94-19.34-25.66-.54-15.99-.28-32-.37-48.01,0-2.18.06-4.37-.05-6.55-.62-12.05-2.75-14.27-14.72-15.49-.47-.05-.9-.41-1.34-.62.09-.47.15-1.08.22-1.08,10.36-.47,20.73-.89,31.09-1.34,3.53-.15,2.44,2.49,2.44,4.21.06,20.19.05,40.37.02,60.57,0,4.92.15,9.82,1.55,14.59,3.49,11.88,13.23,16.06,27.26,11.69,6.93-2.15,12.61-6.36,18.13-10.9,1.78-1.46,1.48-3.16,1.5-4.9.02-18.73,0-37.47,0-56.2,0-10.64-3.63-17.41-14.72-16.01-.68.09-1.46-.12-1.52-1.25.43-1.36,1.72-.84,2.66-.87,8.93-.32,17.87-.41,26.79-.95,3.7-.22,4.48.95,4.45,4.45-.15,24.19-.09,48.38-.07,72.57,0,2-.07,4.01.09,6,.98,11.38,4.96,13.55,13.26,13.57.94,0,2.23-.49,2.94,1.55h.04Z"/> <path d="M682.01,1193.82c-29.67,0-51.96,21.59-51.89,50.27.07,29.84,21.86,51.29,52.03,51.23,29.42-.07,52.07-22.14,51.83-50.52-.25-29.32-22.32-50.98-51.97-50.97h0ZM710.17,1272.02c-4.11,10.53-10.89,18.13-22.75,19.27-12.53,1.21-22.38-3.59-29.05-14.43-5.69-9.24-7.36-19.6-8.14-30.14-.78-10.42,0-20.7,4.02-30.48,4.07-9.89,10.91-16.68,22.01-17.99,11.93-1.41,21.43,2.81,28.2,12.79,7.57,11.17,8.95,23.93,9.39,38.27-.07,6.83-.64,14.93-3.67,22.71h0Z"/> <path d="M1089.83,1292.16c-1.13-1.27-2.68-.63-4.02-.75-7.97-.77-10.96-3.53-11.88-11.46-.27-2.34-.19-4.71-.19-7.08-.02-16.01.21-32.01-.14-48.01-.27-12.41-4.71-22.78-17.04-28.05-19.86-8.5-44.7.83-54.05,20.22-.57,1.19-2.12,2.76-.17,3.72,1.98.99,2.21-1.32,2.87-2.41,5.38-8.95,13.34-14.17,23.46-16.33,14.37-3.07,24.5,3.89,26.57,18.37.52,3.59.48,7.25.95,10.85.43,3.39-.75,5.18-4.07,6.42-6.81,2.54-13.52,5.3-20.45,7.55-8.81,2.85-17.73,5.59-25.25,11.32-7.54,5.73-10.08,15.03-6.99,25.03,2.38,7.68,10.23,13.25,19.19,13.75,7.97.45,15.01-1.95,21.63-6.24,5.62-3.63,10.38-8.23,15.91-13.56,0,5.84.07,10.53-.02,15.19-.05,2.4.52,3.67,3.33,3.64,10.13-.12,20.28-.05,30.41-.05,0-.72-.02-1.44-.04-2.15v.02ZM1056.1,1262.35c-.43,4.27,1.51,8.81-2.99,12.51-6.56,5.39-12.87,10.85-22.09,10.37-5.8-.31-10.88-2.17-13.15-8.02-2.28-5.86-2.38-11.72,1.67-17.05,2.34-3.08,5.31-5.48,8.62-7.45,7.83-4.63,16.15-8.31,24.33-12.27,2.91-1.41,3.82-1,3.69,2.28-.19,4.36-.05,8.72-.05,13.09,0,2.18.19,4.38-.04,6.55h.01Z"/> <path d="M995.1,1293.31c-16.49,0-32.52,0-48.54-.02-.61,0-1.47.19-1.76-1.08,1.21-1.3,2.96-.69,4.42-.85,7.8-.82,10.93-3.89,11.63-11.72.14-1.45.12-2.91.12-4.36v-104.74c0-3.09-.14-6.15-1.08-9.16-1.61-5.12-5.27-7.05-10.32-7.24-.99-.04-2.54.28-2.76-1.09-.32-1.94,1.5-1.61,2.64-1.87,8.51-1.94,17.09-3.7,25.54-5.88,3.35-.87,3.66.43,3.64,3.12-.07,12.19-.02,24.36-.02,36.55v87.28c0,2-.04,4.01.14,6,.8,9.66,3.45,12.29,13.07,13.19.98.09,2.2-.43,3.29,1.86Z"/> <path d="M1151.12,1224.58c-1.34-4.07-2.34-8.29-4.06-12.2-5.7-12.99-21.41-18.36-34.06-11.85-8.85,4.54-10.38,15.62-3.02,22.28,3.25,2.94,7.09,5.07,11.12,6.78,7.54,3.2,14.95,6.63,21.93,10.94,11.75,7.26,16.94,19.02,14.11,32.11-2.67,12.35-12.25,21.06-25.67,22.45-11.66,1.21-22.84-.99-33.31-6.46-2.8-1.46-4.32-3.43-4.79-6.69-.92-6.38-2.3-12.72-3.58-19.53,3.6.71,3.33,3.37,4.12,5.11,4.65,10.13,10.08,19.45,21.9,22.68,6.67,1.82,13.41,2.03,19.81-.72,11.33-4.88,14.02-17.77,5.8-27.05-4.07-4.6-9.47-7.3-14.91-9.86-6.57-3.09-13.35-5.77-19.46-9.8-6.31-4.17-10.88-9.55-12.67-17.05-3.58-14.85,3.2-26.7,17.95-30.4,12.05-3.02,23.84-1.93,35.08,3.77,2.83,1.44,4.37,3.23,4.4,6.68.07,6.21,1.24,12.41-.73,18.81h.04Z"/> <path d="M1419.98,1162.97c0,7.05-5.3,12.36-12.4,12.44-7.21.07-12.81-5.48-12.77-12.71.02-6.81,5.64-12.42,12.5-12.53,7.19-.11,12.67,5.43,12.67,12.81h0Z"/> <path d="M1285.37,1267.22c-.38-.43-.78-.85-1.16-1.29.45-1.22.46-2.72,2.41-3.51.12,1.93-.04,3.48-1.25,4.8Z"/> <g> <path d="M356.9,1130.92c-49.33,0-89.34,40-89.34,89.34s40,89.34,89.34,89.34,89.35-40,89.35-89.34-40-89.34-89.35-89.34ZM356.9,1300.66c-44.4,0-80.4-35.99-80.4-80.4s36.01-80.39,80.4-80.39,80.4,35.99,80.4,80.39-35.99,80.4-80.4,80.4h0Z"/> <path d="M337,1175.5v89.22c-16.82-7.82-28.47-24.86-28.47-44.61s11.66-36.8,28.47-44.61h0Z"/> <path d="M356.9,1147.77c-40.03,0-72.48,32.46-72.48,72.48s32.46,72.48,72.48,72.48,72.48-32.46,72.48-72.48-32.44-72.48-72.48-72.48ZM350.8,1283.15c-4.79-.54-9.4-1.62-13.8-3.17-24.6-8.65-42.23-32.1-42.23-59.65s17.63-51,42.23-59.65c4.39-1.55,9.02-2.62,13.8-3.17v125.64ZM378.4,1279.97c-4.4,1.5-9.02,2.54-13.8,3.03v-125.78c4.78.49,9.39,1.52,13.8,3.03,22.32,7.6,39.03,27.35,42.24,51.36h-14.49c-2.73-16.15-13.35-29.62-27.75-36.32v36.32h19.19v13.97h-19.19v38.91c15.17-7.05,26.13-21.62,28.12-38.91h14.45c-2.18,25.37-19.33,46.46-42.59,54.39h.01Z"/> </g> </g> </svg>`;
-const LOGO_GVC_NAVY = `<svg fill="#00273A" data-name="GVC All Integrated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000"> <g> <g> <path d="M337.43,898.24l-2.3-6.66c13.73-5.6,28.67-8.59,43.98-8.59,9.58,0,18.7.9,27.15,2.47,2.68.5,5.29,1.07,7.83,1.69,10.45,2.59,19.67,6.23,27.23,10.44l-8.76,47.6-4.1-.58c-3.04-18.82-10.17-32.75-20.06-42.02-2.04-1.91-4.2-3.62-6.46-5.14-8.92-5.98-19.49-8.91-31-8.91-12.17,0-23.57,3.31-33.51,9.7Z"/> <path d="M435.48,1043.02l3.22,1.17c-11.98,28.32-34.17,51.69-73.88,51.69-55.78,0-97.25-45.85-97.25-103.67,0-31.5,12.21-57.89,31.36-76.84l8.48,23.69c-4.39,12.76-6.84,27.81-6.84,44.98,0,57.53,30.66,91.7,74.17,91.7,28.62,0,49.94-15.19,60.74-32.71Z"/> </g> <path d="M392.15,899.1l-43.8,118.25c-.18.48-.64.8-1.15.8h-3.55c-.52,0-.98-.33-1.16-.81l-61.72-171.77c-7.67-21.29-18.91-29.91-30.54-31.74-.6-.09-1.05-.6-1.05-1.21v-.34c0-.68.55-1.23,1.23-1.23h74.47c.68,0,1.23.55,1.23,1.23v.19c0,.67-.54,1.21-1.21,1.23-15.17.4-20.56,8.36-14.29,26.6l46.25,133.62c.38,1.09,1.92,1.11,2.32.02l27.81-76.82"/> <path d="M394.12,877.43l5.71-15.77c10.91-30.72.4-47.35-20.73-47.95-.67-.02-1.21-.55-1.21-1.22v-.2c0-.68.55-1.23,1.23-1.23h67.8v2.63c-16.97,1.46-30.13,18.72-40.37,46.51l-6.62,17.88"/> <path d="M389.83,774.11h-80.32c-.68,0-1.23.55-1.23,1.23h0c0,.64.47,1.16,1.08,1.23,11.52,1.39,29.92,6.88,29.92,24.45v32.77c0,12.18-5.23,21.6-14.7,27.15l2.51,7.29c15.47-3.48,29.32-9.18,39.34-14.5.4-.22.65-.63.65-1.08v-51.62c0-17.64,9.95-23.09,22.88-24.46.63-.07,1.1-.59,1.1-1.22,0-.68-.55-1.23-1.23-1.23ZM221.83,747.08c3.62-49.7,30.35-84.71,72.7-84.71,31.06,0,53.18,20.75,60.38,57.93.1.51.51.91,1.02.99l2.06.3c.65.09,1.26-.35,1.38-1l8.42-47.97c.09-.52-.15-1.05-.62-1.3-12.85-6.88-38.42-13.62-66.51-13.62-63.77,0-112.91,43.88-112.91,107.35,0,52.53,38.3,98.17,95.11,105.46l-2.47-6.9c-35.48-10.76-59-50.17-59-104.7,0-1.78.03-3.54.08-5.29.07-2.21.19-4.38.35-6.53Z"/> </g> <g> <g> <path d="M537.13,939.63l-56.25-123.54h34.17l40.48,93.57h-9.81l40.48-93.57h32.77l-56.07,123.54h-25.76Z"/> <path d="M635.26,939.63v-123.54h87.26v24.88h-56.6v23.48h52.74v24.88h-52.74v25.41h56.6v24.88h-87.26Z"/> <path d="M751.96,939.63v-123.54h59.58c13.9,0,24.65,3.42,32.24,10.25,7.59,6.83,11.39,16.33,11.39,28.47,0,7.95-1.69,14.78-5.08,20.5-3.39,5.73-8.35,10.14-14.89,13.23-6.54,3.1-14.43,4.64-23.66,4.64l1.23-3.15h8.59c4.91,0,9.29,1.2,13.14,3.59,3.86,2.4,7.07,6.05,9.64,10.95l19.28,35.05h-35.22l-21.55-39.43c-.94-1.63-2.05-2.95-3.33-3.94-1.29-.99-2.69-1.69-4.21-2.1-1.52-.41-3.27-.61-5.26-.61h-9.64v46.09h-32.24ZM784.2,870.77h21.38c6.19,0,10.89-1.23,14.11-3.68,3.21-2.45,4.82-6.19,4.82-11.21s-1.61-8.94-4.82-11.39c-3.21-2.45-7.92-3.68-14.11-3.68h-21.38v29.96Z"/> <path d="M884.78,939.63v-123.54h50.99c14.37,0,26.57,2.45,36.62,7.36,10.05,4.91,17.7,11.95,22.95,21.12,5.26,9.17,7.89,20.24,7.89,33.21s-2.63,24.09-7.89,33.38c-5.26,9.29-12.91,16.36-22.95,21.2-10.05,4.85-22.25,7.27-36.62,7.27h-50.99ZM917.03,913.52h16.82c12.15,0,21.2-2.98,27.16-8.94,5.96-5.96,8.94-14.89,8.94-26.81s-2.98-20.97-8.94-26.81c-5.96-5.84-15.01-8.76-27.16-8.76h-16.82v71.32Z"/> <path d="M1031.63,939.63v-123.54h32.24v123.54h-32.24Z"/> <path d="M1158.49,941.73c-14.14,0-26.14-2.66-36.01-7.97-9.87-5.31-17.41-12.7-22.6-22.17-5.2-9.46-7.8-20.5-7.8-33.12s2.72-24.44,8.15-34.08c5.43-9.64,13.26-17.11,23.48-22.43,10.22-5.31,22.52-7.97,36.89-7.97,5.72,0,11.33.56,16.82,1.66,5.49,1.11,10.54,2.6,15.16,4.47,4.61,1.87,8.56,4.09,11.83,6.66l-9.81,24.88c-5.37-3.5-10.81-6.05-16.3-7.62-5.49-1.58-11.27-2.37-17.35-2.37-11.92,0-20.79,3.15-26.63,9.46-5.84,6.31-8.76,15.42-8.76,27.34s2.95,20.91,8.85,26.99c5.9,6.08,14.57,9.11,26.02,9.11,3.5,0,7.3-.35,11.39-1.05,4.09-.7,8.29-1.75,12.62-3.15l-5.96,12.27v-29.96h-24.71v-22.6h50.99v61.86c-4.44,2.1-9.17,3.89-14.19,5.34-5.02,1.46-10.25,2.57-15.68,3.33-5.43.76-10.89,1.14-16.38,1.14Z"/> <path d="M1235.42,939.63v-123.54h32.24v96.73h54.85v26.81h-87.09Z"/> <path d="M1347.03,939.63v-123.54h32.24v123.54h-32.24Z"/> <path d="M1470.39,941.73c-9.46,0-18.05-1.55-25.76-4.64-7.71-3.09-14.31-7.45-19.8-13.05-5.49-5.61-9.76-12.35-12.79-20.24-3.04-7.89-4.56-16.62-4.56-26.2s1.49-18.25,4.47-26.02c2.98-7.77,7.27-14.43,12.88-19.98,5.61-5.55,12.27-9.87,19.98-12.97,7.71-3.09,16.24-4.64,25.58-4.64s17.87,1.52,25.58,4.56c7.71,3.04,14.34,7.36,19.89,12.97,5.55,5.61,9.81,12.3,12.79,20.06,2.98,7.77,4.47,16.44,4.47,26.02s-1.49,18.46-4.47,26.28c-2.98,7.83-7.24,14.54-12.79,20.15-5.55,5.61-12.18,9.96-19.89,13.05s-16.24,4.64-25.58,4.64ZM1470.57,914.57c6.07,0,11.27-1.46,15.6-4.38,4.32-2.92,7.65-7.12,9.99-12.62,2.34-5.49,3.5-12.09,3.5-19.8s-1.17-14.31-3.5-19.8c-2.34-5.49-5.7-9.66-10.08-12.53-4.38-2.86-9.61-4.29-15.68-4.29s-11.3,1.43-15.68,4.29c-4.38,2.86-7.77,7.04-10.16,12.53-2.4,5.49-3.59,12.09-3.59,19.8s1.2,14.31,3.59,19.8c2.39,5.49,5.78,9.7,10.16,12.62,4.38,2.92,9.66,4.38,15.86,4.38Z"/> <path d="M1561.34,939.63v-123.54h23.66l61.68,76.93h-4.91v-76.93h29.96v123.54h-23.66l-61.68-77.1h4.91v77.1h-29.96Z"/> <path d="M1703.27,939.63v-123.54h87.26v24.88h-56.6v23.48h52.74v24.88h-52.74v25.41h56.6v24.88h-87.26Z"/> </g> <g> <path d="M796.45,787.58c-14.14,0-26.14-2.66-36.01-7.97-9.87-5.31-17.41-12.7-22.6-22.17-5.2-9.46-7.8-20.5-7.8-33.12s2.72-24.44,8.15-34.08c5.43-9.64,13.26-17.11,23.48-22.43,10.22-5.31,22.52-7.97,36.89-7.97,5.72,0,11.33.56,16.82,1.66,5.49,1.11,10.54,2.6,15.16,4.47,4.61,1.87,8.56,4.09,11.83,6.66l-9.81,24.88c-5.37-3.5-10.81-6.05-16.3-7.62-5.49-1.58-11.27-2.37-17.35-2.37-11.92,0-20.79,3.15-26.63,9.46-5.84,6.31-8.76,15.42-8.76,27.34s2.95,20.91,8.85,26.99c5.9,6.08,14.57,9.11,26.02,9.11,3.5,0,7.3-.35,11.39-1.05,4.09-.7,8.29-1.75,12.62-3.15l-5.96,12.27v-29.96h-24.71v-22.6h50.99v61.86c-4.44,2.1-9.17,3.89-14.19,5.34-5.02,1.46-10.25,2.57-15.68,3.33-5.43.76-10.89,1.14-16.38,1.14Z"/> <path d="M858.66,785.48l57.48-123.54h25.58l57.83,123.54h-32.24l-14.54-33.99,12.44,9.11h-72.37l12.27-9.11-14.54,33.99h-31.89ZM928.75,695.59l-20.33,48.54-4.91-8.41h50.99l-5.08,8.41-20.33-48.54h-.35Z"/> <path d="M1062.27,787.58c-6.54,0-12.88-.56-19.01-1.66-6.13-1.11-11.86-2.66-17.17-4.64-5.32-1.98-9.9-4.38-13.76-7.18l8.94-24.88c3.62,2.34,7.65,4.41,12.09,6.22,4.44,1.81,9.11,3.21,14.02,4.21,4.91.99,9.87,1.49,14.89,1.49,7.59,0,12.94-1.08,16.03-3.24,3.09-2.16,4.64-4.7,4.64-7.62,0-1.75-.47-3.3-1.4-4.64-.94-1.34-2.48-2.51-4.64-3.5-2.16-.99-5.05-1.84-8.67-2.54l-20.5-4.38c-11.33-2.45-19.71-6.57-25.15-12.35-5.43-5.78-8.15-13.29-8.15-22.52,0-8.18,2.19-15.27,6.57-21.29,4.38-6.02,10.51-10.72,18.4-14.11,7.88-3.39,16.97-5.08,27.25-5.08,5.72,0,11.27.56,16.65,1.66,5.37,1.11,10.31,2.66,14.81,4.64,4.5,1.99,8.32,4.38,11.48,7.18l-8.94,23.66c-4.44-3.39-9.61-6.02-15.51-7.89-5.9-1.87-12.18-2.8-18.84-2.8-4.32,0-8,.53-11.04,1.58-3.04,1.05-5.34,2.51-6.92,4.38-1.58,1.87-2.37,4.03-2.37,6.48s1.05,4.53,3.15,6.22c2.1,1.69,5.84,3.07,11.21,4.12l20.33,4.38c11.33,2.45,19.8,6.51,25.41,12.18,5.61,5.67,8.41,13,8.41,21.99,0,7.95-2.16,14.92-6.48,20.94-4.32,6.02-10.4,10.69-18.22,14.02-7.83,3.33-17,4.99-27.51,4.99Z"/> <path d="M1139.37,785.48v-123.54h50.99c14.37,0,26.57,2.45,36.62,7.36,10.05,4.91,17.7,11.95,22.95,21.12,5.26,9.17,7.89,20.24,7.89,33.21s-2.63,24.09-7.89,33.38c-5.26,9.29-12.91,16.36-22.95,21.2-10.05,4.85-22.25,7.27-36.62,7.27h-50.99ZM1171.61,759.37h16.82c12.15,0,21.2-2.98,27.16-8.94,5.96-5.96,8.94-14.89,8.94-26.81s-2.98-20.97-8.94-26.81c-5.96-5.84-15.01-8.76-27.16-8.76h-16.82v71.32Z"/> <path d="M1271.49,785.48l57.48-123.54h25.58l57.83,123.54h-32.24l-14.54-33.99,12.44,9.11h-72.37l12.27-9.11-14.54,33.99h-31.89ZM1341.58,695.59l-20.33,48.54-4.91-8.41h50.99l-5.08,8.41-20.33-48.54h-.35Z"/> <path d="M1475.1,787.58c-6.54,0-12.88-.56-19.01-1.66-6.13-1.11-11.86-2.66-17.17-4.64-5.32-1.98-9.9-4.38-13.76-7.18l8.94-24.88c3.62,2.34,7.65,4.41,12.09,6.22,4.44,1.81,9.11,3.21,14.02,4.21,4.91.99,9.87,1.49,14.89,1.49,7.59,0,12.94-1.08,16.03-3.24,3.09-2.16,4.64-4.7,4.64-7.62,0-1.75-.47-3.3-1.4-4.64-.94-1.34-2.48-2.51-4.64-3.5-2.16-.99-5.05-1.84-8.67-2.54l-20.5-4.38c-11.33-2.45-19.71-6.57-25.15-12.35s-8.15-13.29-8.15-22.52c0-8.18,2.19-15.27,6.57-21.29,4.38-6.02,10.51-10.72,18.4-14.11,7.88-3.39,16.97-5.08,27.25-5.08,5.72,0,11.27.56,16.65,1.66,5.37,1.11,10.31,2.66,14.81,4.64,4.5,1.99,8.32,4.38,11.48,7.18l-8.94,23.66c-4.44-3.39-9.61-6.02-15.51-7.89-5.9-1.87-12.18-2.8-18.84-2.8-4.32,0-8,.53-11.04,1.58-3.04,1.05-5.34,2.51-6.92,4.38-1.58,1.87-2.37,4.03-2.37,6.48s1.05,4.53,3.15,6.22c2.1,1.69,5.84,3.07,11.21,4.12l20.33,4.38c11.33,2.45,19.8,6.51,25.41,12.18,5.61,5.67,8.41,13,8.41,21.99,0,7.95-2.16,14.92-6.48,20.94-4.32,6.02-10.4,10.69-18.22,14.02-7.83,3.33-17,4.99-27.51,4.99Z"/> <path d="M1552.2,785.48v-123.54h32.24v52.92h.35l47.84-52.92h38.2l-60.8,65.19.17-13.32,62.73,71.67h-38.55l-49.59-55.9h-.35v55.9h-32.24Z"/> <path d="M1671.35,785.48l57.48-123.54h25.58l57.83,123.54h-32.24l-14.54-33.99,12.44,9.11h-72.37l12.27-9.11-14.54,33.99h-31.89ZM1741.45,695.59l-20.33,48.54-4.91-8.41h50.99l-5.08,8.41-20.33-48.54h-.35Z"/> </g> <g> <path d="M490.4,785.48v-58.87h-23.66v-15.91h66.94v15.91h-23.76v58.87h-19.52Z"/> <path d="M546.63,785.48v-74.79h19.52v28.96h30.87v-28.96h19.41v74.79h-19.41v-29.91h-30.87v29.91h-19.52Z"/> <path d="M635.52,785.48v-74.79h52.83v15.06h-34.26v14.21h31.93v15.06h-31.93v15.38h34.26v15.06h-52.83Z"/> </g> <g> <path d="M635.75,1095.88c-13.67,0-25.41-2.66-35.22-7.97-9.81-5.31-17.38-12.73-22.69-22.25-5.32-9.52-7.97-20.76-7.97-33.73s2.66-24.18,7.97-33.64c5.31-9.46,12.88-16.85,22.69-22.17,9.81-5.31,21.55-7.97,35.22-7.97,8.06,0,15.89,1.29,23.48,3.86,7.59,2.57,13.73,5.96,18.4,10.16l-9.64,25.23c-5.02-3.74-10.14-6.48-15.33-8.24-5.2-1.75-10.54-2.63-16.03-2.63-10.86,0-19.01,3.04-24.44,9.11-5.43,6.08-8.15,14.84-8.15,26.28s2.72,20.24,8.15,26.37c5.43,6.13,13.58,9.2,24.44,9.2,5.49,0,10.83-.88,16.03-2.63,5.2-1.75,10.31-4.5,15.33-8.24l9.64,25.23c-4.67,4.21-10.81,7.6-18.4,10.16-7.6,2.57-15.42,3.86-23.48,3.86Z"/> <path d="M762.27,1095.88c-9.46,0-18.05-1.55-25.76-4.64s-14.31-7.45-19.8-13.05c-5.49-5.61-9.76-12.35-12.79-20.24-3.04-7.89-4.56-16.62-4.56-26.2s1.49-18.25,4.47-26.02c2.98-7.77,7.27-14.43,12.88-19.98,5.61-5.55,12.27-9.87,19.98-12.97,7.71-3.09,16.24-4.64,25.58-4.64s17.87,1.52,25.58,4.56c7.71,3.04,14.34,7.36,19.89,12.97,5.55,5.61,9.81,12.3,12.79,20.06,2.98,7.77,4.47,16.44,4.47,26.02s-1.49,18.46-4.47,26.28c-2.98,7.83-7.24,14.54-12.79,20.15-5.55,5.61-12.18,9.96-19.89,13.05s-16.24,4.64-25.58,4.64ZM762.44,1068.72c6.07,0,11.27-1.46,15.6-4.38,4.32-2.92,7.65-7.12,9.99-12.62,2.34-5.49,3.5-12.09,3.5-19.8s-1.17-14.31-3.5-19.8c-2.34-5.49-5.7-9.66-10.08-12.53-4.38-2.86-9.61-4.29-15.68-4.29s-11.3,1.43-15.68,4.29c-4.38,2.86-7.77,7.04-10.16,12.53-2.4,5.49-3.59,12.09-3.59,19.8s1.2,14.31,3.59,19.8c2.39,5.49,5.78,9.7,10.16,12.62,4.38,2.92,9.66,4.38,15.86,4.38Z"/> <path d="M853.21,1093.78v-123.54h23.66l61.68,76.93h-4.91v-76.93h29.96v123.54h-23.66l-61.68-77.1h4.91v77.1h-29.96Z"/> <path d="M995.14,1093.78v-123.54h32.24v96.73h54.85v26.81h-87.09Z"/> <path d="M1166.34,1095.88c-9.46,0-18.05-1.55-25.76-4.64s-14.31-7.45-19.8-13.05c-5.49-5.61-9.76-12.35-12.79-20.24-3.04-7.89-4.56-16.62-4.56-26.2s1.49-18.25,4.47-26.02c2.98-7.77,7.27-14.43,12.88-19.98,5.61-5.55,12.27-9.87,19.98-12.97,7.71-3.09,16.24-4.64,25.58-4.64s17.87,1.52,25.58,4.56c7.71,3.04,14.34,7.36,19.89,12.97,5.55,5.61,9.81,12.3,12.79,20.06,2.98,7.77,4.47,16.44,4.47,26.02s-1.49,18.46-4.47,26.28c-2.98,7.83-7.24,14.54-12.79,20.15-5.55,5.61-12.18,9.96-19.89,13.05-7.71,3.09-16.24,4.64-25.58,4.64ZM1166.51,1068.72c6.07,0,11.27-1.46,15.6-4.38,4.32-2.92,7.65-7.12,9.99-12.62,2.34-5.49,3.5-12.09,3.5-19.8s-1.17-14.31-3.5-19.8c-2.34-5.49-5.7-9.66-10.08-12.53-4.38-2.86-9.61-4.29-15.68-4.29s-11.3,1.43-15.68,4.29c-4.38,2.86-7.77,7.04-10.16,12.53-2.4,5.49-3.59,12.09-3.59,19.8s1.2,14.31,3.59,19.8c2.39,5.49,5.78,9.7,10.16,12.62,4.38,2.92,9.66,4.38,15.86,4.38Z"/> <path d="M1257.28,1093.78v-123.54h23.66l61.68,76.93h-4.91v-76.93h29.96v123.54h-23.66l-61.68-77.1h4.91v77.1h-29.96Z"/> </g> <g> <path d="M1414.15,1049.85v-58.87h-23.66v-15.91h66.94v15.91h-23.76v58.87h-19.52Z"/> <path d="M1470.37,1049.85v-74.79h52.83v15.06h-34.26v14.21h31.93v15.06h-31.93v15.38h34.26v15.06h-52.83Z"/> <path d="M1532.11,1049.85l34.79-74.79h15.49l35.01,74.79h-19.52l-8.8-20.58,7.53,5.52h-43.81l7.43-5.52-8.8,20.58h-19.31ZM1574.54,995.43l-12.3,29.38-2.97-5.09h30.87l-3.08,5.09-12.3-29.38h-.21Z"/> <path d="M1627.68,1049.85v-74.79h16.23l25.67,46.25h-3.61l25.67-46.25h15.81v74.79h-17.61v-44.45h2.23l-19.31,33.31h-10.5l-19.52-33.41h2.55v44.55h-17.61Z"/> </g> </g> </svg>`;
-const LOGO_MONO_WHITE = `<svg fill="#fff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000"> <g data-name="Layer 1"> <g> <g> <path d="M1057.97,1061.9l-6.62-19.22c39.61-16.17,82.73-24.78,126.91-24.78,27.65,0,53.96,2.59,78.33,7.11,7.73,1.45,15.26,3.08,22.58,4.89,30.16,7.48,56.76,17.98,78.56,30.14l-25.27,137.34-11.82-1.68c-8.77-54.3-29.34-94.5-57.9-121.25-5.9-5.51-12.11-10.45-18.63-14.82-25.74-17.25-56.24-25.71-89.46-25.71-35.1,0-68.01,9.55-96.7,27.99Z"/> <path d="M1340.87,1479.67l9.29,3.39c-34.56,81.72-98.59,149.14-213.19,149.14-160.96,0-280.6-132.3-280.6-299.13,0-90.88,35.23-167.04,90.49-221.72l24.47,68.35c-12.68,36.81-19.74,80.25-19.74,129.79,0,166,88.47,264.59,214.02,264.59,82.57,0,144.09-43.82,175.26-94.4Z"/> </g> <path d="M1215.85,1064.39l-126.38,341.21c-.52,1.39-1.84,2.31-3.32,2.31h-10.23c-1.5,0-2.83-.94-3.34-2.35l-178.09-495.63c-22.12-61.44-54.58-86.31-88.11-91.57-1.74-.27-3.04-1.73-3.04-3.5v-.98c0-1.96,1.59-3.55,3.55-3.55h214.89c1.96,0,3.55,1.59,3.55,3.55v.56c0,1.94-1.57,3.48-3.5,3.54-43.76,1.14-59.32,24.12-41.23,76.76l133.46,385.54c1.09,3.16,5.55,3.19,6.68.05l80.24-221.65"/> <path d="M1221.54,1001.87l16.47-45.5c31.48-88.64,1.17-136.62-59.81-138.37-1.93-.06-3.49-1.6-3.49-3.53v-.57c0-1.96,1.59-3.55,3.55-3.55h195.64v7.6c-48.95,4.22-86.93,54.02-116.48,134.2l-19.1,51.58"/> <path d="M1209.14,703.75h-231.76c-1.97,0-3.54,1.58-3.54,3.54v.03c0,1.81,1.35,3.31,3.13,3.52,33.24,4.01,86.33,19.84,86.33,70.55v94.55c0,35.16-15.08,62.32-42.43,78.33l7.24,21.03c44.62-10.04,84.59-26.49,113.51-41.83,1.16-.62,1.86-1.81,1.86-3.13v-148.95c0-50.88,28.71-66.64,66.02-70.57,1.81-.21,3.18-1.71,3.18-3.52,0-1.97-1.58-3.54-3.54-3.54ZM724.41,625.75c10.45-143.39,87.57-244.44,209.77-244.44,89.61,0,153.46,59.86,174.23,167.17.28,1.48,1.47,2.64,2.95,2.85l5.95.85c1.89.26,3.65-1.01,3.98-2.9l24.29-138.43c.26-1.5-.44-3.03-1.79-3.75-37.07-19.84-110.85-39.3-191.9-39.3-184.01,0-325.8,126.6-325.8,309.76,0,151.57,110.51,283.27,274.42,304.3l-7.11-19.92c-102.36-31.04-170.24-144.76-170.24-302.1,0-5.12.08-10.22.23-15.26.21-6.36.54-12.65,1.01-18.83Z"/> </g> </g> <g data-name="GVC All Integrated"> <g> <g> <path d="M1057.97,1061.9l-6.62-19.22c39.61-16.17,82.73-24.78,126.91-24.78,27.65,0,53.96,2.59,78.33,7.11,7.73,1.45,15.26,3.08,22.58,4.89,30.16,7.48,56.76,17.98,78.56,30.14l-25.27,137.34-11.82-1.68c-8.77-54.3-29.34-94.5-57.9-121.25-5.9-5.51-12.11-10.45-18.63-14.82-25.74-17.25-56.24-25.71-89.46-25.71-35.1,0-68.01,9.55-96.7,27.99Z"/> <path d="M1340.87,1479.67l9.29,3.39c-34.56,81.72-98.59,149.14-213.19,149.14-160.96,0-280.6-132.3-280.6-299.13,0-90.88,35.23-167.04,90.49-221.72l24.47,68.35c-12.68,36.81-19.74,80.25-19.74,129.79,0,166,88.47,264.59,214.02,264.59,82.57,0,144.09-43.82,175.26-94.4Z"/> </g> <path d="M1215.85,1064.39l-126.38,341.21c-.52,1.39-1.84,2.31-3.32,2.31h-10.23c-1.5,0-2.83-.94-3.34-2.35l-178.09-495.63c-22.12-61.44-54.58-86.31-88.11-91.57-1.74-.27-3.04-1.73-3.04-3.5v-.98c0-1.96,1.59-3.55,3.55-3.55h214.89c1.96,0,3.55,1.59,3.55,3.55v.56c0,1.94-1.57,3.48-3.5,3.54-43.76,1.14-59.32,24.12-41.23,76.76l133.46,385.54c1.09,3.16,5.55,3.19,6.68.05l80.24-221.65"/> <path d="M1221.54,1001.87l16.47-45.5c31.48-88.64,1.17-136.62-59.81-138.37-1.93-.06-3.49-1.6-3.49-3.53v-.57c0-1.96,1.59-3.55,3.55-3.55h195.64v7.6c-48.95,4.22-86.93,54.02-116.48,134.2l-19.1,51.58"/> <path d="M1209.14,703.75h-231.76c-1.97,0-3.54,1.58-3.54,3.54v.03c0,1.81,1.35,3.31,3.13,3.52,33.24,4.01,86.33,19.84,86.33,70.55v94.55c0,35.16-15.08,62.32-42.43,78.33l7.24,21.03c44.62-10.04,84.59-26.49,113.51-41.83,1.16-.62,1.86-1.81,1.86-3.13v-148.95c0-50.88,28.71-66.64,66.02-70.57,1.81-.21,3.18-1.71,3.18-3.52,0-1.97-1.58-3.54-3.54-3.54ZM724.41,625.75c10.45-143.39,87.57-244.44,209.77-244.44,89.61,0,153.46,59.86,174.23,167.17.28,1.48,1.47,2.64,2.95,2.85l5.95.85c1.89.26,3.65-1.01,3.98-2.9l24.29-138.43c.26-1.5-.44-3.03-1.79-3.75-37.07-19.84-110.85-39.3-191.9-39.3-184.01,0-325.8,126.6-325.8,309.76,0,151.57,110.51,283.27,274.42,304.3l-7.11-19.92c-102.36-31.04-170.24-144.76-170.24-302.1,0-5.12.08-10.22.23-15.26.21-6.36.54-12.65,1.01-18.83Z"/> </g> </g> </svg>`;
-const LOGO_MONO_NAVY = LOGO_MONO_WHITE.replace(/fill="#fff"/g, 'fill="#00273A"');
-const BADGE_DE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="261 1125 192 192" fill="#00273A"><g> <path d="M356.9,1130.92c-49.33,0-89.34,40-89.34,89.34s40,89.34,89.34,89.34,89.35-40,89.35-89.34-40-89.34-89.35-89.34ZM356.9,1300.66c-44.4,0-80.4-35.99-80.4-80.4s36.01-80.39,80.4-80.39,80.4,35.99,80.4,80.39-35.99,80.4-80.4,80.4h0Z"/> <path d="M337,1175.5v89.22c-16.82-7.82-28.47-24.86-28.47-44.61s11.66-36.8,28.47-44.61h0Z"/> <path d="M356.9,1147.77c-40.03,0-72.48,32.46-72.48,72.48s32.46,72.48,72.48,72.48,72.48-32.46,72.48-72.48-32.44-72.48-72.48-72.48ZM350.8,1283.15c-4.79-.54-9.4-1.62-13.8-3.17-24.6-8.65-42.23-32.1-42.23-59.65s17.63-51,42.23-59.65c4.39-1.55,9.02-2.62,13.8-3.17v125.64ZM378.4,1279.97c-4.4,1.5-9.02,2.54-13.8,3.03v-125.78c4.78.49,9.39,1.52,13.8,3.03,22.32,7.6,39.03,27.35,42.24,51.36h-14.49c-2.73-16.15-13.35-29.62-27.75-36.32v36.32h19.19v13.97h-19.19v38.91c15.17-7.05,26.13-21.62,28.12-38.91h14.45c-2.18,25.37-19.33,46.46-42.59,54.39h.01Z"/> </g></svg>`;
-const BADGE_GVC = LOGO_MONO_NAVY.replace('viewBox="0 0 2000 2000"', 'viewBox="658 381 780 1251"');
+/* Brand artwork for the sheet lives in assets/logos/sheet/ — the exact paths
+   this file used to carry inline (41 KB of it, half never used), with the crop
+   fitLogos() used to measure on every render now baked into each viewBox.
+
+   The files are read once at startup and placed inline, as they always were:
+   an SVG drawn through <img> goes down a different rendering path and shifted
+   every logo by a fraction of a pixel on the printed page, and inline artwork
+   can never be caught half-loaded by the print dialog. Until they arrive (or
+   if they cannot be read) the slots are simply empty. */
+const ART_DIR = '../../assets/logos/sheet/';
+const ART_FILES = { lockup: 'lockup-navy.svg', monoWhite: 'monogram-white.svg', monoNavy: 'monogram-navy.svg',
+                    badgeDe: 'badge-de.svg', badgeGvc: 'badge-gvc.svg' };
+const art = Object.fromEntries(Object.keys(ART_FILES).map(k => [k, '']));
+function loadArt(){
+  return Promise.all(Object.entries(ART_FILES).map(([k, file]) =>
+    fetch(ART_DIR + file).then(r => r.ok ? r.text() : '').catch(() => '')
+      // only an SVG is ever put into the page
+      .then(t => { art[k] = /^\s*<svg[\s>]/.test(t) ? t.trim() : ''; })));
+}
 const BADGE_EHO = `<svg viewBox="8.5 8 23.5 22" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#00273A" stroke-width="1.6"><path d="M20 9.5 10 17h2.3v11.5h15.4V17H30L20 9.5z" stroke-linejoin="round"/><path d="M16 20h8M16 23.6h8" stroke-linecap="round"/></svg>`;
 /* hairline icon set — stroke inherits currentColor */
 const ICONS = {
@@ -717,7 +640,7 @@ const OFFICE_LINE = "575 Madison Avenue, 5th Floor · (347) 564-2440 · gvcreale
 function blankUnit(){
   return {
     ownership:'co-op', paper:'a5', bleed:false, neighborhood:'', borough:'Manhattan', address:'', unit:'', positioning:'',
-    webId:'', listingUrl:'', docxName:'',
+    listingUrl:'', docxName:'',
     /* photos is the tray; heroIndex and secondaryIndex say which of them sit
        in the sheet's two slots, or null for a slot left empty. Older saved
        sheets carried the back photo as its own secondaryPhoto object — setDoc
@@ -734,12 +657,23 @@ function blankUnit(){
     maintenance:'', commonCharges:'', taxesMonthly:'', taxDeductible:'',
     maxFinancing:'', assessments:'', capitalContributions:'', flipTax:'',
     building:{builtYear:'', architect:'', stories:'', residences:'', service:'', policy:'', amenities:[]},
-    residence:{tag:'', exposures:'', outdoor:'', ceiling:'', climate:'', features:[]},
+    residence:{exposures:'', outdoor:'', ceiling:'', climate:'', features:[]},
     agentIds:['john-gasdaska','tj-verdiglione'],
     disclaimer: DEFAULT_DISCLAIMER
   };
 }
 let state = blankUnit();
+/* Paper size, bleed and the agents belong to the person printing and to the
+   team, not to the listing, so they carry from one listing to the next. This
+   is the one way a new listing starts: dropping a different Word document,
+   clearing the form, and loading another property from the library all used
+   to build it separately, and each kept a slightly different list. */
+const CARRY_OVER = ['paper', 'bleed', 'agentIds'];
+function freshListing(){
+  const next = blankUnit();
+  CARRY_OVER.forEach(k => { next[k] = structuredClone(state[k]); });
+  return next;
+}
 
 /* ============================================================
    UTILITIES
@@ -758,45 +692,8 @@ function setPath(obj, path, val){
   const ks = path.split('.'); const last = ks.pop();
   const tgt = ks.reduce((o,k)=>o[k], obj); tgt[last] = val;
 }
-function moneyNum(s){
-  if(s==null) return null;
-  const m = String(s).replace(/,/g,'').match(/\$?\s*(\d+(?:\.\d+)?)/);
-  return m ? parseFloat(m[1]) : null;
-}
-function fmtMoney(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
-function displayPrice(s){
-  const n = moneyNum(s);
-  if(n!=null && /^[\s$\d,.]+$/.test(String(s).trim())) return fmtMoney(n);
-  return s;
-}
-/* A bare figure, optionally with its period: "5,588", "5,588/mo", "$22,080 per year". */
-const BARE_MONEY = /^\s*\$?\s*\d[\d,]*(\.\d+)?\s*(\/\s*(mo|month|yr|year)\.?|per\s+(month|year)|monthly|annually|a\s+(month|year))?\s*$/i;
-/* The monthly figure in a free-text money field, or null.
-   "$220.35/mo through July 2027" gives 220.35. The $ is optional when the
-   field is nothing but a figure: requiring it meant real estate taxes typed as
-   "5,588/mo" were silently left out of Est. Monthly Carrying — the sample
-   listing printed $6,128 where the carrying cost is $11,716. Without a $, a
-   number inside a sentence ("through July 2027") is not read as money.
-   A yearly figure counts as a twelfth; a one-time or total amount is not a
-   monthly cost and gives null. */
-function monthlyAmount(s){
-  if(blankish(s)) return null;
-  const t = String(s).replace(/,/g,'');
-  if(/one[\s-]?time|lump|in\s+full|\btotal\b/i.test(t)) return null;
-  const m = t.match(/\$\s*(\d+(?:\.\d+)?)/) || (BARE_MONEY.test(s) && t.match(/(\d+(?:\.\d+)?)/));
-  if(!m) return null;
-  const n = parseFloat(m[1]);
-  return /\/\s*(yr|year)|per\s+year|annual|yearly|a\s+year/i.test(t) ? n / 12 : n;
-}
-/* the ledger prints money as typed, but a bare figure gets its $ */
-function moneyText(s){
-  const t = String(s).trim();
-  return BARE_MONEY.test(t) && !/^\$/.test(t) ? '$' + t : t;
-}
-function blankish(v){
-  const t = String(v==null?'':v).trim();
-  return !t || /^(-|–|—|n\/?a|none|tbd)$/i.test(t);
-}
+/* reading money and Word documents lives in listing.js, where Node can test it */
+const { blankish, fmtMoney, displayPrice, moneyText } = window.GVC_LISTING;
 
 /* ============================================================
    QR — shared with the other three builders, assets/js/qr.js
@@ -840,9 +737,10 @@ function photoCell(p, cls, drop){
   return `<div class="${cls}" data-drop="${drop}"><img src="${esc(p.src)}" style="object-position:${pos}" alt=""></div>`;
 }
 function renderFront(){
+  const webId = webIdOf(state.listingUrl);
   const heroP = frontPhoto();
   const photoHtml = heroP ? photoCell(heroP, 'photo-hero', 'hero')
-    : `<div class="photo-empty" data-drop="hero">${LOGO_MONO_NAVY}</div>`;
+    : `<div class="photo-empty" data-drop="hero">${art.monoNavy}</div>`;
   // the residence — complete information, scaled to fit the left column
   const r = state.residence;
   const rSpecs = specRow('Exposures', r.exposures) + specRow('Outdoor', r.outdoor) + specRow('Ceilings', r.ceiling) + specRow('Climate', r.climate);
@@ -878,14 +776,14 @@ function renderFront(){
   $('#sheetFront').innerHTML = `
     <div class="trim">
       <div class="sh-head">
-        <div class="sh-logo">${LOGO_GVC_NAVY}</div>
+        <div class="sh-logo">${art.lockup}</div>
         <div class="sh-id">
           <div class="addr">${esc(state.address) || '<span style="opacity:.25">Street Address</span>'}</div>
           ${state.unit ? `<div class="unit-lt">${esc(unitDisplay(state.unit))}</div>` : ''}
         </div>
         <div class="sh-right">
           ${askBlock}
-          ${state.webId ? `<span class="webid">Web ID ${esc(state.webId)}</span>` : ''}
+          ${webId ? `<span class="webid">Web ID ${esc(webId)}</span>` : ''}
         </div>
       </div>
       ${state.positioning ? `<div class="f-lede">${esc(state.positioning)}</div>` : ''}
@@ -903,7 +801,7 @@ function renderFront(){
       </div>
       <div class="sh-foot">
         <div class="fl">${FRONT_DISCLAIMER}</div>
-        <div class="badges"><span class="badge">${BADGE_DE}</span><span class="badge">${BADGE_GVC}</span><span class="badge">${BADGE_EHO}</span></div>
+        <div class="badges"><span class="badge">${art.badgeDe}</span><span class="badge">${art.badgeGvc}</span><span class="badge">${BADGE_EHO}</span></div>
       </div>
     </div>
     <div class="safe"></div>
@@ -929,20 +827,6 @@ function ledgerRows(){
   if(!blankish(state.flipTax)) L.push({lab:'Flip Tax', val: esc(state.flipTax)});
   return L;
 }
-/* Est. Monthly Carrying, and the names of what went into it — the footnote
-   lists exactly those, so it never claims taxes or an assessment the total
-   does not contain. */
-function carrying(){
-  const items = [];
-  const add = (v, what) => { const n = monthlyAmount(v); if(n) items.push({n, what}); };
-  if(state.ownership === 'co-op') add(state.maintenance, 'maintenance');
-  else { add(state.commonCharges, 'common charges'); add(state.taxesMonthly, 'taxes'); }
-  add(state.assessments, 'assessments');
-  if(!items.length) return null;
-  const names = items.map(i => i.what);
-  const said = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names[0];
-  return { total: items.reduce((x, i) => x + i.n, 0), what: said.charAt(0).toUpperCase() + said.slice(1) };
-}
 function specRow(lab, val){
   return blankish(val) ? '' : `<div class="r-spec"><span class="sl">${lab}</span><span class="sv">${esc(val)}</span></div>`;
 }
@@ -957,10 +841,11 @@ function cropMarks(whiteBottom){
   return `<div class="crop">${h}</div>`;
 }
 function renderBack(){
+  const webId = webIdOf(state.listingUrl);
   const lg = ledgerRows().map(r => r.note
     ? `<div class="lg-note">${r.note}</div>`
     : `<div class="lg-row${r.lead?' lead':''}"><span class="lg-lab">${r.lab}</span><span class="lg-val">${r.val}</span></div>`).join('');
-  const carry = carrying();
+  const carry = GVC_LISTING.carrying(state);
   const carryHtml = carry ? `
     <div class="lg-total">
       <div class="lg-row"><span class="lg-lab">Est. Monthly Carrying</span><span class="lg-val">${fmtMoney(carry.total)}</span></div>
@@ -989,7 +874,7 @@ function renderBack(){
       </div>
     </div>`).join('');
   const bandQr = (!qrInFooter && qr) ? `
-    <div class="ag-qr"><div class="ql">Scan for the full listing${state.webId?`<br><span style="font-weight:300;letter-spacing:.12em">Web ID ${esc(state.webId)}</span>`:''}</div><div class="qr-box">${qr}</div></div>` : '';
+    <div class="ag-qr"><div class="ql">Scan for the full listing${webId?`<br><span style="font-weight:300;letter-spacing:.12em">Web ID ${esc(webId)}</span>`:''}</div><div class="qr-box">${qr}</div></div>` : '';
 
   $('#sheetBack').innerHTML = `
     <div class="trim">
@@ -997,7 +882,7 @@ function renderBack(){
         <div class="ba">${esc(state.address)||''}${state.unit?`<span class="bu"> — ${esc(unitDisplay(state.unit))}</span>`:''}</div>
         <div class="bh-right">
           ${chipHtml()}
-          ${state.webId?`<span class="webid">Web ID ${esc(state.webId)}</span>`:''}
+          ${webId?`<span class="webid">Web ID ${esc(webId)}</span>`:''}
         </div>
       </div>
       <div class="b-main">
@@ -1014,7 +899,7 @@ function renderBack(){
         ${bandQr}
       </div>
       <div class="b-foot${qrInFooter?' has-qr':''}">
-        <div class="mono">${LOGO_MONO_WHITE}</div>
+        <div class="mono">${art.monoWhite}</div>
         <div class="dis">${esc(state.disclaimer)}</div>
         <div class="office">
           <div class="o1">The Gasdaska Verdiglione Conlon Team</div>
@@ -1027,32 +912,28 @@ function renderBack(){
     <div class="safe"></div>
     ${cropMarks(true)}`;
 }
-function fitLogos(){
-  $$('#sheets svg[data-autofit], .sh-logo svg, .b-foot .mono svg, .photo-empty svg').forEach(svg=>{
-    try{
-      const bb = svg.getBBox();
-      if(bb.width>0 && bb.height>0) svg.setAttribute('viewBox', `${bb.x-8} ${bb.y-8} ${bb.width+16} ${bb.height+16}`);
-    }catch(e){}
-  });
-}
 /* ============================================================
    TEXT AUTOFIT — type scales so content fills its allotted space
    ============================================================ */
+/* Every autofit on the sheet is this one search: the largest value in
+   [lo, hi] at which ok() holds. hi is tried first; failing that the range is
+   halved `steps` times, with lo assumed to hold (and used when nothing larger
+   does). set(v) applies each candidate before it is tested, and the answer is
+   left applied. The sheet used to spell this loop out six times over. */
+function largest(lo, hi, set, ok, steps){
+  set(hi);
+  if(ok()) return hi;
+  for(let k=0;k<steps;k++){ const m = (lo+hi)/2; set(m); if(ok()) lo = m; else hi = m; }
+  set(lo);
+  return lo;
+}
+const setFont = el => pt => { el.style.fontSize = pt.toFixed(2) + 'pt'; };
 function fitBlock(el, minPt, maxPt){
   // largest container font-size where nothing overflows (children scale in em);
   // returns the size it settled on, in pt
   if(!el) return null;
-  const fits = ()=> el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
-  el.style.fontSize = maxPt + 'pt';
-  if(fits()) return maxPt;
-  let lo = minPt, hi = maxPt;
-  for(let k=0;k<7;k++){
-    const mid = (lo+hi)/2;
-    el.style.fontSize = mid.toFixed(2) + 'pt';
-    if(fits()) lo = mid; else hi = mid;
-  }
-  el.style.fontSize = lo.toFixed(2) + 'pt';
-  return lo;
+  return largest(minPt, maxPt, setFont(el),
+    () => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1, 7);
 }
 function fitHeading(el, minPt, maxPt){
   // one-line heading sized to fill its column; wraps only if the minimum still overflows.
@@ -1060,16 +941,9 @@ function fitHeading(el, minPt, maxPt){
   if(!el) return null;
   el.style.whiteSpace = 'nowrap';
   const avail = el.clientWidth;
-  const at = pt => { el.style.fontSize = pt.toFixed(2) + 'pt'; return el.scrollWidth <= avail; };
-  let lo = minPt;
-  if(at(maxPt)) lo = maxPt;
-  else {
-    let hi = maxPt;
-    for(let k=0;k<7;k++){ const mid = (lo+hi)/2; if(at(mid)) lo = mid; else hi = mid; }
-    at(lo);
-  }
+  const pt = largest(minPt, maxPt, setFont(el), () => el.scrollWidth <= avail, 7);
   if(el.scrollWidth > avail) el.style.whiteSpace = 'normal';
-  return lo;
+  return pt;
 }
 
 /* ============================================================
@@ -1111,12 +985,8 @@ let textFit = {};
    apply(). Shrinking always fits, so only growth is searched; the autofit's
    own size (1) is the known-good floor. */
 function growTo(apply, ok, want){
-  apply(want);
-  if(want <= 1 || ok()) return want;
-  let lo = 1, hi = want;
-  for(let k=0;k<7;k++){ const m = (lo+hi)/2; apply(m); if(ok()) lo = m; else hi = m; }
-  apply(lo);
-  return lo;
+  if(want <= 1){ apply(want); return want; }
+  return largest(1, want, apply, ok, 7);
 }
 /* a heading that the autofit sized to `auto` pt, scaled by k — growth only
    as far as it still fits on one line */
@@ -1159,9 +1029,7 @@ function fitFrontBody(trial){
   const fits = el => !el || (el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
 
   // 1) biggest shared size that keeps the residence column from overflowing
-  let lo = MIN, hi = MAX, size = MAX;
-  set(MAX);
-  if(!fits(res)){ for(let k=0;k<8;k++){ const m=(lo+hi)/2; set(m); fits(res)?lo=m:hi=m; } set(lo); size = lo; }
+  let size = largest(MIN, MAX, set, () => fits(res), 8);
 
   // 2) if the photo is now too short, the type is what's crowding it out — shrink the
   //    shared size (the residence still fits at anything smaller) until the building
@@ -1171,14 +1039,10 @@ function fitFrontBody(trial){
   const heroOK = () => photo.offsetHeight >= MIN_HERO_IN * PX;
   if(right && bld && photo && !heroOK()){
     set(MIN);
-    if(heroOK()){
-      lo = MIN; hi = size;
-      for(let k=0;k<8;k++){ const m=(lo+hi)/2; set(m); heroOK()?lo=m:hi=m; }
-      set(lo); size = lo;
-    }else{
+    if(heroOK()) size = largest(MIN, size, set, heroOK, 8);
+    else {
       right.classList.add('no-photo');
-      lo = MIN; hi = size; set(size);
-      if(!(fits(res) && fits(bld))){ for(let k=0;k<8;k++){ const m=(lo+hi)/2; set(m); (fits(res)&&fits(bld))?lo=m:hi=m; } set(lo); }
+      largest(MIN, size, set, () => fits(res) && fits(bld), 8);
     }
   }
 
@@ -1385,7 +1249,7 @@ function render(){
   renderQueued = true;
   const draw = ()=>{
     renderQueued = false;
-    renderFront(); renderBack(); fitLogos(); fitSheets(); layoutPreview();
+    renderFront(); renderBack(); fitSheets(); layoutPreview();
     paintSlotTools();     // the slots were just rebuilt
     paintFloorplanTools();
     paintTextPanel();     // reports what each section managed, and re-lights a hovered one
@@ -1430,18 +1294,16 @@ window.addEventListener('resize', layoutPreview);
 /* ============================================================
    FORM BINDING
    ============================================================ */
-/* The Web ID is the final group of digits in the listing URL — derived, never
-   typed. It used to be worked out only while typing in the URL box, so a
-   property loaded from the library (its URL comes from the shared facts)
-   printed no Web ID at all, or the one saved with an older copy of the sheet
-   beside a newer link. Every path that changes the sheet comes through here. */
+/* The Web ID is the final group of digits in the listing URL. It is worked
+   out wherever it is printed rather than stored: kept as its own field, it was
+   only updated while typing in the URL box, so a property loaded from the
+   library printed no Web ID at all, or an old one beside a newer link. */
 function webIdOf(url){
   const m = String(url || '').replace(/[?#].*$/,'').match(/(\d+)\/?\s*$/);
   return m ? m[1] : '';
 }
 function hydrateForm(){
   normalizeLayout();
-  state.webId = webIdOf(state.listingUrl);
   $$('[data-field]').forEach(el=>{
     const v = getPath(state, el.dataset.field);
     if(el.tagName==='TEXTAREA' && Array.isArray(v)) el.value = v.join('\n');
@@ -1471,7 +1333,7 @@ document.addEventListener('click', e=>{
   if(what==='floorplan'){ state.floorplan=null; state.floorplanView = normFpView(null); }
   if(what==='docx'){
     // dropping the doc means starting the next listing — clear everything unit-specific
-    state = Object.assign(blankUnit(), {agentIds:[...state.agentIds], paper:state.paper, bleed:state.bleed});
+    state = freshListing();
     hydrateForm();
     toast('Form cleared — drop the next listing.');
   }
@@ -1518,7 +1380,6 @@ function syncBleed(){
 }
 function syncOwnership(){
   $$('#ownSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===state.ownership));
-  document.body.classList.toggle('is-condo', state.ownership!=='co-op');
   $$('.coop-only').forEach(e=>e.style.display = state.ownership==='co-op'?'':'none');
   $$('.condo-only').forEach(e=>e.style.display = state.ownership==='co-op'?'none':'');
 }
@@ -1528,7 +1389,6 @@ document.addEventListener('input', e=>{
   let v = e.target.value;
   if(e.target.tagName==='TEXTAREA' && (f==='building.amenities' || f==='residence.features')) v = v.split('\n');
   setPath(state, f, v);
-  if(f==='listingUrl') state.webId = webIdOf(v);
   render();
 });
 $('#ownSeg').addEventListener('click', e=>{
@@ -1549,86 +1409,9 @@ $('#bleedSeg').addEventListener('click', e=>{
 /* ============================================================
    IMAGES — ingestion (canvas re-encode: CMYK→RGB, downscale)
    ============================================================ */
-function fileToImage(file){
-  return new Promise((res, rej)=>{
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = ()=>{ URL.revokeObjectURL(url); res(img); };
-    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('Could not read image')); };
-    img.src = url;
-  });
-}
-function reencode(img, maxEdge, quality, crop){
-  // crop: the source rectangle to keep, {x, y, w, h}; the whole image by default
-  const c = crop || {x:0, y:0, w:img.naturalWidth, h:img.naturalHeight};
-  const r = Math.min(1, maxEdge / Math.max(c.w, c.h));
-  const w = Math.round(c.w*r), h = Math.round(c.h*r);
-  const cv = document.createElement('canvas'); cv.width=w; cv.height=h;
-  const cx = cv.getContext('2d');
-  cx.fillStyle='#fff'; cx.fillRect(0,0,w,h);   // flatten transparency, normalize CMYK→RGB
-  cx.drawImage(img, c.x, c.y, c.w, c.h, 0, 0, w, h);
-  return cv.toDataURL('image/jpeg', quality);
-}
-/* The drawing's own bounding box inside the rows from srcY down. Plan exports
-   carry wide white margins, and in a frame sized to the whole image those
-   margins are what the page prints — trimming them is the single biggest gain
-   in how large the plan itself appears. Measured on a small copy, which also
-   averages away JPEG specks; anything clearly darker than paper counts,
-   so a compass, a scale bar or a caption is kept. Returns null when there is
-   nothing worth trimming (under 3% a side). */
-function contentBox(img, srcY){
-  try{
-    const W = img.naturalWidth, H = img.naturalHeight - srcY;
-    const s = Math.min(1, 500 / Math.max(W, H));
-    const w = Math.max(1, Math.round(W*s)), h = Math.max(1, Math.round(H*s));
-    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-    const cx = cv.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);
-    cx.drawImage(img, 0, srcY, W, H, 0, 0, w, h);
-    const d = cx.getImageData(0, 0, w, h).data;
-    let x0 = w, y0 = h, x1 = -1, y1 = -1;
-    for(let y=0; y<h; y++) for(let x=0; x<w; x++){
-      const i = (y*w + x) * 4;
-      if(.299*d[i] + .587*d[i+1] + .114*d[i+2] < 232){
-        if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y;
-      }
-    }
-    if(x1 < 0) return null;                          // a blank page: leave it alone
-    const pad = Math.round(Math.max(w, h) * .015);   // a little air around the lines
-    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
-    x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
-    // worth it when either axis gets back at least 3%
-    if(Math.max(1 - (x1 - x0 + 1) / w, 1 - (y1 - y0 + 1) / h) < .03) return null;
-    return { x: Math.floor(x0 / s), y: srcY + Math.floor(y0 / s),
-             w: Math.min(W, Math.ceil((x1 - x0 + 1) / s)), h: Math.min(H, Math.ceil((y1 - y0 + 1) / s)) };
-  }catch(e){ return null; }
-}
-function floorplanHeaderY(img){
-  // GVC floorplan exports lead with a full-width navy title band; find the white
-  // gap right below it. Returns 0 when no band is present (already-cropped plans).
-  try{
-    const W = img.naturalWidth, H = img.naturalHeight;
-    const scanH = Math.floor(H*0.35);
-    const cv = document.createElement('canvas'); cv.width=W; cv.height=scanH;
-    const cx = cv.getContext('2d');
-    cx.drawImage(img, 0, 0, W, scanH, 0, 0, W, scanH);
-    const data = cx.getImageData(0, 0, W, scanH).data;
-    const darkFrac = y=>{
-      let dark=0, n=0;
-      for(let x=0;x<W;x+=8){
-        const i=(y*W+x)*4;
-        if(.299*data[i]+.587*data[i+1]+.114*data[i+2] < 200) dark++;
-        n++;
-      }
-      return dark/n;
-    };
-    if(darkFrac(2) < .85 || darkFrac(Math.floor(H*0.015)) < .85) return 0; // no navy band on top
-    for(let y=Math.floor(H*0.02); y<scanH; y+=3){
-      if(darkFrac(y) < .08) return y; // first white row after the band
-    }
-  }catch(e){}
-  return 0;
-}
+/* reading a dropped photo or plan is shared with the Brochure — assets/js/images.js */
+const { fileToImage, reencode, floorplanHeaderY, trimRect } = window.GVC_IMAGES;
+
 /* Every image dropped joins the tray. The first one to arrive takes the
    front of the sheet, because that is what an agent dropping one photo
    means; everything after that waits to be dragged somewhere. */
@@ -1655,9 +1438,9 @@ async function setFloorplanFile(f){
   try{
     const img = await fileToImage(f);
     const cropY = floorplanHeaderY(img);
-    const box = contentBox(img, cropY);
-    state.floorplan = reencode(img, 2400, .9,
-      box || {x:0, y:cropY, w:img.naturalWidth, h:img.naturalHeight - cropY});
+    const rect = trimRect(img, cropY);
+    const box = rect.w < img.naturalWidth || rect.h < img.naturalHeight - cropY;   // did the trim take anything
+    state.floorplan = reencode(img, 2400, .9, rect);
     state.floorplanView = normFpView(null);   // a new plan starts uncropped
     syncDropZones();
     render();
@@ -2114,7 +1897,7 @@ async function importDocx(file){
   try{
     const buf = await file.arrayBuffer();
     const {value:html} = await mammoth.convertToHtml({arrayBuffer:buf});
-    const found = applyParsedDocx(parseDocxHtml(html));
+    const found = applyParsedDocx(GVC_LISTING.blocksFromHtml(html));
     state.docxName = file.name;
     hydrateForm(); render();
     $('#docxStatus').textContent = '';
@@ -2125,182 +1908,26 @@ async function importDocx(file){
     toast('Could not parse that document — fields left as-is.', true);
   }
 }
-function parseDocxHtml(html){
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const blocks = [];
-  const flat = el=>{
-    for(const node of el.children){
-      const tag = node.tagName;
-      if(tag==='TABLE'){
-        node.querySelectorAll('tr').forEach(tr=>{
-          blocks.push({kind:'row', cells:[...tr.querySelectorAll('td,th')].map(td=>td.textContent.trim())});
-        });
-      } else if(tag==='UL'||tag==='OL'){
-        node.querySelectorAll('li').forEach(li=>blocks.push({kind:'li', text:li.textContent.trim()}));
-      } else if(tag==='P'||/^H\d$/.test(tag)){
-        blocks.push({kind:'p', text:node.textContent.trim()});
-      } else flat(node);
-    }
-  };
-  flat(doc.body);
-  return blocks;
-}
-function cleanLine(s){
-  return s.replace(/^[\s•·•\-–—]+/, '').replace(/\s+/g,' ').trim();
-}
-function normKey(s){ return s.toLowerCase().replace(/[^a-z]/g,''); }
-function fixPct(v){
-  return v.replace(/(\d)\s*&(?=\s|$)/g,'$1%').replace(/(\d)\.\s*%/g,'$1%');
-}
-function dedupeLines(lines){
-  const seen = [], out = [];
-  const tokens = s => new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>2));
-  for(const ln of lines){
-    const t = tokens(ln);
-    let dup = false;
-    for(const prev of seen){
-      const inter = [...t].filter(x=>prev.has(x)).length;
-      const uni = new Set([...t,...prev]).size;
-      if(uni>0 && inter/uni >= 0.72){ dup = true; break; }
-    }
-    if(!dup){ seen.push(t); out.push(ln); }
-  }
-  return out;
-}
+/* What the document says, laid over the sheet (listing.js does the reading).
+
+   A different address OR a different unit is a different listing: start
+   clean so nothing from the previous one leaks onto printed collateral.
+   Comparing the address alone treated 4B and 3A in the same building as the
+   same listing, and the second import inherited the first one's assessment,
+   financing limit and photo. Only a unit the document actually names is
+   compared: a document with no parseable unit must not read as "unit
+   cleared" and wipe a sheet mid-edit. */
 function applyParsedDocx(blocks){
-  const found = [];
-  // -------- title --------
-  const firstP = blocks.find(b=>b.kind==='p' && b.text);
-  let newAddress = '', newUnit = '';
-  if(firstP){
-    const m = firstP.text.split(/\s+[-–—]\s+/);
-    if(m.length>=2){
-      newAddress = m.slice(0,-1).join(' - ').trim();
-      newUnit = m[m.length-1].trim();
-    } else newAddress = firstP.text.trim();
-  }
-  /* A different address OR a different unit is a different listing: start
-     clean so nothing from the previous one leaks onto printed collateral.
-     Comparing the address alone treated 4B and 3A in the same building as the
-     same listing, and the second import inherited the first one's assessment,
-     financing limit and photo. Agents, paper size and the disclaimer are not
-     property facts and carry over. */
+  const title = GVC_LISTING.titleOf(blocks);
   const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  // only compare a unit the document actually named: a DOCX with no parseable
-  // unit must not read as "unit cleared" and wipe a sheet mid-edit
-  const moved = (newAddress && state.address && norm(newAddress)!==norm(state.address)) ||
-                (newUnit    && state.unit    && norm(newUnit)   !==norm(state.unit));
-  if(moved){
-    state = Object.assign(blankUnit(), {agentIds:[...state.agentIds], paper:state.paper, bleed:state.bleed});
-    found.push('(new unit — form reset)');
-  }
-  if(newAddress){ state.address = newAddress; found.push('address'); }
-  if(newUnit){ state.unit = newUnit; found.push('unit'); }
-  // -------- table rows (label/value pairs, tolerant of flattened rows) --------
-  const LABELS = {
-    price:'price', cc:'cc', maintenance:'cc', maintenancecc:'cc', commoncharges:'cc',
-    taxes:'taxes', tax:'taxes', maxfinancing:'maxFinancing', financing:'maxFinancing',
-    assessments:'assessments', assessment:'assessments', fliptax:'flipTax',
-    capitalcontributions:'capitalContributions', capitalcontribution:'capitalContributions'
-  };
-  let ccValue = null, taxesValue = null;
-  const allCells = [];
-  blocks.filter(b=>b.kind==='row').forEach(r=>allCells.push(...r.cells));
-  for(let i=0;i<allCells.length;i++){
-    const key = LABELS[normKey(allCells[i])];
-    if(!key) continue;
-    // value = next non-label cell
-    let val = '';
-    for(let j=i+1;j<allCells.length;j++){
-      if(LABELS[normKey(allCells[j])]) break;
-      if(allCells[j].trim()){ val = allCells[j].trim(); break; }
-      if(j>i+1) break; // only look one empty cell ahead
-    }
-    if(blankish(val)) val='';
-    switch(key){
-      case 'price': if(val){ state.price = val; found.push('price'); } break;
-      case 'cc': ccValue = val; break;
-      case 'taxes': taxesValue = val; break;
-      case 'maxFinancing': if(val){ state.maxFinancing = fixPct(val); found.push('max financing'); } break;
-      case 'assessments': if(val){ state.assessments = val; found.push('assessments'); } break;
-      case 'flipTax': if(val){ state.flipTax = fixPct(val); found.push('flip tax'); } break;
-      case 'capitalContributions': if(val){ state.capitalContributions = val; found.push('capital contribution'); } break;
-    }
-  }
-  // -------- feature sections --------
-  let section = null;
-  const interior = [], buildingL = [];
-  for(const b of blocks){
-    if(b.kind==='row') continue;
-    const t = b.text || '';
-    if(/interior\s+features/i.test(t)){ section='interior'; continue; }
-    if(/building\s+features/i.test(t)){ section='building'; continue; }
-    if(b===firstP) continue;
-    const ln = cleanLine(t);
-    if(!ln) continue;
-    if(section==='interior') interior.push(ln);
-    else if(section==='building') buildingL.push(ln);
-  }
-  const everything = [...interior, ...buildingL].join(' \n ');
-  // ownership
-  const hasCondo = /\bcondo(minium)?\b/i.test(everything);
-  // word-bounded, or "scoop" in a feature line would read as co-op
-  const hasCoop = /\bco-?op(erative)?\b/i.test(everything);
-  if(hasCoop && !hasCondo) state.ownership='co-op';
-  else if(hasCondo && !hasCoop) state.ownership='condo';
-  if(hasCoop||hasCondo) found.push('ownership');
-  // cc/taxes mapped by ownership
-  if(ccValue){
-    if(state.ownership==='condo') state.commonCharges = ccValue; else state.maintenance = ccValue;
-    found.push(state.ownership==='condo'?'common charges':'maintenance');
-  }
-  if(taxesValue && state.ownership==='condo'){ state.taxesMonthly = taxesValue; found.push('taxes'); }
-  // beds/baths
-  const bb = everything.match(/(\d+)\s*BD\s*\/?\s*(\d+(?:\.\d+)?)\s*BA/i);
-  if(bb){ state.beds = bb[1]; state.baths = bb[2]; found.push('beds/baths'); }
-  // building lines → structured
-  const claimed = new Set();
-  for(const ln of buildingL){
-    let m;
-    if((m = ln.match(/^built\s+(.+)/i))){
-      state.building.builtYear = m[1].replace(/\s*,\s*/g, ', ').trim(); claimed.add(ln); found.push('built');
-    } else if((m = ln.match(/(\d+)\s*floors?\s*\/\s*(\d+)\s*units?/i))){
-      state.building.stories = m[1]; state.building.residences = m[2]; claimed.add(ln); found.push('stories/residences');
-    }
-  }
-  const svcLines = buildingL.filter(ln=>!claimed.has(ln) && /(full[\s-]?service|doorman|concierge|door staff|attended lobby|resident manager|superintendent)/i.test(ln));
-  if(svcLines.length){
-    state.building.service = svcLines.slice(0,2).map(s=>s.replace(/\s*(cooperative|coop|co-op|condominium|condo|building)\s*$/i,'').trim()).filter(Boolean).join(' · ');
-    svcLines.slice(0,2).forEach(l=>claimed.add(l));
-    found.push('service');
-  }
-  const polLines = buildingL.filter(ln=>!claimed.has(ln) && /(pied|pets?\b|sublet|guarantor|co-?purchas|gifting|washer\/?dryer allowed)/i.test(ln));
-  if(polLines.length){
-    state.building.policy = polLines.map(s=>s.trim()).join(' · ');
-    polLines.forEach(l=>claimed.add(l));
-    found.push('policies');
-  }
-  const amen = dedupeLines(buildingL.filter(ln=>!claimed.has(ln)));
-  if(amen.length){ state.building.amenities = amen; found.push('amenities'); }
-  // interior → residence
-  const rclaimed = new Set();
-  const firstFeat = interior[0] || '';
-  if(/penthouse|duplex|loft|prewar|pre-war|convertible|classic\s*\d|\dBD/i.test(firstFeat)){
-    state.residence.tag = firstFeat; rclaimed.add(firstFeat);
-    if(!state.positioning) state.positioning = '';
-  }
-  const grab = (re)=>{ const l = interior.find(x=>!rclaimed.has(x) && re.test(x)); return l || ''; };
-  const exq = grab(/exposure|facing\b|northern|southern|eastern|western light/i);
-  if(exq){ state.residence.exposures = exq; rclaimed.add(exq); }
-  const out = grab(/terrace|balcon|private garden|roof rights|outdoor space/i);
-  if(out){ state.residence.outdoor = out; rclaimed.add(out); }
-  const ceil = grab(/ceiling/i);
-  if(ceil){ state.residence.ceiling = ceil; rclaimed.add(ceil); }
-  const clim = grab(/air.?condition|central air|central heat|hvac|mini.?split|heating/i);
-  if(clim){ state.residence.climate = clim; rclaimed.add(clim); }
-  const feats = dedupeLines(interior.filter(x=>!rclaimed.has(x)));
-  if(feats.length){ state.residence.features = feats; found.push('features'); }
-  return [...new Set(found)];
+  const moved = (title.address && state.address && norm(title.address)!==norm(state.address)) ||
+                (title.unit    && state.unit    && norm(title.unit)   !==norm(state.unit));
+  if(moved) state = freshListing();
+  const { building, residence, found, ...facts } = GVC_LISTING.read(blocks, state.ownership);
+  Object.assign(state, facts);
+  Object.assign(state.building, building);
+  Object.assign(state.residence, residence);
+  return moved ? ['(new unit — form reset)', ...found] : found;
 }
 wireDrop($('#docxDrop'), $('#docxFile'), importDocx, false);
 
@@ -2385,6 +2012,7 @@ $('#btnZoom').onclick = ()=>{
   buildTextPanel();
   hydrateForm();
   render();
+  loadArt().then(render);
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>render());
 })();
 
@@ -2406,27 +2034,15 @@ const CORE_ONLY = ['address','unit','borough','neighborhood','price','beds','bat
                    'listingUrl','positioning','maintenance','commonCharges','taxesMonthly',
                    'ownership','agentIds'];
 
-/* What a sheet looks like before any property is loaded. The reset is derived
+/* What a sheet looks like before any property is loaded. Every reset is built
    from blankUnit() rather than hand-listed, so a field added there is covered
-   the day it is added — a hand-list is exactly how webId, assessments,
+   the day it is added — a hand-list is exactly how the Web ID, assessments,
    maxFinancing and the flip tax came to survive a property switch and print on
    the next listing's sheet. */
 const BLANK_DOC = blankUnit();
 
-/* Paper size and bleed belong to the person printing, not to the listing, so
-   they are saved with the sheet but not wiped when the property changes. */
-const KEEP_ON_SWITCH = ['paper','bleed'];
-
-function resetDocFields(){
-  Object.keys(state).forEach(k => {
-    if(CORE_ONLY.includes(k) || k === 'disclaimer' || KEEP_ON_SWITCH.includes(k)) return;
-    // a key an older saved sheet left behind that blankUnit() no longer knows
-    // about goes entirely; migratePhotos folds the ones that still matter back in
-    // (cloned, or photos and amenities would be shared with the blank)
-    if(k in BLANK_DOC) state[k] = structuredClone(BLANK_DOC[k]);
-    else delete state[k];
-  });
-}
+/* what property-bar calls before a property's facts go on */
+function resetDocFields(){ state = freshListing(); }
 
 /* Nothing is kept in this browser any more, so the tab has to ask before it
    closes on unsaved work — the same warning the other three builders give.
@@ -2485,8 +2101,8 @@ const LIBRARY = {
     return doc;
   },
 
-  /* blank() has already put every document field back to its default, so this
-     only lays a saved sheet on top of it. A property with no showsheet yet
+  /* blank() has already started a fresh listing, so this only lays a saved
+     sheet on top of it. A property with no showsheet yet
      needs nothing further — it already has the blank. */
   setDoc: doc => {
     if (doc) {
@@ -2498,7 +2114,11 @@ const LIBRARY = {
          never had one keeps the sheet's. */
       const built = state.building.builtYear;
       const coreFeats = state.residence.features;
-      Object.keys(doc).forEach(k => { if (CORE_ONLY.indexOf(k) === -1) state[k] = doc[k]; });
+      // only fields this build knows (plus the old back-photo shape migratePhotos folds in);
+      // anything else an older sheet carried would ride along into every later save
+      Object.keys(doc).forEach(k => {
+        if (CORE_ONLY.indexOf(k) === -1 && (k in BLANK_DOC || k === 'secondaryPhoto')) state[k] = doc[k];
+      });
       // merged over the blank so a sheet saved before a key existed still has it
       state.building = Object.assign(structuredClone(BLANK_DOC.building), state.building);
       state.residence = Object.assign(structuredClone(BLANK_DOC.residence), state.residence);
@@ -2533,10 +2153,10 @@ window.__test = {
   placePhoto, unusePhoto, renderTray, migratePhotos,
   setFloorplanDataUrl(dataUrl){ state.floorplan = dataUrl; render(); },
   /* the real upload path — header crop and margin trim included */
-  setFloorplanFile, contentBox, textFit: () => textFit, TEXT_SECTIONS,
+  setFloorplanFile, textFit: () => textFit, TEXT_SECTIONS,
   async importDocxBuffer(buf){
     const {value:html} = await mammoth.convertToHtml({arrayBuffer:buf});
-    const found = applyParsedDocx(parseDocxHtml(html));
+    const found = applyParsedDocx(GVC_LISTING.blocksFromHtml(html));
     hydrateForm(); render();
     return found;
   }

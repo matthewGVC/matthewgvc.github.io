@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Watermark — Matt Bloomfield</title>
-<meta name="description" content="Add a Virtually Staged or Virtually Renovated watermark to a listing photo. Runs entirely in the browser — nothing is uploaded.">
+<meta name="description" content="Add a Virtually Staged or Virtually Renovated watermark to one listing photo or a whole folder. Runs entirely in the browser — nothing is uploaded.">
 <meta property="og:title" content="Watermark — Matt Bloomfield">
-<meta property="og:description" content="Add a Virtually Staged or Virtually Renovated watermark to a listing photo. Runs entirely in the browser — nothing is uploaded.">
+<meta property="og:description" content="Add a Virtually Staged or Virtually Renovated watermark to one listing photo or a whole folder. Runs entirely in the browser — nothing is uploaded.">
 <meta property="og:image" content="https://matthewgvc.github.io/assets/img/tile-showsheet.webp">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/watermark/">
 <meta property="og:type" content="website">
@@ -65,6 +65,24 @@
 #dropzone .dz-main{font-family:var(--serif);font-style:italic;font-weight:300;font-size:17px;color:var(--ink)}
 #dropzone .dz-sub{font-family:var(--mono);font-size:10px;color:var(--ink-soft);letter-spacing:0.1em;text-transform:uppercase}
 
+.linkbtn{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+  background:none;border:0;padding:0;margin-top:10px;color:var(--ink-soft);
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+}
+.linkbtn:hover{color:var(--ink)}
+.linkbtn:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+
+.scale-row{display:flex;align-items:center;gap:12px}
+.scale-row input[type=range]{flex:1;min-width:0;margin:0;accent-color:var(--ink)}
+.scale-row input[type=range]:focus-visible{outline:2px solid var(--sky);outline-offset:3px}
+.scale-row output{font-family:var(--mono);font-size:11px;color:var(--ink);min-width:4ch;text-align:right}
+.ctl-note{
+  font-family:var(--mono);font-size:10px;color:var(--ink-soft);
+  letter-spacing:0.08em;text-transform:uppercase;margin-top:8px;
+}
+.ctl-note:empty{display:none}
+
 #download{
   font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
   background:var(--ink);border:1px solid var(--ink);color:var(--bone);
@@ -86,10 +104,24 @@
   display:block;max-width:100%;max-height:58vh;margin:0 auto;
   border:1px solid var(--rule);
 }
+.pager{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-top:12px;
+}
+#placeholder[hidden],#canvas[hidden],.pager[hidden]{display:none}
+.pager button{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+  background:none;border:1px solid var(--rule);color:var(--ink);
+  padding:6px 10px;cursor:pointer;flex:none;
+  transition:border-color var(--dur-1) var(--ease);
+}
+.pager button:hover{border-color:var(--sky)}
+.pager button:disabled{opacity:0.35;cursor:not-allowed}
+.pager button:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
 #filemeta{
   font-family:var(--mono);font-size:11px;color:var(--ink-soft);
   letter-spacing:0.08em;text-transform:uppercase;
-  margin-top:12px;text-align:center;
+  text-align:center;min-width:0;overflow-wrap:anywhere;
 }
 .privacy-note{
   font-family:var(--mono);font-size:11px;color:var(--ink-soft);
@@ -118,11 +150,13 @@
   <section class="tool">
     <aside class="controls">
       <div class="ctl-group">
-        <h4>Photo</h4>
-        <div id="dropzone" role="button" tabindex="0" aria-label="Drop a photo or click to browse">
-          <span class="dz-main">Drop a photo</span>
+        <h4>Photos</h4>
+        <div id="dropzone" role="button" tabindex="0" aria-label="Drop photos or a folder, or click to browse">
+          <span class="dz-main">Drop photos or a folder</span>
           <span class="dz-sub">or click to browse</span>
         </div>
+        <button type="button" class="linkbtn" id="pick-folder">Choose a folder</button>
+        <p class="ctl-note" id="load-note" aria-live="polite"></p>
       </div>
       <div class="ctl-group">
         <h4>Label</h4>
@@ -141,93 +175,237 @@
         </div>
       </div>
       <div class="ctl-group">
+        <h4><label for="scale">Label size</label></h4>
+        <div class="scale-row">
+          <input type="range" id="scale" min="50" max="200" step="5" value="100">
+          <output id="scale-val" for="scale">100%</output>
+        </div>
+        <p class="ctl-note" id="scale-note" aria-live="polite"></p>
+      </div>
+      <div class="ctl-group">
         <h4>Export</h4>
         <button type="button" id="download" disabled>Download</button>
+        <p class="ctl-note" id="status" aria-live="polite"></p>
       </div>
     </aside>
 
     <section class="stage">
       <div id="placeholder">No photo loaded</div>
       <canvas id="canvas" hidden></canvas>
-      <p id="filemeta" hidden></p>
+      <div class="pager" id="pager" hidden>
+        <button type="button" id="prev" aria-label="Previous photo">&lsaquo; Prev</button>
+        <p id="filemeta" aria-live="polite"></p>
+        <button type="button" id="next" aria-label="Next photo">Next &rsaquo;</button>
+      </div>
       <p class="privacy-note">Photos are processed in your browser. Nothing is uploaded.</p>
-      <input type="file" id="file" accept="image/*" hidden>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <input type="file" id="folder" webkitdirectory multiple hidden>
     </section>
   </section>
 </main>
 
 <script>
 const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
 const dropzone = document.getElementById("dropzone");
 const placeholder = document.getElementById("placeholder");
 const fileInput = document.getElementById("file");
+const folderInput = document.getElementById("folder");
+const pickFolderBtn = document.getElementById("pick-folder");
+const loadNote = document.getElementById("load-note");
+const pager = document.getElementById("pager");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
 const filemeta = document.getElementById("filemeta");
+const scaleInput = document.getElementById("scale");
+const scaleVal = document.getElementById("scale-val");
+const scaleNote = document.getElementById("scale-note");
 const downloadBtn = document.getElementById("download");
+const statusEl = document.getElementById("status");
 
 const WM_FONT = "'Nunito Sans', Arial, sans-serif";
+const fontReady = document.fonts.load("800 32px " + WM_FONT).catch(() => {});
 
-let img = null;
-let fileName = "photo";
-let fileType = "image/jpeg";
+// Only the File objects are kept; each photo is decoded when it's shown or saved, so a
+// big folder of full-size shots doesn't sit in memory all at once.
+let photos = [];      // [{ file, path }], sorted by path
+let index = 0;
+let img = null;       // the decoded photo in the preview
+let showToken = 0;
+let saving = false;
 let label = "VIRTUALLY STAGED";
 let corner = "tl";
+let scale = 1;
 
-function draw(){
-  if(!img) return;
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  ctx.drawImage(img, 0, 0);
+function settings(){ return { label, corner, scale }; }
 
-  const w = canvas.width, h = canvas.height;
-  const fontSize = Math.max(14, Math.round(Math.min(w, h) * 0.032));
-  ctx.font = "800 " + fontSize + "px " + WM_FONT;
-  if("letterSpacing" in ctx) ctx.letterSpacing = Math.round(fontSize * 0.08) + "px";
+// Paints the photo and its label into canvas c. Returns true when the label stopped
+// short of the requested size to stay inside the photo.
+function paint(c, im, s){
+  c.width = im.naturalWidth;
+  c.height = im.naturalHeight;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(im, 0, 0);
 
-  const tw = ctx.measureText(label).width;
-  const padX = Math.round(fontSize * 0.9);
-  const padY = Math.round(fontSize * 0.55);
+  const w = c.width, h = c.height;
   const margin = Math.round(Math.min(w, h) * 0.035);
-  const boxW = tw + padX * 2;
-  const boxH = fontSize + padY * 2;
+  const maxW = w - margin * 2, maxH = h - margin * 2;
 
-  const x = corner === "tl" || corner === "bl" ? margin : w - margin - boxW;
-  const y = corner === "tl" || corner === "tr" ? margin : h - margin - boxH;
+  function layout(fontSize){
+    ctx.font = "800 " + fontSize + "px " + WM_FONT;
+    if("letterSpacing" in ctx) ctx.letterSpacing = Math.round(fontSize * 0.08) + "px";
+    const padX = Math.round(fontSize * 0.9);
+    const padY = Math.round(fontSize * 0.55);
+    return { fontSize, padX, boxW: ctx.measureText(s.label).width + padX * 2, boxH: fontSize + padY * 2 };
+  }
+
+  const base = Math.max(14, Math.round(Math.min(w, h) * 0.032));
+  const fits = L => L.boxW <= maxW && L.boxH <= maxH;
+  let L = layout(Math.round(base * s.scale));
+  const capped = !fits(L);
+  if(capped){
+    // Estimate in proportion, then step to the exact largest size that fits
+    let fs = Math.max(1, Math.floor(L.fontSize * Math.min(maxW / L.boxW, maxH / L.boxH)));
+    while(fs > 1 && !fits(layout(fs))) fs--;
+    while(fits(layout(fs + 1))) fs++;
+    L = layout(fs);
+  }
+
+  const x = s.corner === "tl" || s.corner === "bl" ? margin : w - margin - L.boxW;
+  const y = s.corner === "tl" || s.corner === "tr" ? margin : h - margin - L.boxH;
 
   ctx.fillStyle = "rgba(0,39,58,0.55)";
   ctx.beginPath();
-  ctx.roundRect(x, y, boxW, boxH, Math.round(fontSize * 0.25));
+  ctx.roundRect(x, y, L.boxW, L.boxH, Math.round(L.fontSize * 0.25));
   ctx.fill();
 
   ctx.fillStyle = "#ffffff";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + padX, y + boxH / 2 + fontSize * 0.06);
+  ctx.fillText(s.label, x + L.padX, y + L.boxH / 2 + L.fontSize * 0.06);
+  return capped;
 }
 
-function loadFile(file){
-  if(!file || !file.type.startsWith("image/")) return;
-  fileName = file.name.replace(/\.[^.]+$/, "") || "photo";
-  fileType = file.type === "image/png" ? "image/png" : "image/jpeg";
-  const url = URL.createObjectURL(file);
-  const im = new Image();
-  im.onload = () => {
-    URL.revokeObjectURL(url);
-    img = im;
-    placeholder.hidden = true;
-    canvas.hidden = false;
-    filemeta.hidden = false;
-    filemeta.textContent = file.name + " — " + im.naturalWidth + " × " + im.naturalHeight;
-    downloadBtn.disabled = false;
-    document.fonts.load("800 32px " + WM_FONT).then(draw).catch(draw);
-  };
-  im.src = url;
+function draw(){
+  if(!img) return;
+  scaleNote.textContent = paint(canvas, img, settings()) ? "Largest that fits this photo" : "";
+}
+
+let drawQueued = false;
+function requestDraw(){
+  if(drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; draw(); });
+}
+
+function decode(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => { URL.revokeObjectURL(url); resolve(im); };
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Can't open " + file.name)); };
+    im.src = url;
+  });
+}
+
+function baseName(file){ return file.name.replace(/\.[^.]+$/, "") || "photo"; }
+
+function isPhoto(file){
+  // "._IMG_0412.jpg" is a macOS metadata file that only looks like a photo
+  return file.type.startsWith("image/") && file.type !== "image/svg+xml" && !file.name.startsWith(".");
+}
+
+function plural(n, one, many){ return n + " " + (n === 1 ? one : many); }
+
+function updatePager(){
+  pager.hidden = !photos.length;
+  prevBtn.hidden = nextBtn.hidden = photos.length < 2;
+  prevBtn.disabled = index === 0;
+  nextBtn.disabled = index === photos.length - 1;
+}
+
+function updateDownload(){
+  downloadBtn.disabled = saving || !photos.length;
+  downloadBtn.textContent = photos.length > 1 ? "Download " + photos.length + " photos" : "Download";
+}
+
+async function show(i){
+  index = i;
+  updatePager();
+  const { file } = photos[i];
+  const token = ++showToken;
+  let im = null;
+  try { im = await decode(file); await fontReady; } catch {}
+  if(token !== showToken) return;
+
+  img = im;
+  placeholder.hidden = !!im;
+  canvas.hidden = !im;
+  if(!im){
+    placeholder.textContent = "This browser can't open this photo";
+    scaleNote.textContent = "";
+  }
+  filemeta.textContent = (photos.length > 1 ? (i + 1) + " of " + photos.length + " — " : "") +
+    file.name + (im ? " — " + im.naturalWidth + " × " + im.naturalHeight : "");
+  draw();
+}
+
+function setPhotos(list){
+  if(!list.length) return;
+  const keep = list.filter(p => isPhoto(p.file));
+  const skipped = list.length - keep.length;
+  if(!keep.length){
+    loadNote.textContent = "No photos found";
+    return;
+  }
+  keep.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" }));
+  photos = keep;
+  const notes = [];
+  if(keep.length > 1) notes.push(plural(keep.length, "photo", "photos"));
+  if(skipped) notes.push(plural(skipped, "file", "files") + " skipped (not photos)");
+  loadNote.textContent = notes.join(" · ");
+  statusEl.textContent = "";
+  updateDownload();
+  show(0);
+}
+
+// Reads a drop, walking into any folders (and their subfolders).
+async function photosFromDrop(dt){
+  // Entries must be taken synchronously, before the first await, or the drop data is gone.
+  const entries = [...dt.items].map(it => it.webkitGetAsEntry ? it.webkitGetAsEntry() : null).filter(Boolean);
+  if(!entries.length) return [...dt.files].map(f => ({ file: f, path: f.name }));
+  const out = [];
+  async function walk(entry){
+    if(entry.isFile){
+      const file = await new Promise((res, rej) => entry.file(res, rej));
+      out.push({ file, path: entry.fullPath.replace(/^\//, "") });
+    }else if(entry.isDirectory){
+      const reader = entry.createReader();
+      let batch;
+      do{
+        batch = await new Promise((res, rej) => reader.readEntries(res, rej));  // returns ~100 at a time
+        for(const e of batch) await walk(e);
+      }while(batch.length);
+    }
+  }
+  for(const e of entries){
+    try { await walk(e); } catch {}
+  }
+  return out;
 }
 
 dropzone.addEventListener("click", () => fileInput.click());
 dropzone.addEventListener("keydown", e => {
   if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
 });
-fileInput.addEventListener("change", () => loadFile(fileInput.files[0]));
+pickFolderBtn.addEventListener("click", () => folderInput.click());
+
+fileInput.addEventListener("change", () => {
+  setPhotos([...fileInput.files].map(f => ({ file: f, path: f.name })));
+  fileInput.value = "";
+});
+folderInput.addEventListener("change", () => {
+  setPhotos([...folderInput.files].map(f => ({ file: f, path: f.webkitRelativePath || f.name })));
+  folderInput.value = "";
+});
 
 ["dragover","dragenter"].forEach(ev => dropzone.addEventListener(ev, () => {
   dropzone.classList.add("dragover");
@@ -237,9 +415,18 @@ fileInput.addEventListener("change", () => loadFile(fileInput.files[0]));
 }));
 
 window.addEventListener("dragover", e => e.preventDefault());
-window.addEventListener("drop", e => {
+window.addEventListener("drop", async e => {
   e.preventDefault();
-  if(e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+  if(e.dataTransfer) setPhotos(await photosFromDrop(e.dataTransfer));
+});
+
+prevBtn.addEventListener("click", () => { if(index > 0) show(index - 1); });
+nextBtn.addEventListener("click", () => { if(index < photos.length - 1) show(index + 1); });
+document.addEventListener("keydown", e => {
+  if(photos.length < 2 || e.altKey || e.ctrlKey || e.metaKey) return;
+  if(e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+  if(e.key === "ArrowLeft" && index > 0) show(index - 1);
+  else if(e.key === "ArrowRight" && index < photos.length - 1) show(index + 1);
 });
 
 function wireSeg(id, attr, cb){
@@ -256,17 +443,57 @@ function wireSeg(id, attr, cb){
 wireSeg("label-seg", "label", v => label = v);
 wireSeg("corner-seg", "corner", v => corner = v);
 
-downloadBtn.addEventListener("click", () => {
-  if(!img) return;
-  const suffix = label === "VIRTUALLY STAGED" ? "virtually-staged" : "virtually-renovated";
-  const ext = fileType === "image/png" ? "png" : "jpg";
-  canvas.toBlob(blob => {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = fileName + "-" + suffix + "." + ext;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }, fileType, 0.92);
+scaleInput.addEventListener("input", () => {
+  scale = scaleInput.value / 100;
+  scaleVal.textContent = scaleInput.value + "%";
+  requestDraw();
+});
+
+const exportCanvas = document.createElement("canvas");
+const toBlob = (c, type) => new Promise(res => c.toBlob(res, type, 0.92));
+const wait = ms => new Promise(res => setTimeout(res, ms));
+
+// Saves every loaded photo as its own download, one at a time. The settings and the
+// photo list are captured up front, so changing them mid-save doesn't mix a batch.
+downloadBtn.addEventListener("click", async () => {
+  if(!photos.length || saving) return;
+  saving = true;
+  updateDownload();
+  const batch = photos.slice();
+  const s = settings();
+  const suffix = s.label === "VIRTUALLY STAGED" ? "virtually-staged" : "virtually-renovated";
+  let saved = 0, failed = 0;
+  await fontReady;
+
+  for(let i = 0; i < batch.length; i++){
+    if(batch.length > 1) statusEl.textContent = "Saving " + (i + 1) + " of " + batch.length + "…";
+    const { file } = batch[i];
+    try{
+      const im = await decode(file);
+      const type = file.type === "image/png" ? "image/png" : "image/jpeg";
+      paint(exportCanvas, im, s);
+      const blob = await toBlob(exportCanvas, type);
+      if(!blob) throw new Error("Couldn't encode " + file.name);
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = baseName(file) + "-" + suffix + "." + (type === "image/png" ? "png" : "jpg");
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(href), 10000);
+      saved++;
+      // Spaced out so the browser treats them as separate downloads rather than dropping some
+      if(i < batch.length - 1) await wait(250);
+    }catch{
+      failed++;
+    }
+  }
+
+  exportCanvas.width = exportCanvas.height = 0;
+  saving = false;
+  updateDownload();
+  statusEl.textContent = batch.length > 1 || failed
+    ? "Downloaded " + plural(saved, "photo", "photos") + (failed ? " · " + failed + " couldn't be opened" : "")
+    : "";
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>

@@ -23,13 +23,22 @@
   function lines(s) { return esc(s).replace(/\n/g, '<br>'); }
 
   /* ---------- money ---------- */
+  /* A price as typed: "$8.95M" and "1.2 million" are what agents write, and
+     stripping everything but digits read them as $9 and $1. */
+  function amount(v) {
+    const s = String(v);
+    let n = Number(s.replace(/[^0-9.\-]/g, ''));
+    const suf = s.replace(/,/g, '').match(/[\d.]\s*(million|mm|m|thousand|k)\b/i);
+    if (suf) n *= /^(k|thousand)$/i.test(suf[1]) ? 1e3 : 1e6;
+    return n;
+  }
   function money(v) {
-    const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    const n = amount(v);
     if (!isFinite(n) || !n) return '';
     return '$' + Math.round(n).toLocaleString('en-US');
   }
   function moneyShort(v) {
-    const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    const n = amount(v);
     if (!isFinite(n) || !n) return '';
     if (n >= 1e6) return '$' + (n / 1e6).toFixed(n >= 1e7 ? 0 : 2).replace(/\.00$/, '') + 'M';
     if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';

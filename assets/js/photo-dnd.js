@@ -218,6 +218,7 @@
       var dx = (ev.clientX - start.x) / scale, dy = (ev.clientY - start.y) / scale;
       if (overX > 0.5) pos.x = Math.max(0, Math.min(100, start.px - (dx / overX) * 100));
       if (overY > 0.5) pos.y = Math.max(0, Math.min(100, start.py - (dy / overY) * 100));
+      if (global.GVC_UNSAVED) GVC_UNSAVED.touch();
       img.style.objectPosition = pos.x + '% ' + pos.y + '%';
       if (opts.onMove) opts.onMove(pos);
     }
@@ -298,7 +299,7 @@
         del.className = 'img-x';
         del.innerHTML = '&#10005;';
         del.title = opts.removeTitle || 'Remove this photo';
-        del.addEventListener('click', function () { opts.onRemove(item); });
+        del.addEventListener('click', function () { if (global.GVC_UNSAVED) GVC_UNSAVED.touch(); opts.onRemove(item); });
         row.appendChild(del);
       }
 

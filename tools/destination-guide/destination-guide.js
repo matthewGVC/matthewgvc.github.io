@@ -96,7 +96,7 @@
 
   function pageOverview(n, total) {
     const o = state.guide.overview;
-    const body = '<div class="field-lede"><div class="big">NJ</div><p>' + esc(o.knownFor) + '</p></div>' +
+    const body = '<div class="field-lede"><div class="big">NJ</div><p>' + esc(state.guide.subtitle) + '</p></div>' +
       '<div class="field-columns">' +
       '<section class="field-note"><h3>What it is known for</h3><p>' + esc(o.knownFor) + '</p></section>' +
       '<section class="field-note"><h3>History</h3><p>' + esc(o.history) + '</p></section>' +
@@ -117,7 +117,7 @@
   }
 
   function pageBucket(n, total) {
-    const body = '<p class="bucket-lede">The fastest way to understand Monmouth County is to cross its landscapes: ocean, harbor, ridge, reservoir, downtown and farm.</p>' +
+    const body = '<p class="bucket-lede">The fastest way to understand ' + esc(state.guide.title) + ' is to do ' + state.guide.bucket.length + ' ordinary things well: coffee, a show, the ferry, a round of golf, dinner by the water and a day at the track.</p>' +
       '<div class="bucket-list">' + state.guide.bucket.map(item => '<section class="bucket"><div class="n"></div><div><h3>' +
         esc(item.title) + '</h3><p>' + esc(item.note) + '</p><div class="src">' + esc(sourceLabel(item.source)) + '</div></div></section>').join('') + '</div>';
     return shell('Do This First', 'The local short list', body, n, total, 'dg-bucket');
@@ -128,37 +128,83 @@
       category,
       items: state.guide.pois.filter(poi => poi.category === category.id)
     })).filter(group => group.items.length);
-    const body = '<div class="directory-lede"><p>Numbers correspond to the schematic map on the next page. Every entry is tied to a maintained source in the guide data.</p></div>' +
+    const body = '<div class="directory-lede"><p>' + state.guide.pois.length + ' places, numbered to match the map on the next page. Each one links to its own site or a maintained source in the guide data.</p></div>' +
       '<div class="dir-grid">' + groups.map(group => '<section class="dir-group"><h3>' + esc(group.category.label) + '</h3><ol>' +
         group.items.map(poi => '<li><span class="pin">' + String(poi.id).padStart(2, '0') + '</span><div><b>' + esc(poi.name) +
           '</b><span>' + esc(poi.place) + ' - ' + esc(poi.note) + '</span></div></li>').join('') + '</ol></section>').join('') + '</div>';
     return shell('Directory', 'Points of interest', body, n, total, 'dg-directory');
   }
 
-  function projectedPois() {
+  /* The schematic map. Pins are laid out by plain equirectangular projection
+     (longitude scaled by cos 40.3 degrees so shapes are not stretched), fitted
+     to the frame, then nudged apart where they would overlap. The Atlantic
+     coast and the north-shore bays are drawn from real shoreline points so the
+     water sits where it really is; everything inland is blank on purpose.
+     It orients; it does not measure. */
+  const SHORE_OCEAN = [[40.4672, -74.0105], [40.4540, -73.9990], [40.4300, -73.9880], [40.4000, -73.9800], [40.3620, -73.9690],
+    [40.3340, -73.9690], [40.3040, -73.9730], [40.2480, -73.9980], [40.2200, -73.9990], [40.2000, -74.0100],
+    [40.1780, -74.0200], [40.1255, -74.0330]];
+  const SHORE_BAY = [[40.4672, -74.0105], [40.4400, -74.0300], [40.4040, -74.0000], [40.4085, -74.0330], [40.4170, -74.0600],
+    [40.4170, -74.0990], [40.4400, -74.1300], [40.4370, -74.2000], [40.4350, -74.2400]];
+
+  function mapFrame(W, H) {
     const pois = state.guide.pois;
-    const lats = pois.map(p => p.lat), lons = pois.map(p => p.lon);
+    const lats = pois.map(p => p.lat).concat([40.4672, 40.1255]);
+    const lons = pois.map(p => p.lon).concat([-74.3846, -73.969]);
     const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
     const minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
-    return pois.map(poi => ({
-      poi,
-      x: 76 + ((poi.lon - minLon) / (maxLon - minLon || 1)) * 510,
-      y: 606 - ((poi.lat - minLat) / (maxLat - minLat || 1)) * 526
-    }));
+    const k = Math.cos(40.3 * Math.PI / 180), pad = 34;
+    const scale = Math.min((W - 2 * pad) / ((maxLon - minLon) * k), (H - 2 * pad) / (maxLat - minLat));
+    const w = (maxLon - minLon) * k * scale, h = (maxLat - minLat) * scale;
+    const ox = (W - w) / 2, oy = (H - h) / 2;
+    return {
+      x: lon => ox + (lon - minLon) * k * scale,
+      y: lat => oy + (maxLat - lat) * scale
+    };
+  }
+
+  function projectedPois(W, H) {
+    const f = mapFrame(W, H);
+    const pts = state.guide.pois.map(poi => ({ poi, x: f.x(poi.lon), y: f.y(poi.lat) }));
+    /* push apart anything closer than a pin diameter; a few passes settle it */
+    const gap = 21;
+    for (let pass = 0; pass < 90; pass++) {
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+        let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+        let d = Math.sqrt(dx * dx + dy * dy);
+        if (d >= gap) continue;
+        if (d < 0.01) { dx = 1; dy = 0; d = 1; }
+        const push = (gap - d) / 2;
+        pts[i].x -= dx / d * push; pts[i].y -= dy / d * push;
+        pts[j].x += dx / d * push; pts[j].y += dy / d * push;
+      }
+    }
+    pts.forEach(p => { p.x = Math.max(14, Math.min(W - 14, p.x)); p.y = Math.max(14, Math.min(H - 14, p.y)); });
+    return pts;
   }
 
   function pageMap(n, total) {
-    const points = projectedPois();
-    const pins = points.map(point => '<g class="map-pin" transform="translate(' + point.x.toFixed(1) + ' ' + point.y.toFixed(1) + ')">' +
-      '<circle r="14"></circle><text y="1">' + point.poi.id + '</text></g>').join('');
+    const W = 650, H = 490, f = mapFrame(W, H);
+    const line = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
+    const ocean = 'M' + line(SHORE_OCEAN) + ' L' + W + ' ' + f.y(SHORE_OCEAN[SHORE_OCEAN.length - 1][0]).toFixed(1) +
+      ' L' + W + ' 0 L' + f.x(SHORE_OCEAN[0][1]).toFixed(1) + ' 0 Z';
+    const bay = 'M' + line(SHORE_BAY) + ' L0 ' + f.y(SHORE_BAY[SHORE_BAY.length - 1][0]).toFixed(1) + ' L0 0 L' +
+      f.x(SHORE_BAY[0][1]).toFixed(1) + ' 0 Z';
+    const pins = projectedPois(W, H).map(point => '<g class="map-pin" transform="translate(' + point.x.toFixed(1) + ' ' + point.y.toFixed(1) + ')">' +
+      '<circle r="10"></circle><text y="1">' + point.poi.id + '</text></g>').join('');
+    const legend = state.guide.categories.map(category => {
+      const items = state.guide.pois.filter(poi => poi.category === category.id);
+      return items.length ? '<section><h3>' + esc(category.label) + '</h3><ol>' + items.map(poi =>
+        '<li><span class="n">' + String(poi.id).padStart(2, '0') + '</span>' + esc(poi.name) + '</li>').join('') + '</ol></section>' : '';
+    }).join('');
     const body = '<div class="map-layout"><div class="map-frame" role="img" aria-label="Schematic map of the guide points of interest">' +
-      '<svg viewBox="0 0 650 690" aria-hidden="true"><path class="map-land" d="M52 642 C72 560 62 474 114 410 C158 355 128 270 194 222 C244 184 260 100 344 70 C426 41 492 80 538 132 C578 177 573 241 604 291 L589 640 Z"></path>' +
-      '<path class="map-river" d="M148 318 C238 276 310 296 392 250 C445 221 480 181 543 172"></path>' +
-      '<path class="map-route" d="M116 562 C208 481 282 416 372 344 C436 293 503 228 562 132"></path>' + pins + '</svg>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      '<path class="map-water" d="' + ocean + '"></path><path class="map-water" d="' + bay + '"></path>' +
+      '<path class="map-coast" d="M' + line(SHORE_OCEAN) + '"></path><path class="map-coast" d="M' + line(SHORE_BAY) + '"></path>' +
+      '<text class="map-label" x="' + (W - 22) + '" y="' + (H - 40) + '" text-anchor="end">ATLANTIC OCEAN</text>' +
+      '<text class="map-label" x="20" y="28">SANDY HOOK BAY / RARITAN BAY</text>' + pins + '</svg>' +
       '<div class="map-note">Schematic orientation / not to scale</div></div>' +
-      '<aside class="map-legend"><h3>Map key</h3><ol>' + state.guide.pois.map(poi => '<li><span class="n">' +
-        String(poi.id).padStart(2, '0') + '</span><div><b>' + esc(poi.name) + '</b><span>' + esc(poi.place) + '</span></div></li>').join('') +
-      '</ol></aside></div>';
+      '<aside class="map-legend" aria-label="Map key">' + legend + '</aside></div>';
     return shell('Map', 'From bay to ocean', body, n, total, 'dg-map');
   }
 
@@ -177,7 +223,7 @@
       '<h2>Ready to find your place in ' + esc(state.guide.title) + '?</h2><div class="line"></div>' +
       '<div class="contact"><p>We help buyers and sellers move with local context, disciplined advice and a connected team.</p>' +
       '<div class="site">gvcrealestateteam.com<br>@gvcrealestateteam</div></div>' +
-      '<div class="back-sources">' + esc(state.guide.sourceNote) + '<br>Research set: ' + esc(sourceNames) + '</div></div></article>';
+      '<div class="back-sources">' + esc(state.guide.sourceNote) + '<br>Research set: ' + Object.keys(state.guide.sources).length + ' linked sources - ' + esc(state.guide.sourceSummary || sourceNames) + '.</div></div></article>';
   }
 
   function redraw() {

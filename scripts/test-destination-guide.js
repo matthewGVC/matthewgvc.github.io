@@ -18,9 +18,11 @@ Object.values((data && data.regions) || {}).forEach(region => {
   check(region.overview && region.overview.knownFor && region.overview.history && region.overview.architecture,
     region.id + ': overview is incomplete');
   check(Array.isArray(region.places) && region.places.length >= 6, region.id + ': needs at least six featured places');
-  check(Array.isArray(region.bucket) && region.bucket.length === 8, region.id + ': bucket list must contain eight items');
+  check(Array.isArray(region.bucket) && region.bucket.length === 10, region.id + ': bucket list must contain ten items');
+  (region.bucket || []).forEach(item => check(region.sources[item.source], region.id + ': bucket item "' + item.title + '" has no source'));
   check(Array.isArray(region.favorites) && region.favorites.length === 4, region.id + ': editor expects four favorites');
 
+  check(region.categories.every(c => (region.pois || []).some(p => p.category === c.id)), region.id + ': a directory group has no entries');
   const ids = new Set();
   (region.pois || []).forEach(poi => {
     check(Number.isInteger(poi.id) && poi.id > 0, region.id + ': invalid POI id');
@@ -32,7 +34,9 @@ Object.values((data && data.regions) || {}).forEach(region => {
   });
 
   Object.entries(region.sources || {}).forEach(([key, source]) => {
-    check(source.label && /^https:\/\//.test(source.url || ''), region.id + ': invalid source ' + key);
+    check(source.label && /^https?:\/\//.test(source.url || ''), region.id + ': invalid source ' + key);
+    // http is allowed only where a venue's own site has no valid https certificate
+    if (/^http:\/\//.test(source.url || '')) console.warn('note: ' + region.id + ' source ' + key + ' is http: ' + source.url);
   });
 });
 

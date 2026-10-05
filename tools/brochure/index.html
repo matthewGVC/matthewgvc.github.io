@@ -1024,6 +1024,10 @@ let assign = { hero: null, infoTop: null, gallery: [] };
    featureLines is deliberately not Pitch.lines: that escapes a textarea into
    one <br>-joined run of HTML, this splits it into the separate strings
    page 2 bullets and the saved core facts each need. */
+/* A drag, a button or a dropped file fires no input event, so the unsaved-work
+   prompt (assets/js/unsaved.js) never heard about it. Every gesture that changes
+   the deck calls this. */
+const edited = () => GVC_UNSAVED.touch();
 const featureLines = s => String(s || '').split('\n').map(x => x.trim()).filter(Boolean);
 /* QR as vector SVG so it stays crisp at any print size — one shared
    implementation for all four builders, in assets/js/qr.js. */
@@ -1080,7 +1084,7 @@ function computeAssignment() {
       // the strongest photos go to the cover and the gallery's big cells;
       // page 3's banner takes what is left
       take('hero');
-      const n = Math.max(0, pool.length - 2);
+      const n = Math.max(0, pool.length - (res.infoTop ? 0 : 1));
       res.gallery = forcedGallery.concat(pool.slice(0, n));
       pool = pool.slice(n);
       take('infoTop');
@@ -1142,6 +1146,7 @@ function syncGallery() {
 function applyPreset(name) {
   const pg = galPages()[state.galPage];
   if (!pg) return;
+  edited();
   const old = cellsOf(pg).map(x => x.cell);
   const fresh = layoutFor(old.map(c => c.id), name);
   // carry each photo's crop and caption across to its new cell
@@ -1169,6 +1174,7 @@ function swapCells(idA, idB) {
   idA = Number(idA); idB = Number(idB);
   const A = findCell(idA), B = findCell(idB);
   if (!A || !B || idA === idB) return;
+  edited();
   const a = A.cell, b = B.cell;
   const keep = { id: a.id, fx: a.fx, fy: a.fy, z: a.z, label: a.label };
   a.id = b.id; a.fx = b.fx; a.fy = b.fy; a.z = b.z; a.label = b.label;
@@ -1178,6 +1184,7 @@ function swapCells(idA, idB) {
 
 function addGalleryPage() {
   if (galPages().length >= GAL_MAX_PAGES) { return; }
+  edited();
   galPages().push({ rows: [] });
   state.galPage = galPages().length - 1;
   redraw(); renderGalleryPanel();
@@ -1186,6 +1193,7 @@ function addGalleryPage() {
 function removeGalleryPage(pi) {
   const pages = galPages();
   if (pages.length <= 1) return;
+  edited();
   const dead = cellsOf(pages[pi]).map(x => x.cell);
   pages.splice(pi, 1);
   // its photos are not lost — they rejoin the page before it
@@ -1205,6 +1213,7 @@ function moveCellToPage(id, pi) {
   const hit = findCell(id);
   const pages = galPages();
   if (!hit || !pages[pi] || hit.pi === pi) return;
+  edited();
   const cell = hit.cell;
   hit.row.cells.splice(hit.ci, 1);
   if (!hit.row.cells.length) hit.page.rows.splice(hit.ri, 1);
@@ -1220,6 +1229,7 @@ function moveCellToPage(id, pi) {
 function cellToOwnRow(id) {
   const hit = findCell(id);
   if (!hit || hit.row.cells.length === 1) return;
+  edited();
   hit.row.cells.splice(hit.ci, 1);
   hit.page.rows.splice(hit.ri + 1, 0, { h: 1, cells: [hit.cell] });
   redraw(); renderGalleryPanel();
@@ -1431,6 +1441,7 @@ function beginFlexDrag(e, axis, list, i, container) {
 
   const move = ev => {
     const d = (((axis === 'x' ? ev.clientX : ev.clientY) - start) / px) * total;
+    edited();
     let na = a0 + d, nb = b0 - d;
     if (na < CELL_MIN) { nb -= CELL_MIN - na; na = CELL_MIN; }
     if (nb < CELL_MIN) { na -= CELL_MIN - nb; nb = CELL_MIN; }
@@ -1503,6 +1514,7 @@ function beginCrop(e, cellEl, c) {
   const move = ev => {
     if (!active && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < DRAG_THRESHOLD) return;
     active = true;
+    edited();
     cellEl.classList.add('is-moving');
     const dx = (ev.clientX - start.x) / scale, dy = (ev.clientY - start.y) / scale;
     if (overX > 1) c.fx = Math.max(0, Math.min(100, start.fx - (dx / overX) * 100));
@@ -1600,7 +1612,7 @@ function renderFloorplan(page, spec, n, of) {
                   : '<div class="empty-note on-white">Drop a floor plan<br>in the Floor plans panel</div>') +
             '</div>' +
             (fp ? '<div class="fp-cap"><span>' + esc(fp.label || ('Level ' + (spec.from + i + 1))) +
-                  '</span>' + (state.sqft ? '<span class="sub">' + esc(state.sqft) + ' sq ft total</span>' : '') +
+                  '</span>' + (state.sqft ? '<span class="sub">' + esc(state.sqft.replace(/\s*(sq\.?\s*ft\.?|sf)\s*$/i, '')) + ' sq ft total</span>' : '') +
                   '</div>' : '') +
           '</div>').join('') +
         (state.fpNote ? '<div class="fp-note">' + esc(state.fpNote) + '</div>' : '') +
@@ -1741,47 +1753,7 @@ function checkOverflow() {
   $('#warnAddr').hidden = !addrOver;
 }
 
-/* ---------------- drag: swap bento cells ---------------- */
 const DRAG_THRESHOLD = 4;
-let drag = null;
-
-function slotUnderPointer(e) {
-  const el = document.elementFromPoint(e.clientX, e.clientY);
-  const cell = el && el.closest ? el.closest('.bento-cell') : null;
-  if (!cell || cell.dataset.slot === undefined) return null;
-  return { cell: cell, slot: parseInt(cell.dataset.slot, 10) };
-}
-
-function beginDrag(e, cell, slot, grid) {
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  e.preventDefault();
-  drag = { slot: slot, cell: cell, grid: grid, x: e.clientX, y: e.clientY, active: false, target: null };
-  try { cell.setPointerCapture(e.pointerId); } catch (_) {}
-
-  const move = ev => {
-    if (!drag) return;
-    if (!drag.active && Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) < DRAG_THRESHOLD) return;
-    drag.active = true;
-    drag.cell.classList.add('is-dragging');
-    const hit = slotUnderPointer(ev);
-    drag.grid.querySelectorAll('.bento-cell').forEach(c => c.classList.remove('is-target'));
-    drag.target = (hit && hit.slot !== drag.slot) ? hit.slot : null;
-    if (hit && hit.slot !== drag.slot) hit.cell.classList.add('is-target');
-  };
-  const finish = ev => {
-    cell.removeEventListener('pointermove', move);
-    cell.removeEventListener('pointerup', finish);
-    cell.removeEventListener('pointercancel', finish);
-    try { cell.releasePointerCapture(ev.pointerId); } catch (_) {}
-    const d = drag; drag = null;
-    (d && d.grid ? d.grid : document).querySelectorAll('.bento-cell')
-      .forEach(c => c.classList.remove('is-dragging', 'is-target'));
-    if (d && d.active && d.target !== null) swapCells(d.slot, d.target);
-  };
-  cell.addEventListener('pointermove', move);
-  cell.addEventListener('pointerup', finish);
-  cell.addEventListener('pointercancel', finish);
-}
 
 /* ---------------- drag: pan a zoomed floor plan ----------------
    The plan is transformed, not object-positioned, so the pan is measured
@@ -1807,6 +1779,7 @@ function beginFpDrag(e, box, fp) {
   try { box.setPointerCapture(e.pointerId); } catch (_) {}
 
   const move = ev => {
+    edited();
     fp.tx = start.tx + ((ev.clientX - start.x) / scale) / (img.offsetWidth * fp.zoom) * 100 * fp.zoom;
     fp.ty = start.ty + ((ev.clientY - start.y) / scale) / (img.offsetHeight * fp.zoom) * 100 * fp.zoom;
     fpClamp(fp, box);
@@ -1942,7 +1915,7 @@ function renderGalleryInspector() {
     const mk = (txt, delta) => {
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = txt;
-      b.addEventListener('click', () => { set(delta); redraw(); renderGalleryPanel(); });
+      b.addEventListener('click', () => { edited(); set(delta); redraw(); renderGalleryPanel(); });
       return b;
     };
     const val = document.createElement('span');
@@ -1983,6 +1956,7 @@ function renderGalleryInspector() {
     return b;
   };
   btns.appendChild(mkBtn('Recentre', () => {
+    edited();
     c.fx = 50; c.fy = 50; c.z = 1; redraw(); renderGalleryPanel();
   }, 'Put the crop back to the middle at 1x'));
   btns.appendChild(mkBtn('Own row', () => cellToOwnRow(c.id),
@@ -2135,6 +2109,7 @@ function unusePhoto(id) {
   id = Number(id);
   const img = state.images.filter(im => im.id === id)[0];
   if (!img) return;
+  edited();
   removeCell(id);
   img.role = 'exclude';
   if (state.galSel === id) state.galSel = null;
@@ -2235,6 +2210,7 @@ function renderImgList() {
     },
     onBadge: (img, badge) => openImgMenu(img, badge),
     onRemove: img => {
+      edited();
       removeCell(img.id);
       state.images = state.images.filter(x => x.id !== img.id);
       redraw(); renderImgList(); renderGalleryPanel();
@@ -2268,6 +2244,7 @@ function renderFpList() {
     const del = document.createElement('button');
     del.type = 'button'; del.className = 'img-x'; del.innerHTML = '&#10005;'; del.title = 'Remove';
     del.addEventListener('click', () => {
+      edited();
       state.floorplans = state.floorplans.filter(x => x.id !== fp.id);
       renderFpList(); redraw();
     });
@@ -2292,6 +2269,7 @@ function renderFpList() {
     const rst = document.createElement('button');
     rst.type = 'button'; rst.className = 'shot-btn'; rst.textContent = 'Reset';
     rst.addEventListener('click', () => {
+      edited();
       fp.zoom = 1; fp.tx = 0; fp.ty = 0;
       rng.value = '100'; val.textContent = '100%';
       redraw();
@@ -2318,7 +2296,7 @@ function addFiles(files) {
       };
       probe.src = img.url;
       redraw(); renderImgList(); updateBentoNote();
-      GVC_UNSAVED.touch();
+      edited();
     };
     reader.readAsDataURL(f);
   });
@@ -2334,6 +2312,7 @@ async function addFloorplans(files) {
       const rect = trimRect(img, floorplanHeaderY(img));
       const url = reencode(img, 2400, .9, rect);
       state.floorplans.push({ id: ++uid, name: f.name, url, label: '', zoom: 1, tx: 0, ty: 0 });
+      edited();
       renderFpList(); redraw();
     } catch (e) { /* unreadable file — skip it */ }
   }
@@ -2370,6 +2349,7 @@ $('#galCaps').addEventListener('change', e => {
   state.galCaptions = e.target.checked; redraw();
 });
 $('#btnResetPos').addEventListener('click', () => {
+  edited();
   state.coverPos = { x: 50, y: 50 };
   state.infoTopPos = { x: 50, y: 50 };
   redraw();
@@ -2445,12 +2425,14 @@ const KEEP_ON_SWITCH = ['paper'];
 
 /* Called before a property's facts are applied — see property-bar's open().
    Cloned, or images and gallery pages would be shared with the blank. */
+const syncStrategy = () => { $('#strategy').value = state.strategy; };
 const resetDocFields = () => {
   DOC_KEYS.forEach(k => {
     if (KEEP_ON_SWITCH.includes(k)) return;
     state[k] = structuredClone(BLANK[k]);
   });
   state.galSel = null;
+  syncStrategy();
 };
 
 GVC_PROPBAR.mount({
@@ -2510,7 +2492,7 @@ GVC_PROPBAR.mount({
       const k = el.dataset.field;
       if (k in state) el.value = state[k];
     });
-    syncPaper();
+    syncPaper(); syncStrategy();
     renderImgList(); renderFpList(); renderGalleryPanel(); redraw(); updateBentoNote();
   }
 });

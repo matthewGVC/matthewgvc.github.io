@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Destination Guide Builder - Matt Bloomfield</title>
+<meta name="description" content="Build a sourced, print-ready regional guide for The GVC Team.">
+<meta property="og:title" content="Destination Guide Builder - Matt Bloomfield">
+<meta property="og:description" content="Build a sourced, print-ready regional guide for The GVC Team.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/destination-guide/">
+<meta property="og:type" content="website">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="destination-guide.css">
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">Destination Guide Builder</h1>
+
+<div id="app">
+  <aside id="editor">
+    <div class="ed-body">
+      <details class="ed-sec" open>
+        <summary>Guide <span class="hint">region + cover</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Region</label>
+            <div class="seg" id="regionPick" role="group" aria-label="Guide region"></div>
+          </div>
+          <div class="field">
+            <label for="guideTitle">Title</label>
+            <input id="guideTitle" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="guideSubtitle">Theme line</label>
+            <textarea id="guideSubtitle" rows="2"></textarea>
+          </div>
+          <div class="field">
+            <label for="guideIssue">Issue line</label>
+            <input id="guideIssue" type="text" autocomplete="off">
+          </div>
+          <div class="field upload-field">
+            <label>Cover image</label>
+            <label class="btn sm ghost upload-btn" for="coverFile">Replace image</label>
+            <input id="coverFile" type="file" accept="image/*" hidden>
+            <div class="note" id="coverName">Starter regional image</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Welcome <span class="hint">team voice</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <label for="welcomeTitle">Heading</label>
+            <input id="welcomeTitle" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="welcomeCopy">Introduction</label>
+            <textarea id="welcomeCopy" rows="8"></textarea>
+            <div class="note">Separate paragraphs with a blank line.</div>
+          </div>
+          <div class="field upload-field">
+            <label>Team image</label>
+            <label class="btn sm ghost upload-btn" for="teamFile">Replace image</label>
+            <input id="teamFile" type="file" accept="image/*" hidden>
+            <div class="note" id="teamName">GVC founders photograph</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Team favorites <span class="hint">optional page</span></summary>
+        <div class="sec-in">
+          <label class="tick page-toggle">
+            <input id="showFavorites" type="checkbox" checked>
+            <span><b>Include Team Favorites</b><i>Turn the complete page on or off.</i></span>
+          </label>
+          <div id="favoriteFields"></div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Research <span class="hint">sources + handoff</span></summary>
+        <div class="sec-in">
+          <p class="sec-note" id="sourceNote"></p>
+          <ol class="source-list" id="sourceList"></ol>
+          <button class="btn sm ghost" id="downloadData" type="button">Download data</button>
+        </div>
+      </details>
+
+      <div class="editor-warning" id="warnGeneral" role="status" hidden></div>
+    </div>
+  </aside>
+
+  <main id="stage">
+    <div id="pages"></div>
+  </main>
+
+  <div id="stageBar">
+    <span class="stage-status" id="pageStatus">10 pages</span>
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button class="btn sm ghost" id="btnZoom" type="button">Zoom 100%</button>
+    <button class="btn lg" id="btnPrint" type="button" title="In the print dialog: Destination Save as PDF, Paper Letter, Margins None, and enable Background graphics.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</div>
+</main>
+
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
+<script src="../../assets/js/nj-towns.js"></script>
+<script src="guide-data.js"></script>
+<script src="destination-guide.js"></script>
+</body>
+</html>

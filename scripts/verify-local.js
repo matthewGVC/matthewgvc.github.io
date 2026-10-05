@@ -24,6 +24,7 @@ const PAGES = [
   ['Seller Pitch',    '/tools/seller-package/'],
   ['Brochure',        '/tools/brochure/'],
   ['Buyer Package',   '/tools/buyer-package/'],
+  ['Destination',     '/tools/destination-guide/'],
   ['Properties',      '/tools/properties/'],
   ['Calculator',      '/tools/calculator/'],
   ['Floorplan',       '/tools/floorplan/'],

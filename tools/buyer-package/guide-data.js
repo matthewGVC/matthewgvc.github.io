@@ -380,86 +380,110 @@
   ];
   var COSTS = {
     nyc: {
-      /* Douglas Elliman NYC Buyer's Guide 2025, pp.14 and 25-28 (closing-cost
-         sheets by Marc Kaufman, Esq.). One page each for condo, co-op and
-         mansion tax. NYC and Westchester recording only; the guide's Long
-         Island rows and its townhouse sheet are left out. */
+      /* Copied from the Douglas Elliman NYC Buyer's Guide 2025, pp.25, 26 and
+         28 (closing-cost sheets prepared with Marc Kaufman, Esq.): same rows,
+         same words, same figures. One page each for condo, co-op and mansion
+         tax. Only changes: the DE Land contact line is left out of the
+         disclaimers, and the fee block on p.25 lists "$50 per Escrow" twice
+         against the wrong labels — here each fee sits on its own label.
+         `blocks` are drawn by pgCostsDe() in index.html. */
       pages: [
         { title: 'What It Costs: Condos',
-          heads: [['10%+', 'Minimum down payment · plus closing costs'],
-                  ['1.8 – 1.925%', 'Mortgage recording tax · share of loan'],
-                  ['1 – 3.9%', 'Mansion tax · from $1M · next pages']],
-          sections: [
-            ['Your attorney and your lender', [
-              ['Your attorney', 'Contract through closing', 'Consult your attorney'],
-              ['Bank fees', 'Charged by the lender at closing', '$750 – $1,000'],
-              ['Application fee', '', '$350 – $650'],
-              ['Processing fee', '', '$330 – $500'],
-              ['Appraisal', 'Ordered by your lender, paid by you', '$500 – $2,000'],
-              ['Credit report', '', '$45 – $100+'],
-              ['Bank attorney', 'The lender’s lawyer, paid by you', '$1,000 – $2,000']]],
-            ['Title, taxes and filing', [
-              ['Mortgage recording tax', 'On your loan: 1.8% under $500K, 1.925% from $500K', '1.8 – 1.925% of loan'],
-              ['Recording fees', 'Deed and mortgage, New York City', 'About $250 – $750'],
-              ['Title insurance', 'Owner’s and lender’s policies', 'Varies by deal'],
-              ['Municipal and bank searches', 'Includes the Patriot Act check', '$600 – $750'],
-              ['Escrow, recording, delivery', '$50 per escrow, $25 per document, $65 delivery', '$140 or so']]],
-            ['The building and the adjustments', [
-              ['Working capital fund', 'Your contribution to the building’s reserve', '1 – 2 months’ common charges'],
-              ['Condominium fees', 'Differs from building to building', 'Ask your agent'],
-              ['Insurance and tax escrow', 'Held by the lender, plus a year of insurance paid up front', '2 – 6 months'],
-              ['Pro-rated adjustments', 'Maintenance for the month, taxes for the tax period you close', 'Pro-rated'],
-              ['Short-term interest', 'Interest for the rest of your closing month', 'Pro-rated']]]
+          sub: 'Typical estimated closing costs: condominium apartments (resale)',
+          blocks: [
+            { h: 'For the purchaser', rows: [
+              ['Buyer’s Attorney', 'Consult your attorney'],
+              ['Bank Fees', '$750–$1,000'],
+              ['Application Fee', '$350–$650'],
+              ['Processing Fee', '$330–$500'],
+              ['Appraisal Fee', '$500–$2,000'],
+              ['Credit Report Fee', '$45–100+'],
+              ['Bank Attorney', '$1,000-$2,000'],
+              ['Insurance & Tax Escrow', '2–6 months & 1 year’s prepaid insurance premium at closing'],
+              ['Recording Fees - Nassau & Suffolk', ['Appr. $1,200-$1,700', 'Deed Fee (Nassau) - $510 Deed Fee',
+                'Deed Fee (Suffolk) - $415', 'Verification Fee (Nassau) - $270 per instrument, per block',
+                'Verification Fee (Suffolk) - $200 per instrument, per lot',
+                'Mortgage Fee (Suffolk) - $700 per mortgage or mortgage type document',
+                'Mortgage Fee (Nassau) - $545 per mortgage or mortgage type document']],
+              ['Recording Fees - NYC & Westchester', 'Appr. $250–$750'],
+              ['Fee Title Insurance', 'Variable by transaction'],
+              ['Mortgage Title Insurance', 'Variable by transaction'],
+              [['Municipal Searches/Bank/Patriot', 'Escrow Service', 'Recording Service', 'Express Delivery'],
+               ['$600 - $750', '$50 per Escrow', '$25 per Document', '$65']],
+              [['Reserve Fund & Working Capital', 'Fund Contribution'], 'An amount equal to 1–2 months common charges each'],
+              ['Condominium fees', 'Varies building to building, consult your agent']] },
+            { h: 'Mortgage tax',
+              grid: { head: ['Property type', 'Mortgage tax<br>New York City',
+                             'Mortgage tax<br>Nassau, Suffolk, Dutchess and Orange Counties', 'Mortgage tax<br>Yonkers'],
+                      rows: [['Residential Condo Unit up to $499,999.99', '1.8% of loan amount', '0.8%¹', '1.8%¹'],
+                             ['Residential Condo Unit $500,000 and up', '1.925% of loan amount', '0.8%¹', '1.8%¹'],
+                             ['Commercial Condo Unit up to $499,999.99', '2.05%²', '0.8%¹', '1.8%¹'],
+                             ['Commercial Condo Unit $500,000.00 and up', '2.80%', '0.8%¹', '1.8%¹']] },
+              after: 'Mansion Tax is paid by purchaser on transactions that are residential or mixed-use and the purchase price is $1M or above.³' },
+            { h: 'Additional expenses', rows: [
+              ['Maintenance Adjustment', 'Pro-rates for the month closing'],
+              ['Short-term interest', 'Equal interest for the balance of month in which you close'],
+              ['Real Estate Tax Adjustment', 'Pro-rate Based on Tax Period']] }
           ],
-          note: 'Estimates from the Douglas Elliman New York City Buyer’s Guide 2025, prepared with Marc Kaufman, Esq. ' +
-                'They are a guide, not every possible cost, and taxes and filing fees change. Your attorney has the ' +
-                'real figures. Cash buyers skip the bank and mortgage lines.' },
+          foot: ['¹ Minus $30 for 1-2 Family.', '² Four Family Residence requires MRT to be calculated at the commercial rate.',
+                 '³ See the Mansion Tax page.'],
+          disc: 'This closing-cost guide is designed to give you the general costs associated with the purchase or sale of a ' +
+                'condominium property. Please note that these are estimates and that potential buyers and sellers should consult ' +
+                'their real estate attorney or financial advisor for specifics. Kindly note, we do not represent that these are ' +
+                'the entirety of potential costs, but are only to be used as a guide. All transfer taxes and filing fees are ' +
+                'subject to change by government agencies in each location. Closing cost estimates provided with the assistance ' +
+                'of Marc Kaufman, Esq. Source: Douglas Elliman New York City Buyer’s Guide 2025.' },
         { title: 'What It Costs: Co-ops',
-          heads: [['20%+', 'Minimum down payment · plus closing costs'],
-                  ['$550', 'Lien search · in place of title insurance'],
-                  ['1 – 3.9%', 'Mansion tax · from $1M · next page']],
-          sections: [
-            ['Your attorney and your lender', [
-              ['Your attorney', 'Contract through closing', 'Consult your attorney'],
-              ['Bank fees', 'Charged by the lender at closing', '$550 – $1,000'],
-              ['Application fee', '', '$350 – $650'],
-              ['Processing fee', '', '$330 – $500'],
-              ['Appraisal', 'Ordered by your lender, paid by you', '$500 – $2,000'],
-              ['Credit report', '', '$45 – $100+'],
-              ['Bank attorney', 'The lender’s lawyer, paid by you', '$1,000 – $2,000']]],
-            ['Searches and filing', [
-              ['Lien search', 'A co-op has no deed; this is the search', '$550'],
-              ['UCC-1 filing', 'Self-filed, in every county but Nassau; $75 through TitleVest', '$20 – $40'],
-              ['Recognition agreement', 'Between you, the lender and the co-op', 'About $250']]],
-            ['The building and the adjustments', [
-              ['Miscellaneous co-op charges', 'Differs from building to building', 'Varies'],
-              ['Flip tax', 'Check with the building who pays and how much', 'Ask the building'],
-              ['Maintenance adjustment', 'Pro-rated for the month you close', 'Pro-rated'],
-              ['Short-term interest', 'Interest for the rest of your closing month', 'Pro-rated']]]
+          sub: 'Typical estimated closing costs: co-operative apartments',
+          blocks: [
+            { h: 'For the purchaser', rows: [
+              ['Buyer’s Attorney', 'Consult your attorney'],
+              ['Bank Fees', '$550–$1,000'],
+              ['Application Fee', '$350–$650'],
+              ['Processing Fee', '$330–$500'],
+              ['Appraisal Fee', '$500–$2,000'],
+              ['Credit Report Fee', '$45–100+'],
+              ['Bank Attorney', '$1,000-$2,000'],
+              ['Lien Search', '$550'],
+              ['UCC-1 Filing Fee', '$20–$40 if self-filed in all counties except for Nassau; $75 via TitleVest'],
+              ['UCC-1 Filing Fee (Nassau)', '$340 if self-filed ($40 to file + $300 per block); $375 via TitleVest']],
+              after: 'Mansion Tax is paid by purchaser on transactions that are residential or mixed-use and the purchase price is $1M or above.¹' },
+            { h: 'Additional expenses', rows: [
+              ['Miscellaneous Co-op Charges', 'Varies by building'],
+              ['Recognition Agreement Fee', 'Approx $250'],
+              ['Flip Tax', 'Please check with building'],
+              ['Maintenance Adjustment', 'Pro-rates for the month closing'],
+              ['Short-term interest', 'Equal interest for the balance of month in which you close']] }
           ],
-          note: 'Estimates from the Douglas Elliman New York City Buyer’s Guide 2025, prepared with Marc Kaufman, Esq. ' +
-                'They are a guide, not every possible cost, and fees change. Co-op loans carry no mortgage recording ' +
-                'tax, and a co-op board can ask for more down than the bank does. Cash buyers skip the bank lines.' },
+          foot: ['¹ See the Mansion Tax page.'],
+          disc: 'This closing-cost guide is designed to give you the general costs associated with the purchase or sale of a ' +
+                'co-operative property. Please note that these are estimates and that potential buyers and sellers should consult ' +
+                'their real estate attorney or financial advisor for specifics. Kindly note, we do not represent that these are ' +
+                'the entirety of potential costs, but are only to be used as a guide. All transfer taxes and filing fees are ' +
+                'subject to change by government agencies in each location. Closing cost estimates provided with the assistance ' +
+                'of Marc Kaufman, Esq. Source: Douglas Elliman New York City Buyer’s Guide 2025.' },
         { title: 'Mansion Tax',
-          heads: [['1%', 'On the whole price · from $1,000,000'],
-                  ['3.9%', 'At the top · $25M and up'],
-                  ['Buyer', 'Pays it, condo or co-op alike']],
-          sections: [
-            ['The rate rises with the price', [
-              ['$1,000,000 – $1,999,999', '1.00% of the price', '$10,000 and up'],
-              ['$2,000,000 – $2,999,999', '1.25% of the price', '$25,000 and up'],
-              ['$3,000,000 – $4,999,999', '1.50% of the price', '$45,000 and up'],
-              ['$5,000,000 – $9,999,999', '2.25% of the price', '$112,500 and up'],
-              ['$10,000,000 – $14,999,999', '3.25% of the price', '$325,000 and up'],
-              ['$15,000,000 – $19,999,999', '3.50% of the price', '$525,000 and up'],
-              ['$20,000,000 – $24,999,999', '3.75% of the price', '$750,000 and up'],
-              ['$25,000,000 or more', '3.90% of the price', '$975,000 and up']]]
+          sub: 'New York State',
+          blocks: [
+            { text: ['Mansion Tax (1% of purchase price) is paid by the purchaser on transactions that are 100% residential and ' +
+                     'the purchase price is $1M or more. In the five boroughs of New York City, the rate increases based on the ' +
+                     'sales price as follows:',
+                     'Note: mansion tax also applies to mixed use. If a property is $1,000,000 and includes a store & 2 residential ' +
+                     'units, mansion tax would be due on the % of the consideration corresponding to the residential units.'] },
+            { callout: ['Mind the thresholds', 'The rate applies to the whole price, so crossing a line costs real money. ' +
+                        'A $1,999,999 apartment owes $20,000 in mansion tax; at $2,000,000 it owes $25,000. ' +
+                        'That is worth knowing before you make an offer.'] },
+            { grid: { head: ['Property price', 'Mansion tax rate'], wide: true,
+                      rows: [['$1,000,000 - $1,999,999', '1.00%'],
+                             ['$2,000,000 - $2,999,999', '1.25%'],
+                             ['$3,000,000 - $4,999,999', '1.50%'],
+                             ['$5,000,000 - $9,999,999', '2.25%'],
+                             ['$10,000,000 - $14,999,999', '3.25%'],
+                             ['$15,000,000 - $19,999,999', '3.50%'],
+                             ['$20,000,000 - $24,999,999', '3.75%'],
+                             ['$25,000,000 or more', '3.90%']] } }
           ],
-          note: 'The rate applies to the whole price, so it steps up at each line: a $1,999,999 apartment owes ' +
-                '$20,000, and one at $2,000,000 owes $25,000. That is worth knowing before you make an offer. ' +
-                'The buyer pays it on a residential or mixed-use purchase of $1M or more. On a mixed-use building ' +
-                'it is due on the residential share of the price. Source: Douglas Elliman New York City Buyer’s ' +
-                'Guide 2025; New York State.' }
+          disc: 'Source: Douglas Elliman New York City Buyer’s Guide 2025. A guide, not tax advice; your attorney has the real figures.' }
       ]
     },
     nj: {

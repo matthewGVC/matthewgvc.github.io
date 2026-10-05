@@ -5,7 +5,7 @@
    roster.js reads this file and attaches each entry to the matching
    person (same `id`), so any tool that shows an agent can show their bio:
    `GVC_AGENT('john-gasdaska').bio`. Load this file BEFORE roster.js.
-   Today the Buyer's Guide's "Meet Your Agent" page uses it.
+   Today the Buyer’s Guide’s "Meet Your Agent" page uses it.
 
    Per agent, all optional — leave a field out and the page simply leaves
    that part out:
@@ -20,8 +20,8 @@
      facts   [label, value] pairs for the "At a glance" list. State only
              what is true and documented.
 
-   Where the words come from: `blurb` is the team site's text for the
-   person; `bio` is the team's master "All Team Bios" Google Doc (GVC -
+   Where the words come from: `blurb` is the team site’s text for the
+   person; `bio` is the team’s master "All Team Bios" Google Doc (GVC -
    Bios in the Marketing drive). A few sentences are trimmed here so the
    page fits; the full text stays in the Doc. An agent with no full bio
    there (`bio: []`) shows the blurb only. When the master doc gets a bio
@@ -72,7 +72,12 @@ window.GVC_BIOS = {
     role: 'New York',
     blurb: 'Katie Cook is a New York–based real estate professional with a background in advertising, culinary arts, and client-focused service. Known for her transparency, creativity, and strong listening skills, she brings a thoughtful, solutions-driven approach to every client relationship.',
     facts: [['Market', 'New York'], ['Background', 'Advertising and culinary arts'], ['Known for', 'Transparency, creativity, listening']],
-    bio: []
+    bio: [
+      'Katie Cook is originally from Long Island and has lived in New York City for over 15 years. Her passion and knowledge for the city runs deep, from its neighborhoods and buildings to the small details that make each block feel different. She brings a grounded, thoughtful approach to helping buyers and sellers navigate the market with confidence.',
+      'Coming from a family background in construction and real estate, and having purchased her own New York City apartment, Katie brings both practical insight and firsthand perspective to her work, fueling her passion for helping others make informed, confident decisions.',
+      'Katie is known for being a great listener and a steady presence throughout the process. She takes the time to understand what matters most to her clients and works patiently and collaboratively to help them achieve their goals and successfully navigate the complex market.',
+      'With a background in communications and client-focused roles, Katie values clear communication, transparency, and trust. She is a creative problem solver who stays calm under pressure and is committed to guiding her clients with care from the first conversation through closing. Above all, Katie approaches her work with integrity, persistence, and genuine respect for the people she represents, and she takes pride in building lasting relationships long after the transaction is complete.'
+    ]
   },
 
   'nicole-sobol': {
@@ -91,35 +96,60 @@ window.GVC_BIOS = {
     role: 'New York',
     blurb: 'Gary Kasparov brings a client-first, family-oriented approach to New York City real estate, combining honesty, persistence, and creative problem-solving to guide clients through even the most challenging transactions. With more than a decade of experience at McKinsey & Co., Accenture, and Bank of America, he leverages his analytical, advisory, and negotiation skills to deliver exceptional results and a seamless experience.',
     facts: [['Market', 'New York City'], ['Before real estate', 'McKinsey & Co., Accenture, Bank of America'], ['Strengths', 'Analysis, advising, negotiation']],
-    bio: []
+    bio: [
+      'Gary treats his clients like family. With a genuine passion for real estate, he believes there is no better place in the world to pursue this exciting profession than New York City.',
+      'At the heart of Gary’s philosophy is a simple belief: put the interests and aspirations of others before your own and always be honest and sincere in your dealings with people. He firmly believes that when you stay true to these principles, remain passionate about what you do, and are genuinely committed to helping others achieve their goals, success naturally follows. This philosophy served him well throughout his previous career in Management Consulting and Financial Services, and he has carried these same principles into his work as a Real Estate Professional at Douglas Elliman.',
+      'Gary is known for his ability to navigate even the most challenging deals, approaching each deal with the dedication, persistence, and creative thinking required to achieve a successful outcome. He combines a thoughtful, analytical approach with a deep commitment to understanding his clients’ unique needs and objectives, enabling him to negotiate exceptional results while providing a seamless and enjoyable experience throughout the process.',
+      'Before transitioning to real estate and joining Douglas Elliman, Gary graduated from Southern Methodist University, a prestigious private university in Dallas, and went on to spend more than a decade with leading management consulting and financial services firms, including McKinsey & Company, Accenture, and Bank of America Corporation. Throughout his career, he developed extensive experience in analytics and strategic advisory work, collaborating with senior executives, building trusted relationships, and helping clients achieve and exceed their goals.',
+      'While Gary considers his work a top priority, he also values time with family and friends, traveling, reading books focused on personal development, and pursuing his own spiritual growth.'
+    ]
   },
 
   'ayuen-gai': {
     role: 'NY Operations Manager',
     blurb: 'Ayuen Gai offers clients a rare blend of talents including analytical expertise, operational precision, and luxury service.',
     facts: [['Market', 'New York'], ['Role', 'NY Operations Manager']],
-    bio: []
+    bio: [
+      'Ayuen offers clients a rare blend of talents including analytical expertise, operational precision, and luxury service. His background in corporate finance and digital marketing allows him to evaluate properties with a strategic lens, while his real estate knowledge ensures a seamless, white-glove experience throughout every transaction. This consummate professional brings a calm, solutions-oriented approach to complex deals, and is committed to protecting his clients’ interests with integrity, transparency, and results-driven focus.',
+      'Whether it’s walking first-time buyers through the co-op application process or advising seasoned sellers on pricing strategy, Ayuen leverages real-time market data, comparative analysis, and historical trends to empower confident decision-making. He keeps clients informed through clear, consistent communication at every stage of the journey, and provides hands-on guidance to deliver the optimal outcome they deserve.',
+      'Ayuen offers full-service representation to his clients, from pre-market strategy and pricing through to closing and beyond. He excels at streamlining processes, anticipating roadblocks, and managing deadlines to make sure transactions stay on track. Trust, education, and long-term value are the foundation of his philosophy, as he sees every encounter as a partnership, not just a deal. “I aim to demystify the real estate process, set realistic expectations, and advocate fiercely for my clients.”',
+      'Originally from Upstate New York, Ayuen currently resides just outside of Manhattan in Westchester County, NY. He holds an MBA as well as a Master’s in Digital Marketing and Marketing Analytics, along with a Bachelor’s degree in Finance and Business Analytics. Prior to real estate he worked for industry-leading firms such as Morgan Stanley and BNY Mellon. Among his personal passions are architecture, design, and culture.'
+    ]
   },
 
   'marli-silver': {
     role: 'New Jersey',
     blurb: 'Marli Silver is a Monmouth County native with nearly a decade of experience serving buyers, sellers, investors, developers, and relocating clients throughout New Jersey. She is also co-founder and Chief of Development of Power Haus, a national referral network of 60+ female real estate professionals.',
     facts: [['Market', 'New Jersey, Monmouth County'], ['Experience', 'Nearly 10 years'], ['Also', 'Co-founder, Power Haus referral network']],
-    bio: []
+    bio: [
+      'In New Jersey’s competitive real estate market, Marli Silver stands out with nearly a decade of experience specializing in all facets of residential sales — buyers, sellers, investors, developers, and relocations. With a deep-rooted family background in real estate, she combines industry expertise with a modern approach, delivering seamless and successful transactions. Her refined marketing strategies — blending strategic branding, social media, her large network, and targeted property promotion — ensure exceptional results.',
+      'Beyond individual sales, Marli is the co-founder and Chief of Development of Power Haus, a national real estate referral network designed to connect and elevate female agents across the country. Through this platform, she has built a dynamic network of 60+ professionals, facilitating referrals and business growth nationwide. Her commitment to collaboration and innovation empowers agents while providing clients with trusted connections in markets beyond New Jersey.',
+      'A Monmouth County native, Marli’s local expertise and sharp negotiation skills make her a trusted advisor, ensuring every client’s experience is both effortless and rewarding. She prides herself on delivering concierge-level service, guiding clients through every step with transparency, efficiency, and a keen eye for detail.'
+    ]
   },
 
   'george-putykewycz': {
     role: 'New Jersey',
     blurb: 'George Putykewycz is a luxury real estate expert and senior property manager, combining sales, management, and business expertise to guide clients through high-end transactions.',
     facts: [['Market', 'New Jersey'], ['Also', 'Senior property manager']],
-    bio: []
+    bio: [
+      'With a diverse background in real estate sales, property management, and business administration, George Putykewycz brings a unique blend of expertise to the GVC Team at Douglas Elliman. As both a luxury real estate specialist and a senior property manager, he provides clients with strategic insight into buying, selling, and managing high-end properties. His ability to navigate complex transactions, assess investment potential, and optimize property value makes him a trusted advisor in the competitive real estate market.',
+      'George’s experience spans both residential and commercial real estate, giving him a comprehensive understanding of market dynamics and asset management. As a senior property manager at JBL Asset Management, he has overseen operations for a diverse portfolio of properties, ensuring efficiency, profitability, and long-term value for investors. His background in business administration and human resources further enhances his ability to manage transactions with professionalism, organization, and a client-first approach.',
+      'A graduate of Rutgers University with a degree in Human Resources Management and an associate’s degree in Business Administration from Brookdale Community College, George combines academic knowledge with real-world experience to deliver results. His strategic mindset, strong negotiation skills, and dedication to client success set him apart in the luxury real estate space.',
+      'Beyond his professional achievements, George is committed to leadership and service. As an Eagle Scout, he developed a strong foundation in teamwork, problem-solving, and community engagement - qualities that continue to shape his approach to real estate. With a reputation built on integrity, market expertise, and personalized service, George Putykewycz is a valuable asset to the GVC Team and the clients he serves.'
+    ]
   },
 
   'james-huber': {
     role: 'NJ Operations Manager',
     blurb: 'James Huber combines finance and operations expertise to streamline luxury real estate transactions and provide exceptional service to clients.',
     facts: [['Market', 'New Jersey'], ['Role', 'NJ Operations Manager'], ['Background', 'Finance and operations']],
-    bio: []
+    bio: [
+      'As New Jersey Operations Manager for the GVC Team, James Huber plays a vital role in ensuring seamless transactions and top-tier client service across the state’s luxury real estate market. With a strong background in finance, sales, and operations, he brings a strategic and analytical approach to every deal, optimizing processes and enhancing the overall client experience. His ability to coordinate complex transactions, manage relationships, and provide data-driven insights makes him an invaluable asset to the team.',
+      'James has an extensive history in real estate, specializing in both high-end resales and new developments across New Jersey’s most sought-after communities. Before joining the GVC Team, he worked with The Verdiglione Group, where he gained hands-on experience in luxury property sales and investment strategies. He also served as a real estate specialist at Brown Harris Stevens in New York City, further refining his market expertise and negotiation skills.',
+      'With a Bachelor’s degree in Finance and Real Estate from Monmouth University, James combines academic knowledge with real-world experience to drive success in New Jersey’s competitive market. His financial background provides a strong foundation for assessing investment opportunities, structuring deals, and maximizing property values for both buyers and sellers.',
+      'A lifelong New Jersey resident, James has a deep appreciation for the state’s unique coastal, suburban, and commuter-friendly communities. His knowledge of key markets—including Rumson, Fair Haven, Colt’s Neck, and the surrounding areas—allows him to provide expert guidance to clients looking to buy, sell, or invest in New Jersey’s premier real estate destinations. His commitment to excellence, integrity, and client satisfaction makes him a trusted resource for both buyers and sellers seeking a seamless and successful transaction.'
+    ]
   },
 
   'nicole-melveney': {
@@ -139,6 +169,10 @@ window.GVC_BIOS = {
     role: 'FL Operations Manager',
     blurb: 'Karl Brisard is a dedicated South Florida Realtor with the GVC Real Estate Team in Boca Raton, specializing in helping clients buy, sell, and invest with confidence in the South Florida market.',
     facts: [['Market', 'South Florida, Boca Raton'], ['Role', 'FL Operations Manager']],
-    bio: []
+    bio: [
+      'As a member of the GVC Real Estate Team at Douglas Elliman, Karl brings over 15 years of experience in sales, marketing, and real estate to one of Florida’s most competitive luxury markets. Based in South Florida since 2010, he has developed deep expertise across Palm Beach, Broward, and Miami-Dade counties, with a particular focus on new development and high-end residential transactions.',
+      'A New York native, Karl understands firsthand what drives Northeast buyers and investors to South Florida and what they need to move confidently in an unfamiliar market. That perspective, combined with 13 years as an advertising sales executive before real estate, gives him a rare ability to read a market, position an opportunity, and guide clients through complex decisions with clarity and conviction.',
+      'A key point of contact for two of South Florida’s newest boutique luxury developments, Casa Avenida in Delray Beach and Le Reve in Boca Raton, Karl brings buyers direct access to exclusive pre-construction and new development opportunities in the region’s most supply-constrained luxury markets. Assertive but approachable, he leads with results and earns the trust of clients who expect both market intelligence and a seamless experience from first conversation to closing.'
+    ]
   }
 };

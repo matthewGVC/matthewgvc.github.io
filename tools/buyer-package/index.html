@@ -17,15 +17,15 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ THREE PAGES ARE STILL ARTWORK (static/p3, p4, p8: The Buying Process, Financing
-     Options, Offer & Negotiation), and one sentence — or six card bodies — on
-     each reads wrongly outside New Jersey. patchProcess(), patchOptions() and
+<!-- ⚠ TWO PAGES ARE STILL ARTWORK (static/p3 and p8: The Buying Process, which only
+     New Jersey and Florida print, and Offer & Negotiation). One sentence — or six
+     card bodies — on each reads wrongly outside New Jersey. patchProcess() and
      patchOffer() draw the right words over the picture on a white patch, at
      positions measured off the 400dpi artwork, so a re-export at a different
      size or with the furniture moved will put them in the wrong place. If you
-     regenerate static/, check all three. Better still: redraw those pages as
+     regenerate static/, check both. Better still: redraw those pages as
      live HTML the way Why Work With Us, What It Costs and FAQ's now are, and
-     the patches go away.
+     the patches go away. New York's Buying Process already is (pgProcess).
 
      Everything else is live HTML. Its copy is in guide-data.js. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
@@ -230,9 +230,20 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   font:300 10.8pt/14.45pt 'Nunito Sans','Segoe UI',sans-serif;}
 .stpg-fix.body{background:none;text-align:center;overflow:visible;}
 .stpg-fix.line{display:flex;align-items:center;white-space:nowrap;}
-.stpg-fix.lead{text-align:right;white-space:nowrap;font:300 8.4pt/9.6pt 'Raleway','Segoe UI',sans-serif;}
-.stpg-fix.ttl{display:flex;align-items:center;justify-content:center;white-space:nowrap;
-  font:800 10.6pt/1 'Nunito Sans','Segoe UI',sans-serif;letter-spacing:.155em;text-transform:uppercase;}
+
+/* The Buying Process, New York: six steps, a photo, one footnote. The circles
+   deepen from the artwork's light teal to its navy. */
+.proc{list-style:none;margin:.12in 0 0;padding:0;}
+.proc li{display:flex;gap:.2in;align-items:center;padding:.1in 0;border-bottom:.5pt solid rgba(0,39,58,.14);}
+.proc .no{flex:none;width:.46in;height:.46in;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;color:#fff;font:italic 400 15pt/1 var(--serif);
+  background:linear-gradient(135deg,color-mix(in srgb,#6fc0d3 calc(100% - var(--i)*18%),#06475f),
+    color-mix(in srgb,#9bd2de calc(100% - var(--i)*20%),#0a6f8e));}
+.proc b{display:block;font:800 9.6pt/1 var(--sans);letter-spacing:.17em;text-transform:uppercase;color:var(--navy);}
+.proc sup{font-size:9pt;letter-spacing:0;}
+.proc p{margin:.05in 0 0;font:300 10.4pt/14pt var(--sans);color:var(--navy);}
+.proc-ph{flex:1;min-height:0;margin-top:.2in;overflow:hidden;}
+.proc-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block;}
 
 /* What It Costs — the three headline figures, three tables, a note */
 .cost-stats{display:flex;gap:.3in;margin-bottom:.1in;text-align:center;}
@@ -455,9 +466,8 @@ let MARKET = MARKETS.nyc;
    ============================================================ */
 const state = {
   photos:[], pos:{},
-  /* optional page key -> true when it is switched off. Financing starts
-     off: most buyers meet it with their lender, not in this guide. */
-  off:{ options:true },
+  /* optional page key -> true when it is switched off */
+  off:{},
   region:'nyc',  // NYC | NJ | FL — the cover toggle; see guide-data.js REGIONS
   market:'nyc',  // which tearsheet dataset prints; always follows `region`
   picks:{nj:[], nyc:[], fl:[]},  // chosen area names per market, kept apart so
@@ -579,7 +589,7 @@ const qrSvg = window.GVC_QR;
    description shown beside its tick.
    ============================================================ */
 /* `st` is the page's index among the drawn pages Matt made in Illustrator,
-   which ship as static/p3.jpg, p4.jpg and p8.jpg — st + 2 is the file. (The
+   which ship as static/p3.jpg and p8.jpg — st + 2 is the file. (The
    rest — Why Work With Us, What It Costs, the questions pages — were redrawn
    as live HTML and their pictures are gone.) The same 400dpi picture is used
    on screen and on paper (see pgStatic for why that won). The Illustrator
@@ -589,7 +599,7 @@ const qrSvg = window.GVC_QR;
    Only the page number is ours, drawn back on because the printed one was
    stripped out of the artwork — and, since they are pictures rather than
    markup, a few sentences are drawn over them the same way: see
-   patchProcess(), patchOptions() and patchOffer().
+   patchProcess() and patchOffer().
 
    `agents` expands to one "Meet Your Agent" page per agent picked. The
    tearsheets follow Offer & Negotiation because that is where the drawn
@@ -598,9 +608,8 @@ const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
   { key:'agents',    title:'Meet Your Agent',     agents:true },
-  { key:'process',   title:'The Buying Process',  st:1, opt:'The seven steps, start to keys' },
+  { key:'process',   title:'The Buying Process',  st:1, opt:'The steps, start to keys' },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
-  { key:'options',   title:'Financing Options',   st:2, opt:'Conventional, FHA, VA, jumbo, cash' },
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost' },
   { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us' },
@@ -625,6 +634,8 @@ function pageList() {
       townPages().forEach(pair => out.push({ key:'towns', title:MARKET.page, towns:pair }));
     } else if (p.agents) {
       agents().forEach(a => out.push({ key:'agent', title:p.title, agent:a }));
+    } else if (p.key === 'costs' && state.region === 'nyc') {
+      if (!state.off.costs) GG.COSTS.nyc.pages.forEach(c => out.push({ key:'costs', title:p.title, cost:c }));
     } else if (!(p.opt && state.off[p.key])) {
       out.push(p);
     }
@@ -808,24 +819,44 @@ function pgDiscovery(n) {
    New York has the mortgage recording tax and a buyer-paid mansion tax, New
    Jersey a seller-paid one and a three-day attorney review, Florida doc stamps
    and insurance that dwarf the other two. The rows are in guide-data.js
-   COSTS with the sources they were checked against. */
-function pgCosts(n) {
-  const c = GG.COSTS[state.region];
+   COSTS with the sources they were checked against. New York runs to three
+   pages (condos, co-ops, mansion tax), each a `cost` in COSTS.nyc.pages. */
+function pgCosts(n, p) {
+  const c = p.cost || GG.COSTS[state.region];
   const rows = list => list.map(r =>
     '<tr><td class="cw">' + esc(r[0]) + '</td><td class="cd">' + esc(r[1]) +
     '</td><td class="num">' + esc(r[2]) + '</td></tr>').join('');
   const sect = (title, list) =>
     '<div class="cs"><div class="cs-h">' + esc(title) + '</div>' +
     '<table class="tbl cost"><tbody>' + rows(list) + '</tbody></table></div>';
+  /* New York hands over its sections; New Jersey and Florida keep the three
+     fixed ones. */
+  const sections = c.sections || [['Before you close', c.before], ['At the closing table', c.table],
+                                  ['Optional, but budget for it', c.optional]];
   const body =
     '<div class="cost-stats">' + c.heads.map(h =>
       '<div class="stat"><div class="v">' + esc(h[0]) + '</div><div class="l">' + esc(h[1]) + '</div></div>').join('') +
     '</div>' +
-    sect('Before you close', c.before) +
-    sect('At the closing table', c.table) +
-    sect('Optional, but budget for it', c.optional) +
+    sections.map(s => sect(s[0], s[1])).join('') +
     '<div class="foot-note">' + esc(c.note) + '</div>';
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'What It Costs', key:'costs', body });
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:c.title || 'What It Costs', key:'costs', body });
+}
+
+/* ---------- The Buying Process ----------
+   New York draws its own, because its steps are not the artwork's: no
+   pre-approval step, offer and negotiation are one, and a board package
+   follows the contract. New Jersey and Florida still print the artwork
+   (pgStatic). The steps and the co-op/condo footnote are in guide-data.js. */
+function pgProcess(n, p) {
+  if (state.region !== 'nyc') return pgStatic(n, p);
+  const N = GG.PROCESS_NYC;
+  const body =
+    '<ol class="proc">' + N.steps.map((s, i) =>
+      '<li><span class="no" style="--i:' + i + '">' + (i + 1) + '</span><div><b>' + esc(s.t) +
+      (s.star ? '<sup>*</sup>' : '') + '</b><p>' + esc(s.d) + '</p></div></li>').join('') + '</ol>' +
+    '<div class="proc-ph"><img src="static/process.jpg" alt=""></div>' +
+    '<div class="foot-note">' + esc(N.note) + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'The Buying Process', key:'process', body });
 }
 
 /* ---------- Questions to Ask (FAQ's) ----------
@@ -859,7 +890,7 @@ const PATCH = (x, y, w, h, html, cls) =>
   '<div class="stpg-fix ' + (cls || '') + '" style="left:' + pxs(x) + ';top:' + pxs(y) + ';width:' + pxs(w) +
   ';height:' + pxs(h) + '">' + html + '</div>';
 
-/* The card grid shared by Financing Options and Offer & Negotiation. */
+/* The card grid on Offer & Negotiation. */
 const CARD_L = [113, 748], CARD_R = [797, 1431], CARD_ROWS = [243, 614, 985];
 /* right-hand card of the third row has art overlapping it on both pages */
 function cardBody(col, row, text, opts) {
@@ -878,21 +909,6 @@ function patchProcess() {
   return PATCH(215, 417, 1225, 40, '<span style="margin-left:6px">' +
     esc(GG.PROCESS_STEP2) + '</span>', 'line') + PATCH(215, 972, 1225, 40, '<span style="margin-left:6px">' +
     esc(GG.PROCESS_STEP6[state.region]) + '</span>', 'line');
-}
-
-function patchOptions() {
-  /* header lines 3 and 4, right-aligned to the card grid's right edge */
-  let h = PATCH(760, 150, 671, 48, GG.OPTIONS_LEAD.map(esc).join('<br>'), 'lead');
-  GG.optionCards(state.region).forEach((c, i) => {
-    const col = i % 2, row = (i / 2) | 0;
-    /* the key hand's fingertips overlap the last card from y1250 */
-    h += cardBody(col, row, c.body, i === 5 ? { bottom: 1246 } : {});
-    if (c.title) {
-      const x0 = (col ? CARD_R : CARD_L)[0], x1 = (col ? CARD_R : CARD_L)[1], ty = CARD_ROWS[row] + 121;
-      h += PATCH(x0 + 90, ty - 22, x1 - x0 - 180, 44, esc(c.title), 'ttl');
-    }
-  });
-  return h;
 }
 
 function patchOffer() {
@@ -999,14 +1015,13 @@ function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
     '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
     (p.key === 'process' ? patchProcess() : '') +
-    (p.key === 'options' ? patchOptions() : '') +
     (p.key === 'offer' ? patchOffer() : '') +
     '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';
 }
 
 const RENDER = {
-  cover:pgCover, why:pgWhy, agent:pgAgent, process:pgStatic, fifty:pgFifty, options:pgStatic,
+  cover:pgCover, why:pgWhy, agent:pgAgent, process:pgProcess, fifty:pgFifty,
   costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgStatic, towns:pgTowns, next:pgNext
 };
 

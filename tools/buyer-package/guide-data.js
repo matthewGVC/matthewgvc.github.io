@@ -3,15 +3,14 @@
 
    The guide prints for one of three markets, chosen on the Cover panel:
    New York City, New Jersey or Florida. Everything in here is either
-   per-market (the cover photo, the testimonial, the state-specific lines on
-   the "50 Things" and "Don't Forget to Ask" pages) or per-agent (the bios on
-   the "Meet Your Agent" pages). index.html owns the layout; this file owns
+   per-market (the cover photo, the "Why Work With Us" photo, the testimonial,
+   the state-specific lines on the "50 Things" and "Don't Forget to Ask"
+   pages). Agent bios are not here: they are in assets/js/bios.js, shared by
+   every package. index.html owns the layout; this file owns
    the copy, so a teammate can correct a sentence without touching markup.
 
-   Nothing here is a quote or a bio written by us: the testimonials are the
-   clients' own words from gvcrealestateteam.com and each bio is the
-   team site's text for that person (gvcrealestateteam.com/about), with the
-   name put back at the front where the site's card sets it in a heading.
+   Nothing here is a quote written by us: the testimonials are the clients'
+   own words from gvcrealestateteam.com.
 
    The state-specific lines are practice, not law. Rules and deadlines move —
    re-read them against the current forms before a season's guides go out.
@@ -24,6 +23,7 @@
     nyc: {
       id: 'nyc', label: 'NYC', name: 'New York City',
       cover: 'static/cover-nyc.jpg',
+      why: 'static/why-nyc.jpg',
       quote: {
         text: 'She was incredibly attentive, always responsive, and extremely professional & helpful ' +
               'throughout the entire process. She took the time to explain every step in detail, making ' +
@@ -35,6 +35,7 @@
     nj: {
       id: 'nj', label: 'NJ', name: 'New Jersey',
       cover: 'static/cover-nj.jpg',
+      why: 'static/why-nj.jpg',
       quote: {
         text: 'This is my third closing with Marli and she is the best realtor I have ever worked with ' +
               '— and trust me, I have worked with quite a few. She makes finding and buying a home ' +
@@ -44,12 +45,18 @@
     },
     fl: {
       id: 'fl', label: 'FL', name: 'Florida',
-      cover: 'static/cover-nyc.jpg',
-      /* Florida fronts with the New York testimonial, same as the cover photo */
-      quote: null
+      cover: 'static/cover-fl.jpg',
+      why: 'static/why-fl.jpg',
+      /* A client of the whole team, from gvcrealestateteam.com/about, with
+         no state in it. Swap in a Florida client's own words when there is
+         one: { text: '...', who: 'Name, Buyer' }. */
+      quote: {
+        text: 'The whole team is a pleasure to work with. Super responsive, knowledgeable and helpful. ' +
+              'They helped us with both buying and selling and did a fantastic job. Highly recommend!',
+        who: 'Jenny Sharfstein Kane, Buyer & Seller'
+      }
     }
   };
-  REGIONS.fl.quote = REGIONS.nyc.quote;
 
   /* ============================================================
      50 THINGS WE DO AS YOUR BUYER'S AGENT
@@ -280,105 +287,6 @@
   function askFor(region) {
     return ASK_COMMON.concat([ASK_BY_REGION[region] || ASK_BY_REGION.nyc]);
   }
-
-  /* ============================================================
-     MEET YOUR AGENT — per-person copy
-
-     `bio` is the team site's own paragraph for the person. `facts` are
-     [label, value] pairs and only state what the site states; anything the
-     site does not say is left out rather than guessed. Name, title, phone,
-     email, Instagram and the cut-out come from roster.js.
-
-     To give a new teammate a page, add their roster.js id here. Without a
-     row the page still prints from the roster alone (name, title, contact).
-     ============================================================ */
-  var PROFILES = {
-    'john-gasdaska': {
-      role: 'Co-Founder',
-      bio: 'John Gasdaska, a trusted real estate advisor with over 25 years of experience, is known for his ' +
-           'expertise as a broker, mentor, and client-focused professional in the luxury market.',
-      facts: [['Experience', '25+ years'], ['In real estate since', '1999'], ['Role', 'Co-Founder, GVC Team']]
-    },
-    'tj-verdiglione': {
-      role: 'Co-Founder',
-      bio: 'TJ Verdiglione has excelled in luxury real estate across NY, NJ, and FL, achieving over $1 billion ' +
-           'in career transactions and specializing in new development and asset management.',
-      facts: [['Career sales', '$1B+ in transactions'], ['Markets', 'New York · New Jersey · Florida'],
-              ['Focus', 'New development and asset management']]
-    },
-    'jonathan-conlon': {
-      role: 'Co-Founder',
-      bio: 'Jonathan Conlon, co-founder of GVC Real Estate, is known for his market expertise, integrity, and ' +
-           'exceptional client service, delivering results with a compassionate, results-driven approach.',
-      facts: [['In real estate since', '2002'], ['Role', 'Co-Founder, GVC Team']]
-    },
-    'katie-cook': {
-      role: 'New York',
-      bio: 'Katie Cook is a New York–based real estate professional with a background in advertising, ' +
-           'culinary arts, and client-focused service. Known for her transparency, creativity, and strong ' +
-           'listening skills, she brings a thoughtful, solutions-driven approach to every client relationship.',
-      facts: [['Market', 'New York'], ['Background', 'Advertising and culinary arts'],
-              ['Known for', 'Transparency, creativity, listening']]
-    },
-    'nicole-sobol': {
-      role: 'New York',
-      bio: 'Nicole Sobol, with over 15 years of experience, specializes in high-end rentals in Manhattan’s ' +
-           'Midtown East, delivering exceptional client service with a well-informed perspective.',
-      facts: [['Market', 'New York'], ['Experience', '15+ years'], ['Focus', 'High-end rentals, Midtown East']]
-    },
-    'gary-kasparov': {
-      role: 'New York',
-      bio: 'Gary Kasparov brings a client-first, family-oriented approach to New York City real estate, ' +
-           'combining honesty, persistence, and creative problem-solving to guide clients through even the most ' +
-           'challenging transactions. With more than a decade of experience at McKinsey & Co., Accenture, and ' +
-           'Bank of America, he leverages his analytical, advisory, and negotiation skills to deliver ' +
-           'exceptional results and a seamless experience.',
-      facts: [['Market', 'New York City'], ['Before real estate', 'McKinsey & Co., Accenture, Bank of America'],
-              ['Strengths', 'Analysis, advising, negotiation']]
-    },
-    'ayuen-gai': {
-      role: 'NY Operations Manager',
-      bio: 'Ayuen Gai offers clients a rare blend of talents including analytical expertise, operational ' +
-           'precision, and luxury service.',
-      facts: [['Market', 'New York'], ['Role', 'NY Operations Manager']]
-    },
-    'marli-silver': {
-      role: 'New Jersey',
-      bio: 'Marli Silver is a Monmouth County native with nearly a decade of experience serving buyers, ' +
-           'sellers, investors, developers, and relocating clients throughout New Jersey. She is also ' +
-           'co-founder and Chief of Development of Power Haus, a national referral network of 60+ female real ' +
-           'estate professionals.',
-      facts: [['Market', 'New Jersey, Monmouth County'], ['Experience', 'Nearly 10 years'],
-              ['Also', 'Co-founder, Power Haus referral network']]
-    },
-    'george-putykewycz': {
-      role: 'New Jersey',
-      bio: 'George Putykewycz is a luxury real estate expert and senior property manager, combining sales, ' +
-           'management, and business expertise to guide clients through high-end transactions.',
-      facts: [['Market', 'New Jersey'], ['Also', 'Senior property manager']]
-    },
-    'james-huber': {
-      role: 'NJ Operations Manager',
-      bio: 'James Huber combines finance and operations expertise to streamline luxury real estate ' +
-           'transactions and provide exceptional service to clients.',
-      facts: [['Market', 'New Jersey'], ['Role', 'NJ Operations Manager'], ['Background', 'Finance and operations']]
-    },
-    'nicole-melveney': {
-      role: 'Florida',
-      bio: 'Nicole Melveney, Director of Florida Sales at GVC Real Estate Team, specializes in luxury and ' +
-           'investment properties across South Florida, delivering exceptional client service with a ' +
-           'well-informed perspective.',
-      facts: [['Market', 'South Florida'], ['Role', 'Director of Florida Sales'],
-              ['Focus', 'Luxury and investment properties']]
-    },
-    'karl-brisard': {
-      role: 'FL Operations Manager',
-      bio: 'Karl Brisard is a dedicated South Florida Realtor with the GVC Real Estate Team in Boca Raton, ' +
-           'specializing in helping clients buy, sell, and invest with confidence in the South Florida market.',
-      facts: [['Market', 'South Florida, Boca Raton'], ['Role', 'FL Operations Manager']]
-    }
-  };
-
 
   /* ============================================================
      THE DRAWN PAGES, MADE TO FIT THE MARKET
@@ -640,7 +548,7 @@
   }
 
   global.GVC_GUIDE = {
-    REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor, PROFILES: PROFILES,
+    REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor,
     PROCESS_STEP6: PROCESS_STEP6, optionCards: optionCards, offerCards: offerCards,
     COSTS: COSTS, faqFor: faqFor
   };

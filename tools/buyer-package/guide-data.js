@@ -291,11 +291,10 @@
   /* ============================================================
      THE DRAWN PAGES, MADE TO FIT THE MARKET
 
-     "The Buying Process" (New Jersey and Florida) and "Offer & Negotiation"
-     are still Matt's artwork (static/*.jpg). One sentence on each reads
-     wrongly outside New Jersey, so index.html draws the corrected sentence
-     over the picture. Those are the strings below. New York's Buying Process
-     is live HTML, because its steps differ, not just a sentence. The costs page and the FAQ are
+     "Offer & Negotiation" is still Matt's artwork (static/p8.jpg). One sentence
+     on it reads wrongly outside New Jersey, so index.html draws the corrected
+     sentence over the picture. Those are the strings below. The Buying Process,
+     the costs page and the FAQ are
      live HTML, so their numbers and questions are here too.
 
      Figures are for budgeting and are checked against official sources as of
@@ -303,33 +302,38 @@
      a season's guides go out.
      ============================================================ */
 
-  /* Step 2 of the buying process: one line, about 88 characters at most. The
-     drawn line assumed a mortgage and said nothing for cash buyers. */
-  var PROCESS_STEP2 = 'Mortgage buyers get a written pre-approval; cash buyers, proof of funds. Both come first.';
-
-  /* The New York Buying Process, drawn live (its steps differ from the NJ and
-     FL artwork: no pre-approval step, offer and negotiation are one, and
-     there is a board package). `star` marks the one step that differs between
-     co-ops and condos; the footnote says how. Co-op, condo and townhouse
-     approval rules are from the Douglas Elliman NYC Buyer's Guide 2025, p.14. */
-  var PROCESS_NYC = {
-    steps: [
-      { t: 'Consultation', d: 'We sit down, agree on what you are looking for, and set a realistic budget and timeline.' },
-      { t: 'The Search', d: 'Curated listings, private showings, and honest opinions about the ones that are wrong for you.' },
-      { t: 'Offer & Negotiation', d: 'We price the offer against real comparables, structure the terms, and work every counter-offer. This is where having done it a thousand times pays.' },
-      { t: 'Contract & Due Diligence', d: 'Working with a good transaction attorney is vital. Attorney review, inspection if applicable, and contract negotiation.' },
-      { t: 'Board Package & Interview Prep', star: true, d: 'Our in-house board package specialists compile your financial information and social profile, then prepare you for the interview.' },
-      { t: 'Closing', d: 'Final walkthrough, wire, signatures, keys.' }
-    ],
-    note: '* Co-ops: the board reviews every applicant, interviews them, and may approve or reject. Condos: a lighter ' +
-          'application and no interview. Townhouses: no board at all.'
+  /* The Buying Process, one set of steps per market, drawn live by pgProcess().
+     New Jersey and Florida keep the seven steps of the old artwork; New York
+     differs (no pre-approval step, offer and negotiation are one, and a board
+     package follows the contract). `star` marks the one New York step that
+     differs between co-ops and condos; `note` says how, from the Douglas
+     Elliman NYC Buyer's Guide 2025, p.14. */
+  var STEPS_SHARED = {
+    consult: { t: 'Consultation', d: 'We sit down, agree on what you are looking for, and set a realistic budget and timeline.' },
+    search:  { t: 'The Search', d: 'Curated listings, private showings, and honest opinions about the ones that are wrong for you.' },
+    preapp:  { t: 'Pre-Approval', d: 'Mortgage buyers get a written pre-approval; cash buyers, proof of funds. Both come first.' },
+    offer:   { t: 'The Offer', d: 'We price the offer against real comparables and structure the terms to make it competitive.' },
+    negot:   { t: 'Negotiation', d: 'Counter-offers, contingencies and repairs. This is where having done it a thousand times pays.' },
+    closing: { t: 'Closing', d: 'Final walkthrough, wire, signatures, keys.' }
   };
-
-  /* Step 6 of the buying process, New Jersey and Florida: one line, about 78
-     characters at most. New York draws the whole page itself, below. */
-  var PROCESS_STEP6 = {
-    nj:  'Attorney review, inspections, title, condo or HOA papers, and the appraisal.',
-    fl:  'Inspection period, HOA or condo documents, insurance quotes, and the appraisal.'
+  function diligence(d) { return { t: 'Contract & Diligence', d: d }; }
+  var PROCESS = {
+    nyc: {
+      steps: [
+        STEPS_SHARED.consult,
+        STEPS_SHARED.search,
+        { t: 'Offer & Negotiation', d: 'We price the offer against real comparables, structure the terms, and work every counter-offer. This is where having done it a thousand times pays.' },
+        { t: 'Contract & Due Diligence', d: 'Working with a good transaction attorney is vital. Attorney review, inspection if applicable, and contract negotiation.' },
+        { t: 'Board Package & Interview Prep', star: true, d: 'Our in-house board package specialists compile your financial information and social profile, then prepare you for the interview.' },
+        STEPS_SHARED.closing
+      ],
+      note: '* Co-ops: the board reviews every applicant, interviews them, and may approve or reject. Condos: a lighter ' +
+            'application and no interview. Townhouses: no board at all.'
+    },
+    nj: { steps: [STEPS_SHARED.consult, STEPS_SHARED.preapp, STEPS_SHARED.search, STEPS_SHARED.offer, STEPS_SHARED.negot,
+                  diligence('Attorney review, inspections, title, condo or HOA papers, and the appraisal.'), STEPS_SHARED.closing] },
+    fl: { steps: [STEPS_SHARED.consult, STEPS_SHARED.preapp, STEPS_SHARED.search, STEPS_SHARED.offer, STEPS_SHARED.negot,
+                  diligence('Inspection period, HOA or condo documents, insurance quotes, and the appraisal.'), STEPS_SHARED.closing] }
   };
 
   /* The six cards on Offer & Negotiation. */
@@ -623,7 +627,7 @@
 
   global.GVC_GUIDE = {
     REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor,
-    PROCESS_STEP2: PROCESS_STEP2, PROCESS_STEP6: PROCESS_STEP6, PROCESS_NYC: PROCESS_NYC, offerCards: offerCards,
+    PROCESS: PROCESS, offerCards: offerCards,
     COSTS: COSTS, faqFor: faqFor
   };
 })(window);

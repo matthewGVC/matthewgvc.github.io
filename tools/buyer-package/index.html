@@ -17,15 +17,13 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ TWO PAGES ARE STILL ARTWORK (static/p3 and p8: The Buying Process, which only
-     New Jersey and Florida print, and Offer & Negotiation). One sentence — or six
-     card bodies — on each reads wrongly outside New Jersey. patchProcess() and
-     patchOffer() draw the right words over the picture on a white patch, at
-     positions measured off the 400dpi artwork, so a re-export at a different
-     size or with the furniture moved will put them in the wrong place. If you
-     regenerate static/, check both. Better still: redraw those pages as
-     live HTML the way Why Work With Us, What It Costs and FAQ's now are, and
-     the patches go away. New York's Buying Process already is (pgProcess).
+<!-- ⚠ ONE PAGE IS STILL ARTWORK (static/p8.jpg: Offer & Negotiation), and six card
+     bodies on it read wrongly outside New Jersey. patchOffer() draws the right words
+     over the picture on a white patch, at positions measured off the 400dpi artwork, so a
+     re-export at a different size or with the furniture moved will put them in the wrong
+     place. If you regenerate static/, check it. Better still: redraw the page as live
+     HTML the way The Buying Process, What It Costs and FAQ's now are, and the patches
+     go away.
 
      Everything else is live HTML. Its copy is in guide-data.js. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
@@ -223,7 +221,7 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   font:200 7.2pt 'Nunito Sans',system-ui,sans-serif;color:#4c6774;
   letter-spacing:.1em;font-variant-numeric:tabular-nums;}
 
-/* Text drawn over the three pictured pages — see patchProcess(). White
+/* Text drawn over the pictured page — see patchOffer(). White
    patches wipe the old words; the text is Nunito Sans Light 10.8pt on the
    artwork's 36.5px (14.45pt) line pitch. */
 .stpg-fix{position:absolute;background:#fff;color:#00273A;overflow:hidden;
@@ -237,8 +235,8 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .proc li{display:flex;gap:.2in;align-items:center;padding:.1in 0;border-bottom:.5pt solid rgba(0,39,58,.14);}
 .proc .no{flex:none;width:.46in;height:.46in;border-radius:50%;display:flex;align-items:center;
   justify-content:center;color:#fff;font:italic 400 15pt/1 var(--serif);
-  background:linear-gradient(135deg,color-mix(in srgb,#6fc0d3 calc(100% - var(--i)*18%),#06475f),
-    color-mix(in srgb,#9bd2de calc(100% - var(--i)*20%),#0a6f8e));}
+  background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#6fc0d3),
+    color-mix(in srgb,#0a6f8e var(--t),#9bd2de));}
 .proc b{display:block;font:800 9.6pt/1 var(--sans);letter-spacing:.17em;text-transform:uppercase;color:var(--navy);}
 .proc sup{font-size:9pt;letter-spacing:0;}
 .proc p{margin:.05in 0 0;font:300 10.4pt/14pt var(--sans);color:var(--navy);}
@@ -609,7 +607,7 @@ const qrSvg = window.GVC_QR;
    description shown beside its tick.
    ============================================================ */
 /* `st` is the page's index among the drawn pages Matt made in Illustrator,
-   which ship as static/p3.jpg and p8.jpg — st + 2 is the file. (The
+   of which only static/p8.jpg is left — st + 2 is the file. (The
    rest — Why Work With Us, What It Costs, the questions pages — were redrawn
    as live HTML and their pictures are gone.) The same 400dpi picture is used
    on screen and on paper (see pgStatic for why that won). The Illustrator
@@ -617,9 +615,8 @@ const qrSvg = window.GVC_QR;
    serve it.
 
    Only the page number is ours, drawn back on because the printed one was
-   stripped out of the artwork — and, since they are pictures rather than
-   markup, a few sentences are drawn over them the same way: see
-   patchProcess() and patchOffer().
+   stripped out of the artwork — and, since it is a picture rather than
+   markup, a few sentences are drawn over it the same way: see patchOffer().
 
    `agents` expands to one "Meet Your Agent" page per agent picked. The
    tearsheets follow Offer & Negotiation because that is where the drawn
@@ -628,7 +625,7 @@ const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
   { key:'agents',    title:'Meet Your Agent',     agents:true },
-  { key:'process',   title:'The Buying Process',  st:1, opt:'The steps, start to keys' },
+  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys' },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost' },
@@ -864,19 +861,19 @@ function pgCosts(n, p) {
 }
 
 /* ---------- The Buying Process ----------
-   New York draws its own, because its steps are not the artwork's: no
-   pre-approval step, offer and negotiation are one, and a board package
-   follows the contract. New Jersey and Florida still print the artwork
-   (pgStatic). The steps and the co-op/condo footnote are in guide-data.js. */
+   Live HTML, one set of steps per market (GG.PROCESS): the artwork's seven
+   steps for New Jersey and Florida, six for New York, which has no
+   pre-approval step and adds a board package. The co-op/condo footnote is
+   New York's. */
 function pgProcess(n, p) {
-  if (state.region !== 'nyc') return pgStatic(n, p);
-  const N = GG.PROCESS_NYC;
+  const N = GG.PROCESS[state.region];
+  const last = N.steps.length - 1;
   const body =
     '<ol class="proc">' + N.steps.map((s, i) =>
-      '<li><span class="no" style="--i:' + i + '">' + (i + 1) + '</span><div><b>' + esc(s.t) +
+      '<li><span class="no" style="--t:' + Math.round(i / last * 100) + '%">' + (i + 1) + '</span><div><b>' + esc(s.t) +
       (s.star ? '<sup>*</sup>' : '') + '</b><p>' + esc(s.d) + '</p></div></li>').join('') + '</ol>' +
     '<div class="proc-ph"><img src="static/process.jpg" alt=""></div>' +
-    '<div class="foot-note">' + esc(N.note) + '</div>';
+    (N.note ? '<div class="foot-note">' + esc(N.note) + '</div>' : '');
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'The Buying Process', key:'process', body });
 }
 
@@ -951,13 +948,6 @@ function cardBody(col, row, text, opts) {
   const patch = PATCH(x0 + 8, top + 140, (opts.right || x1) - x0 - 16, bottom - top - 140, '', 'wipe');
   const txt = PATCH(x0 + 40, top + 172 - 18, x1 - x0 - 80, 4 * 36.5, esc(text), 'body');
   return patch.replace('class="stpg-fix wipe"', 'class="stpg-fix wipe"') + txt;
-}
-
-function patchProcess() {
-  /* step 2's description: left-set at x226, centre line y437; step 6's: centre line y990 */
-  return PATCH(215, 417, 1225, 40, '<span style="margin-left:6px">' +
-    esc(GG.PROCESS_STEP2) + '</span>', 'line') + PATCH(215, 972, 1225, 40, '<span style="margin-left:6px">' +
-    esc(GG.PROCESS_STEP6[state.region]) + '</span>', 'line');
 }
 
 function patchOffer() {
@@ -1063,7 +1053,6 @@ function pgNext(n) {
 function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
     '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
-    (p.key === 'process' ? patchProcess() : '') +
     (p.key === 'offer' ? patchOffer() : '') +
     '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';

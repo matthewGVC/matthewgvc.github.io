@@ -230,6 +230,7 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   font:300 10.8pt/14.45pt 'Nunito Sans','Segoe UI',sans-serif;}
 .stpg-fix.body{background:none;text-align:center;overflow:visible;}
 .stpg-fix.line{display:flex;align-items:center;white-space:nowrap;}
+.stpg-fix.lead{text-align:right;white-space:nowrap;font:300 8.4pt/9.6pt 'Raleway','Segoe UI',sans-serif;}
 .stpg-fix.ttl{display:flex;align-items:center;justify-content:center;white-space:nowrap;
   font:800 10.6pt/1 'Nunito Sans','Segoe UI',sans-serif;letter-spacing:.155em;text-transform:uppercase;}
 
@@ -873,13 +874,15 @@ function cardBody(col, row, text, opts) {
 }
 
 function patchProcess() {
-  /* step 6's description: left-set at x226, centre line y990 */
-  return PATCH(215, 972, 1225, 40, '<span style="margin-left:6px">' +
+  /* step 2's description: left-set at x226, centre line y437; step 6's: centre line y990 */
+  return PATCH(215, 417, 1225, 40, '<span style="margin-left:6px">' +
+    esc(GG.PROCESS_STEP2) + '</span>', 'line') + PATCH(215, 972, 1225, 40, '<span style="margin-left:6px">' +
     esc(GG.PROCESS_STEP6[state.region]) + '</span>', 'line');
 }
 
 function patchOptions() {
-  let h = '';
+  /* header lines 3 and 4, right-aligned to the card grid's right edge */
+  let h = PATCH(760, 150, 671, 48, GG.OPTIONS_LEAD.map(esc).join('<br>'), 'lead');
   GG.optionCards(state.region).forEach((c, i) => {
     const col = i % 2, row = (i / 2) | 0;
     /* the key hand's fingertips overlap the last card from y1250 */

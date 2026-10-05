@@ -303,6 +303,18 @@
      a season's guides go out.
      ============================================================ */
 
+  /* Step 2 of the buying process: one line, about 88 characters at most. The
+     drawn line assumed a mortgage and said nothing for cash buyers. */
+  var PROCESS_STEP2 = 'Mortgage buyers get a written pre-approval; cash buyers, proof of funds. Both come first.';
+
+  /* The last two lines of the Financing Options header, set right-aligned,
+     about 70 characters each. The drawn ones promised "days rather than
+     weeks" and said nothing was possible without a pre-approval. */
+  var OPTIONS_LEAD = [
+    'Gather it once and it works for every lender.',
+    'Cash buyers need only proof of funds; either way, that comes first.'
+  ];
+
   /* Step 6 of the buying process: one line, about 78 characters at most. */
   var PROCESS_STEP6 = {
     nyc: 'Contract signing, inspection, board package if applicable, and the appraisal.',
@@ -549,7 +561,7 @@
 
   global.GVC_GUIDE = {
     REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor,
-    PROCESS_STEP6: PROCESS_STEP6, optionCards: optionCards, offerCards: offerCards,
+    PROCESS_STEP2: PROCESS_STEP2, OPTIONS_LEAD: OPTIONS_LEAD, PROCESS_STEP6: PROCESS_STEP6, optionCards: optionCards, offerCards: offerCards,
     COSTS: COSTS, faqFor: faqFor
   };
 })(window);

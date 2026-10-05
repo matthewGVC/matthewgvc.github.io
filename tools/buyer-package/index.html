@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buyer Package Builder — Matt Bloomfield</title>
-<meta name="description" content="Build the print-ready 8.5x11 buyer packet for The GVC Team — the process, the costs, the questions to ask, and New Jersey town tearsheets.">
+<meta name="description" content="Build the print-ready 8.5x11 buyer packet for The GVC Team — the process, the costs, the questions to ask.">
 <meta property="og:title" content="Buyer Package Builder — Matt Bloomfield">
-<meta property="og:description" content="Build the print-ready 8.5x11 buyer packet for The GVC Team — the process, the costs, the questions to ask, and New Jersey town tearsheets.">
+<meta property="og:description" content="Build the print-ready 8.5x11 buyer packet for The GVC Team — the process, the costs, the questions to ask.">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/buyer-package/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -37,8 +37,7 @@
    BUYER PACKAGE — deck-specific page styles
    Shared furniture lives in assets/css/pitch.css: the page frame, the
    framed cover this deck fronts with (.fcv), the cards, the tables, the
-   hand-ticked checklist (.chk), the "verify" stamp (.stamp) and the whole
-   closing page.
+   hand-ticked checklist (.chk) and the whole closing page.
    ============================================================ */
 
 /* why us — a photo down the left, one editorial column down the right:
@@ -166,46 +165,6 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .pg[data-key="offer"] .card{text-align:center;}
 .pg[data-key="offer"] .card .ci{margin:0 auto .1in;}
 
-/* ============================================================
-   TOWN TEARSHEETS — two towns per page, each taking half the body.
-   The data is assets/js/nj-towns.js; nothing about the layout is
-   per-town, so adding a town adds a half-page and nothing else.
-   ============================================================ */
-.tsheet{display:flex;flex-direction:column;flex:1;min-height:0;}
-.ts{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;}
-.ts + .ts{border-top:.75pt solid var(--rule);padding-top:.3in;}
-.ts-h{display:flex;align-items:baseline;gap:.16in;}
-.ts-h h3{margin:0;font:700 21pt/1.05 var(--serif);color:var(--navy);}
-.ts-h .co{flex:none;margin-left:auto;font:800 7pt var(--sans);letter-spacing:.16em;
-  text-transform:uppercase;color:var(--sky2);}
-/* Printed beside any town whose figures nobody has checked yet. Red, small
-   and unmissable — the page also carries the shared .stamp. Add the town to
-   VERIFIED in assets/js/nj-towns.js and this goes away. */
-.ts-h .ts-flag{flex:none;font:800 6.2pt var(--sans);letter-spacing:.14em;text-transform:uppercase;
-  color:#c63232;border:.75pt solid rgba(198,50,50,.5);padding:.03in .07in;white-space:nowrap;}
-.ts-tag{margin-top:.09in;font:300 10.5pt/15pt var(--body);color:rgba(0,39,58,.8);}
-.ts-stats{display:flex;gap:.3in;margin:.2in 0;}
-.ts-stats .s{flex:1;min-width:0;border-top:1.4pt solid var(--sky);padding-top:.09in;}
-.ts-stats .s .v{font:700 15pt/1 var(--serif);color:var(--navy);font-variant-numeric:tabular-nums;}
-.ts-stats .s .l{margin-top:.05in;font:800 6.2pt var(--sans);letter-spacing:.14em;
-  text-transform:uppercase;color:rgba(0,39,58,.55);}
-.ts-b{display:flex;gap:.42in;}
-.ts-b > div{flex:1;min-width:0;}
-.ts-r{padding:.05in 0;}
-.ts-r b{display:block;font:800 6.4pt var(--sans);letter-spacing:.14em;text-transform:uppercase;
-  color:rgba(0,39,58,.5);margin-bottom:.02in;}
-.ts-r span{font:300 9pt/13pt var(--body);color:var(--navy);}
-.ts-n{list-style:none;margin:0;padding:0;}
-.ts-n li{position:relative;padding:.045in 0 .045in .18in;font:300 9pt/13pt var(--body);color:var(--navy);}
-.ts-n li::before{content:'';position:absolute;left:0;top:.082in;width:.06in;height:.06in;background:var(--sky);}
-/* The foot of every town page. On a page whose figures nobody has checked
-   it is the warning that says so, in red; once its towns are in VERIFIED it
-   goes back to being the quiet "compiled when" line. See the header comment
-   in assets/js/nj-towns.js. */
-.ts-src{flex:none;margin-top:.2in;padding-top:.14in;border-top:.75pt solid var(--rule);
-  font:300 7.5pt/11pt var(--body);color:rgba(0,39,58,.5);text-align:center;}
-.ts-src.raw{color:#c63232;border-top-color:rgba(198,50,50,.35);}
-
 /* ---------- the seven drawn pages, as previewed ---------- */
 /* A flat picture of the artwork with the live page number over it. The
    number sits where the printed one sat: right edge flush to the 567pt
@@ -256,9 +215,6 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .pg.rev .pg-foot .pg-n{color:rgba(229,229,229,.78);}
 .pg.rev .ag-who .ct .k,.pg.rev .ag-lrow .lk{color:rgba(229,229,229,.8);}
 .pg .ag .legal{font-size:7.4pt;color:rgba(229,229,229,.88);}
-/* a lone town on the last tearsheet sits at the top, as the first of a pair would */
-.tsheet .ts:only-child{flex:none;justify-content:flex-start;}
-
 /* What It Costs, New York — Douglas Elliman's sheets: a two-column fee table,
    a grid, small print. Tight, because the condo sheet carries a lot. */
 .de-sub{text-align:center;font:800 7.6pt var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--navy);margin:.1in 0 .08in;}
@@ -311,7 +267,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
        property library here and nothing to type: the copy is GVC
        boilerplate that lives in this file, the way the Seller Pitch's
        marketing plan and prep checklist do. What is left to choose is
-       the photos, which pages go in, which towns go in, and who is
+       the photos, which pages go in, and who is
        presenting it. -->
   <aside id="editor">
     <div class="ed-body">
@@ -328,8 +284,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
             </div>
           </div>
           <div class="sec-note">Swaps the cover photo, the client quote on &ldquo;Why Work With Us&rdquo;,
-            the state-specific lines on &ldquo;50 Things&rdquo; and &ldquo;Don&rsquo;t Forget to Ask&rdquo;,
-            and the area tearsheets.</div>
+            and the state-specific lines on &ldquo;50 Things&rdquo; and &ldquo;Don&rsquo;t Forget to Ask&rdquo;.</div>
           <div class="field">
             <label for="covKicker">Line above the title</label>
             <input type="text" id="covKicker" value="Comprehensive Guide for the Home Buying Process">
@@ -362,19 +317,6 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
           <div id="pagePick"></div>
           <div class="sec-note">Anything switched off drops out of the packet and the deck renumbers
             itself, running footers included.</div>
-        </div>
-      </details>
-
-      <details class="ed-sec" open>
-        <summary><span id="townLabel">New Jersey towns</span> <span class="hint" id="townHint"></span></summary>
-        <div class="sec-in">
-          <div id="townPick"></div>
-          <div class="tick-bar">
-            <button class="btn sm ghost" type="button" id="townAll">Select all</button>
-            <button class="btn sm ghost" type="button" id="townNone">Clear</button>
-          </div>
-          <div class="sec-note" id="townNote"></div>
-          <div class="warn" id="warnTowns" hidden></div>
         </div>
       </details>
 
@@ -426,71 +368,13 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 <script src="../../assets/js/qr.js"></script>
 <script src="../../assets/js/legal.js"></script>
 <script src="../../assets/js/unsaved.js"></script>
-<script src="../../assets/js/nj-towns.js"></script>
-<script src="../../assets/js/nyc-areas.js"></script>
 <script src="guide-data.js"></script>
 <script>
 'use strict';
 const P = window.Pitch, esc = P.esc;
 const PD = window.GVC_PHOTODND;
 const DECK = 'Buyer Package';
-/* ============================================================
-   MARKETS — the packet prints New Jersey towns or New York City
-   areas, never both. The two datasets are the same record shape,
-   so one renderer draws either; a market only supplies its labels
-   and its data. Adding a third market is a row in here plus a
-   data file.
-
-   `stats` names the four figures in the tearsheet's stat row, as
-   [field, label] pairs; `eyebrow` is the field printed above the
-   name. Both differ because the sources do — see the header
-   comments in assets/js/nj-towns.js and assets/js/nyc-areas.js.
-   ============================================================ */
-const MARKETS = {
-  nj: {
-    id:'nj', data: window.GVC_NJ_TOWNS,
-    panel:'New Jersey towns', page:'New Jersey Towns', noun:'town',
-    eyebrow: t => t.county,
-    sub: t => t.county.replace(' County', '') + ' · ' + t.price,
-    stats: [['price','Median sale'], ['tax','Taxes / yr'],
-            ['rate','Tax rate'],    ['mins','To Manhattan']],
-    rows:  [['transit','Getting there'], ['schools','Schools'], ['crime','Index crime']],
-    src: 'Prices and tax figures move every quarter and the crime data is a full year behind ' +
-         '— confirm anything a decision rests on.',
-    note: '<b>Every figure traces to a source.</b> Prices are Redfin medians (Jul 2026), tax bill ' +
-          'and effective rate are NJ DCA (2025), commutes are read off the NJ TRANSIT and Seastreak ' +
-          'timetables, and crime is the NJSP Uniform Crime Report (2023) &mdash; all listed per ' +
-          'field at the top of <code>assets/js/nj-towns.js</code>. Two towns per page, in this order.'
-  },
-  nyc: {
-    id:'nyc', data: window.GVC_NYC_AREAS,
-    panel:'New York City areas', page:'New York City Areas', noun:'area',
-    eyebrow: t => t.county,
-    sub: t => (t.county === 'New York City' ? 'Borough' : t.county) + ' · ' + t.price,
-    stats: [['price','Median sale'], ['tax','Taxes / yr'],
-            ['days','Days on market'], ['mins','To Midtown']],
-    rows:  [['transit','Getting there'], ['schools','Schools'], ['crime','Major felonies']],
-    src: 'Prices and days on market move every month, the tax figure is a median condo unit ' +
-         'and excludes common charges, and the crime data is a year behind — confirm ' +
-         'anything a decision rests on.',
-    note: '<b>Every figure traces to a source.</b> Prices and days on market are StreetEasy ' +
-          '(Jul 2026), the tax figure is the median condo unit from the NYC DOF assessment roll ' +
-          '(FY2025/26), commutes are computed from the MTA’s own GTFS schedule feed, and crime is ' +
-          'NYPD seven major felonies (2025) &mdash; all listed per field at the top of ' +
-          '<code>assets/js/nyc-areas.js</code>. Two areas per page, in this order.'
-  }
-};
-/* Florida has no tearsheet dataset yet, so its market is an empty one: the
-   Area Tearsheets pages simply do not appear and the panel says why. */
-MARKETS.fl = {
-  id:'fl', data: { list: [], AS_OF: '' },
-  panel:'Florida areas', page:'Florida Areas', noun:'area',
-  eyebrow: t => t.county, sub: t => t.county,
-  stats: [], rows: [], src: '',
-  note: 'There are no Florida area tearsheets yet, so this guide prints without them.'
-};
 const GG = window.GVC_GUIDE, REGIONS = GG.REGIONS;
-let MARKET = MARKETS.nyc;
 
 
 /* ============================================================
@@ -498,16 +382,13 @@ let MARKET = MARKETS.nyc;
 
    Deliberately small. This packet is handed to any buyer, so there is no
    client, no address and no target price in it — the only decisions are
-   which photos, which pages, which towns and which agents.
+   which photos, which pages and which agents.
    ============================================================ */
 const state = {
   photos:[], pos:{},
   /* optional page key -> true when it is switched off */
   off:{},
   region:'nyc',  // NYC | NJ | FL — the cover toggle; see guide-data.js REGIONS
-  market:'nyc',  // which tearsheet dataset prints; always follows `region`
-  picks:{nj:[], nyc:[], fl:[]},  // chosen area names per market, kept apart so
-                          // switching market does not throw a selection away
   agents:[],
   /* the two editable runs on the cover — both print in caps */
   cover:{ kicker:'Comprehensive Guide for the Home Buying Process',
@@ -619,10 +500,9 @@ const qrSvg = window.GVC_QR;
 /* ============================================================
    PAGE LIST
 
-   The spine is fixed; what varies is which optional pages are on and how
-   many town tearsheets have been picked. Two towns print per page, so the
-   deck is assembled per render and every page number, running footer and
-   page count follows from it.
+   The spine is fixed; what varies is which optional pages are on, how many
+   agents are picked, and the market. The deck is assembled per render and
+   every page number, running footer and page count follows from it.
 
    `opt` marks a page the panel can switch off, and doubles as the one-line
    description shown beside its tick.
@@ -639,9 +519,7 @@ const qrSvg = window.GVC_QR;
    stripped out of the artwork — and, since it is a picture rather than
    markup, a few sentences are drawn over it the same way: see patchOffer().
 
-   `agents` expands to one "Meet Your Agent" page per agent picked. The
-   tearsheets follow Offer & Negotiation because that is where the drawn
-   deck ends before its closing page. */
+   `agents` expands to one "Meet Your Agent" page per agent picked. */
 const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
@@ -652,25 +530,14 @@ const SPINE = [
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost' },
   { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us' },
   { key:'offer',     title:'Offer & Negotiation', st:6, opt:'Winning the house on terms, not price' },
-  { key:'towns',     title:'Area Tearsheets',     towns:true },
   { key:'next',      title:'Thank You' }
 ];
 const OPTIONAL = SPINE.filter(p => p.opt);
 
-/* The picked towns, two to a page. */
-function townPages() {
-  const picked = MARKET.data.list.filter(t => state.picks[state.market].indexOf(t.name) > -1);
-  const out = [];
-  for (let i = 0; i < picked.length; i += 2) out.push(picked.slice(i, i + 2));
-  return out;
-}
-
 function pageList() {
   const out = [];
   SPINE.forEach(p => {
-    if (p.towns) {
-      townPages().forEach(pair => out.push({ key:'towns', title:MARKET.page, towns:pair }));
-    } else if (p.agents) {
+    if (p.agents) {
       agents().forEach(a => out.push({ key:'agent', title:p.title, agent:a }));
     } else if (p.key === 'costs' && state.region === 'nyc') {
       if (!state.off.costs) GG.COSTS.nyc.pages.forEach(c => out.push({ key:'costs', title:p.title, cost:c }));
@@ -984,44 +851,6 @@ function patchOffer() {
   return h;
 }
 
-/* Two town tearsheets to a page. Everything printed here comes from the
-   town's own record in assets/js/nj-towns.js. */
-function tearsheet(t) {
-  const stat = (v, l) => '<div class="s"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
-  const row = (l, v) => '<div class="ts-r"><b>' + l + '</b><span>' + esc(v) + '</span></div>';
-  return '<div class="ts">' +
-    '<div class="ts-h"><h3>' + esc(t.name) + '</h3>' +
-      (t.verified ? '' : '<span class="ts-flag">Unverified</span>') +
-      '<span class="co">' + esc(MARKET.eyebrow(t)) + '</span></div>' +
-    '<div class="ts-tag">' + esc(t.tag) + '</div>' +
-    '<div class="ts-stats">' +
-      MARKET.stats.map(f => stat(esc(t[f[0]]), f[1])).join('') +
-    '</div>' +
-    '<div class="ts-b">' +
-      '<div>' + MARKET.rows.map(f => row(f[1], t[f[0]])).join('') + '</div>' +
-      '<div class="ts-r"><b>Good to know</b><ul class="ts-n">' +
-        t.notes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' +
-    '</div>' +
-  '</div>';
-}
-
-/* A page carries the stamp if EITHER town on it is still unverified, and
-   the note under it changes with it. Verifying a town is one line in
-   assets/js/nj-towns.js — add its name to VERIFIED — and its flag, and
-   eventually its page's stamp, disappear on their own. */
-function pgTowns(n, page) {
-  const raw = page.towns.filter(t => !t.verified).length;
-  const body =
-    (raw ? '<div class="stamp">Claude estimate</div>' : '') +
-    '<div class="tsheet">' + page.towns.map(tearsheet).join('') + '</div>' +
-    '<div class="ts-src' + (raw ? ' raw' : '') + '">' + (raw
-      ? 'A figure on this page has not been checked against its source. Do not put this sheet ' +
-        'in front of a client until somebody has checked it.'
-      : esc(MARKET.data.AS_OF) + '. ' + MARKET.src) + '</div>';
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:MARKET.page, body });
-}
-
-
 /* Closing page — Team and Next Steps merged into one. It is the Brochure's
    editorial close, not the Seller Pitch & CMA's centred cards: the lockup and
    the team QR on a header line, the sign-off under it, then one row per agent
@@ -1071,8 +900,8 @@ function pgNext(n) {
    leaves the browser's own printer to render the pages that are ours.
 
    The page number is the one exception. It was stripped out of the
-   artwork so the deck can renumber when a page is switched off or
-   tearsheets are added, so it is drawn back on: here for the preview, and
+   artwork so the deck can renumber when a page is switched off or an
+   agent is added, so it is drawn back on: here for the preview, and
    again in the export at the baseline it was measured off. */
 function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
@@ -1084,20 +913,17 @@ function pgStatic(n, p) {
 
 const RENDER = {
   cover:pgCover, why:pgWhy, agent:pgAgent, process:pgProcess, fifty:pgFifty,
-  costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgStatic, towns:pgTowns, next:pgNext
+  costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgStatic, next:pgNext
 };
 
 /* ---------- wiring ---------- */
 let builder = null;
 
-/* Only the towns are the agent's own doing, so they get the specific
-   warning; anything else that overflows is a copy edit in this file, and
-   the fallback names the page. */
+/* An agent's bio is the one overflow with a specific warning; anything else that
+   overflows is a copy edit in this file, and the fallback names the page. */
 const RULES = [
   { key:'agent', box:'warnGeneral',
-    msg:'An agent\u2019s full bio runs past the page \u2014 trim it in assets/js/bios.js (about 2,000 characters fits).' },
-  { key:'towns', box:'warnTowns',
-    msg:'An area tearsheet runs past the page — shorten one of its notes in the market’s data file.' }
+    msg:'An agent\u2019s full bio runs past the page \u2014 trim it in assets/js/bios.js (about 2,000 characters fits).' }
 ];
 /* Runs after the pages are in the DOM and again once the webfonts have
    landed. Both matter to the cover — see Pitch.fitCover() for why. */
@@ -1122,16 +948,8 @@ function redraw() {
 
 function paintHints() {
   const on = OPTIONAL.filter(p => !state.off[p.key]).length;
-  const pages = townPages().length;
   document.getElementById('pagesHint').textContent =
     on + ' of ' + OPTIONAL.length + ' optional on';
-  document.getElementById('townHint').textContent =
-    state.picks[state.market].length + ' of ' + MARKET.data.list.length + ' · ' +
-    (pages ? pages + (pages > 1 ? ' pages' : ' page') : 'no pages');
-  /* tearsheets print two to a page, so an odd pick leaves the last one alone on half a page */
-  const odd = state.picks[state.market].length % 2 === 1;
-  document.getElementById('townNote').innerHTML = MARKET.note +
-    (odd ? ' <b>Towns print two to a page, so the last one sits alone. Pick one more or one fewer to fill it.</b>' : '');
 }
 
 function paintPhotos() {
@@ -1167,51 +985,20 @@ document.addEventListener('DOMContentLoaded', () => {
   /* the browser asks before a reload throws unsaved work away */
   GVC_UNSAVED.watch();
 
-  /* which optional pages print — the shared tick list, same as the towns */
+  /* which optional pages print — the shared tick list */
   P.tickList(document.getElementById('pagePick'),
     OPTIONAL.map(p => [p.key, p.title, p.opt]),
     key => !state.off[key],
     (key, on) => { if (on) delete state.off[key]; else state.off[key] = true; redraw(); });
 
-  /* Repainted whenever the market changes, so the ticks always describe the
-     dataset now in play. The selection is rebuilt in the order the data file
-     lists them rather than in click order, so the pages come out the same
-     however the ticks were reached. */
-  let paintTowns = () => {};
-  const wireTowns = () => {
-    paintTowns = P.tickList(document.getElementById('townPick'),
-      MARKET.data.list.map(t => [t.name, t.name,
-        MARKET.sub(t) + (t.verified ? '' : ' · unverified')]),
-      name => state.picks[state.market].indexOf(name) > -1,
-      (name, on) => {
-        state.picks[state.market] = MARKET.data.list
-          .filter(t => (t.name === name ? on : state.picks[state.market].indexOf(t.name) > -1))
-          .map(t => t.name);
-        redraw();
-      });
-  };
-  wireTowns();
-  const setTowns = names => { state.picks[state.market] = names; wireTowns(); redraw(); };
-  document.getElementById('townAll').addEventListener('click',
-    () => setTowns(MARKET.data.list.map(t => t.name)));
-  document.getElementById('townNone').addEventListener('click', () => setTowns([]));
-
   /* The market toggle on the Cover panel. It swaps the cover photo, the
-     client quote, the state-specific lines and — through MARKET — the
-     tearsheet dataset, the stat labels, the page title and the tick list in
-     one go; each market keeps its own selection, so switching back finds it
-     as you left it. */
+     client quote, the state-specific lines and the costs pages in one go. */
   P.segPick(document.getElementById('regionPick'), 'region',
     () => state.region,
     v => {
-      state.region = state.market = v;
-      MARKET = MARKETS[v];
-      document.getElementById('townLabel').textContent = MARKET.panel;
-      document.getElementById('townNote').innerHTML = MARKET.note;
-      wireTowns(); redraw(); GVC_UNSAVED.touch();
+      state.region = v;
+      redraw(); GVC_UNSAVED.touch();
     });
-  document.getElementById('townLabel').textContent = MARKET.panel;
-  document.getElementById('townNote').innerHTML = MARKET.note;
 
   /* The cover's two text runs. Typed live, capitalised by CSS, and the
      title refits itself to the measure on every keystroke. */

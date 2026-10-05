@@ -1,10 +1,9 @@
 /* ============================================================
-   NEW YORK CITY AREA TEARSHEETS — the NYC half of the Buyer
-   Package's optional area pages. Its New Jersey twin is
-   assets/js/nj-towns.js, and the two are deliberately the same
-   shape: same record, same renderer, same page. Only the labels
-   and the sources differ, so the packet swaps market with one
-   toggle.
+   NEW YORK CITY AREA TEARSHEETS — the NYC area data. The Buyer Package
+   printed it as optional area pages until October 2026, when the pages came
+   out; it is kept here as the source for the local guides. Its New Jersey
+   twin is assets/js/nj-towns.js, and the two are deliberately the same
+   shape: same record, only the labels and the sources differ.
 
    The list is the five boroughs, then the Manhattan submarkets a
    buyer actually shops in, in the order they appear in the panel.

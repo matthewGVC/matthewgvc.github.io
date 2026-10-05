@@ -1,6 +1,7 @@
 /* ============================================================
-   NEW JERSEY TOWN TEARSHEETS — the data behind the Buyer Package's
-   optional town pages.
+   NEW JERSEY TOWN TEARSHEETS — the town data. The Buyer Package printed it
+   as optional town pages until October 2026, when the pages came out; it is
+   kept here as the source for the local guides.
 
    One record per town, in the order the towns appear in the panel.
    The list is the towns we actually sell in — it mirrors the folder

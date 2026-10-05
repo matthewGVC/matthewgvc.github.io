@@ -245,6 +245,26 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .proc-ph{flex:1;min-height:0;margin-top:.2in;overflow:hidden;}
 .proc-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block;}
 
+/* What It Costs, New York — Douglas Elliman's sheets: a two-column fee table,
+   a grid, small print. Tight, because the condo sheet carries a lot. */
+.de-sub{text-align:center;font:800 7.6pt var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--navy);margin:.1in 0 .08in;}
+.de-h{display:flex;align-items:center;gap:.14in;margin:.09in 0 .05in;}
+.de-h:before,.de-h:after{content:"";flex:1;border-top:.6pt solid var(--navy);}
+.de-h span{font:800 9pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--navy);}
+table.de-t,table.de-g{width:100%;border-collapse:collapse;font:300 7.6pt/9.4pt var(--sans);color:var(--navy);}
+.de-t th,.de-t td,.de-g th,.de-g td{border:.5pt solid rgba(0,39,58,.55);padding:.028in .07in;vertical-align:middle;text-align:left;}
+.de-t th{width:2.45in;font-weight:400;}
+.de-g th{font:800 6.8pt/8.4pt var(--sans);text-transform:uppercase;text-align:center;border:none;padding-bottom:.05in;}
+.de-g td{text-align:center;}
+.de-g.wide td{text-align:left;font-size:9pt;line-height:12pt;padding:.07in .1in;border-width:.5pt 0;}
+.de-g.wide th{text-align:left;padding-left:.1in;font-size:7.6pt;}
+.de-after{margin:.05in 0 0;font:300 7.4pt/9.4pt var(--sans);color:var(--navy);}
+.de-text p{margin:.07in 0 0;font:300 9.6pt/13.4pt var(--sans);color:var(--navy);}
+.de-call{margin:.22in 0 .24in;padding:.16in .2in;border-left:3pt solid var(--sky);background:rgba(0,39,58,.045);
+  font:300 11pt/15pt var(--sans);color:var(--navy);}
+.de-call b{display:block;margin-bottom:.04in;font:800 8pt var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--sky2);}
+.de-fine{margin-top:auto;padding-top:.1in;font:300 6.2pt/7.8pt var(--body);color:rgba(0,39,58,.62);}
+
 /* What It Costs — the three headline figures, three tables, a note */
 .cost-stats{display:flex;gap:.3in;margin-bottom:.1in;text-align:center;}
 .cost-stats .stat .v{font-size:23pt;}
@@ -822,7 +842,8 @@ function pgDiscovery(n) {
    COSTS with the sources they were checked against. New York runs to three
    pages (condos, co-ops, mansion tax), each a `cost` in COSTS.nyc.pages. */
 function pgCosts(n, p) {
-  const c = p.cost || GG.COSTS[state.region];
+  if (p.cost) return pgCostsDe(n, p.cost);
+  const c = GG.COSTS[state.region];
   const rows = list => list.map(r =>
     '<tr><td class="cw">' + esc(r[0]) + '</td><td class="cd">' + esc(r[1]) +
     '</td><td class="num">' + esc(r[2]) + '</td></tr>').join('');
@@ -857,6 +878,34 @@ function pgProcess(n, p) {
     '<div class="proc-ph"><img src="static/process.jpg" alt=""></div>' +
     '<div class="foot-note">' + esc(N.note) + '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'The Buying Process', key:'process', body });
+}
+
+/* New York's three cost pages are Douglas Elliman's own closing-cost sheets,
+   set in our type: same tables, same rows, same words (see COSTS.nyc in
+   guide-data.js). `blocks` are, in order, any of: a headed two-column table
+   (`rows`, with `after` for the line under it), a `grid` (the mortgage-tax and
+   mansion-tax tables), paragraphs of `text`, or our own `callout`. */
+function pgCostsDe(n, c) {
+  const lines = v => (Array.isArray(v) ? v : [v]).map(esc).join('<br>');
+  const cell = (tag, v) => '<' + tag + '>' + String(v).split('<br>').map(esc).join('<br>') + '</' + tag + '>';
+  const block = b => {
+    if (b.text) return '<div class="de-text">' + b.text.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>';
+    if (b.callout) return '<div class="de-call"><b>' + esc(b.callout[0]) + '</b>' + esc(b.callout[1]) + '</div>';
+    let h = b.h ? '<div class="de-h"><span>' + esc(b.h) + '</span></div>' : '';
+    if (b.rows) h += '<table class="de-t"><tbody>' + b.rows.map(r =>
+      '<tr><th>' + lines(r[0]) + '</th><td>' + lines(r[1]) + '</td></tr>').join('') + '</tbody></table>';
+    if (b.grid) h += '<table class="de-g' + (b.grid.wide ? ' wide' : '') + '"><thead><tr>' +
+      b.grid.head.map(t => cell('th', t)).join('') + '</tr></thead><tbody>' +
+      b.grid.rows.map(r => '<tr>' + r.map(t => cell('td', t)).join('') + '</tr>').join('') + '</tbody></table>';
+    if (b.after) h += '<p class="de-after">' + esc(b.after) + '</p>';
+    return h;
+  };
+  const body =
+    '<div class="de-sub">' + esc(c.sub) + '</div>' +
+    c.blocks.map(block).join('') +
+    '<div class="de-fine">' + (c.foot || []).map(t => '<div>' + esc(t) + '</div>').join('') +
+    '<div>' + esc(c.disc) + '</div></div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:c.title, key:'costs', body });
 }
 
 /* ---------- Questions to Ask (FAQ's) ----------

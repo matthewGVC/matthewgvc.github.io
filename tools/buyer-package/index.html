@@ -266,7 +266,9 @@ table.de-t,table.de-g{width:100%;border-collapse:collapse;font:300 7.6pt/9.4pt v
 .de-call{margin:.22in 0 .24in;padding:.16in .2in;border-left:3pt solid var(--sky);background:rgba(0,39,58,.045);
   font:300 11pt/15pt var(--sans);color:var(--navy);}
 .de-call b{display:block;margin-bottom:.04in;font:800 8pt var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--sky2);}
-.de-fine{margin-top:auto;padding-top:.1in;font:300 6.2pt/7.8pt var(--body);color:rgba(0,39,58,.62);}
+.de-ph{flex:1;min-height:0;margin-top:.24in;overflow:hidden;}
+.de-ph img{width:100%;height:100%;object-fit:cover;display:block;}
+.de-fine{margin-top:.18in;padding-top:.1in;font:300 6.2pt/7.8pt var(--body);color:rgba(0,39,58,.62);}
 
 /* What It Costs — the three headline figures, three tables, a note */
 .cost-stats{display:flex;gap:.3in;margin-bottom:.1in;text-align:center;}
@@ -908,6 +910,7 @@ function pgCostsDe(n, c) {
   const body =
     '<div class="de-sub">' + esc(c.sub) + '</div>' +
     c.blocks.map(block).join('') +
+    (c.photo ? '<div class="de-ph"><img src="' + esc(c.photo.src) + '" alt="" style="object-position:' + c.photo.pos + '"></div>' : '') +
     '<div class="de-fine">' + (c.foot || []).map(t => '<div>' + esc(t) + '</div>').join('') +
     '<div>' + esc(c.disc) + '</div></div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:c.title, key:'costs', body });

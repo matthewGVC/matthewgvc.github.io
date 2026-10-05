@@ -387,7 +387,8 @@
       /* Copied from the Douglas Elliman NYC Buyer's Guide 2025, pp.25, 26 and
          28 (closing-cost sheets prepared with Marc Kaufman, Esq.): same rows,
          same words, same figures. One page each for condo, co-op and mansion
-         tax. Only changes: the DE Land contact line is left out of the
+         tax. `photo` is a stock picture (Unsplash, free for print) that fills the room under
+         the co-op and mansion-tax tables. Only changes: the DE Land contact line is left out of the
          disclaimers, and the fee block on p.25 lists "$50 per Escrow" twice
          against the wrong labels — here each fee sits on its own label.
          `blocks` are drawn by pgCostsDe() in index.html. */
@@ -459,6 +460,7 @@
               ['Maintenance Adjustment', 'Pro-rates for the month closing'],
               ['Short-term interest', 'Equal interest for the balance of month in which you close']] }
           ],
+          photo: { src: 'static/costs-coop.jpg', pos: '50% 60%' },
           foot: ['¹ See the Mansion Tax page.'],
           disc: 'This closing-cost guide is designed to give you the general costs associated with the purchase or sale of a ' +
                 'co-operative property. Please note that these are estimates and that potential buyers and sellers should consult ' +
@@ -487,6 +489,7 @@
                              ['$20,000,000 - $24,999,999', '3.75%'],
                              ['$25,000,000 or more', '3.90%']] } }
           ],
+          photo: { src: 'static/costs-mansion.jpg', pos: '50% 43%' },
           disc: 'Source: Douglas Elliman New York City Buyer’s Guide 2025. A guide, not tax advice; your attorney has the real figures.' }
       ]
     },

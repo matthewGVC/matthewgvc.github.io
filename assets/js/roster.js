@@ -15,6 +15,9 @@
      2. Add a row to the right market below. Keep `id`
         lowercase-hyphenated and matching the filename.
 
+   Bios, a short intro and the "at a glance" facts are NOT written here:
+   they are in assets/js/bios.js, one block per person, and merged in below.
+
    `phone`, `mobile` and `instagram` may be left empty — the tools skip blank fields
    rather than leaving a gap in the layout. That makes Instagram opt-in: a
    handle is printed only for the agents who have one filled in here, so
@@ -55,7 +58,18 @@
   var dir = document.currentScript && document.currentScript.src;
   var base = dir ? new URL('../agents/', dir).href : '/assets/agents/';
 
-  PEOPLE.forEach(function (a) { a.photo = base + a.id + '.png'; });
+  /* Bios live in assets/js/bios.js (loaded first, optional). Each person
+     gets role / blurb / bio / facts from there, or empty ones, so a tool can
+     read them without checking they exist. */
+  var BIOS = global.GVC_BIOS || {};
+  PEOPLE.forEach(function (a) {
+    var b = BIOS[a.id] || {};
+    a.photo = base + a.id + '.png';
+    a.role = b.role || '';
+    a.blurb = b.blurb || '';
+    a.bio = b.bio || [];
+    a.facts = b.facts || [];
+  });
 
   global.GVC_ROSTER = PEOPLE;
   var BY_ID = {};

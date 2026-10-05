@@ -497,6 +497,8 @@
        qr           QR markup for the header, already rendered
        qrCap        its caption
        legal        the GVC_LEGAL block for this deck
+       referral     optional markup set beside "Thank you." (the Buyer's Guide's
+                    "know someone moving?" line); omitted by the Brochure
        foot         the running page footer
      `.solo` widens the rail and steps the sign-off down to match — one class
      on the page root so the geometry moves together. */
@@ -514,7 +516,8 @@
           (o.qr ? '<div class="ag-qr"><div class="qbox">' + o.qr + '</div>' +
                   '<div class="qcap">' + esc(o.qrCap || '') + '</div></div>' : '') +
         '</div>' +
-        '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div></div>' +
+        '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div>' +
+          (o.referral || '') + '</div>' +
         '<div class="ag-people">' + people + '</div>' +
         '<div class="ag-foot">' +
           agentCol('Social', socialRows(list)) +

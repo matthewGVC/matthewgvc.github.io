@@ -189,7 +189,7 @@
       '$1.25M', '$16,495', '64 days', '4–7 min',
       '1/2/3 on Broadway, B/C on Central Park West',
       'Community school district 3, which runs 59th to 122nd and is known for its middle-school choice process',
-      '997 per 100K in 2025, the lowest rate of any Manhattan submarket on this list.',
+      '997 per 100K in 2025, among the lowest rates of any Manhattan submarket on this list.',
       ['Four minutes to Times Square on the 2 or 3 express from 72nd Street.',
        'Sells faster than the East Side — 64 days against 76 — on very similar money.',
        'Two parks, and the price difference between a Central Park West line and a West End Avenue one is large.']),
@@ -200,7 +200,7 @@
       '6 at 51 St, E/M at Lexington-53, Grand Central four blocks south',
       'Community school district 2 · no zoned high schools in Manhattan; admission is the citywide match',
       '958 per 100K in 2025, low for a district this busy by day.',
-      ['The lowest median price of any Manhattan submarket here except the Lower East Side.',
+      ['One of the lowest median prices of any Manhattan submarket here.',
        'Slow to sell — 86 days — because the buyer pool is pied-à-terre and investor, not family.',
        'The tax bill is Upper East Side money on an $795K apartment, which is the whole argument against it.']),
 
@@ -211,7 +211,7 @@
       'Community school district 2 · no zoned high schools in Manhattan',
       '6,061 per 100K in 2025 — but that is Times Square\'s offences divided by 96,000 residents. Read it as a daytime figure, not a residential one.',
       ['The crime rate here is a measurement artefact: the 14th and 18th Precincts police the busiest tourist district in America.',
-       'New construction dominates, so expect 421-a tax abatements with expiry dates — ask when it burns off.',
+       'New construction dominates, so expect 421-a or 485-x tax abatements with expiry dates — ask when it burns off.',
        'Ninth and Tenth Avenue west of the towers is a completely different, quieter market.']),
 
     A('Chelsea', 'Manhattan',
@@ -240,7 +240,7 @@
       'Only the 1 at Christopher St-Stonewall; everything else is a walk east',
       'Community school district 2 · no zoned high schools in Manhattan',
       '2,406 per 100K in 2025 — the same 6th Precinct figure as Greenwich Village, not a separate measurement.',
-      ['Sells faster than anywhere else on this list bar the East Village — 67 days.',
+      ['Sells faster than most Manhattan areas on this list — 67 days.',
        'One train. Buyers who commute to Midtown East should test the trip before they fall in love.',
        'Townhouses set the tone but almost never trade; the median is co-ops and small condos.']),
 

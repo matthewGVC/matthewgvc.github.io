@@ -17,21 +17,17 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ TWO THINGS ARE DRAWN OVER THE ARTWORK IN static/, and they will be wrong
-     the moment the artwork is redrawn with either of them fixed at source:
+<!-- ⚠ THREE PAGES ARE STILL ARTWORK (static/p3, p4, p8: The Buying Process, Financing
+     Options, Offer & Negotiation), and one sentence — or six card bodies — on
+     each reads wrongly outside New Jersey. patchProcess(), patchOptions() and
+     patchOffer() draw the right words over the picture on a white patch, at
+     positions measured off the 400dpi artwork, so a re-export at a different
+     size or with the furniture moved will put them in the wrong place. If you
+     regenerate static/, check all three. Better still: redraw those pages as
+     live HTML the way Why Work With Us, What It Costs and FAQ's now are, and
+     the patches go away.
 
-       mansionRow()  corrects the mansion tax on p5, per market
-       faqHeading()  renames the duplicated sixth panel heading on p7
-
-     Each is positioned by numbers measured off the 400dpi pictures, so a
-     re-export at a different size or with the page furniture moved will also
-     put them in the wrong place. If you regenerate static/, check both.
-     Two further copy errors on p4 and p8 are NOT patched here and still need
-     fixing at source — see faqHeading() for what they are.
-
-     "Why Work With Us", "Don't Forget to Ask", "50 Things", "Meet Your Agent"
-     and the closing page are live HTML, not artwork. Their copy is in
-     guide-data.js. -->
+     Everything else is live HTML. Its copy is in guide-data.js. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">
@@ -211,33 +207,32 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   font:200 7.2pt 'Nunito Sans',system-ui,sans-serif;color:#4c6774;
   letter-spacing:.1em;font-variant-numeric:tabular-nums;}
 
-/* The mansion-tax row on "What It Costs", redrawn over the artwork.
-   See mansionRow() for why. Measured off the 400dpi picture: the row's
-   hairlines sit at 462.60pt and 486.54pt, so the patch runs between them
-   without covering either; the label column starts at 45pt, the description
-   at 179.8pt, and the amount is flush right at 558.8pt (612 - 53.2).
-   Raleway 400 at 9pt matches the drawn table: set against the artwork, the
-   label "Mansion tax" measures 49.5pt of ink there and 49.7pt here, where
-   the 300 the rest of the deck uses for body copy comes out visibly lighter
-   and 0.4pt narrow. Checked by magnifying this row against the drawn ones
-   above and below it, not by eye at page size. */
-.stpg-fix{position:absolute;left:0;right:0;top:462.96pt;height:23.22pt;
-  background:#fff;font:400 9pt/23.22pt 'Raleway','Segoe UI',sans-serif;
-  color:#00273A;}
-.stpg-fix span{position:absolute;white-space:nowrap;}
-.stpg-fix .f-l{left:45pt;}
-.stpg-fix .f-d{left:179.8pt;}
-.stpg-fix .f-a{right:53.2pt;}
+/* Text drawn over the three pictured pages — see patchProcess(). White
+   patches wipe the old words; the text is Nunito Sans Light 10.8pt on the
+   artwork's 36.5px (14.45pt) line pitch. */
+.stpg-fix{position:absolute;background:#fff;color:#00273A;overflow:hidden;
+  font:300 10.8pt/14.45pt 'Nunito Sans','Segoe UI',sans-serif;}
+.stpg-fix.body{background:none;text-align:center;overflow:visible;}
+.stpg-fix.line{display:flex;align-items:center;white-space:nowrap;}
+.stpg-fix.ttl{display:flex;align-items:center;justify-content:center;white-space:nowrap;
+  font:800 10.6pt/1 'Nunito Sans','Segoe UI',sans-serif;letter-spacing:.155em;text-transform:uppercase;}
 
-/* The sixth panel heading on the FAQ page — see faqHeading(). Measured off
-   the artwork: the drawn run sits at x 348.12pt and y 519.30pt with a 6.12pt
-   cap, so the patch spans the full drawn width and sets the replacement on
-   the same left edge. The colour is sampled from the drawn headings rather
-   than taken from --sky, because it is matching a JPEG of them. */
-.stpg-faq{position:absolute;left:348.12pt;top:516.4pt;width:160pt;height:11.5pt;
-  background:#fff;color:#31b5ca;
-  font:700 8.5pt/11.5pt 'Nunito Sans','Segoe UI',sans-serif;
-  letter-spacing:.111em;text-transform:uppercase;white-space:nowrap;}
+/* What It Costs — the three headline figures, three tables, a note */
+.cost-stats{display:flex;gap:.3in;margin-bottom:.1in;text-align:center;}
+.cost-stats .stat .v{font-size:23pt;}
+.cs{margin-top:.24in;}
+.cs-h{text-align:center;font:800 8.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--sky2);padding-bottom:.08in;}
+table.tbl.cost{table-layout:fixed;border-top:1pt solid var(--navy);}
+table.tbl.cost td{padding:.07in .1in .07in 0;font-size:8.8pt;line-height:12pt;}
+table.tbl.cost .cw{width:1.85in;}
+table.tbl.cost .cd{color:rgba(0,39,58,.78);}
+table.tbl.cost .num{width:1.5in;padding-right:0;}
+
+/* FAQ's — the buyer's checklist, six groups of five-ish */
+.chk.faq{columns:2;column-gap:.55in;}
+.chk.faq .cgrp{margin-bottom:.22in;}
+.chk.faq li{font-size:9.6pt;line-height:13pt;padding:.06in 0;}
 
 </style>
 </head>
@@ -566,17 +561,17 @@ const qrSvg = window.GVC_QR;
    description shown beside its tick.
    ============================================================ */
 /* `st` is the page's index among the drawn pages Matt made in Illustrator,
-   which ship as static/p3.jpg, p4, p5, p7 and p8 — st + 2 is the file. (p2 and
-   p6 were redrawn as live HTML — "Why Work With Us" and the questions page —
-   and their pictures are gone.) There is no PDF in static/; the same 400dpi
-   picture is used on screen and on paper (see pgStatic for why that won). The
-   Illustrator source lives in exports/, which is gitignored so the public
-   site does not serve it.
+   which ship as static/p3.jpg, p4.jpg and p8.jpg — st + 2 is the file. (The
+   rest — Why Work With Us, What It Costs, the questions pages — were redrawn
+   as live HTML and their pictures are gone.) The same 400dpi picture is used
+   on screen and on paper (see pgStatic for why that won). The Illustrator
+   source lives in exports/, which is gitignored so the public site does not
+   serve it.
 
    Only the page number is ours, drawn back on because the printed one was
    stripped out of the artwork — and, since they are pictures rather than
-   markup, two corrections are drawn over them the same way: see mansionRow()
-   and faqHeading().
+   markup, a few sentences are drawn over them the same way: see
+   patchProcess(), patchOptions() and patchOffer().
 
    `agents` expands to one "Meet Your Agent" page per agent picked. The
    tearsheets follow Offer & Negotiation because that is where the drawn
@@ -588,9 +583,9 @@ const SPINE = [
   { key:'process',   title:'The Buying Process',  st:1, opt:'The seven steps, start to keys' },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'options',   title:'Financing Options',   st:2, opt:'Conventional, FHA, VA, jumbo, cash' },
-  { key:'costs',     title:'What It Costs',       st:3, opt:'Every cost in the deal, with ranges' },
+  { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost' },
-  { key:'questions', title:'Questions to Ask',    st:5, opt:'A checklist for the buyer and for us' },
+  { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us' },
   { key:'offer',     title:'Offer & Negotiation', st:6, opt:'Winning the house on terms, not price' },
   { key:'towns',     title:'Area Tearsheets',     towns:true },
   { key:'next',      title:'Thank You' }
@@ -767,6 +762,106 @@ function pgDiscovery(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Don’t Forget to Ask', key:'discovery', body });
 }
 
+/* ---------- What It Costs ----------
+   Live HTML (it was a picture) because nearly every line differs by market:
+   New York has the mortgage recording tax and a buyer-paid mansion tax, New
+   Jersey a seller-paid one and a three-day attorney review, Florida doc stamps
+   and insurance that dwarf the other two. The rows are in guide-data.js
+   COSTS with the sources they were checked against. */
+function pgCosts(n) {
+  const c = GG.COSTS[state.region];
+  const rows = list => list.map(r =>
+    '<tr><td class="cw">' + esc(r[0]) + '</td><td class="cd">' + esc(r[1]) +
+    '</td><td class="num">' + esc(r[2]) + '</td></tr>').join('');
+  const sect = (title, list) =>
+    '<div class="cs"><div class="cs-h">' + esc(title) + '</div>' +
+    '<table class="tbl cost"><tbody>' + rows(list) + '</tbody></table></div>';
+  const body =
+    '<div class="cost-stats">' + c.heads.map(h =>
+      '<div class="stat"><div class="v">' + esc(h[0]) + '</div><div class="l">' + esc(h[1]) + '</div></div>').join('') +
+    '</div>' +
+    sect('Before you close', c.before) +
+    sect('At the closing table', c.table) +
+    sect('Optional, but budget for it', c.optional) +
+    '<div class="foot-note">' + esc(c.note) + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'What It Costs', key:'costs', body });
+}
+
+/* ---------- Questions to Ask (FAQ's) ----------
+   The buyer's checklist, drawn live so the questions fit the market: no
+   basement in a Manhattan apartment, no attorney review in Florida. */
+function pgFaq(n) {
+  const groups = GG.faqFor(state.region);
+  const body = '<div class="chk tight faq">' + groups.map(g =>
+    '<div class="cgrp"><div class="cgrp-h">' + ic(g.icon, 'ci') + '<span>' + esc(g.title) + '</span></div>' +
+    '<ul>' + g.items.map(t => '<li><i></i><span>' + esc(t) + '</span></li>').join('') + '</ul></div>').join('') +
+  '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'FAQ’s', key:'questions', body });
+}
+
+/* ---------- text corrected on the drawn pages ----------
+   Three pages are still Matt's artwork. One sentence (or six card bodies) on
+   each reads wrongly outside New Jersey, so the right words are drawn over
+   the picture on a white patch, positioned the way the page number is: by
+   numbers measured off the 400dpi artwork. Boxes are in pixels of a 1546-wide
+   view of the page (the units they were measured in) and converted to pt here.
+
+   Font: Nunito Sans Light at 10.8pt, set by measuring a drawn line's width and
+   solving for the size — "Closing date, contingencies and financing" runs
+   495px (196pt) in the artwork. Card bodies are centred in the card with the
+   artwork's 36.5px line pitch, first line 172px under the card's top edge.
+
+   If the artwork is regenerated, check every number in here. */
+const PXPT = 612 / 1546;
+const pxs = v => (v * PXPT).toFixed(2) + 'pt';
+const PATCH = (x, y, w, h, html, cls) =>
+  '<div class="stpg-fix ' + (cls || '') + '" style="left:' + pxs(x) + ';top:' + pxs(y) + ';width:' + pxs(w) +
+  ';height:' + pxs(h) + '">' + html + '</div>';
+
+/* The card grid shared by Financing Options and Offer & Negotiation. */
+const CARD_L = [113, 748], CARD_R = [797, 1431], CARD_ROWS = [243, 614, 985];
+/* right-hand card of the third row has art overlapping it on both pages */
+function cardBody(col, row, text, opts) {
+  opts = opts || {};
+  const x0 = (col ? CARD_R : CARD_L)[0], x1 = (col ? CARD_R : CARD_L)[1];
+  const top = CARD_ROWS[row];
+  const bottom = opts.bottom || (top + 319 - 6);
+  /* clear patch, then the text block centred on the card */
+  const patch = PATCH(x0 + 8, top + 140, (opts.right || x1) - x0 - 16, bottom - top - 140, '', 'wipe');
+  const txt = PATCH(x0 + 40, top + 172 - 18, x1 - x0 - 80, 4 * 36.5, esc(text), 'body');
+  return patch.replace('class="stpg-fix wipe"', 'class="stpg-fix wipe"') + txt;
+}
+
+function patchProcess() {
+  /* step 6's description: left-set at x226, centre line y990 */
+  return PATCH(215, 972, 1225, 40, '<span style="margin-left:9px">' +
+    esc(GG.PROCESS_STEP6[state.region]) + '</span>', 'line');
+}
+
+function patchOptions() {
+  let h = '';
+  GG.optionCards(state.region).forEach((c, i) => {
+    const col = i % 2, row = (i / 2) | 0;
+    /* the key hand's fingertips overlap the last card from y1250 */
+    h += cardBody(col, row, c.body, i === 5 ? { bottom: 1246 } : {});
+    if (c.title) {
+      const x0 = (col ? CARD_R : CARD_L)[0], x1 = (col ? CARD_R : CARD_L)[1], ty = CARD_ROWS[row] + 121;
+      h += PATCH(x0 + 90, ty - 22, x1 - x0 - 180, 44, esc(c.title), 'ttl');
+    }
+  });
+  return h;
+}
+
+function patchOffer() {
+  let h = '';
+  GG.offerCards(state.region).forEach((t, i) => {
+    /* the handset's ear-piece overlaps the last card from x1300, y1235; the
+       drawn text there is two lines and ends by y1215, so the wipe stops above it */
+    h += cardBody(i % 2, (i / 2) | 0, t, i === 5 ? { bottom: 1226 } : {});
+  });
+  return h;
+}
+
 /* Two town tearsheets to a page. Everything printed here comes from the
    town's own record in assets/js/nj-towns.js. */
 function tearsheet(t) {
@@ -856,69 +951,19 @@ function pgNext(n) {
    artwork so the deck can renumber when a page is switched off or
    tearsheets are added, so it is drawn back on: here for the preview, and
    again in the export at the baseline it was measured off. */
-/* ---------- the mansion tax ----------
-   The drawn page carries one line for both markets — "Mansion tax · On sales
-   of $1M and above · 1% of price" — filed under what the BUYER pays at the
-   closing table. It is wrong in both markets, and differently wrong in each,
-   which is why it is corrected here rather than in the artwork: the picture
-   is one page serving New Jersey and New York, and the honest answer is not
-   the same sentence.
-
-   New Jersey moved this fee to the SELLER on 10 July 2025 and made it
-   graduated, 1% to 3.5%, charged on the whole price rather than the amount
-   over $1M. It is not a buyer cost there at all, so putting a figure in this
-   column would overstate a New Jersey buyer's cash to close by a full 1%.
-
-   New York still charges the buyer, but a flat 1% only holds below $2M — the
-   city's rate steps up through eight brackets to 3.9% at $25M, so a flat 1%
-   understates every purchase above $2M.
-
-   Redrawn the same way the page number is: measured off the artwork and
-   printed from this DOM, because the export is a print of this page.
-
-   Rates change. Re-check both before a season's packets go out —
-   nj.gov/treasury/taxation/realty.shtml and tax.ny.gov/bus/transfer. */
-const MANSION = {
-  nj:  { note: 'Paid by the seller in New Jersey — not a buyer cost', amt: 'None' },
-  nyc: { note: 'On purchases of $1M and above; the rate climbs above $2M', amt: '1 – 3.9% of price' },
-  fl:  { note: 'Florida does not charge a mansion tax', amt: 'None' }
-};
-
-function mansionRow() {
-  const m = MANSION[state.market] || MANSION.nyc;
-  return '<div class="stpg-fix">' +
-           '<span class="f-l">Mansion tax</span>' +
-           '<span class="f-d">' + esc(m.note) + '</span>' +
-           '<span class="f-a">' + esc(m.amt) + '</span>' +
-         '</div>';
-}
-
-/* The FAQ page has six panels and two of them are headed "ABOUT THE BUILDING
-   OR HOA". The second one's questions are not about a building at all — they
-   are the inspection report, the deposit in escrow, when attorney review ends
-   and a low appraisal — so the heading was pasted from the panel above it and
-   the icon beside it, which is not the building icon, was not.
-
-   Unlike the other two copy errors on these pages, this one does not need
-   anything written: the list underneath says what the heading should be. The
-   other two are named in the branch notes and left for the artwork, because
-   they need new copy rather than a corrected label. */
-function faqHeading() {
-  return '<div class="stpg-faq">Once under contract</div>';
-}
-
 function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
     '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
-    (p.key === 'costs' ? mansionRow() : '') +
-    (p.key === 'questions' ? faqHeading() : '') +
+    (p.key === 'process' ? patchProcess() : '') +
+    (p.key === 'options' ? patchOptions() : '') +
+    (p.key === 'offer' ? patchOffer() : '') +
     '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';
 }
 
 const RENDER = {
   cover:pgCover, why:pgWhy, agent:pgAgent, process:pgStatic, fifty:pgFifty, options:pgStatic,
-  costs:pgStatic, discovery:pgDiscovery, questions:pgStatic, offer:pgStatic, towns:pgTowns, next:pgNext
+  costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgStatic, towns:pgTowns, next:pgNext
 };
 
 /* ---------- wiring ---------- */

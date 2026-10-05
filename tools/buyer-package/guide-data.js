@@ -141,7 +141,7 @@
     nj: [
       [ /* 2 */
         'Compare towns by taxes, schools and commute',
-        'Explain NJ’s attorney-review period up front'
+        'Explain NJ’s three-business-day attorney review up front'
       ],
       [ /* 3 */
         'Check flood zone, school feed and tax history',
@@ -154,10 +154,10 @@
         'Use escalation clauses carefully, never casually'
       ],
       [ /* 6 */
-        'Run the three-day attorney review with your lawyer',
+        'Run the three-business-day attorney review with your lawyer',
         'Order the survey and coordinate the title search',
         'Arrange radon, sewer-line and oil-tank checks',
-        'Confirm the town’s CO and smoke/CO certificate',
+        'Confirm the town’s certificate of occupancy and smoke/CO papers',
         'Get a flood insurance quote before inspections end',
         'Check permits on basements, additions and decks'
       ],
@@ -186,7 +186,7 @@
       [ /* 6 */
         'Order home, wind-mitigation and roof inspections',
         'Get homeowner’s and flood quotes before inspections end',
-        'Review condo reserve study and milestone inspection',
+        'Review the condo SIRS and milestone inspection reports',
         'Coordinate title, survey and closing agent',
         'Track the inspection period and financing deadlines',
         'Check open permits and claims history'
@@ -265,7 +265,7 @@
       'Which towns, and have you looked at the tax bill, not just the price?',
       'Do you need a particular school district or commute?',
       'Are you open to an older home: oil tank, old wiring, flood zone?',
-      'Do you have an attorney lined up for the three-day review?',
+      'Do you have an attorney lined up for the three-business-day review?',
       'Planning a finished basement, addition or pool that needs permits?'
     ]},
     fl: { title: 'Florida specifics', items: [
@@ -379,7 +379,268 @@
     }
   };
 
+
+  /* ============================================================
+     THE DRAWN PAGES, MADE TO FIT THE MARKET
+
+     "The Buying Process", "Financing Options" and "Offer & Negotiation" are
+     still Matt's artwork (static/*.jpg). One sentence on each reads wrongly
+     outside New Jersey — "attorney review" is a NJ step, "board package" a
+     New York one — so index.html draws the corrected sentence over the
+     picture. Those are the strings below. The costs page and the FAQ are
+     live HTML, so their numbers and questions are here too.
+
+     Figures are for budgeting and are checked against official sources as of
+     the date in each comment; rates and limits move, so re-read them before
+     a season's guides go out.
+     ============================================================ */
+
+  /* Step 6 of the buying process: one line, about 78 characters at most. */
+  var PROCESS_STEP6 = {
+    nyc: 'Contract signing, inspection, board package if applicable, and the appraisal.',
+    nj:  'Attorney review, inspections, title, condo or HOA papers, and the appraisal.',
+    fl:  'Inspection period, HOA or condo documents, insurance quotes, and the appraisal.'
+  };
+
+  /* The six financing cards, in the order they sit on the page. Only the ones
+     that differ by market are listed per market; the rest come from COMMON.
+     `title` replaces the card's drawn heading (the first card was a stray copy
+     of step 1, "Consultation"). */
+  var OPTIONS_COMMON = [
+    { title: 'Conventional',
+      body: 'Down payments from 3% to 20%. Put 20% down and there is no private mortgage insurance; below that it drops off once you reach 20% equity.' },
+    { body: 'As little as 3.5% down and far more forgiving on credit. The trade is mortgage insurance that lasts the life of the loan if you put down under 10%.' },
+    { body: 'Nothing down and no monthly mortgage insurance for eligible service members, veterans and surviving spouses. A one-time funding fee applies unless exempt.' },
+    { body: 'Anything above the county conforming limit. Tighter underwriting, larger reserves, and worth using a lender who writes them every week.' },
+    { body: 'A fixed rate buys thirty years of certainty. An adjustable one only makes sense if you genuinely know you are gone before it resets.' },
+    { body: 'The fastest and strongest offer on the table. You can still put a mortgage on the house afterwards and take the money back out.' }
+  ];
+  var OPTIONS_BY_REGION = {
+    nyc: {
+      0: 'Down payments from 3% to 20% on condos and houses. Co-ops lend differently: expect 20–25% down, and a board that can say no even when the bank says yes.',
+      5: 'The fastest, strongest offer on the table, and no lender for a co-op board to weigh.'
+    },
+    nj: {},
+    fl: {
+      5: 'The fastest, strongest offer on the table, and sometimes the only way into a condo that lenders will not finance.'
+    }
+  };
+
+  /* The six cards on Offer & Negotiation. */
+  var OFFER_COMMON = [
+    'Closing date, contingencies and financing type routinely matter more to a seller than the last $10,000.',
+    'We check recent sales and what is on the market nearby before we name a number, not after.',
+    'Inspection, financing and appraisal contingencies are your exits. We waive them deliberately, never casually.',
+    'Good homes go fast. We settle your number and your terms in advance, so you can move quickly and still decide with a clear head.',
+    'Escalation clauses can win a bidding war or reveal your ceiling. We use them situationally.',
+    'Verbal agreements are not agreements. Every accepted term goes into the contract.'
+  ];
+  var OFFER_BY_REGION = {
+    nyc: {
+      2: 'Financing, inspection and board-approval conditions are your exits. We waive them deliberately, never casually.',
+      3: 'Good apartments go fast. We settle your number and your terms in advance, so you can move quickly and still decide with a clear head.',
+      4: 'Escalation clauses can win a bidding war or reveal your ceiling. They are rare in New York, so we use them situationally.',
+      5: 'Verbal agreements are not agreements. Every accepted term goes into the contract your attorney reviews.'
+    },
+    nj: {
+      2: 'Inspection, financing and appraisal contingencies are your exits, and attorney review is another. We waive them deliberately, never casually.',
+      5: 'Verbal agreements are not agreements. Every accepted term goes into the contract your attorney reviews.'
+    },
+    fl: {
+      2: 'The inspection period, financing and appraisal contingencies are your exits. We waive them deliberately, never casually.',
+      5: 'Verbal agreements are not agreements. Every accepted term goes into the contract.'
+    }
+  };
+
+  function optionCards(region) {
+    var over = OPTIONS_BY_REGION[region] || {};
+    return OPTIONS_COMMON.map(function (c, i) {
+      return { title: c.title || '', body: over[i] || c.body };
+    });
+  }
+  function offerCards(region) {
+    var over = OFFER_BY_REGION[region] || {};
+    return OFFER_COMMON.map(function (t, i) { return over[i] || t; });
+  }
+
+  /* ============================================================
+     WHAT IT COSTS — live HTML now, because almost every line differs by
+     market. Each row is [what, when/why, amount]. `heads` are the three big
+     figures across the top. Sources, as of October 2026:
+       NYC  tax.ny.gov (mansion tax, mortgage recording tax), NYC DOF
+       NJ   nj.gov/treasury/taxation (realty transfer fee; the 2025 graduated
+            fee on the seller), N.J.A.C. 11:5-6.2 (attorney review)
+       FL   floridarevenue.com (doc stamps ch. 201 F.S.), FR/BAR contract
+     Ranges marked "estimate" in the notes are budgeting figures, not quotes.
+     ============================================================ */
+  var COST_OPTIONAL = [
+    ['Staging', 'Only if you are selling a home to buy this one', '$1,500 – $5,000'],
+    ['Movers', 'A local move, two bedrooms or so', '$1,200 – $4,000'],
+    ['Repairs and paint', 'What you want done before you move in', 'Varies']
+  ];
+  var COSTS = {
+    nyc: {
+      heads: [['2 – 5%+', 'Closing costs · share of price'],
+              ['20%', 'Down payment that avoids PMI'],
+              ['$2k – 4k', 'Before you own anything · deposit extra']],
+      before: [
+        ['Home inspection', 'Booked once your offer is accepted, before you sign', '$500 – $900'],
+        ['Specialty inspections', 'Houses: radon, oil tank, sewer, termite — each', '$100 – $500'],
+        ['Appraisal', 'Ordered by your lender, paid by you', '$600 – $1,000'],
+        ['Deposit', 'At contract, held in escrow — credited back to you at closing', '10% of price']
+      ],
+      table: [
+        ['Attorney', 'Contract through closing, flat fee', '$2,000 – $5,000'],
+        ['Title insurance', 'Condos and houses; co-ops get a lien search instead', '0.4 – 0.6% of price'],
+        ['Lender fees & points', 'Origination, underwriting, any rate buy-down', '0.5 – 1.5% of loan'],
+        ['Mortgage recording tax', 'On your loan, condos and houses only — none on co-op loans', '1.8 – 1.925% of loan'],
+        ['Recording & filing fees', 'Deed and mortgage recording; UCC filing for co-ops', '$300 – $1,200'],
+        ['Mansion tax', 'Buyer pays, on the whole price: 1% from $1M, up to 3.9%', '1 – 3.9% of price'],
+        ['Board package & move-in', 'Application, managing agent, refundable move-in deposit', '$500 – $2,500+'],
+        ['First year of insurance', 'HO-6 for a co-op or condo; a house costs more', '$300 – $1,500']
+      ],
+      optional: COST_OPTIONAL.concat([['Reserves', 'What lenders and co-op boards like to see left over', '2 – 12+ months']]),
+      note: 'Ranges for budgeting, not quotes. The seller pays the NYC and NY State transfer taxes on a resale; ' +
+            'on new development the buyer usually does. Your attorney and lender give the real figures once ' +
+            'there is an actual apartment and an actual loan.'
+    },
+    nj: {
+      heads: [['2 – 5%', 'Closing costs · share of price'],
+              ['20%', 'Down payment that avoids PMI'],
+              ['$2k – 4k', 'Before you own anything · deposit extra']],
+      before: [
+        ['Home inspection', 'Once the contract is signed; the window is usually 7–14 days', '$500 – $900'],
+        ['Specialty inspections', 'Radon, oil tank, sewer, termite — each', '$100 – $500'],
+        ['Appraisal', 'Ordered by your lender, paid by you', '$600 – $1,000'],
+        ['Deposit', 'At contract — credited back to you at closing', '5 – 10% of price']
+      ],
+      table: [
+        ['Attorney', 'Contract through closing, flat fee', '$1,500 – $3,500'],
+        ['Title search & insurance', 'One-time, and it protects your title, not the lender’s', '0.3 – 0.5% of price'],
+        ['Lender fees & points', 'Origination, underwriting, any rate buy-down', '0.5 – 1.5% of loan'],
+        ['Survey', 'Most lenders and title companies ask for one', '$600 – $1,200'],
+        ['Recording & municipal fees', 'Deed and mortgage recording, town certificates and searches', '$300 – $900'],
+        ['Mansion tax', 'Paid by the seller in New Jersey — not a buyer cost', 'None'],
+        ['Escrow set-up', 'Prepaid property taxes and insurance', '2 – 6 months'],
+        ['First year of insurance', 'Homeowner’s, due at closing', '$900 – $2,500']
+      ],
+      optional: COST_OPTIONAL.concat([['Reserves', 'What lenders like to see left over afterwards', '2 – 6 months of payments']]),
+      note: 'Ranges for budgeting, not quotes. The seller pays the New Jersey realty transfer fee. ' +
+            'Percentages bill against the purchase price unless the line says otherwise, and the real ' +
+            'figures come from your attorney and your lender once there is an actual house and an actual loan.'
+    },
+    fl: {
+      heads: [['2 – 5%', 'Closing costs · share of price'],
+              ['20%', 'Down payment that avoids PMI'],
+              ['$3k – 6k', 'Before you own anything · deposit extra']],
+      before: [
+        ['Home inspection', 'Booked in your inspection period, usually 15 days', '$500 – $900'],
+        ['Specialty inspections', 'Wind mitigation, 4-point, roof, termite, sewer scope — each', '$75 – $600'],
+        ['Appraisal', 'Ordered by your lender, paid by you', '$500 – $1,000'],
+        ['Deposit', 'At contract, more after the inspection period — credited at closing', '1 – 10% of price']
+      ],
+      table: [
+        ['Closing agent', 'A title company usually closes; an attorney is optional', '$500 – $2,500'],
+        ['Title insurance', 'Seller pays in most counties; buyers often pay in Miami-Dade and Broward', '0 – 0.5% of price'],
+        ['Lender fees & points', 'Origination, underwriting, any rate buy-down', '0.5 – 1.5% of loan'],
+        ['Survey', 'Buyer usually orders it; lenders and title often require one', '$400 – $1,000'],
+        ['Doc stamps & intangible tax', 'On your loan, plus recording fees: 0.35% + 0.2%', '0.55% of loan'],
+        ['Condo or HOA fees', 'Transfer, approval and capital contribution, where they apply', '$300 – $5,000+'],
+        ['Home insurance, first year', 'Wind-rated, due at closing; lenders escrow it', '$4,000 – $12,000+'],
+        ['Flood insurance', 'If required or advised — not part of a homeowner’s policy', '$700 – $4,000+']
+      ],
+      optional: COST_OPTIONAL.concat([['Reserves', 'What lenders like to see left over afterwards', '2 – 6 months of payments']]),
+      note: 'Ranges for budgeting, not quotes. Florida has no mansion tax, and the seller customarily pays the ' +
+            'deed doc stamps. Insurance is the line that surprises people — get quotes for the actual house ' +
+            'before your inspection period ends.'
+    }
+  };
+
+  /* ============================================================
+     QUESTIONS TO ASK — the buyer's checklist (live HTML; it was a picture
+     with New Jersey assumptions in it). Six groups; `icon` is an icons.js
+     name. A market overrides individual lines by "group index:line index".
+     ============================================================ */
+  var FAQ_GROUPS = [
+    { icon: 'home', title: 'At every showing', items: [
+      'Why are they selling, and how soon?',
+      'How long has it been listed, and at what prices?',
+      'What are the taxes, insurance and monthly fees?',
+      'How old are the roof, furnace and water heater?',
+      'What is not staying with the house?',
+      'Has there ever been water in the basement?'] },
+    { icon: 'chart', title: 'Ask your lender', items: [
+      'What is the rate, and what would it take to lock it?',
+      'What do the fees add up to, all in?',
+      'Which loan types do I qualify for?',
+      'What could change my approval before closing?',
+      'How long do you need once we are under contract?'] },
+    { icon: 'building', title: 'About the building or HOA', items: [
+      'What does the monthly fee actually cover?',
+      'Is an assessment planned or being discussed?',
+      'How healthy are the reserves?',
+      'What are the rules on pets, rentals and renovations?',
+      'What share of the units are owner-occupied?'] },
+    { icon: 'users', title: 'What we will ask you', items: [
+      'What has to be true on day one?',
+      'What would you trade, and what will you not?',
+      'Where is the down payment coming from?',
+      'Who else has a say in the decision?',
+      'What would make you walk away?'] },
+    { icon: 'pin', title: 'About the area', items: [
+      'What is the tax rate, and when was the last reassessment?',
+      'Is any part of the lot in a flood zone?',
+      'Which schools does this address actually feed?',
+      'What is the commute at 7am, not at noon?',
+      'What is approved to be built nearby?'] },
+    { icon: 'pen', title: 'Once under contract', items: [
+      'Have I read the inspection report myself?',
+      'Is my deposit in escrow, and with whom?',
+      'When does attorney review end?',
+      'What happens if the appraisal comes in low?'] }
+  ];
+  var FAQ_BY_REGION = {
+    nyc: {
+      '0:3': 'How old are the windows, appliances and heating system?',
+      '0:5': 'Has there ever been a leak or water damage in the unit?',
+      '1:2': 'Which loan types do I qualify for, and do you lend on co-ops?',
+      '2:4': 'What does the board ask for, and how long does approval take?',
+      '4:0': 'What are the taxes or abatement, and when does the abatement end?',
+      '4:1': 'Is the building in a flood or evacuation zone?',
+      '4:3': 'What is the commute at 8am, not at noon?',
+      '5:0': 'Have I read the inspection report and the building financials myself?',
+      '5:2': 'When are the mortgage commitment and board approval due?'
+    },
+    nj: {
+      '5:2': 'When does attorney review end?'
+    },
+    fl: {
+      '0:3': 'How old are the roof, AC and water heater?',
+      '0:5': 'Any past leaks, water intrusion or flood claims?',
+      '1:2': 'Which loan types do I qualify for, and is this condo approved?',
+      '2:4': 'Is the milestone inspection and reserve study (SIRS) done and funded?',
+      '4:0': 'What will the taxes be after purchase, and is homestead available?',
+      '4:1': 'Is it in a flood zone, and what do wind and flood insurance cost?',
+      '5:2': 'When does my inspection period end?'
+    }
+  };
+  /* extra lines appended to the last group, per market */
+  var FAQ_EXTRA = {
+    nj: ['Have I read the seller’s disclosure, including flood history?'],
+    nyc: [], fl: []
+  };
+  function faqFor(region) {
+    var over = FAQ_BY_REGION[region] || {};
+    return FAQ_GROUPS.map(function (g, gi) {
+      var items = g.items.map(function (t, i) { return over[gi + ':' + i] || t; });
+      if (gi === FAQ_GROUPS.length - 1) items = items.concat(FAQ_EXTRA[region] || []);
+      return { icon: g.icon, title: g.title, items: items };
+    });
+  }
+
   global.GVC_GUIDE = {
-    REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor, PROFILES: PROFILES
+    REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor, PROFILES: PROFILES,
+    PROCESS_STEP6: PROCESS_STEP6, optionCards: optionCards, offerCards: offerCards,
+    COSTS: COSTS, faqFor: faqFor
   };
 })(window);

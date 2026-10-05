@@ -26,6 +26,7 @@ Plain Node, no install — each exits non-zero on a failure:
 
 - `test-property-model.js` — the shared property model (units, merges, resets)
 - `test-area-data.js` — the ranking claims in the area datasets ("fastest", "slowest") against their own figures
+- `test-destination-guide.js` — destination-guide POIs, source links, coordinates, and required page data
 - `test-listing.js` — the Showsheet's Word-document reader and its money math
 
 Node + Playwright — `cd scripts && npm install`:
@@ -54,6 +55,16 @@ A sample listing lives in `tools/showsheet/sample/` (555 W59th PHC — `listing.
 to see a fully populated sheet. There is no button that loads them for you (an older
 one was retired). Needs the site served over http (fetch can't read `file://`
 siblings).
+
+## Destination Guide tool
+
+`tools/destination-guide/` builds a sourced, print-ready US Letter regional
+guide. Its first complete dataset is Monmouth County. Guide facts, POIs, map
+coordinates, team picks, and source URLs live in `guide-data.js`; the page
+renderer and editor are separate so research can be corrected without touching
+the layouts. The preview supports live cover/welcome edits, session-only image
+replacement, an optional Team Favorites page, JSON handoff, and Print / Save
+PDF.
 
 ## Docs
 

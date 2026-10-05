@@ -497,6 +497,9 @@
        qr           QR markup for the header, already rendered
        qrCap        its caption
        legal        the GVC_LEGAL block for this deck
+       licensedLabel optional heading for the states column (default "Licensed in")
+       referral     optional markup set beside "Thank you." (the Buyer's Guide's
+                    "know someone moving?" line); omitted by the Brochure
        foot         the running page footer
      `.solo` widens the rail and steps the sign-off down to match — one class
      on the page root so the geometry moves together. */
@@ -514,12 +517,13 @@
           (o.qr ? '<div class="ag-qr"><div class="qbox">' + o.qr + '</div>' +
                   '<div class="qcap">' + esc(o.qrCap || '') + '</div></div>' : '') +
         '</div>' +
-        '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div></div>' +
+        '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div>' +
+          (o.referral || '') + '</div>' +
         '<div class="ag-people">' + people + '</div>' +
         '<div class="ag-foot">' +
           agentCol('Social', socialRows(list)) +
           agentCol('Links', TEAM_LINKS) +
-          '<div class="ag-col"><div class="ag-col-t">Licensed in</div>' +
+          '<div class="ag-col"><div class="ag-col-t">' + esc(o.licensedLabel || 'Licensed in') + '</div>' +
             STATES.map(([nm, art]) =>
               '<div class="ag-st"><i style="-webkit-mask-image:url(' + art +
                 ');mask-image:url(' + art + ')"></i><span>' + esc(nm) + '</span></div>').join('') +

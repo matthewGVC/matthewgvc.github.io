@@ -16,7 +16,7 @@
 
      price    StreetEasy Data Dashboard, median sale price, July
               2026 — the operator's own published CSV, using
-              StreetEasy's own borough and neighbourhood
+              StreetEasy's own borough and neighborhood
               boundaries. Not asking price; recorded sales.
      tax      NYC Dept. of Finance assessment roll, FY2025/26,
               via NYC Open Data (dataset 8y4t-faws). For every
@@ -131,7 +131,7 @@
       '1,786 per 100K in 2025, against the city\'s 1,376.',
       ['The tax figure is the median condo unit. A Class 1 house here runs $32,000, and there are only 12,400 of them.',
        'Common charges or maintenance are the bigger monthly number, and they are not in any figure on this page.',
-       'Co-ops are billed to the building and sold with a board interview; condos are neither. That choice comes before the neighbourhood.']),
+       'Co-ops are billed to the building and sold with a board interview; condos are billed per unit and usually skip the interview. That choice comes before the neighborhood.']),
 
     A('Brooklyn', 'New York City',
       'Now the second-priciest borough, and the one with real houses at the top of the market.',
@@ -147,9 +147,9 @@
       'The city\'s house market: more one- to three-family homes than any other borough, by a wide margin.',
       '$810K', '$7,810', '62 days', '16–18 min',
       'E/F express, M, R — measured from Jackson Hts-Roosevelt Av',
-      'Community school districts 24 through 30 · zoned high schools, and the most-used school-choice programmes in the city',
+      'Community school districts 24 through 30 · zoned high schools, and the most-used school-choice programs in the city',
       '1,098 per 100K in 2025, the second-lowest of the five boroughs.',
-      ['557,000 Class 1 houses — more than Brooklyn and Staten Island put together.',
+      ['557,000 Class 1 houses — more than any other borough.',
        'Sixteen minutes to Bryant Park on the F from Jackson Heights, which is faster than most of Manhattan north of 96th.',
        'Condo units here carry a lower median tax than houses do, at $6,488.']),
 
@@ -180,7 +180,7 @@
       '4/5/6 on Lexington, Q on Second Avenue',
       'Community school district 2 below 96th Street, district 4 above it · no zoned high schools anywhere in Manhattan',
       '1,052 per 100K in 2025 — well under the city\'s 1,376, and down 5.4% on 2024.',
-      ['Seven minutes to Grand Central on the 6. Nothing else in Manhattan is closer to Midtown for the money.',
+      ['Seven minutes to Grand Central on the 6. Few Manhattan addresses are closer to Midtown for the money.',
        'Heavily co-op, which means board packages, interviews and financing minimums before you get a contract.',
        'The Second Avenue Q reset values east of Third — the blocks that were a walk from the train no longer are.']),
 
@@ -189,18 +189,18 @@
       '$1.25M', '$16,495', '64 days', '4–7 min',
       '1/2/3 on Broadway, B/C on Central Park West',
       'Community school district 3, which runs 59th to 122nd and is known for its middle-school choice process',
-      '997 per 100K in 2025, the lowest rate of any Manhattan submarket on this list.',
+      '997 per 100K in 2025, among the lowest rates of any Manhattan submarket on this list.',
       ['Four minutes to Times Square on the 2 or 3 express from 72nd Street.',
        'Sells faster than the East Side — 64 days against 76 — on very similar money.',
        'Two parks, and the price difference between a Central Park West line and a West End Avenue one is large.']),
 
     A('Midtown East', 'Manhattan',
-      'You are already there: the cheapest way into a Manhattan address if the commute is the whole point.',
+      'You are already there: one of the cheapest ways into a Manhattan address if the commute is the whole point.',
       '$795K', '$16,283', '86 days', '2 min',
-      '6 at 51 St, E/M at Lexington-53, Grand Central four blocks south',
+      '6 at 51 St, E/M at Lexington-53, Grand Central a short walk south',
       'Community school district 2 · no zoned high schools in Manhattan; admission is the citywide match',
       '958 per 100K in 2025, low for a district this busy by day.',
-      ['The lowest median price of any Manhattan submarket here except the Lower East Side.',
+      ['One of the lowest median prices of any Manhattan submarket here.',
        'Slow to sell — 86 days — because the buyer pool is pied-à-terre and investor, not family.',
        'The tax bill is Upper East Side money on an $795K apartment, which is the whole argument against it.']),
 
@@ -210,8 +210,8 @@
       '1/C/E at 50 St, plus every line at Times Square and Port Authority',
       'Community school district 2 · no zoned high schools in Manhattan',
       '6,061 per 100K in 2025 — but that is Times Square\'s offences divided by 96,000 residents. Read it as a daytime figure, not a residential one.',
-      ['The crime rate here is a measurement artefact: the 14th and 18th Precincts police the busiest tourist district in America.',
-       'New construction dominates, so expect 421-a tax abatements with expiry dates — ask when it burns off.',
+      ['The crime rate here is a measurement artifact: the 14th and 18th Precincts police the busiest tourist district in America.',
+       'New construction dominates, so expect 421-a or 485-x tax abatements with expiry dates — ask when it burns off.',
        'Ninth and Tenth Avenue west of the towers is a completely different, quieter market.']),
 
     A('Chelsea', 'Manhattan',
@@ -230,7 +230,7 @@
       'A/B/C/D/E/F/M all at W 4 St-Wash Sq',
       'Community school district 2 · no zoned high schools in Manhattan',
       '2,406 per 100K in 2025 across the 6th Precinct — which it shares with the West Village, so the two read identically.',
-      ['Eight lines at one station. Nothing else downtown matches it.',
+      ['Seven lines at one station. Nothing else downtown matches it.',
        'Historic district rules govern most of it, so renovation is slower and dearer than the price suggests.',
        'Down 13.1% on crime year over year, the sharpest improvement of any area on this list.']),
 
@@ -240,7 +240,7 @@
       'Only the 1 at Christopher St-Stonewall; everything else is a walk east',
       'Community school district 2 · no zoned high schools in Manhattan',
       '2,406 per 100K in 2025 — the same 6th Precinct figure as Greenwich Village, not a separate measurement.',
-      ['Sells faster than anywhere else on this list bar the East Village — 67 days.',
+      ['Sells faster than most Manhattan areas on this list — 67 days.',
        'One train. Buyers who commute to Midtown East should test the trip before they fall in love.',
        'Townhouses set the tone but almost never trade; the median is co-ops and small condos.']),
 
@@ -255,14 +255,14 @@
        'PS 234 is the reason a lot of these deals happen, and district 2 has no zoned high school to follow it.']),
 
     A('Financial District', 'Manhattan',
-      'The value end of downtown: office-to-residential conversions at half the Tribeca price, four blocks away.',
+      'The value end of downtown: office-to-residential conversions at a fraction of the Tribeca price, four blocks away.',
       '$950K', '$18,228', '92 days', '12 min',
       '2/3 and 4/5 at Wall St, plus the Fulton Center complex',
       'Community school district 2 · no zoned high schools in Manhattan',
-      '2,120 per 100K in 2025 — the same 1st Precinct figure as Tribeca, and likewise a daytime-population artefact.',
-      ['Slow to trade at 92 days — only Central Harlem and Washington Heights sit longer — and the largest discount to its own neighbourhood.',
+      '2,120 per 100K in 2025 — the same 1st Precinct figure as Tribeca, and likewise a daytime-population artifact.',
+      ['Slow to trade at 92 days — only Central Harlem and Washington Heights sit longer — and the largest discount to its own neighborhood.',
        'Mostly conversions, so ask what the building was and when: layouts, light and column spacing all follow from it.',
-       'Battery Park City next door is on ground-lease land, which changes the maths entirely.']),
+       'Battery Park City next door is on ground-lease land, which changes the math entirely.']),
 
     A('East Village', 'Manhattan',
       'The fastest-selling market in Manhattan, and the cheapest tax bill below 96th Street.',
@@ -275,7 +275,7 @@
        'District 1 has no zoned schools at any level. Families should understand the match before they buy.']),
 
     A('Lower East Side', 'Manhattan',
-      'The cheapest median price in Manhattan, sitting next to some of its newest luxury towers.',
+      'One of the cheapest median prices in Manhattan, sitting next to some of its newest luxury towers.',
       '$720K', '$18,405', '61 days', '14 min',
       'F/M at Delancey-Essex, J/Z above it',
       'Community school district 1 · no zoned elementary, middle or high schools — admission is entirely by application',

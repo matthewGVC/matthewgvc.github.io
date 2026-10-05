@@ -17,18 +17,17 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ THREE THINGS ARE DRAWN OVER THE ARTWORK IN static/, and they will be wrong
-     the moment the artwork is redrawn with any of them fixed at source:
+<!-- ⚠ THREE PAGES ARE STILL ARTWORK (static/p3, p4, p8: The Buying Process, Financing
+     Options, Offer & Negotiation), and one sentence — or six card bodies — on
+     each reads wrongly outside New Jersey. patchProcess(), patchOptions() and
+     patchOffer() draw the right words over the picture on a white patch, at
+     positions measured off the 400dpi artwork, so a re-export at a different
+     size or with the furniture moved will put them in the wrong place. If you
+     regenerate static/, check all three. Better still: redraw those pages as
+     live HTML the way Why Work With Us, What It Costs and FAQ's now are, and
+     the patches go away.
 
-       mansionRow()  corrects the mansion tax on p5, per market
-       whyPhoto()    draws the agent's second photo onto p2
-       faqHeading()  renames the duplicated sixth panel heading on p7
-
-     Each is positioned by numbers measured off the 400dpi pictures, so a
-     re-export at a different size or with the page furniture moved will also
-     put them in the wrong place. If you regenerate static/, check all three.
-     Two further copy errors on p4 and p8 are NOT patched here and still need
-     fixing at source — see faqHeading() for what they are. -->
+     Everything else is live HTML. Its copy is in guide-data.js. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">
@@ -45,32 +44,99 @@
    ============================================================ */
 
 /* why us — a photo down the left, one editorial column down the right:
-   an opening line in the serif, the copy, the numbers, then a client in
-   their own words. The column is the only text on the page, so it is set
-   larger than the deck's default .copy. */
+   the copy, the team's standing line, the numbers, the three states, then a
+   client in their own words. Drawn in code (it was a picture) so the quote
+   can follow the market. The column is the only text on the page, so it is
+   set larger than the deck's default .copy. */
 .why{display:flex;gap:.42in;flex:1;min-height:0;}
 .why .ph{width:2.85in;flex:none;align-self:stretch;}
 .why .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
-.why .copy{font-size:11.5pt;line-height:17.5pt;}
-.why .copy p + p{margin-top:.17in;}
-/* the team's standing line, set as a display rule between the blurb and
-   the numbers */
-.why .tag{margin:.3in 0 0;padding-top:.24in;border-top:.75pt solid var(--rule);
-  font:300 16pt/1.28 var(--serif);color:var(--navy);}
+.why .copy{font-size:10.5pt;line-height:16pt;letter-spacing:.02em;}
+.why .copy p{margin:0;}
+.why .copy p + p{margin-top:.15in;}
+.why .tag{margin:.22in 0 0;padding-top:.2in;border-top:.75pt solid var(--rule);
+  font:400 16pt/1.28 var(--serif);color:var(--navy);text-align:center;text-wrap:balance;}
+.why .stats{display:flex;gap:.22in;margin-top:.2in;text-align:center;}
+.why .stat .v{font-size:21pt;}
+.why .stat .l{font-size:6.4pt;}
+/* the three states, in the artwork's own blues */
+.why .sts{display:flex;align-items:center;justify-content:center;gap:.12in;margin-top:.26in;}
+.why .sts i{display:block;height:.9in;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;}
+.why .sts i.ny{width:1.15in;background:linear-gradient(135deg,#00273A,#0a7c99);}
+.why .sts i.nj{width:.6in;background:linear-gradient(135deg,#53C7DC,#a9dce6);}
+.why .sts i.fl{width:1.15in;background:linear-gradient(135deg,#7fcfe0,#0a8aa6);}
+.why .sts b{width:.22in;height:0;border-top:1pt solid var(--sky);}
 /* One review in a half-width column, so the shared quote block is set
    down from its 15pt. font-size is the only knob it needs — the marks
    and the indents are sized in em and come down with it. */
 .why .quote{margin-top:auto;font-size:10.5pt;}
 
-/* search-criteria worksheet — blank rules the buyer fills in by hand */
-.ws{display:grid;grid-template-columns:1fr 1fr;gap:.1in .42in;}
-.ws .wl{grid-column:1 / -1;font:800 7.5pt var(--sans);letter-spacing:.15em;text-transform:uppercase;
-  color:var(--sky2);margin-top:.16in;padding-bottom:.05in;border-bottom:.75pt solid var(--rule);}
-.ws .wl:first-child{margin-top:0;}
-.ws .wf{display:flex;align-items:baseline;gap:.1in;padding:.11in 0 .03in;}
-.ws .wf span{flex:none;font:800 7pt var(--sans);letter-spacing:.13em;text-transform:uppercase;
-  color:rgba(0,39,58,.55);width:1.15in;}
-.ws .wf i{flex:1;border-bottom:.75pt solid rgba(0,39,58,.35);height:.16in;display:block;}
+/* ============================================================
+   DON'T FORGET TO ASK — the agent's list. Six groups of five, three to a
+   column; every item has its box for a pen. Uses the shared .chk.
+   ============================================================ */
+.ask{flex:1;min-height:0;display:flex;flex-direction:column;}
+.ask .lede{font-size:10pt;line-height:15pt;margin-bottom:.16in;max-width:none;color:rgba(0,39,58,.7);}
+.chk.ask-chk{columns:2;column-gap:.5in;}
+.chk.ask-chk .cgrp{margin-bottom:.2in;}
+.chk.ask-chk li{font-size:9.6pt;line-height:13.4pt;padding:.052in 0;}
+.chk.ask-chk .cgrp-h .n{flex:none;width:.2in;height:.2in;border-radius:50%;background:var(--navy);
+  color:#fff;font:800 7pt/.2in var(--sans);text-align:center;letter-spacing:0;}
+.chk.ask-chk .cgrp.mkt .cgrp-h .n{background:var(--sky2);}
+
+/* ============================================================
+   50 THINGS — five groups, numbered straight through. Two columns, set
+   by hand rather than CSS columns so a group never splits.
+   ============================================================ */
+.fifty{display:flex;gap:.45in;flex:1;min-height:0;}
+.fifty .fc{flex:1;min-width:0;display:flex;flex-direction:column;}
+.fifty .fg + .fg{margin-top:.17in;}
+.fifty .fg-h{font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
+  padding-bottom:.05in;border-bottom:1pt solid var(--navy);margin-bottom:.04in;}
+.fifty ol{list-style:none;margin:0;padding:0;}
+.fifty li{display:flex;gap:.1in;padding:.036in 0;border-bottom:.5pt solid var(--rule);
+  font:300 8.9pt/11.6pt var(--body);color:var(--navy);}
+.fifty li .n{flex:none;width:.22in;font:700 8pt/11.6pt var(--serif);color:var(--sky2);text-align:right;
+  font-variant-numeric:tabular-nums;}
+.fifty-lede{margin:0 0 .14in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
+
+/* ============================================================
+   MEET YOUR AGENT — one page per selected agent. A navy banner with the
+   cut-out standing on its foot, then the bio and the facts. All of it is
+   team-site copy (guide-data.js PROFILES); nothing is written per page.
+   ============================================================ */
+.ab-top{flex:none;position:relative;height:3.3in;background:var(--navy);color:#fff;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:0 .4in .34in;}
+.ab-top::before{content:'';position:absolute;left:-1.2in;top:-1.4in;width:5.4in;height:5.4in;
+  background:radial-gradient(circle,rgba(83,199,220,.2),rgba(83,199,220,0) 68%);}
+.ab-top img{position:absolute;right:.05in;bottom:0;height:3.3in;width:3.3in;max-width:none;object-fit:contain;object-position:50% 100%;}
+.ab-top .role{position:relative;font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
+.ab-top .nm{position:relative;margin:.08in 0 .06in;font:700 30pt/1.04 var(--serif);color:#fff;max-width:4.2in;}
+.ab-top .tt{position:relative;font:800 6.8pt/1.5 var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(229,229,229,.75);}
+.ab-main{flex:1;min-height:0;display:flex;gap:.45in;padding-top:.3in;}
+.ab-main .l{flex:1.45;min-width:0;display:flex;flex-direction:column;}
+.ab-main .r{flex:1;min-width:0;display:flex;flex-direction:column;}
+.ab-lab{font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
+  padding-bottom:.05in;border-bottom:1pt solid var(--navy);margin-bottom:.12in;}
+.ab-bio{margin:0;font:400 13pt/1.52 var(--serif);color:var(--navy);}
+.ab-facts{margin-top:.28in;}
+.ab-facts .f{display:flex;gap:.14in;padding:.075in 0;border-bottom:.75pt solid var(--rule);
+  font:300 9.5pt/1.4 var(--body);color:var(--navy);}
+.ab-facts .f b{flex:none;width:1.25in;font:800 6.6pt/1.9 var(--sans);letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(0,39,58,.55);}
+.ab-con .c{display:flex;gap:.1in;align-items:flex-start;padding:.07in 0;font:300 9.5pt/1.35 var(--body);color:var(--navy);}
+.ab-con .c .ci{flex:none;width:.17in;height:.17in;margin-top:.01in;color:var(--sky2);}
+.ab-con .c span{min-width:0;overflow-wrap:anywhere;}
+.ab-exp .e{padding:.1in 0;border-bottom:.75pt solid var(--rule);}
+.ab-exp .e b{display:block;font:800 7pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--navy);}
+.ab-exp .e span{display:block;margin-top:.03in;font:300 9pt/1.45 var(--body);color:rgba(0,39,58,.78);}
+
+/* the referral line on the closing page, set beside "Thank you." */
+.ag-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:.3in;}
+.ag-hero .ref{flex:none;width:2.55in;padding-bottom:.08in;}
+.ag-hero .ref b{display:block;font:800 6.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky);}
+.ag-hero .ref p{margin:.06in 0 0;font:300 8.6pt/1.5 var(--body);color:var(--ow);}
 
 /* costs table — grouped by when the money leaves your hands */
 table.tbl tr.grp td{border-bottom:1pt solid var(--navy);padding:.2in .1in .06in 0;
@@ -141,41 +207,32 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
   font:200 7.2pt 'Nunito Sans',system-ui,sans-serif;color:#4c6774;
   letter-spacing:.1em;font-variant-numeric:tabular-nums;}
 
-/* The mansion-tax row on "What It Costs", redrawn over the artwork.
-   See mansionRow() for why. Measured off the 400dpi picture: the row's
-   hairlines sit at 462.60pt and 486.54pt, so the patch runs between them
-   without covering either; the label column starts at 45pt, the description
-   at 179.8pt, and the amount is flush right at 558.8pt (612 - 53.2).
-   Raleway 400 at 9pt matches the drawn table: set against the artwork, the
-   label "Mansion tax" measures 49.5pt of ink there and 49.7pt here, where
-   the 300 the rest of the deck uses for body copy comes out visibly lighter
-   and 0.4pt narrow. Checked by magnifying this row against the drawn ones
-   above and below it, not by eye at page size. */
-.stpg-fix{position:absolute;left:0;right:0;top:462.96pt;height:23.22pt;
-  background:#fff;font:400 9pt/23.22pt 'Raleway','Segoe UI',sans-serif;
-  color:#00273A;}
-.stpg-fix span{position:absolute;white-space:nowrap;}
-.stpg-fix .f-l{left:45pt;}
-.stpg-fix .f-d{left:179.8pt;}
-.stpg-fix .f-a{right:53.2pt;}
+/* Text drawn over the three pictured pages — see patchProcess(). White
+   patches wipe the old words; the text is Nunito Sans Light 10.8pt on the
+   artwork's 36.5px (14.45pt) line pitch. */
+.stpg-fix{position:absolute;background:#fff;color:#00273A;overflow:hidden;
+  font:300 10.8pt/14.45pt 'Nunito Sans','Segoe UI',sans-serif;}
+.stpg-fix.body{background:none;text-align:center;overflow:visible;}
+.stpg-fix.line{display:flex;align-items:center;white-space:nowrap;}
+.stpg-fix.ttl{display:flex;align-items:center;justify-content:center;white-space:nowrap;
+  font:800 10.6pt/1 'Nunito Sans','Segoe UI',sans-serif;letter-spacing:.155em;text-transform:uppercase;}
 
-/* The photo column down the left of the drawn "Why Work With Us" page.
-   Measured off the same 400dpi artwork: it starts on the page's 45pt margin,
-   like the tables on the costs page. The agent's own photo covers the drawn
-   one; with no photo assigned nothing is drawn and the artwork shows through. */
-.stpg-photo{position:absolute;left:44.64pt;top:95.94pt;width:205.2pt;height:628.56pt;
-  overflow:hidden;background:#fff;}
-.stpg-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+/* What It Costs — the three headline figures, three tables, a note */
+.cost-stats{display:flex;gap:.3in;margin-bottom:.1in;text-align:center;}
+.cost-stats .stat .v{font-size:23pt;}
+.cs{margin-top:.24in;}
+.cs-h{text-align:center;font:800 8.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--sky2);padding-bottom:.08in;}
+table.tbl.cost{table-layout:fixed;border-top:1pt solid var(--navy);}
+table.tbl.cost td{padding:.07in .1in .07in 0;font-size:8.8pt;line-height:12pt;}
+table.tbl.cost .cw{width:1.85in;}
+table.tbl.cost .cd{color:rgba(0,39,58,.78);}
+table.tbl.cost .num{width:1.5in;padding-right:0;}
 
-/* The sixth panel heading on the FAQ page — see faqHeading(). Measured off
-   the artwork: the drawn run sits at x 348.12pt and y 519.30pt with a 6.12pt
-   cap, so the patch spans the full drawn width and sets the replacement on
-   the same left edge. The colour is sampled from the drawn headings rather
-   than taken from --sky, because it is matching a JPEG of them. */
-.stpg-faq{position:absolute;left:348.12pt;top:516.4pt;width:160pt;height:11.5pt;
-  background:#fff;color:#31b5ca;
-  font:700 8.5pt/11.5pt 'Nunito Sans','Segoe UI',sans-serif;
-  letter-spacing:.111em;text-transform:uppercase;white-space:nowrap;}
+/* FAQ's — the buyer's checklist, six groups of five-ish */
+.chk.faq{columns:2;column-gap:.55in;}
+.chk.faq .cgrp{margin-bottom:.22in;}
+.chk.faq li{font-size:9.6pt;line-height:13pt;padding:.06in 0;}
 
 </style>
 </head>
@@ -196,8 +253,19 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
     <div class="ed-body">
 
       <details class="ed-sec" open>
-        <summary>Cover <span class="hint">title + subtitle</span></summary>
+        <summary>Cover <span class="hint">market + title</span></summary>
         <div class="sec-in">
+          <div class="field">
+            <label>Market</label>
+            <div class="seg pick" id="regionPick" role="group" aria-label="Market">
+              <button type="button" data-region="nyc">NYC</button>
+              <button type="button" data-region="nj">NJ</button>
+              <button type="button" data-region="fl">FL</button>
+            </div>
+          </div>
+          <div class="sec-note">Swaps the cover photo, the client quote on &ldquo;Why Work With Us&rdquo;,
+            the state-specific lines on &ldquo;50 Things&rdquo; and &ldquo;Don&rsquo;t Forget to Ask&rdquo;,
+            and the area tearsheets.</div>
           <div class="field">
             <label for="covKicker">Line above the title</label>
             <input type="text" id="covKicker" value="Comprehensive Guide for the Home Buying Process">
@@ -216,7 +284,7 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
         <div class="sec-in">
           <div class="drop" id="dropPhotos" tabindex="0" role="button">
             <div class="d-big">Drop photos</div>
-            <div class="d-sub">First is the cover, second sits beside &ldquo;Why Work With Us&rdquo;</div>
+            <div class="d-sub">Optional. First replaces the cover photo, second the one beside &ldquo;Why Work With Us&rdquo;</div>
           </div>
           <input type="file" id="filePhotos" accept="image/*" multiple hidden>
           <div id="imgList"></div>
@@ -236,13 +304,6 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
       <details class="ed-sec" open>
         <summary><span id="townLabel">New Jersey towns</span> <span class="hint" id="townHint"></span></summary>
         <div class="sec-in">
-          <div class="field">
-            <label for="marketPick">Market</label>
-            <select id="marketPick">
-              <option value="nj">New Jersey &mdash; towns we sell in</option>
-              <option value="nyc">New York City &mdash; boroughs and Manhattan</option>
-            </select>
-          </div>
           <div id="townPick"></div>
           <div class="tick-bar">
             <button class="btn sm ghost" type="button" id="townAll">Select all</button>
@@ -254,7 +315,7 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
       </details>
 
       <details class="ed-sec">
-        <summary>Agents <span class="hint">max 2 &middot; cover + closing</span></summary>
+        <summary>Agents <span class="hint">max 2 &middot; own page + closing</span></summary>
         <div class="sec-in">
           <div id="rosterPick"></div>
         </div>
@@ -302,6 +363,7 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 <script src="../../assets/js/unsaved.js"></script>
 <script src="../../assets/js/nj-towns.js"></script>
 <script src="../../assets/js/nyc-areas.js"></script>
+<script src="guide-data.js"></script>
 <script>
 'use strict';
 const P = window.Pitch, esc = P.esc;
@@ -353,7 +415,17 @@ const MARKETS = {
           '<code>assets/js/nyc-areas.js</code>. Two areas per page, in this order.'
   }
 };
-let MARKET = MARKETS.nj;
+/* Florida has no tearsheet dataset yet, so its market is an empty one: the
+   Area Tearsheets pages simply do not appear and the panel says why. */
+MARKETS.fl = {
+  id:'fl', data: { list: [], AS_OF: '' },
+  panel:'Florida areas', page:'Florida Areas', noun:'area',
+  eyebrow: t => t.county, sub: t => t.county,
+  stats: [], rows: [], src: '',
+  note: 'There are no Florida area tearsheets yet, so this guide prints without them.'
+};
+const GG = window.GVC_GUIDE, REGIONS = GG.REGIONS;
+let MARKET = MARKETS.nyc;
 
 
 /* ============================================================
@@ -365,9 +437,12 @@ let MARKET = MARKETS.nj;
    ============================================================ */
 const state = {
   photos:[], pos:{},
-  off:{},        // optional page key -> true when it is switched off
-  market:'nj',   // which market the packet prints — see MARKETS
-  picks:{nj:[], nyc:[]},  // chosen area names per market, kept apart so
+  /* optional page key -> true when it is switched off. Financing starts
+     off: most buyers meet it with their lender, not in this guide. */
+  off:{ options:true },
+  region:'nyc',  // NYC | NJ | FL — the cover toggle; see guide-data.js REGIONS
+  market:'nyc',  // which tearsheet dataset prints; always follows `region`
+  picks:{nj:[], nyc:[], fl:[]},  // chosen area names per market, kept apart so
                           // switching market does not throw a selection away
   agents:[],
   /* the two editable runs on the cover — both print in caps */
@@ -485,29 +560,32 @@ const qrSvg = window.GVC_QR;
    `opt` marks a page the panel can switch off, and doubles as the one-line
    description shown beside its tick.
    ============================================================ */
-/* `st` is the page's index among the seven Matt drew in Illustrator, which
-   ship as static/p2.jpg … p8.jpg — st + 2 is the file. There is no PDF in
-   static/; an earlier design copied the real PDF page through at export and
-   this note still described it, but what actually happens is that the same
-   400dpi picture is used on screen and on paper (see pgStatic for why that
-   won). The Illustrator source lives in exports/, which is gitignored so the
-   public site does not serve it.
+/* `st` is the page's index among the drawn pages Matt made in Illustrator,
+   which ship as static/p3.jpg, p4.jpg and p8.jpg — st + 2 is the file. (The
+   rest — Why Work With Us, What It Costs, the questions pages — were redrawn
+   as live HTML and their pictures are gone.) The same 400dpi picture is used
+   on screen and on paper (see pgStatic for why that won). The Illustrator
+   source lives in exports/, which is gitignored so the public site does not
+   serve it.
 
    Only the page number is ours, drawn back on because the printed one was
    stripped out of the artwork — and, since they are pictures rather than
-   markup, two corrections are drawn over them the same way: see mansionRow()
-   and whyPhoto().
+   markup, a few sentences are drawn over them the same way: see
+   patchProcess(), patchOptions() and patchOffer().
 
-   The tearsheets follow Offer & Negotiation because that is where the drawn
+   `agents` expands to one "Meet Your Agent" page per agent picked. The
+   tearsheets follow Offer & Negotiation because that is where the drawn
    deck ends before its closing page. */
 const SPINE = [
   { key:'cover',     title:'Cover' },
-  { key:'why',       title:'Why Work With Us',    st:0 },
+  { key:'why',       title:'Why Work With Us' },
+  { key:'agents',    title:'Meet Your Agent',     agents:true },
   { key:'process',   title:'The Buying Process',  st:1, opt:'The seven steps, start to keys' },
+  { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'options',   title:'Financing Options',   st:2, opt:'Conventional, FHA, VA, jumbo, cash' },
-  { key:'costs',     title:'What It Costs',       st:3, opt:'Every cost in the deal, with ranges' },
-  { key:'criteria',  title:'Your Search Criteria',st:4, opt:'A worksheet you fill in together' },
-  { key:'questions', title:'Questions to Ask',    st:5, opt:'A checklist for the buyer and for us' },
+  { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
+  { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost' },
+  { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us' },
   { key:'offer',     title:'Offer & Negotiation', st:6, opt:'Winning the house on terms, not price' },
   { key:'towns',     title:'Area Tearsheets',     towns:true },
   { key:'next',      title:'Thank You' }
@@ -527,6 +605,8 @@ function pageList() {
   SPINE.forEach(p => {
     if (p.towns) {
       townPages().forEach(pair => out.push({ key:'towns', title:MARKET.page, towns:pair }));
+    } else if (p.agents) {
+      agents().forEach(a => out.push({ key:'agent', title:p.title, agent:a }));
     } else if (!(p.opt && state.off[p.key])) {
       out.push(p);
     }
@@ -546,7 +626,7 @@ function pgCover() {
     kicker: state.cover.kicker,
     title: state.cover.title,
     foot: 'New York · New Jersey · Florida',
-    image: slot('cover'),
+    image: slot('cover') || REGIONS[state.region].cover,
     pos: posFor('cover')
   });
 }
@@ -557,6 +637,230 @@ function pgCover() {
 
 
 
+
+/* ---------- Why Work With Us ----------
+   Live HTML, redrawn from the artwork so the testimonial can follow the
+   market (NJ prints Marli's, NYC and FL print Andrya's). The photo down the
+   left is the drop slot 'portrait'; with none dropped it is the Empire State
+   picture cropped off the old artwork. The stat block reuses the shared .stat. */
+const REGION = () => REGIONS[state.region];
+
+function pgWhy(n) {
+  const url = slot('portrait') || 'static/why.jpg';
+  const pos = posFor('portrait');
+  const q = REGION().quote;
+  const st = P.STATES.map(s => s[1]);        // New York, New Jersey, Florida art
+  const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
+  const body =
+    '<div class="why">' +
+      '<div class="ph" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
+        '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%"></div>' +
+      '<div class="txt">' +
+        '<div class="copy">' +
+          '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
+            'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
+            'transactions, the team serves high-net-worth clients across New York, New Jersey, and Florida.</p>' +
+          '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
+            'wide network of skilled agents across NYC, New Jersey, and Florida, all of whom share the team’s ' +
+            'core values and client-focused approach.</p>' +
+        '</div>' +
+        '<div class="tag">The Premier Luxury Real Estate Team Across NY, NJ, &amp; FL</div>' +
+        '<div class="stats">' + stat('$3B+', 'Sold to date') + stat('3', 'States licensed') +
+          stat('50+', 'Years combined experience') + '</div>' +
+        '<div class="sts">' +
+          '<i class="ny" style="--m:url(' + st[0] + ')"></i><b></b>' +
+          '<i class="nj" style="--m:url(' + st[1] + ')"></i><b></b>' +
+          '<i class="fl" style="--m:url(' + st[2] + ')"></i>' +
+        '</div>' +
+        '<div class="quote"><p>' + esc(q.text) + '</p><div class="who">' + esc(q.who) + '</div></div>' +
+      '</div>' +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Why Work With Us', body });
+}
+
+/* ---------- Meet Your Agent ----------
+   One page per agent picked. Name, title, phone, email, Instagram and the
+   cut-out come from the roster; the bio and the facts from PROFILES in
+   guide-data.js, which are the team site's own words. An agent with no
+   profile row still gets the banner and the contact column. The "what to
+   expect" lines are the buying process page's own promises, not claims about
+   the person. */
+const EXPECT = [
+  ['Honest opinions', 'A straight answer about the homes that are wrong for you, not just the ones that are right.'],
+  ['Private showings', 'Curated listings and showings arranged around your schedule.'],
+  ['Offers built on terms', 'Priced against real comparables, with the terms to make it competitive.']
+];
+
+function pgAgent(n, p) {
+  const a = p.agent, pr = GG.PROFILES[a.id] || {};
+  const phone = [a.phone && ['phone', 'Office ' + a.phone], a.mobile && ['phone', 'Mobile ' + a.mobile],
+                 a.email && ['mail', a.email], a.instagram && ['instagram', a.instagram]].filter(Boolean);
+  const body =
+    '<div class="ab-top">' +
+      '<img src="' + esc(headshotFor(a)) + '" alt="">' +
+      (pr.role ? '<div class="role">' + esc(pr.role) + '</div>' : '') +
+      '<div class="nm">' + esc(a.name) + '</div>' +
+      '<div class="tt">' + esc(a.title) + '</div>' +
+    '</div>' +
+    '<div class="ab-main">' +
+      '<div class="l">' +
+        '<div class="ab-lab">About ' + esc(a.name.split(' ')[0]) + '</div>' +
+        (pr.bio ? '<p class="ab-bio">' + esc(pr.bio) + '</p>' : '') +
+        ((pr.facts || []).length
+          ? '<div class="ab-facts">' + pr.facts.map(f =>
+              '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
+          : '') +
+      '</div>' +
+      '<div class="r">' +
+        '<div class="ab-lab">Get in touch</div>' +
+        '<div class="ab-con">' + phone.map(c =>
+          '<div class="c">' + ic(c[0], 'ci') + '<span>' + esc(c[1]) + '</span></div>').join('') + '</div>' +
+        '<div class="ab-lab" style="margin-top:.3in">What to expect</div>' +
+        '<div class="ab-exp">' + EXPECT.map(e =>
+          '<div class="e"><b>' + esc(e[0]) + '</b><span>' + esc(e[1]) + '</span></div>').join('') + '</div>' +
+      '</div>' +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', body });
+}
+
+/* ---------- 50 Things We Do ----------
+   Five groups numbered straight through, the first three in the left column
+   and the last two in the right. The count is checked on every draw: the
+   page's title promises fifty, so a market short of that says so loudly in
+   the console rather than printing 48 under a "50". */
+function pgFifty(n) {
+  const groups = GG.fiftyFor(state.region);
+  const total = groups.reduce((t, g) => t + g.items.length, 0);
+  if (total !== 50) console.warn('guide-data.js: "' + state.region + '" has ' + total + ' things, not 50');
+  let i = 0;
+  const col = gs => '<div class="fc">' + gs.map(g =>
+    '<div class="fg"><div class="fg-h">' + esc(g.title) + '</div><ol>' +
+      g.items.map(t => '<li><span class="n">' + (++i) + '</span><span>' + esc(t) + '</span></li>').join('') +
+    '</ol></div>').join('') + '</div>';
+  const body =
+    '<p class="fifty-lede">What it means to have a buyer’s agent on your side in ' +
+      esc(REGION().name) + ', from the first conversation to long after closing.</p>' +
+    '<div class="fifty">' + col(groups.slice(0, 3)) + col(groups.slice(3)) + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'50 Things We Do for You', key:'fifty', body });
+}
+
+/* ---------- Don't Forget to Ask ----------
+   The agent's own prompt sheet, replacing the blank search-criteria
+   worksheet: the questions that slip out of a first consultation, the
+   renovation one above all. Five shared groups and one for the market. */
+function pgDiscovery(n) {
+  const groups = GG.askFor(state.region);
+  const body =
+    '<div class="ask">' +
+      '<p class="lede">For the agent, with the buyer in the room. Tick each one once it has an answer.</p>' +
+      '<div class="chk ask-chk">' + groups.map((g, gi) =>
+        '<div class="cgrp' + (gi === groups.length - 1 ? ' mkt' : '') + '">' +
+          '<div class="cgrp-h"><span class="n">' + (gi + 1) + '</span><span>' + esc(g.title) + '</span></div>' +
+          '<ul>' + g.items.map(t => '<li><i></i><span>' + esc(t) + '</span></li>').join('') + '</ul>' +
+        '</div>').join('') + '</div>' +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Don’t Forget to Ask', key:'discovery', body });
+}
+
+/* ---------- What It Costs ----------
+   Live HTML (it was a picture) because nearly every line differs by market:
+   New York has the mortgage recording tax and a buyer-paid mansion tax, New
+   Jersey a seller-paid one and a three-day attorney review, Florida doc stamps
+   and insurance that dwarf the other two. The rows are in guide-data.js
+   COSTS with the sources they were checked against. */
+function pgCosts(n) {
+  const c = GG.COSTS[state.region];
+  const rows = list => list.map(r =>
+    '<tr><td class="cw">' + esc(r[0]) + '</td><td class="cd">' + esc(r[1]) +
+    '</td><td class="num">' + esc(r[2]) + '</td></tr>').join('');
+  const sect = (title, list) =>
+    '<div class="cs"><div class="cs-h">' + esc(title) + '</div>' +
+    '<table class="tbl cost"><tbody>' + rows(list) + '</tbody></table></div>';
+  const body =
+    '<div class="cost-stats">' + c.heads.map(h =>
+      '<div class="stat"><div class="v">' + esc(h[0]) + '</div><div class="l">' + esc(h[1]) + '</div></div>').join('') +
+    '</div>' +
+    sect('Before you close', c.before) +
+    sect('At the closing table', c.table) +
+    sect('Optional, but budget for it', c.optional) +
+    '<div class="foot-note">' + esc(c.note) + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'What It Costs', key:'costs', body });
+}
+
+/* ---------- Questions to Ask (FAQ's) ----------
+   The buyer's checklist, drawn live so the questions fit the market: no
+   basement in a Manhattan apartment, no attorney review in Florida. */
+function pgFaq(n) {
+  const groups = GG.faqFor(state.region);
+  const body = '<div class="chk tight faq">' + groups.map(g =>
+    '<div class="cgrp"><div class="cgrp-h">' + ic(g.icon, 'ci') + '<span>' + esc(g.title) + '</span></div>' +
+    '<ul>' + g.items.map(t => '<li><i></i><span>' + esc(t) + '</span></li>').join('') + '</ul></div>').join('') +
+  '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'FAQ’s', key:'questions', body });
+}
+
+/* ---------- text corrected on the drawn pages ----------
+   Three pages are still Matt's artwork. One sentence (or six card bodies) on
+   each reads wrongly outside New Jersey, so the right words are drawn over
+   the picture on a white patch, positioned the way the page number is: by
+   numbers measured off the 400dpi artwork. Boxes are in pixels of a 1546-wide
+   view of the page (the units they were measured in) and converted to pt here.
+
+   Font: Nunito Sans Light at 10.8pt, set by measuring a drawn line's width and
+   solving for the size — "Closing date, contingencies and financing" runs
+   495px (196pt) in the artwork. Card bodies are centred in the card with the
+   artwork's 36.5px line pitch, first line 172px under the card's top edge.
+
+   If the artwork is regenerated, check every number in here. */
+const PXPT = 612 / 1546;
+const pxs = v => (v * PXPT).toFixed(2) + 'pt';
+const PATCH = (x, y, w, h, html, cls) =>
+  '<div class="stpg-fix ' + (cls || '') + '" style="left:' + pxs(x) + ';top:' + pxs(y) + ';width:' + pxs(w) +
+  ';height:' + pxs(h) + '">' + html + '</div>';
+
+/* The card grid shared by Financing Options and Offer & Negotiation. */
+const CARD_L = [113, 748], CARD_R = [797, 1431], CARD_ROWS = [243, 614, 985];
+/* right-hand card of the third row has art overlapping it on both pages */
+function cardBody(col, row, text, opts) {
+  opts = opts || {};
+  const x0 = (col ? CARD_R : CARD_L)[0], x1 = (col ? CARD_R : CARD_L)[1];
+  const top = CARD_ROWS[row];
+  const bottom = opts.bottom || (top + 319 - 6);
+  /* clear patch, then the text block centred on the card */
+  const patch = PATCH(x0 + 8, top + 140, (opts.right || x1) - x0 - 16, bottom - top - 140, '', 'wipe');
+  const txt = PATCH(x0 + 40, top + 172 - 18, x1 - x0 - 80, 4 * 36.5, esc(text), 'body');
+  return patch.replace('class="stpg-fix wipe"', 'class="stpg-fix wipe"') + txt;
+}
+
+function patchProcess() {
+  /* step 6's description: left-set at x226, centre line y990 */
+  return PATCH(215, 972, 1225, 40, '<span style="margin-left:6px">' +
+    esc(GG.PROCESS_STEP6[state.region]) + '</span>', 'line');
+}
+
+function patchOptions() {
+  let h = '';
+  GG.optionCards(state.region).forEach((c, i) => {
+    const col = i % 2, row = (i / 2) | 0;
+    /* the key hand's fingertips overlap the last card from y1250 */
+    h += cardBody(col, row, c.body, i === 5 ? { bottom: 1246 } : {});
+    if (c.title) {
+      const x0 = (col ? CARD_R : CARD_L)[0], x1 = (col ? CARD_R : CARD_L)[1], ty = CARD_ROWS[row] + 121;
+      h += PATCH(x0 + 90, ty - 22, x1 - x0 - 180, 44, esc(c.title), 'ttl');
+    }
+  });
+  return h;
+}
+
+function patchOffer() {
+  let h = '';
+  GG.offerCards(state.region).forEach((t, i) => {
+    /* the handset's ear-piece overlaps the last card from x1300, y1235; the
+       drawn text there is two lines and ends by y1215, so the wipe stops above it */
+    h += cardBody(i % 2, (i / 2) | 0, t, i === 5 ? { bottom: 1226 } : {});
+  });
+  return h;
+}
 
 /* Two town tearsheets to a page. Everything printed here comes from the
    town's own record in assets/js/nj-towns.js. */
@@ -606,6 +910,16 @@ function pgTowns(n, page) {
    Every part of it is built by Pitch.closingPage(), shared with the Brochure,
    so the two pages are one design. Its markup carries the running footer
    itself, so this page is assembled here rather than through P.page(). */
+/* "Know someone moving?" — set beside the sign-off on the last page. It names
+   all three states rather than the market on the cover, because the person
+   being referred is usually moving somewhere other than where this guide's
+   reader is buying. */
+function referralNote() {
+  return '<div class="ref"><b>Know someone moving?</b>' +
+    '<p>A friend, colleague or relative relocating to New York, New Jersey or Florida? ' +
+    'Introduce them. Our team works in all three states and will connect them with the right agent.</p></div>';
+}
+
 function pgNext(n) {
   const qr = qrSvg(TEAM_QR_URL);
   return '<div class="pg rev" data-key="next">' +
@@ -613,6 +927,8 @@ function pgNext(n) {
       agents: agents(), headshotFor,
       qr, qrCap: 'Our properties',
       legal: GVC_LEGAL.block('brokerage'),
+      licensedLabel: 'Team licensed in',
+      referral: referralNote(),
       foot: P.foot(SITE, true, n, OF)
     }) +
   '</div>';
@@ -636,88 +952,19 @@ function pgNext(n) {
    artwork so the deck can renumber when a page is switched off or
    tearsheets are added, so it is drawn back on: here for the preview, and
    again in the export at the baseline it was measured off. */
-/* ---------- the mansion tax ----------
-   The drawn page carries one line for both markets — "Mansion tax · On sales
-   of $1M and above · 1% of price" — filed under what the BUYER pays at the
-   closing table. It is wrong in both markets, and differently wrong in each,
-   which is why it is corrected here rather than in the artwork: the picture
-   is one page serving New Jersey and New York, and the honest answer is not
-   the same sentence.
-
-   New Jersey moved this fee to the SELLER on 10 July 2025 and made it
-   graduated, 1% to 3.5%, charged on the whole price rather than the amount
-   over $1M. It is not a buyer cost there at all, so putting a figure in this
-   column would overstate a New Jersey buyer's cash to close by a full 1%.
-
-   New York still charges the buyer, but a flat 1% only holds below $2M — the
-   city's rate steps up through eight brackets to 3.9% at $25M, so a flat 1%
-   understates every purchase above $2M.
-
-   Redrawn the same way the page number is: measured off the artwork and
-   printed from this DOM, because the export is a print of this page.
-
-   Rates change. Re-check both before a season's packets go out —
-   nj.gov/treasury/taxation/realty.shtml and tax.ny.gov/bus/transfer. */
-const MANSION = {
-  nj:  { note: 'Paid by the seller in New Jersey — not a buyer cost', amt: 'None' },
-  nyc: { note: 'On purchases of $1M and above; the rate climbs above $2M', amt: '1 – 3.9% of price' }
-};
-
-function mansionRow() {
-  const m = MANSION[state.market] || MANSION.nyc;
-  return '<div class="stpg-fix">' +
-           '<span class="f-l">Mansion tax</span>' +
-           '<span class="f-d">' + esc(m.note) + '</span>' +
-           '<span class="f-a">' + esc(m.amt) + '</span>' +
-         '</div>';
-}
-
-/* The Photos panel promises the second photo "sits beside Why Work With Us",
-   and the drawn page does have a photo column down its left side — but the
-   page is a picture, so nothing ever rendered there and a photo dropped on
-   that slot silently vanished. The role, the slot and the drag gesture all
-   existed already; only the drawing was missing.
-
-   data-drop is what paintSlotGrips looks for to hang the move and remove
-   grips on, and data-pos is what the drag-to-reposition writes through, so
-   naming them the way frameCover does gets both for free. */
-function whyPhoto() {
-  const url = slot('portrait');
-  if (!url) return '';                       // no photo: the drawn one stands
-  const pos = posFor('portrait');
-  return '<div class="stpg-photo" data-drop="portrait" data-pos="portrait">' +
-           '<img src="' + esc(url) + '" alt="" style="object-position:' +
-             pos.x + '% ' + pos.y + '%">' +
-         '</div>';
-}
-
-/* The FAQ page has six panels and two of them are headed "ABOUT THE BUILDING
-   OR HOA". The second one's questions are not about a building at all — they
-   are the inspection report, the deposit in escrow, when attorney review ends
-   and a low appraisal — so the heading was pasted from the panel above it and
-   the icon beside it, which is not the building icon, was not.
-
-   Unlike the other two copy errors on these pages, this one does not need
-   anything written: the list underneath says what the heading should be. The
-   other two are named in the branch notes and left for the artwork, because
-   they need new copy rather than a corrected label. */
-function faqHeading() {
-  return '<div class="stpg-faq">Once under contract</div>';
-}
-
 function pgStatic(n, p) {
   return '<div class="stpg" data-key="' + p.key + '">' +
     '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
-    (p.key === 'costs' ? mansionRow() : '') +
-    (p.key === 'why' ? whyPhoto() : '') +
-    (p.key === 'questions' ? faqHeading() : '') +
+    (p.key === 'process' ? patchProcess() : '') +
+    (p.key === 'options' ? patchOptions() : '') +
+    (p.key === 'offer' ? patchOffer() : '') +
     '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';
 }
 
 const RENDER = {
-  cover:pgCover, why:pgStatic, process:pgStatic, options:pgStatic, costs:pgStatic,
-  criteria:pgStatic, questions:pgStatic, offer:pgStatic, towns:pgTowns, next:pgNext
+  cover:pgCover, why:pgWhy, agent:pgAgent, process:pgStatic, fifty:pgFifty, options:pgStatic,
+  costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgStatic, towns:pgTowns, next:pgNext
 };
 
 /* ---------- wiring ---------- */
@@ -800,9 +1047,6 @@ document.addEventListener('DOMContentLoaded', () => {
     key => !state.off[key],
     (key, on) => { if (on) delete state.off[key]; else state.off[key] = true; redraw(); });
 
-  /* Which town tearsheets print. The selection is rebuilt in the order
-     nj-towns.js lists them rather than in click order, so the pages come out
-     the same however the ticks were reached. */
   /* Repainted whenever the market changes, so the ticks always describe the
      dataset now in play. The selection is rebuilt in the order the data file
      lists them rather than in click order, so the pages come out the same
@@ -826,16 +1070,20 @@ document.addEventListener('DOMContentLoaded', () => {
     () => setTowns(MARKET.data.list.map(t => t.name)));
   document.getElementById('townNone').addEventListener('click', () => setTowns([]));
 
-  /* The market switch. Changing it swaps the dataset, the stat labels, the
-     page title and the tick list in one go; each market keeps its own
-     selection, so switching back finds it as you left it. */
-  document.getElementById('marketPick').addEventListener('change', e => {
-    state.market = e.target.value;
-    MARKET = MARKETS[state.market];
-    document.getElementById('townLabel').textContent = MARKET.panel;
-    document.getElementById('townNote').innerHTML = MARKET.note;
-    wireTowns(); redraw();
-  });
+  /* The market toggle on the Cover panel. It swaps the cover photo, the
+     client quote, the state-specific lines and — through MARKET — the
+     tearsheet dataset, the stat labels, the page title and the tick list in
+     one go; each market keeps its own selection, so switching back finds it
+     as you left it. */
+  P.segPick(document.getElementById('regionPick'), 'region',
+    () => state.region,
+    v => {
+      state.region = state.market = v;
+      MARKET = MARKETS[v];
+      document.getElementById('townLabel').textContent = MARKET.panel;
+      document.getElementById('townNote').innerHTML = MARKET.note;
+      wireTowns(); redraw(); GVC_UNSAVED.touch();
+    });
   document.getElementById('townLabel').textContent = MARKET.panel;
   document.getElementById('townNote').innerHTML = MARKET.note;
 

@@ -834,7 +834,7 @@ function cardBody(col, row, text, opts) {
 
 function patchProcess() {
   /* step 6's description: left-set at x226, centre line y990 */
-  return PATCH(215, 972, 1225, 40, '<span style="margin-left:9px">' +
+  return PATCH(215, 972, 1225, 40, '<span style="margin-left:6px">' +
     esc(GG.PROCESS_STEP6[state.region]) + '</span>', 'line');
 }
 
@@ -917,7 +917,7 @@ function pgTowns(n, page) {
 function referralNote() {
   return '<div class="ref"><b>Know someone moving?</b>' +
     '<p>A friend, colleague or relative relocating to New York, New Jersey or Florida? ' +
-    'We\u2019ve got you covered in all three. Introduce them and we\u2019ll take care of the rest.</p></div>';
+    'Introduce them. Our team works in all three states and will connect them with the right agent.</p></div>';
 }
 
 function pgNext(n) {
@@ -927,6 +927,7 @@ function pgNext(n) {
       agents: agents(), headshotFor,
       qr, qrCap: 'Our properties',
       legal: GVC_LEGAL.block('brokerage'),
+      licensedLabel: 'Team licensed in',
       referral: referralNote(),
       foot: P.foot(SITE, true, n, OF)
     }) +

@@ -497,6 +497,7 @@
        qr           QR markup for the header, already rendered
        qrCap        its caption
        legal        the GVC_LEGAL block for this deck
+       licensedLabel optional heading for the states column (default "Licensed in")
        referral     optional markup set beside "Thank you." (the Buyer's Guide's
                     "know someone moving?" line); omitted by the Brochure
        foot         the running page footer
@@ -522,7 +523,7 @@
         '<div class="ag-foot">' +
           agentCol('Social', socialRows(list)) +
           agentCol('Links', TEAM_LINKS) +
-          '<div class="ag-col"><div class="ag-col-t">Licensed in</div>' +
+          '<div class="ag-col"><div class="ag-col-t">' + esc(o.licensedLabel || 'Licensed in') + '</div>' +
             STATES.map(([nm, art]) =>
               '<div class="ag-st"><i style="-webkit-mask-image:url(' + art +
                 ');mask-image:url(' + art + ')"></i><span>' + esc(nm) + '</span></div>').join('') +

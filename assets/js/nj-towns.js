@@ -190,8 +190,8 @@
       '$999K', '$9,531', '1.07%', '≈ 10 min',
       'PATH to the World Trade Center · NY Waterway ferry to Midtown',
       'Hoboken Public Schools · heavy charter and private enrolment, so ask what neighbours actually do',
-      '1,627 per 100K in 2023 — below the state\'s 1,755, in the densest square mile in the state.',
-      ['Mostly condo and co-op, plus brownstones and rowhouses — read the offering plan and the reserves.',
+      '1,627 per 100K in 2023 — below the state\'s 1,755, in one of the most densely populated cities in the country.',
+      ['Mostly condo and co-op, plus brownstones and rowhouses — read the condo documents and the reserve study.',
        'Parking is a monthly cost, not something that comes with the unit.',
        'Flood history west of Washington Street is real and well documented.']),
 
@@ -220,7 +220,7 @@
       '$760K', '$12,635', '1.37%', '≈ 90 min',
       'North Jersey Coast Line from Long Branch — the end of the electrified track',
       'Long Branch Public Schools · a large, diverse PreK-12 district with strong specialized programs',
-      '1,718 per 100K in 2023, level with the state\'s 1,755 — but it varies sharply by neighbourhood.',
+      '1,718 per 100K in 2023, level with the state\'s 1,755 — but it varies sharply by neighborhood.',
       ['New oceanfront condos standing next to hundred-year-old cottages.',
        'Pier Village dining, shops and beach access without a beach-club membership.',
        'The most rental-friendly beach market in the county.']),
@@ -292,7 +292,7 @@
       'Rumson K-8 · Rumson-Fair Haven Regional, one of the best-regarded high schools in the state',
       '603 per 100K in 2023, a third of the state\'s 1,755.',
       ['Waterfront and estate properties on the Navesink and the Shrewsbury.',
-       'The biggest tax bill in the county on one of its lowest rates — 1.11% of a very large number.',
+       'The biggest tax bill on this list on one of its lowest rates — 1.11% of a very large number.',
        'Zoning protects the lot sizes, so there is very little new construction.']),
 
     T('Sea Bright', 'Monmouth County',

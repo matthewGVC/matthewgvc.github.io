@@ -90,7 +90,7 @@
       'Recommend inspectors and specialists, and attend',
       'Review the report with you and decide what to ask for',
       'Track every deadline so nothing lapses',
-      'Coordinate lender, appraiser and attorney or title',
+      'Coordinate lender, appraiser, attorney and title company',
       'Chase the paperwork you would otherwise forget',
       'Update you weekly, not just when things change'
     ],
@@ -101,7 +101,7 @@
       'Line up utilities, insurance and moving dates',
       'Be at the closing table with you',
       'Hand you the keys',
-      'Introduce movers, contractors and designers',
+      'Introduce movers, designers and trusted vendors',
       'Stay your real estate resource long after closing'
     ]
   ];
@@ -121,13 +121,13 @@
       [ /* 3 */
         'Prepare the offer letter and proof of funds package',
         'Work out the deposit and contract terms with your attorney',
-        'Read the offering plan and sponsor terms on new development'
+        'Flag key sponsor terms in the offering plan for your attorney'
       ],
       [ /* 6 */
         'Assemble and submit your co-op or condo board package',
         'Prepare you for the board interview',
         'Go through minutes and financials with your attorney',
-        'Explain the NYC and New York State taxes that apply to you',
+        'Walk you through the closing taxes and fees; your attorney confirms',
         'Track the mortgage commitment and contract deadlines',
         'Arrange the managing agent’s move-in requirements'
       ],
@@ -135,13 +135,13 @@
         'Confirm your move-in date with the building',
         'Book the elevator and certificate of insurance for move day',
         'Coordinate keys and fobs with the managing agent',
-        'Introduce New York architects, contractors and designers'
+        'Introduce New York architects and contractors'
       ]
     ],
     nj: [
       [ /* 2 */
         'Compare towns by taxes, schools and commute',
-        'Explain NJ’s three-business-day attorney review up front'
+        'Line up your NJ attorney before you make an offer'
       ],
       [ /* 3 */
         'Check flood zone, school feed and tax history',
@@ -157,7 +157,7 @@
         'Run the three-business-day attorney review with your lawyer',
         'Order the survey and coordinate the title search',
         'Arrange radon, sewer-line and oil-tank checks',
-        'Confirm the town’s certificate of occupancy and smoke/CO papers',
+        'Confirm the smoke/CO certificate and the town’s CO where required',
         'Get a flood insurance quote before inspections end',
         'Check permits on basements, additions and decks'
       ],
@@ -165,7 +165,7 @@
         'Check property tax and escrow figures at closing',
         'Confirm the proration of taxes, fuel and utilities',
         'Remind you of tax-relief filings you may qualify for',
-        'Introduce local contractors, landscapers and movers'
+        'Introduce local landscapers and contractors'
       ]
     ],
     fl: [
@@ -179,7 +179,7 @@
         'Check roof, wiring, plumbing and HVAC ages (insurers will)'
       ],
       [ /* 3 */
-        'Write the offer on the Florida Realtors/Bar contract',
+        'Write the offer on the FR/BAR contract',
         'Set the deposit, inspection and financing deadlines',
         'Build in an insurability check, not just price'
       ],
@@ -195,7 +195,7 @@
         'Help you file for the Florida homestead exemption',
         'Line up hurricane prep and insurance papers',
         'Coordinate HOA or condo approval and move-in',
-        'Introduce local contractors, pool services and movers'
+        'Introduce pool, landscaping and shutter pros'
       ]
     ]
   };
@@ -249,7 +249,7 @@
       'How far over asking would you really go?',
       'What would make you walk away?',
       'Anything in your credit or finances I should hear from you first?',
-      'Have you lost a house before, and what happened?'
+      'Have you lost a home before, and what happened?'
     ]}
   ];
 
@@ -408,7 +408,7 @@
      of step 1, "Consultation"). */
   var OPTIONS_COMMON = [
     { title: 'Conventional',
-      body: 'Down payments from 3% to 20%. Put 20% down and there is no private mortgage insurance; below that it drops off once you reach 20% equity.' },
+      body: 'Down payments from 3% to 20%. Put 20% down and there is no private mortgage insurance; below that, you can ask to drop it once you reach 20% equity.' },
     { body: 'As little as 3.5% down and far more forgiving on credit. The trade is mortgage insurance that lasts the life of the loan if you put down under 10%.' },
     { body: 'Nothing down and no monthly mortgage insurance for eligible service members, veterans and surviving spouses. A one-time funding fee applies unless exempt.' },
     { body: 'Anything above the county conforming limit. Tighter underwriting, larger reserves, and worth using a lender who writes them every week.' },
@@ -417,8 +417,8 @@
   ];
   var OPTIONS_BY_REGION = {
     nyc: {
-      0: 'Down payments from 3% to 20% on condos and houses. Co-ops lend differently: expect 20–25% down, and a board that can say no even when the bank says yes.',
-      5: 'The fastest, strongest offer on the table, and no lender for a co-op board to weigh.'
+      0: 'Down payments from 3% to 20% on condos and houses. Co-ops lend differently: most boards want at least 20% down, many more, and can say no even when the bank says yes.',
+      5: 'The fastest, strongest offer on the table, and the only kind some all-cash buildings accept.'
     },
     nj: {},
     fl: {
@@ -428,7 +428,7 @@
 
   /* The six cards on Offer & Negotiation. */
   var OFFER_COMMON = [
-    'Closing date, contingencies and financing type routinely matter more to a seller than the last $10,000.',
+    'Closing date, contingencies and financing type often matter more to a seller than the last $10,000.',
     'We check recent sales and what is on the market nearby before we name a number, not after.',
     'Inspection, financing and appraisal contingencies are your exits. We waive them deliberately, never casually.',
     'Good homes go fast. We settle your number and your terms in advance, so you can move quickly and still decide with a clear head.',
@@ -496,7 +496,7 @@
         ['Mortgage recording tax', 'On your loan, condos and houses only — none on co-op loans', '1.8 – 1.925% of loan'],
         ['Recording & filing fees', 'Deed and mortgage recording; UCC filing for co-ops', '$300 – $1,200'],
         ['Mansion tax', 'Buyer pays, on the whole price: 1% from $1M, up to 3.9%', '1 – 3.9% of price'],
-        ['Board package & move-in', 'Application, managing agent, refundable move-in deposit', '$500 – $2,500+'],
+        ['Board package & move-in', 'Application, managing agent, move-in deposit, capital contribution', '$500 – $2,500+'],
         ['First year of insurance', 'HO-6 for a co-op or condo; a house costs more', '$300 – $1,500']
       ],
       optional: COST_OPTIONAL.concat([['Reserves', 'What lenders and co-op boards like to see left over', '2 – 12+ months']]),
@@ -516,7 +516,7 @@
       ],
       table: [
         ['Attorney', 'Contract through closing, flat fee', '$1,500 – $3,500'],
-        ['Title search & insurance', 'One-time, and it protects your title, not the lender’s', '0.3 – 0.5% of price'],
+        ['Title search & insurance', 'Owner’s policy protects you; your lender requires its own', '0.3 – 0.5% of price'],
         ['Lender fees & points', 'Origination, underwriting, any rate buy-down', '0.5 – 1.5% of loan'],
         ['Survey', 'Most lenders and title companies ask for one', '$600 – $1,200'],
         ['Recording & municipal fees', 'Deed and mortgage recording, town certificates and searches', '$300 – $900'],
@@ -525,7 +525,7 @@
         ['First year of insurance', 'Homeowner’s, due at closing', '$900 – $2,500']
       ],
       optional: COST_OPTIONAL.concat([['Reserves', 'What lenders like to see left over afterwards', '2 – 6 months of payments']]),
-      note: 'Ranges for budgeting, not quotes. The seller pays the New Jersey realty transfer fee. ' +
+      note: 'Ranges for budgeting, not quotes. On a resale, the seller pays the New Jersey realty transfer fee. ' +
             'Percentages bill against the purchase price unless the line says otherwise, and the real ' +
             'figures come from your attorney and your lender once there is an actual house and an actual loan.'
     },
@@ -541,12 +541,12 @@
       ],
       table: [
         ['Closing agent', 'A title company usually closes; an attorney is optional', '$500 – $2,500'],
-        ['Title insurance', 'Seller pays in most counties; buyers often pay in Miami-Dade and Broward', '0 – 0.5% of price'],
+        ['Title insurance', 'Seller pays in most counties; buyers often pay in Miami-Dade and Broward', '0 – 0.6% of price'],
         ['Lender fees & points', 'Origination, underwriting, any rate buy-down', '0.5 – 1.5% of loan'],
         ['Survey', 'Buyer usually orders it; lenders and title often require one', '$400 – $1,000'],
         ['Doc stamps & intangible tax', 'On your loan, plus recording fees: 0.35% + 0.2%', '0.55% of loan'],
         ['Condo or HOA fees', 'Transfer, approval and capital contribution, where they apply', '$300 – $5,000+'],
-        ['Home insurance, first year', 'Wind-rated, due at closing; lenders escrow it', '$4,000 – $12,000+'],
+        ['Home insurance, first year', 'Wind-rated, due at closing, lenders escrow it (condo HO-6 costs far less)', '$4,000 – $12,000+'],
         ['Flood insurance', 'If required or advised — not part of a homeowner’s policy', '$700 – $4,000+']
       ],
       optional: COST_OPTIONAL.concat([['Reserves', 'What lenders like to see left over afterwards', '2 – 6 months of payments']]),
@@ -602,6 +602,7 @@
   var FAQ_BY_REGION = {
     nyc: {
       '0:3': 'How old are the windows, appliances and heating system?',
+      '0:4': 'What is not staying with the unit?',
       '0:5': 'Has there ever been a leak or water damage in the unit?',
       '1:2': 'Which loan types do I qualify for, and do you lend on co-ops?',
       '2:4': 'What does the board ask for, and how long does approval take?',
@@ -626,7 +627,7 @@
   };
   /* extra lines appended to the last group, per market */
   var FAQ_EXTRA = {
-    nj: ['Have I read the seller’s disclosure, including flood history?'],
+    nj: ['Have I read the seller’s disclosure and the flood-risk disclosure?'],
     nyc: [], fl: []
   };
   function faqFor(region) {

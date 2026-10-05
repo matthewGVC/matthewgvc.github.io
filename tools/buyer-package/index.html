@@ -122,7 +122,7 @@
 .ab-facts .f{display:flex;gap:.14in;padding:.075in 0;border-bottom:.75pt solid var(--rule);
   font:300 9.5pt/1.4 var(--body);color:var(--navy);}
 .ab-facts .f b{flex:none;width:1.25in;font:800 6.6pt/1.9 var(--sans);letter-spacing:.14em;
-  text-transform:uppercase;color:rgba(0,39,58,.55);}
+  text-transform:uppercase;color:rgba(0,39,58,.72);}
 .ab-con .c{display:flex;gap:.1in;align-items:flex-start;padding:.07in 0;font:300 9.5pt/1.35 var(--body);color:var(--navy);}
 .ab-con .c .ci{flex:none;width:.17in;height:.17in;margin-top:.01in;color:var(--sky2);}
 .ab-con .c span{min-width:0;overflow-wrap:anywhere;}
@@ -229,24 +229,35 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .stpg-fix.body{background:none;text-align:center;overflow:visible;}
 .stpg-fix.line{display:flex;align-items:center;white-space:nowrap;}
 
-/* The Buying Process, New York: six steps, a photo, one footnote. The circles
-   deepen from the artwork's light teal to its navy. */
+/* The Buying Process: the steps, a photo, a footnote. The circles deepen from teal to navy,
+   dark enough throughout for the white numeral to read. */
 .proc{list-style:none;margin:.12in 0 0;padding:0;}
 .proc li{display:flex;gap:.2in;align-items:center;padding:.1in 0;border-bottom:.5pt solid rgba(0,39,58,.14);}
 .proc .no{flex:none;width:.46in;height:.46in;border-radius:50%;display:flex;align-items:center;
   justify-content:center;color:#fff;font:italic 400 15pt/1 var(--serif);
-  background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#6fc0d3),
-    color-mix(in srgb,#0a6f8e var(--t),#9bd2de));}
+  background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#13809b),
+    color-mix(in srgb,#06475f var(--t),#0f7694));}
 .proc b{display:block;font:800 9.6pt/1 var(--sans);letter-spacing:.17em;text-transform:uppercase;color:var(--navy);}
 .proc sup{font-size:9pt;letter-spacing:0;}
 .proc p{margin:.05in 0 0;font:300 10.4pt/14pt var(--sans);color:var(--navy);}
 .proc-ph{flex:1;min-height:0;margin-top:.2in;overflow:hidden;}
 .proc-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block;}
 
-/* The closing page's disclaimer, at a size and contrast a reader can use. The shared
-   rule (pitch.css) sets it at 6.5pt and 55% white on navy, which is too small and too
-   faint to read; the Seller Pitch keeps that, this guide does not. */
+/* Contrast. The shared pitch.css sets small labels in --sky2 (3:1 on white) and the
+   running footer, quote credit and stat captions at 42-60% ink, which reads well
+   but falls short of 4.5:1. This guide holds every line of text to that; the Seller
+   Pitch keeps the shared look. The closing page's disclaimer was the worst of it:
+   6.5pt at 55% white on navy. */
+.pg:not(.rev){--sky2:#0b7a95;}
+.pg:not(.rev) .stat .l,.pg:not(.rev) .quote .who{color:rgba(0,39,58,.72);}
+.pg-foot .site{color:rgba(0,39,58,.72);}
+.pg-foot .pg-n{color:rgba(0,39,58,.7);}
+.pg.rev .pg-foot .site{color:rgba(229,229,229,.82);}
+.pg.rev .pg-foot .pg-n{color:rgba(229,229,229,.78);}
+.pg.rev .ag-who .ct .k,.pg.rev .ag-lrow .lk{color:rgba(229,229,229,.8);}
 .pg .ag .legal{font-size:7.4pt;color:rgba(229,229,229,.88);}
+/* a lone town on the last tearsheet sits at the top, as the first of a pair would */
+.tsheet .ts:only-child{flex:none;justify-content:flex-start;}
 
 /* What It Costs, New York — Douglas Elliman's sheets: a two-column fee table,
    a grid, small print. Tight, because the condo sheet carries a lot. */
@@ -756,7 +767,9 @@ function pgAgent(n, p) {
   const a = p.agent, first = esc(a.name.split(' ')[0]);
   const full = (a.bio || []).length > 0;
   const chars = (a.bio || []).join('').length;
-  const contact = [a.phone && ['phone', 'Office ' + a.phone], a.mobile && ['phone', 'Mobile ' + a.mobile],
+  /* The roster's `phone` is each agent's mobile (the master sheet agrees) unless they also have a
+     separate `mobile`, in which case `phone` is the office line. Labelled to match. */
+  const contact = [a.phone && ['phone', (a.mobile ? 'Office ' : 'Mobile ') + a.phone], a.mobile && ['phone', 'Mobile ' + a.mobile],
                    a.email && ['mail', a.email], a.instagram && ['instagram', a.instagram]].filter(Boolean);
   const factsHtml = (a.facts || []).length
     ? '<div class="ab-facts">' + a.facts.map(f =>
@@ -1115,6 +1128,10 @@ function paintHints() {
   document.getElementById('townHint').textContent =
     state.picks[state.market].length + ' of ' + MARKET.data.list.length + ' · ' +
     (pages ? pages + (pages > 1 ? ' pages' : ' page') : 'no pages');
+  /* tearsheets print two to a page, so an odd pick leaves the last one alone on half a page */
+  const odd = state.picks[state.market].length % 2 === 1;
+  document.getElementById('townNote').innerHTML = MARKET.note +
+    (odd ? ' <b>Towns print two to a page, so the last one sits alone. Pick one more or one fewer to fill it.</b>' : '');
 }
 
 function paintPhotos() {

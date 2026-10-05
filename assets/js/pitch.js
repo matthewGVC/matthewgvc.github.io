@@ -449,7 +449,7 @@
     ['LinkedIn',  'The GVC Real Estate Team']
   ];
   const TEAM_LINKS = [
-    ['Our listings',    'gvcrealestateteam.com/listings'],
+    ['Our listings',    'gvcrealestateteam.com/property'],
     ['Douglas Elliman', 'elliman.com'],
     ['Book a call',     'gvcrealestateteam.com/contact']
   ];

@@ -588,7 +588,8 @@ function pgWhy(n) {
   const body =
     '<div class="why">' +
       '<div class="ph" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
-        '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%"></div>' +
+        '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
+        (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>' +
       '<div class="txt">' +
         '<div class="copy">' +
           '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +

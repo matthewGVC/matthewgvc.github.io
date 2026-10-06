@@ -67,6 +67,11 @@
 .duo .cap{position:absolute;left:0;right:0;bottom:0;padding:.12in .2in;
   background:rgba(0,39,58,.82);text-align:center;
   font:800 8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#fff;}
+/* New Jersey: the agents presenting the listing, standing on a navy panel,
+   in place of the founders photo. */
+.duo.cut{background:radial-gradient(ellipse at 50% 35%,#0d4a63 0%,#00273A 70%);}
+.duo.cut .people{position:absolute;inset:0 0 .36in;display:flex;justify-content:center;align-items:flex-end;gap:.2in;}
+.duo.cut .people img{width:auto;height:100%;max-width:3.4in;object-fit:contain;object-position:50% 100%;}
 .about-copy{font:300 9.3pt/14pt var(--body);color:var(--navy);text-align:center;margin-bottom:.22in;}
 .about-copy b{font-weight:700;}
 
@@ -87,6 +92,14 @@
   text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.85);}
 .crew .cell.lab.n3 .nm,.crew .cell.lab.n4 .nm{color:var(--navy);}
 .crew .cell.lab.n3 .tt,.crew .cell.lab.n4 .tt{color:rgba(0,39,58,.75);}
+/* New Jersey: the same 2x2-of-colours row, one discipline per square, no people */
+.crew .cell.lab.inh{align-items:center;text-align:center;aspect-ratio:1/2;}
+.crew .cell.lab.inh .ci{width:.4in;height:.4in;margin-bottom:.12in;color:#fff;}
+.crew .cell.lab.n3.inh .ci,.crew .cell.lab.n4.inh .ci{color:var(--navy);}
+/* Your Property, New Jersey: every digit the same height (lining figures),
+   so prices and sizes do not bob up and down in the serif. */
+.pg[data-market="nj"][data-key="property"],
+.pg[data-market="nj"][data-key="property"] *{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1,"tnum" 1;}
 /* right-hand members read outward, so their text hangs to the right */
 .crew .cell.lab.r{text-align:right;}
 
@@ -249,14 +262,16 @@
         <div class="sec-in">
           <div class="field">
             <div class="seg pick" id="marketPick" role="group" aria-label="Market">
-              <button type="button" data-market="nyc">New York</button>
               <button type="button" data-market="nj">New Jersey</button>
+              <button type="button" data-market="nyc">New York</button>
             </div>
           </div>
           <div class="sec-note">Sets the verbiage that is market-specific: four rows of the
             Marketing Plan, and the prose beside the videos. It follows the State field on
-            the property, so it is usually right without being touched. The cover, the About
-            page and the testimonials name all three markets and do not change.</div>
+            the property, so it is usually right without being touched. The cover line and the
+            About page list the three states with the market's own first. <b>New Jersey</b> also
+            swaps in New Jersey stock photos where none is dropped, shows the picked agents on
+            &ldquo;Our Team&rdquo;, and presents marketing as all in-house.</div>
         </div>
       </details>
 
@@ -739,13 +754,30 @@ const VIDEO_COPY = {
 };
 
 /* The two markets, in the order the toggle prints them. */
-const MARKETS = [['nyc', 'New York'], ['nj', 'New Jersey']];
+const MARKETS = [['nj', 'New Jersey'], ['nyc', 'New York']];
+/* The three states, with the market's own first (as in the Buyer Package). */
+const STATE_LINE = () => state.market === 'nj'
+  ? ['New Jersey', 'New York', 'Florida'] : ['New York', 'New Jersey', 'Florida'];
+
+/* New Jersey stock photos, used in a slot nobody has dropped a photo into. */
+const NJ_STOCK = {
+  cover:    '../../assets/img/nj/stock-cover.jpg',
+  hero:     '../../assets/img/nj/stock-hero.jpg',
+  strategy: '../../assets/img/nj/stock-strategy.jpg'
+};
+const photoFor = name => slot(name) || (state.market === 'nj' ? NJ_STOCK[name] : null) || null;
 
 /* ============================================================
    HELPERS
    ============================================================ */
 const headshotFor = a => a.photo;
-const agents = () => P.agentsOf(state);
+/* Marli Silver's admin is James Huber; a New Jersey deck's closing page prints him on her row
+   (Pitch.agentRow's "Admin" line). His details come from the roster. */
+const ADMINS = { 'marli-silver': 'james-huber' };
+const agents = () => P.agentsOf(state).map(a => {
+  const ad = state.market === 'nj' && ADMINS[a.id] && window.GVC_AGENT(ADMINS[a.id]);
+  return ad ? Object.assign({}, a, { admin: ad.name + (ad.email ? ' · ' + ad.email : '') }) : a;
+});
 const pairs = txt => String(txt || '').split('\n')
   .map(l => l.trim()).filter(Boolean)
   .map(l => { const i = l.indexOf('|'); return i < 0 ? [l, ''] : [l.slice(0, i).trim(), l.slice(i + 1).trim()]; });
@@ -946,7 +978,7 @@ function pgCover() {
     kicker: 'Listing Presentation & Market Analysis',
     title: state.address || 'Property Address',
     foot: coverFoot(),
-    image: slot('cover'),
+    image: photoFor('cover'),
     pos: posFor('cover')
   });
 }
@@ -957,7 +989,7 @@ function pgCover() {
 function coverFoot() {
   const who = state.client && 'Prepared for ' + state.client;
   const line = [who, state.date].filter(Boolean).join(' · ');
-  return line || 'New York · New Jersey · Florida';
+  return line || STATE_LINE().join(' · ');
 }
 
 /* Company page — entirely static, including the photo. The three co-founders
@@ -967,8 +999,14 @@ const FOUNDERS = ['jonathan-conlon', 'john-gasdaska', 'tj-verdiglione'];
 
 function pgAbout(n) {
   const names = FOUNDERS.map(id => { const a = window.GVC_AGENT(id); return a ? a.name : ''; }).filter(Boolean).join(' &middot; ');
-  const duo =
-    '<div class="duo" data-pos="about0">' +
+  /* New Jersey shows the agents picked for this listing; with none picked it
+     falls back to the founders photo. */
+  const team = state.market === 'nj' ? agents() : [];
+  const duo = team.length
+    ? '<div class="duo cut"><div class="people">' + team.map(a =>
+        '<img src="' + esc(headshotFor(a)) + '" alt="">').join('') + '</div>' +
+      '<div class="cap">' + team.map(a => esc(a.name)).join(' &middot; ') + '</div></div>'
+    : '<div class="duo" data-pos="about0">' +
       '<img src="../../assets/team/founders-lifestyle.jpg" alt="" style="object-position:' +
         posFor('about0').x + '% ' + posFor('about0').y + '%">' +
       '<div class="cap">' + names + '</div>' +
@@ -982,8 +1020,9 @@ function pgAbout(n) {
     'knowledge, extensive experience, and unwavering commitment have earned them the trust of countless ' +
     'clients and partners. Known for consistently delivering <b>exceptional results</b>, the team has ' +
     'become a proven leader in <b>luxury residential transactions</b>, <b>major commercial deals</b>, and ' +
-    'significant <b>new development</b> and redevelopment projects across New York City, New Jersey, ' +
-    'and Florida.</div>' +
+    'significant <b>new development</b> and redevelopment projects across ' +
+    (state.market === 'nj' ? 'New Jersey, New York City, and Florida' : 'New York City, New Jersey, and Florida') +
+    '.</div>' +
     '<div class="tri">' +
       '<div class="tb c1"><h4>Ethical and Client Centric</h4><p>Though we come from diverse backgrounds, ' +
         'we have the same values &mdash; integrity, putting our client&rsquo;s best interests first, and ' +
@@ -1057,6 +1096,36 @@ function pgStudio(n) {
     title:'Marketing', body });
 }
 
+/* New Jersey's version: no crew and no Boulder. The same page furniture, saying
+   only that every part of the marketing is produced in-house. */
+function pgStudioNj(n) {
+  const ico = name => (window.icon ? window.icon(name, 'ci') : '');
+  const work = [['camera', 'Photography', 'n1'], ['clapper', 'Video', 'n2'],
+                ['pen', 'Design', 'n3'], ['megaphone', 'Social Media', 'n4']];
+  const body =
+    '<div class="crew">' + work.map(w =>
+      '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
+      '<div class="tt">In-house</div></div>').join('') + '</div>' +
+    '<div class="dline"><b>All</b> In-House</div>' +
+    '<div class="about-copy">Every part of your home&rsquo;s marketing is produced <b>in-house</b> by the ' +
+    'GVC Team: the <b>photography and video</b>, the <b>design</b> of every brochure, sign and listing, ' +
+    'and the <b>digital and social media</b> campaigns. Nothing is handed to an outside agency, so it is ' +
+    'done to one standard, on our schedule, and positioned for <b>maximum exposure</b>.</div>' +
+    '<div class="dline sm">Our Marketing <b>Advantage</b></div>' +
+    '<div class="tri">' +
+      '<div class="tb c1">' + ico('pen') +
+        '<h4>Immersive Visual Design</h4><p>Renderings, brochures and listing design that bring the ' +
+        'property to life and highlight every architectural detail.</p></div>' +
+      '<div class="tb c2">' + ico('megaphone') +
+        '<h4>Digital Strategy &amp; Social Media Reach</h4><p>Targeted campaigns that expand visibility ' +
+        'and reach the right buyers across every platform.</p></div>' +
+      '<div class="tb c3">' + ico('clapper') +
+        '<h4>Cinematic Storytelling</h4><p>Films and photography that capture the home&rsquo;s ' +
+        'essence and show it at its absolute best.</p></div>' +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Marketing', body });
+}
+
 function pgProperty(n) {
   const specs = [
     ['Property type', state.ptype, 'home'], ['Bedrooms', state.beds, 'bed'], ['Bathrooms', state.baths, 'bath'],
@@ -1066,8 +1135,8 @@ function pgProperty(n) {
   ].filter(r => r[1]);
   const feats = listOf(state.features);
   const body =
-    '<div class="ph pb-hero" data-drop="hero"' + (slot('hero') ? ' data-pos="hero"' : '') + '>' + (slot('hero')
-      ? '<img src="' + slot('hero') + '" alt="" style="object-position:' + posFor('hero').x + '% ' + posFor('hero').y + '%">'
+    '<div class="ph pb-hero" data-drop="hero"' + (photoFor('hero') ? ' data-pos="hero"' : '') + '>' + (photoFor('hero')
+      ? '<img src="' + photoFor('hero') + '" alt="" style="object-position:' + posFor('hero').x + '% ' + posFor('hero').y + '%">'
       : '<div class="empty-note on-white">Tag a photo &ldquo;Property hero&rdquo;</div>') + '</div>' +
     (state.blurb ? '<div class="copy" style="margin-bottom:.24in">' + P.lines(state.blurb) + '</div>' : '') +
     '<div class="pb-grid">' +
@@ -1146,8 +1215,8 @@ function pgStrategy(n) {
     'listing goes stale &mdash; buyers read days-on-market before they read the description. Go out too ' +
     'low and you leave money on the table. The three numbers above are the honest range the comparables ' +
     'support, and the highlighted one is where we would go to market.</div>' +
-    '<div class="ph strat-ph" data-drop="strategy"' + (slot('strategy') ? ' data-pos="strategy"' : '') + '>' + (slot('strategy')
-      ? '<img src="' + slot('strategy') + '" alt="" style="object-position:' +
+    '<div class="ph strat-ph" data-drop="strategy"' + (photoFor('strategy') ? ' data-pos="strategy"' : '') + '>' + (photoFor('strategy')
+      ? '<img src="' + photoFor('strategy') + '" alt="" style="object-position:' +
           posFor('strategy').x + '% ' + posFor('strategy').y + '%">'
       : '<div class="empty-note on-white">Tag a photo &ldquo;Strategy page&rdquo;</div>') + '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE,
@@ -1279,13 +1348,14 @@ function pgContact(n) {
       agents: agents(), headshotFor,
       qr: qrSvg(TEAM_QR_URL), qrCap: 'Our properties',
       legal: GVC_LEGAL.block('listing'),
+      states: STATE_LINE().map(nm => P.STATES.filter(s => s[0] === nm)[0]),
       foot: P.foot(SITE, true, n, OF)
     }) +
   '</div>';
 }
 
 const RENDER = {
-  cover:pgCover, about:pgAbout, studio:pgStudio, property:pgProperty,
+  cover:pgCover, about:pgAbout, studio:n => state.market === 'nj' ? pgStudioNj(n) : pgStudio(n), property:pgProperty,
   map:pgMap, comps:pgComps, strategy:pgStrategy, plan:pgPlan, prep:pgPrep,
   reviews:pgReviews, videos:pgVideos, contact:pgContact
 };
@@ -1488,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       page.innerHTML = RENDER[PAGES[i].key](i + 1);
       // tag the rendered page so the overflow check can name it
       const pg = page.querySelector('.pg');
-      if (pg) { pg.dataset.key = PAGES[i].key; pg.dataset.n = String(i + 1); }
+      if (pg) { pg.dataset.key = PAGES[i].key; pg.dataset.n = String(i + 1); pg.dataset.market = state.market; }
     }
   });
   document.fonts && document.fonts.ready.then(() => setTimeout(checkAll, 0));

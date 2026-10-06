@@ -36,7 +36,7 @@
     },
     nj: {
       id: 'nj', label: 'NJ', name: 'New Jersey',
-      cover: 'static/cover-nj.jpg',
+      cover: 'static/cover-nj-aerial.jpg',
       why: 'static/why-nj.jpg',
       quote: {
         text: 'This is my third closing with Marli and she is the best realtor I have ever worked with ' +
@@ -630,9 +630,185 @@
     });
   }
 
+  /* ============================================================
+     STATE ORDER — the market being sold leads, then New York, then the
+     remaining state: NJ -> NYC -> FL, FL -> NYC -> NJ, and NYC keeps the
+     original NYC -> NJ -> FL. Every list of the three states in the guide
+     (cover line, copy, tag line, silhouettes, closing page) reads from here
+     so they can never disagree.
+     ============================================================ */
+  var STATE_INFO = {
+    ny: { id: 'ny', name: 'New York',   abbr: 'NY', copyName: 'New York City' },
+    nj: { id: 'nj', name: 'New Jersey', abbr: 'NJ', copyName: 'New Jersey' },
+    fl: { id: 'fl', name: 'Florida',    abbr: 'FL', copyName: 'Florida' }
+  };
+  var STATE_ORDER = { nyc: ['ny', 'nj', 'fl'], nj: ['nj', 'ny', 'fl'], fl: ['fl', 'ny', 'nj'] };
+  function statesFor(region) {
+    return (STATE_ORDER[region] || STATE_ORDER.nyc).map(function (k) { return STATE_INFO[k]; });
+  }
+  /* "A, B, and C" over one key of the state record; `last` is what sits
+     before the third name (', and ' / ' & ' / ', or '). */
+  function joinStates(region, key, last) {
+    var n = statesFor(region).map(function (s) { return s[key]; });
+    return n[0] + ', ' + n[1] + last + n[2];
+  }
+
+  /* ============================================================
+     NEW JERSEY: THE SEVEN STEPS AND THE FIFTY THINGS, ON ONE PAGE
+
+     For New Jersey the Buying Process page and the 50 Things page are one:
+     each of the seven steps carries the things we do during it. The lines
+     are the same fifty New Jersey lines the 50 Things page has always
+     printed (fiftyFor('nj')), regrouped by step; the total is checked in
+     index.html. Step titles and order match PROCESS.nj.
+     ============================================================ */
+  var NJ_STEPS_FIFTY = [
+    { t: 'Consultation', items: [
+      'Set a realistic budget and timeline with you',
+      'Sort your must-haves from your deal-breakers',
+      'Explain the buyer agreement and how I am paid',
+      'Compare towns by taxes, schools and commute',
+      'Set up listing alerts so you see new homes first',
+      'Line up your NJ attorney before you make an offer'
+    ]},
+    { t: 'Pre-Approval', items: [
+      'Connect you with lenders for a written pre-approval',
+      'Show the real monthly cost, not just the mortgage'
+    ]},
+    { t: 'The Search', items: [
+      'Pre-screen listings so you tour only the right ones',
+      'Book and attend every private showing with you',
+      'Tap my network for off-market homes',
+      'Research price history and time on the market',
+      'Pull recent nearby sales to show real prices',
+      'Tell you honestly when a home is wrong for you',
+      'Point out what photos hide: noise, light, layout, street',
+      'Check flood zone, school feed and tax history',
+      'Test the commute at rush hour, not at noon',
+      'Look past the seller’s tax bill to your own'
+    ]},
+    { t: 'The Offer', items: [
+      'Price your offer against real comparable sales',
+      'Structure terms and dates to make it competitive',
+      'Find out what the seller actually needs',
+      'Make the contract dates and review terms clear',
+      'Use escalation clauses carefully, never casually'
+    ]},
+    { t: 'Negotiation', items: [
+      'Negotiate counter-offers, credits and repairs for you',
+      'Negotiate the deposit and what conveys with the house',
+      'Keep every agreed term in writing'
+    ]},
+    { t: 'Contract & Diligence', items: [
+      'Run the three-business-day attorney review with your lawyer',
+      'Recommend inspectors and specialists, and attend',
+      'Review the report with you and decide what to ask for',
+      'Order the survey and coordinate the title search',
+      'Arrange radon, sewer-line and oil-tank checks',
+      'Confirm the smoke/CO certificate and the town’s CO where required',
+      'Get a flood insurance quote before inspections end',
+      'Check permits on basements, additions and decks',
+      'Track every deadline so nothing lapses',
+      'Coordinate lender, appraiser, attorney and title company',
+      'Chase the paperwork you would otherwise forget',
+      'Update you weekly, not just when things change'
+    ]},
+    { t: 'Closing & Beyond', items: [
+      'Do the final walk-through with you',
+      'Check the closing figures before you sign',
+      'Check property tax and escrow figures at closing',
+      'Confirm the proration of taxes, fuel and utilities',
+      'Warn you to confirm wire instructions by phone',
+      'Line up utilities, insurance and moving dates',
+      'Be at the closing table with you',
+      'Hand you the keys',
+      'Remind you of tax-relief filings you may qualify for',
+      'Introduce movers, designers and trusted vendors',
+      'Introduce local landscapers and contractors',
+      'Stay your real estate resource long after closing'
+    ]}
+  ];
+
+  /* NEW JERSEY OFFER & NEGOTIATION — six cards, editable in the panel. The
+     text is the old artwork's, with the New Jersey wording this deck always
+     patched over it. `icon` is an icons.js name. */
+  var NJ_OFFER = [
+    { icon: 'check', title: 'Price is only one term',    text: OFFER_COMMON[0] },
+    { icon: 'home',  title: 'Know the competition',      text: OFFER_COMMON[1] },
+    { icon: 'box',   title: 'Contingencies protect you', text: OFFER_BY_REGION.nj[2] },
+    { icon: 'phone', title: 'Move fast, decide slowly',  text: OFFER_COMMON[3] },
+    { icon: 'users', title: 'Escalation, carefully',     text: OFFER_COMMON[4] },
+    { icon: 'mail',  title: 'Everything in writing',     text: OFFER_BY_REGION.nj[5] }
+  ];
+
+  /* ============================================================
+     USEFUL LINKS (New Jersey) — mortgage rates and the paperwork a client
+     is most likely to look up. Every URL was fetched live on 2026-10-06;
+     re-check before a print run. Rates are only pointed to, never printed:
+     they move daily and a printed number would be wrong by Monday.
+     [label, what it is, printed address, href]
+     ============================================================ */
+  var NJ_LINKS = [
+    { title: 'Mortgage rates & financing', items: [
+      ['Freddie Mac: weekly mortgage rates', 'The national average 30- and 15-year rates, updated weekly.', 'freddiemac.com/pmms', 'https://www.freddiemac.com/pmms'],
+      ['CFPB: explore mortgage rates', 'See what lenders are quoting for your credit score and down payment.', 'consumerfinance.gov/owning-a-home/explore-rates', 'https://www.consumerfinance.gov/owning-a-home/explore-rates/'],
+      ['NJHMFA: NJ Housing & Mortgage Finance Agency', 'First-time buyer loans, down-payment assistance and income limits.', 'njhousing.gov', 'https://www.njhousing.gov/'],
+      ['HUD: buying a home', 'FHA loans, housing counseling and federal buyer programs.', 'hud.gov/topics/buying_a_home', 'https://www.hud.gov/topics/buying_a_home']
+    ]},
+    { title: 'Legal & closing documents', items: [
+      ['CFPB: your Loan Estimate, explained', 'How to read the estimate your lender sends within three days of applying.', 'consumerfinance.gov/owning-a-home/loan-estimate', 'https://www.consumerfinance.gov/owning-a-home/loan-estimate/'],
+      ['CFPB: your Closing Disclosure, explained', 'A line-by-line guide to the final figures you get before closing.', 'consumerfinance.gov/owning-a-home/closing-disclosure', 'https://www.consumerfinance.gov/owning-a-home/closing-disclosure/'],
+      ['NJ Real Estate Commission', 'Licensing, consumer information and how to check an agent.', 'nj.gov/dobi/division_rec', 'https://www.nj.gov/dobi/division_rec/'],
+      ['NJ Realtors', 'The state association behind the standard contract and disclosure forms.', 'njrealtor.com', 'https://www.njrealtor.com/'],
+      ['NJ Dept. of Community Affairs: construction codes', 'Certificates of occupancy, smoke and CO detector rules, permits.', 'nj.gov/dca/divisions/codes', 'https://www.nj.gov/dca/divisions/codes/']
+    ]},
+    { title: 'Taxes & after you close', items: [
+      ['NJ Division of Taxation', 'Realty transfer fee, forms and filing deadlines.', 'nj.gov/treasury/taxation', 'https://www.nj.gov/treasury/taxation/'],
+      ['NJ property tax relief', 'Credits and reimbursements you may qualify for as a homeowner.', 'nj.gov/treasury/taxation/ptr', 'https://www.nj.gov/treasury/taxation/ptr/'],
+      ['NJ local property tax', 'How your municipality sets and bills your tax.', 'nj.gov/treasury/taxation/lpt/localtax.shtml', 'https://www.nj.gov/treasury/taxation/lpt/localtax.shtml']
+    ]}
+  ];
+
+  /* ============================================================
+     MARLI SILVER — Power Haus Women, and her referral partners.
+
+     Power Haus copy is from powerhauswomen.com (fetched 2026-10-06):
+     founded 2023 by five female real estate professionals, market partners
+     in 26+ states. Marli's role is from her bio in assets/js/bios.js.
+     ============================================================ */
+  var POWERHAUS = {
+    url: 'https://www.powerhauswomen.com/market-partners',
+    urlText: 'powerhauswomen.com/market-partners',
+    lede: 'Marli Silver is the co-founder and Chief of Development of Power Haus Women, a national ' +
+          'community of female real estate professionals and business owners.',
+    paras: [
+      'Power Haus Women was founded in 2023 by five female real estate professionals who saw the need for a ' +
+      'community built on collaboration, value and business growth.',
+      'Its real estate network has market partners in 26+ states. When you work with Marli you are not ' +
+      'hiring one agent: wherever you are moving next, a trusted local expert is one introduction away, ' +
+      'with a national network behind your purchase.'
+    ],
+    stats: [['2023', 'Founded'], ['26+', 'States with market partners']],
+    cta: 'Scan to meet a Power Haus agent in your market'
+  };
+  /* Marli's referral partners. NOT supplied yet: the page prints a visible
+     "list needed" placeholder per category until each `partners` array holds
+     { name, company, contact } rows. Do not invent entries. */
+  var MARLI_REFERRALS = [
+    { title: 'Mortgage lenders', partners: [] },
+    { title: 'Real estate attorneys', partners: [] },
+    { title: 'Home inspectors', partners: [] },
+    { title: 'Title & insurance', partners: [] },
+    { title: 'Movers & stagers', partners: [] },
+    { title: 'Contractors & designers', partners: [] }
+  ];
+
   global.GVC_GUIDE = {
     REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor,
     PROCESS: PROCESS, offerCards: offerCards,
-    COSTS: COSTS, faqFor: faqFor
+    COSTS: COSTS, faqFor: faqFor,
+    statesFor: statesFor, joinStates: joinStates,
+    NJ_STEPS_FIFTY: NJ_STEPS_FIFTY, NJ_OFFER: NJ_OFFER, NJ_LINKS: NJ_LINKS,
+    POWERHAUS: POWERHAUS, MARLI_REFERRALS: MARLI_REFERRALS
   };
 })(window);

@@ -17,7 +17,8 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ ONE PAGE IS STILL ARTWORK (static/p8.jpg: Offer & Negotiation), and six card
+<!-- ⚠ ONE PAGE IS STILL ARTWORK for New York and Florida (static/p8.jpg: Offer &
+     Negotiation; New Jersey prints the live, editable pgOfferLive), and six card
      bodies on it read wrongly outside New Jersey. patchOffer() draws the right words
      over the picture on a white patch, at positions measured off the 400dpi artwork, so a
      re-export at a different size or with the furniture moved will put them in the wrong
@@ -32,6 +33,7 @@
 <link rel="stylesheet" href="../../assets/css/builder.css">
 <link rel="stylesheet" href="../../assets/css/pitch.css">
 <link rel="stylesheet" href="../../assets/css/photo-dnd.css">
+<link rel="stylesheet" href="../../assets/css/agent-pages.css">
 <style>
 /* ============================================================
    BUYER PACKAGE — deck-specific page styles
@@ -73,19 +75,6 @@
    down from its 15pt. font-size is the only knob it needs — the marks
    and the indents are sized in em and come down with it. */
 .why .quote{margin-top:auto;font-size:10.5pt;}
-
-/* ============================================================
-   DON'T FORGET TO ASK — the agent's list. Six groups of five, three to a
-   column; every item has its box for a pen. Uses the shared .chk.
-   ============================================================ */
-.ask{flex:1;min-height:0;display:flex;flex-direction:column;}
-.ask .lede{font-size:10pt;line-height:15pt;margin-bottom:.16in;max-width:none;color:rgba(0,39,58,.7);}
-.chk.ask-chk{columns:2;column-gap:.5in;}
-.chk.ask-chk .cgrp{margin-bottom:.2in;}
-.chk.ask-chk li{font-size:9.6pt;line-height:13.4pt;padding:.052in 0;}
-.chk.ask-chk .cgrp-h .n{flex:none;width:.2in;height:.2in;border-radius:50%;background:var(--navy);
-  color:#fff;font:800 7pt/.2in var(--sans);text-align:center;letter-spacing:0;}
-.chk.ask-chk .cgrp.mkt .cgrp-h .n{background:var(--sky2);}
 
 /* ============================================================
    50 THINGS — five groups, numbered straight through. Two columns, set
@@ -255,10 +244,97 @@ table.tbl.cost .cw{width:1.85in;}
 table.tbl.cost .cd{color:rgba(0,39,58,.78);}
 table.tbl.cost .num{width:1.5in;padding-right:0;}
 
-/* FAQ's — the buyer's checklist, six groups of five-ish */
-.chk.faq{columns:2;column-gap:.55in;}
-.chk.faq .cgrp{margin-bottom:.22in;}
-.chk.faq li{font-size:9.6pt;line-height:13pt;padding:.06in 0;}
+/* ============================================================
+   NEW JERSEY PAGES — only the NJ market prints these.
+   ============================================================ */
+
+/* "Needs updating" / "Work in progress". It PRINTS on purpose: a page
+   carrying it is waiting on somebody, and the mark has to reach the
+   printer so the copy does not go out as finished. Positioned against .pg. */
+.nj-stamp{position:absolute;top:.52in;right:var(--pad);z-index:5;transform:rotate(-2deg);
+  border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.94);padding:.04in .12in;
+  font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
+
+/* Why Work With Us, NJ: the county map from the NJ Footprint page in the
+   photo's place, with the four counties the team works lit. */
+.why .ph.njmap{position:relative;background:#fff;display:flex;flex-direction:column;justify-content:center;}
+.why .ph.njmap svg{display:block;width:100%;height:auto;}
+.njmap .cty{fill:#E7E4DC;stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
+.njmap .cty.lit{fill:#53C7DC;}
+.njmap .cl{font:800 12px var(--sans);letter-spacing:.06em;fill:#00273A;text-anchor:middle;
+  dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
+.njmap .cap{margin-top:.12in;text-align:center;font:800 6.6pt var(--sans);letter-spacing:.16em;
+  text-transform:uppercase;color:rgba(0,39,58,.72);}
+.njmap .nj-stamp{top:.05in;right:.05in;}
+
+/* 50 Things, NJ: the seven steps of the Buying Process, each carrying the
+   things we do during it. Steps 1-4 left, 5-7 right; the step circle is the
+   Buying Process's own (.proc .no), smaller. */
+.fifty.nj .fg + .fg{margin-top:.13in;}
+.fifty.nj .fg-h{display:flex;align-items:center;gap:.09in;font-size:7.6pt;color:var(--navy);padding-bottom:.045in;}
+.fifty.nj .sn{flex:none;width:.25in;height:.25in;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;color:#fff;font:italic 400 9.5pt/1 var(--serif);letter-spacing:0;
+  background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#13809b),
+    color-mix(in srgb,#06475f var(--t),#0f7694));}
+.fifty.nj li{padding:.03in 0;font-size:8.7pt;line-height:11.2pt;}
+.fifty.nj li .n{line-height:11.2pt;}
+
+/* Offer & Negotiation, NJ: the artwork's six cards as live, editable HTML.
+   No telephone — the cards take the whole page. */
+.offer-live{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:.3in;}
+.offer-live .card{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:.3in .34in;border-color:rgba(0,39,58,.4);}
+.offer-live .card .ci{width:.34in;height:.34in;margin:0 0 .16in;}
+.offer-live .card h3{font-size:9.4pt;letter-spacing:.16em;margin-bottom:.12in;}
+.offer-live .card p{font-size:10.8pt;line-height:15pt;color:var(--navy);}
+
+/* Useful Links, NJ */
+.lk-lede{margin:0 0 .1in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
+.lk-g{margin-top:.2in;}
+.lk-g .fg-h{font:800 7.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
+  padding-bottom:.05in;border-bottom:1pt solid var(--navy);}
+.lk-r{display:flex;gap:.3in;align-items:baseline;padding:.085in 0;border-bottom:.5pt solid var(--rule);}
+.lk-r .w{flex:1;min-width:0;}
+.lk-r b{display:block;font:700 9.6pt/1.3 var(--body);color:var(--navy);}
+.lk-r span{display:block;margin-top:.02in;font:300 8.8pt/1.4 var(--body);color:rgba(0,39,58,.78);}
+.lk-r a{flex:none;width:2.7in;text-align:right;font:600 8.4pt/1.35 var(--sans);color:var(--sky2);
+  text-decoration:none;overflow-wrap:anywhere;}
+
+/* Power Haus Women (Marli) — her photo down the left, the copy, the two
+   numbers and a QR to the market-partner directory down the right. */
+.ph-pg{display:flex;gap:.42in;flex:1;min-height:0;}
+.ph-pg .ph{width:3.1in;flex:none;align-self:stretch;}
+.ph-pg .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.ph-pg .kick{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky2);}
+.ph-pg .lede{margin:.1in 0 .2in;font:400 15pt/1.4 var(--serif);color:var(--navy);}
+.ph-pg .copy{font-size:10.3pt;line-height:15.5pt;}
+.ph-pg .copy p{margin:0;}
+.ph-pg .copy p + p{margin-top:.13in;}
+.ph-pg .stats{display:flex;gap:.25in;margin-top:.3in;text-align:center;}
+.ph-pg .qrrow{display:flex;gap:.2in;align-items:center;margin-top:auto;padding-top:.2in;border-top:.75pt solid var(--rule);}
+.ph-pg .qrrow .qbox{flex:none;width:1in;height:1in;}
+.ph-pg .qrrow .qbox svg{width:100%;height:100%;display:block;}
+.ph-pg .qrrow b{display:block;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
+.ph-pg .qrrow span{display:block;margin-top:.05in;font:300 9pt/1.4 var(--body);color:var(--sky2);}
+
+/* Marli's referral partners — six categories; an empty one prints dashed
+   "to be added" rows until the list arrives (MARLI_REFERRALS in guide-data.js). */
+.rf-lede{margin:0 0 .22in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
+.rf{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:.24in .3in;}
+.rf .card{display:flex;flex-direction:column;}
+.rf .card .ci{margin-bottom:.08in;}
+.rf .row{padding:.07in 0;border-bottom:.5pt solid var(--rule);font:300 9pt/1.35 var(--body);color:var(--navy);}
+.rf .row b{font-weight:700;}
+.rf .row span{display:block;color:rgba(0,39,58,.72);}
+.rf .row.tbd{border:1pt dashed rgba(140,58,43,.45);border-radius:2px;margin-top:.07in;padding:.07in .1in;
+  color:rgba(140,58,43,.85);font-style:italic;}
+
+/* Meet Your Agent, NJ: the whole cut-out, larger, and no contact block. */
+.ab-top.big{height:4.1in;padding-bottom:.34in;}
+.ab-top.big img{height:4.05in;width:4in;}
+.ab-top.big .nm{font-size:32pt;max-width:3.6in;}
+.ab-full.nj .ab-row{margin-top:.24in;}
+.ab-full.nj .ab-row .ab-facts{max-width:none;}
 
 </style>
 </head>
@@ -284,13 +360,17 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
           <div class="field">
             <label>Market</label>
             <div class="seg pick" id="regionPick" role="group" aria-label="Market">
-              <button type="button" data-region="nyc">NYC</button>
               <button type="button" data-region="nj">NJ</button>
+              <button type="button" data-region="nyc">NYC</button>
               <button type="button" data-region="fl">FL</button>
             </div>
           </div>
           <div class="sec-note">Swaps the cover photo, the client quote on &ldquo;Why Work With Us&rdquo;,
-            and the state-specific lines on &ldquo;50 Things&rdquo; and &ldquo;Don&rsquo;t Forget to Ask&rdquo;.</div>
+            and the state-specific lines, and puts that state first wherever the three are listed.
+            <b>New Jersey</b> also merges the Buying Process into the 50 Things page, adds Useful Links
+            (and Power Haus + referral partners when Marli is picked), and moves &ldquo;Don&rsquo;t Forget
+            to Ask&rdquo; and &ldquo;FAQ&rsquo;s&rdquo; out to the
+            <a href="../agent-info/">Useful Agent Info</a> tool.</div>
           <div class="field">
             <label for="covKicker">Line above the title</label>
             <input type="text" id="covKicker" value="Comprehensive Guide for the Home Buying Process">
@@ -323,6 +403,14 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
           <div id="pagePick"></div>
           <div class="sec-note">Anything switched off drops out of the packet and the deck renumbers
             itself, running footers included.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec" id="offerSec" hidden>
+        <summary>Offer &amp; Negotiation <span class="hint">New Jersey &middot; editable</span></summary>
+        <div class="sec-in">
+          <div id="offerEd"></div>
+          <button class="btn sm ghost" type="button" id="offerReset" style="margin-top:10px">Reset to the original wording</button>
         </div>
       </details>
 
@@ -375,6 +463,8 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 <script src="../../assets/js/legal.js"></script>
 <script src="../../assets/js/unsaved.js"></script>
 <script src="guide-data.js"></script>
+<script src="../../assets/js/agent-pages.js"></script>
+<script src="../nj-footprint/nj-counties.js"></script>
 <script>
 'use strict';
 const P = window.Pitch, esc = P.esc;
@@ -396,6 +486,10 @@ const state = {
   off:{},
   region:'nyc',  // NYC | NJ | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
+  /* NJ only: the Meet Your Agent pages are a work in progress, off until ticked */
+  njAgents:false,
+  /* NJ only: the Offer & Negotiation cards as edited in the panel; null = GG.NJ_OFFER */
+  offer:null,
   /* the two editable runs on the cover — both print in caps */
   cover:{ kicker:'Comprehensive Guide for the Home Buying Process',
           title:'Buyer’s Guide' }
@@ -530,20 +624,37 @@ const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
   { key:'agents',    title:'Meet Your Agent',     agents:true },
-  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys' },
+  { key:'powerhaus', title:'Power Haus Women',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
+  { key:'referrals', title:'Referral Partners',   only:['nj'], marli:true, opt:'Marli’s partners (list still needed)' },
+  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj'] },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
-  { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost' },
-  { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us' },
+  { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost', not:['nj'] },
+  { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us', not:['nj'] },
   { key:'offer',     title:'Offer & Negotiation', st:6, opt:'Winning the house on terms, not price' },
+  { key:'links',     title:'Useful Links',        only:['nj'], opt:'Mortgage rates and legal documents' },
   { key:'next',      title:'Thank You' }
 ];
-const OPTIONAL = SPINE.filter(p => p.opt);
+/* `only` / `not` list the markets a page is printed for. New Jersey merges the
+   Buying Process into 50 Things and hands the two agent-facing pages to the
+   Useful Agent Info tool; `marli` pages print only when Marli Silver is picked. */
+const inMarket = p => (!p.only || p.only.indexOf(state.region) >= 0) && (p.not || []).indexOf(state.region) < 0;
+const hasMarli = () => state.agents.indexOf('marli-silver') >= 0;
+/* The tick list for this market. In New Jersey the agent pages are a work in
+   progress, so they get a tick of their own (state.njAgents), off by default. */
+const NJ_AGENTS_TICK = { key:'njAgents', title:'Meet Your Agent', opt:'Work in progress — off for now' };
+function optionalFor() {
+  const list = SPINE.filter(p => p.opt && inMarket(p) && (!p.marli || hasMarli()));
+  return state.region === 'nj' ? [NJ_AGENTS_TICK].concat(list) : list;
+}
+const isOn = key => key === 'njAgents' ? state.njAgents : !state.off[key];
 
 function pageList() {
   const out = [];
   SPINE.forEach(p => {
+    if (!inMarket(p) || (p.marli && !hasMarli())) return;
     if (p.agents) {
+      if (state.region === 'nj' && !state.njAgents) return;
       agents().forEach(a => out.push({ key:'agent', title:p.title, agent:a }));
     } else if (p.key === 'costs' && state.region === 'nyc') {
       if (!state.off.costs) GG.COSTS.nyc.pages.forEach(c => out.push({ key:'costs', title:p.title, cost:c }));
@@ -565,7 +676,7 @@ function pgCover() {
   return P.frameCover({
     kicker: state.cover.kicker,
     title: state.cover.title,
-    foot: 'New York · New Jersey · Florida',
+    foot: GG.statesFor(state.region).map(s => s.name).join(' · '),
     image: slot('cover') || REGIONS[state.region].cover,
     pos: posFor('cover')
   });
@@ -584,34 +695,63 @@ function pgCover() {
    left is the drop slot 'portrait'; with none dropped it is the market's own
    picture: the Empire State, the Jersey City skyline or Boca Raton. The stat block reuses the shared .stat. */
 const REGION = () => REGIONS[state.region];
+/* The three states in this market's order (guide-data.js statesFor): the
+   market leads, then New York, then the third. Each id maps to its outline
+   in Pitch.STATES, which are listed New York, New Jersey, Florida. */
+const STATE_ART = { ny: P.STATES[0][1], nj: P.STATES[1][1], fl: P.STATES[2][1] };
+const orderedStates = () => GG.statesFor(state.region);
+
+/* New Jersey's Why page shows the county map from the NJ Footprint page
+   (tools/nj-footprint/nj-counties.js) rather than a photo, with the counties
+   the team works lit. Flagged "Needs updating" until Matt confirms the four.
+   A dropped photo still takes the slot over. */
+const NJ_LIT = ['Monmouth', 'Ocean', 'Middlesex', 'Bergen'];
+function njMapPanel() {
+  const M = window.NJ_COUNTIES;
+  if (!M) return '';
+  const lit = M.counties.filter(c => NJ_LIT.indexOf(c.name) >= 0);
+  return '<div class="ph njmap" data-drop="portrait">' +
+    '<span class="nj-stamp">Needs updating</span>' +
+    '<svg viewBox="0 0 ' + M.width + ' ' + M.height + '" role="img" aria-label="New Jersey: ' +
+      esc(NJ_LIT.join(', ')) + ' counties">' +
+      M.counties.map(c => '<path class="cty' + (NJ_LIT.indexOf(c.name) >= 0 ? ' lit' : '') +
+        '" d="' + c.d + '"></path>').join('') +
+      lit.map(c => '<text class="cl" x="' + c.c[0] + '" y="' + c.c[1] + '">' + esc(c.name.toUpperCase()) + '</text>').join('') +
+    '</svg>' +
+    '<div class="cap">Where we work in New Jersey</div>' +
+  '</div>';
+}
 
 function pgWhy(n) {
   const url = slot('portrait') || REGION().why;
   const pos = posFor('portrait');
   const q = REGION().quote;
-  const st = P.STATES.map(s => s[1]);        // New York, New Jersey, Florida art
+  const sts = orderedStates();
+  const nycNames = sts.map(s => s.id === 'ny' ? 'NYC' : s.name);
   const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
+  const map = state.region === 'nj' && !slot('portrait') ? njMapPanel() : '';
   const body =
     '<div class="why">' +
-      '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') + '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
+      (map || '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') + '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
         '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
-        (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>' +
+        (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>') +
       '<div class="txt">' +
         '<div class="copy">' +
           '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
             'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
-            'transactions, the team serves high-net-worth clients across New York, New Jersey, and Florida.</p>' +
+            'transactions, the team serves high-net-worth clients across ' +
+            esc(GG.joinStates(state.region, 'name', ', and ')) + '.</p>' +
           '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
-            'wide network of skilled agents across NYC, New Jersey, and Florida, all of whom share the team’s ' +
+            'wide network of skilled agents across ' + esc(nycNames[0] + ', ' + nycNames[1] + ', and ' + nycNames[2]) +
+            ', all of whom share the team’s ' +
             'core values and client-focused approach.</p>' +
         '</div>' +
-        '<div class="tag">The Premier Luxury Real Estate Team Across NY, NJ, &amp; FL</div>' +
+        '<div class="tag">The Premier Luxury Real Estate Team Across ' +
+          esc(GG.joinStates(state.region, 'abbr', ', & ')) + '</div>' +
         '<div class="stats">' + stat('$3B+', 'Sold to date') + stat('3', 'States licensed') +
           stat('50+', 'Years combined experience') + '</div>' +
-        '<div class="sts">' +
-          '<i class="ny" style="--m:url(' + st[0] + ')"></i><b></b>' +
-          '<i class="nj" style="--m:url(' + st[1] + ')"></i><b></b>' +
-          '<i class="fl" style="--m:url(' + st[2] + ')"></i>' +
+        '<div class="sts">' + sts.map(s =>
+          '<i class="' + s.id + '" style="--m:url(' + STATE_ART[s.id] + ')"></i>').join('<b></b>') +
         '</div>' +
         '<div class="quote"><p>' + esc(q.text) + '</p><div class="who">' + esc(q.who) + '</div></div>' +
       '</div>' +
@@ -689,6 +829,35 @@ function pgAgent(n, p) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', body: top + main });
 }
 
+/* New Jersey's Meet Your Agent: a work in progress, off unless ticked. The
+   whole cut-out at full height, the About copy, the bio and the facts. No
+   contact details on this page. */
+function pgAgentNj(n, p) {
+  const a = p.agent, first = esc(a.name.split(' ')[0]);
+  const chars = (a.bio || []).join('').length;
+  const facts = (a.facts || []).length
+    ? '<div class="ab-row"><div><div class="ab-lab">At a glance</div><div class="ab-facts">' + a.facts.map(f =>
+        '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div></div></div>'
+    : '';
+  const body =
+    '<span class="nj-stamp">Work in progress</span>' +
+    '<div class="ab-top big">' +
+      '<img src="' + esc(headshotFor(a)) + '" alt="">' +
+      (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
+      '<div class="nm">' + esc(a.name) + '</div>' +
+      '<div class="tt">' + esc(a.title) + '</div>' +
+    '</div>' +
+    '<div class="ab-full nj">' +
+      (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
+      ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
+        '<div class="ab-text tight">' +
+        a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +
+      facts +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', body });
+}
+const pgAgentAny = (n, p) => state.region === 'nj' ? pgAgentNj(n, p) : pgAgent(n, p);
+
 /* ---------- 50 Things We Do ----------
    Five groups numbered straight through, the first three in the left column
    and the last two in the right. The count is checked on every draw: the
@@ -710,21 +879,37 @@ function pgFifty(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'50 Things We Do for You', key:'fifty', body });
 }
 
+/* New Jersey: the Buying Process and the 50 Things are one page. Each of the
+   seven steps carries the things we do during it (GG.NJ_STEPS_FIFTY, the same
+   fifty lines regrouped), steps 1-4 left and 5-7 right, numbered straight
+   through. No photo, which is where the room for the steps came from. */
+const NJ_FIFTY_TITLE = '50 Things We Do for You as Your Buyer’s Agent';
+function pgFiftyNj(n) {
+  const steps = GG.NJ_STEPS_FIFTY;
+  const total = steps.reduce((t, g) => t + g.items.length, 0);
+  if (total !== 50) console.warn('guide-data.js: NJ_STEPS_FIFTY has ' + total + ' things, not 50');
+  const last = steps.length - 1;
+  let i = 0;
+  const col = (gs, from) => '<div class="fc">' + gs.map((g, k) =>
+    '<div class="fg"><div class="fg-h"><span class="sn" style="--t:' + Math.round((from + k) / last * 100) + '%">' +
+      (from + k + 1) + '</span><span>' + esc(g.t) + '</span></div><ol>' +
+      g.items.map(t => '<li><span class="n">' + (++i) + '</span><span>' + esc(t) + '</span></li>').join('') +
+    '</ol></div>').join('') + '</div>';
+  const body =
+    '<p class="fifty-lede">The seven steps from the first conversation to the keys, and what your buyer’s ' +
+      'agent does for you at each one in New Jersey.</p>' +
+    '<div class="fifty nj">' + col(steps.slice(0, 4), 0) + col(steps.slice(4), 4) + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:NJ_FIFTY_TITLE, key:'fifty', body });
+}
+
 /* ---------- Don't Forget to Ask ----------
    The agent's own prompt sheet, replacing the blank search-criteria
    worksheet: the questions that slip out of a first consultation, the
-   renovation one above all. Five shared groups and one for the market. */
+   renovation one above all. Five shared groups and one for the market. Drawn by
+   assets/js/agent-pages.js, shared with the Useful Agent Info tool; New Jersey
+   prints it there rather than in this packet. */
 function pgDiscovery(n) {
-  const groups = GG.askFor(state.region);
-  const body =
-    '<div class="ask">' +
-      '<p class="lede">For the agent, with the buyer in the room. Tick each one once it has an answer.</p>' +
-      '<div class="chk ask-chk">' + groups.map((g, gi) =>
-        '<div class="cgrp' + (gi === groups.length - 1 ? ' mkt' : '') + '">' +
-          '<div class="cgrp-h"><span class="n">' + (gi + 1) + '</span><span>' + esc(g.title) + '</span></div>' +
-          '<ul>' + g.items.map(t => '<li><i></i><span>' + esc(t) + '</span></li>').join('') + '</ul>' +
-        '</div>').join('') + '</div>' +
-    '</div>';
+  const body = GVC_AGENTPAGES.discovery(state.region);
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Don’t Forget to Ask', key:'discovery', body });
 }
 
@@ -807,12 +992,76 @@ function pgCostsDe(n, c) {
    The buyer's checklist, drawn live so the questions fit the market: no
    basement in a Manhattan apartment, no attorney review in Florida. */
 function pgFaq(n) {
-  const groups = GG.faqFor(state.region);
-  const body = '<div class="chk tight faq">' + groups.map(g =>
-    '<div class="cgrp"><div class="cgrp-h">' + ic(g.icon, 'ci') + '<span>' + esc(g.title) + '</span></div>' +
-    '<ul>' + g.items.map(t => '<li><i></i><span>' + esc(t) + '</span></li>').join('') + '</ul></div>').join('') +
-  '</div>';
+  const body = GVC_AGENTPAGES.faq(state.region);
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'FAQ’s', key:'questions', body });
+}
+
+/* ---------- Offer & Negotiation, New Jersey ----------
+   The artwork's six cards redrawn as live HTML so they can be edited in the
+   panel (state.offer; GG.NJ_OFFER until someone edits). No telephone. New York
+   and Florida still print the artwork with patchOffer(). */
+const offerCardsNj = () => state.offer || GG.NJ_OFFER;
+function pgOfferLive(n) {
+  const body = '<div class="offer-live">' + offerCardsNj().map(c =>
+    '<div class="card">' + ic(c.icon, 'ci') + '<h3>' + esc(c.title) + '</h3><p>' + esc(c.text) + '</p></div>').join('') +
+  '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Offer & Negotiation', key:'offer', body });
+}
+const pgOffer = (n, p) => state.region === 'nj' ? pgOfferLive(n) : pgStatic(n, p);
+
+/* ---------- Useful Links, New Jersey ----------
+   Where to check today's mortgage rates and find the legal and closing paperwork.
+   Rates are pointed to, never printed. Links are in GG.NJ_LINKS. */
+function pgLinks(n) {
+  const body =
+    '<p class="lk-lede">Rates move daily, so we point you to where they are published rather than print a number. ' +
+      'Your attorney and lender remain the last word on any document.</p>' +
+    GG.NJ_LINKS.map(g => '<div class="lk-g"><div class="fg-h">' + esc(g.title) + '</div>' +
+      g.items.map(r => '<div class="lk-r"><div class="w"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>' +
+        '<a href="' + esc(r[3]) + '">' + esc(r[2]) + '</a></div>').join('') + '</div>').join('');
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Useful Links', key:'links', body });
+}
+
+/* ---------- Power Haus Women (New Jersey, Marli picked) ----------
+   Marli co-founded Power Haus Women. Copy in GG.POWERHAUS, photo is the
+   group picture from the team's stock folder. */
+function pgPowerhaus(n) {
+  const H = GG.POWERHAUS;
+  const stat = s => '<div class="stat"><div class="v">' + esc(s[0]) + '</div><div class="l">' + esc(s[1]) + '</div></div>';
+  const body =
+    '<div class="ph-pg">' +
+      '<div class="ph"><img src="static/powerhaus-women.jpg" alt="" style="object-position:50% 30%"></div>' +
+      '<div class="txt">' +
+        '<div class="kick">A national network behind your purchase</div>' +
+        '<p class="lede">' + esc(H.lede) + '</p>' +
+        '<div class="copy">' + H.paras.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
+        '<div class="stats">' + H.stats.map(stat).join('') + '</div>' +
+        '<div class="qrrow"><div class="qbox">' + qrSvg(H.url) + '</div>' +
+          '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText) + '</span></div></div>' +
+      '</div>' +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Women', key:'powerhaus', body });
+}
+
+/* ---------- Marli's referral partners (New Jersey, Marli picked) ----------
+   Six categories from GG.MARLI_REFERRALS. No names have been supplied, so an
+   empty category prints dashed "to be added" rows and the page carries a
+   "List needed" stamp until every category has partners. */
+const REF_ICONS = ['home', 'check', 'box', 'mail', 'users', 'phone'];
+function pgReferrals(n) {
+  const cats = GG.MARLI_REFERRALS;
+  const empty = cats.some(c => !c.partners.length);
+  const rows = c => c.partners.length
+    ? c.partners.map(p => '<div class="row"><b>' + esc(p.name) + '</b>' +
+        (p.company ? ' · ' + esc(p.company) : '') + (p.contact ? '<span>' + esc(p.contact) + '</span>' : '') + '</div>').join('')
+    : '<div class="row tbd">Partner to be added</div><div class="row tbd">Partner to be added</div>';
+  const body =
+    (empty ? '<span class="nj-stamp">List needed</span>' : '') +
+    '<p class="rf-lede">The people Marli trusts with her own clients. Ask her for an introduction to any of them.</p>' +
+    '<div class="rf">' + cats.map((c, i) =>
+      '<div class="card">' + ic(REF_ICONS[i % REF_ICONS.length], 'ci') + '<h3>' + esc(c.title) + '</h3>' + rows(c) + '</div>').join('') +
+    '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Marli’s Referral Partners', key:'referrals', body });
 }
 
 /* ---------- text corrected on the drawn pages ----------
@@ -874,7 +1123,7 @@ function patchOffer() {
    reader is buying. */
 function referralNote() {
   return '<div class="ref"><b>Know someone moving?</b>' +
-    '<p>A friend, colleague or relative relocating to New York, New Jersey or Florida? ' +
+    '<p>A friend, colleague or relative relocating to ' + esc(GG.joinStates(state.region, 'name', ' or ')) + '? ' +
     'Introduce them. Our team works in all three states and will connect them with the right agent.</p></div>';
 }
 
@@ -886,6 +1135,7 @@ function pgNext(n) {
       qr, qrCap: 'Our properties',
       legal: GVC_LEGAL.block('brokerage'),
       licensedLabel: 'Team licensed in',
+      states: orderedStates().map(s => [s.name, STATE_ART[s.id]]),
       referral: referralNote(),
       foot: P.foot(SITE, true, n, OF)
     }) +
@@ -919,8 +1169,10 @@ function pgStatic(n, p) {
 }
 
 const RENDER = {
-  cover:pgCover, why:pgWhy, agent:pgAgent, process:pgProcess, fifty:pgFifty,
-  costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgStatic, next:pgNext
+  cover:pgCover, why:pgWhy, agent:pgAgentAny, process:pgProcess,
+  fifty:(n, p) => state.region === 'nj' ? pgFiftyNj(n, p) : pgFifty(n, p),
+  costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgOffer, next:pgNext,
+  links:pgLinks, powerhaus:pgPowerhaus, referrals:pgReferrals
 };
 
 /* ---------- wiring ---------- */
@@ -954,9 +1206,56 @@ function redraw() {
 }
 
 function paintHints() {
-  const on = OPTIONAL.filter(p => !state.off[p.key]).length;
+  const list = optionalFor();
+  const on = list.filter(p => isOn(p.key)).length;
   document.getElementById('pagesHint').textContent =
-    on + ' of ' + OPTIONAL.length + ' optional on';
+    on + ' of ' + list.length + ' optional on';
+  paintTicks();
+  document.getElementById('offerSec').hidden = state.region !== 'nj';
+}
+
+/* The NJ Offer & Negotiation editor: a title and a body per card. The first
+   edit copies GG.NJ_OFFER into state.offer, so Reset can always go back. */
+function paintOfferEd() {
+  const host = document.getElementById('offerEd');
+  host.replaceChildren();
+  offerCardsNj().forEach((c, i) => {
+    const f = document.createElement('div');
+    f.className = 'field';
+    const lab = document.createElement('label');
+    lab.textContent = 'Card ' + (i + 1);
+    const t = document.createElement('input');
+    t.type = 'text'; t.value = c.title; t.setAttribute('aria-label', 'Card ' + (i + 1) + ' title');
+    const b = document.createElement('textarea');
+    b.rows = 3; b.value = c.text; b.setAttribute('aria-label', 'Card ' + (i + 1) + ' text');
+    const set = (key, el) => el.addEventListener('input', () => {
+      if (!state.offer) state.offer = GG.NJ_OFFER.map(o => Object.assign({}, o));
+      state.offer[i][key] = el.value;
+      redraw(); GVC_UNSAVED.touch();
+    });
+    set('title', t); set('text', b);
+    f.append(lab, t, b);
+    host.appendChild(f);
+  });
+}
+
+/* Which optional pages print — the shared tick list. Which pages are on offer
+   depends on the market and on whether Marli is picked, so the list is rebuilt
+   whenever that set changes. */
+let tickSig = '';
+function paintTicks() {
+  const list = optionalFor();
+  const sig = list.map(p => p.key).join(',');
+  if (sig === tickSig) return;
+  tickSig = sig;
+  P.tickList(document.getElementById('pagePick'),
+    list.map(p => [p.key, p.title, p.opt]),
+    isOn,
+    (key, on) => {
+      if (key === 'njAgents') state.njAgents = on;
+      else if (on) delete state.off[key]; else state.off[key] = true;
+      redraw();
+    });
 }
 
 function paintPhotos() {
@@ -992,11 +1291,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* the browser asks before a reload throws unsaved work away */
   GVC_UNSAVED.watch();
 
-  /* which optional pages print — the shared tick list */
-  P.tickList(document.getElementById('pagePick'),
-    OPTIONAL.map(p => [p.key, p.title, p.opt]),
-    key => !state.off[key],
-    (key, on) => { if (on) delete state.off[key]; else state.off[key] = true; redraw(); });
 
   /* The market toggle on the Cover panel. It swaps the cover photo, the
      client quote, the state-specific lines and the costs pages in one go. */
@@ -1018,6 +1312,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   P.wireRoster(document.getElementById('rosterPick'), state, 2, redraw);
+
+  paintOfferEd();
+  document.getElementById('offerReset').addEventListener('click', () => {
+    state.offer = null; paintOfferEd(); redraw(); GVC_UNSAVED.touch();
+  });
 
   builder = Builder.init({
     pages: PAGES.length,

@@ -1,78 +1,60 @@
 /* NJ Footprint — TRANSACTIONS.
 
-   *** SAMPLE DATA. Every row below is invented. None is a real sale. ***
-   The real list is the full MLS export for TJ, James and Marli (James is pulling it).
+   *** DRAFT: MARLI SILVER'S SALES ONLY. TJ and James are not in here yet. ***
+   Source: the Sold list on Marli's public Zillow profile (read 2026-10-06), buyer and seller
+   side both counted. Zillow only gives "3 years ago", so dates are approximate: a month for
+   sales under a year old, otherwise a year (+/- 1). Three Manhattan buyer-side sales are left
+   out (NJ page), and one Asbury Park sale Zillow listed twice is counted once. No street
+   addresses are kept; the page only needs town, county and price.
 
-   When it arrives:
-     1. replace the rows in NJ_TRANSACTIONS (same five fields: date, town, county, price, agent),
-     2. set NJ_SAMPLE_DATA to false — that removes the SAMPLE DATA stamp from the printed page,
-     3. run  node scripts/test-nj-footprint.js
+   When the full MLS list (TJ, James, Marli) arrives:
+     1. replace the rows in NJ_TRANSACTIONS (fields: date, town, county, price, agent; `side` is
+        optional and not used by the page),
+     2. set NJ_DRAFT_NOTE to '' — that removes the stamp from the printed page,
+     3. update NJ_SOURCE to say where the figures come from,
+     4. run  node scripts/test-nj-footprint.js
    County must be the plain name used on the map ("Monmouth", not "Monmouth County").
-   Agent must be one of the three names in footprint.js. Confirm Marli's sales are in the pull. */
-window.NJ_SAMPLE_DATA = true;
+   Agent must be one of the three names in footprint.js. */
+window.NJ_DRAFT_NOTE = "Draft — Marli Silver's sales only";
+window.NJ_SOURCE = "Figures are Marli Silver's closed sales, buyer and seller side, as listed on Zillow; dates are approximate.";
 window.NJ_TRANSACTIONS = [
- {"date":"2023-01-26","town":"Hoboken","county":"Hudson","price":1520000,"agent":"Marli Silver"},
- {"date":"2023-02-03","town":"Rumson","county":"Monmouth","price":2260000,"agent":"James Huber"},
- {"date":"2023-03-19","town":"Brielle","county":"Monmouth","price":2640000,"agent":"James Huber"},
- {"date":"2023-03-26","town":"Brielle","county":"Monmouth","price":2120000,"agent":"Marli Silver"},
- {"date":"2023-05-09","town":"Asbury Park","county":"Monmouth","price":580000,"agent":"TJ Verdiglione"},
- {"date":"2023-06-01","town":"Beach Haven","county":"Ocean","price":1950000,"agent":"Marli Silver"},
- {"date":"2023-06-04","town":"Long Branch","county":"Monmouth","price":875000,"agent":"TJ Verdiglione"},
- {"date":"2023-07-12","town":"Rumson","county":"Monmouth","price":3015000,"agent":"Marli Silver"},
- {"date":"2023-08-04","town":"Colts Neck","county":"Monmouth","price":1215000,"agent":"TJ Verdiglione"},
- {"date":"2023-09-05","town":"Red Bank","county":"Monmouth","price":920000,"agent":"James Huber"},
- {"date":"2023-09-25","town":"Hoboken","county":"Hudson","price":1090000,"agent":"TJ Verdiglione"},
- {"date":"2023-10-25","town":"Colts Neck","county":"Monmouth","price":1320000,"agent":"Marli Silver"},
- {"date":"2024-01-28","town":"Rumson","county":"Monmouth","price":2530000,"agent":"James Huber"},
- {"date":"2024-03-17","town":"Rumson","county":"Monmouth","price":2345000,"agent":"TJ Verdiglione"},
- {"date":"2024-03-19","town":"Morristown","county":"Morris","price":620000,"agent":"James Huber"},
- {"date":"2024-03-21","town":"Rumson","county":"Monmouth","price":3060000,"agent":"TJ Verdiglione"},
- {"date":"2024-04-01","town":"Barnegat Light","county":"Ocean","price":2790000,"agent":"TJ Verdiglione"},
- {"date":"2024-05-20","town":"Asbury Park","county":"Monmouth","price":1210000,"agent":"James Huber"},
- {"date":"2024-05-24","town":"Hoboken","county":"Hudson","price":1175000,"agent":"TJ Verdiglione"},
- {"date":"2024-07-22","town":"Point Pleasant","county":"Ocean","price":895000,"agent":"Marli Silver"},
- {"date":"2024-08-17","town":"Toms River","county":"Ocean","price":745000,"agent":"James Huber"},
- {"date":"2024-10-04","town":"Rumson","county":"Monmouth","price":4745000,"agent":"Marli Silver"},
- {"date":"2024-11-27","town":"Rumson","county":"Monmouth","price":3505000,"agent":"TJ Verdiglione"},
- {"date":"2025-01-08","town":"Middletown","county":"Monmouth","price":670000,"agent":"James Huber"},
- {"date":"2025-01-20","town":"Colts Neck","county":"Monmouth","price":1940000,"agent":"Marli Silver"},
- {"date":"2025-02-10","town":"Rumson","county":"Monmouth","price":3595000,"agent":"TJ Verdiglione"},
- {"date":"2025-02-26","town":"Middletown","county":"Monmouth","price":1150000,"agent":"TJ Verdiglione"},
- {"date":"2025-03-02","town":"Brick","county":"Ocean","price":690000,"agent":"James Huber"},
- {"date":"2025-03-06","town":"Matawan","county":"Monmouth","price":465000,"agent":"TJ Verdiglione"},
- {"date":"2025-03-18","town":"Beach Haven","county":"Ocean","price":925000,"agent":"TJ Verdiglione"},
- {"date":"2025-03-21","town":"Rumson","county":"Monmouth","price":3610000,"agent":"TJ Verdiglione"},
- {"date":"2025-05-01","town":"Jersey City","county":"Hudson","price":500000,"agent":"Marli Silver"},
- {"date":"2025-05-06","town":"Little Silver","county":"Monmouth","price":1230000,"agent":"TJ Verdiglione"},
- {"date":"2025-06-06","town":"Matawan","county":"Monmouth","price":655000,"agent":"TJ Verdiglione"},
- {"date":"2025-06-10","town":"Long Branch","county":"Monmouth","price":735000,"agent":"James Huber"},
- {"date":"2025-06-25","town":"Brielle","county":"Monmouth","price":1885000,"agent":"Marli Silver"},
- {"date":"2025-07-10","town":"Middletown","county":"Monmouth","price":850000,"agent":"Marli Silver"},
- {"date":"2025-08-26","town":"Rumson","county":"Monmouth","price":2865000,"agent":"TJ Verdiglione"},
- {"date":"2025-08-28","town":"Freehold","county":"Monmouth","price":570000,"agent":"Marli Silver"},
- {"date":"2025-09-14","town":"Rumson","county":"Monmouth","price":2955000,"agent":"TJ Verdiglione"},
- {"date":"2025-09-19","town":"Asbury Park","county":"Monmouth","price":810000,"agent":"Marli Silver"},
- {"date":"2025-10-09","town":"Toms River","county":"Ocean","price":415000,"agent":"Marli Silver"},
- {"date":"2025-10-12","town":"Ridgewood","county":"Bergen","price":1185000,"agent":"TJ Verdiglione"},
- {"date":"2025-10-17","town":"Point Pleasant","county":"Ocean","price":625000,"agent":"Marli Silver"},
- {"date":"2025-10-20","town":"Morristown","county":"Morris","price":860000,"agent":"James Huber"},
- {"date":"2025-11-04","town":"Barnegat Light","county":"Ocean","price":1400000,"agent":"TJ Verdiglione"},
- {"date":"2025-11-18","town":"Middletown","county":"Monmouth","price":890000,"agent":"James Huber"},
- {"date":"2025-11-20","town":"Colts Neck","county":"Monmouth","price":1145000,"agent":"Marli Silver"},
- {"date":"2025-12-16","town":"Little Silver","county":"Monmouth","price":1040000,"agent":"Marli Silver"},
- {"date":"2025-12-20","town":"Toms River","county":"Ocean","price":430000,"agent":"James Huber"},
- {"date":"2025-12-22","town":"Long Branch","county":"Monmouth","price":630000,"agent":"James Huber"},
- {"date":"2026-01-25","town":"Red Bank","county":"Monmouth","price":1375000,"agent":"Marli Silver"},
- {"date":"2026-02-26","town":"Red Bank","county":"Monmouth","price":1000000,"agent":"Marli Silver"},
- {"date":"2026-02-27","town":"Middletown","county":"Monmouth","price":680000,"agent":"TJ Verdiglione"},
- {"date":"2026-03-09","town":"Colts Neck","county":"Monmouth","price":1620000,"agent":"Marli Silver"},
- {"date":"2026-03-21","town":"Morristown","county":"Morris","price":855000,"agent":"James Huber"},
- {"date":"2026-03-25","town":"Red Bank","county":"Monmouth","price":1325000,"agent":"TJ Verdiglione"},
- {"date":"2026-06-14","town":"Barnegat Light","county":"Ocean","price":3120000,"agent":"Marli Silver"},
- {"date":"2026-08-14","town":"Rumson","county":"Monmouth","price":2220000,"agent":"Marli Silver"},
- {"date":"2026-09-18","town":"Brick","county":"Ocean","price":655000,"agent":"TJ Verdiglione"},
- {"date":"2026-10-03","town":"Beach Haven","county":"Ocean","price":1005000,"agent":"Marli Silver"},
- {"date":"2026-10-03","town":"Long Branch","county":"Monmouth","price":1280000,"agent":"James Huber"},
- {"date":"2026-10-21","town":"Toms River","county":"Ocean","price":565000,"agent":"Marli Silver"},
- {"date":"2026-10-24","town":"Point Pleasant","county":"Ocean","price":630000,"agent":"Marli Silver"}
+ {"date":"2026-08","town":"Lanoka Harbor","county":"Ocean","price":845000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2026-07","town":"Freehold","county":"Monmouth","price":750000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2026-07","town":"Neptune","county":"Monmouth","price":532000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2026-06","town":"Atlantic Highlands","county":"Monmouth","price":732000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2026-06","town":"Manalapan","county":"Monmouth","price":985000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2026-06","town":"Lanoka Harbor","county":"Ocean","price":900000,"agent":"Marli Silver","side":"Both"},
+ {"date":"2026-05","town":"Englishtown","county":"Monmouth","price":600000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2026-01","town":"Tinton Falls","county":"Monmouth","price":465000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2025-11","town":"Tinton Falls","county":"Monmouth","price":450000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2025","town":"Manalapan","county":"Monmouth","price":700000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2025","town":"Port Monmouth","county":"Monmouth","price":685000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2025","town":"Eatontown","county":"Monmouth","price":760000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2024","town":"Keansburg","county":"Monmouth","price":290000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2024","town":"Freehold","county":"Monmouth","price":695000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2024","town":"Tinton Falls","county":"Monmouth","price":305000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2024","town":"Middletown","county":"Monmouth","price":450000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2024","town":"Toms River","county":"Ocean","price":650000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2023","town":"Red Bank","county":"Monmouth","price":520000,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2023","town":"Wall","county":"Monmouth","price":825000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2023","town":"Manalapan","county":"Monmouth","price":860000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2022","town":"Red Bank","county":"Monmouth","price":347500,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2022","town":"Neptune","county":"Monmouth","price":405000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2022","town":"Freehold","county":"Monmouth","price":640000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2022","town":"Point Pleasant","county":"Ocean","price":535000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2021","town":"Union Beach","county":"Monmouth","price":705000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2021","town":"South Amboy","county":"Middlesex","price":340000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2021","town":"Morganville","county":"Monmouth","price":1499999,"agent":"Marli Silver","side":"Seller"},
+ {"date":"2021","town":"Matawan","county":"Monmouth","price":349900,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2021","town":"Sea Bright","county":"Monmouth","price":350000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2021","town":"Asbury Park","county":"Monmouth","price":660000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2020","town":"Beachwood","county":"Ocean","price":265000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2020","town":"Atlantic Highlands","county":"Monmouth","price":575000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2020","town":"Middletown","county":"Monmouth","price":226000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2019","town":"East Brunswick","county":"Middlesex","price":159000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2019","town":"Holmdel","county":"Monmouth","price":410000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2019","town":"Tinton Falls","county":"Monmouth","price":549000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2018","town":"Cliffwood","county":"Monmouth","price":355000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2018","town":"Ocean Township","county":"Monmouth","price":345000,"agent":"Marli Silver","side":"Buyer"},
+ {"date":"2018","town":"Keansburg","county":"Monmouth","price":132000,"agent":"Marli Silver","side":"Buyer"}
 ];

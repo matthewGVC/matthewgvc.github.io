@@ -30,10 +30,11 @@ counties.forEach(c => check(c.d && c.c.length === 2 && c.c.every(Number.isFinite
 
 // data contract
 check(Array.isArray(rows) && rows.length > 0, 'no transactions');
-check(typeof window.NJ_SAMPLE_DATA === 'boolean', 'NJ_SAMPLE_DATA must be true or false');
+check(typeof window.NJ_DRAFT_NOTE === 'string', "NJ_DRAFT_NOTE must be a string ('' for a finished sheet)");
+check(typeof window.NJ_SOURCE === 'string' && window.NJ_SOURCE.length > 10, 'NJ_SOURCE must say where the figures come from');
 rows.forEach((r, i) => {
   const at = 'row ' + (i + 1) + ' (' + r.town + '): ';
-  check(/^\d{4}-\d{2}-\d{2}$/.test(r.date) && !isNaN(Date.parse(r.date)), at + 'date must be YYYY-MM-DD');
+  check(/^\d{4}(-(0[1-9]|1[0-2])(-\d{2})?)?$/.test(r.date), at + 'date must be YYYY, YYYY-MM or YYYY-MM-DD (approximate dates are allowed)');
   check(r.town && typeof r.town === 'string', at + 'town missing');
   check(names.has(r.county), at + 'county "' + r.county + '" is not an NJ county name (use "Monmouth", not "Monmouth County")');
   check(Number.isFinite(r.price) && r.price > 0, at + 'price must be a positive number');
@@ -49,7 +50,12 @@ check(s.volume === rows.reduce((a, r) => a + r.price, 0), 'volume off');
   check(sum(s.byCounty, k) === s[k], 'county ' + k + ' do not add up to the total');
   check(sum(s.byAgent, k) === s[k], 'agent ' + k + ' do not add up to the total');
 });
-F.AGENTS.forEach(a => check(s.byAgent[a].deals > 0, a + ' has no deals — is their business in the list?'));
+// A draft sheet may hold only some agents' sales; a finished one must hold all three.
+F.AGENTS.forEach(a => {
+  if (s.byAgent[a].deals > 0) return;
+  if (window.NJ_DRAFT_NOTE) console.warn('note: ' + a + ' has no sales in the list yet (draft sheet)');
+  else errors.push(a + ' has no deals — is their business in the list?');
+});
 F.CORE.forEach(c => check(s.byCounty[c] && s.byCounty[c].deals > 0, c + ' has no deals'));
 
 // shading + short money

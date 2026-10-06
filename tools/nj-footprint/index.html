@@ -102,7 +102,7 @@
 .badge{width:.37in;height:.37in;display:block;}
 .badge svg,.badge img{width:100%;height:100%;display:block;}
 
-/* SAMPLE DATA stamp — prints. Removed by setting NJ_SAMPLE_DATA = false in transactions.js. */
+/* Draft stamp — prints. Removed by setting NJ_DRAFT_NOTE = '' in transactions.js. */
 .stamp{position:absolute;top:1.1in;right:.62in;transform:rotate(-2deg);z-index:5;
   border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.92);padding:.04in .12in;
   font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
@@ -215,7 +215,7 @@
     const badges = ['badge-de.svg', 'badge-gvc.svg'].map(f => '<span class="badge"><img src="../../assets/logos/sheet/' + f + '" alt=""></span>').join('') +
       '<span class="badge"><svg viewBox="8.5 8 23.5 22" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#00273A" stroke-width="1.6"><path d="M20 9.5 10 17h2.3v11.5h15.4V17H30L20 9.5z" stroke-linejoin="round"/><path d="M16 20h8M16 23.6h8" stroke-linecap="round"/></svg></span>';
 
-    return (window.NJ_SAMPLE_DATA ? '<div class="stamp">Sample data — not real sales</div>' : '') +
+    return (window.NJ_DRAFT_NOTE ? '<div class="stamp">' + esc(window.NJ_DRAFT_NOTE) + '</div>' : '') +
       '<div class="hd"><img class="lockup" src="../../assets/logos/sheet/lockup-navy.svg" alt="The GVC Team"><div class="meta">New Jersey · closed sales ' + span + '</div></div>' +
       '<div class="title"><h1>Where we <em>work.</em></h1><p>From the Monmouth shore down through Ocean County, and across the rest of New Jersey: where The GVC Team sells, and how much business it has done.</p></div>' +
       '<div class="hero"><div class="stat"><div class="n">' + S.deals + '</div><div class="l">Closed sales in New Jersey</div></div>' +
@@ -225,11 +225,11 @@
         '</div></div>' +
       '<div class="team"><p class="eyebrow">Meet the team</p><div class="team-row">' + team + '</div></div>' +
       snow +
-      '<div class="ft"><div class="legal">' + window.GVC_LEGAL.BROKERAGE + '<span class="src">Figures are closed sales from MLS records, ' + span + '.</span></div><div class="badges">' + badges + '</div></div>';
+      '<div class="ft"><div class="legal">' + window.GVC_LEGAL.BROKERAGE + '<span class="src">' + esc(window.NJ_SOURCE) + '</span></div><div class="badges">' + badges + '</div></div>';
   }
 
   $('sheet').innerHTML = sheet();
-  $('stageNote').textContent = S.deals + ' sales · ' + money(S.volume) + (window.NJ_SAMPLE_DATA ? ' · sample data' : '');
+  $('stageNote').textContent = S.deals + ' sales · ' + money(S.volume) + (window.NJ_DRAFT_NOTE ? ' · draft' : '');
 
   /* ---------- fit the sheet to the preview well on screen (print is untouched: builder.css) ---------- */
   function fit() {

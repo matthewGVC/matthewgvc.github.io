@@ -265,7 +265,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
   dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
 .njmap .cap{margin-top:.12in;text-align:center;font:800 6.6pt var(--sans);letter-spacing:.16em;
   text-transform:uppercase;color:rgba(0,39,58,.72);}
-.njmap .nj-stamp{top:.05in;right:.05in;}
+
 
 /* 50 Things, NJ: the seven steps of the Buying Process, each carrying the
    things we do during it. Steps 1-4 left, 5-7 right; the step circle is the
@@ -484,10 +484,10 @@ const state = {
   photos:[], pos:{},
   /* optional page key -> true when it is switched off */
   off:{},
-  region:'nyc',  // NYC | NJ | FL — the cover toggle; see guide-data.js REGIONS
+  region:'nj',   // NJ | NYC | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
-  /* NJ only: the Meet Your Agent pages are a work in progress, off until ticked */
-  njAgents:false,
+  /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
+  njAgents:true,
   /* NJ only: the Offer & Negotiation cards as edited in the panel; null = GG.NJ_OFFER */
   offer:null,
   /* the two editable runs on the cover — both print in caps */
@@ -641,8 +641,8 @@ const SPINE = [
 const inMarket = p => (!p.only || p.only.indexOf(state.region) >= 0) && (p.not || []).indexOf(state.region) < 0;
 const hasMarli = () => state.agents.indexOf('marli-silver') >= 0;
 /* The tick list for this market. In New Jersey the agent pages are a work in
-   progress, so they get a tick of their own (state.njAgents), off by default. */
-const NJ_AGENTS_TICK = { key:'njAgents', title:'Meet Your Agent', opt:'Work in progress — off for now' };
+   progress, so they get a tick of their own (state.njAgents), on by default. */
+const NJ_AGENTS_TICK = { key:'njAgents', title:'Meet Your Agent', opt:'Work in progress' };
 function optionalFor() {
   const list = SPINE.filter(p => p.opt && inMarket(p) && (!p.marli || hasMarli()));
   return state.region === 'nj' ? [NJ_AGENTS_TICK].concat(list) : list;
@@ -703,15 +703,15 @@ const orderedStates = () => GG.statesFor(state.region);
 
 /* New Jersey's Why page shows the county map from the NJ Footprint page
    (tools/nj-footprint/nj-counties.js) rather than a photo, with the counties
-   the team works lit. Flagged "Needs updating" until Matt confirms the four.
+   the team works lit (confirmed by Matt 2026-10-06).
    A dropped photo still takes the slot over. */
-const NJ_LIT = ['Monmouth', 'Ocean', 'Middlesex', 'Bergen'];
+const NJ_LIT = ['Monmouth', 'Ocean', 'Middlesex'];
 function njMapPanel() {
   const M = window.NJ_COUNTIES;
   if (!M) return '';
   const lit = M.counties.filter(c => NJ_LIT.indexOf(c.name) >= 0);
   return '<div class="ph njmap" data-drop="portrait">' +
-    '<span class="nj-stamp">Needs updating</span>' +
+
     '<svg viewBox="0 0 ' + M.width + ' ' + M.height + '" role="img" aria-label="New Jersey: ' +
       esc(NJ_LIT.join(', ')) + ' counties">' +
       M.counties.map(c => '<path class="cty' + (NJ_LIT.indexOf(c.name) >= 0 ? ' lit' : '') +

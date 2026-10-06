@@ -47,6 +47,9 @@
    set larger than the deck's default .copy. */
 .why{display:flex;gap:.42in;flex:1;min-height:0;}
 .why .ph{width:2.85in;flex:none;align-self:stretch;}
+/* a picture shown whole rather than cropped (the NYC neighborhoods map): a white
+   panel with a barely-there shadow instead of the photo tint */
+.why .ph.fit{background:#fff;box-shadow:0 .015in .1in rgba(0,39,58,.09);}
 .why .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
 .why .copy{font-size:10.5pt;line-height:16pt;letter-spacing:.02em;}
 .why .copy p{margin:0;}
@@ -587,7 +590,7 @@ function pgWhy(n) {
   const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
   const body =
     '<div class="why">' +
-      '<div class="ph" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
+      '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') + '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
         '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
         (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>' +
       '<div class="txt">' +

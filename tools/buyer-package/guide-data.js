@@ -23,7 +23,9 @@
     nyc: {
       id: 'nyc', label: 'NYC', name: 'New York City',
       cover: 'static/cover-nyc.jpg',
-      why: 'static/why-nyc.jpg',
+      why: 'static/why-nyc.png',
+      /* the Manhattan neighborhoods map: shown whole, not cropped like a photo */
+      whyFit: 'contain',
       quote: {
         text: 'She was incredibly attentive, always responsive, and extremely professional & helpful ' +
               'throughout the entire process. She took the time to explain every step in detail, making ' +

@@ -24,6 +24,7 @@ const PAGES = [
   ['Seller Pitch',    '/tools/seller-package/'],
   ['Brochure',        '/tools/brochure/'],
   ['Buyer Package',   '/tools/buyer-package/'],
+  ['Agent Info',      '/tools/agent-info/'],
   ['Destination',     '/tools/destination-guide/'],
   ['NJ Footprint',    '/tools/nj-footprint/'],
   ['Properties',      '/tools/properties/'],

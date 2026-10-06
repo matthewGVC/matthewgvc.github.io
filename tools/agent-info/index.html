@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Useful Agent Info — Matt Bloomfield</title>
+<meta name="description" content="Print-ready agent crib sheets for The GVC Team: the questions that get lost, and the buyer's checklist.">
+<meta property="og:title" content="Useful Agent Info — Matt Bloomfield">
+<meta property="og:description" content="Print-ready agent crib sheets for The GVC Team: the questions that get lost, and the buyer's checklist.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/agent-info/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts: see the note in tools/buyer-package/index.html. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/agent-pages.css">
+<style>
+/* the same contrast rules the Buyer Package holds its text to */
+.pg:not(.rev){--sky2:#0b7a95;}
+.pg-foot .site{color:rgba(0,39,58,.72);}
+.pg-foot .pg-n{color:rgba(0,39,58,.7);}
+</style>
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">Useful Agent Info</h1>
+
+<div id="app">
+  <!-- Moved out of the Buyer Package for New Jersey: these two pages are for
+       the agent to use in the room, not for the client to keep. Nothing to
+       type here — the copy lives in tools/buyer-package/guide-data.js. -->
+  <aside id="editor">
+    <div class="ed-body">
+      <details class="ed-sec" open>
+        <summary>Market <span class="hint">state-specific lines</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <div class="seg pick" id="regionPick" role="group" aria-label="Market">
+              <button type="button" data-region="nj">NJ</button>
+              <button type="button" data-region="nyc">NYC</button>
+              <button type="button" data-region="fl">FL</button>
+            </div>
+          </div>
+          <div class="sec-note">Changes the last group on &ldquo;Don&rsquo;t Forget to Ask&rdquo; and the
+            market-specific lines on &ldquo;FAQ&rsquo;s&rdquo;.</div>
+        </div>
+      </details>
+      <details class="ed-sec" open>
+        <summary>Pages <span class="hint" id="pagesHint"></span></summary>
+        <div class="sec-in">
+          <div id="pagePick"></div>
+          <div class="sec-note">Anything switched off drops out and the pages renumber.</div>
+        </div>
+      </details>
+      <details class="ed-sec">
+        <summary>Warnings</summary>
+        <div class="sec-in"><div class="warn" id="warnGeneral" hidden></div></div>
+      </details>
+    </div>
+  </aside>
+
+  <main id="stage"><div id="pages"></div></main>
+
+  <div id="stageBar">
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button class="btn sm ghost" id="btnZoom">Zoom 100%</button>
+    <button class="btn lg" id="btnPrint" title="In the print dialog: Destination 'Save as PDF' &middot; Paper 'Letter' &middot; Margins 'None' &middot; enable 'Background graphics'.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/pitch.js"></script>
+<script src="../../assets/js/icons.js"></script>
+<script src="../buyer-package/guide-data.js"></script>
+<script src="../../assets/js/agent-pages.js"></script>
+<script>
+'use strict';
+const P = window.Pitch;
+const DECK = 'Useful Agent Info';
+const SITE = 'gvcrealestateteam.com';
+const AP = window.GVC_AGENTPAGES;
+
+const state = { region: 'nj', off: {} };
+
+const SPINE = [
+  { key: 'discovery', title: 'Don’t Forget to Ask', opt: 'For the agent: questions that get lost' },
+  { key: 'questions', title: 'FAQ’s',                opt: 'A checklist for the buyer and for us' }
+];
+const pageList = () => SPINE.filter(p => !state.off[p.key]);
+let PAGES = pageList(), OF = PAGES.length;
+
+const RENDER = {
+  discovery: n => P.page({ deck: DECK, n, of: OF, site: SITE, title: 'Don’t Forget to Ask', key: 'discovery', body: AP.discovery(state.region) }),
+  questions: n => P.page({ deck: DECK, n, of: OF, site: SITE, title: 'FAQ’s', key: 'questions', body: AP.faq(state.region) })
+};
+
+let builder = null;
+function redraw() {
+  if (!builder) return;
+  PAGES = pageList(); OF = PAGES.length;
+  if (builder.state.pages !== PAGES.length) builder.setPages(PAGES.length); else builder.rebuild();
+  document.getElementById('pagesHint').textContent = PAGES.length + ' of ' + SPINE.length + ' on';
+  setTimeout(() => P.checkOverflow(document.getElementById('pages'), [], 'warnGeneral'), 0);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  P.tickList(document.getElementById('pagePick'), SPINE.map(p => [p.key, p.title, p.opt]),
+    key => !state.off[key],
+    (key, on) => { if (on) delete state.off[key]; else state.off[key] = true; redraw(); });
+  P.segPick(document.getElementById('regionPick'), 'region', () => state.region, v => { state.region = v; redraw(); });
+  builder = Builder.init({
+    pages: PAGES.length, label: 'Page',
+    printName: () => 'Useful Agent Info',
+    render: (page, i) => {
+      page.innerHTML = RENDER[PAGES[i].key](i + 1);
+      const pg = page.querySelector('.pg');
+      if (pg) { pg.dataset.key = PAGES[i].key; pg.dataset.n = String(i + 1); }
+    }
+  });
+  redraw();
+});
+</script>
+</body>
+</html>

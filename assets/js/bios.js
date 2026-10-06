@@ -120,7 +120,7 @@ window.GVC_BIOS = {
   'marli-silver': {
     role: 'New Jersey',
     blurb: 'Marli Silver is a Monmouth County native with nearly a decade of experience serving buyers, sellers, investors, developers, and relocating clients throughout New Jersey. She is also co-founder and Chief of Development of Power Haus, a national referral network of 60+ female real estate professionals.',
-    facts: [['Market', 'New Jersey, Monmouth County'], ['Experience', 'Nearly 10 years'], ['Also', 'Co-founder, Power Haus referral network']],
+    facts: [['Market', 'New Jersey, Monmouth County'], ['Experience', '10+ years'], ['Leadership', 'Co-founder, Power Haus referral network']],
     bio: [
       'In New Jersey’s competitive real estate market, Marli Silver stands out with nearly a decade of experience specializing in all facets of residential sales — buyers, sellers, investors, developers, and relocations. With a deep-rooted family background in real estate, she combines industry expertise with a modern approach, delivering seamless and successful transactions. Her refined marketing strategies — blending strategic branding, social media, her large network, and targeted property promotion — ensure exceptional results.',
       'Beyond individual sales, Marli is the co-founder and Chief of Development of Power Haus, a national real estate referral network designed to connect and elevate female agents across the country. Through this platform, she has built a dynamic network of 60+ professionals, facilitating referrals and business growth nationwide. Her commitment to collaboration and innovation empowers agents while providing clients with trusted connections in markets beyond New Jersey.',
@@ -131,7 +131,7 @@ window.GVC_BIOS = {
   'george-putykewycz': {
     role: 'New Jersey',
     blurb: 'George Putykewycz is a luxury real estate expert and senior property manager, combining sales, management, and business expertise to guide clients through high-end transactions.',
-    facts: [['Market', 'New Jersey'], ['Also', 'Senior property manager']],
+    facts: [['Market', 'New Jersey'], ['Background', 'Senior property manager']],
     bio: [
       'With a diverse background in real estate sales, property management, and business administration, George Putykewycz brings a unique blend of expertise to the GVC Team at Douglas Elliman. As both a luxury real estate specialist and a senior property manager, he provides clients with strategic insight into buying, selling, and managing high-end properties. His ability to navigate complex transactions, assess investment potential, and optimize property value makes him a trusted advisor in the competitive real estate market.',
       'George’s experience spans both residential and commercial real estate, giving him a comprehensive understanding of market dynamics and asset management. As a senior property manager at JBL Asset Management, he has overseen operations for a diverse portfolio of properties, ensuring efficiency, profitability, and long-term value for investors. His background in business administration and human resources further enhances his ability to manage transactions with professionalism, organization, and a client-first approach.',

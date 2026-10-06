@@ -28,6 +28,7 @@ Plain Node, no install — each exits non-zero on a failure:
 - `test-area-data.js` — the ranking claims in the area datasets ("fastest", "slowest") against their own figures
 - `test-destination-guide.js` — destination-guide POIs, source links, coordinates, and required page data
 - `test-listing.js` — the Showsheet's Word-document reader and its money math
+- `test-nj-footprint.js` — the NJ Footprint sales list (counties, agents, prices) and its totals
 
 Node + Playwright — `cd scripts && npm install`:
 
@@ -65,6 +66,15 @@ renderer and editor are separate so research can be corrected without touching
 the layouts. The preview supports live cover/welcome edits, session-only image
 replacement, an optional Team Favorites page, JSON handoff, and Print / Save
 PDF.
+
+## NJ Footprint tool
+
+`tools/nj-footprint/` is a one-page, print-ready US Letter sheet — where the team
+sells in New Jersey, with counts and dollar volume. It has no editor panel: the
+sheet draws itself from `transactions.js` (one row per sale), and `footprint.js`
+does the arithmetic. **The rows there are currently invented sample data** and the
+page prints a "Sample data" stamp. To go live, paste in the real MLS list, set
+`NJ_SAMPLE_DATA = false`, and run `node scripts/test-nj-footprint.js`.
 
 ## Docs
 

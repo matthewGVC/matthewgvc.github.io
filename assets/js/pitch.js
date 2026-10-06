@@ -478,6 +478,8 @@
     if (office) rows.push(['Tel', office, true]);
     if (mobile) rows.push(['Mobile', mobile, true]);
     if (a.email) rows.push(['Email', String(a.email).trim(), false]);
+    /* an agent's administrator, when the deck names one (the Seller Pitch does for Marli) */
+    if (a.admin) rows.push(['Admin', String(a.admin).trim(), false]);
     return '<div class="ag-person">' +
       '<div class="ag-shot"><img src="' + esc(headshotFor(a)) + '" alt=""></div>' +
       '<div class="ag-who">' +
@@ -533,7 +535,7 @@
           agentCol('Social', socialRows(list)) +
           agentCol('Links', TEAM_LINKS) +
           '<div class="ag-col"><div class="ag-col-t">' + esc(o.licensedLabel || 'Licensed in') + '</div>' +
-            STATES.map(([nm, art]) =>
+            (o.states || STATES).map(([nm, art]) =>
               '<div class="ag-st"><i style="-webkit-mask-image:url(' + art +
                 ');mask-image:url(' + art + ')"></i><span>' + esc(nm) + '</span></div>').join('') +
           '</div>' +

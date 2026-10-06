@@ -42,39 +42,43 @@
    hand-ticked checklist (.chk) and the whole closing page.
    ============================================================ */
 
-/* why us — a photo down the left, one editorial column down the right:
-   the copy, the team's standing line, the numbers, the three states, then a
-   client in their own words. Drawn in code (it was a picture) so the quote
-   can follow the market. The column is the only text on the page, so it is
-   set larger than the deck's default .copy. */
-.why{display:flex;gap:.42in;flex:1;min-height:0;}
-.why .ph{width:2.85in;flex:none;align-self:stretch;}
-/* a picture shown whole rather than cropped (the NYC neighborhoods map): a plain
-   white panel, with a barely-there shadow that follows the map's own outline
-   (the PNG is transparent) rather than the square around it. The panel is
-   padded and unclipped so the shadow is not cut off at the map's edges. */
-.why .ph.fit{background:#fff;overflow:visible;padding:.08in .1in .1in;}
-.why .ph.fit img{filter:drop-shadow(0 .018in .05in rgba(0,39,58,.22));}
-.why .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
-.why .copy{font-size:10.5pt;line-height:16pt;letter-spacing:.02em;}
+/* why us — the copy as two paragraphs side by side, then the team's standing
+   line, the numbers and the three states across the full width, and in the
+   bottom third the market's map (or photo) and a client in their own words,
+   both on a blurred photograph of the market. Drawn in code so the quote and
+   the pictures follow the market. */
+.why{flex:1;min-height:0;display:flex;flex-direction:column;}
+.why .copy{display:grid;grid-template-columns:1fr 1fr;gap:.4in;font-size:10pt;line-height:15.5pt;letter-spacing:.02em;}
 .why .copy p{margin:0;}
-.why .copy p + p{margin-top:.15in;}
-.why .tag{margin:.22in 0 0;padding-top:.2in;border-top:.75pt solid var(--rule);
-  font:400 16pt/1.28 var(--serif);color:var(--navy);text-align:center;text-wrap:balance;}
-.why .stats{display:flex;gap:.22in;margin-top:.2in;text-align:center;}
+.why .tag{margin:.26in 0 0;padding-top:.2in;border-top:.75pt solid var(--rule);
+  font:400 17pt/1.28 var(--serif);color:var(--navy);text-align:center;text-wrap:balance;}
+.why .facts{display:flex;align-items:center;gap:.4in;margin-top:.2in;}
+.why .stats{flex:1.3;display:flex;gap:.22in;text-align:center;}
 .why .stat .v{font-size:21pt;}
 .why .stat .l{font-size:6.4pt;}
 /* the three states, in the artwork's own blues */
-.why .sts{display:flex;align-items:center;justify-content:center;gap:.12in;margin-top:.26in;}
-.why .sts i{display:block;height:.9in;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;}
-.why .sts i.ny{width:1.15in;background:linear-gradient(135deg,#00273A,#0a7c99);}
-.why .sts i.nj{width:.6in;background:linear-gradient(135deg,#53C7DC,#a9dce6);}
-.why .sts i.fl{width:1.15in;background:linear-gradient(135deg,#7fcfe0,#0a8aa6);}
-.why .sts b{width:.22in;height:0;border-top:1pt solid var(--sky);}
-/* One review in a half-width column, so the shared quote block is set
-   down from its 15pt. font-size is the only knob it needs — the marks
-   and the indents are sized in em and come down with it. */
-.why .quote{margin-top:auto;font-size:10.5pt;}
+.why .sts{flex:1;display:flex;align-items:center;justify-content:center;gap:.12in;}
+.why .sts svg{display:block;height:.8in;}
+.why .sts svg.ny{width:1in;}
+.why .sts svg.nj{width:.52in;}
+.why .sts svg.fl{width:1in;}
+.why .sts b{width:.18in;height:0;border-top:1pt solid var(--sky);}
+/* the bottom third: a blurred photograph of the market, bled to the page edges
+   and faded in at the top, with the map card and the quote card on it */
+.why .low{position:relative;flex:1;min-height:0;margin:.3in calc(-1 * var(--pad)) -.44in;
+  padding:.34in var(--pad) .4in;display:flex;gap:.35in;align-items:stretch;}
+.why .low .bg{position:absolute;inset:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(transparent,#000 38%);mask-image:linear-gradient(transparent,#000 38%);}
+.why .low .bg img{width:100%;height:100%;object-fit:cover;display:block;opacity:.8;transform:scale(1.08);}
+.why .ph{position:relative;width:2.75in;flex:none;background:#fff;
+  box-shadow:0 .04in .18in rgba(0,39,58,.22);overflow:hidden;}
+.why .ph img{width:100%;height:100%;object-fit:cover;display:block;}
+/* a picture shown whole rather than cropped (the NYC neighborhoods map) */
+.why .ph.fit{padding:.1in;}
+.why .ph.fit img{object-fit:contain;}
+.why .qcard{position:relative;flex:1;min-width:0;align-self:center;background:rgba(255,255,255,.94);
+  border-left:3pt solid var(--sky);padding:.32in .3in .28in .1in;box-shadow:0 .04in .18in rgba(0,39,58,.18);}
+.why .quote{font-size:11pt;}
 
 /* ============================================================
    50 THINGS — five groups, numbered straight through. Two columns, set
@@ -257,14 +261,12 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 
 /* Why Work With Us, NJ: the county map from the NJ Footprint page in the
    photo's place, with the four counties the team works lit. */
-.why .ph.njmap{position:relative;background:#fff;display:flex;flex-direction:column;justify-content:center;}
-.why .ph.njmap svg{display:block;width:100%;height:auto;}
+.why .ph.njmap{display:flex;align-items:center;justify-content:center;padding:.12in;}
+.why .ph.njmap svg{display:block;width:100%;height:100%;}
 .njmap .cty{fill:#E7E4DC;stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
 .njmap .cty.lit{fill:#53C7DC;}
 .njmap .cl{font:800 12px var(--sans);letter-spacing:.06em;fill:#00273A;text-anchor:middle;
   dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
-.njmap .cap{margin-top:.12in;text-align:center;font:800 6.6pt var(--sans);letter-spacing:.16em;
-  text-transform:uppercase;color:rgba(0,39,58,.72);}
 
 
 /* 50 Things, NJ: the seven steps of the Buying Process, each carrying the
@@ -273,11 +275,15 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .fifty.nj .fg + .fg{margin-top:.13in;}
 .fifty.nj .fg-h{display:flex;align-items:center;gap:.09in;font-size:7.6pt;color:var(--navy);padding-bottom:.045in;}
 .fifty.nj .sn{flex:none;width:.25in;height:.25in;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;color:#fff;font:italic 400 9.5pt/1 var(--serif);letter-spacing:0;
+  justify-content:center;color:#fff;font:800 8pt/1 var(--sans);letter-spacing:0;padding-top:.5pt;
   background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#13809b),
     color-mix(in srgb,#06475f var(--t),#0f7694));}
 .fifty.nj li{padding:.03in 0;font-size:8.7pt;line-height:11.2pt;}
 .fifty.nj li .n{line-height:11.2pt;}
+/* lines Matt is checking with the agents — prints, so it cannot be missed */
+.fifty.nj .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
+  font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#8C3A2B;}
+.fifty.nj .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:#53C7DC;}
 
 /* Offer & Negotiation, NJ: the artwork's six cards as live, editable HTML.
    No telephone — the cards take the whole page. */
@@ -289,21 +295,24 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .offer-live .card p{font-size:10.8pt;line-height:15pt;color:var(--navy);}
 
 /* Useful Links, NJ */
-.lk-lede{margin:0 0 .1in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
-.lk-g{margin-top:.2in;}
+.lk-g + .lk-g{margin-top:.15in;}
+.lk-ph{flex:1;min-height:1.1in;margin-top:.2in;overflow:hidden;}
+.lk-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 55%;display:block;}
+.lk-note{margin-top:.12in;font:300 7.4pt/10.4pt var(--body);color:rgba(0,39,58,.72);}
 .lk-g .fg-h{font:800 7.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
   padding-bottom:.05in;border-bottom:1pt solid var(--navy);}
-.lk-r{display:flex;gap:.3in;align-items:baseline;padding:.085in 0;border-bottom:.5pt solid var(--rule);}
+.lk-r{display:flex;gap:.3in;align-items:baseline;padding:.05in 0;border-bottom:.5pt solid var(--rule);}
 .lk-r .w{flex:1;min-width:0;}
-.lk-r b{display:block;font:700 9.6pt/1.3 var(--body);color:var(--navy);}
-.lk-r span{display:block;margin-top:.02in;font:300 8.8pt/1.4 var(--body);color:rgba(0,39,58,.78);}
-.lk-r a{flex:none;width:2.7in;text-align:right;font:600 8.4pt/1.35 var(--sans);color:var(--sky2);
+.lk-r b{display:block;font:700 9.2pt/1.25 var(--body);color:var(--navy);}
+.lk-r span{display:block;margin-top:.01in;font:300 8.4pt/1.35 var(--body);color:rgba(0,39,58,.78);}
+.lk-r a{flex:none;width:3in;text-align:right;font:600 8pt/1.35 var(--sans);color:var(--sky2);
   text-decoration:none;overflow-wrap:anywhere;}
 
 /* Power Haus Women (Marli) — her photo down the left, the copy, the two
    numbers and a QR to the market-partner directory down the right. */
 .ph-pg{display:flex;gap:.42in;flex:1;min-height:0;}
-.ph-pg .ph{width:3.1in;flex:none;align-self:stretch;}
+.ph-pg{gap:.34in;}
+.ph-pg .ph{width:3.75in;flex:none;align-self:stretch;}
 .ph-pg .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
 .ph-pg .kick{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky2);}
 .ph-pg .lede{margin:.1in 0 .2in;font:400 15pt/1.4 var(--serif);color:var(--navy);}
@@ -311,7 +320,10 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .ph-pg .copy p{margin:0;}
 .ph-pg .copy p + p{margin-top:.13in;}
 .ph-pg .stats{display:flex;gap:.25in;margin-top:.3in;text-align:center;}
-.ph-pg .qrrow{display:flex;gap:.2in;align-items:center;margin-top:auto;padding-top:.2in;border-top:.75pt solid var(--rule);}
+.ph-pg .qrrow{position:relative;display:flex;gap:.2in;align-items:center;margin-top:auto;padding-top:.5in;border-top:.75pt solid var(--rule);}
+/* the Power Haus Women logo, sat on the rule above the QR */
+.ph-pg .qrrow .phw{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);height:.62in;width:auto;
+  background:#fff;padding:0 .14in;}
 .ph-pg .qrrow .qbox{flex:none;width:1in;height:1in;}
 .ph-pg .qrrow .qbox svg{width:100%;height:100%;display:block;}
 .ph-pg .qrrow b{display:block;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
@@ -330,11 +342,23 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
   color:rgba(140,58,43,.85);font-style:italic;}
 
 /* Meet Your Agent, NJ: the whole cut-out, larger, and no contact block. */
-.ab-top.big{height:4.1in;padding-bottom:.34in;}
-.ab-top.big img{height:4.05in;width:4in;}
-.ab-top.big .nm{font-size:32pt;max-width:3.6in;}
-.ab-full.nj .ab-row{margin-top:.24in;}
-.ab-full.nj .ab-row .ab-facts{max-width:none;}
+/* Meet Your Agent, NJ: a compact name band at the top, the words down the
+   left, and the agent's photograph (not the cut-out) filling the bottom two
+   thirds of the page on the right, bled to the trim. No contact block. */
+.agnj{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
+.agnj .band{flex:none;background:var(--navy);color:#fff;padding:.24in .34in .22in;margin-bottom:.26in;text-align:left;}
+.agnj .band .role{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
+.agnj .band .nm{margin:.06in 0 .04in;font:700 30pt/1.04 var(--serif);color:#fff;}
+.agnj .band .tt{font:800 6.8pt/1.5 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(229,229,229,.78);}
+.agnj .words{position:relative;z-index:1;width:4.05in;flex:1;min-height:0;display:flex;flex-direction:column;}
+.agnj .ab-bio.sm{text-align:left;}
+.agnj .ab-text{columns:1;text-align:left;}
+.agnj .ab-facts{margin-top:auto;padding-top:.16in;}
+.agnj .ab-facts .f b{width:1in;}
+.agnj .shot{position:absolute;right:calc(-1 * var(--pad));bottom:0;width:3.2in;height:76%;overflow:hidden;
+  background:var(--navy);}
+.agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
+.agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
 
 </style>
 </head>
@@ -463,6 +487,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 <script src="../../assets/js/legal.js"></script>
 <script src="../../assets/js/unsaved.js"></script>
 <script src="guide-data.js"></script>
+<script src="state-shapes.js"></script>
 <script src="../../assets/js/agent-pages.js"></script>
 <script src="../nj-footprint/nj-counties.js"></script>
 <script>
@@ -676,7 +701,8 @@ function pgCover() {
   return P.frameCover({
     kicker: state.cover.kicker,
     title: state.cover.title,
-    foot: GG.statesFor(state.region).map(s => s.name).join(' · '),
+    /* the market being printed for leads, and is set bold */
+    footHtml: GG.statesFor(state.region).map((s, i) => i ? esc(s.name) : '<b>' + esc(s.name) + '</b>').join(' · '),
     image: slot('cover') || REGIONS[state.region].cover,
     pos: posFor('cover')
   });
@@ -718,8 +744,17 @@ function njMapPanel() {
         '" d="' + c.d + '"></path>').join('') +
       lit.map(c => '<text class="cl" x="' + c.c[0] + '" y="' + c.c[1] + '">' + esc(c.name.toUpperCase()) + '</text>').join('') +
     '</svg>' +
-    '<div class="cap">Where we work in New Jersey</div>' +
   '</div>';
+}
+
+/* One state's outline as inline SVG in the artwork's blues (state-shapes.js). */
+const STATE_GRAD = { ny: ['#00273A', '#0a7c99'], nj: ['#53C7DC', '#a9dce6'], fl: ['#7fcfe0', '#0a8aa6'] };
+function stateSvg(id) {
+  const sh = window.GVC_STATE_SHAPES[id], g = STATE_GRAD[id];
+  return '<svg class="' + id + '" viewBox="' + sh.vb + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+    '<defs><linearGradient id="sg-' + id + '" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0" stop-color="' + g[0] + '"/><stop offset="1" stop-color="' + g[1] + '"/></linearGradient></defs>' +
+    sh.d.map(d => '<path fill="url(#sg-' + id + ')" d="' + d + '"/>').join('') + '</svg>';
 }
 
 function pgWhy(n) {
@@ -730,30 +765,32 @@ function pgWhy(n) {
   const nycNames = sts.map(s => s.id === 'ny' ? 'NYC' : s.name);
   const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
   const map = state.region === 'nj' && !slot('portrait') ? njMapPanel() : '';
+  const pic = map || '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') +
+    '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
+    '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%"></div>';
   const body =
     '<div class="why">' +
-      (map || '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') + '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
-        '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
-        (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>') +
-      '<div class="txt">' +
-        '<div class="copy">' +
-          '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
-            'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
-            'transactions, the team serves high-net-worth clients across ' +
-            esc(GG.joinStates(state.region, 'name', ', and ')) + '.</p>' +
-          '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
-            'wide network of skilled agents across ' + esc(nycNames[0] + ', ' + nycNames[1] + ', and ' + nycNames[2]) +
-            ', all of whom share the team’s ' +
-            'core values and client-focused approach.</p>' +
-        '</div>' +
-        '<div class="tag">The Premier Luxury Real Estate Team Across ' +
-          esc(GG.joinStates(state.region, 'abbr', ', & ')) + '</div>' +
+      '<div class="copy">' +
+        '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
+          'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
+          'transactions, the team serves high-net-worth clients across ' +
+          esc(GG.joinStates(state.region, 'name', ', and ')) + '.</p>' +
+        '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
+          'wide network of skilled agents across ' + esc(nycNames[0] + ', ' + nycNames[1] + ', and ' + nycNames[2]) +
+          ', all of whom share the team’s ' +
+          'core values and client-focused approach.</p>' +
+      '</div>' +
+      '<div class="tag">The Premier Luxury Real Estate Team Across ' +
+        esc(GG.joinStates(state.region, 'abbr', ', & ')) + '</div>' +
+      '<div class="facts">' +
         '<div class="stats">' + stat('$3B+', 'Sold to date') + stat('3', 'States licensed') +
           stat('50+', 'Years combined experience') + '</div>' +
-        '<div class="sts">' + sts.map(s =>
-          '<i class="' + s.id + '" style="--m:url(' + STATE_ART[s.id] + ')"></i>').join('<b></b>') +
-        '</div>' +
-        '<div class="quote"><p>' + esc(q.text) + '</p><div class="who">' + esc(q.who) + '</div></div>' +
+        '<div class="sts">' + sts.map(s => stateSvg(s.id)).join('<b></b>') + '</div>' +
+      '</div>' +
+      '<div class="low">' +
+        (REGION().whyBg ? '<div class="bg"><img src="' + esc(REGION().whyBg) + '" alt=""></div>' : '') +
+        pic +
+        '<div class="qcard"><div class="quote"><p>' + esc(q.text) + '</p><div class="who">' + esc(q.who) + '</div></div></div>' +
       '</div>' +
     '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Why Work With Us', body });
@@ -832,27 +869,31 @@ function pgAgent(n, p) {
 /* New Jersey's Meet Your Agent: a work in progress, off unless ticked. The
    whole cut-out at full height, the About copy, the bio and the facts. No
    contact details on this page. */
+/* The agent's photograph for the NJ page; an agent without one shows the
+   roster cut-out on navy in the same place. */
+const AGENT_PHOTO = { 'marli-silver': 'static/agent-marli-silver.jpg' };
 function pgAgentNj(n, p) {
   const a = p.agent, first = esc(a.name.split(' ')[0]);
-  const chars = (a.bio || []).join('').length;
+  const photo = AGENT_PHOTO[a.id];
   const facts = (a.facts || []).length
-    ? '<div class="ab-row"><div><div class="ab-lab">At a glance</div><div class="ab-facts">' + a.facts.map(f =>
-        '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div></div></div>'
+    ? '<div class="ab-facts">' + a.facts.map(f =>
+        '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
     : '';
   const body =
     '<span class="nj-stamp">Work in progress</span>' +
-    '<div class="ab-top big">' +
-      '<img src="' + esc(headshotFor(a)) + '" alt="">' +
-      (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
-      '<div class="nm">' + esc(a.name) + '</div>' +
-      '<div class="tt">' + esc(a.title) + '</div>' +
-    '</div>' +
-    '<div class="ab-full nj">' +
-      (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
-      ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
-        '<div class="ab-text tight">' +
-        a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +
-      facts +
+    '<div class="agnj">' +
+      '<div class="band">' +
+        (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
+        '<div class="nm">' + esc(a.name) + '</div>' +
+        '<div class="tt">' + esc(a.title) + '</div>' +
+      '</div>' +
+      '<div class="words">' +
+        (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
+        ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
+          '<div class="ab-text tight">' + a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +
+        facts +
+      '</div>' +
+      '<div class="shot' + (photo ? '' : ' cut') + '"><img src="' + esc(photo || headshotFor(a)) + '" alt=""></div>' +
     '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', body });
 }
@@ -884,6 +925,12 @@ function pgFifty(n) {
    fifty lines regrouped), steps 1-4 left and 5-7 right, numbered straight
    through. No photo, which is where the room for the steps came from. */
 const NJ_FIFTY_TITLE = '50 Things We Do for You as Your Buyer’s Agent';
+/* Lines Matt is confirming with the agents (by number) get a printed "Check"
+   tag; take a number out once it is confirmed. The last line gets a star. */
+const NJ_FIFTY_CHECK = [10, 15, 17, 23, 28];
+const STAR = '<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" ' +
+  'd="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
+const lineMark = i => NJ_FIFTY_CHECK.indexOf(i) >= 0 ? '<span class="vfy">Check</span>' : (i === 50 ? STAR : '');
 function pgFiftyNj(n) {
   const steps = GG.NJ_STEPS_FIFTY;
   const total = steps.reduce((t, g) => t + g.items.length, 0);
@@ -893,12 +940,9 @@ function pgFiftyNj(n) {
   const col = (gs, from) => '<div class="fc">' + gs.map((g, k) =>
     '<div class="fg"><div class="fg-h"><span class="sn" style="--t:' + Math.round((from + k) / last * 100) + '%">' +
       (from + k + 1) + '</span><span>' + esc(g.t) + '</span></div><ol>' +
-      g.items.map(t => '<li><span class="n">' + (++i) + '</span><span>' + esc(t) + '</span></li>').join('') +
+      g.items.map(t => { ++i; return '<li><span class="n">' + i + '</span><span>' + esc(t) + '</span>' + lineMark(i) + '</li>'; }).join('') +
     '</ol></div>').join('') + '</div>';
-  const body =
-    '<p class="fifty-lede">The seven steps from the first conversation to the keys, and what your buyer’s ' +
-      'agent does for you at each one in New Jersey.</p>' +
-    '<div class="fifty nj">' + col(steps.slice(0, 4), 0) + col(steps.slice(4), 4) + '</div>';
+  const body = '<div class="fifty nj">' + col(steps.slice(0, 4), 0) + col(steps.slice(4), 4) + '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:NJ_FIFTY_TITLE, key:'fifty', body });
 }
 
@@ -1014,11 +1058,13 @@ const pgOffer = (n, p) => state.region === 'nj' ? pgOfferLive(n) : pgStatic(n, p
    Rates are pointed to, never printed. Links are in GG.NJ_LINKS. */
 function pgLinks(n) {
   const body =
-    '<p class="lk-lede">Rates move daily, so we point you to where they are published rather than print a number. ' +
-      'Your attorney and lender remain the last word on any document.</p>' +
     GG.NJ_LINKS.map(g => '<div class="lk-g"><div class="fg-h">' + esc(g.title) + '</div>' +
       g.items.map(r => '<div class="lk-r"><div class="w"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>' +
-        '<a href="' + esc(r[3]) + '">' + esc(r[2]) + '</a></div>').join('') + '</div>').join('');
+        '<a href="' + esc(r[3]) + '">' + esc(r[2]) + '</a></div>').join('') + '</div>').join('') +
+    '<div class="lk-ph"><img src="static/links-nj.jpg" alt=""></div>' +
+    '<p class="lk-note">These links go to outside websites and were live when this guide was printed. Sites change ' +
+      'without notice, and The GVC Team is not responsible for their content. Nothing here is legal, tax or lending ' +
+      'advice: rates move daily, so confirm yours with your lender, and any document with your attorney.</p>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Useful Links', key:'links', body });
 }
 
@@ -1036,7 +1082,8 @@ function pgPowerhaus(n) {
         '<p class="lede">' + esc(H.lede) + '</p>' +
         '<div class="copy">' + H.paras.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
         '<div class="stats">' + H.stats.map(stat).join('') + '</div>' +
-        '<div class="qrrow"><div class="qbox">' + qrSvg(H.url) + '</div>' +
+        '<div class="qrrow"><img class="phw" src="static/phw-logo-navy.png" alt="Power Haus Women">' +
+          '<div class="qbox">' + qrSvg(H.url) + '</div>' +
           '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText) + '</span></div></div>' +
       '</div>' +
     '</div>';

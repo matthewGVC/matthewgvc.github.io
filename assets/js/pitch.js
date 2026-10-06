@@ -91,7 +91,7 @@
                      (o.pos ? o.pos.x : 50) + '% ' + (o.pos ? o.pos.y : 50) + '%">'
                  : '<div class="empty-note">Drag a photo here<br>from the Photos panel</div>') +
       '</div>' +
-      '<div class="fcv-foot">' + esc(o.foot) + '</div>' +
+      '<div class="fcv-foot">' + (o.footHtml || esc(o.foot)) + '</div>' +
       '<img class="fcv-band" src="' + COVER_BAND + '" alt="">' +
     '</div>';
   }

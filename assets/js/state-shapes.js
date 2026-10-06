@@ -1,5 +1,6 @@
 /* The three state outlines from assets/img/states/*.svg, as path data, so the
-   Buyer Package can draw them inline. Drawn as CSS masks they printed with thin
+   Buyer Package's Why page and every closing page (Pitch.closingPage) can draw
+   them inline. Drawn as CSS masks they printed with thin
    lines along the box edges in Chrome's PDF output; inline SVG prints clean.
    Generated from the SVG files: re-run the extraction if they change. */
 window.GVC_STATE_SHAPES = {

@@ -514,6 +514,25 @@
        foot         the running page footer
      `.solo` widens the rail and steps the sign-off down to match — one class
      on the page root so the geometry moves together. */
+  /* A state mark on the closing page: the brand mesh seen through the state's
+     outline. Drawn as inline SVG (the image clipped to the outline from
+     assets/js/state-shapes.js) when that file is loaded, because a CSS mask
+     printed thin lines along the box edges in Chrome's PDF output; the CSS
+     mask is the fallback. */
+  const MESH = '../../assets/img/mesh-gradient.jpg';
+  const STATE_ID = { 'new-york': 'ny', 'new-jersey': 'nj', 'florida': 'fl' };
+  let markN = 0;
+  function stateMark(art) {
+    const id = STATE_ID[(String(art).match(/([a-z-]+)\.svg$/) || [])[1]];
+    const sh = id && global.GVC_STATE_SHAPES && global.GVC_STATE_SHAPES[id];
+    if (!sh) return '<i style="-webkit-mask-image:url(' + art + ');mask-image:url(' + art + ')"></i>';
+    const vb = sh.vb.split(/\s+/).map(Number), cid = 'stm-' + id + '-' + (++markN);
+    return '<svg class="ag-stm" viewBox="' + sh.vb + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+      '<defs><clipPath id="' + cid + '">' + sh.d.map(d => '<path d="' + d + '"/>').join('') + '</clipPath></defs>' +
+      '<image href="' + MESH + '" x="' + vb[0] + '" y="' + vb[1] + '" width="' + vb[2] + '" height="' + vb[3] +
+        '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/></svg>';
+  }
+
   function closingPage(o) {
     const list = o.agents || [];
     const people = list.length
@@ -536,8 +555,7 @@
           agentCol('Links', TEAM_LINKS) +
           '<div class="ag-col"><div class="ag-col-t">' + esc(o.licensedLabel || 'Licensed in') + '</div>' +
             (o.states || STATES).map(([nm, art]) =>
-              '<div class="ag-st"><i style="-webkit-mask-image:url(' + art +
-                ');mask-image:url(' + art + ')"></i><span>' + esc(nm) + '</span></div>').join('') +
+              '<div class="ag-st">' + stateMark(art) + '<span>' + esc(nm) + '</span></div>').join('') +
           '</div>' +
         '</div>' +
         (o.legal || '') +

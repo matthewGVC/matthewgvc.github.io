@@ -72,9 +72,10 @@ PDF.
 `tools/nj-footprint/` is a one-page, print-ready US Letter sheet — where the team
 sells in New Jersey, with counts and dollar volume. It has no editor panel: the
 sheet draws itself from `transactions.js` (one row per sale), and `footprint.js`
-does the arithmetic. **The rows there are currently invented sample data** and the
-page prints a "Sample data" stamp. To go live, paste in the real MLS list, set
-`NJ_SAMPLE_DATA = false`, and run `node scripts/test-nj-footprint.js`.
+does the arithmetic. **The rows there are currently Marli Silver's sales only**, read
+from her public Zillow profile with approximate dates, and the page prints a "Draft"
+stamp. To finish it, paste in the full MLS list (TJ, James, Marli), set
+`NJ_DRAFT_NOTE = ''`, update `NJ_SOURCE`, and run `node scripts/test-nj-footprint.js`.
 
 ## Docs
 

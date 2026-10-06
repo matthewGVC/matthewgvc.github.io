@@ -25,6 +25,7 @@ const PAGES = [
   ['Brochure',        '/tools/brochure/'],
   ['Buyer Package',   '/tools/buyer-package/'],
   ['Destination',     '/tools/destination-guide/'],
+  ['NJ Footprint',    '/tools/nj-footprint/'],
   ['Properties',      '/tools/properties/'],
   ['Calculator',      '/tools/calculator/'],
   ['Floorplan',       '/tools/floorplan/'],

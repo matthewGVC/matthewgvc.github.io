@@ -24,8 +24,6 @@
       id: 'nyc', label: 'NYC', name: 'New York City',
       cover: 'static/cover-nyc.jpg',
       why: 'static/why-nyc.png',
-      /* blurred behind the bottom third of Why Work With Us */
-      whyBg: 'static/why-bg-nyc.jpg',
       /* the Manhattan neighborhoods map: shown whole, not cropped like a photo */
       whyFit: 'contain',
       quote: {
@@ -40,7 +38,6 @@
       id: 'nj', label: 'NJ', name: 'New Jersey',
       cover: 'static/cover-nj-aerial.jpg',
       why: 'static/why-nj.jpg',
-      whyBg: 'static/why-bg-nj.jpg',
       quote: {
         text: 'This is my third closing with Marli and she is the best realtor I have ever worked with ' +
               '— and trust me, I have worked with quite a few. She makes finding and buying a home ' +
@@ -52,7 +49,6 @@
       id: 'fl', label: 'FL', name: 'Florida',
       cover: 'static/cover-fl.jpg',
       why: 'static/why-fl.jpg',
-      whyBg: 'static/why-bg-fl.jpg',
       /* A client of the whole team, from gvcrealestateteam.com/about, with
          no state in it. Swap in a Florida client's own words when there is
          one: { text: '...', who: 'Name, Buyer' }. */

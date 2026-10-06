@@ -42,43 +42,36 @@
    hand-ticked checklist (.chk) and the whole closing page.
    ============================================================ */
 
-/* why us — the copy as two paragraphs side by side, then the team's standing
-   line, the numbers and the three states across the full width, and in the
-   bottom third the market's map (or photo) and a client in their own words,
-   both on a blurred photograph of the market. Drawn in code so the quote and
-   the pictures follow the market. */
-.why{flex:1;min-height:0;display:flex;flex-direction:column;}
-.why .copy{display:grid;grid-template-columns:1fr 1fr;gap:.4in;font-size:10pt;line-height:15.5pt;letter-spacing:.02em;}
+/* why us — a photo (or, for New Jersey, the county map) down the left, one
+   editorial column down the right: the copy, the team's standing line, the
+   numbers, the three states, then a client in their own words in a card.
+   Drawn in code so the quote and the picture follow the market. */
+.why{display:flex;gap:.42in;flex:1;min-height:0;}
+.why .ph{width:2.85in;flex:none;align-self:stretch;}
+/* a picture shown whole rather than cropped (the NYC neighborhoods map): a plain
+   white panel, with a barely-there shadow that follows the map's own outline */
+.why .ph.fit{background:#fff;overflow:visible;padding:.08in .1in .1in;}
+.why .ph.fit img{filter:drop-shadow(0 .018in .05in rgba(0,39,58,.22));}
+.why .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.why .copy{font-size:10.5pt;line-height:16pt;letter-spacing:.02em;}
 .why .copy p{margin:0;}
-.why .tag{margin:.26in 0 0;padding-top:.2in;border-top:.75pt solid var(--rule);
-  font:400 17pt/1.28 var(--serif);color:var(--navy);text-align:center;text-wrap:balance;}
-.why .facts{display:flex;align-items:center;gap:.4in;margin-top:.2in;}
-.why .stats{flex:1.3;display:flex;gap:.22in;text-align:center;}
+.why .copy p + p{margin-top:.15in;}
+.why .tag{margin:.22in 0 0;padding-top:.2in;border-top:.75pt solid var(--rule);
+  font:400 16pt/1.28 var(--serif);color:var(--navy);text-align:center;text-wrap:balance;}
+.why .stats{display:flex;gap:.22in;margin-top:.2in;text-align:center;}
 .why .stat .v{font-size:21pt;}
 .why .stat .l{font-size:6.4pt;}
-/* the three states, in the artwork's own blues */
-.why .sts{flex:1;display:flex;align-items:center;justify-content:center;gap:.12in;}
-.why .sts svg{display:block;height:.8in;}
-.why .sts svg.ny{width:1in;}
-.why .sts svg.nj{width:.52in;}
-.why .sts svg.fl{width:1in;}
-.why .sts b{width:.18in;height:0;border-top:1pt solid var(--sky);}
-/* the bottom third: a blurred photograph of the market, bled to the page edges
-   and faded in at the top, with the map card and the quote card on it */
-.why .low{position:relative;flex:1;min-height:0;margin:.3in calc(-1 * var(--pad)) -.44in;
-  padding:.34in var(--pad) .4in;display:flex;gap:.35in;align-items:stretch;}
-.why .low .bg{position:absolute;inset:0;overflow:hidden;
-  -webkit-mask-image:linear-gradient(transparent,#000 38%);mask-image:linear-gradient(transparent,#000 38%);}
-.why .low .bg img{width:100%;height:100%;object-fit:cover;display:block;opacity:.8;transform:scale(1.08);}
-.why .ph{position:relative;width:2.75in;flex:none;background:#fff;
-  box-shadow:0 .04in .18in rgba(0,39,58,.22);overflow:hidden;}
-.why .ph img{width:100%;height:100%;object-fit:cover;display:block;}
-/* a picture shown whole rather than cropped (the NYC neighborhoods map) */
-.why .ph.fit{padding:.1in;}
-.why .ph.fit img{object-fit:contain;}
-.why .qcard{position:relative;flex:1;min-width:0;align-self:center;background:rgba(255,255,255,.94);
-  border-left:3pt solid var(--sky);padding:.32in .3in .28in .1in;box-shadow:0 .04in .18in rgba(0,39,58,.18);}
-.why .quote{font-size:11pt;}
+/* the three states, drawn inline (stateSvg) in the artwork's own blues */
+.why .sts{display:flex;align-items:center;justify-content:center;gap:.12in;margin-top:.26in;}
+.why .sts svg{display:block;height:.9in;}
+.why .sts svg.ny{width:1.15in;}
+.why .sts svg.nj{width:.6in;}
+.why .sts svg.fl{width:1.15in;}
+.why .sts b{width:.22in;height:0;border-top:1pt solid var(--sky);}
+/* the client's words in a card at the foot of the column */
+.why .qcard{margin-top:auto;background:#fff;border-left:3pt solid var(--sky);padding:.24in .14in .2in .04in;
+  box-shadow:0 .03in .16in rgba(0,39,58,.16);}
+.why .quote{font-size:10.5pt;}
 
 /* ============================================================
    50 THINGS — five groups, numbered straight through. Two columns, set
@@ -145,10 +138,18 @@
 .ab-row .ab-con .c{padding:.045in 0;}
 
 /* the referral line on the closing page, set beside "Thank you." */
-.ag-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:.3in;}
-.ag-hero .ref{flex:none;width:2.55in;padding-bottom:.08in;}
-.ag-hero .ref b{display:block;font:800 6.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky);}
-.ag-hero .ref p{margin:.06in 0 0;font:300 8.6pt/1.5 var(--body);color:var(--ow);}
+/* "Know someone moving?" — a slim full-width band under "Thank you.": the
+   question set in the serif, and the line about introducing them. */
+.ag-hero{display:flex;flex-direction:column;align-items:stretch;}
+/* the band costs the page height, so the hero and the agent rows give a little back */
+.pg[data-key="next"] .ag:not(.solo) .ag-hero{padding-top:.16in;}
+.pg[data-key="next"] .ag-person + .ag-person{margin-top:.1in;}
+.ag-hero .ref{display:flex;align-items:center;gap:.16in;margin-top:.1in;padding:.07in .16in;
+  border-left:3pt solid var(--sky);background:rgba(83,199,220,.09);}
+
+.ag-hero .ref b{flex:none;font:italic 400 13pt/1.1 var(--serif);color:#fff;}
+.ag-hero .ref p{margin:0;padding-left:.16in;border-left:.75pt solid rgba(229,229,229,.25);
+  font:300 7.8pt/1.4 var(--body);color:var(--ow);}
 
 /* costs table — grouped by when the money leaves your hands */
 table.tbl tr.grp td{border-bottom:1pt solid var(--navy);padding:.2in .1in .06in 0;
@@ -261,7 +262,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 
 /* Why Work With Us, NJ: the county map from the NJ Footprint page in the
    photo's place, with the four counties the team works lit. */
-.why .ph.njmap{display:flex;align-items:center;justify-content:center;padding:.12in;}
+.why .ph.njmap{position:relative;background:#fff;display:flex;align-items:center;justify-content:center;}
 .why .ph.njmap svg{display:block;width:100%;height:100%;}
 .njmap .cty{fill:#E7E4DC;stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
 .njmap .cty.lit{fill:#53C7DC;}
@@ -312,10 +313,10 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
    numbers and a QR to the market-partner directory down the right. */
 .ph-pg{display:flex;gap:.42in;flex:1;min-height:0;}
 .ph-pg{gap:.34in;}
-.ph-pg .ph{width:3.75in;flex:none;align-self:stretch;}
+.ph-pg .ph{width:4.3in;flex:none;align-self:stretch;}
 .ph-pg .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
 .ph-pg .kick{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky2);}
-.ph-pg .lede{margin:.1in 0 .2in;font:400 15pt/1.4 var(--serif);color:var(--navy);}
+.ph-pg .lede{margin:.1in 0 .2in;font:400 13pt/1.4 var(--serif);color:var(--navy);}
 .ph-pg .copy{font-size:10.3pt;line-height:15.5pt;}
 .ph-pg .copy p{margin:0;}
 .ph-pg .copy p + p{margin-top:.13in;}
@@ -350,13 +351,17 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .agnj .band .role{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
 .agnj .band .nm{margin:.06in 0 .04in;font:700 30pt/1.04 var(--serif);color:#fff;}
 .agnj .band .tt{font:800 6.8pt/1.5 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(229,229,229,.78);}
-.agnj .words{position:relative;z-index:1;width:4.05in;flex:1;min-height:0;display:flex;flex-direction:column;}
+/* no page heading: the name band is the top of the page */
+.pg.nohead .pg-h{display:none;}
+.pg.nohead .pg-body{padding-top:.5in;}
+.pg.nohead .nj-stamp{top:.12in;}
+.agnj .row{flex:1;min-height:0;display:flex;gap:.3in;}
+.agnj .words{width:4.05in;flex:none;min-height:0;display:flex;flex-direction:column;}
 .agnj .ab-bio.sm{text-align:left;}
 .agnj .ab-text{columns:1;text-align:left;}
 .agnj .ab-facts{margin-top:auto;padding-top:.16in;}
 .agnj .ab-facts .f b{width:1in;}
-.agnj .shot{position:absolute;right:calc(-1 * var(--pad));bottom:0;width:3.2in;height:76%;overflow:hidden;
-  background:var(--navy);}
+.agnj .shot{flex:1;min-width:0;margin-right:calc(-1 * var(--pad));overflow:hidden;background:var(--navy);}
 .agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
 .agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
 
@@ -487,7 +492,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 <script src="../../assets/js/legal.js"></script>
 <script src="../../assets/js/unsaved.js"></script>
 <script src="guide-data.js"></script>
-<script src="state-shapes.js"></script>
+<script src="../../assets/js/state-shapes.js"></script>
 <script src="../../assets/js/agent-pages.js"></script>
 <script src="../nj-footprint/nj-counties.js"></script>
 <script>
@@ -767,29 +772,27 @@ function pgWhy(n) {
   const map = state.region === 'nj' && !slot('portrait') ? njMapPanel() : '';
   const pic = map || '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') +
     '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
-    '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%"></div>';
+    '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
+    (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>';
   const body =
     '<div class="why">' +
-      '<div class="copy">' +
-        '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
-          'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
-          'transactions, the team serves high-net-worth clients across ' +
-          esc(GG.joinStates(state.region, 'name', ', and ')) + '.</p>' +
-        '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
-          'wide network of skilled agents across ' + esc(nycNames[0] + ', ' + nycNames[1] + ', and ' + nycNames[2]) +
-          ', all of whom share the team’s ' +
-          'core values and client-focused approach.</p>' +
-      '</div>' +
-      '<div class="tag">The Premier Luxury Real Estate Team Across ' +
-        esc(GG.joinStates(state.region, 'abbr', ', & ')) + '</div>' +
-      '<div class="facts">' +
+      pic +
+      '<div class="txt">' +
+        '<div class="copy">' +
+          '<p>The Gasdaska Verdiglione Conlon (GVC) Team is built on a foundation of excellence, integrity, ' +
+            'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
+            'transactions, the team serves high-net-worth clients across ' +
+            esc(GG.joinStates(state.region, 'name', ', and ')) + '.</p>' +
+          '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
+            'wide network of skilled agents across ' + esc(nycNames[0] + ', ' + nycNames[1] + ', and ' + nycNames[2]) +
+            ', all of whom share the team’s ' +
+            'core values and client-focused approach.</p>' +
+        '</div>' +
+        '<div class="tag">The Premier Luxury Real Estate Team Across ' +
+          esc(GG.joinStates(state.region, 'abbr', ', & ')) + '</div>' +
         '<div class="stats">' + stat('$3B+', 'Sold to date') + stat('3', 'States licensed') +
           stat('50+', 'Years combined experience') + '</div>' +
         '<div class="sts">' + sts.map(s => stateSvg(s.id)).join('<b></b>') + '</div>' +
-      '</div>' +
-      '<div class="low">' +
-        (REGION().whyBg ? '<div class="bg"><img src="' + esc(REGION().whyBg) + '" alt=""></div>' : '') +
-        pic +
         '<div class="qcard"><div class="quote"><p>' + esc(q.text) + '</p><div class="who">' + esc(q.who) + '</div></div></div>' +
       '</div>' +
     '</div>';
@@ -887,15 +890,15 @@ function pgAgentNj(n, p) {
         '<div class="nm">' + esc(a.name) + '</div>' +
         '<div class="tt">' + esc(a.title) + '</div>' +
       '</div>' +
-      '<div class="words">' +
+      '<div class="row"><div class="words">' +
         (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
         ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
           '<div class="ab-text tight">' + a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +
         facts +
       '</div>' +
-      '<div class="shot' + (photo ? '' : ' cut') + '"><img src="' + esc(photo || headshotFor(a)) + '" alt=""></div>' +
+      '<div class="shot' + (photo ? '' : ' cut') + '"><img src="' + esc(photo || headshotFor(a)) + '" alt=""></div></div>' +
     '</div>';
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', body });
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', cls:'nohead', body });
 }
 const pgAgentAny = (n, p) => state.region === 'nj' ? pgAgentNj(n, p) : pgAgent(n, p);
 

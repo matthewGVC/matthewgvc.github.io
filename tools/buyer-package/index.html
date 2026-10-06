@@ -47,9 +47,12 @@
    set larger than the deck's default .copy. */
 .why{display:flex;gap:.42in;flex:1;min-height:0;}
 .why .ph{width:2.85in;flex:none;align-self:stretch;}
-/* a picture shown whole rather than cropped (the NYC neighborhoods map): a white
-   panel with a barely-there shadow instead of the photo tint */
-.why .ph.fit{background:#fff;box-shadow:0 .015in .1in rgba(0,39,58,.09);}
+/* a picture shown whole rather than cropped (the NYC neighborhoods map): a plain
+   white panel, with a barely-there shadow that follows the map's own outline
+   (the PNG is transparent) rather than the square around it. The panel is
+   padded and unclipped so the shadow is not cut off at the map's edges. */
+.why .ph.fit{background:#fff;overflow:visible;padding:.08in .1in .1in;}
+.why .ph.fit img{filter:drop-shadow(0 .018in .05in rgba(0,39,58,.22));}
 .why .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
 .why .copy{font-size:10.5pt;line-height:16pt;letter-spacing:.02em;}
 .why .copy p{margin:0;}

@@ -69,7 +69,7 @@
       '<p class="dv-stage s-' + stageOf(h) + '">' + stageName(stageOf(h)) + '</p>' +
       '<h3>' + esc(h.address) + '</h3>' +
       (h.town ? '<p class="dv-town">' + esc(h.town) + '</p>' : '') +
-      (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') +
+      (h.price ? '<p class="dv-price"><span class="dv-ask">Asking</span>' + esc(h.price) + '</p>' : '') +
       facts(h) +
       (h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
     '</div>';
@@ -82,26 +82,25 @@
       (h.imageNote ? '<figcaption>' + esc(h.imageNote) + '</figcaption>' : '') + '</figure>';
   }
 
-  /* A subdivision: its homes side by side, each a card of its own that
-     names the site. A note every home on the site shares is said once,
-     under the pair. */
+  /* A subdivision: a heading line for the site (a note every home on it
+     shares is said once, beside it), then one tile per home. */
   function siteInner(s, urlFor) {
     const town = (s.homes.find(h => h.town) || {}).town;
     const unitName = h => (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
     const meta = (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision';
     const notes = s.homes.map(h => h.note || '');
     const shared = notes.every(n => n && n === notes[0]) ? notes[0] : '';
-    return '<div class="dv-pair">' + s.homes.map(h => {
-      const rows = factRows(h);
-      return '<section class="dv-card dv-unit"><div class="dv-unit-h"><div><h3>' + esc(s.name) + '</h3>' +
-          '<p class="dv-site-meta">' + meta + '</p></div><span class="dv-tag">' + esc(unitName(h)) + '</span></div>' +
-        pic(h, urlFor) +
-        '<div class="dv-unit-f">' + (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') +
+    return '<div class="dv-site-h"><div><h3>' + esc(s.name) + '</h3><p class="dv-site-meta">' + meta + '</p></div>' +
+        (shared ? '<p class="dv-note">' + esc(shared) + '</p>' : '') + '</div>' +
+      '<div class="dv-pair">' + s.homes.map(h => {
+        const rows = factRows(h);
+        return '<section class="dv-unit"><p class="dv-tag">' + esc(unitName(h)) + '</p>' + pic(h, urlFor) +
+          (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') +
           (rows.length ? '<dl class="dv-ufacts">' + rows.map(([k, v]) =>
-            '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' : '') + '</div>' +
-        (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
-      '</section>';
-    }).join('') + '</div>' + (shared ? '<p class="dv-note dv-shared">' + esc(shared) + '</p>' : '');
+            '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' : '') +
+          (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
+        '</section>';
+      }).join('') + '</div>';
   }
 
   /* The timeline: one stop per completion date in the order the homes are
@@ -166,15 +165,9 @@
   /* ---------- the body, as blocks ---------- */
   function blocks(doc, urlFor, o) {
     const out = [];
-    const built = o.features.filter(h => stageOf(h) === 'construction');
-    const planned = o.features.filter(h => stageOf(h) !== 'construction');
-    for (let i = 0; i < built.length; i += 2) {
-      out.push('<div class="dv-blk dv-duo">' + built.slice(i, i + 2).map(h =>
-        '<article class="dv-card">' + pic(h, urlFor) + homeText(h) + '</article>').join('') + '</div>');
-    }
-    planned.forEach(h => {
+    o.features.forEach((h, i) => {
       const p = pic(h, urlFor);
-      out.push('<article class="dv-blk dv-card dv-wide' + (p ? '' : ' nopic') + '">' + p + homeText(h) + '</article>');
+      out.push('<article class="dv-blk dv-wide' + (p ? '' : ' nopic') + (i % 2 ? ' flip' : '') + '">' + p + homeText(h) + '</article>');
     });
     o.sites.forEach((s, i) => {
       out.push(i === 0

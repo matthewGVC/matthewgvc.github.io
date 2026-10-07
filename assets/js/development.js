@@ -120,18 +120,12 @@
       if (!mine.length) return '';
       const n = o.homes.filter(h => stageOf(h) === st.key).length;
       return '<div class="dv-band b-' + st.key + '" style="--stops:' + mine.length + '">' +
-        '<p class="dv-band-h"><b>' + st.name + '</b><span>' + n + ' ' + homesWord(n) + '</span></p>' +
-        '<ol class="dv-stops">' + mine.map(s => {
-          const seen = [];
-          s.homes.forEach(h => {
-            const k = h.site || h.address, e = seen.find(x => x.k === k);
-            if (e) e.n++; else seen.push({ k, n: 1 });
-          });
-          return '<li><span class="dv-dot"></span>' +
-            '<p class="dv-when">' + (s.when ? range(s.when) : 'Timing not yet set') + '</p>' +
-            '<ul>' + seen.map(x => '<li><b>' + esc(x.k) + '</b>' + (x.n > 1 ? '<span class="dv-x">' + x.n + ' homes</span>' : '') + '</li>').join('') +
-            '</ul></li>';
-        }).join('') + '</ol></div>';
+        (st.key === 'construction'
+          ? '<p class="dv-band-h"><b>' + st.name + '</b><span>' + n + ' ' + homesWord(n) + '</span></p>'
+          : '<p class="dv-band-h" aria-hidden="true">&nbsp;</p>') +
+        '<ol class="dv-stops">' + mine.map(s =>
+          '<li><span class="dv-dot">' + s.homes.length + '</span>' +
+            '<p class="dv-when">' + (s.when ? range(s.when) : 'Timing not yet set') + '</p></li>').join('') + '</ol></div>';
     }).join('');
     return '<section class="dv-line"><p class="dv-total"><b>' + o.homes.length + '</b> ' +
       homesWord(o.homes.length) + ' in the pipeline</p><div class="dv-track">' + bands + '</div></section>';
@@ -151,10 +145,10 @@
   const creditParts = doc => ['Development by ' + esc((doc.developer || {}).name), 'Sales &amp; Marketing by ' + esc(doc.marketing)];
 
   function head(doc, urlFor, o, first) {
-    if (!first) return mast(doc, urlFor) + '<p class="dv-cont">' + esc(doc.title) + ', continued</p>';
+    if (!first) return mast(doc, urlFor);
     return mast(doc, urlFor) +
       '<div class="dv-title"><h1>' + esc(doc.title) + '</h1>' +
-        '<p class="dv-credits">' + creditParts(doc).join('<i aria-hidden="true"></i>') + '</p></div>' +
+      '</div>' +
       (o.homes.length ? timeline(o) : '');
   }
   const foot = (doc, n, of) => '<footer class="dv-foot"><div>' +

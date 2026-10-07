@@ -60,12 +60,20 @@
       '<h2 class="dg-heading">' + esc(title) + '</h2>' + body + pageFoot(n, total) + '</div></article>';
   }
 
+  /* The cover panel is 2.35in of type wide; a long county name at 40pt runs out
+     of it (Monmouth already touched the edge). Step the size down by the
+     longest word so any region fits. */
+  function coverTitleSize(title) {
+    const longest = Math.max.apply(null, String(title).split(/\s+/).map(w => w.length));
+    return longest >= 10 ? ' xs' : longest >= 8 ? ' sm' : '';
+  }
+
   function pageCover(n, total) {
     const g = state.guide;
     return '<article class="dg dg-cover">' +
       '<div class="cover-photo"><img src="' + esc(g.coverImage) + '" alt="' + esc(g.coverAlt) + '"></div>' +
       '<div class="cover-panel"><div class="cover-issue">' + esc(g.issue) + '</div>' +
-      '<h2 class="cover-title">' + esc(g.title) + '</h2><div class="cover-state">' + esc(g.state) + '</div>' +
+      '<h2 class="cover-title' + coverTitleSize(g.title) + '">' + esc(g.title) + '</h2><div class="cover-state">' + esc(g.state) + '</div>' +
       '<p class="cover-sub">' + esc(g.subtitle) + '</p></div>' +
       '<div class="cover-word">GVC Destination ' + String(n).padStart(2, '0') + '</div></article>';
   }

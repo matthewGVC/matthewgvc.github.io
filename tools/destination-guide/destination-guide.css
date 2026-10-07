@@ -42,6 +42,8 @@
 .cover-panel::after{content:'';position:absolute;top:0;right:-.08in;width:.08in;height:100%;background:var(--sky);}
 .cover-issue{font:800 7.5pt/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
 .cover-title{margin-top:1.3in;font:400 40pt/.91 var(--serif);letter-spacing:-.03em;text-wrap:balance;}
+.cover-title.sm{font-size:34pt;}
+.cover-title.xs{font-size:29pt;}
 .cover-state{margin-top:.14in;font:800 8pt var(--sans);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72);}
 .cover-sub{margin-top:auto;padding-top:.24in;border-top:.75pt solid rgba(255,255,255,.34);font:400 14pt/1.35 var(--body);text-wrap:pretty;}
 .cover-word{position:absolute;right:-.02in;bottom:.22in;z-index:1;color:#fff;font:800 9pt var(--sans);letter-spacing:.19em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg);}
@@ -146,7 +148,7 @@
 .dg-map .dg-foot{border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.72);}
 
 /* Favorites. */
-.favorite-intro{display:grid;grid-template-columns:1.4in 1fr;gap:.25in;margin:-.08in 0 .3in;align-items:start;}
+.favorite-intro{display:grid;grid-template-columns:1.4in 1fr;gap:.25in;margin:.2in 0 .3in;align-items:start;}
 .favorite-intro .mark{width:1.15in;height:1.15in;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;font:400 30pt var(--serif);}
 .favorite-intro p{font:400 13pt/1.42 var(--serif);text-wrap:pretty;}
 .favorite-grid{display:grid;grid-template-columns:1fr 1fr;gap:.24in .32in;}

@@ -88,7 +88,7 @@
 .dv-duo .dv-pic { margin-bottom: .1in; }
 /* one home across the page, picture beside the text */
 .dv-wide { display: grid; grid-template-columns: 1.15fr 1fr; gap: .3in; align-items: center; }
-.dv-wide .dv-pic img { height: 2.5in; }
+.dv-wide .dv-pic img { height: 2.3in; }
 .dv-wide.nopic { grid-template-columns: 1fr; }
 
 /* subdivisions: the site on the left, its homes side by side */
@@ -103,6 +103,12 @@
 .dv-site .dv-note { margin-top: 4pt; }
 .dv-pair { display: grid; grid-template-columns: 1fr 1fr; gap: .22in; }
 .dv-unit h4 { font: 800 8pt/1 var(--fig); letter-spacing: .02em; color: var(--harbor); }
+/* a subdivision's pictures, side by side under its heading: small, so a
+   modest source still prints sharp */
+.dv-site-pics { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; margin-top: 7pt; }
+.dv-site-pics .dv-pic img { height: .95in; }
+.dv-site-pics figcaption { font-size: 6.5pt; }
+.dv-site-pics figcaption b { font-weight: 800; color: var(--harbor); margin-right: 3pt; }
 .dv-unit .dv-price { margin-top: 4pt; font-size: 13pt; }
 .dv-unit .dv-facts { margin-top: 4pt; }
 .dv-unit .dv-facts div { grid-template-columns: 6.6em 1fr; padding: 2.5pt 0; }

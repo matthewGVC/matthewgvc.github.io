@@ -56,14 +56,17 @@ window.GVC_DEV_SEED = {
       note: 'Planned with an elevator, first-floor bedroom, 2-car garage and pool.',
       image: 'seed:806-riverview-2400.webp', imageNote: 'Architect’s 3D view - subject to change' },
 
-    /* 405 Old Bridge Rd: the only renderings are ~700px copies inside the PDF,
-       too small to use. Add image/imageNote once the originals are found. */
+    /* 405 Old Bridge Rd: the concept renderings are the PDF's own, about 700px
+       wide. That holds up at the size a subdivision card prints them (about
+       2.4in), not much bigger. Replace with the originals if they turn up. */
     { address: '405 Old Bridge Rd - Home 1', site: '405 Old Bridge Rd', status: 'planned',
       price: '$2,650,000', beds: '4', baths: '4.5', living: '3,556 sq. ft.', basement: 'basement',
-      garage: '2-car garage' },
+      garage: '2-car garage',
+      image: 'seed:405-old-bridge-1.jpg', imageNote: 'Concept rendering - subject to change' },
     { address: '405 Old Bridge Rd - Home 2', site: '405 Old Bridge Rd', status: 'planned',
       price: '$2,250,000', beds: '4', baths: '4.5', living: '3,123 sq. ft.', basement: 'basement',
-      garage: '1-car garage' },
+      garage: '1-car garage',
+      image: 'seed:405-old-bridge-2.jpg', imageNote: 'Concept rendering - subject to change' },
 
     { address: '304 Union Ln - Home 1', site: '304 Union Ln', town: 'Brielle', status: 'planned',
       price: '$3,500,000', plans: 'In development',

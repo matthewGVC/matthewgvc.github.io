@@ -313,7 +313,9 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
    numbers and a QR to the market-partner directory down the right. */
 .ph-pg{display:flex;gap:.42in;flex:1;min-height:0;}
 .ph-pg{gap:.34in;}
-.ph-pg .ph{width:4.3in;flex:none;align-self:stretch;}
+/* the group photo bleeds off the left trim, so it can run wide without
+   squeezing the copy */
+.ph-pg .ph{width:calc(4.5in + var(--pad));margin-left:calc(-1 * var(--pad));flex:none;align-self:stretch;}
 .ph-pg .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
 .ph-pg .kick{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky2);}
 .ph-pg .lede{margin:.1in 0 .2in;font:400 13pt/1.4 var(--serif);color:var(--navy);}
@@ -328,6 +330,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .ph-pg .qrrow .qbox{flex:none;width:1in;height:1in;}
 .ph-pg .qrrow .qbox svg{width:100%;height:100%;display:block;}
 .ph-pg .qrrow b{display:block;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
+.ph-pg .qrrow > div:last-child{flex:1;min-width:0;}
 .ph-pg .qrrow span{display:block;margin-top:.05in;font:300 9pt/1.4 var(--body);color:var(--sky2);}
 
 /* Marli's referral partners — six categories; an empty one prints dashed
@@ -344,8 +347,8 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 
 /* Meet Your Agent, NJ: the whole cut-out, larger, and no contact block. */
 /* Meet Your Agent, NJ: a compact name band at the top, the words down the
-   left, and the agent's photograph (not the cut-out) filling the bottom two
-   thirds of the page on the right, bled to the trim. No contact block. */
+   left, and the agent's photograph (not the cut-out) beside them on the right,
+   inside the page margins. No contact block. */
 .agnj{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
 .agnj .band{flex:none;background:var(--navy);color:#fff;padding:.24in .34in .22in;margin-bottom:.26in;text-align:left;}
 .agnj .band .role{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
@@ -361,7 +364,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .agnj .ab-text{columns:1;text-align:left;}
 .agnj .ab-facts{margin-top:auto;padding-top:.16in;}
 .agnj .ab-facts .f b{width:1in;}
-.agnj .shot{flex:1;min-width:0;margin-right:calc(-1 * var(--pad));overflow:hidden;background:var(--navy);}
+.agnj .shot{flex:1;min-width:0;overflow:hidden;background:var(--navy);}
 .agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
 .agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
 
@@ -1087,7 +1090,7 @@ function pgPowerhaus(n) {
         '<div class="stats">' + H.stats.map(stat).join('') + '</div>' +
         '<div class="qrrow"><img class="phw" src="static/phw-logo-navy.png" alt="Power Haus Women">' +
           '<div class="qbox">' + qrSvg(H.url) + '</div>' +
-          '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText) + '</span></div></div>' +
+          '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText).replace(/\//g, '/<wbr>') + '</span></div></div>' +
       '</div>' +
     '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Women', key:'powerhaus', body });

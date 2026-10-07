@@ -1,193 +1,211 @@
 /* ============================================================
-   NEW-DEVELOPMENT PAGE — the shared template.
+   NEW DEVELOPMENT — the printed Private Preview, drawn from one document.
+   Styles: assets/css/development.css. Used by tools/new-development/.
 
-   A development's page is a folder under projects/ holding index.html (a
-   mount point), data.js (window.GVC_DEVELOPMENT) and img/. This file turns
-   the data into the page, so a new development is a data change, never a
-   redesign. Styles: assets/css/development.css (screen and print).
+   A document is plain data (see tools/new-development/seed.js for the shape):
+   the header copy, the developer, and one record per home. Everything a
+   buyer reads comes from it; the only words written here are the page's own
+   furniture (section names, field labels, "continued"). The counts and the
+   timeline are worked out from each home's status and completion date, so
+   they cannot disagree with the homes listed after them.
 
-   Everything a buyer reads comes from data.js. The only words written here
-   are the page's own furniture: section names, field labels, button text.
-   The counts and the timeline are worked out from each home's status and
-   completion date, so they cannot disagree with the homes listed below them.
+   pages(doc, urlFor, measure) returns one HTML string per Letter page. The
+   body is a run of blocks (homes in pairs, single homes, subdivisions, the
+   next step) laid onto pages by measuring them on an unscaled page off
+   screen, so more homes means another page rather than an overflow.
    ============================================================ */
-(function () {
+(function (global) {
   'use strict';
-  const D = window.GVC_DEVELOPMENT;
-  const root = document.getElementById('dev');
-  if (!D || !root) return;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  /* "Q3-Q4 2027" sets with a proper range dash; the data keeps the source's hyphen */
-  const range = s => esc(s).replace(/(Q\d)-(Q\d)/g, '$1–$2');
+  /* "Q3-Q4 2027" sets with a range dash; the document keeps what was typed */
+  const range = s => esc(s).replace(/(Q\d)\s*-\s*(Q\d)/g, '$1–$2');
   const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
   const word = n => WORDS[n] || String(n);
   const homesWord = n => n === 1 ? 'home' : 'homes';
+  const GVC_LOCKUP = '../../assets/logos/sheet/lockup-navy.svg';
 
   const STAGES = [
     { key: 'construction', name: 'Under construction' },
     { key: 'planned',      name: 'Yet to break ground' }
   ];
-  const homes = D.homes;
-  const of = key => homes.filter(h => h.status === key);
+  const stageOf = h => h.status === 'construction' ? 'construction' : 'planned';
+  const stageName = key => (STAGES.find(s => s.key === key) || STAGES[1]).name;
 
-  /* homes with a site are subdivisions; the rest are shown one to a spread */
-  const features = homes.filter(h => !h.site);
-  const sites = [];
-  homes.filter(h => h.site).forEach(h => {
-    let s = sites.find(x => x.name === h.site);
-    if (!s) sites.push(s = { name: h.site, homes: [] });
-    s.homes.push(h);
-  });
-
-  /* ---------- pieces ---------- */
-  const img = (base, alt, sizes, eager) =>
-    '<img src="img/' + esc(base) + '-1200.webp" srcset="img/' + esc(base) + '-1200.webp 1200w, img/' +
-      esc(base) + '-2400.webp 2400w" sizes="' + sizes + '" alt="' + esc(alt) + '"' +
-      (eager ? ' fetchpriority="high"' : '') + ' decoding="async">';
-
-  const stageName = h => (STAGES.find(s => s.key === h.status) || {}).name || '';
+  /* Homes with a site are subdivisions, shown side by side under one
+     heading; the rest are feature homes with a picture. */
+  function organise(doc) {
+    const homes = (doc.homes || []).filter(h => h && (h.address || h.price));
+    const features = homes.filter(h => !h.site);
+    const sites = [];
+    homes.filter(h => h.site).forEach(h => {
+      let s = sites.find(x => x.name === h.site);
+      if (!s) sites.push(s = { name: h.site, homes: [] });
+      s.homes.push(h);
+    });
+    return { homes, features, sites };
+  }
 
   function facts(h) {
     const rows = [];
     if (h.done) rows.push(['Estimated completion', range(h.done)]);
     if (h.plans) rows.push(['Plans', esc(h.plans)]);
-    if (h.beds || h.baths) rows.push(['Beds / baths', esc(h.beds) + ' / ' + esc(h.baths)]);
-    if (h.living) rows.push([h.basement && /sq/.test(h.basement) ? 'Living + basement' : 'Living',
+    if (h.beds || h.baths) rows.push(['Beds / baths', esc(h.beds || '–') + ' / ' + esc(h.baths || '–')]);
+    if (h.living) rows.push([/sq/.test(h.basement || '') ? 'Living + basement' : 'Living',
       esc(h.living) + (h.basement ? ' + ' + esc(h.basement) : '')]);
     if (h.garage) rows.push(['Garage', esc(h.garage)]);
-    return '<dl class="facts">' + rows.map(([k, v]) =>
-      '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>';
+    return rows.length ? '<dl class="dv-facts">' + rows.map(([k, v]) =>
+      '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' : '';
   }
 
-  function feature(h, i) {
-    const pic = h.image
-      ? '<figure class="sp-pic">' + img(h.image, 'Rendering of ' + h.address, '(min-width: 960px) 58vw, 100vw') +
-          '<figcaption>' + esc(h.imageNote) + '</figcaption></figure>'
-      : '';
-    return '<article class="spread' + (i % 2 ? ' flip' : '') + (pic ? '' : ' nopic') + '" id="' + esc(h.id) + '">' + pic +
-      '<div class="sp-txt">' +
-        '<p class="stage s-' + esc(h.status) + '">' + stageName(h) + '</p>' +
-        '<h3>' + esc(h.address) + '</h3>' +
-        (h.town ? '<p class="town">' + esc(h.town) + '</p>' : '') +
-        '<p class="price"><span>Asking</span>' + esc(h.price) + '</p>' +
-        facts(h) +
-        (h.note ? '<p class="note">' + esc(h.note) + '</p>' : '') +
-      '</div></article>';
+  function homeText(h) {
+    return '<div class="dv-home">' +
+      '<p class="dv-stage s-' + stageOf(h) + '">' + stageName(stageOf(h)) + '</p>' +
+      '<h3>' + esc(h.address) + '</h3>' +
+      (h.town ? '<p class="dv-town">' + esc(h.town) + '</p>' : '') +
+      (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') +
+      facts(h) +
+      (h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
+    '</div>';
+  }
+
+  function pic(h, urlFor) {
+    const url = h.image ? urlFor(h.image) : '';
+    if (!url) return '';
+    return '<figure class="dv-pic"><img src="' + esc(url) + '" alt="Rendering of ' + esc(h.address) + '">' +
+      (h.imageNote ? '<figcaption>' + esc(h.imageNote) + '</figcaption>' : '') + '</figure>';
   }
 
   /* A subdivision: one heading for the site, the homes side by side. A note
      every home on the site shares is said once, under the heading. */
-  function site(s) {
+  function siteInner(s) {
     const notes = s.homes.map(h => h.note || '');
     const shared = notes.every(n => n && n === notes[0]) ? notes[0] : '';
-    const town = s.homes[0].town;
-    return '<article class="site">' +
-      '<header><h3>' + esc(s.name) + '</h3>' +
-        '<p class="site-meta">' + (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision</p>' +
-        (shared ? '<p class="note">' + esc(shared) + '</p>' : '') +
-      '</header>' +
-      '<div class="pair">' + s.homes.map(h => {
-        const name = h.address.replace(s.name, '').replace(/^\s*[-–]\s*/, '') || h.address;
-        return '<section class="unit" id="' + esc(h.id) + '">' +
-          '<h4>' + esc(name) + '</h4>' +
-          '<p class="price">' + esc(h.price) + '</p>' + facts(h) +
-          (!shared && h.note ? '<p class="note">' + esc(h.note) + '</p>' : '') +
+    const town = (s.homes.find(h => h.town) || {}).town;
+    return '<div><h3>' + esc(s.name) + '</h3>' +
+        '<p class="dv-site-meta">' + (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision</p>' +
+        (shared ? '<p class="dv-note">' + esc(shared) + '</p>' : '') +
+      '</div>' +
+      '<div class="dv-pair">' + s.homes.map(h => {
+        const name = (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
+        return '<section class="dv-unit"><h4>' + esc(name) + '</h4>' +
+          (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') + facts(h) +
+          (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
         '</section>';
-      }).join('') + '</div></article>';
+      }).join('') + '</div>';
   }
 
-  /* The timeline: one stop per completion date, in the order the homes are
-     listed, then one stop for every home with no date yet. Grouped under the
-     stage each stop belongs to. */
-  function timeline() {
+  /* The timeline: one stop per completion date in the order the homes are
+     listed, then one stop for every home with no date yet, each under the
+     stage it belongs to. Subdivision homes collapse to their site. */
+  function timeline(o) {
     const stops = [];
-    homes.forEach(h => {
-      const when = h.done || '';
-      let s = stops.find(x => x.when === when && x.status === h.status);
-      if (!s) stops.push(s = { when, status: h.status, homes: [] });
+    o.homes.forEach(h => {
+      const status = stageOf(h), when = h.done || '';
+      let s = stops.find(x => x.when === when && x.status === status);
+      if (!s) stops.push(s = { when, status, homes: [] });
       s.homes.push(h);
     });
     stops.sort((a, b) => (a.when ? 0 : 1) - (b.when ? 0 : 1));
-    const short = h => h.site ? h.site : h.address;
     const bands = STAGES.map(st => {
       const mine = stops.filter(s => s.status === st.key);
       if (!mine.length) return '';
-      const n = of(st.key).length;
-      return '<div class="band b-' + st.key + '" style="--stops:' + mine.length + '">' +
-        '<p class="band-h"><b>' + st.name + '</b><span>' + n + ' ' + homesWord(n) + '</span></p>' +
-        '<ol class="stops">' + mine.map(s => {
-          /* subdivision homes collapse to their site, with a count */
+      const n = o.homes.filter(h => stageOf(h) === st.key).length;
+      return '<div class="dv-band b-' + st.key + '" style="--stops:' + mine.length + '">' +
+        '<p class="dv-band-h"><b>' + st.name + '</b><span>' + n + ' ' + homesWord(n) + '</span></p>' +
+        '<ol class="dv-stops">' + mine.map(s => {
           const seen = [];
           s.homes.forEach(h => {
-            const k = short(h), e = seen.find(x => x.k === k);
-            if (e) e.n++; else seen.push({ k, n: 1, id: h.id });
+            const k = h.site || h.address, e = seen.find(x => x.k === k);
+            if (e) e.n++; else seen.push({ k, n: 1 });
           });
-          return '<li><span class="dot" aria-hidden="true"></span>' +
-            '<p class="when">' + (s.when ? range(s.when) : 'Timing not yet set') + '</p>' +
-            '<ul>' + seen.map(x => '<li><a href="#' + esc(x.id) + '">' + esc(x.k) + '</a>' +
-              (x.n > 1 ? '<span class="x">' + x.n + ' homes</span>' : '') + '</li>').join('') + '</ul></li>';
+          return '<li><span class="dv-dot"></span>' +
+            '<p class="dv-when">' + (s.when ? range(s.when) : 'Timing not yet set') + '</p>' +
+            '<ul>' + seen.map(x => '<li><b>' + esc(x.k) + '</b>' + (x.n > 1 ? '<span class="dv-x">' + x.n + ' homes</span>' : '') + '</li>').join('') +
+            '</ul></li>';
         }).join('') + '</ol></div>';
     }).join('');
-    return '<section class="line" aria-labelledby="line-h">' +
-      '<h2 id="line-h" class="vh">The pipeline</h2>' +
-      '<p class="line-total"><b>' + homes.length + '</b> ' + homesWord(homes.length) + ' in the pipeline</p>' +
-      '<div class="track">' + bands + '</div></section>';
+    return '<section class="dv-line"><p class="dv-total"><b>' + o.homes.length + '</b> ' +
+      homesWord(o.homes.length) + ' in the pipeline</p><div class="dv-track">' + bands + '</div></section>';
   }
 
-  const hero = homes.find(h => h.id === D.hero) || features.find(h => h.image);
-  const credits = '<p class="credits">Development by ' + esc(D.developer.name) +
-    '<span class="sep" aria-hidden="true"></span>Sales &amp; Marketing by ' + esc(D.marketing) + '</p>';
+  /* ---------- the page furniture ---------- */
+  function mast(doc, urlFor) {
+    const dev = doc.developer || {};
+    const logo = dev.logo ? urlFor(dev.logo) : '';
+    return '<header class="dv-mast">' +
+      (logo ? '<img class="dev-logo" src="' + esc(logo) + '" alt="' + esc(dev.name) + '">'
+            : '<span class="dev-name">' + esc(dev.name) + '</span>') +
+      '<p class="dv-kick">' + esc(doc.kicker) + '</p>' +
+      '<img class="gvc" src="' + GVC_LOCKUP + '" alt="The Gasdaska Verdiglione Conlon Team">' +
+    '</header>';
+  }
+  const creditParts = doc => ['Development by ' + esc((doc.developer || {}).name), 'Sales &amp; Marketing by ' + esc(doc.marketing)];
 
-  root.innerHTML =
-    '<header class="mast">' +
-      '<img class="m-dev" src="' + esc(D.developer.logo) + '" alt="' + esc(D.developer.name) + '">' +
-      '<p class="m-kick">' + esc(D.kicker) + '</p>' +
-      '<img class="m-gvc" src="../../assets/logos/sheet/lockup-navy.svg" alt="The Gasdaska Verdiglione Conlon Team">' +
-    '</header>' +
+  function head(doc, urlFor, o, first) {
+    if (!first) return mast(doc, urlFor) + '<p class="dv-cont">' + esc(doc.title) + ', continued</p>';
+    return mast(doc, urlFor) +
+      '<div class="dv-title"><h1>' + esc(doc.title) + '</h1>' +
+        (doc.lede ? '<p class="dv-lede">' + esc(doc.lede) + '</p>' : '') +
+        '<p class="dv-credits">' + creditParts(doc).join('<i aria-hidden="true"></i>') + '</p></div>' +
+      (o.homes.length ? timeline(o) : '');
+  }
+  const foot = (doc, n, of) => '<footer class="dv-foot"><div>' +
+    '<p>' + creditParts(doc).join('  |  ') + '</p>' +
+    (doc.disclaimer ? '<p class="dv-disc">' + esc(doc.disclaimer) + '</p>' : '') +
+    '</div><span class="dv-pn">' + n + ' of ' + of + '</span></footer>';
 
-    '<section class="hero">' +
-      '<div class="h-txt">' +
-        '<h1>' + esc(D.title) + '</h1>' +
-        '<p class="lede">' + esc(D.lede) + '</p>' +
-        credits +
-      '</div>' +
-      (hero ? '<figure class="h-pic">' + img(hero.image, 'Rendering of ' + hero.address, '(min-width: 960px) 62vw, 100vw', true) +
-        '<figcaption><a href="#' + esc(hero.id) + '">' + esc(hero.address) + '</a>' + esc(hero.imageNote) + '</figcaption></figure>' : '') +
-    '</section>' +
+  /* ---------- the body, as blocks ---------- */
+  function blocks(doc, urlFor, o) {
+    const out = [];
+    const built = o.features.filter(h => stageOf(h) === 'construction');
+    const planned = o.features.filter(h => stageOf(h) !== 'construction');
+    for (let i = 0; i < built.length; i += 2) {
+      out.push('<div class="dv-blk dv-duo">' + built.slice(i, i + 2).map(h =>
+        '<article>' + pic(h, urlFor) + homeText(h) + '</article>').join('') + '</div>');
+    }
+    planned.forEach(h => {
+      const p = pic(h, urlFor);
+      out.push('<article class="dv-blk dv-wide' + (p ? '' : ' nopic') + '">' + p + homeText(h) + '</article>');
+    });
+    o.sites.forEach((s, i) => {
+      out.push(i === 0
+        ? '<div class="dv-blk"><div class="dv-sites-h"><h2>' + word(o.sites.length) +
+            ' new subdivision' + (o.sites.length === 1 ? '' : 's') + '</h2>' +
+            (doc.subdivisionsIntro ? '<p>' + esc(doc.subdivisionsIntro) + '</p>' : '') + '</div>' +
+            '<div class="dv-site">' + siteInner(s) + '</div></div>'
+        : '<div class="dv-blk dv-site">' + siteInner(s) + '</div>');
+    });
+    if (doc.nextStep) out.push('<section class="dv-blk dv-next"><h2>Next step</h2><p>' + esc(doc.nextStep) + '</p></section>');
+    return out;
+  }
 
-    timeline() +
+  /* Lay the blocks onto pages. `measure` is an unscaled 8.5 x 11in element
+     off screen with this stylesheet applied. A block taller than a whole
+     page still gets a page of its own; the tool's overflow check flags it. */
+  function pages(doc, urlFor, measure) {
+    const o = organise(doc);
+    const shell = (first, body, n, of) =>
+      '<div class="dv">' + head(doc, urlFor, o, first) + '<div class="dv-body">' + body + '</div>' + foot(doc, n, of) + '</div>';
+    if (!o.homes.length) return [shell(true,
+      '<p class="dv-empty">Add the development’s homes in the panel on the left.</p>', 1, 1)];
 
-    STAGES.map(st => {
-      const list = features.filter(h => h.status === st.key);
-      if (!list.length) return '';
-      return '<section class="stage-sec" aria-label="' + st.name + '">' +
-        list.map(h => feature(h, features.indexOf(h))).join('') + '</section>';
-    }).join('') +
+    const bl = blocks(doc, urlFor, o);
+    const runs = [[]];
+    const fits = (first, list) => {
+      measure.innerHTML = shell(first, list.join(''), 9, 9);
+      const body = measure.querySelector('.dv-body');
+      return body.scrollHeight <= body.clientHeight + 1;
+    };
+    bl.forEach(b => {
+      const run = runs[runs.length - 1];
+      if (!run.length || fits(runs.length === 1, run.concat(b))) run.push(b);
+      else runs.push([b]);
+    });
+    measure.innerHTML = '';
+    return runs.map((run, i) => shell(i === 0, run.join(''), i + 1, runs.length));
+  }
 
-    (sites.length ? '<section class="sites" aria-labelledby="sites-h">' +
-      '<div class="sites-h"><h2 id="sites-h">' + word(sites.length) + ' new subdivisions</h2>' +
-        '<p>' + esc(D.subdivisionsIntro) + '</p></div>' +
-      sites.map(site).join('') + '</section>' : '') +
-
-    '<section class="next" aria-labelledby="next-h">' +
-      '<div class="n-txt"><h2 id="next-h">Next step</h2><p>' + esc(D.nextStep) + '</p></div>' +
-      '<div class="n-act">' +
-        '<a class="btn" href="' + esc(D.contactUrl) + '" target="_blank" rel="noopener">Contact the GVC Team</a>' +
-        '<button class="btn ghost" type="button" id="printBtn">Print or save as PDF</button>' +
-      '</div>' +
-    '</section>' +
-
-    '<footer class="foot">' +
-      '<div class="f-logos">' +
-        '<img src="' + esc(D.developer.logoWhite) + '" alt="' + esc(D.developer.name) + '">' +
-        '<img class="f-gvc" src="../../assets/logos/sheet/lockup-navy.svg" alt="The Gasdaska Verdiglione Conlon Team">' +
-      '</div>' +
-      credits +
-      '<p class="disc">' + esc(D.disclaimer) + '</p>' +
-    '</footer>';
-
-  document.getElementById('printBtn').addEventListener('click', () => window.print());
-  requestAnimationFrame(() => document.documentElement.classList.add('ready'));
-})();
+  global.GVC_DEV = { pages, organise, STAGES };
+})(window);

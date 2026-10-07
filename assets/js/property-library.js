@@ -668,7 +668,10 @@
     stripPhotos: stripPhotos,
     slugOf: slugOf, slugOfCore: slugOfCore, labelOf: labelOf,
     joinUnit: joinUnit, splitUnit: splitUnit,
-    unitDisplay: unitDisplay, unitOf: unitOf
+    unitDisplay: unitDisplay, unitOf: unitOf,
+    /* for tools with a table of their own (New Development): the one
+       authenticated request path, and the photo shrink + content hash */
+    call: call, shrink: shrink, hashOf: hashOf
   };
 
   /* Node can require this file to test the pure helpers — the address and unit

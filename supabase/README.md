@@ -14,6 +14,7 @@ saved property each. This folder holds the schema for that shared store.
 |---|---|
 | `properties` | One row per address. `core` is the facts every builder shares: address, city/state/zip, price, beds, baths, sqft, description, features, agents, comps. |
 | `documents` | One saved document per tool per property (`showsheet`, `brochure`, `seller`, `buyer`). `state` is stored verbatim and handed back untouched. |
+| `developments` | One row per developer pipeline for `tools/new-development/` (migration 0002). `data` is the whole printable document, stored verbatim; uploaded renderings go in the `property-photos` bucket under `developments/<slug>/`. |
 | `photos` | The index of the photo shelf. The files themselves live in the private `property-photos` bucket; pages render them through short-lived signed URLs. |
 
 A property may have no documents at all — core facts alone are a perfectly normal property, and

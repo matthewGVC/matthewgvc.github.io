@@ -33,7 +33,9 @@ const PAGES = [
   ['CMA',             '/tools/cma/'],
   ['Map Studio',      '/tools/map-studio/'],
   ['Watermark',       '/tools/watermark/'],
-  ['Listing Rules',   '/listing-rules/']
+  ['Listing Rules',   '/listing-rules/'],
+  /* a client-facing private preview: deliberately no portfolio masthead */
+  ['South Street',    '/projects/south-street/', { noChrome: true }]
 ];
 
 /* Some browsers ask for these on their own whether or not a page links an
@@ -46,7 +48,7 @@ const PAGES = [
 const BROWSER_PROBES = [/\/favicon\.ico$/, /\/apple-touch-icon(-precomposed)?\.png$/];
 const isProbe = url => BROWSER_PROBES.some(re => re.test(url));
 
-async function check(page, label, path) {
+async function check(page, label, path, opts = {}) {
   const consoleErrors = [], pageErrors = [], sriBlocked = [], notFound = [];
 
   page.removeAllListeners('console');
@@ -88,8 +90,8 @@ async function check(page, label, path) {
   if (consoleErrors.length) problems.push(consoleErrors.length + ' console error(s): ' + consoleErrors.join(' | '));
   if (sriBlocked.length)    problems.push(sriBlocked.length + ' SRI-blocked: ' + sriBlocked.join(' | '));
   if (notFound.length)      problems.push(notFound.length + ' missing file(s): ' + notFound.join(' | '));
-  if (!r.masthead)          problems.push('no masthead — chrome.js did not run');
-  if (!r.monogram)          problems.push('monogram SVG missing from the masthead');
+  if (!opts.noChrome && !r.masthead) problems.push('no masthead — chrome.js did not run');
+  if (!opts.noChrome && !r.monogram) problems.push('monogram SVG missing from the masthead');
   if (r.bodyText < 40)      problems.push('page rendered almost no text (' + r.bodyText + ' chars)');
   if (r.horizontalOverflow) problems.push('page scrolls sideways at this width');
 
@@ -105,8 +107,8 @@ async function check(page, label, path) {
 
   console.log('\nChecking ' + PAGES.length + ' pages on ' + BASE + '\n');
   let failed = 0;
-  for (const [label, path] of PAGES) {
-    if (!await check(page, label, path)) failed++;
+  for (const [label, path, opts] of PAGES) {
+    if (!await check(page, label, path, opts)) failed++;
   }
 
   /* The 404 page's one job is to get somebody back to the site. */

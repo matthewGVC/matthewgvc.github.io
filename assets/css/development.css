@@ -1,0 +1,289 @@
+/* ============================================================
+   NEW-DEVELOPMENT PAGE — screen and print. Markup: assets/js/development.js.
+
+   Co-branded: GVC navy carries the text, the developer's harbour blue
+   (South Street #0060A2) carries status and links, on a cool off-white
+   rather than the portfolio's paper. The one bold element is the pipeline
+   timeline; everything else stays quiet.
+
+   The timeline encodes stage in the line itself: solid where homes are
+   being built, dashed where ground is not yet broken; filled dots and
+   hollow dots say the same thing again on each home's spread.
+   ============================================================ */
+:root {
+  --ink: #00273A;
+  --soft: #3D5A68;
+  --harbor: #0060A2;
+  --sky: #53C7DC;
+  --page: #FAFAFA;
+  --mist: #EBF1F4;
+  --rule: rgba(0, 39, 58, .14);
+  --bone: #E5E5E5;
+  --serif: 'Playfair Display', Georgia, serif;
+  --body: 'Raleway', system-ui, sans-serif;
+  --fig: 'Nunito Sans', system-ui, sans-serif;
+  --wrap: 1240px;
+  --gut: clamp(16px, 4.5vw, 64px);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 400 17px/1.6 var(--body);
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; border-radius: 2px; }
+h1, h2, h3, h4, p, figure, dl, dd, ol, ul { margin: 0; padding: 0; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.dev > * { padding-left: var(--gut); padding-right: var(--gut); }
+
+/* ---------- masthead ---------- */
+.mast {
+  max-width: calc(var(--wrap) + 2 * var(--gut)); margin: 0 auto;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px;
+  padding-top: 26px; padding-bottom: 26px;
+}
+.m-dev { height: 30px; width: auto; }
+.m-gvc { height: 38px; width: auto; justify-self: end; }
+.m-kick { font: italic 400 17px/1 var(--serif); color: var(--soft); }
+
+/* ---------- hero: title left, rendering bleeding to the right edge ---------- */
+.hero {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 4vw, 72px);
+  align-items: end; padding-right: 0 !important;
+  padding-left: max(var(--gut), calc((100vw - var(--wrap)) / 2)) !important;
+  margin-top: clamp(8px, 2vw, 28px);
+}
+.h-txt { padding-bottom: 12px; }
+.hero h1 {
+  font: 400 clamp(46px, 6.4vw, 96px)/.98 var(--serif); letter-spacing: -.012em;
+  text-wrap: balance;
+}
+.lede { margin-top: 26px; max-width: 30ch; font: 300 clamp(18px, 1.6vw, 22px)/1.5 var(--body); color: var(--soft); }
+.credits { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--rule);
+  font: 500 14px/1.7 var(--body); color: var(--soft); max-width: 48ch; }
+.credits .sep { display: block; height: 0; }
+.h-pic { position: relative; }
+.h-pic img { width: 100%; height: min(76vh, 720px); min-height: 380px; object-fit: cover; object-position: 50% 62%; }
+.h-pic figcaption, .sp-pic figcaption {
+  margin-top: 10px; font: 500 12.5px/1.4 var(--fig); color: var(--soft); letter-spacing: .01em;
+}
+.h-pic figcaption a { font-weight: 800; color: var(--ink); text-decoration: none; margin-right: 10px; }
+.h-pic figcaption a:hover { color: var(--harbor); }
+
+/* ---------- the pipeline timeline ---------- */
+.line { background: var(--mist); margin-top: clamp(56px, 7vw, 104px);
+  padding-top: clamp(40px, 5vw, 64px); padding-bottom: clamp(44px, 5vw, 72px); }
+.line > * { max-width: var(--wrap); margin-left: auto; margin-right: auto; }
+.line-total { font: italic 400 clamp(24px, 2.4vw, 32px)/1.2 var(--serif); }
+.line-total b { font-style: normal; font-weight: 600; }
+.track { display: flex; margin-top: 38px; }
+.band { flex: var(--stops) 1 0; min-width: 0; }
+.band-h { display: flex; gap: 12px; align-items: baseline; font: 400 15px/1.3 var(--body); color: var(--soft); padding-right: 24px; }
+.band-h b { font: 800 15px/1.3 var(--fig); color: var(--ink); }
+.stops { list-style: none; display: grid; grid-template-columns: repeat(var(--stops), minmax(0, 1fr));
+  margin-top: 22px; position: relative; }
+/* the track itself: solid while building, dashed before ground is broken */
+.stops::before { content: ''; position: absolute; left: 0; right: 0; top: 7px; height: 0;
+  border-top: 2px solid var(--harbor); transform-origin: left; transition: transform 1.3s var(--ease) .25s; }
+.b-planned .stops::before { border-top-style: dashed; border-top-color: rgba(0, 96, 162, .55); }
+.stops > li { position: relative; padding-right: 24px; }
+.dot { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--harbor);
+  position: relative; box-shadow: 0 0 0 5px var(--mist); }
+.b-planned .dot { background: var(--mist); border: 2px solid var(--harbor); }
+.when { margin-top: 18px; font: 800 14px/1.3 var(--fig); letter-spacing: .02em; color: var(--harbor); }
+.stops ul { list-style: none; margin-top: 8px; }
+.stops ul li { margin-top: 4px; }
+.stops ul a { font: 500 clamp(19px, 1.7vw, 23px)/1.3 var(--serif); text-decoration: none;
+  background: linear-gradient(var(--sky), var(--sky)) 0 100% / 0 1.5px no-repeat; transition: background-size .3s var(--ease); }
+.stops ul a:hover { background-size: 100% 1.5px; }
+.x { margin-left: 8px; font: 500 13px/1 var(--fig); color: var(--soft); white-space: nowrap; }
+
+/* ---------- a home to a spread ---------- */
+.stage-sec { max-width: calc(var(--wrap) + 2 * var(--gut)); margin: 0 auto; }
+.spread { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 80px);
+  align-items: center; padding: clamp(56px, 7vw, 112px) 0 0; scroll-margin-top: 24px; }
+.spread.flip { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.spread.flip .sp-pic { order: 2; }
+.spread.nopic { grid-template-columns: minmax(0, 1fr); }
+.sp-pic img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+.stage { display: flex; align-items: center; gap: 9px; font: 800 13.5px/1 var(--fig); letter-spacing: .02em; color: var(--harbor); }
+.stage::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--harbor); }
+.stage.s-planned::before { background: transparent; border: 1.5px solid var(--harbor); }
+.sp-txt h3 { margin-top: 18px; font: 500 clamp(36px, 4vw, 58px)/1.02 var(--serif); letter-spacing: -.01em; }
+.town { margin-top: 10px; font: 400 17px/1.4 var(--body); color: var(--soft); }
+.price { margin-top: 26px; font: 300 clamp(30px, 2.8vw, 40px)/1 var(--fig); font-variant-numeric: lining-nums tabular-nums; }
+.price span { display: block; margin-bottom: 8px; font: 600 13px/1 var(--body); color: var(--soft); }
+.facts { margin-top: 24px; border-top: 1px solid var(--rule); }
+.facts div { display: grid; grid-template-columns: 11.5em 1fr; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+.facts dt { font: 600 14px/1.45 var(--fig); color: var(--soft); }
+.facts dd { font: 600 15.5px/1.45 var(--fig); font-variant-numeric: lining-nums tabular-nums; }
+.note { margin-top: 22px; max-width: 46ch; font: 400 16.5px/1.65 var(--body); color: var(--soft); }
+
+/* ---------- subdivisions: one site, its homes side by side ---------- */
+.sites { max-width: calc(var(--wrap) + 2 * var(--gut)); margin: clamp(80px, 9vw, 140px) auto 0; }
+.sites-h { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 5vw, 80px); align-items: end;
+  padding-bottom: 28px; border-bottom: 2px solid var(--ink); }
+.sites-h h2 { font: 400 clamp(34px, 3.6vw, 52px)/1.05 var(--serif); }
+.sites-h p { max-width: 52ch; color: var(--soft); }
+.site { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 5vw, 80px);
+  padding: 40px 0 44px; border-bottom: 1px solid var(--rule); }
+.site h3 { font: 500 clamp(28px, 2.6vw, 38px)/1.1 var(--serif); }
+.site-meta { margin-top: 10px; font: 500 15px/1.4 var(--body); color: var(--soft); }
+.site header .note { margin-top: 18px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 44px); }
+.unit { scroll-margin-top: 24px; }
+.unit h4 { font: 800 14px/1 var(--fig); letter-spacing: .02em; color: var(--harbor); }
+.unit .price { margin-top: 14px; font-size: clamp(26px, 2.3vw, 32px); }
+.unit .facts { margin-top: 18px; }
+.unit .facts div { grid-template-columns: 8.5em 1fr; }
+
+/* ---------- next step + footer ---------- */
+.next { background: var(--ink); color: #fff; margin-top: clamp(80px, 9vw, 140px);
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px 64px; align-items: end;
+  padding-top: clamp(52px, 6vw, 88px); padding-bottom: clamp(40px, 5vw, 64px);
+  padding-left: max(var(--gut), calc((100vw - var(--wrap)) / 2)); padding-right: max(var(--gut), calc((100vw - var(--wrap)) / 2)); }
+.next h2 { font: 400 clamp(36px, 4vw, 56px)/1 var(--serif); }
+.next p { margin-top: 18px; max-width: 46ch; font: 300 19px/1.55 var(--body); color: var(--bone); }
+.n-act { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+.btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px; border: 1.5px solid var(--sky);
+  background: var(--sky); color: var(--ink); font: 800 15px/1 var(--fig); letter-spacing: .02em; text-decoration: none;
+  cursor: pointer; border-radius: 2px; transition: background .18s, color .18s; }
+.btn:hover { background: #fff; border-color: #fff; }
+.btn.ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .45); }
+.btn.ghost:hover { border-color: #fff; color: var(--ink); background: #fff; }
+.foot { background: var(--ink); color: var(--bone); border-top: 1px solid rgba(255, 255, 255, .14);
+  padding-top: 32px; padding-bottom: 40px;
+  padding-left: max(var(--gut), calc((100vw - var(--wrap)) / 2)); padding-right: max(var(--gut), calc((100vw - var(--wrap)) / 2)); }
+.f-logos { display: flex; align-items: center; gap: 36px; }
+.f-logos img { height: 26px; width: auto; }
+.f-logos .f-gvc { height: 34px; filter: brightness(0) invert(1); }
+.foot .credits { border: 0; padding: 0; margin-top: 22px; color: var(--bone); max-width: none; }
+.foot .credits .sep { display: inline-block; width: 1px; height: 12px; margin: 0 12px; background: rgba(255, 255, 255, .35); }
+.disc { margin-top: 6px; font: 400 13.5px/1.6 var(--body); color: rgba(229, 229, 229, .75); }
+
+/* ---------- the one entrance: rendering settles, track draws ---------- */
+.h-pic img { transition: opacity 1s var(--ease), transform 1.6s var(--ease); }
+html:not(.ready) .h-pic img { opacity: 0; transform: scale(1.025); }
+html:not(.ready) .stops::before { transform: scaleX(0); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .h-pic img, .stops::before, .stops ul a, .btn { transition: none !important; }
+  html:not(.ready) .h-pic img { opacity: 1; transform: none; }
+  html:not(.ready) .stops::before { transform: none; }
+}
+
+/* ---------- narrow screens ---------- */
+@media screen and (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; padding-right: var(--gut) !important; padding-left: var(--gut) !important; }
+  .h-pic img { height: auto; min-height: 0; aspect-ratio: 4 / 3; }
+  .spread, .spread.flip { grid-template-columns: 1fr; }
+  .spread.flip .sp-pic { order: 0; }
+  .sites-h, .site { grid-template-columns: 1fr; }
+  .next { grid-template-columns: 1fr; }
+  .n-act { justify-content: flex-start; }
+  /* the timeline turns to run down the page */
+  .track { flex-direction: column; gap: 28px; }
+  .stops { grid-template-columns: 1fr; padding-left: 30px; row-gap: 20px; }
+  .stops::before { left: 7px; right: auto; top: 6px; bottom: 6px; border-top: 0; border-left: 2px solid var(--harbor); transform-origin: top; }
+  .b-planned .stops::before { border-left-style: dashed; border-left-color: rgba(0, 96, 162, .55); }
+  html:not(.ready) .stops::before { transform: scaleY(0); }
+  .dot { position: absolute; left: -30px; top: 0; }
+  .when { margin-top: 0; }
+}
+@media screen and (max-width: 560px) {
+  .mast { grid-template-columns: 1fr auto; }
+  .m-kick { display: none; }
+  .m-dev { height: 22px; }
+  .m-gvc { height: 30px; }
+  .pair { grid-template-columns: 1fr; }
+  .facts div, .unit .facts div { grid-template-columns: 8em 1fr; }
+  .foot .credits .sep { display: block; width: auto; height: 0; margin: 0; background: none; }
+  .f-logos { flex-wrap: wrap; gap: 20px; }
+}
+
+/* ---------- print: a Letter handout ----------
+   Page 1: masthead, title, the timeline, the two homes under construction
+   side by side. Page 2: the planned home, the subdivisions, next step. */
+@media print {
+  @page { size: letter; margin: .42in .45in .4in; }
+  html, body { background: #fff; font-size: 10pt; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dev > * { padding-left: 0 !important; padding-right: 0 !important; }
+  html:not(.ready) .h-pic img, html:not(.ready) .stops::before { opacity: 1; transform: none; }
+  a { text-decoration: none; }
+
+  .mast { padding: 0 0 .14in; border-bottom: 1px solid var(--rule); }
+  .m-dev { height: 18pt; } .m-gvc { height: 24pt; } .m-kick { font-size: 11pt; }
+
+  /* the hero rendering is 619 Bradley's, which prints a few inches below:
+     on paper the title stands alone rather than show the house twice */
+  .hero { display: block; margin-top: .2in; padding: 0 !important; }
+  .h-pic { display: none; }
+  .hero h1 { font-size: 30pt; }
+  .lede { margin-top: .06in; max-width: none; font-size: 11.5pt; }
+  .credits { margin-top: .1in; padding-top: .07in; font-size: 8.5pt; max-width: none; }
+  .credits .sep { display: inline-block; width: 1px; height: 9pt; margin: 0 9pt -1pt; background: var(--rule); }
+
+  .line { margin-top: .18in; padding: .14in .22in .16in !important; }
+  .line-total { font-size: 15pt; }
+  .track { margin-top: .12in; }
+  .band-h, .band-h b { font-size: 9pt; }
+  .stops { margin-top: .1in; }
+  .when { margin-top: 8pt; font-size: 8.5pt; }
+  .stops ul a { font-size: 10.5pt; white-space: nowrap; }
+  .stops > li { padding-right: 10pt; }
+  .stops ul li { margin-top: 1pt; }
+  .x { font-size: 7.5pt; }
+
+  /* the two homes being built share page 1, image over text */
+  .stage-sec { display: grid; grid-template-columns: 1fr 1fr; gap: .3in; }
+  .stage-sec + .stage-sec { display: block; break-before: page; }
+  .spread, .spread.flip { grid-template-columns: 1fr; gap: .1in; padding-top: .2in; align-items: start; break-inside: avoid; }
+  .spread.flip .sp-pic { order: 0; }
+  .sp-pic img { aspect-ratio: auto; height: 2.1in; }
+  .sp-pic figcaption { font-size: 7pt; margin-top: 3pt; }
+  .stage { font-size: 8pt; }
+  .stage::before { width: 7px; height: 7px; }
+  .sp-txt h3 { margin-top: 5pt; font-size: 20pt; }
+  .town { margin-top: 2pt; font-size: 9.5pt; }
+  .price { margin-top: 7pt; font-size: 17pt; }
+  .price span { display: none; }
+  .facts { margin-top: 6pt; }
+  .facts div { padding: 3.5pt 0; grid-template-columns: 9.5em 1fr; }
+  .facts dt { font-size: 8.5pt; } .facts dd { font-size: 9pt; }
+  .note { margin-top: 6pt; font-size: 9pt; line-height: 1.45; max-width: none; }
+
+  /* page 2: the planned home runs across, picture beside the text */
+  .stage-sec + .stage-sec .spread { grid-template-columns: 1.15fr 1fr; gap: .3in; padding-top: 0; align-items: center; }
+  .stage-sec + .stage-sec .sp-pic img { height: 2.5in; }
+
+  .sites { margin-top: .26in; }
+  .sites-h { padding-bottom: .08in; gap: .3in; grid-template-columns: 4fr 6fr; }
+  .sites-h h2 { font-size: 19pt; }
+  .sites-h p { font-size: 9pt; }
+  .site { grid-template-columns: 4fr 6fr; gap: .3in; padding: .11in 0 .12in; break-inside: avoid; }
+  .site h3 { font-size: 14pt; }
+  .site-meta { margin-top: 2pt; font-size: 8.5pt; }
+  .site header .note { margin-top: 4pt; }
+  .pair { gap: .22in; }
+  .unit h4 { font-size: 8pt; }
+  .unit .price { margin-top: 4pt; font-size: 13pt; }
+  .unit .facts { margin-top: 4pt; }
+  .unit .facts div { padding: 2.5pt 0; grid-template-columns: 6.6em 1fr; }
+
+  .next { margin-top: .22in; padding: .16in .22in !important; grid-template-columns: 1fr; break-inside: avoid; }
+  .next h2 { font-size: 15pt; }
+  .next p { margin-top: 4pt; font-size: 9.5pt; max-width: none; }
+  .n-act { display: none; }
+  .foot { padding: .1in .22in .12in !important; border-top: 0; break-inside: avoid; }
+  .f-logos { display: none; }
+  .foot .credits { margin-top: 0; font-size: 8pt; }
+  .disc { margin-top: 1pt; font-size: 7.5pt; }
+}

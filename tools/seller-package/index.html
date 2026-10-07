@@ -93,20 +93,12 @@
   text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.85);}
 .crew .cell.lab.n3 .nm,.crew .cell.lab.n4 .nm{color:var(--navy);}
 .crew .cell.lab.n3 .tt,.crew .cell.lab.n4 .tt{color:rgba(0,39,58,.75);}
-/* New Jersey: the same 2x2-of-colours row, one discipline per square, no people */
-.crew .cell.lab.inh{align-items:center;text-align:center;aspect-ratio:1/2;}
-.crew .cell.lab.inh .ci{width:.4in;height:.4in;margin-bottom:.12in;color:#fff;}
-.crew .cell.lab.n3.inh .ci,.crew .cell.lab.n4.inh .ci{color:var(--navy);}
-/* ...a full-width mockup of the team's work (a brochure it designed, with
-   one of its films playing on a phone), the four squares as a strip under it */
-.showcase{display:flex;flex-direction:column;flex:none;}
-.showcase .mock{height:3.625in;overflow:hidden;background:#929292;}  /* 7.25in wide: Matt's 2:1 crop */
-.showcase .mock img{width:100%;height:100%;object-fit:cover;display:block;}
-.showcase .crew{margin:0;}
-.showcase .crew .cell.lab.inh{aspect-ratio:auto;flex-direction:row;gap:.1in;padding:.15in .1in;}
-.showcase .crew .cell.lab.inh .ci{width:.24in;height:.24in;margin:0;}
-.showcase .crew .cell.lab.inh .nm{font-size:10pt;}
-.showcase .crew .cell.lab.inh .tt{display:none;}
+/* New Jersey's marketing page, led by a full-width mockup of the team's work (blueprint, brochure,
+   camera, a film on a phone). The panel takes the image's own proportions, so
+   none of it is ever cropped. */
+.showcase{flex:none;}
+.showcase .mock{aspect-ratio:2600 / 1491;overflow:hidden;background:#929292;}
+.showcase .mock img{width:100%;height:100%;object-fit:contain;display:block;}
 /* this page carries four sections, so its headings sit tighter than the
    other company pages' */
 .showcase ~ .dline.sm{margin:.14in 0 .1in;}
@@ -1156,14 +1148,9 @@ function pgStudio(n) {
    only that every part of the marketing is produced in-house. */
 function pgStudioNj(n) {
   const ico = name => (window.icon ? window.icon(name, 'ci') : '');
-  const work = [['camera', 'Photography', 'n1'], ['clapper', 'Video', 'n2'],
-                ['pen', 'Design', 'n3'], ['megaphone', 'Social Media', 'n4']];
   const body =
     '<div class="showcase">' +
       '<div class="mock"><img src="../../assets/img/nj/marketing-mockup.jpg" alt="A GVC listing brochure and its film playing on a phone"></div>' +
-      '<div class="crew">' + work.map(w =>
-        '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
-        '<div class="tt">In-house</div></div>').join('') + '</div>' +
     '</div>' +
     '<div class="dline sm">Our Marketing <b>Advantage</b></div>' +
     '<div class="tri">' +

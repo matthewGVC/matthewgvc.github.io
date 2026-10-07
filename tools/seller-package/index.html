@@ -959,7 +959,8 @@ function paintSlotGrips() {
   SLOTS.forEach(name => {
     const img = assign[name];
     const box = document.querySelector('[data-drop="' + name + '"]');
-    if (!img || !box || !box.querySelector('img')) return;
+    const shown = box && box.querySelector('img');
+    if (!img || !shown || shown.getAttribute('src') !== img.url) return;
     PD.grip(box, {
       onMove: ev => beginPhotoDnD(ev, img, 'page'),
       onOff: () => unusePhoto(img)
@@ -1346,7 +1347,11 @@ function pgVideos(n) {
     '<div class="vids">' +
       '<div class="vids-copy">' + VIDEO_COPY[state.market].map(p => '<p>' + p + '</p>').join('') + '</div>' +
       '<div class="vids-list">' + chosenVideos().map((v, i) => {
-        const key = 'video' + (i + 1), img = v.photo || slot(key);
+        /* A photo the user pinned to this card wins over the film's own still:
+           dropping one here is a deliberate act and has to show. Auto-placed
+           photos do not, so the library stills stay the default. */
+        const key = 'video' + (i + 1), pinned = assign[key] && assign[key].role === key ? assign[key].url : null;
+        const img = pinned || v.photo || slot(key);
         const code = v.qr
           ? '<img src="' + v.qr + '" alt="">'
           : qrSvg(v.url);

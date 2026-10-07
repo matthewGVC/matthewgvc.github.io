@@ -1997,14 +1997,6 @@ function renderGalleryInspector() {
 function updateBentoNote() { renderGalleryPanel(); }
 
 
-function roleLabelFor(img) {
-  if (img.role && img.role !== 'auto') return null;   // explicit shows in the select
-  if (assign.hero === img) return 'Cover';
-  if (assign.infoTop === img) return 'Info · top';
-  if (assign.gallery.includes(img)) return 'Gallery';
-  return 'Unused';
-}
-
 /* ============================================================
    PHOTO DRAG & DROP
 
@@ -2539,5 +2531,6 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkOverf
 .linkish:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
 </style>
 <script src="../../assets/js/panel-collapse.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
 </body>
 </html>

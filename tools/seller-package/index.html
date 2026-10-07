@@ -97,14 +97,17 @@
 .crew .cell.lab.inh{align-items:center;text-align:center;aspect-ratio:1/2;}
 .crew .cell.lab.inh .ci{width:.4in;height:.4in;margin-bottom:.12in;color:#fff;}
 .crew .cell.lab.n3.inh .ci,.crew .cell.lab.n4.inh .ci{color:var(--navy);}
-/* ...beside a mockup of a brochure the team designed, the four squares
-   folded into a 2x2 so the piece of work gets the width */
-.showcase{display:grid;grid-template-columns:1.75fr 1fr;height:4.5in;flex:none;margin-bottom:.24in;}
+/* ...under two mockups of a brochure the team designed (its cover, then a
+   spread), the four squares folded into a strip so the work gets the room */
+.showcase{display:flex;flex-direction:column;flex:none;margin-bottom:.24in;}
+.showcase .mocks{display:grid;grid-template-columns:1fr 1fr;gap:.06in;height:3.9in;margin-bottom:.06in;}
 .showcase .mock{overflow:hidden;min-width:0;background:#929292;}
 .showcase .mock img{width:100%;height:100%;object-fit:cover;display:block;}
-.showcase .crew{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;margin:0;}
-.showcase .crew .cell.lab.inh{aspect-ratio:auto;}
-.showcase .crew .cell.lab.inh .ci{width:.32in;height:.32in;margin-bottom:.1in;}
+.showcase .crew{margin:0;}
+.showcase .crew .cell.lab.inh{aspect-ratio:auto;flex-direction:row;gap:.1in;padding:.17in .1in;}
+.showcase .crew .cell.lab.inh .ci{width:.24in;height:.24in;margin:0;}
+.showcase .crew .cell.lab.inh .tt{display:none;}
+.showcase .crew .cell.lab.inh .nm{font-size:10pt;}
 /* Your Property, New Jersey: every digit the same height (lining figures),
    so prices and sizes do not bob up and down in the serif. */
 .pg[data-market="nj"][data-key="property"],
@@ -1146,7 +1149,10 @@ function pgStudioNj(n) {
                 ['pen', 'Design', 'n3'], ['megaphone', 'Social Media', 'n4']];
   const body =
     '<div class="showcase">' +
-      '<div class="mock"><img src="../../assets/img/nj/brochure-mockup.jpg" alt="A GVC listing brochure"></div>' +
+      '<div class="mocks">' +
+        '<div class="mock"><img src="../../assets/img/nj/brochure-mockup.jpg" alt="A GVC listing brochure, cover"></div>' +
+        '<div class="mock"><img src="../../assets/img/nj/brochure-spread.jpg" alt="A GVC listing brochure, property spread"></div>' +
+      '</div>' +
       '<div class="crew">' + work.map(w =>
         '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
         '<div class="tt">In-house</div></div>').join('') + '</div>' +

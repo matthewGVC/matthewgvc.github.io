@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Development — Matt Bloomfield</title>
+<meta name="description" content="Build the printable Private Preview of a developer's new-construction pipeline for The GVC Team.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted static fonts (assets/css/fonts.css) so Save as PDF embeds them. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="../../assets/css/development.css">
+<link rel="stylesheet" href="../../assets/css/panel-collapse.css">
+<style>
+/* ---------- the panel's own pieces ---------- */
+.lib-status{font:400 10px var(--ui-mono);color:var(--ui-ink-soft);line-height:1.6;margin-top:10px;min-height:16px;}
+.lib-status.ok{color:#1f6b3a;} .lib-status.warn{color:#8C3A2B;}
+.lib-row{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.lib-row > select,.lib-row > input{flex:1;min-width:0;border:1px solid var(--ui-rule);background:#fff;padding:7px 9px;font:500 12.5px var(--body);color:var(--navy);border-radius:6px;}
+.lib-row > select:focus,.lib-row > input:focus{border-color:var(--sky);outline:2px solid var(--sky);outline-offset:1px;}
+.linkish{border:0;background:none;padding:0;font:400 10px var(--ui-mono);color:var(--ui-ink-soft);text-decoration:underline;cursor:pointer;}
+
+.hm{border:1px solid var(--ui-rule);border-radius:8px;background:#fff;margin-top:10px;}
+.hm > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:9px 11px;}
+.hm > summary::-webkit-details-marker{display:none;}
+.hm > summary:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:8px;}
+.hm-dot{flex:none;width:9px;height:9px;border-radius:50%;background:#0060A2;}
+.hm-dot.planned{background:transparent;border:1.5px solid #0060A2;}
+.hm-name{flex:1;min-width:0;font:800 11px var(--sans);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hm-meta{font:400 10px var(--ui-mono);color:var(--ui-ink-soft);white-space:nowrap;}
+.hm-in{padding:0 11px 12px;border-top:1px solid var(--ui-rule);}
+.hm-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.hm-pic{display:flex;gap:10px;align-items:center;margin-top:10px;}
+.hm-pic img{width:96px;height:64px;object-fit:cover;border-radius:4px;background:var(--ui-paper-2);flex:none;}
+.hm-pic .none{width:96px;height:64px;border-radius:4px;background:var(--ui-paper-2);display:grid;place-items:center;
+  font:400 9px var(--ui-mono);color:var(--ui-ink-soft);flex:none;text-align:center;}
+.hm-pic .acts{display:flex;flex-direction:column;gap:6px;align-items:flex-start;}
+.logo-prev{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.logo-prev img{height:22px;width:auto;max-width:200px;}
+.warn-box{margin:10px 0 0;padding:8px 10px;border-radius:6px;background:rgba(140,58,43,.08);color:#8C3A2B;font:400 10.5px var(--ui-mono);line-height:1.5;}
+.dv-measure{position:absolute;left:-20000px;top:0;visibility:hidden;pointer-events:none;}
+@media print{.dv-measure{display:none !important;}}
+</style>
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">New Development</h1>
+
+<div id="app">
+
+  <!-- ======================= EDITOR =======================
+       The document is one development's pipeline. It loads from the library
+       (Supabase, table developments) when signed in, and falls back to the
+       bundled seed for South Street; Save writes it back. The pages on the
+       right are exactly what Download PDF prints. -->
+  <aside id="editor">
+    <div class="ed-body">
+
+      <details class="ed-sec" open>
+        <summary>Library <span class="hint">sign in &middot; load &middot; save</span></summary>
+        <div class="sec-in">
+          <form id="signForm" class="lib-row" hidden>
+            <input type="password" id="pw" placeholder="Team password" autocomplete="current-password" aria-label="Team password">
+            <button class="btn sm" type="submit">Sign in</button>
+          </form>
+          <div id="libIn" hidden>
+            <div class="lib-row">
+              <select id="devPick" aria-label="Development"></select>
+              <button class="btn sm ghost" type="button" id="btnNew">New</button>
+            </div>
+            <div class="lib-row">
+              <button class="btn sm" type="button" id="btnSave">Save</button>
+              <button class="linkish" type="button" id="btnOut">Sign out</button>
+            </div>
+          </div>
+          <p class="lib-status" id="libStatus" role="status"></p>
+          <div class="sec-note">The team password is the same one the property library uses. Saving keeps this
+            development for the whole team; Download PDF prints the pages as they are on the right.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Header <span class="hint">title, developer, closing text</span></summary>
+        <div class="sec-in" id="docFields"></div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Homes <span class="hint" id="homesHint"></span></summary>
+        <div class="sec-in">
+          <div id="homes"></div>
+          <div class="hm-tools"><button class="btn sm" type="button" id="btnAdd">Add a home</button></div>
+          <div class="sec-note">Status sets which part of the timeline a home sits in, and the counts follow.
+            Give two homes the same Subdivision to show them side by side under one heading.
+            Renderings: high resolution only (1600px wide or more).</div>
+        </div>
+      </details>
+
+      <div id="warnGeneral" class="warn-box" hidden></div>
+    </div>
+  </aside>
+
+  <!-- ======================= STAGE ======================= -->
+  <main id="stage">
+    <div id="pages"></div>
+  </main>
+
+  <div id="stageBar">
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button class="btn sm ghost" id="btnZoom">Zoom 100%</button>
+    <button class="btn lg" id="btnPrint" title="Opens the save dialog with the file already named. Destination: Save as PDF. Margins: None. Background graphics: on.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+      Download PDF
+    </button>
+  </div>
+
+</div><!-- /app -->
+</main>
+<input type="file" id="fileIn" accept="image/*" hidden>
+
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script src="../../assets/js/development.js"></script>
+<script src="seed.js"></script>
+<script>
+'use strict';
+const P = window.GVC_PROPS, DEV = window.GVC_DEV, CFG = window.GVC_SUPABASE;
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ============================================================
+   STATE — the document being edited, and where it came from.
+   ============================================================ */
+let doc = clone(window.GVC_DEV_SEED);
+let saved = false;          // is this document in the library?
+let signed = {};            // storage path -> signed URL, for 'store:' images
+let builder = null, PAGES = [];
+
+const BLANK = () => ({
+  slug: '', kicker: 'Private preview', title: 'New Construction Opportunities', lede: '',
+  developer: { name: '', logo: '' }, marketing: 'the GVC Team at Douglas Elliman',
+  subdivisionsIntro: '', nextStep: window.GVC_DEV_SEED.nextStep,
+  disclaimer: window.GVC_DEV_SEED.disclaimer, homes: []
+});
+const BLANK_HOME = () => ({ address: '', town: '', status: 'planned', price: '', done: '', plans: '',
+  beds: '', baths: '', living: '', basement: '', garage: '', note: '', image: '', imageNote: '', site: '' });
+
+/* An image reference is 'seed:<file>' (bundled with this tool) or
+   'store:<path>' (uploaded to the private bucket, shown by signed URL). */
+function urlFor(ref) {
+  if (!ref) return '';
+  if (ref.startsWith('seed:')) return 'seed/' + ref.slice(5);
+  if (ref.startsWith('store:')) return signed[ref.slice(6)] || '';
+  return '';
+}
+const storePaths = () => [doc.developer && doc.developer.logo].concat(doc.homes.map(h => h.image))
+  .filter(r => r && r.startsWith('store:')).map(r => r.slice(6));
+
+/* signed URLs for every uploaded image the document uses, plus any extra
+   paths (a file just uploaded, not yet in the document) */
+function signAll(extra) {
+  const want = storePaths().concat(extra || []).filter(p => !signed[p]);
+  if (!want.length || !P.signedIn()) return Promise.resolve();
+  return P.call('/storage/v1/object/sign/' + CFG.photoBucket, {
+    method: 'POST', body: JSON.stringify({ paths: want, expiresIn: 60 * 60 * 8 })
+  }).then(rows => (rows || []).forEach(r => { if (r.signedURL) signed[r.path] = CFG.url + '/storage/v1' + r.signedURL; }));
+}
+
+/* ============================================================
+   THE PAGES — drawn from the document, paginated by measuring.
+   ============================================================ */
+const measure = document.createElement('div');
+measure.className = 'page dv-measure';
+
+function redraw() {
+  if (!builder) return;
+  PAGES = DEV.pages(doc, urlFor, measure);
+  if (builder.state.pages !== PAGES.length) builder.setPages(PAGES.length);
+  else builder.rebuild();
+  setTimeout(checkOverflow, 0);
+}
+let redrawT = 0;
+const soon = () => { clearTimeout(redrawT); redrawT = setTimeout(redraw, 160); };
+
+function checkOverflow() {
+  const over = [...document.querySelectorAll('#pages .dv-body')].some(b => b.scrollHeight > b.clientHeight + 1);
+  const box = $('warnGeneral');
+  box.hidden = !over;
+  box.textContent = over ? 'Something runs past the bottom of a page: a note is too long for one home. Shorten it and the page fits again.' : '';
+}
+
+/* ============================================================
+   LIBRARY — sign in, list, load, save. All through the property
+   library's one authenticated request path (GVC_PROPS.call).
+   ============================================================ */
+function say(msg, tone) { const s = $('libStatus'); s.textContent = msg || ''; s.className = 'lib-status' + (tone ? ' ' + tone : ''); }
+const MISSING = 'The developments table is not set up yet. Run supabase/migrations/0002_developments.sql in the Supabase SQL Editor, then reload.';
+const explain = e => (e && (e.status === 404 || /developments|relation|schema cache/i.test(e.message))) ? MISSING : (e && e.message) || 'Something went wrong.';
+const slugify = s => String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+function paintLib() {
+  const inn = P.signedIn();
+  $('signForm').hidden = inn;
+  $('libIn').hidden = !inn;
+}
+
+function list() {
+  return P.call('/rest/v1/developments?select=slug,label,updated_at&order=label.asc').then(rows => {
+    const pick = $('devPick');
+    pick.replaceChildren();
+    const have = rows || [];
+    if (!have.some(r => r.slug === doc.slug)) pick.append(new Option((doc.developer.name || 'This development') + ' (not saved yet)', doc.slug));
+    have.forEach(r => pick.append(new Option(r.label, r.slug)));
+    pick.value = doc.slug;
+    return have;
+  });
+}
+
+function load(slug) {
+  say('Loading…');
+  return P.call('/rest/v1/developments?slug=eq.' + encodeURIComponent(slug) + '&select=data,updated_at').then(rows => {
+    if (!rows || !rows[0]) return false;
+    doc = Object.assign(BLANK(), rows[0].data, { slug });
+    saved = true;
+    return signAll().then(() => {
+      paintAll(); redraw(); GVC_UNSAVED.clear();
+      say('Loaded. Last saved ' + new Date(rows[0].updated_at).toLocaleString() + '.', 'ok');
+      return true;
+    });
+  });
+}
+
+function save() {
+  if (!doc.slug) doc.slug = slugify(doc.developer.name);
+  if (!doc.slug) { say('Give the developer a name first (Header).', 'warn'); return; }
+  say('Saving…');
+  $('btnSave').disabled = true;
+  P.call('/rest/v1/developments?on_conflict=slug', {
+    method: 'POST', prefer: 'resolution=merge-duplicates,return=representation',
+    body: JSON.stringify({ slug: doc.slug, label: doc.developer.name || doc.slug, data: doc })
+  }).then(() => {
+    saved = true; GVC_UNSAVED.clear();
+    say('Saved at ' + new Date().toLocaleTimeString() + '.', 'ok');
+    return list();
+  }).catch(e => say(explain(e), 'warn')).then(() => { $('btnSave').disabled = false; });
+}
+
+function startLibrary() {
+  paintLib();
+  if (!P.signedIn()) { say('Showing the South Street starting copy. Sign in to load or save.'); return; }
+  list().then(rows => {
+    const target = rows.find(r => r.slug === doc.slug) ? doc.slug : (rows[0] && rows[0].slug);
+    if (target) return load(target);
+    say('Not in the library yet. Save to keep it for the team.');
+  }).catch(e => say(explain(e), 'warn'));
+}
+
+$('signForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const pw = $('pw').value;
+  if (!pw) return;
+  say('Signing in…');
+  P.signIn(pw).then(() => { $('pw').value = ''; startLibrary(); }).catch(e => say(e.message, 'warn'));
+});
+$('btnOut').addEventListener('click', () => { P.signOut(); signed = {}; paintLib(); say('Signed out.'); redraw(); });
+$('btnSave').addEventListener('click', save);
+$('devPick').addEventListener('change', ev => {
+  const slug = ev.target.value;
+  if (slug === doc.slug) return;
+  if (GVC_UNSAVED.isDirty() && !confirm('Open another development? Unsaved changes here are lost.')) { ev.target.value = doc.slug; return; }
+  load(slug).catch(e => say(explain(e), 'warn'));
+});
+$('btnNew').addEventListener('click', () => {
+  if (GVC_UNSAVED.isDirty() && !confirm('Start a new development? Unsaved changes here are lost.')) return;
+  const name = prompt('Developer’s name (e.g. South Street Development Group):');
+  if (!name) return;
+  doc = BLANK(); doc.developer.name = name.trim(); doc.slug = slugify(name);
+  saved = false; paintAll(); redraw(); GVC_UNSAVED.touch();
+  list().catch(() => {});
+  say('New development. Add its homes, then Save.');
+});
+
+/* ============================================================
+   UPLOADS — renderings and the developer's logo, into the private
+   bucket under developments/<slug>/, deduped by content hash.
+   ============================================================ */
+const MIN_EDGE = 1600;
+let uploadTo = null;    // (ref) => void, set by the button that opened the picker
+
+function upload(file, isLogo) {
+  if (!P.signedIn()) { say('Sign in to upload images (Library, above).', 'warn'); return Promise.resolve(null); }
+  if (!doc.slug) doc.slug = slugify(doc.developer.name);
+  if (!doc.slug) { say('Give the developer a name first (Header).', 'warn'); return Promise.resolve(null); }
+  return createImageBitmap(file).then(bmp => {
+    const w = bmp.width, h = bmp.height; bmp.close && bmp.close();
+    if (!isLogo && Math.max(w, h) < MIN_EDGE &&
+        !confirm('This image is only ' + w + ' × ' + h + ' px, so it will print soft. Use it anyway?')) return null;
+    say('Uploading…');
+    const isPng = isLogo && /png|svg/i.test(file.type);
+    const make = isPng ? Promise.resolve({ blob: file }) : P.shrink(file);
+    return make.then(s => P.hashOf(s.blob).then(hash => {
+      const path = 'developments/' + doc.slug + '/' + hash + (isPng ? '.png' : '.jpg');
+      return P.call('/storage/v1/object/' + CFG.photoBucket + '/' + path, {
+        method: 'POST', contentType: isPng ? 'image/png' : 'image/jpeg', body: s.blob
+      }).catch(e => { if (!(e.status === 409 || e.status === 400 && /exist|duplicate/i.test(e.message))) throw e; })
+        .then(() => { delete signed[path]; return signAll([path]); })
+        .then(() => { say('Uploaded. Save to keep it.', 'ok'); return 'store:' + path; });
+    }));
+  }).catch(e => { say(explain(e), 'warn'); return null; });
+}
+$('fileIn').addEventListener('change', ev => {
+  const f = ev.target.files[0]; ev.target.value = '';
+  if (f && uploadTo) uploadTo(f);
+});
+const pickFile = then => { uploadTo = then; $('fileIn').click(); };
+
+/* ============================================================
+   THE PANEL — header fields and one card per home. Every field
+   writes straight into the document and redraws the pages.
+   ============================================================ */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function field(label, key, val, opts) {
+  opts = opts || {};
+  const input = opts.area
+    ? '<textarea data-k="' + key + '" rows="' + (opts.rows || 3) + '">' + esc(val) + '</textarea>'
+    : opts.options
+      ? '<select data-k="' + key + '">' + opts.options.map(([v, t]) => '<option value="' + v + '"' + (v === val ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'
+      : '<input type="text" data-k="' + key + '" value="' + esc(val) + '"' + (opts.ph ? ' placeholder="' + esc(opts.ph) + '"' : '') + '>';
+  return '<div class="field"><label>' + label + '</label>' + input + (opts.note ? '<div class="note">' + opts.note + '</div>' : '') + '</div>';
+}
+
+function paintDoc() {
+  const d = doc;
+  $('docFields').innerHTML =
+    field('Developer', 'developer.name', d.developer.name) +
+    '<div class="field"><label>Developer’s logo</label><div class="logo-prev">' +
+      (urlFor(d.developer.logo) ? '<img src="' + esc(urlFor(d.developer.logo)) + '" alt="">' : '<span class="note">No logo: the name prints instead.</span>') +
+      '<button class="btn sm ghost" type="button" data-act="logo">Upload</button>' +
+      (d.developer.logo ? '<button class="linkish" type="button" data-act="nologo">Remove</button>' : '') +
+    '</div></div>' +
+    field('Line above the title', 'kicker', d.kicker) +
+    field('Title', 'title', d.title) +
+    field('Line under the title', 'lede', d.lede, { area: true, rows: 2 }) +
+    field('Sales & marketing by', 'marketing', d.marketing) +
+    field('Subdivisions introduction', 'subdivisionsIntro', d.subdivisionsIntro, { area: true, rows: 2 }) +
+    field('Next step', 'nextStep', d.nextStep, { area: true, rows: 3 }) +
+    field('Disclaimer (every page)', 'disclaimer', d.disclaimer, { area: true, rows: 2 });
+}
+
+const STATUS_OPTS = [['construction', 'Under construction'], ['planned', 'Yet to break ground']];
+function summary(h) {
+  return '<span class="hm-dot' + (h.status === 'construction' ? '' : ' planned') + '"></span>' +
+    '<span class="hm-name">' + esc(h.address || 'New home') + '</span><span class="hm-meta">' + esc(h.price) + '</span>';
+}
+function paintHomes(openIdx) {
+  const host = $('homes');
+  const wasOpen = new Set([...host.querySelectorAll('.hm[open]')].map(d => +d.dataset.i));
+  if (openIdx != null) wasOpen.add(openIdx);
+  host.innerHTML = doc.homes.map((h, i) => {
+    const img = urlFor(h.image);
+    return '<details class="hm" data-i="' + i + '"' + (wasOpen.has(i) ? ' open' : '') + '>' +
+      '<summary>' + summary(h) + '</summary><div class="hm-in">' +
+      field('Address', 'address', h.address) +
+      '<div class="f-row">' + field('Status', 'status', h.status, { options: STATUS_OPTS }) + field('Asking price', 'price', h.price, { ph: '$1,895,000' }) + '</div>' +
+      field('Town', 'town', h.town, { ph: 'Brielle, New Jersey' }) +
+      '<div class="f-row">' + field('Est. completion', 'done', h.done, { ph: 'Q1 2027' }) + field('Plans', 'plans', h.plans, { ph: 'In development' }) + '</div>' +
+      '<div class="f-row">' + field('Beds', 'beds', h.beds) + field('Baths', 'baths', h.baths) + field('Garage', 'garage', h.garage, { ph: '2-car garage' }) + '</div>' +
+      '<div class="f-row">' + field('Living', 'living', h.living, { ph: '2,550 sq. ft.' }) + field('Basement', 'basement', h.basement, { ph: '694 sq. ft.' }) + '</div>' +
+      field('Subdivision', 'site', h.site, { ph: 'e.g. 405 Old Bridge Rd', note: 'Same text on two homes = shown side by side, without a picture.' }) +
+      field('Note', 'note', h.note, { area: true, rows: 3 }) +
+      '<div class="field"><label>Rendering</label><div class="hm-pic">' +
+        (img ? '<img src="' + esc(img) + '" alt="">' : '<span class="none">No image</span>') +
+        '<div class="acts"><button class="btn sm ghost" type="button" data-act="img">' + (img ? 'Replace' : 'Upload') + '</button>' +
+        (h.image ? '<button class="linkish" type="button" data-act="noimg">Remove</button>' : '') + '</div></div></div>' +
+      field('Caption under the rendering', 'imageNote', h.imageNote, { ph: 'Exterior rendering - subject to change' }) +
+      '<div class="hm-tools">' +
+        '<button class="btn sm ghost" type="button" data-act="up"' + (i ? '' : ' disabled') + '>Move up</button>' +
+        '<button class="btn sm ghost" type="button" data-act="down"' + (i < doc.homes.length - 1 ? '' : ' disabled') + '>Move down</button>' +
+        '<button class="btn sm ghost" type="button" data-act="dup">Duplicate</button>' +
+        '<button class="btn sm ghost" type="button" data-act="del">Delete</button>' +
+      '</div></div></details>';
+  }).join('');
+  const n = doc.homes.length;
+  $('homesHint').textContent = n + ' ' + (n === 1 ? 'home' : 'homes');
+}
+function paintAll() { paintDoc(); paintHomes(); paintLib(); }
+
+/* one listener for every field: data-k is the key, the card gives the home */
+$('editor').addEventListener('input', ev => {
+  const el = ev.target, k = el.dataset && el.dataset.k;
+  if (!k) return;
+  const card = el.closest('.hm');
+  if (card) {
+    const h = doc.homes[+card.dataset.i];
+    h[k] = el.value;
+    card.querySelector('summary').innerHTML = summary(h);
+  } else if (k === 'developer.name') doc.developer.name = el.value;
+  else doc[k] = el.value;
+  GVC_UNSAVED.touch(); soon();
+});
+$('editor').addEventListener('change', ev => { if (ev.target.tagName === 'SELECT' && ev.target.dataset.k) ev.target.dispatchEvent(new Event('input', { bubbles: true })); });
+
+$('editor').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act, card = b.closest('.hm'), i = card ? +card.dataset.i : -1;
+  const done = (openIdx) => { paintHomes(openIdx); GVC_UNSAVED.touch(); redraw(); };
+  if (act === 'logo') return pickFile(f => upload(f, true).then(ref => { if (ref) { doc.developer.logo = ref; paintDoc(); GVC_UNSAVED.touch(); redraw(); } }));
+  if (act === 'nologo') { doc.developer.logo = ''; paintDoc(); GVC_UNSAVED.touch(); return redraw(); }
+  if (act === 'img') return pickFile(f => upload(f, false).then(ref => { if (ref) { doc.homes[i].image = ref; done(i); } }));
+  if (act === 'noimg') { doc.homes[i].image = ''; return done(i); }
+  if (act === 'up' && i > 0) { doc.homes.splice(i - 1, 0, doc.homes.splice(i, 1)[0]); return done(i - 1); }
+  if (act === 'down' && i < doc.homes.length - 1) { doc.homes.splice(i + 1, 0, doc.homes.splice(i, 1)[0]); return done(i + 1); }
+  if (act === 'dup') { doc.homes.splice(i + 1, 0, clone(doc.homes[i])); return done(i + 1); }
+  if (act === 'del' && confirm('Delete ' + (doc.homes[i].address || 'this home') + '?')) { doc.homes.splice(i, 1); return done(); }
+});
+$('btnAdd').addEventListener('click', () => { doc.homes.push(BLANK_HOME()); paintHomes(doc.homes.length - 1); GVC_UNSAVED.touch(); redraw(); });
+
+/* ============================================================
+   START
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.appendChild(measure);
+  GVC_UNSAVED.watch();
+  paintAll();
+  PAGES = DEV.pages(doc, urlFor, measure);
+  builder = Builder.init({
+    pages: PAGES.length, label: 'Page',
+    printName: () => [doc.developer.name, doc.title].filter(Boolean).join(' - '),
+    render: (page, i) => { page.innerHTML = PAGES[i] || ''; }
+  });
+  /* the page break is measured, so measure again once the fonts are in */
+  document.fonts && document.fonts.ready.then(redraw);
+  startLibrary();
+});
+</script>
+<script src="../../assets/js/panel-collapse.js"></script>
+</body>
+</html>

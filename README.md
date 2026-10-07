@@ -40,6 +40,10 @@ Node + Playwright — `cd scripts && npm install`:
   uncaught errors, SRI blocks, missing files, missing chrome or sideways scroll.
   Needs `cd scripts && npm install` once; exits non-zero, so it is worth running
   before a publish
+- `interact-local.js` — click through every editor control on every tool (sections, buttons,
+  dropdowns, checkboxes, sliders, awkward text), print each to PDF, and fail on any error.
+  `node scripts/interact-local.js brochure` runs one tool. A tool's own "text runs past the
+  page" warning is listed, not failed
 
 ## Showsheet tool
 

@@ -44,6 +44,10 @@ Node + Playwright — `cd scripts && npm install`:
   dropdowns, checkboxes, sliders, awkward text), print each to PDF, and fail on any error.
   `node scripts/interact-local.js brochure` runs one tool. A tool's own "text runs past the
   page" warning is listed, not failed
+- `dnd-local.js` — drag photos around the brochure, seller pitch, buyer package and showsheet with
+  real mouse events: tray to every slot, slot to slot by the grip, slot to tray, the X buttons and
+  panning. Uses six solid-colour photos so it can tell which photo landed where, and fails if a
+  photo ever shows in two places
 
 ## Showsheet tool
 

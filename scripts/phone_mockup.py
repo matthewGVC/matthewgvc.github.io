@@ -1,5 +1,9 @@
 """Draw a phone playing one of our films, lying on a mockup's grey surface.
 
+Made the phone for the NJ seller pitch's Marketing page. The image there now
+(assets/img/nj/marketing-mockup.jpg) is Matt's own Photoshop composite of these
+pieces (exports/marketing-mockup-pieces/), cropped to its top 2250px (2:1).
+
 Made for the NJ seller pitch's Marketing page (assets/img/nj/marketing-mockup.jpg):
 the phone was laid into Matt's brochure mockup ("Magazine 4.jpg") beside the
 magazines. The frame is 18.2s into "14 Ridge (no music).mov" (the Ridge Road

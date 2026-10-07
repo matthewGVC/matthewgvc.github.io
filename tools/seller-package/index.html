@@ -97,21 +97,16 @@
 .crew .cell.lab.inh{align-items:center;text-align:center;aspect-ratio:1/2;}
 .crew .cell.lab.inh .ci{width:.4in;height:.4in;margin-bottom:.12in;color:#fff;}
 .crew .cell.lab.n3.inh .ci,.crew .cell.lab.n4.inh .ci{color:var(--navy);}
-/* ...a mockup of the team's work (a brochure it designed, with one of its
-   films playing on a phone) beside the "All In-House" copy, and the four
-   squares as a strip under both */
-.showcase{display:grid;grid-template-columns:4.1in 1fr;grid-template-rows:3.5in auto;flex:none;}
-.showcase .mock{overflow:hidden;min-width:0;background:#929292;}
+/* ...a full-width mockup of the team's work (a brochure it designed, with
+   one of its films playing on a phone), the four squares as a strip under it */
+.showcase{display:flex;flex-direction:column;flex:none;}
+.showcase .mock{height:3.5in;overflow:hidden;background:#929292;}
 .showcase .mock img{width:100%;height:100%;object-fit:cover;display:block;}
-.showcase .intro{display:flex;flex-direction:column;justify-content:center;padding-left:.32in;min-width:0;}
-.showcase .intro .dline{text-align:left;margin:0 0 .16in;}
-.showcase .intro .about-copy{text-align:left;margin:0;font-size:10pt;line-height:15.5pt;}
-.showcase .crew{grid-column:1 / -1;margin:0;}
+.showcase .crew{margin:0;}
 .showcase .crew .cell.lab.inh{aspect-ratio:auto;flex-direction:row;gap:.1in;padding:.15in .1in;}
 .showcase .crew .cell.lab.inh .ci{width:.24in;height:.24in;margin:0;}
 .showcase .crew .cell.lab.inh .nm{font-size:10pt;}
 .showcase .crew .cell.lab.inh .tt{display:none;}
-.showcase .intro b{white-space:nowrap;}
 /* this page carries four sections, so its headings sit tighter than the
    other company pages' */
 .showcase ~ .dline.sm{margin:.14in 0 .1in;}
@@ -1166,13 +1161,6 @@ function pgStudioNj(n) {
   const body =
     '<div class="showcase">' +
       '<div class="mock"><img src="../../assets/img/nj/marketing-mockup.jpg" alt="A GVC listing brochure and its film playing on a phone"></div>' +
-      '<div class="intro">' +
-        '<div class="dline"><b>All</b> In-House</div>' +
-        '<div class="about-copy">Every part of your home&rsquo;s marketing is produced <b>in-house</b> by the ' +
-        'GVC Team: the <b>photography and video</b>, the <b>design</b> of every brochure, sign and listing, ' +
-        'and the <b>digital and social media</b> campaigns. Nothing is handed to an outside agency, so it is ' +
-        'done to one standard, on our schedule, and positioned for <b>maximum exposure</b>.</div>' +
-      '</div>' +
       '<div class="crew">' + work.map(w =>
         '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
         '<div class="tt">In-house</div></div>').join('') + '</div>' +

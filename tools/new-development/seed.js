@@ -27,7 +27,6 @@ window.GVC_DEV_SEED = {
   slug: 'south-street',
   kicker: 'Private preview',
   title: 'New Construction Opportunities',
-  lede: 'A concise look at homes underway now and the projects coming next.',
   developer: {
     name: 'South Street Development Group',
     logo: 'seed:ssd-logo.png'

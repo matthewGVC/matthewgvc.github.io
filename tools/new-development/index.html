@@ -131,7 +131,7 @@ let signed = {};            // storage path -> signed URL, for 'store:' images
 let builder = null, PAGES = [];
 
 const BLANK = () => ({
-  slug: '', kicker: 'Private preview', title: 'New Construction Opportunities', lede: '',
+  slug: '', kicker: 'Private preview', title: 'New Construction Opportunities',
   developer: { name: '', logo: '' }, marketing: 'the GVC Team at Douglas Elliman',
   subdivisionsIntro: '', nextStep: window.GVC_DEV_SEED.nextStep,
   disclaimer: window.GVC_DEV_SEED.disclaimer, homes: []
@@ -356,7 +356,6 @@ function paintDoc() {
     '</div></div>' +
     field('Line above the title', 'kicker', d.kicker) +
     field('Title', 'title', d.title) +
-    field('Line under the title', 'lede', d.lede, { area: true, rows: 2 }) +
     field('Sales & marketing by', 'marketing', d.marketing) +
     field('Subdivisions introduction', 'subdivisionsIntro', d.subdivisionsIntro, { area: true, rows: 2 }) +
     field('Next step', 'nextStep', d.nextStep, { area: true, rows: 3 }) +

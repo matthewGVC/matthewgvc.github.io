@@ -85,12 +85,18 @@
     const shared = notes.every(n => n && n === notes[0]) ? notes[0] : '';
     const town = (s.homes.find(h => h.town) || {}).town;
     const unitName = h => (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
+    /* the homes' pictures sit together under the site's heading, where the
+       column has room, each captioned with the home it shows */
+    const pics = s.homes.filter(h => h.image && urlFor(h.image)).map(h =>
+      '<figure class="dv-pic"><img src="' + esc(urlFor(h.image)) + '" alt="Rendering of ' + esc(h.address) + '">' +
+        '<figcaption><b>' + esc(unitName(h)) + '</b>' + (h.imageNote ? ' ' + esc(h.imageNote) : '') + '</figcaption></figure>').join('');
     return '<div><h3>' + esc(s.name) + '</h3>' +
         '<p class="dv-site-meta">' + (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision</p>' +
         (shared ? '<p class="dv-note">' + esc(shared) + '</p>' : '') +
+        (pics ? '<div class="dv-site-pics">' + pics + '</div>' : '') +
       '</div>' +
       '<div class="dv-pair">' + s.homes.map(h => {
-        return '<section class="dv-card dv-unit"><h4>' + esc(unitName(h)) + '</h4>' + pic(h, urlFor) +
+        return '<section class="dv-unit"><h4>' + esc(unitName(h)) + '</h4>' +
           (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') + facts(h) +
           (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
         '</section>';
@@ -148,6 +154,7 @@
     if (!first) return mast(doc, urlFor) + '<p class="dv-cont">' + esc(doc.title) + ', continued</p>';
     return mast(doc, urlFor) +
       '<div class="dv-title"><h1>' + esc(doc.title) + '</h1>' +
+        (doc.lede ? '<p class="dv-lede">' + esc(doc.lede) + '</p>' : '') +
         '<p class="dv-credits">' + creditParts(doc).join('<i aria-hidden="true"></i>') + '</p></div>' +
       (o.homes.length ? timeline(o) : '');
   }
@@ -163,11 +170,11 @@
     const planned = o.features.filter(h => stageOf(h) !== 'construction');
     for (let i = 0; i < built.length; i += 2) {
       out.push('<div class="dv-blk dv-duo">' + built.slice(i, i + 2).map(h =>
-        '<article class="dv-card">' + pic(h, urlFor) + homeText(h) + '</article>').join('') + '</div>');
+        '<article>' + pic(h, urlFor) + homeText(h) + '</article>').join('') + '</div>');
     }
     planned.forEach(h => {
       const p = pic(h, urlFor);
-      out.push('<article class="dv-blk dv-card dv-wide' + (p ? '' : ' nopic') + '">' + p + homeText(h) + '</article>');
+      out.push('<article class="dv-blk dv-wide' + (p ? '' : ' nopic') + '">' + p + homeText(h) + '</article>');
     });
     o.sites.forEach((s, i) => {
       out.push(i === 0

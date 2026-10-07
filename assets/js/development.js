@@ -48,7 +48,7 @@
     return { homes, features, sites };
   }
 
-  function facts(h) {
+  function factRows(h) {
     const rows = [];
     if (h.done) rows.push(['Estimated completion', range(h.done)]);
     if (h.plans) rows.push(['Plans', esc(h.plans)]);
@@ -56,6 +56,10 @@
     if (h.living) rows.push([/sq/.test(h.basement || '') ? 'Living + basement' : 'Living',
       esc(h.living) + (h.basement ? ' + ' + esc(h.basement) : '')]);
     if (h.garage) rows.push(['Garage', esc(h.garage)]);
+    return rows;
+  }
+  function facts(h) {
+    const rows = factRows(h);
     return rows.length ? '<dl class="dv-facts">' + rows.map(([k, v]) =>
       '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' : '';
   }
@@ -78,18 +82,26 @@
       (h.imageNote ? '<figcaption>' + esc(h.imageNote) + '</figcaption>' : '') + '</figure>';
   }
 
-  /* A subdivision: one heading for the site, the homes side by side. A note
-     every home on the site shares is said once, under the heading. */
+  /* A subdivision: its homes side by side, each a card of its own that
+     names the site. A note every home on the site shares is said once,
+     under the pair. */
   function siteInner(s, urlFor) {
     const town = (s.homes.find(h => h.town) || {}).town;
     const unitName = h => (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
     const meta = (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision';
-    return '<div class="dv-pair">' + s.homes.map(h =>
-      '<section class="dv-card dv-unit"><h3>' + esc(s.name) + '</h3>' +
-        '<p class="dv-site-meta">' + meta + ' &middot; <b>' + esc(unitName(h)) + '</b></p>' + pic(h, urlFor) +
-        (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') + facts(h) +
-        (h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
-      '</section>').join('') + '</div>';
+    const notes = s.homes.map(h => h.note || '');
+    const shared = notes.every(n => n && n === notes[0]) ? notes[0] : '';
+    return '<div class="dv-pair">' + s.homes.map(h => {
+      const rows = factRows(h);
+      return '<section class="dv-card dv-unit"><div class="dv-unit-h"><div><h3>' + esc(s.name) + '</h3>' +
+          '<p class="dv-site-meta">' + meta + '</p></div><span class="dv-tag">' + esc(unitName(h)) + '</span></div>' +
+        pic(h, urlFor) +
+        '<div class="dv-unit-f">' + (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') +
+          (rows.length ? '<dl class="dv-ufacts">' + rows.map(([k, v]) =>
+            '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' : '') + '</div>' +
+        (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
+      '</section>';
+    }).join('') + '</div>' + (shared ? '<p class="dv-note dv-shared">' + esc(shared) + '</p>' : '');
   }
 
   /* The timeline: one stop per completion date in the order the homes are

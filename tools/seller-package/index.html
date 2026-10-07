@@ -541,7 +541,10 @@ const planFor = m => PLAN_ROWS.map(r =>
    Each entry names the agents it credits, so the page can follow the Agents
    section: pick John and Marli and the fill takes two of each, which reads
    better in a listing presentation than four of one voice. `agents: []`
-   marks a review that names nobody, usable with any presenter.
+   marks a review that names nobody, usable with any presenter. `market` is
+   where the sale was, so a deck whose agents have no reviews of their own
+   tops up from its own market: an NYC deck should not print a New Jersey
+   seller's quote.
 
    Order within an agent matters, because the fill takes reviews in library
    order: seller-side reviews go first. A listing presentation should lead on
@@ -566,28 +569,28 @@ const planFor = m => PLAN_ROWS.map(r =>
    listing presentation is a different order of risk from a placeholder
    photo. */
 const REVIEWS = [
-  { id:'lenny-z', agents:['marli-silver'],
+  { id:'lenny-z', agents:['marli-silver'], market:'nj',
     quote:'Marli was absolutely fantastic. We were selling a property in New Jersey while living in Florida, and she was instrumental in reducing the stress of a long-distance sale — incredibly responsive, and very open and honest about our expectations.',
     who:'Lenny Z., Seller' },
-  { id:'jeff-b', agents:['marli-silver'],
+  { id:'jeff-b', agents:['marli-silver'], market:'nj',
     quote:'Marli has great knowledge of the area and is skilled in determining a strategic asking price. She is incredibly responsive in helping to work through any challenge that comes up along the way. The process was smooth and quick.',
     who:'Jeff B., Seller' },
-  { id:'melinda-b', agents:['marli-silver'],
+  { id:'melinda-b', agents:['marli-silver'], market:'nj',
     quote:'This is my third closing with Marli and she is the best realtor I have ever worked with — and trust me, I have worked with quite a few. She makes finding and buying a home very easy, and her real estate expertise is outstanding.',
     who:'Melinda B., Buyer' },
-  { id:'sally-siebold', agents:['john-gasdaska'],
+  { id:'sally-siebold', agents:['john-gasdaska'], market:'nyc',
     quote:'I have had many experiences buying and selling real estate. My experience with the GVC Real Estate team was by far the best. They were honest and very experienced from start to finish. They handled everything, from the listing, pictures, to staging the apartment for us.',
     who:'Sally Siebold, Seller' },
-  { id:'edward-whittemore', agents:['john-gasdaska','jonathan-conlon'],
+  { id:'edward-whittemore', agents:['john-gasdaska','jonathan-conlon'], market:'nyc',
     quote:'My family worked with the GVC Team over the course of 2+ years to successfully sell two apartments in a small UES co-op in the East 70s. John and Jonathan and their entire team were professional, very responsive and outcome oriented. Top rate!',
     who:'Edward Whittemore, Seller' },
-  { id:'conor-hagen', agents:['john-gasdaska'],
+  { id:'conor-hagen', agents:['john-gasdaska'], market:'nyc',
     quote:'John and his associates at Gasdaska Conlon are top notch professionals. It was a very smooth, easy and overall enjoyable experience working with them to buy and sell our apartment in NYC.',
     who:'Conor Hagen, Buyer & Seller' },
-  { id:'gary-watson', agents:['john-gasdaska','jonathan-conlon'],
+  { id:'gary-watson', agents:['john-gasdaska','jonathan-conlon'], market:'nyc',
     quote:'John Gasdaska and Jonathan Conlon are truly outstanding. When we needed to move on, they achieved an excellent outcome for us in a very short time, despite a challenging market. We could not recommend them more highly.',
     who:'Gary Watson, Buyer & Seller' },
-  { id:'bardia-fd', agents:['john-gasdaska'],
+  { id:'bardia-fd', agents:['john-gasdaska'], market:'nyc',
     quote:'I am a realtor in Orange County, California and I referred a client to John Gasdaska to work with. I knew John was the right recommendation for my client based on his knowledge and his style. He successfully navigated my buyer to a successful closing.',
     who:'Bardia Fd, Referring Agent' },
   { id:'jenny-kane', agents:[],
@@ -815,7 +818,8 @@ function chosenVideos() {
 
    Following fills round-robin across the picked agents in roster order,
    taking each agent's reviews in library order, then tops up from the
-   reviews that name nobody, then from whatever is left. Round-robin rather
+   reviews that name nobody, then from the deck's own market, then from
+   whatever is left. Round-robin rather
    than agent-by-agent because John and Marli together should print two of
    each: four quotes in one voice reads like one agent's page, and this one
    is titled What Our Clients Say. Most of the roster has no attributed
@@ -829,6 +833,7 @@ function followedReviewIds() {
   for (let i = 0; out.length < REVIEW_SLOTS && i < REVIEWS.length; i++)
     queues.forEach(q => { if (out.length < REVIEW_SLOTS) take(q[i]); });
   REVIEWS.filter(r => !r.agents.length).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  REVIEWS.filter(r => r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
   REVIEWS.forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
   return out;
 }

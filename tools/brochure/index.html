@@ -1249,7 +1249,8 @@ function pagePlan() {
     title: 'The Property in Pictures' + (gp.length > 1 ? ' \u2014 ' + (i + 1) + ' of ' + gp.length : '')
   }));
   plan.push({ t: 'info', title: 'The Property' });
-  const fpPages = Math.max(1, Math.ceil(state.floorplans.length / 2));
+  /* No floor plans uploaded means no Floor Plans page, not an empty one. */
+  const fpPages = Math.ceil(state.floorplans.length / 2);
   for (let i = 0; i < fpPages; i++) {
     plan.push({ t: 'floorplan', from: i * 2, page: i + 1, of: fpPages,
                 title: 'Floor Plans' + (fpPages > 1 ? ' \u2014 ' + (i + 1) + ' of ' + fpPages : '') });
@@ -2490,6 +2491,11 @@ GVC_PROPBAR.mount({
   setDoc: doc => {
     DOC_KEYS.forEach(k => { if (doc && k in doc) state[k] = doc[k]; });
     state.galSel = null;
+    /* placeInSlot keeps each single slot to one photo, but a deck saved before
+       that could carry two tagged Cover (or Top banner); the later one would
+       otherwise end up wherever the strategy dropped it. Free it to auto. */
+    ['hero', 'info-top'].forEach(role => state.images.filter(im => im.role === role)
+      .slice(1).forEach(im => { im.role = 'auto'; }));
     uid = Math.max(uid, ...state.images.map(i => i.id || 0), ...state.floorplans.map(f => f.id || 0), 0);
     document.querySelectorAll('[data-field]').forEach(el => {
       const k = el.dataset.field;

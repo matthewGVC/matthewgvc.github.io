@@ -81,20 +81,15 @@
   /* A subdivision: one heading for the site, the homes side by side. A note
      every home on the site shares is said once, under the heading. */
   function siteInner(s, urlFor) {
-    const notes = s.homes.map(h => h.note || '');
-    const shared = notes.every(n => n && n === notes[0]) ? notes[0] : '';
     const town = (s.homes.find(h => h.town) || {}).town;
     const unitName = h => (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
-    return '<div><h3>' + esc(s.name) + '</h3>' +
-        '<p class="dv-site-meta">' + (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision</p>' +
-        (shared ? '<p class="dv-note">' + esc(shared) + '</p>' : '') +
-      '</div>' +
-      '<div class="dv-pair">' + s.homes.map(h => {
-        return '<section class="dv-card dv-unit"><h4>' + esc(unitName(h)) + '</h4>' + pic(h, urlFor) +
-          (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') + facts(h) +
-          (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
-        '</section>';
-      }).join('') + '</div>';
+    const meta = (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision';
+    return '<div class="dv-pair">' + s.homes.map(h =>
+      '<section class="dv-card dv-unit"><h3>' + esc(s.name) + '</h3>' +
+        '<p class="dv-site-meta">' + meta + ' &middot; <b>' + esc(unitName(h)) + '</b></p>' + pic(h, urlFor) +
+        (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') + facts(h) +
+        (h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
+      '</section>').join('') + '</div>';
   }
 
   /* The timeline: one stop per completion date in the order the homes are

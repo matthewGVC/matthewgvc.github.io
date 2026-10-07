@@ -99,15 +99,15 @@
   padding-bottom: .08in; border-bottom: 1.5pt solid var(--ink); }
 .dv-sites-h h2 { font: 400 19pt/1.05 var(--serif); }
 .dv-sites-h p { font: 400 9pt/1.45 var(--body); color: var(--soft); }
-.dv-site { display: grid; grid-template-columns: 4fr 6fr; gap: .2in; padding: .1in 0 .08in; }
-.dv-blk.dv-site { margin-top: .06in; }
-.dv-site h3 { font: 500 14pt/1.1 var(--serif); }
+.dv-site { padding: 0; }
+.dv-blk.dv-site { margin-top: .12in; }
+.dv-unit h3 { font: 500 15pt/1.1 var(--serif); }
 .dv-site-meta { margin-top: 2pt; font: 500 8.5pt/1.4 var(--body); color: var(--soft); }
 .dv-site .dv-note { margin-top: 4pt; }
-.dv-pair { display: grid; grid-template-columns: 1fr 1fr; gap: .12in; align-items: start; }
+.dv-pair { display: grid; grid-template-columns: 1fr 1fr; gap: .16in; align-items: start; }
 .dv-unit { padding: .09in .11in .1in; }
-.dv-unit h4 { font: 800 8pt/1 var(--fig); letter-spacing: .02em; color: var(--harbor); margin-bottom: 5pt; }
-.dv-unit .dv-pic img { height: 1.05in; }
+.dv-unit .dv-pic { margin-top: 6pt; }
+.dv-unit .dv-pic img { height: 1.35in; }
 .dv-unit .dv-pic figcaption { font-size: 6.5pt; }
 .dv-unit .dv-price { margin-top: 4pt; font-size: 13pt; }
 .dv-unit .dv-facts { margin-top: 4pt; }

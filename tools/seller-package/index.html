@@ -97,6 +97,14 @@
 .crew .cell.lab.inh{align-items:center;text-align:center;aspect-ratio:1/2;}
 .crew .cell.lab.inh .ci{width:.4in;height:.4in;margin-bottom:.12in;color:#fff;}
 .crew .cell.lab.n3.inh .ci,.crew .cell.lab.n4.inh .ci{color:var(--navy);}
+/* ...beside a mockup of a brochure the team designed, the four squares
+   folded into a 2x2 so the piece of work gets the width */
+.showcase{display:grid;grid-template-columns:1.75fr 1fr;height:4.5in;flex:none;margin-bottom:.24in;}
+.showcase .mock{overflow:hidden;min-width:0;background:#929292;}
+.showcase .mock img{width:100%;height:100%;object-fit:cover;display:block;}
+.showcase .crew{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;margin:0;}
+.showcase .crew .cell.lab.inh{aspect-ratio:auto;}
+.showcase .crew .cell.lab.inh .ci{width:.32in;height:.32in;margin-bottom:.1in;}
 /* Your Property, New Jersey: every digit the same height (lining figures),
    so prices and sizes do not bob up and down in the serif. */
 .pg[data-market="nj"][data-key="property"],
@@ -1137,9 +1145,12 @@ function pgStudioNj(n) {
   const work = [['camera', 'Photography', 'n1'], ['clapper', 'Video', 'n2'],
                 ['pen', 'Design', 'n3'], ['megaphone', 'Social Media', 'n4']];
   const body =
-    '<div class="crew">' + work.map(w =>
-      '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
-      '<div class="tt">In-house</div></div>').join('') + '</div>' +
+    '<div class="showcase">' +
+      '<div class="mock"><img src="../../assets/img/nj/brochure-mockup.jpg" alt="A GVC listing brochure"></div>' +
+      '<div class="crew">' + work.map(w =>
+        '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
+        '<div class="tt">In-house</div></div>').join('') + '</div>' +
+    '</div>' +
     '<div class="dline"><b>All</b> In-House</div>' +
     '<div class="about-copy">Every part of your home&rsquo;s marketing is produced <b>in-house</b> by the ' +
     'GVC Team: the <b>photography and video</b>, the <b>design</b> of every brochure, sign and listing, ' +

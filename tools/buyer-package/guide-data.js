@@ -730,17 +730,101 @@
     ]}
   ];
 
-  /* NEW JERSEY OFFER & NEGOTIATION — six cards, editable in the panel. The
-     text is the old artwork's, with the New Jersey wording this deck always
-     patched over it. `icon` is an icons.js name. */
-  var NJ_OFFER = [
-    { icon: 'check', title: 'Price is only one term',    text: OFFER_COMMON[0] },
-    { icon: 'home',  title: 'Know the competition',      text: OFFER_COMMON[1] },
-    { icon: 'box',   title: 'Contingencies protect you', text: OFFER_BY_REGION.nj[2] },
-    { icon: 'phone', title: 'Move fast, decide slowly',  text: OFFER_COMMON[3] },
-    { icon: 'users', title: 'Escalation, carefully',     text: OFFER_COMMON[4] },
-    { icon: 'mail',  title: 'Everything in writing',     text: OFFER_BY_REGION.nj[5] }
+  /* ============================================================
+     NEW YORK: THE SIX STEPS AND THE FIFTY THINGS, ON ONE PAGE
+
+     As for New Jersey: the fifty New York lines (fiftyFor('nyc'), unreworded)
+     regrouped under the six steps of PROCESS.nyc, merged 2026-10-07. `star`
+     carries the Buying Process page's co-op/condo footnote across with the
+     board step; `note` is that footnote.
+     ============================================================ */
+  var NYC_STEPS_FIFTY = [
+    { t: 'Consultation', items: [
+      'Set a realistic budget and timeline with you',
+      'Connect you with lenders for a written pre-approval',
+      'Show the real monthly cost, not just the mortgage',
+      'Sort your must-haves from your deal-breakers',
+      'Explain the buyer agreement and how I am paid',
+      'Set up listing alerts so you see new homes first',
+      'Explain co-ops, condos and townhouses, and which fits you',
+      'Get your finances board-package ready before you shop'
+    ]},
+    { t: 'The Search', items: [
+      'Pre-screen listings so you tour only the right ones',
+      'Book and attend every private showing with you',
+      'Tap my network for off-market homes',
+      'Research price history and time on the market',
+      'Pull recent nearby sales to show real prices',
+      'Tell you honestly when a home is wrong for you',
+      'Point out what photos hide: noise, light, layout, street',
+      'Review building financials, reserves and pending assessments',
+      'Compare buildings on fees, amenities, pet and sublet rules',
+      'Check the block: transit, noise, construction nearby'
+    ]},
+    { t: 'Offer & Negotiation', items: [
+      'Price your offer against real comparable sales',
+      'Structure terms and dates to make it competitive',
+      'Find out what the seller actually needs',
+      'Prepare the offer letter and proof of funds package',
+      'Negotiate counter-offers, credits and repairs for you',
+      'Work out the deposit and contract terms with your attorney',
+      'Flag key sponsor terms in the offering plan for your attorney',
+      'Keep every agreed term in writing'
+    ]},
+    { t: 'Contract & Due Diligence', items: [
+      'Recommend inspectors and specialists, and attend',
+      'Review the report with you and decide what to ask for',
+      'Go through minutes and financials with your attorney',
+      'Track every deadline so nothing lapses',
+      'Track the mortgage commitment and contract deadlines',
+      'Coordinate lender, appraiser, attorney and title company',
+      'Chase the paperwork you would otherwise forget',
+      'Walk you through the closing taxes and fees; your attorney confirms',
+      'Update you weekly, not just when things change'
+    ]},
+    { t: 'Board Package & Interview Prep', star: true, items: [
+      'Assemble and submit your co-op or condo board package',
+      'Prepare you for the board interview'
+    ]},
+    { t: 'Closing & Beyond', items: [
+      'Do the final walk-through with you',
+      'Check the closing figures before you sign',
+      'Warn you to confirm wire instructions by phone',
+      'Line up utilities, insurance and moving dates',
+      'Confirm your move-in date with the building',
+      'Arrange the managing agent’s move-in requirements',
+      'Book the elevator and certificate of insurance for move day',
+      'Coordinate keys and fobs with the managing agent',
+      'Be at the closing table with you',
+      'Hand you the keys',
+      'Introduce movers, designers and trusted vendors',
+      'Introduce New York architects and contractors',
+      'Stay your real estate resource long after closing'
+    ]}
   ];
+  NYC_STEPS_FIFTY.note = PROCESS.nyc.note;
+
+  /* The merged steps-and-fifty page, for the markets that have one. */
+  var STEPS_FIFTY = { nj: NJ_STEPS_FIFTY, nyc: NYC_STEPS_FIFTY };
+  function stepsFifty(region) { return STEPS_FIFTY[region] || null; }
+
+  /* OFFER & NEGOTIATION as live cards (New Jersey and New York), editable in
+     the panel. Titles and icons are the old artwork's; the text is the
+     market's offerCards() wording, which used to be patched over the picture.
+     `icon` is an icons.js name. Florida still prints the artwork. */
+  var OFFER_HEADS = [
+    ['check', 'Price is only one term'],
+    ['home',  'Know the competition'],
+    ['box',   'Contingencies protect you'],
+    ['phone', 'Move fast, decide slowly'],
+    ['users', 'Escalation, carefully'],
+    ['mail',  'Everything in writing']
+  ];
+  function offerLive(region) {
+    return offerCards(region).map(function (t, i) {
+      return { icon: OFFER_HEADS[i][0], title: OFFER_HEADS[i][1], text: t };
+    });
+  }
 
   /* ============================================================
      USEFUL LINKS (New Jersey) — mortgage rates and the paperwork a client
@@ -809,7 +893,7 @@
     PROCESS: PROCESS, offerCards: offerCards,
     COSTS: COSTS, faqFor: faqFor,
     statesFor: statesFor, joinStates: joinStates,
-    NJ_STEPS_FIFTY: NJ_STEPS_FIFTY, NJ_OFFER: NJ_OFFER, NJ_LINKS: NJ_LINKS,
+    stepsFifty: stepsFifty, offerLive: offerLive, NJ_LINKS: NJ_LINKS,
     POWERHAUS: POWERHAUS, MARLI_REFERRALS: MARLI_REFERRALS
   };
 })(window);

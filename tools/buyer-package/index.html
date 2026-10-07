@@ -879,7 +879,16 @@ function pgAgent(n, p) {
    contact details on this page. */
 /* The agent's photograph for the NJ page; an agent without one shows the
    roster cut-out on navy in the same place. */
-const AGENT_PHOTO = { 'marli-silver': 'static/agent-marli-silver.jpg' };
+const AGENT_PHOTO = {
+  'marli-silver': 'static/agent-marli-silver.jpg',
+  'james-huber': 'static/agent-james-huber.jpg',
+  'tj-verdiglione': 'static/agent-tj-verdiglione.jpg',
+  'gary-kasparov': 'static/agent-gary-kasparov.jpg',
+  'nicole-melveney': 'static/agent-nicole-melveney.jpg',
+  'katie-cook': 'static/agent-katie-cook.jpg',
+  'john-gasdaska': 'static/agent-john-gasdaska.jpg',
+  'ayuen-gai': 'static/agent-ayuen-gai.jpg'
+};
 function pgAgentNj(n, p) {
   const a = p.agent, first = esc(a.name.split(' ')[0]);
   const photo = AGENT_PHOTO[a.id];

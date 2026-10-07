@@ -6,8 +6,12 @@ magazines. The frame is 18.2s into "14 Ridge (no music).mov" (the Ridge Road
 Short) on the GVC - Videos Photos drive:
 
     ffmpeg -ss 18.2 -i "14 Ridge (no music).mov" -frames:v 1 -q:v 2 frame.jpg
-    set BG=.../Magazine 4.jpg & set CROP=754,360,3846,3000 & set AT=2291,2000
-    python scripts/phone_mockup.py frame.jpg assets/img/nj/marketing-mockup.jpg 16 990
+    set BG=wide-bg.png & set CROP=217,360,5063,2700 & set AT=3610,1560 & set OUTMAX=2600
+    python scripts/phone_mockup.py frame.jpg assets/img/nj/marketing-mockup.jpg 16 1100
+
+wide-bg.png is Magazine 4.jpg with the "New Jersey, Red Bank 07***" line
+blurred and 900px of its surface mirrored onto the right edge (numpy.pad,
+mode='reflect') so the scene can run the full page width.
 
 Args: frame, output, angle (degrees, + = counter-clockwise), phone height (px).
 Without BG it draws its own grey surface, 2480x2640, phone centred.
@@ -116,6 +120,6 @@ for blur, dx, dy, st in ((70, -45, 70, 0.45), (14, -10, 16, 0.55)):
     bg.paste(black, (cx0 + ddx, cy0 + ddy), a)
 bg.paste(phone, (cx0, cy0), phone)
 
-bg.thumbnail((1800, 1800), Image.LANCZOS)
+bg.thumbnail((int(os.environ.get('OUTMAX', 1800)),) * 2, Image.LANCZOS)
 bg.save(out_path, quality=86, optimize=True, progressive=True)
 print(out_path, bg.size)

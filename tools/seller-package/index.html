@@ -97,18 +97,30 @@
 .crew .cell.lab.inh{align-items:center;text-align:center;aspect-ratio:1/2;}
 .crew .cell.lab.inh .ci{width:.4in;height:.4in;margin-bottom:.12in;color:#fff;}
 .crew .cell.lab.n3.inh .ci,.crew .cell.lab.n4.inh .ci{color:var(--navy);}
-/* ...beside a mockup of the team's work (a brochure it designed, with one of
-   its films playing on a phone), the four squares folded into a 2x2 */
-.showcase{display:grid;grid-template-columns:1.04fr 1fr;height:3.9in;flex:none;margin-bottom:.06in;}
+/* ...a mockup of the team's work (a brochure it designed, with one of its
+   films playing on a phone) beside the "All In-House" copy, and the four
+   squares as a strip under both */
+.showcase{display:grid;grid-template-columns:3.3in 1fr;grid-template-rows:3.5in auto;flex:none;}
 .showcase .mock{overflow:hidden;min-width:0;background:#929292;}
 .showcase .mock img{width:100%;height:100%;object-fit:cover;display:block;}
-.showcase .crew{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;margin:0;}
-.showcase .crew .cell.lab.inh{aspect-ratio:auto;}
-.showcase .crew .cell.lab.inh .ci{width:.32in;height:.32in;margin-bottom:.1in;}
+.showcase .intro{display:flex;flex-direction:column;justify-content:center;padding-left:.32in;min-width:0;}
+.showcase .intro .dline{text-align:left;margin:0 0 .16in;}
+.showcase .intro .about-copy{text-align:left;margin:0;font-size:10pt;line-height:15.5pt;}
+.showcase .crew{grid-column:1 / -1;margin:.06in 0 0;}
+.showcase .crew .cell.lab.inh{aspect-ratio:auto;flex-direction:row;gap:.1in;padding:.15in .1in;}
+.showcase .crew .cell.lab.inh .ci{width:.24in;height:.24in;margin:0;}
+.showcase .crew .cell.lab.inh .nm{font-size:10pt;}
+.showcase .crew .cell.lab.inh .tt{display:none;}
+.showcase .intro b{white-space:nowrap;}
+/* this page carries four sections, so its headings sit tighter than the
+   other company pages' */
+.showcase ~ .dline.sm{margin:.14in 0 .1in;}
+.showcase ~ .tri .tb{padding:.14in .16in;}
 /* the bottom of the page: one room, as shot and as virtually staged */
-.staging{display:grid;grid-template-columns:1fr 1fr;gap:.06in;height:2.3in;flex:none;}
+.staging{display:grid;grid-template-columns:1fr 1fr;gap:.06in;height:1.9in;flex:none;}
 .staging figure{position:relative;margin:0;overflow:hidden;min-width:0;}
-.staging img{width:100%;height:100%;object-fit:cover;display:block;}
+.staging img{width:100%;height:100%;object-fit:cover;object-position:50% 92%;display:block;}
+/* (anchored low: the after photo carries its "Virtually staged" mark bottom-left) */
 .staging figcaption{position:absolute;top:.12in;left:.12in;padding:.05in .11in;background:var(--navy);
   font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#fff;}
 .staging figure + figure figcaption{background:var(--sky);color:var(--navy);}
@@ -1154,15 +1166,29 @@ function pgStudioNj(n) {
   const body =
     '<div class="showcase">' +
       '<div class="mock"><img src="../../assets/img/nj/marketing-mockup.jpg" alt="A GVC listing brochure and its film playing on a phone"></div>' +
+      '<div class="intro">' +
+        '<div class="dline"><b>All</b> In-House</div>' +
+        '<div class="about-copy">Every part of your home&rsquo;s marketing is produced <b>in-house</b> by the ' +
+        'GVC Team: the <b>photography and video</b>, the <b>design</b> of every brochure, sign and listing, ' +
+        'and the <b>digital and social media</b> campaigns. Nothing is handed to an outside agency, so it is ' +
+        'done to one standard, on our schedule, and positioned for <b>maximum exposure</b>.</div>' +
+      '</div>' +
       '<div class="crew">' + work.map(w =>
         '<div class="cell lab inh ' + w[2] + '">' + ico(w[0]) + '<div class="nm">' + w[1] + '</div>' +
         '<div class="tt">In-house</div></div>').join('') + '</div>' +
     '</div>' +
-    '<div class="dline"><b>All</b> In-House</div>' +
-    '<div class="about-copy">Every part of your home&rsquo;s marketing is produced <b>in-house</b> by the ' +
-    'GVC Team: the <b>photography and video</b>, the <b>design</b> of every brochure, sign and listing, ' +
-    'and the <b>digital and social media</b> campaigns. Nothing is handed to an outside agency, so it is ' +
-    'done to one standard, on our schedule, and positioned for <b>maximum exposure</b>.</div>' +
+    '<div class="dline sm">Our Marketing <b>Advantage</b></div>' +
+    '<div class="tri">' +
+      '<div class="tb c1">' + ico('pen') +
+        '<h4>Immersive Visual Design</h4><p>Renderings, brochures and listing design that bring the ' +
+        'property to life and highlight every architectural detail.</p></div>' +
+      '<div class="tb c2">' + ico('megaphone') +
+        '<h4>Digital Strategy &amp; Social Media Reach</h4><p>Targeted campaigns that expand visibility ' +
+        'and reach the right buyers across every platform.</p></div>' +
+      '<div class="tb c3">' + ico('clapper') +
+        '<h4>Cinematic Storytelling</h4><p>Films and photography that capture the home&rsquo;s ' +
+        'essence and show it at its absolute best.</p></div>' +
+    '</div>' +
     '<div class="dline sm">Virtual <b>Staging</b></div>' +
     '<div class="staging">' +
       '<figure><img src="../../assets/img/nj/staging-before.jpg" alt="A living room as photographed"><figcaption>Before</figcaption></figure>' +

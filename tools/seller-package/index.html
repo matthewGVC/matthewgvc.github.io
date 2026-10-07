@@ -639,6 +639,32 @@ const PREP = [
    'Clear stairs and halls;Store excess furniture;Clear counters and stove;Make closets neat and tidy']
 ];
 
+/* The New York version, for an apartment rather than a house (drafted
+   2026-10-07 for Matt's review, not from the printed plan): same six-group
+   page, with the building taking Curb Appeal's place and the house-only lines
+   (lawns, furnace, doorbell, fireplace) swapped for their apartment ones. */
+const PREP_NYC = [
+  ['General Maintenance', 'box',
+   'Oil squeaky doors;Tighten doorknobs and cabinet pulls;Replace burned out lights;Clean and repair windows;' +
+   'Touch up chipped paint;Repair cracked plaster;Repair leaking taps and toilets'],
+  ['Cleaning', 'home',
+   'Shampoo carpets and clean rugs;Clean washer, dryer, and tubs;Clean radiators and AC units;' +
+   'Clean fridge, stove and dishwasher;Clean and freshen bathrooms'],
+  ['Showing Ready', 'pen',
+   'Clean and tidy entry;Check the buzzer and intercom;Polish door hardware;' +
+   'Touch up the front door <em>(as necessary)</em>'],
+  ['The Building', 'building',
+   'Tell the managing agent and front desk you are selling;Confirm the building’s showing rules;' +
+   'Leave keys and access for showings;Find your deed or co-op share certificate and lease;' +
+   'Keep recent maintenance or common charge statements;Note any assessments or building projects'],
+  ['That Extra Touch', 'sun',
+   'Be absent during showings;Turn on all lights;Open blinds and shades in the day time;' +
+   'Set the heat or AC to a comfortable temperature;Play quiet background music;Keep pets out during showings'],
+  ['Tidy and Organized', 'check',
+   'Clear entry and hallways;Store excess furniture;Clear counters and stove;Clear windowsills for the light;' +
+   'Make closets neat and tidy']
+];
+
 /* ============================================================
    PROFESSIONAL VIDEOS  (page 11)  —  EDIT THIS BLOCK
    ------------------------------------------------------------
@@ -1262,10 +1288,11 @@ function pgPlan(n) {
 }
 
 /* The seller's own prep checklist. Boxes print empty — this page is meant to
-   be handed over and ticked off, so nothing here is editor-driven. */
+   be handed over and ticked off, so nothing here is editor-driven. The list
+   follows the market: an apartment one for New York. */
 function pgPrep(n) {
   const body =
-    '<div class="chk">' + PREP.map(([name, ic, items]) =>
+    '<div class="chk">' + (state.market === 'nyc' ? PREP_NYC : PREP).map(([name, ic, items]) =>
       '<div class="cgrp"><div class="cgrp-h">' + (window.icon ? window.icon(ic, 'ci') : '') +
         '<span>' + name + '</span></div><ul>' +
         items.split(';').map(t => '<li><i></i><span>' + t + '</span></li>').join('') +

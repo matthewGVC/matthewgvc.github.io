@@ -1,0 +1,60 @@
+/* ============================================================
+   COLLAPSIBLE EDITOR PANEL — the handle and the folded state.
+   Behaviour: assets/js/panel-collapse.js (sets body[data-panel-layout],
+   body.panel-collapsed, .pc-box on the panel's container).
+
+   The panel keeps its width when folded and slides out sideways while its
+   column closes, so the editor's text never reflows mid-animation; the
+   container clips it. Each layout only folds above its own stacking
+   breakpoint: below it the panel sits on top of the preview, always shown.
+   ============================================================ */
+.pc-box { position: relative; }
+.pc-handle {
+  display: none; position: absolute; top: 14px; z-index: 40;
+  width: 28px; height: 28px; margin-left: -14px; padding: 0;
+  place-items: center; border-radius: 50%; cursor: pointer;
+  background: #fff; color: #00273A; border: 1px solid #D3D4D0;
+  box-shadow: 0 1px 4px rgba(0, 39, 58, .16);
+  transition: background .18s, border-color .18s;
+}
+.pc-handle svg { width: 14px; height: 14px; transition: transform .32s cubic-bezier(.4, 0, .2, 1); }
+.pc-handle:hover { background: #53C7DC; border-color: #53C7DC; }
+.pc-handle:focus-visible { outline: 2px solid #53C7DC; outline-offset: 2px; }
+.panel-collapsed .pc-handle { margin-left: 6px; }
+.panel-collapsed .pc-handle svg { transform: rotate(180deg); }
+.pc-anim .pc-handle { transition: left .32s cubic-bezier(.4, 0, .2, 1), margin-left .32s cubic-bezier(.4, 0, .2, 1), background .18s; }
+
+/* ---------- builder shell: #app > #editor (builder.css, Showsheet) ---------- */
+@media screen and (min-width: 1101px) {
+  [data-panel-layout="builder"] .pc-handle { display: grid; }
+  .pc-anim #app { transition: grid-template-columns .32s cubic-bezier(.4, 0, .2, 1); }
+  .pc-anim #editor { transition: transform .32s cubic-bezier(.4, 0, .2, 1); }
+  .panel-collapsed #app { grid-template-columns: 0 minmax(0, 1fr); }
+  .panel-collapsed #editor { transform: translateX(-100%); }
+}
+
+/* ---------- Map Studio: .mapstudio > .sidebar (flex) ---------- */
+@media screen and (min-width: 761px) {
+  [data-panel-layout="map"] .pc-handle { display: grid; }
+  [data-panel-layout="map"] .pc-box { overflow: hidden; }
+  .pc-anim .mapstudio > .sidebar { transition: margin-left .32s cubic-bezier(.4, 0, .2, 1); }
+  .panel-collapsed .mapstudio > .sidebar { margin-left: -430px; }
+}
+
+/* ---------- Watermark: .tool > .controls (grid) ---------- */
+@media screen and (min-width: 821px) {
+  [data-panel-layout="watermark"] .pc-handle { display: grid; }
+  [data-panel-layout="watermark"] .pc-box { overflow: hidden; }
+  /* the column sets this panel's width, so pin it to slide rather than squeeze */
+  [data-panel-layout="watermark"] .tool > .controls { width: 300px; }
+  .pc-anim .tool { transition: grid-template-columns .32s cubic-bezier(.4, 0, .2, 1), column-gap .32s; }
+  .pc-anim .tool > .controls { transition: transform .32s cubic-bezier(.4, 0, .2, 1); }
+  .panel-collapsed .tool { grid-template-columns: 0 1fr; column-gap: 0; }
+  .panel-collapsed .tool > .controls { transform: translateX(-110%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-anim #app, .pc-anim #editor, .pc-anim .mapstudio > .sidebar, .pc-anim .tool,
+  .pc-anim .tool > .controls, .pc-anim .pc-handle, .pc-handle svg { transition: none !important; }
+}
+@media print { .pc-handle { display: none !important; } }

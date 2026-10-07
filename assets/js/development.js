@@ -34,7 +34,8 @@
   const stageName = key => (STAGES.find(s => s.key === key) || STAGES[1]).name;
 
   /* Homes with a site are subdivisions, shown side by side under one
-     heading; the rest are feature homes with a picture. */
+     heading (their pictures small, under it); the rest are feature homes
+     with a large picture. */
   function organise(doc) {
     const homes = (doc.homes || []).filter(h => h && (h.address || h.price));
     const features = homes.filter(h => !h.site);
@@ -79,17 +80,23 @@
 
   /* A subdivision: one heading for the site, the homes side by side. A note
      every home on the site shares is said once, under the heading. */
-  function siteInner(s) {
+  function siteInner(s, urlFor) {
     const notes = s.homes.map(h => h.note || '');
     const shared = notes.every(n => n && n === notes[0]) ? notes[0] : '';
     const town = (s.homes.find(h => h.town) || {}).town;
+    const unitName = h => (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
+    /* the homes' pictures sit together under the site's heading, where the
+       column has room, each captioned with the home it shows */
+    const pics = s.homes.filter(h => h.image && urlFor(h.image)).map(h =>
+      '<figure class="dv-pic"><img src="' + esc(urlFor(h.image)) + '" alt="Rendering of ' + esc(h.address) + '">' +
+        '<figcaption><b>' + esc(unitName(h)) + '</b>' + (h.imageNote ? ' ' + esc(h.imageNote) : '') + '</figcaption></figure>').join('');
     return '<div><h3>' + esc(s.name) + '</h3>' +
         '<p class="dv-site-meta">' + (town ? esc(town) + ', ' : '') + s.homes.length + '-home subdivision</p>' +
         (shared ? '<p class="dv-note">' + esc(shared) + '</p>' : '') +
+        (pics ? '<div class="dv-site-pics">' + pics + '</div>' : '') +
       '</div>' +
       '<div class="dv-pair">' + s.homes.map(h => {
-        const name = (h.address || '').replace(s.name, '').replace(/^\s*[-–,]\s*/, '') || h.address;
-        return '<section class="dv-unit"><h4>' + esc(name) + '</h4>' +
+        return '<section class="dv-unit"><h4>' + esc(unitName(h)) + '</h4>' +
           (h.price ? '<p class="dv-price">' + esc(h.price) + '</p>' : '') + facts(h) +
           (!shared && h.note ? '<p class="dv-note">' + esc(h.note) + '</p>' : '') +
         '</section>';
@@ -174,8 +181,8 @@
         ? '<div class="dv-blk"><div class="dv-sites-h"><h2>' + word(o.sites.length) +
             ' new subdivision' + (o.sites.length === 1 ? '' : 's') + '</h2>' +
             (doc.subdivisionsIntro ? '<p>' + esc(doc.subdivisionsIntro) + '</p>' : '') + '</div>' +
-            '<div class="dv-site">' + siteInner(s) + '</div></div>'
-        : '<div class="dv-blk dv-site">' + siteInner(s) + '</div>');
+            '<div class="dv-site">' + siteInner(s, urlFor) + '</div></div>'
+        : '<div class="dv-blk dv-site">' + siteInner(s, urlFor) + '</div>');
     });
     if (doc.nextStep) out.push('<section class="dv-blk dv-next"><h2>Next step</h2><p>' + esc(doc.nextStep) + '</p></section>');
     return out;

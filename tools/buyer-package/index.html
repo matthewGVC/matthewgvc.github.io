@@ -363,6 +363,9 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .agnj .words{width:4.05in;flex:none;min-height:0;display:flex;flex-direction:column;}
 .agnj .ab-bio.sm{text-align:left;}
 .agnj .ab-text{columns:1;text-align:left;}
+/* a long blurb plus a long bio (Gary, John, Jonathan) would run past the page */
+.agnj .words.long .ab-bio.sm{font-size:10pt;line-height:1.4;margin-bottom:.1in;}
+.agnj .words.long .ab-text{font-size:7.7pt;line-height:10.6pt;}
 .agnj .ab-facts{margin-top:auto;padding-top:.16in;}
 .agnj .ab-facts .f b{width:1in;}
 .agnj .shot{flex:1;min-width:0;overflow:hidden;background:var(--navy);}
@@ -904,7 +907,7 @@ function pgAgentNj(n, p) {
         '<div class="nm">' + esc(a.name) + '</div>' +
         '<div class="tt">' + esc(a.title) + '</div>' +
       '</div>' +
-      '<div class="row"><div class="words">' +
+      '<div class="row"><div class="words' + ((a.blurb || '').length + (a.bio || []).join('').length > 2300 ? ' long' : '') + '">' +
         (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
         ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
           '<div class="ab-text tight">' + a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +

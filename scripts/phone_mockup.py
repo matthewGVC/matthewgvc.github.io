@@ -6,7 +6,7 @@ magazines. The frame is 18.2s into "14 Ridge (no music).mov" (the Ridge Road
 Short) on the GVC - Videos Photos drive:
 
     ffmpeg -ss 18.2 -i "14 Ridge (no music).mov" -frames:v 1 -q:v 2 frame.jpg
-    set BG=.../Magazine 4.jpg & set CROP=1060,360,3540,3000 & set AT=1985,2000
+    set BG=.../Magazine 4.jpg & set CROP=754,360,3846,3000 & set AT=2291,2000
     python scripts/phone_mockup.py frame.jpg assets/img/nj/marketing-mockup.jpg 16 990
 
 Args: frame, output, angle (degrees, + = counter-clockwise), phone height (px).

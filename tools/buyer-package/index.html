@@ -17,9 +17,9 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ ONE PAGE IS STILL ARTWORK for New York and Florida (static/p8.jpg: Offer &
-     Negotiation; New Jersey prints the live, editable pgOfferLive), and six card
-     bodies on it read wrongly outside New Jersey. patchOffer() draws the right words
+<!-- ⚠ ONE PAGE IS STILL ARTWORK for Florida (static/p8.jpg: Offer & Negotiation;
+     New Jersey and New York print the live, editable pgOfferLive), and six card
+     bodies on it read wrongly for Florida. patchOffer() draws the right words
      over the picture on a white patch, at positions measured off the 400dpi artwork, so a
      re-export at a different size or with the furniture moved will put them in the wrong
      place. If you regenerate static/, check it. Better still: redraw the page as live
@@ -270,21 +270,21 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
   dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
 
 
-/* 50 Things, NJ: the seven steps of the Buying Process, each carrying the
-   things we do during it. Steps 1-4 left, 5-7 right; the step circle is the
-   Buying Process's own (.proc .no), smaller. */
-.fifty.nj .fg + .fg{margin-top:.13in;}
-.fifty.nj .fg-h{display:flex;align-items:center;gap:.09in;font-size:7.6pt;color:var(--navy);padding-bottom:.045in;}
-.fifty.nj .sn{flex:none;width:.25in;height:.25in;border-radius:50%;display:flex;align-items:center;
+/* 50 Things, NJ and NYC: the steps of the Buying Process, each carrying the
+   things we do during it (NJ 4/3 steps a column, NYC 3/3); the step circle is
+   the Buying Process's own (.proc .no), smaller. */
+.fifty.steps .fg + .fg{margin-top:.13in;}
+.fifty.steps .fg-h{display:flex;align-items:center;gap:.09in;font-size:7.6pt;color:var(--navy);padding-bottom:.045in;}
+.fifty.steps .sn{flex:none;width:.25in;height:.25in;border-radius:50%;display:flex;align-items:center;
   justify-content:center;color:#fff;font:800 8pt/1 var(--sans);letter-spacing:0;padding-top:.5pt;
   background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#13809b),
     color-mix(in srgb,#06475f var(--t),#0f7694));}
-.fifty.nj li{padding:.03in 0;font-size:8.7pt;line-height:11.2pt;}
-.fifty.nj li .n{line-height:11.2pt;}
+.fifty.steps li{padding:.03in 0;font-size:8.7pt;line-height:11.2pt;}
+.fifty.steps li .n{line-height:11.2pt;}
 /* lines Matt is checking with the agents — prints, so it cannot be missed */
-.fifty.nj .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
+.fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
   font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#8C3A2B;}
-.fifty.nj .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:#53C7DC;}
+.fifty.steps .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:#53C7DC;}
 
 /* Offer & Negotiation, NJ: the artwork's six cards as live, editable HTML.
    No telephone — the cards take the whole page. */
@@ -439,7 +439,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
       </details>
 
       <details class="ed-sec" id="offerSec" hidden>
-        <summary>Offer &amp; Negotiation <span class="hint">New Jersey &middot; editable</span></summary>
+        <summary>Offer &amp; Negotiation <span class="hint" id="offerHint">New Jersey &middot; editable</span></summary>
         <div class="sec-in">
           <div id="offerEd"></div>
           <button class="btn sm ghost" type="button" id="offerReset" style="margin-top:10px">Reset to the original wording</button>
@@ -521,8 +521,9 @@ const state = {
   agents:[],
   /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
   njAgents:true,
-  /* NJ only: the Offer & Negotiation cards as edited in the panel; null = GG.NJ_OFFER */
-  offer:null,
+  /* NJ and NYC: the Offer & Negotiation cards as edited in the panel, by
+     market; a market with no entry prints GG.offerLive(region) */
+  offer:{},
   /* the two editable runs on the cover — both print in caps */
   cover:{ kicker:'Comprehensive Guide for the Home Buying Process',
           title:'Buyer’s Guide' }
@@ -659,7 +660,7 @@ const SPINE = [
   { key:'agents',    title:'Meet Your Agent',     agents:true },
   { key:'powerhaus', title:'Power Haus Women',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
   { key:'referrals', title:'Referral Partners',   only:['nj'], marli:true, opt:'Marli’s partners (list still needed)' },
-  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj'] },
+  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj','nyc'] },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost', not:['nj'] },
@@ -926,30 +927,39 @@ function pgFifty(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'50 Things We Do for You', key:'fifty', body });
 }
 
-/* New Jersey: the Buying Process and the 50 Things are one page. Each of the
-   seven steps carries the things we do during it (GG.NJ_STEPS_FIFTY, the same
-   fifty lines regrouped), steps 1-4 left and 5-7 right, numbered straight
-   through. No photo, which is where the room for the steps came from. */
-const NJ_FIFTY_TITLE = '50 Things We Do for You as Your Buyer’s Agent';
-/* Lines Matt is confirming with the agents (by number) get a printed "Check"
-   tag; take a number out once it is confirmed. The last line gets a star. */
+/* New Jersey and New York: the Buying Process and the 50 Things are one page.
+   Each step carries the things we do during it (GG.stepsFifty(region), the
+   market's same fifty lines regrouped), numbered straight through: New
+   Jersey's seven steps split 4/3 across the columns, New York's six 3/3. No
+   photo, which is where the room for the steps came from. New York's board
+   step keeps the Buying Process page's co-op/condo footnote, at the foot of
+   the right-hand column. */
+const STEPS_FIFTY_TITLE = '50 Things We Do for You as Your Buyer’s Agent';
+const STEPS_SPLIT = { nj: 4, nyc: 3 };
+/* New Jersey lines Matt is confirming with the agents (by number) get a
+   printed "Check" tag; take a number out once it is confirmed. The last line
+   gets a star. */
 const NJ_FIFTY_CHECK = [10, 15, 17, 23, 28];
 const STAR = '<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" ' +
   'd="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
-const lineMark = i => NJ_FIFTY_CHECK.indexOf(i) >= 0 ? '<span class="vfy">Check</span>' : (i === 50 ? STAR : '');
-function pgFiftyNj(n) {
-  const steps = GG.NJ_STEPS_FIFTY;
+const lineMark = i => state.region === 'nj' && NJ_FIFTY_CHECK.indexOf(i) >= 0
+  ? '<span class="vfy">Check</span>' : (i === 50 ? STAR : '');
+function pgFiftySteps(n) {
+  const steps = GG.stepsFifty(state.region);
   const total = steps.reduce((t, g) => t + g.items.length, 0);
-  if (total !== 50) console.warn('guide-data.js: NJ_STEPS_FIFTY has ' + total + ' things, not 50');
+  if (total !== 50) console.warn('guide-data.js: "' + state.region + '" steps carry ' + total + ' things, not 50');
+  const split = STEPS_SPLIT[state.region];
   const last = steps.length - 1;
   let i = 0;
-  const col = (gs, from) => '<div class="fc">' + gs.map((g, k) =>
+  const col = (gs, from, tail) => '<div class="fc">' + gs.map((g, k) =>
     '<div class="fg"><div class="fg-h"><span class="sn" style="--t:' + Math.round((from + k) / last * 100) + '%">' +
-      (from + k + 1) + '</span><span>' + esc(g.t) + '</span></div><ol>' +
+      (from + k + 1) + '</span><span>' + esc(g.t) + (g.star ? '<sup>*</sup>' : '') + '</span></div><ol>' +
       g.items.map(t => { ++i; return '<li><span class="n">' + i + '</span><span>' + esc(t) + '</span>' + lineMark(i) + '</li>'; }).join('') +
-    '</ol></div>').join('') + '</div>';
-  const body = '<div class="fifty nj">' + col(steps.slice(0, 4), 0) + col(steps.slice(4), 4) + '</div>';
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:NJ_FIFTY_TITLE, key:'fifty', body });
+    '</ol></div>').join('') + (tail || '') + '</div>';
+  /* the footnote closes the right-hand column, which is the shorter one */
+  const note = steps.note ? '<p class="foot-note">' + esc(steps.note) + '</p>' : '';
+  const body = '<div class="fifty steps">' + col(steps.slice(0, split), 0) + col(steps.slice(split), split, note) + '</div>';
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:STEPS_FIFTY_TITLE, key:'fifty', body });
 }
 
 /* ---------- Don't Forget to Ask ----------
@@ -1046,18 +1056,20 @@ function pgFaq(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'FAQ’s', key:'questions', body });
 }
 
-/* ---------- Offer & Negotiation, New Jersey ----------
+/* ---------- Offer & Negotiation, New Jersey and New York ----------
    The artwork's six cards redrawn as live HTML so they can be edited in the
-   panel (state.offer; GG.NJ_OFFER until someone edits). No telephone. New York
-   and Florida still print the artwork with patchOffer(). */
-const offerCardsNj = () => state.offer || GG.NJ_OFFER;
+   panel (state.offer[region]; GG.offerLive(region) until someone edits). No
+   telephone. Florida still prints the artwork with patchOffer(). */
+const LIVE_OFFER = ['nj', 'nyc'];
+const liveOffer = () => LIVE_OFFER.indexOf(state.region) > -1;
+const offerCards = () => state.offer[state.region] || GG.offerLive(state.region);
 function pgOfferLive(n) {
-  const body = '<div class="offer-live">' + offerCardsNj().map(c =>
+  const body = '<div class="offer-live">' + offerCards().map(c =>
     '<div class="card">' + ic(c.icon, 'ci') + '<h3>' + esc(c.title) + '</h3><p>' + esc(c.text) + '</p></div>').join('') +
   '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Offer & Negotiation', key:'offer', body });
 }
-const pgOffer = (n, p) => state.region === 'nj' ? pgOfferLive(n) : pgStatic(n, p);
+const pgOffer = (n, p) => liveOffer() ? pgOfferLive(n) : pgStatic(n, p);
 
 /* ---------- Useful Links, New Jersey ----------
    Where to check today's mortgage rates and find the legal and closing paperwork.
@@ -1223,7 +1235,7 @@ function pgStatic(n, p) {
 
 const RENDER = {
   cover:pgCover, why:pgWhy, agent:pgAgentAny, process:pgProcess,
-  fifty:(n, p) => state.region === 'nj' ? pgFiftyNj(n, p) : pgFifty(n, p),
+  fifty:(n, p) => GG.stepsFifty(state.region) ? pgFiftySteps(n, p) : pgFifty(n, p),
   costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgOffer, next:pgNext,
   links:pgLinks, powerhaus:pgPowerhaus, referrals:pgReferrals
 };
@@ -1264,15 +1276,19 @@ function paintHints() {
   document.getElementById('pagesHint').textContent =
     on + ' of ' + list.length + ' optional on';
   paintTicks();
-  document.getElementById('offerSec').hidden = state.region !== 'nj';
+  document.getElementById('offerSec').hidden = !liveOffer();
+  document.getElementById('offerHint').textContent = REGIONS[state.region].name + ' · editable';
 }
 
-/* The NJ Offer & Negotiation editor: a title and a body per card. The first
-   edit copies GG.NJ_OFFER into state.offer, so Reset can always go back. */
+/* The Offer & Negotiation editor (NJ and NYC): a title and a body per card,
+   for the market on the cover. The first edit copies GG.offerLive(region)
+   into state.offer[region], so Reset can always go back. Repainted when the
+   market changes. */
 function paintOfferEd() {
   const host = document.getElementById('offerEd');
   host.replaceChildren();
-  offerCardsNj().forEach((c, i) => {
+  const region = state.region;
+  offerCards().forEach((c, i) => {
     const f = document.createElement('div');
     f.className = 'field';
     const lab = document.createElement('label');
@@ -1282,8 +1298,8 @@ function paintOfferEd() {
     const b = document.createElement('textarea');
     b.rows = 3; b.value = c.text; b.setAttribute('aria-label', 'Card ' + (i + 1) + ' text');
     const set = (key, el) => el.addEventListener('input', () => {
-      if (!state.offer) state.offer = GG.NJ_OFFER.map(o => Object.assign({}, o));
-      state.offer[i][key] = el.value;
+      if (!state.offer[region]) state.offer[region] = GG.offerLive(region);
+      state.offer[region][i][key] = el.value;
       redraw(); GVC_UNSAVED.touch();
     });
     set('title', t); set('text', b);
@@ -1351,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     () => state.region,
     v => {
       state.region = v;
-      redraw(); GVC_UNSAVED.touch();
+      paintOfferEd(); redraw(); GVC_UNSAVED.touch();
     });
 
   /* The cover's two text runs. Typed live, capitalised by CSS, and the
@@ -1368,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   paintOfferEd();
   document.getElementById('offerReset').addEventListener('click', () => {
-    state.offer = null; paintOfferEd(); redraw(); GVC_UNSAVED.touch();
+    delete state.offer[state.region]; paintOfferEd(); redraw(); GVC_UNSAVED.touch();
   });
 
   builder = Builder.init({

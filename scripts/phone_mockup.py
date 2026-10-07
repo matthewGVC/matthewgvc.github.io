@@ -9,6 +9,11 @@ Short) on the GVC - Videos Photos drive:
     set BG=wide-bg.png & set CROP=217,360,5063,2700 & set AT=3610,1560 & set OUTMAX=2600
     python scripts/phone_mockup.py frame.jpg assets/img/nj/marketing-mockup.jpg 16 1100
 
+The blueprint (top-left) and camera (top-right) were then laid in on the
+same surface with the same two-layer drop shadow, from Unsplash (free licence):
+  blueprint  unsplash.com/photos/9tmKEDz03uw  (Amsterdam City Archives), as a flat sheet
+  camera     unsplash.com/photos/YaD9gSQ3dGA  (Dhruv Vishwakarma), cut out at luminance < 80
+
 wide-bg.png is Magazine 4.jpg with the "New Jersey, Red Bank 07***" line
 blurred and 900px of its surface mirrored onto the right edge (numpy.pad,
 mode='reflect') so the scene can run the full page width.

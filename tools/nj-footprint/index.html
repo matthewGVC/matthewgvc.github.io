@@ -79,18 +79,20 @@
 .also .cv{color:var(--ui-ink-soft);font-variant-numeric:tabular-nums;}
 .team{flex:none;margin:.14in var(--pad) 0;border-top:1px solid var(--rule);padding-top:.12in;}
 .team .eyebrow{margin:0 0 .08in;}
-.team-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.24in;align-items:start;}
-.ag{display:grid;grid-template-columns:.62in 1fr;column-gap:.12in;row-gap:.07in;align-items:center;}
-.ag .ph{width:.62in;height:.62in;border-radius:50%;overflow:hidden;background:var(--paper-2);}
+.team-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.18in;align-items:stretch;}
+.ag{display:grid;grid-template-columns:.64in 1fr;column-gap:.12in;row-gap:.09in;align-items:center;align-content:start;
+  background:#F4F2EE;border-top:3px solid var(--navy);border-radius:2px;padding:.15in .16in .16in;}
+.ag .ph{width:.64in;height:.64in;border-radius:50%;overflow:hidden;background:var(--paper-2);
+  border:2px solid #fff;box-shadow:0 0 0 1.5px #53C7DC;}
 .ag .ph img{display:block;width:100%;height:100%;object-fit:cover;transform:scale(1.55);transform-origin:50% 26%;}
 .ag .who{min-width:0;}
-.ag .an{font:800 9.5pt/1.2 var(--sans);letter-spacing:.02em;}
-.ag .rl{margin-top:.02in;font:800 6.5pt/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-ink-soft);}
-.ag .bio{grid-column:1 / -1;font:300 8pt/1.4 var(--body);color:var(--navy);}
+.ag .an{font:400 12pt/1.1 var(--serif);color:var(--navy);white-space:nowrap;}
+.ag .rl{margin-top:.05in;padding-left:.07in;border-left:2px solid #53C7DC;
+  font:800 6pt/1.35 var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--ui-ink-soft);}
+.ag .bio{grid-column:1 / -1;padding-top:.08in;border-top:1px solid var(--rule);font:300 7.8pt/1.42 var(--body);color:var(--navy);}
 
 /* snowbird band */
 .snow{flex:none;margin:.16in var(--pad) 0;background:var(--navy);color:var(--bone);border-radius:2px;padding:.17in .3in;display:flex;align-items:center;gap:.35in;}
-.snow .k{flex:none;width:1.45in;font:800 7.5pt/1.5 var(--sans);letter-spacing:.2em;text-transform:uppercase;color:#53C7DC;}
 .snow p{margin:0;font:300 10.5pt/1.45 var(--body);}
 .snow p b{font-weight:600;color:#fff;}
 
@@ -208,16 +210,14 @@
         '<div class="who"><div class="an">' + esc(a) + '</div><div class="rl">' + esc(WHO[a][0]) + '</div></div><div class="bio">' + esc(WHO[a][1]) + '</div></div>';
     }).join('');
 
-    /* COPY: the snowbird line is a placeholder until the team supplies its wording. */
-    const snow = '<div class="snow"><div class="k">Snowbirds<br>Florida to New Jersey</div>' +
-      '<p><b>Wintering in Florida, calling New Jersey home?</b> The same team that works the Jersey shore sells and buys on both ends, so one conversation covers the whole move.</p></div>';
+    const snow = '<div class="snow"><p><b>Wintering in Florida, calling New Jersey home?</b> Our teams work in both states, and we have agents on the ground in each, so one conversation covers the whole move.</p></div>';
 
     const badges = ['badge-de.svg', 'badge-gvc.svg'].map(f => '<span class="badge"><img src="../../assets/logos/sheet/' + f + '" alt=""></span>').join('') +
       '<span class="badge"><svg viewBox="8.5 8 23.5 22" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#00273A" stroke-width="1.6"><path d="M20 9.5 10 17h2.3v11.5h15.4V17H30L20 9.5z" stroke-linejoin="round"/><path d="M16 20h8M16 23.6h8" stroke-linecap="round"/></svg></span>';
 
     return (window.NJ_DRAFT_NOTE ? '<div class="stamp">' + esc(window.NJ_DRAFT_NOTE) + '</div>' : '') +
       '<div class="hd"><img class="lockup" src="../../assets/logos/sheet/lockup-navy.svg" alt="The GVC Team"><div class="meta">New Jersey · closed sales ' + span + '</div></div>' +
-      '<div class="title"><h1>Where we <em>work.</em></h1><p>From the Monmouth shore down through Ocean County, and across the rest of New Jersey: where The GVC Team sells, and how much business it has done.</p></div>' +
+      '<div class="title"><h1>Where we <em>work.</em></h1><p>Monmouth and Ocean counties are home base, but we sell all over New Jersey. Here is where, and how much.</p></div>' +
       '<div class="hero"><div class="stat"><div class="n">' + S.deals + '</div><div class="l">Closed sales in New Jersey</div></div>' +
         '<div class="stat"><div class="n">' + money(S.volume) + '</div><div class="l">Total sales volume</div></div></div>' +
       '<div class="body"><div class="mapcol">' + mapSVG() + '</div>' +

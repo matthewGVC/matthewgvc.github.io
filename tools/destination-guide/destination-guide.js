@@ -18,7 +18,6 @@
 
   const pageDefs = [
     { key: 'cover', title: 'Cover', render: pageCover },
-    { key: 'contents', title: 'Contents', render: pageContents },
     { key: 'welcome', title: 'From The GVC Team', heading: () => state.guide.welcomeTitle, render: pageWelcome },
     { key: 'overview', title: 'Field Notes', heading: () => 'What to expect', render: pageOverview },
     { key: 'places', title: 'Places', heading: () => 'Nine ways into the county', render: pagePlaces },
@@ -51,14 +50,31 @@
   }
 
   function pageFoot(n, total, reverse) {
-    return '<div class="dg-foot"><span>The GVC Team / Destination Guide</span>' +
+    return '<div class="dg-foot"><span>Destination Guide</span>' +
       '<span class="page-no">' + String(n).padStart(2, '0') + ' / ' + String(total).padStart(2, '0') + '</span></div>';
   }
 
-  function shell(section, title, body, n, total, cls) {
+  /* `review` marks the heading for the agent-review highlight; an empty title
+     leaves the heading out (the map page gives its room to the map). */
+  function shell(section, title, body, n, total, cls, review) {
     return '<article class="dg ' + (cls || '') + '"><div class="dg-shell">' + pageTop(section) +
-      '<h2 class="dg-heading">' + esc(title) + '</h2>' + body + pageFoot(n, total) + '</div></article>';
+      (title ? '<h2 class="dg-heading' + (review ? ' review' : '') + '">' + esc(title) + '</h2>' : '') + body + pageFoot(n, total) + '</div></article>';
   }
+
+  /* One small line icon per directory group (24 x 24, drawn in currentColor). */
+  const CAT_ICONS = {
+    restaurants: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 1.5-3 4-3 7v3h3v8M17 3v18"/>',
+    grocery: '<path d="M3 4h2l2.4 11h10l2-8H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/>',
+    shopping: '<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+    fitness: '<path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12"/>',
+    coffee: '<path d="M5 8h11v6a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5V8z"/><path d="M16 9h2a2.5 2.5 0 0 1 0 5h-2"/><path d="M8 3v2M12 3v2"/>',
+    outdoors: '<path d="M12 3l5 7h-3l4 6H6l4-6H7l5-7z"/><path d="M12 16v5"/>',
+    transit: '<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12M9 21l2-4M15 21l-2-4"/><circle cx="9.5" cy="14" r=".8"/><circle cx="14.5" cy="14" r=".8"/>',
+    healthcare: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+    entertainment: '<path d="M3 8a2 2 0 0 1 0 0V6h18v2a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2H3v-2a2 2 0 0 0 0-4v0a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/>'
+  };
+  const catIcon = id => CAT_ICONS[id]
+    ? '<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CAT_ICONS[id] + '</svg>' : '';
 
   /* A captioned photograph that takes whatever height its page leaves. */
   function pagePhoto(key) {
@@ -78,35 +94,26 @@
 
   function pageCover(n, total) {
     const g = state.guide;
+    /* what is inside, with the page each part starts on */
+    const contents = pages.filter(page => page.heading).map(page =>
+      '<li><span class="p">' + String(pages.findIndex(item => item.key === page.key) + 1).padStart(2, '0') + '</span><span class="t">' + esc(page.title) +
+      '</span><span class="d">' + esc(page.heading()) + '</span></li>').join('');
     return '<article class="dg dg-cover">' +
-      '<div class="cover-photo"><img src="' + esc(g.coverImage) + '" alt="' + esc(g.coverAlt) + '"></div>' +
+      '<div class="cover-photo"><img src="' + esc(g.coverImage) + '" alt="' + esc(g.coverAlt) + '">' +
+      '<img class="cover-mono' + (g.coverMono === 'dark' ? ' dark' : '') + '" src="../../assets/logos/' + (g.coverMono === 'dark' ? 'monogram' : 'monogram-white') + '.svg" alt=""></div>' +
       '<div class="cover-panel"><div class="cover-issue">' + esc(g.issue) + '</div>' +
       '<h2 class="cover-title' + coverTitleSize(g.title) + '">' + esc(g.title) + '</h2><div class="cover-state">' + esc(g.state) + '</div>' +
-      '<p class="cover-sub">' + esc(g.subtitle) + '</p></div>' +
+      '<p class="cover-sub">' + esc(g.subtitle) + '</p>' +
+      '<ol class="cover-contents review" aria-label="Inside the guide">' + contents + '</ol></div>' +
       '<div class="cover-word">GVC Destination ' + String(n).padStart(2, '0') + '</div></article>';
-  }
-
-  function pageContents(n, total) {
-    const items = pages.filter(page => page.heading);
-    return '<article class="dg dg-contents"><div class="contents-grid">' +
-      '<section class="contents-intro"><div class="roman">I</div><h2>Inside the guide</h2>' +
-      '<p>One region, read through its communities, landscape, culture and useful connections.</p></section>' +
-      '<section class="contents-list"><div class="issue">' + esc(state.guide.issue) + '</div><ol>' +
-      items.map(page => {
-        const index = pages.findIndex(item => item.key === page.key) + 1;
-        return '<li><span class="p">' + String(index + 1).padStart(2, '0') + '</span><span class="t">' + esc(page.title) +
-          '</span><span class="d">' + esc(page.heading()) + '</span></li>';
-      }).join('') + '</ol><p class="note">Prepared as a practical orientation, not a ranking. Seasonal access and schedules should be checked before a visit.</p>' +
-      '</section></div></article>';
   }
 
   function pageWelcome(n, total) {
     const g = state.guide;
     const body = '<div class="welcome-grid"><section class="welcome-copy"><p class="lede">' + esc(g.welcomeTitle) + '</p>' +
-      '<div class="body">' + g.welcome.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
+      '<div class="body">' + g.welcome.map((p, i) => '<p' + (i === 1 ? ' class="review"' : '') + '>' + esc(p) + '</p>').join('') + '</div>' +
       '<div class="welcome-signoff">The GVC Team / Douglas Elliman</div></section>' +
-      '<figure class="welcome-visual"><div class="welcome-photo"><img src="' + esc(g.teamImage) + '" alt="' + esc(g.teamAlt) + '"></div>' +
-      '<figcaption class="dg-caption">Local context, clear guidance, and a team perspective across New York, New Jersey and Florida.</figcaption></figure></div>';
+      '<figure class="welcome-visual"><div class="welcome-photo"><img src="' + esc(g.welcomeImage) + '" alt="' + esc(g.welcomeAlt) + '"></div></figure></div>';
     return shell('From The GVC Team', 'Welcome', body, n, total, 'dg-welcome');
   }
 
@@ -129,14 +136,16 @@
         return '<section class="place"><div class="place-head"><h3>' + esc(place.name) + '</h3><span class="zone">' + esc(place.zone) +
           '</span></div><p>' + esc(text) + '</p></section>';
       }).join('') + '</div>' + pagePhoto('places');
-    return shell('Places', 'Nine ways into the county', body, n, total, 'dg-places');
+    return shell('Places', 'Nine ways into the county', body, n, total, 'dg-places', true);
   }
 
   function pageBucket(n, total) {
-    const body = '<p class="bucket-lede">The fastest way to understand ' + esc(state.guide.title) + ' is to do ' + state.guide.bucket.length + ' ordinary things well: ' + esc(state.guide.bucketLede) + '.</p>' +
+    const body = '<p class="bucket-lede review">The fastest way to understand ' + esc(state.guide.title) + ' is to do ' + state.guide.bucket.length + ' ordinary things well: ' + esc(state.guide.bucketLede) + '.</p>' +
       '<div class="bucket-list">' + state.guide.bucket.map(item => '<section class="bucket"><div class="n"></div><div><h3>' +
-        esc(item.title) + '</h3><p>' + esc(item.note) + '</p><div class="src">' + esc(sourceLabel(item.source)) + '</div></div></section>').join('') + '</div>';
-    return shell('Do This First', 'The local short list', body, n, total, 'dg-bucket');
+        esc(item.title) + '</h3><p>' + esc(item.note) + '</p><div class="src">' + esc(sourceLabel(item.source)) + '</div></div>' +
+        /* a picture or logo an agent adds; an empty slot shows on screen only */
+        '<div class="bucket-pic' + (item.image ? '' : ' empty') + '">' + (item.image ? '<img src="' + esc(item.image) + '" alt="">' : '<span>Logo<br>or photo</span>') + '</div></section>').join('') + '</div>';
+    return shell('Do This First', 'The local short list', body, n, total, 'dg-bucket', true);
   }
 
   function pageDirectory(n, total) {
@@ -144,8 +153,7 @@
       category,
       items: state.guide.pois.filter(poi => poi.category === category.id)
     })).filter(group => group.items.length);
-    const body = '<div class="directory-lede"><p>' + state.guide.pois.length + ' places across ' + groups.length + ' categories, numbered to match the map on the next page.</p></div>' +
-      '<div class="dir-grid">' + groups.map(group => '<section class="dir-group"><h3>' + esc(group.category.label) + '</h3><ol>' +
+    const body = '<div class="dir-grid">' + groups.map(group => '<section class="dir-group cat-' + group.category.id + '"><h3>' + esc(group.category.label) + catIcon(group.category.id) + '</h3><ol>' +
         group.items.map(poi => '<li><span class="pin">' + String(poi.id).padStart(2, '0') + '</span><div><b>' + esc(poi.name) +
           '</b><span>' + esc(poi.place) + ' - ' + esc(poi.note) + '</span></div></li>').join('') + '</ol></section>').join('') + '</div>';
     return shell('Directory', 'Points of interest', body, n, total, 'dg-directory');
@@ -212,21 +220,25 @@
 
   /* Optional layers a region can add to its map data (all drawn from real
      geometry, all optional, so a region that has none renders as before):
+       land     [[lat, lon], ...] land polygons from the coastline; water is the rest of
+                the frame (use instead of water/coasts)
        county   the county outline [[lat, lon], ...]; tints the land inside it
+       boundaries  town outlines [[[lat, lon], ...], ...] drawn as fine dotted lines
        parks    [{ name, pts }] green park polygons
        rivers   [[lat, lon], ...] lines drawn as a channel
        rail     [{ n, lines: [...] }] railway lines
        roads    [{ k: 'motorway' | 'highway' | 'minor', n, lines: [...] }]
        roadLabels  [{ text, lat, lon, rot, rail }] set along the lines
        towns    [{ name, lat, lon, major, dx, dy }] place names; dx/dy set a
-                name beside a crowd of pins with a hairline to the true spot
+                name beside a crowd of pins with a hairline to the true spot;
+                water: true sets the name in white for a label on the sea
        compass  'tl' | 'tr' | 'bl' | 'br'
        grid     true for the graticule and its degree ticks
        credit   one line of data credit for the map note
-       inset    { title, bounds: [[lat, lon], [lat, lon]], at: { x, y, w, h },
-                  towns, parkLabels } a zoomed panel for a crowded core; the
-                  pins inside its bounds are numbered there and shown as dots
-                  on the main map */
+       insets   [{ title, bounds: [[lat, lon], [lat, lon]], at: { x, y, w, h },
+                  towns, parkLabels }] zoomed panels for crowded cores (`inset`
+                  takes a single one); the pins inside a panel's bounds are
+                  numbered there and shown as dots on the main map */
   function mapScene(cfg, f, W, H) {
     const P = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
     const path = (cls, pts, close) => '<path class="' + cls + '" d="M' + P(pts) + (close ? ' Z' : '') + '"></path>';
@@ -242,9 +254,21 @@
         lons.map(v => '<text class="map-tick" x="' + (f.x(v) + 4).toFixed(1) + '" y="' + (H - 6) + '">' + Math.abs(v).toFixed(1) + '°W</text>').join(''));
     }
     if (cfg.county) under.push(path('map-county', cfg.county, true));
+    if (cfg.boundaries) under.push(lines('map-town-border', cfg.boundaries));
     if (cfg.parks) under.push(cfg.parks.map(p => path('map-park', p.pts, true)).join(''));
-    const water = cfg.water.map(poly => path('map-water', poly, true)).join('');
-    const coast = cfg.coasts.map(pts => path('map-coast-glow', pts) + path('map-coast', pts)).join('');
+    let water = cfg.water.map(poly => path('map-water', poly, true)).join('');
+    let coast = cfg.coasts.map(pts => path('map-coast-glow', pts) + path('map-coast', pts)).join('');
+    if (cfg.land) {
+      /* water is the whole frame; the land shape goes over it, and the land layers
+         (grid, county tint, town borders, parks) are clipped to the land */
+      const id = 'dg-land-' + (mapScene.seq = (mapScene.seq || 0) + 1);
+      const shape = cfg.land.map(r => 'M' + P(r) + ' Z').join(' ');
+      const layers = under.splice(0, under.length).join('');
+      water = '<rect class="map-water" x="-60" y="-60" width="' + (W + 120) + '" height="' + (H + 120) + '"></rect>' +
+        '<path class="map-land" d="' + shape + '"></path>' +
+        '<clipPath id="' + id + '"><path d="' + shape + '"></path></clipPath><g clip-path="url(#' + id + ')">' + layers + '</g>';
+      coast = '<path class="map-coast-glow is-fine" d="' + shape + '"></path><path class="map-coast is-fine" d="' + shape + '"></path>';
+    }
     (cfg.rivers || []).forEach(r => { above.push(path('map-river-edge', r), path('map-river', r)); });
     (cfg.rail || []).forEach(r => { above.push(lines('map-rail-bed', r.lines), lines('map-rail', r.lines)); });
     (cfg.roads || []).forEach(r => { above.push(lines('map-road-case map-road-' + r.k, r.lines), lines('map-road map-road-' + r.k, r.lines)); });
@@ -268,7 +292,7 @@
     (cfg.towns || []).forEach(t => {
       const cx = f.x(t.lon), cy = f.y(t.lat), x = cx + (t.dx || 0), y = cy + (t.dy || 0);
       if (t.dx || t.dy) above.push('<path class="map-town-leader" d="M' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' L' + x.toFixed(1) + ' ' + (y - 4).toFixed(1) + '"></path><circle class="map-dot" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="1.8"></circle>');
-      above.push('<text class="map-town' + (t.major ? ' is-major' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (t.anchor || 'middle') + '">' + esc(t.name) + '</text>');
+      above.push('<text class="map-town' + (t.major ? ' is-major' : '') + (t.water ? ' on-water' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (t.anchor || 'middle') + '">' + esc(t.name) + '</text>');
     });
     if (cfg.compass) {
       const [cx, cy] = { tl: [46, 58], tr: [W - 46, 58], bl: [46, H - 64], br: [W - 46, H - 64] }[cfg.compass] || [46, 58];
@@ -293,31 +317,34 @@
     const pois = state.guide.pois;
     let scene = mapScene(m, f, W, H), pinned = pois, insetSvg = '', insetBox = '';
 
-    if (m.inset) {
-      const ins = m.inset, a = ins.at, b = ins.bounds;
+    /* zoomed panels for crowded cores: each takes the pins inside its bounds */
+    (m.insets || (m.inset ? [m.inset] : [])).forEach(ins => {
+      const a = ins.at, b = ins.bounds;
       const inBox = poi => poi.lat <= b[0][0] && poi.lat >= b[1][0] && poi.lon >= b[0][1] && poi.lon <= b[1][1];
-      const inside = pois.filter(inBox);
-      pinned = pois.filter(poi => !inBox(poi));
+      const inside = pinned.filter(inBox);
+      pinned = pinned.filter(poi => !inBox(poi));
       const g = fitBounds(b[1][0], b[0][0], b[0][1], b[1][1], a.w, a.h, 12);
       const cfg = Object.assign({}, m, { towns: ins.towns || [], roadLabels: ins.roadLabels || [], compass: null, grid: false, labels: [], parkLabels: ins.parkLabels });
       const ip = placePins(inside, g, a.w, a.h, 18);
-      insetSvg = '<svg class="map-inset" x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="' + a.h + '" viewBox="0 0 ' + a.w + ' ' + a.h + '">' +
+      insetSvg += '<svg class="map-inset" x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="' + a.h + '" viewBox="0 0 ' + a.w + ' ' + a.h + '">' +
         '<rect class="map-inset-bg" width="' + a.w + '" height="' + a.h + '"></rect>' + mapScene(cfg, g, a.w, a.h) +
         ip.map(leaderMarkup).join('') + ip.map(pinMarkup).join('') + '</svg>' +
         '<rect class="map-inset-edge" x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="' + a.h + '"></rect>' +
         '<text class="map-inset-title" x="' + (a.x + 7) + '" y="' + (a.y + a.h - 8) + '">' + esc(ins.title) + '</text>';
       /* the zoomed area, boxed on the main map and tied to the panel */
       const x0 = f.x(b[0][1]), x1 = f.x(b[1][1]), y0 = f.y(b[0][0]), y1 = f.y(b[1][0]);
-      insetBox = '<path class="map-inset-link" d="M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' L' + (a.x + a.w) + ' ' + a.y + ' M' + x0.toFixed(1) + ' ' + y1.toFixed(1) + ' L' + (a.x + a.w) + ' ' + (a.y + a.h) + '"></path>' +
+      const side = x1 < a.x ? [a.x, a.x] : [a.x + a.w, a.x + a.w];
+      const fromX = x1 < a.x ? x1 : x0;
+      insetBox += '<path class="map-inset-link" d="M' + fromX.toFixed(1) + ' ' + y0.toFixed(1) + ' L' + side[0] + ' ' + a.y + ' M' + fromX.toFixed(1) + ' ' + y1.toFixed(1) + ' L' + side[1] + ' ' + (a.y + a.h) + '"></path>' +
         '<rect class="map-inset-box" x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + (x1 - x0).toFixed(1) + '" height="' + (y1 - y0).toFixed(1) + '"></rect>';
       /* the pins inside the box are numbered in the panel; here they are dots */
       insetBox += inside.map(poi => '<circle class="map-pin-dot cat-' + poi.category + '" cx="' + f.x(poi.lon).toFixed(1) + '" cy="' + f.y(poi.lat).toFixed(1) + '" r="2.6"></circle>').join('');
-    }
+    });
 
     const placed = placePins(pinned, f, W, H, 18);
     const legend = state.guide.categories.map(category => {
       const items = pois.filter(poi => poi.category === category.id);
-      return items.length ? '<section class="cat-' + category.id + '"><h3>' + esc(category.label) + '</h3><ol>' + items.map(poi =>
+      return items.length ? '<section class="cat-' + category.id + '"><h3>' + esc(category.label) + catIcon(category.id) + '</h3><ol>' + items.map(poi =>
         '<li><span class="n">' + String(poi.id).padStart(2, '0') + '</span>' + esc(poi.name) + '</li>').join('') + '</ol></section>' : '';
     }).join('');
     const note = 'Schematic orientation / not to scale' + (m.credit ? '<br>' + esc(m.credit) : '');
@@ -326,12 +353,12 @@
       scene + insetBox + placed.map(leaderMarkup).join('') + placed.map(pinMarkup).join('') + insetSvg + '</svg>' +
       '<div class="map-note">' + note + '</div></div>' +
       '<aside class="map-legend" aria-label="Map key">' + legend + '</aside></div>';
-    return shell('Map', m.title, body, n, total, 'dg-map' + (m.tall ? ' map-tall' : ''));
+    return shell('Map', '', body, n, total, 'dg-map' + (m.tall ? ' map-tall' : ''));
   }
 
   function pageFavorites(n, total) {
     const favorites = state.guide.favorites.filter(item => item.pick.trim());
-    const body = '<div class="favorite-intro"><div class="mark">G</div><p>Personal recommendations belong to the people who know the area. Replace these starter picks with names and notes from the team before distribution.</p></div>' +
+    const body = '<div class="favorite-intro"><div class="mark">G</div><p class="review">Personal recommendations belong to the people who know the area. Replace these starter picks with names and notes from the team before distribution.</p></div>' +
       '<div class="favorite-grid">' + favorites.map(item => '<section class="favorite"><div class="who">' + esc(item.person) + '</div><h3>' +
         esc(item.pick) + '</h3><div class="loc">' + esc(item.location) + '</div><p class="note">' + esc(item.note) + '</p></section>').join('') + '</div>' +
       pagePhoto('favorites');
@@ -341,11 +368,11 @@
   function pageBack(n, total) {
     const sourceNames = Object.values(state.guide.sources).map(source => source.label).join(' / ');
     return '<article class="dg dg-back"><div class="back-photo"><img src="' + esc(state.guide.teamImage) + '" alt=""></div>' +
-      '<div class="back-main"><div class="back-lock">The GVC Team / Douglas Elliman</div>' +
+      '<div class="back-main"><img class="back-logo" src="../../assets/logos/sheet/lockup-sky.svg" alt="The Gasdaska Verdiglione Conlon Team">' +
       '<h2>Ready to find your place in ' + esc(state.guide.title) + '?</h2><div class="line"></div>' +
       '<div class="contact"><p>We help buyers and sellers move with local context, disciplined advice and a connected team.</p>' +
       '<div class="site">gvcrealestateteam.com<br>@gvcrealestateteam</div></div>' +
-      '<div class="back-sources">' + esc(state.guide.sourceNote) + '<br>Research set: ' + Object.keys(state.guide.sources).length + ' linked sources - ' + esc(state.guide.sourceSummary || sourceNames) + '.</div></div></article>';
+      '<div class="back-sources">' + esc(state.guide.sourceNote) + (state.guide.photoCredits ? '<br>Photos: ' + esc(state.guide.photoCredits) : '') + '<br>Research set: ' + Object.keys(state.guide.sources).length + ' linked sources - ' + esc(state.guide.sourceSummary || sourceNames) + '.</div></div></article>';
   }
 
   function redraw() {
@@ -419,8 +446,10 @@
     buildSources();
     buildFavoriteFields();
     document.getElementById('coverName').textContent = 'Starter regional image';
+    document.getElementById('welcomeName').textContent = 'Starter regional image';
     document.getElementById('teamName').textContent = 'GVC founders photograph';
-    ['coverFile', 'teamFile'].forEach(inputId => { document.getElementById(inputId).value = ''; });
+    ['coverFile', 'welcomeFile', 'teamFile'].forEach(inputId => { document.getElementById(inputId).value = ''; });
+    buildBucketFields();
     redraw(); touch();
   }
 
@@ -440,6 +469,35 @@
       '<div class="field"><label>Note</label><textarea rows="3" data-key="note">' + esc(item.note) + '</textarea></div></section>').join('');
   }
 
+  /* One upload per short-list item, for the logo or photo beside it. */
+  function buildBucketFields() {
+    const host = document.getElementById('bucketFields');
+    host.innerHTML = state.guide.bucket.map((item, index) => '<div class="bucket-editor" data-bucket="' + index + '">' +
+      '<span class="b-num">' + String(index + 1).padStart(2, '0') + '</span><span class="b-title">' + esc(item.title) + '</span>' +
+      '<label class="btn sm ghost upload-btn" for="bucketFile' + index + '">' + (item.image ? 'Replace' : 'Add') + '</label>' +
+      '<input id="bucketFile' + index + '" type="file" accept="image/*" hidden>' +
+      (item.image ? '<button class="btn sm ghost" type="button" data-clear="' + index + '">Remove</button>' : '') + '</div>').join('');
+  }
+
+  function watchBucketFields() {
+    const host = document.getElementById('bucketFields');
+    host.addEventListener('change', event => {
+      const row = event.target.closest('[data-bucket]');
+      const file = event.target.files && event.target.files[0];
+      if (!row || !file) return;
+      const url = URL.createObjectURL(file);
+      state.objectUrls.push(url);
+      state.guide.bucket[Number(row.dataset.bucket)].image = url;
+      buildBucketFields(); redraw(); touch();
+    });
+    host.addEventListener('click', event => {
+      const clear = event.target.closest('[data-clear]');
+      if (!clear) return;
+      delete state.guide.bucket[Number(clear.dataset.clear)].image;
+      buildBucketFields(); redraw(); touch();
+    });
+  }
+
   function watchFavoriteFields() {
     document.getElementById('favoriteFields').addEventListener('input', event => {
       const field = event.target.closest('[data-key]');
@@ -454,6 +512,8 @@
     const payload = clone(state.guide);
     if (String(payload.coverImage).startsWith('blob:')) payload.coverImage = '[session cover image]';
     if (String(payload.teamImage).startsWith('blob:')) payload.teamImage = '[session team image]';
+    if (String(payload.welcomeImage).startsWith('blob:')) payload.welcomeImage = '[session welcome image]';
+    payload.bucket.forEach(item => { if (String(item.image || '').startsWith('blob:')) item.image = '[session picture]'; });
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -477,7 +537,16 @@
       state.guide.welcome = value.split(/\n\s*\n/).map(text => text.trim()).filter(Boolean);
     });
     bindImage('coverFile', 'coverName', 'coverImage');
+    bindImage('welcomeFile', 'welcomeName', 'welcomeImage');
     bindImage('teamFile', 'teamName', 'teamImage');
+    buildBucketFields();
+    watchBucketFields();
+
+    /* Orange marks the copy agents should look over; the client copy turns it off. */
+    const review = document.getElementById('showReview');
+    const applyReview = () => document.body.classList.toggle('review-on', review.checked);
+    review.addEventListener('change', applyReview);
+    applyReview();
 
     document.getElementById('showFavorites').addEventListener('change', event => {
       state.showFavorites = event.target.checked;

@@ -19,7 +19,9 @@
    (needs a Supabase session) is out of reach, as in verify-local.js.
    ============================================================ */
 const path = require('path');
-const { chromium } = require('playwright');
+/* BROWSER=webkit runs the same checks in Safari's engine (npx playwright install webkit, once) */
+const ENGINE = process.env.BROWSER || 'chromium';
+const engine = require('playwright')[ENGINE];
 
 const BASE = 'http://localhost:8080';
 const SAMPLE = path.resolve(__dirname, '../tools/showsheet/sample') + path.sep;
@@ -97,7 +99,8 @@ async function run(browser, tool) {
   const warnings = await page.evaluate(() =>
     [...document.querySelectorAll('.warn-item, .warn-box')].filter(e => e.offsetParent).map(e => e.textContent.trim().slice(0, 70)));
   await page.emulateMedia({ media: 'print' });
-  const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true }).catch(e => { errors.add('print: ' + e.message.slice(0, 100)); return null; });
+  /* page.pdf() exists only in Chromium; other engines skip the print step */
+  const pdf = ENGINE !== 'chromium' ? null : await page.pdf({ preferCSSPageSize: true, printBackground: true }).catch(e => { errors.add('print: ' + e.message.slice(0, 100)); return null; });
   const pages = pdf ? (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length : 0;
   await page.context().close();
 
@@ -109,7 +112,7 @@ async function run(browser, tool) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await engine.launch();
   console.log('\nExercising ' + TOOLS.length + ' tool(s) on ' + BASE + '\n');
   let failed = 0;
   for (const t of TOOLS) if (!await run(browser, t)) failed++;

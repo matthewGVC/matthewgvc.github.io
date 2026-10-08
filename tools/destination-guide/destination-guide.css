@@ -145,6 +145,9 @@
 .map-legend ol{list-style:none;margin:0;padding:0;}
 .map-legend li{display:grid;grid-template-columns:.22in 1fr;gap:.05in;padding:.012in 0;font:400 6pt/1.28 var(--body);color:rgba(255,255,255,.86);}
 .map-legend .n{font:700 5.6pt var(--mono);color:var(--sky);}
+.map-tall .map-layout{flex-direction:row;gap:.24in;}
+.map-tall .map-frame{flex:none;width:56%;}
+.map-tall .map-legend{flex:1;columns:2;column-gap:.2in;}
 .dg-map .dg-foot{border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.72);}
 
 /* Favorites. */

@@ -23,6 +23,7 @@ PHOTOS = [
     'monmouth-cover.jpg', 'monmouth-boardwalk.jpg', 'monmouth-beach.jpg', 'monmouth-welcome.jpg',
     'ocean-county-cover.jpg', 'ocean-lagoons.jpg', 'ocean-casino-pier.jpg', 'ocean-dunes.jpg', 'ocean-welcome.jpg',
     'middlesex-cover.jpg', 'middlesex-marsh.jpg', 'middlesex-perth-amboy.jpg', 'middlesex-new-brunswick.jpg', 'middlesex-welcome.jpg',
+    'back-shore.jpg',
 ]
 # monmouth-surf.jpg already carries real grain and is left alone.
 SIGMA = 6.5

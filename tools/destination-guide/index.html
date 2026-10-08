@@ -29,6 +29,10 @@
       <details class="ed-sec" open>
         <summary>Guide <span class="hint">region + cover</span></summary>
         <div class="sec-in">
+          <label class="tick page-toggle">
+            <input id="showReview" type="checkbox" checked>
+            <span><b>Highlight copy for agent review</b><i>Orange marks what agents should look over. Turn it off for the client copy.</i></span>
+          </label>
           <div class="field">
             <label>Region</label>
             <div class="seg" id="regionPick" role="group" aria-label="Guide region"></div>
@@ -67,11 +71,25 @@
             <div class="note">Separate paragraphs with a blank line.</div>
           </div>
           <div class="field upload-field">
-            <label>Team image</label>
+            <label>Welcome image</label>
+            <label class="btn sm ghost upload-btn" for="welcomeFile">Replace image</label>
+            <input id="welcomeFile" type="file" accept="image/*" hidden>
+            <div class="note" id="welcomeName">Starter regional image</div>
+          </div>
+          <div class="field upload-field">
+            <label>Back cover image</label>
             <label class="btn sm ghost upload-btn" for="teamFile">Replace image</label>
             <input id="teamFile" type="file" accept="image/*" hidden>
             <div class="note" id="teamName">GVC founders photograph</div>
           </div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Short list <span class="hint">logos + photos</span></summary>
+        <div class="sec-in">
+          <p class="sec-note">Add a logo or photo beside any item. An empty slot shows on screen only and does not print.</p>
+          <div id="bucketFields"></div>
         </div>
       </details>
 

@@ -50,30 +50,22 @@
 .cover-title.sm{font-size:34pt;}
 .cover-title.xs{font-size:29pt;}
 .cover-state{margin-top:.14in;font:800 8pt var(--sans);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72);}
-.dg .cover-sub{margin-top:auto;padding-top:.24in;border-top:.75pt solid rgba(255,255,255,.34);font:400 14pt/1.35 var(--body);text-wrap:pretty;}
+.dg .cover-sub{margin-top:.5in;padding-top:.24in;border-top:.75pt solid rgba(255,255,255,.34);font:400 14pt/1.35 var(--body);text-wrap:pretty;}
+/* the contents, moved here from its own page */
+.cover-contents{list-style:none;margin:auto 0 0;padding:.16in .16in .12in;display:flex;flex-direction:column;}
+.cover-contents li{display:grid;grid-template-columns:.38in 1fr;grid-template-rows:auto auto;column-gap:.06in;align-content:center;padding:.075in 0;border-bottom:.5pt solid rgba(255,255,255,.2);}
+.cover-contents li:last-child{border-bottom:0;}
+.cover-contents .p{grid-row:1 / span 2;font:400 11pt/1 var(--serif);color:var(--sky);font-variant-numeric:lining-nums;}
+.cover-contents .t{font:800 4.8pt/1.2 var(--sans);letter-spacing:.17em;text-transform:uppercase;color:rgba(255,255,255,.62);}
+.cover-contents .d{margin-top:.02in;font:400 8.2pt/1.2 var(--serif);}
+.dg .cover-mono{position:absolute;top:.5in;right:.45in;left:auto;width:1.05in;height:auto;object-fit:contain;mix-blend-mode:soft-light;}
 .cover-word{position:absolute;right:-.02in;bottom:.22in;z-index:1;color:#fff;font:800 9pt var(--sans);letter-spacing:.19em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg);}
-
-/* Contents. */
-.dg-contents{background:var(--navy);color:#fff;}
-.contents-grid{height:100%;display:grid;grid-template-columns:2.8in 1fr;}
-.contents-intro{padding:.58in .45in;display:flex;flex-direction:column;border-right:.08in solid var(--sky);}
-.contents-intro .roman{font:400 58pt/.9 var(--serif);color:var(--sky);}
-.contents-intro h2{margin-top:.18in;font:400 34pt/1 var(--serif);letter-spacing:-.025em;}
-.contents-intro p{margin-top:auto;font:400 11pt/1.55 var(--body);color:rgba(255,255,255,.78);}
-.contents-list{padding:.62in .52in;display:flex;flex-direction:column;}
-.contents-list .issue{font:800 7pt var(--sans);letter-spacing:.17em;text-transform:uppercase;color:var(--sky);}
-.contents-list ol{list-style:none;margin:.5in 0 .5in;padding:0;flex:1;display:flex;flex-direction:column;border-top:.75pt solid rgba(255,255,255,.22);}
-.contents-list li{flex:1;display:grid;grid-template-columns:.62in 1fr;grid-template-rows:auto auto;column-gap:.1in;align-content:center;padding:.1in 0;border-bottom:.75pt solid rgba(255,255,255,.22);}
-.contents-list .p{grid-row:1 / span 2;font:400 20pt/1 var(--serif);color:var(--sky);font-variant-numeric:lining-nums;}
-.contents-list .t{font:800 7.4pt/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);}
-.contents-list .d{margin-top:.05in;font:400 17pt/1.1 var(--serif);letter-spacing:-.012em;}
-.contents-list .note{font:400 8.5pt/1.5 var(--body);color:rgba(255,255,255,.72);}
 
 /* Team welcome. */
 .welcome-grid{display:flex;flex-direction:column;flex:1;min-height:0;}
 .welcome-visual{order:-1;flex:1;min-height:3.6in;margin:0 0 .34in;display:flex;flex-direction:column;}
 .welcome-photo{flex:1;min-height:0;overflow:hidden;background:var(--paper-2);}
-.welcome-photo img{object-position:center 30%;}
+.welcome-photo img{object-position:center 40%;}
 .welcome-copy{flex:none;display:grid;grid-template-columns:2.55in 1fr;grid-template-rows:auto auto;column-gap:.42in;min-height:0;}
 .welcome-copy .lede{font:400 22pt/1.14 var(--serif);letter-spacing:-.018em;text-wrap:balance;}
 .welcome-copy .body p{font:400 10.8pt/1.56 var(--body);text-wrap:pretty;}
@@ -114,9 +106,6 @@
 /* Directory. */
 /* The densest page: a tighter heading keeps 48 entries clear of the footer. */
 .dg.dg-directory .dg-heading{margin:.14in 0 .12in;}
-.directory-lede{display:flex;gap:.18in;align-items:flex-start;margin:0 0 .18in;}
-.directory-lede::before{content:'';width:.85in;border-top:4pt solid var(--sky);margin-top:.08in;}
-.directory-lede p{font:400 10pt/1.5 var(--body);color:var(--ink-soft);max-width:5.4in;}
 .dir-grid{columns:3;column-gap:.3in;}
 .dir-group{break-inside:avoid;margin-bottom:.14in;}
 .dir-group h3{font:800 7.4pt var(--sans);letter-spacing:.16em;text-transform:uppercase;padding-bottom:.06in;border-bottom:1pt solid var(--navy);}
@@ -210,7 +199,6 @@
 .back-photo{position:absolute;inset:0;opacity:.24;}
 .back-photo::after{content:'';position:absolute;inset:0;background:rgba(0,39,58,.45);}
 .back-main{position:relative;z-index:1;height:100%;padding:.62in .58in .52in;display:flex;flex-direction:column;}
-.back-lock{font:800 8pt var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--sky);}
 .back-main h2{margin-top:1.28in;max-width:6.6in;font:400 40pt/.98 var(--serif);letter-spacing:-.03em;text-wrap:balance;}
 .back-main .line{margin-top:.28in;width:1.15in;border-top:5pt solid var(--sky);}
 .back-main .contact{margin-top:auto;display:grid;grid-template-columns:1fr 2.6in;gap:.4in;align-items:end;}
@@ -234,3 +222,35 @@
 .map-inset-link{fill:none;stroke:#00273a;stroke-width:.8;stroke-opacity:.5;stroke-dasharray:3 2;}
 .map-pin-dot{fill:var(--pin);stroke:#fff;stroke-width:.9;}
 .map-park-label{font:italic 700 5.4px 'Nunito Sans',sans-serif;fill:#4f6b3a;letter-spacing:.08em;paint-order:stroke;stroke:#f4f1ea;stroke-width:2;stroke-linejoin:round;}
+
+/* Orange marks the copy agents should look over (panel: Highlight copy for agent review). */
+.review-on .dg .review{background:rgba(255,158,64,.42);border-radius:.12in;padding:.03in .12in;margin-left:-.12in;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+.review-on .dg .cover-contents.review{margin-left:0;padding:.16in .16in .12in;border-radius:.28in;background:rgba(255,158,64,.34);}
+.review-on .dg .favorite-intro p.review{margin-left:0;}
+
+/* A logo or photo beside a short-list item; an empty slot is a screen guide only. */
+.bucket{grid-template-columns:.46in 1fr .62in;}
+.bucket-pic{width:.62in;height:.62in;align-self:start;display:grid;place-items:center;overflow:hidden;}
+.bucket-pic img{object-fit:contain;padding:.03in;}
+.bucket-pic.empty{border:1px dashed rgba(0,39,58,.3);border-radius:.06in;font:700 5pt/1.25 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:rgba(0,39,58,.42);text-align:center;}
+@media print{.bucket-pic.empty{display:none;}.bucket:has(.bucket-pic.empty){grid-template-columns:.46in 1fr;}}
+.bucket-editor{display:flex;align-items:center;gap:7px;padding:6px 0;border-top:1px solid var(--ui-rule);font:500 11px/1.3 var(--body);}
+.bucket-editor:first-child{border-top:0;}
+.bucket-editor .b-num{font:800 9px var(--ui-mono);color:var(--ui-ink-soft);}
+.bucket-editor .b-title{flex:1;min-width:0;}
+
+/* A small line icon beside each directory group. */
+.cat-icon{width:.15in;height:.15in;margin-left:.07in;vertical-align:-.03in;color:#0b7088;flex:none;}
+.dir-group h3{display:flex;align-items:center;}
+.map-legend h3{display:flex;align-items:center;}
+.map-legend .cat-icon{color:var(--sky);width:.13in;height:.13in;margin-left:.06in;vertical-align:baseline;}
+
+/* Back cover: the team lockup in the corner. */
+.dg .back-logo{width:3in;height:auto;object-fit:contain;object-position:left top;}
+
+.map-town-border{fill:none;stroke:#00273a;stroke-opacity:.3;stroke-width:.55;stroke-dasharray:1.6 1.6;stroke-linejoin:round;}
+.map-land{fill:#e7e4dc;}
+.map-coast-glow.is-fine{stroke-width:4.5;stroke-opacity:.2;}
+.map-coast.is-fine{stroke-width:1.5;}
+.map-town.on-water{fill:#fff;fill-opacity:.85;stroke:#073447;stroke-width:2.2;}
+.dg .cover-mono.dark{mix-blend-mode:multiply;opacity:.55;}

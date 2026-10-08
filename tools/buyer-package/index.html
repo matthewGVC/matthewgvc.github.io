@@ -17,16 +17,7 @@
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 
-<!-- ⚠ ONE PAGE IS STILL ARTWORK for Florida (static/p8.jpg: Offer & Negotiation;
-     New Jersey and New York print the live, editable pgOfferLive), and six card
-     bodies on it read wrongly for Florida. patchOffer() draws the right words
-     over the picture on a white patch, at positions measured off the 400dpi artwork, so a
-     re-export at a different size or with the furniture moved will put them in the wrong
-     place. If you regenerate static/, check it. Better still: redraw the page as live
-     HTML the way The Buying Process, What It Costs and FAQ's now are, and the patches
-     go away.
-
-     Everything else is live HTML. Its copy is in guide-data.js. -->
+<!-- Everything else is live HTML. Its copy is in guide-data.js. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">
@@ -165,29 +156,6 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
    left-set, to match the rest of the deck's card treatment */
 .pg[data-key="offer"] .card{text-align:center;}
 .pg[data-key="offer"] .card .ci{margin:0 auto .1in;}
-
-/* ---------- the seven drawn pages, as previewed ---------- */
-/* A flat picture of the artwork with the live page number over it. The
-   number sits where the printed one sat: right edge flush to the 567pt
-   margin, baseline on 764.5pt, both measured off the artwork at 600dpi. */
-.stpg{position:absolute;inset:0;background:#fff;overflow:hidden;}
-.stpg img{width:100%;height:100%;display:block;}
-/* Flush right and on the artwork's baseline. `right` is 45pt less the
-   trailing letter-space CSS adds after the last glyph; `bottom` is the
-   27.48pt to the baseline less the 2.28pt a zero line-height puts between
-   the box edge and where the glyphs actually sit — both measured off a
-   print of this page against the artwork, not derived. */
-.stpg-n{position:absolute;right:44.28pt;bottom:25.2pt;line-height:0;
-  font:200 7.2pt 'Nunito Sans',system-ui,sans-serif;color:#4c6774;
-  letter-spacing:.1em;font-variant-numeric:tabular-nums;}
-
-/* Text drawn over the pictured page — see patchOffer(). White
-   patches wipe the old words; the text is Nunito Sans Light 10.8pt on the
-   artwork's 36.5px (14.45pt) line pitch. */
-.stpg-fix{position:absolute;background:#fff;color:#00273A;overflow:hidden;
-  font:300 10.8pt/14.45pt 'Nunito Sans','Segoe UI',sans-serif;}
-.stpg-fix.body{background:none;text-align:center;overflow:visible;}
-.stpg-fix.line{display:flex;align-items:center;white-space:nowrap;}
 
 /* The Buying Process: the steps, a photo, a footnote. The circles deepen from teal to navy,
    dark enough throughout for the white numeral to read. */
@@ -442,7 +410,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
         </div>
       </details>
 
-      <details class="ed-sec" id="offerSec" hidden>
+      <details class="ed-sec" id="offerSec">
         <summary>Offer &amp; Negotiation <span class="hint" id="offerHint">New Jersey &middot; editable</span></summary>
         <div class="sec-in">
           <div id="offerEd"></div>
@@ -525,7 +493,7 @@ const state = {
   agents:[],
   /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
   njAgents:true,
-  /* NJ and NYC: the Offer & Negotiation cards as edited in the panel, by
+  /* The Offer & Negotiation cards as edited in the panel, by
      market; a market with no entry prints GG.offerLive(region) */
   offer:{},
   /* the two editable runs on the cover — both print in caps */
@@ -645,19 +613,7 @@ const qrSvg = window.GVC_QR;
    `opt` marks a page the panel can switch off, and doubles as the one-line
    description shown beside its tick.
    ============================================================ */
-/* `st` is the page's index among the drawn pages Matt made in Illustrator,
-   of which only static/p8.jpg is left — st + 2 is the file. (The
-   rest — Why Work With Us, What It Costs, the questions pages — were redrawn
-   as live HTML and their pictures are gone.) The same 400dpi picture is used
-   on screen and on paper (see pgStatic for why that won). The Illustrator
-   source lives in exports/, which is gitignored so the public site does not
-   serve it.
-
-   Only the page number is ours, drawn back on because the printed one was
-   stripped out of the artwork — and, since it is a picture rather than
-   markup, a few sentences are drawn over it the same way: see patchOffer().
-
-   `agents` expands to one "Meet Your Agent" page per agent picked. */
+/* `agents` expands to one "Meet Your Agent" page per agent picked. */
 const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
@@ -669,7 +625,7 @@ const SPINE = [
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost', not:['nj'] },
   { key:'questions', title:'FAQ\u2019s',           opt:'A checklist for the buyer and for us', not:['nj'] },
-  { key:'offer',     title:'Offer & Negotiation', st:6, opt:'Winning the house on terms, not price' },
+  { key:'offer',     title:'Offer & Negotiation', opt:'Winning the house on terms, not price' },
   { key:'links',     title:'Useful Links',        only:['nj'], opt:'Mortgage rates and legal documents' },
   { key:'next',      title:'Thank You' }
 ];
@@ -1069,12 +1025,10 @@ function pgFaq(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'FAQ’s', key:'questions', body });
 }
 
-/* ---------- Offer & Negotiation, New Jersey and New York ----------
+/* ---------- Offer & Negotiation ----------
    The artwork's six cards redrawn as live HTML so they can be edited in the
    panel (state.offer[region]; GG.offerLive(region) until someone edits). No
-   telephone. Florida still prints the artwork with patchOffer(). */
-const LIVE_OFFER = ['nj', 'nyc'];
-const liveOffer = () => LIVE_OFFER.indexOf(state.region) > -1;
+   telephone. */
 const offerCards = () => state.offer[state.region] || GG.offerLive(state.region);
 function pgOfferLive(n) {
   const body = '<div class="offer-live">' + offerCards().map(c =>
@@ -1082,7 +1036,7 @@ function pgOfferLive(n) {
   '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Offer & Negotiation', key:'offer', body });
 }
-const pgOffer = (n, p) => liveOffer() ? pgOfferLive(n) : pgStatic(n, p);
+const pgOffer = (n, p) => pgOfferLive(n);
 
 /* ---------- Useful Links, New Jersey ----------
    Where to check today's mortgage rates and find the legal and closing paperwork.
@@ -1142,49 +1096,6 @@ function pgReferrals(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Marli’s Referral Partners', key:'referrals', body });
 }
 
-/* ---------- text corrected on the drawn pages ----------
-   Three pages are still Matt's artwork. One sentence (or six card bodies) on
-   each reads wrongly outside New Jersey, so the right words are drawn over
-   the picture on a white patch, positioned the way the page number is: by
-   numbers measured off the 400dpi artwork. Boxes are in pixels of a 1546-wide
-   view of the page (the units they were measured in) and converted to pt here.
-
-   Font: Nunito Sans Light at 10.8pt, set by measuring a drawn line's width and
-   solving for the size — "Closing date, contingencies and financing" runs
-   495px (196pt) in the artwork. Card bodies are centred in the card with the
-   artwork's 36.5px line pitch, first line 172px under the card's top edge.
-
-   If the artwork is regenerated, check every number in here. */
-const PXPT = 612 / 1546;
-const pxs = v => (v * PXPT).toFixed(2) + 'pt';
-const PATCH = (x, y, w, h, html, cls) =>
-  '<div class="stpg-fix ' + (cls || '') + '" style="left:' + pxs(x) + ';top:' + pxs(y) + ';width:' + pxs(w) +
-  ';height:' + pxs(h) + '">' + html + '</div>';
-
-/* The card grid on Offer & Negotiation. */
-const CARD_L = [113, 748], CARD_R = [797, 1431], CARD_ROWS = [243, 614, 985];
-/* right-hand card of the third row has art overlapping it on both pages */
-function cardBody(col, row, text, opts) {
-  opts = opts || {};
-  const x0 = (col ? CARD_R : CARD_L)[0], x1 = (col ? CARD_R : CARD_L)[1];
-  const top = CARD_ROWS[row];
-  const bottom = opts.bottom || (top + 319 - 6);
-  /* clear patch, then the text block centred on the card */
-  const patch = PATCH(x0 + 8, top + 140, (opts.right || x1) - x0 - 16, bottom - top - 140, '', 'wipe');
-  const txt = PATCH(x0 + 40, top + 172 - 18, x1 - x0 - 80, 4 * 36.5, esc(text), 'body');
-  return patch.replace('class="stpg-fix wipe"', 'class="stpg-fix wipe"') + txt;
-}
-
-function patchOffer() {
-  let h = '';
-  GG.offerCards(state.region).forEach((t, i) => {
-    /* the handset's ear-piece overlaps the last card from x1300, y1235; the
-       drawn text there is two lines and ends by y1215, so the wipe stops above it */
-    h += cardBody(i % 2, (i / 2) | 0, t, i === 5 ? { bottom: 1226 } : {});
-  });
-  return h;
-}
-
 /* Closing page — Team and Next Steps merged into one. It is the Brochure's
    editorial close, not the Seller Pitch & CMA's centred cards: the lockup and
    the team QR on a header line, the sign-off under it, then one row per agent
@@ -1217,32 +1128,6 @@ function pgNext(n) {
       referral: referralNote(),
       foot: P.foot(SITE, true, n, OF)
     }) +
-  '</div>';
-}
-
-/* One of the seven drawn pages. Nothing here is a rebuild of it: the page
-   is a 400dpi picture of Matt's artwork, rendered from his PDF, and it is
-   the same picture on screen and on paper.
-
-   It is a picture rather than the PDF page itself because everything that
-   would have kept it vector turned out to damage something else. Copying
-   the real page in meant photographing OUR pages to sit around it, and
-   html2canvas draws text below its own box — it slid the cover photo over
-   the title and sheared the descenders off the closing page. Converting
-   the pages to SVG kept them vector but MuPDF's SVG writer mishandles the
-   custom colour space on the photographs and threw a blue cast over them.
-   A 400dpi picture is the one option where nothing is misdrawn, and it
-   leaves the browser's own printer to render the pages that are ours.
-
-   The page number is the one exception. It was stripped out of the
-   artwork so the deck can renumber when a page is switched off or an
-   agent is added, so it is drawn back on: here for the preview, and
-   again in the export at the baseline it was measured off. */
-function pgStatic(n, p) {
-  return '<div class="stpg" data-key="' + p.key + '">' +
-    '<img src="static/p' + (p.st + 2) + '.jpg" alt="' + esc(p.alt || p.title) + '">' +
-    (p.key === 'offer' ? patchOffer() : '') +
-    '<div class="stpg-n">' + n + ' / ' + OF + '</div>' +
   '</div>';
 }
 
@@ -1289,11 +1174,10 @@ function paintHints() {
   document.getElementById('pagesHint').textContent =
     on + ' of ' + list.length + ' optional on';
   paintTicks();
-  document.getElementById('offerSec').hidden = !liveOffer();
   document.getElementById('offerHint').textContent = REGIONS[state.region].name + ' · editable';
 }
 
-/* The Offer & Negotiation editor (NJ and NYC): a title and a body per card,
+/* The Offer & Negotiation editor: a title and a body per card,
    for the market on the cover. The first edit copies GG.offerLive(region)
    into state.offer[region], so Reset can always go back. Repainted when the
    market changes. */

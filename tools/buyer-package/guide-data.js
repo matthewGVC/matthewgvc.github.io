@@ -293,10 +293,7 @@
   /* ============================================================
      THE DRAWN PAGES, MADE TO FIT THE MARKET
 
-     "Offer & Negotiation" is still Matt's artwork (static/p8.jpg). One sentence
-     on it reads wrongly outside New Jersey, so index.html draws the corrected
-     sentence over the picture. Those are the strings below. The Buying Process,
-     the costs page and the FAQ are
+     The Buying Process, the costs page, the FAQ and Offer & Negotiation are
      live HTML, so their numbers and questions are here too.
 
      Figures are for budgeting and are checked against official sources as of
@@ -808,10 +805,10 @@
   var STEPS_FIFTY = { nj: NJ_STEPS_FIFTY, nyc: NYC_STEPS_FIFTY };
   function stepsFifty(region) { return STEPS_FIFTY[region] || null; }
 
-  /* OFFER & NEGOTIATION as live cards (New Jersey and New York), editable in
+  /* OFFER & NEGOTIATION as live cards, editable in
      the panel. Titles and icons are the old artwork's; the text is the
-     market's offerCards() wording, which used to be patched over the picture.
-     `icon` is an icons.js name. Florida still prints the artwork. */
+     market's offerCards() wording.
+     `icon` is an icons.js name. */
   var OFFER_HEADS = [
     ['check', 'Price is only one term'],
     ['home',  'Know the competition'],

@@ -163,8 +163,15 @@
       title: 'Monmouth County',
       subtitle: 'Shore towns, working harbors, historic farms and real downtowns',
       issue: 'The GVC Team / Local Guide',
-      coverImage: '../buyer-package/static/cover-nj.jpg',
-      coverAlt: 'New Jersey lighthouse against an open blue sky',
+      coverImage: '../../assets/img/nj/monmouth-cover.jpg',
+      coverAlt: 'Asbury Park Convention Hall on the ocean under a stormy sky',
+      /* Page photographs (Pexels, free licence): cover 22765211, field
+         22765206, places 37329949, favorites 13570584. `pos` is the crop focus. */
+      photos: {
+        field: { src: '../../assets/img/nj/monmouth-boardwalk.jpg', alt: 'The Asbury Park boardwalk lined with murals', caption: 'The Asbury Park boardwalk', pos: 'center 62%' },
+        places: { src: '../../assets/img/nj/monmouth-surf.jpg', alt: 'A wave breaking at Asbury Park beach', caption: 'Surf at Asbury Park', pos: 'center 55%' },
+        favorites: { src: '../../assets/img/nj/monmouth-beach.jpg', alt: 'Asbury Park beach and the Atlantic on a calm day', caption: 'Asbury Park beach', pos: 'center 60%' }
+      },
       teamImage: '../../assets/team/founders-lifestyle.jpg',
       teamAlt: 'The GVC Team founders together outside a residence',
       welcomeTitle: 'A county with more than one center',
@@ -348,6 +355,13 @@
       issue: 'The GVC Team / Local Guide',
       coverImage: '../../assets/img/nj/ocean-county-cover.jpg',
       coverAlt: 'Barnegat Lighthouse rising above the dune grass on Long Beach Island',
+      /* Page photographs (Pexels, free licence): cover 23407598, field
+         8932871, places 18500756, favorites 38647881. `pos` is the crop focus. */
+      photos: {
+        field: { src: '../../assets/img/nj/ocean-lagoons.jpg', alt: 'Lagoon streets and salt marsh in Little Egg Harbor Township from the air', caption: 'Lagoon streets in Little Egg Harbor Township', pos: 'center 55%' },
+        places: { src: '../../assets/img/nj/ocean-casino-pier.jpg', alt: 'The Casino Pier Ferris wheel against a summer sky', caption: 'Casino Pier, Seaside Heights', pos: 'center 45%' },
+        favorites: { src: '../../assets/img/nj/ocean-dunes.jpg', alt: 'Dune grass and a sand fence at sunset on the Jersey Shore', caption: 'The dunes at sunset', pos: 'center 70%' }
+      },
       teamImage: '../../assets/team/founders-lifestyle.jpg',
       teamAlt: 'The GVC Team founders together outside a residence',
       welcomeTitle: 'A county built in layers',

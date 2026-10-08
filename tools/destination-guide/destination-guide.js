@@ -125,7 +125,7 @@
   }
 
   function pageBucket(n, total) {
-    const body = '<p class="bucket-lede">The fastest way to understand ' + esc(state.guide.title) + ' is to do ' + state.guide.bucket.length + ' ordinary things well: coffee, a show, the ferry, a round of golf, dinner by the water and a day at the track.</p>' +
+    const body = '<p class="bucket-lede">The fastest way to understand ' + esc(state.guide.title) + ' is to do ' + state.guide.bucket.length + ' ordinary things well: ' + esc(state.guide.bucketLede) + '.</p>' +
       '<div class="bucket-list">' + state.guide.bucket.map(item => '<section class="bucket"><div class="n"></div><div><h3>' +
         esc(item.title) + '</h3><p>' + esc(item.note) + '</p><div class="src">' + esc(sourceLabel(item.source)) + '</div></div></section>').join('') + '</div>';
     return shell('Do This First', 'The local short list', body, n, total, 'dg-bucket');
@@ -144,24 +144,19 @@
   }
 
   /* The schematic map. Pins are laid out by plain equirectangular projection
-     (longitude scaled by cos 40.3 degrees so shapes are not stretched), fitted
-     to the frame, then nudged apart where they would overlap. The Atlantic
-     coast and the north-shore bays are drawn from real shoreline points so the
-     water sits where it really is; everything inland is blank on purpose.
+     (longitude scaled by the cosine of the region's middle latitude so shapes
+     are not stretched), fitted to the frame, then nudged apart where they would
+     overlap. Each region's water is drawn from real shoreline points in its
+     `map` data (polygons may run far past the frame; the SVG clips them), so
+     the water sits where it really is; everything inland is blank on purpose.
      It orients; it does not measure. */
-  const SHORE_OCEAN = [[40.4672, -74.0105], [40.4540, -73.9990], [40.4300, -73.9880], [40.4000, -73.9800], [40.3620, -73.9690],
-    [40.3340, -73.9690], [40.3040, -73.9730], [40.2480, -73.9980], [40.2200, -73.9990], [40.2000, -74.0100],
-    [40.1780, -74.0200], [40.1255, -74.0330]];
-  const SHORE_BAY = [[40.4672, -74.0105], [40.4400, -74.0300], [40.4040, -74.0000], [40.4085, -74.0330], [40.4170, -74.0600],
-    [40.4170, -74.0990], [40.4400, -74.1300], [40.4370, -74.2000], [40.4350, -74.2400]];
-
   function mapFrame(W, H) {
-    const pois = state.guide.pois;
-    const lats = pois.map(p => p.lat).concat([40.4672, 40.1255]);
-    const lons = pois.map(p => p.lon).concat([-74.3846, -73.969]);
+    const pois = state.guide.pois, extra = state.guide.map.bounds || [];
+    const lats = pois.map(p => p.lat).concat(extra.map(p => p[0]));
+    const lons = pois.map(p => p.lon).concat(extra.map(p => p[1]));
     const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
     const minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
-    const k = Math.cos(40.3 * Math.PI / 180), pad = 34;
+    const k = Math.cos((minLat + maxLat) / 2 * Math.PI / 180), pad = 34;
     const scale = Math.min((W - 2 * pad) / ((maxLon - minLon) * k), (H - 2 * pad) / (maxLat - minLat));
     const w = (maxLon - minLon) * k * scale, h = (maxLat - minLat) * scale;
     const ox = (W - w) / 2, oy = (H - h) / 2;
@@ -191,13 +186,24 @@
     return pts;
   }
 
+  /* Water labels sit in a frame corner, or at a lat/lon when the water is
+     not at an edge (a bay between the mainland and the barrier islands). */
+  function mapLabel(label, f, W, H) {
+    const at = {
+      tl: [20, 28, 'start'], tr: [W - 22, 28, 'end'],
+      bl: [20, H - 40, 'start'], br: [W - 22, H - 40, 'end']
+    }[label.corner] || [f.x(label.lon), f.y(label.lat), label.anchor || 'middle'];
+    return '<text class="map-label" x="' + at[0].toFixed(1) + '" y="' + at[1].toFixed(1) + '" text-anchor="' + at[2] + '"' +
+      (label.rotate ? ' transform="rotate(' + label.rotate + ' ' + at[0].toFixed(1) + ' ' + at[1].toFixed(1) + ')"' : '') + '>' + esc(label.text) + '</text>';
+  }
+
   function pageMap(n, total) {
-    const W = 650, H = 490, f = mapFrame(W, H);
+    /* A region longer than it is wide (Ocean County's coast) gets a portrait
+       frame with the key beside it rather than below. */
+    const m = state.guide.map, W = m.tall ? 380 : 650, H = m.tall ? 820 : 490, f = mapFrame(W, H);
     const line = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
-    const ocean = 'M' + line(SHORE_OCEAN) + ' L' + W + ' ' + f.y(SHORE_OCEAN[SHORE_OCEAN.length - 1][0]).toFixed(1) +
-      ' L' + W + ' 0 L' + f.x(SHORE_OCEAN[0][1]).toFixed(1) + ' 0 Z';
-    const bay = 'M' + line(SHORE_BAY) + ' L0 ' + f.y(SHORE_BAY[SHORE_BAY.length - 1][0]).toFixed(1) + ' L0 0 L' +
-      f.x(SHORE_BAY[0][1]).toFixed(1) + ' 0 Z';
+    const water = m.water.map(poly => '<path class="map-water" d="M' + line(poly) + ' Z"></path>').join('');
+    const coast = m.coasts.map(pts => '<path class="map-coast" d="M' + line(pts) + '"></path>').join('');
     const pins = projectedPois(W, H).map(point => '<g class="map-pin" transform="translate(' + point.x.toFixed(1) + ' ' + point.y.toFixed(1) + ')">' +
       '<circle r="10"></circle><text y="1">' + point.poi.id + '</text></g>').join('');
     const legend = state.guide.categories.map(category => {
@@ -207,13 +213,10 @@
     }).join('');
     const body = '<div class="map-layout"><div class="map-frame" role="img" aria-label="Schematic map of the guide points of interest">' +
       '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<path class="map-water" d="' + ocean + '"></path><path class="map-water" d="' + bay + '"></path>' +
-      '<path class="map-coast" d="M' + line(SHORE_OCEAN) + '"></path><path class="map-coast" d="M' + line(SHORE_BAY) + '"></path>' +
-      '<text class="map-label" x="' + (W - 22) + '" y="' + (H - 40) + '" text-anchor="end">ATLANTIC OCEAN</text>' +
-      '<text class="map-label" x="20" y="28">SANDY HOOK BAY / RARITAN BAY</text>' + pins + '</svg>' +
+      water + coast + m.labels.map(label => mapLabel(label, f, W, H)).join('') + pins + '</svg>' +
       '<div class="map-note">Schematic orientation / not to scale</div></div>' +
       '<aside class="map-legend" aria-label="Map key">' + legend + '</aside></div>';
-    return shell('Map', 'From bay to ocean', body, n, total, 'dg-map');
+    return shell('Map', m.title, body, n, total, 'dg-map' + (m.tall ? ' map-tall' : ''));
   }
 
   function pageFavorites(n, total) {
@@ -250,9 +253,13 @@
     warning.textContent = bad.length ? bad.length + ' guide page' + (bad.length === 1 ? '' : 's') + ' overflow. Shorten the edited copy before printing.' : '';
   }
 
+  const fills = [];
+
   function bindText(id, read, write, transform) {
     const input = document.getElementById(id);
-    input.value = transform ? transform(read()) : read();
+    const fill = () => { input.value = transform ? transform(read()) : read(); };
+    fills.push(fill);
+    fill();
     input.addEventListener('input', () => {
       write(transform ? transform(input.value) : input.value);
       redraw(); touch();
@@ -274,7 +281,36 @@
 
   function buildRegionPicker() {
     const host = document.getElementById('regionPick');
-    host.innerHTML = Object.values(DATA.regions).map(region => '<button type="button" class="on" data-region="' + esc(region.id) + '">' + esc(region.label) + '</button>').join('');
+    host.innerHTML = Object.values(DATA.regions).map(region => '<button type="button" data-region="' + esc(region.id) +
+      '" aria-pressed="false">' + esc(region.label) + '</button>').join('');
+    host.addEventListener('click', event => {
+      const button = event.target.closest('[data-region]');
+      if (button && button.dataset.region !== state.region) switchRegion(button.dataset.region);
+    });
+    markRegion();
+  }
+
+  function markRegion() {
+    document.querySelectorAll('#regionPick [data-region]').forEach(button => {
+      const on = button.dataset.region === state.region;
+      button.classList.toggle('on', on);
+      button.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  /* A new region starts from its own data: edited copy, favorites and any
+     session images belong to the region they were made for. */
+  function switchRegion(id) {
+    state.region = id;
+    state.guide = clone(DATA.regions[id]);
+    markRegion();
+    fills.forEach(fill => fill());
+    buildSources();
+    buildFavoriteFields();
+    document.getElementById('coverName').textContent = 'Starter regional image';
+    document.getElementById('teamName').textContent = 'GVC founders photograph';
+    ['coverFile', 'teamFile'].forEach(inputId => { document.getElementById(inputId).value = ''; });
+    redraw(); touch();
   }
 
   function buildSources() {
@@ -291,7 +327,10 @@
       '<div class="field"><label>Location</label><input type="text" data-key="location" value="' + esc(item.location) + '"></div></div>' +
       '<div class="field"><label>Pick</label><input type="text" data-key="pick" value="' + esc(item.pick) + '"></div>' +
       '<div class="field"><label>Note</label><textarea rows="3" data-key="note">' + esc(item.note) + '</textarea></div></section>').join('');
-    host.addEventListener('input', event => {
+  }
+
+  function watchFavoriteFields() {
+    document.getElementById('favoriteFields').addEventListener('input', event => {
       const field = event.target.closest('[data-key]');
       const section = event.target.closest('[data-favorite]');
       if (!field || !section) return;
@@ -317,6 +356,7 @@
     buildRegionPicker();
     buildSources();
     buildFavoriteFields();
+    watchFavoriteFields();
 
     bindText('guideTitle', () => state.guide.title, value => { state.guide.title = value; });
     bindText('guideSubtitle', () => state.guide.subtitle, value => { state.guide.subtitle = value; });

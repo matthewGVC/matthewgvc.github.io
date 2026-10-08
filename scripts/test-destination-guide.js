@@ -21,6 +21,15 @@ Object.values((data && data.regions) || {}).forEach(region => {
   check(Array.isArray(region.bucket) && region.bucket.length === 10, region.id + ': bucket list must contain ten items');
   (region.bucket || []).forEach(item => check(region.sources[item.source], region.id + ': bucket item "' + item.title + '" has no source'));
   check(Array.isArray(region.favorites) && region.favorites.length === 4, region.id + ': editor expects four favorites');
+  check(region.bucketLede, region.id + ': bucket list needs its lede line');
+
+  const map = region.map || {};
+  const point = p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
+  check(map.title, region.id + ': map needs a title');
+  check(Array.isArray(map.water) && map.water.every(poly => poly.length >= 3 && poly.every(point)), region.id + ': map water polygons are invalid');
+  check(Array.isArray(map.coasts) && map.coasts.every(line => line.length >= 2 && line.every(point)), region.id + ': map coastlines are invalid');
+  check(Array.isArray(map.labels) && map.labels.every(l => l.text && (l.corner || (Number.isFinite(l.lat) && Number.isFinite(l.lon)))),
+    region.id + ': map labels need a corner or a lat/lon');
 
   check(region.categories.every(c => (region.pois || []).some(p => p.category === c.id)), region.id + ': a directory group has no entries');
   const ids = new Set();

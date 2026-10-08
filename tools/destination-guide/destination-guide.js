@@ -177,8 +177,9 @@
   function projectedPois(W, H) {
     const f = mapFrame(W, H);
     const pts = state.guide.pois.map(poi => ({ poi, x: f.x(poi.lon), y: f.y(poi.lat) }));
+    pts.forEach(p => { p.tx = p.x; p.ty = p.y; });
     /* push apart anything closer than a pin diameter; a few passes settle it */
-    const gap = 21;
+    const gap = 18;
     for (let pass = 0; pass < 90; pass++) {
       for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
         let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
@@ -205,24 +206,91 @@
       (label.rotate ? ' transform="rotate(' + label.rotate + ' ' + at[0].toFixed(1) + ' ' + at[1].toFixed(1) + ')"' : '') + '>' + esc(label.text) + '</text>';
   }
 
+  /* Optional layers a region can add to its map data (all drawn from real
+     geometry, all optional, so a region that has none renders as before):
+       county   the county outline [[lat, lon], ...]; tints the land inside it
+       parks    [{ name, pts }] green park polygons
+       rivers   [[lat, lon], ...] lines drawn as a channel
+       rail     [{ n, lines: [...] }] railway lines
+       roads    [{ k: 'motorway' | 'highway' | 'minor', n, lines: [...] }]
+       roadLabels  [{ text, lat, lon, rot, rail }] set along the lines
+       towns    [{ name, lat, lon, major }] place names
+       compass  'tl' | 'tr' | 'bl' | 'br'
+       grid     true for the graticule and its degree ticks
+       credit   one line of data credit for the map note */
+  function mapLayers(m, f, W, H) {
+    const P = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
+    const path = (cls, pts, close) => '<path class="' + cls + '" d="M' + P(pts) + (close ? ' Z' : '') + '"></path>';
+    const lines = (cls, list) => list.map(l => path(cls, l)).join('');
+    const under = [], over = [];
+    if (m.grid) {
+      const k = Math.cos(0); /* straight lat/lon lines; the frame is equirectangular */
+      const lats = [], lons = [];
+      const b = m.bounds || [];
+      const all = state.guide.pois.map(p => [p.lat, p.lon]).concat(b);
+      const minLat = Math.min.apply(null, all.map(p => p[0])), maxLat = Math.max.apply(null, all.map(p => p[0]));
+      const minLon = Math.min.apply(null, all.map(p => p[1])), maxLon = Math.max.apply(null, all.map(p => p[1]));
+      for (let v = Math.ceil(minLat * 20) / 20; v <= maxLat; v += 0.05) lats.push(+v.toFixed(2));
+      for (let v = Math.ceil(minLon * 10) / 10; v <= maxLon; v += 0.1) lons.push(+v.toFixed(1));
+      under.push(lats.map(v => '<path class="map-grid" d="M0 ' + f.y(v).toFixed(1) + ' H' + W + '"></path>').join('') +
+        lons.map(v => '<path class="map-grid" d="M' + f.x(v).toFixed(1) + ' 0 V' + H + '"></path>').join(''));
+      over.push(lats.map(v => '<text class="map-tick" x="6" y="' + (f.y(v) - 3).toFixed(1) + '">' + v.toFixed(2) + '°N</text>').join('') +
+        lons.map(v => '<text class="map-tick" x="' + (f.x(v) + 4).toFixed(1) + '" y="' + (H - 6) + '">' + Math.abs(v).toFixed(1) + '°W</text>').join(''));
+    }
+    if (m.county) under.push(path('map-county', m.county, true));
+    if (m.parks) under.push(m.parks.map(p => path('map-park', p.pts, true)).join(''));
+    return { under: under.join(''), over: over.join(''), P, path, lines };
+  }
+
+  function mapAbove(m, f, W, H, L) {
+    const out = [];
+    (m.rivers || []).forEach(r => { out.push(L.path('map-river-edge', r), L.path('map-river', r)); });
+    (m.rail || []).forEach(r => { out.push(L.lines('map-rail-bed', r.lines), L.lines('map-rail', r.lines)); });
+    (m.roads || []).forEach(r => { out.push(L.lines('map-road-case map-road-' + r.k, r.lines), L.lines('map-road map-road-' + r.k, r.lines)); });
+    (m.roadLabels || []).forEach(l => {
+      const x = f.x(l.lon).toFixed(1), y = f.y(l.lat).toFixed(1);
+      out.push('<text class="map-road-label' + (l.rail ? ' is-rail' : '') + '" x="' + x + '" y="' + y + '" transform="rotate(' + l.rot + ' ' + x + ' ' + y + ')" dy="-3" text-anchor="middle">' + esc(l.text) + '</text>');
+    });
+    /* A town name that would sit under a cluster of pins is set beside it (dx, dy
+       in frame units) with a hairline back to the town's true centre. */
+    (m.towns || []).forEach(t => {
+      const cx = f.x(t.lon), cy = f.y(t.lat), x = cx + (t.dx || 0), y = cy + (t.dy || 0);
+      if (t.dx || t.dy) out.push('<path class="map-town-leader" d="M' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' L' + x.toFixed(1) + ' ' + (y - 4).toFixed(1) + '"></path><circle class="map-dot" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="1.8"></circle>');
+      out.push('<text class="map-town' + (t.major ? ' is-major' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (t.anchor || 'middle') + '">' + esc(t.name) + '</text>');
+    });
+    if (m.compass) {
+      const [cx, cy] = { tl: [46, 58], tr: [W - 46, 58], bl: [46, H - 64], br: [W - 46, H - 64] }[m.compass] || [46, 58];
+      out.push('<g class="map-compass" transform="translate(' + cx + ' ' + cy + ')"><circle r="19"></circle><circle class="in" r="14"></circle>' +
+        '<path class="n" d="M0 -17 L5 3 L0 -1 L-5 3 Z"></path><path class="s" d="M0 17 L5 -3 L0 1 L-5 -3 Z"></path><text y="-23">N</text></g>');
+    }
+    return out.join('');
+  }
+
   function pageMap(n, total) {
     /* A region longer than it is wide (Ocean County's coast) gets a portrait
        frame with the key beside it rather than below. */
     const m = state.guide.map, W = m.tall ? 380 : 650, H = m.tall ? 820 : 490, f = mapFrame(W, H);
+    const L = mapLayers(m, f, W, H);
     const line = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
     const water = m.water.map(poly => '<path class="map-water" d="M' + line(poly) + ' Z"></path>').join('');
-    const coast = m.coasts.map(pts => '<path class="map-coast" d="M' + line(pts) + '"></path>').join('');
-    const pins = projectedPois(W, H).map(point => '<g class="map-pin" transform="translate(' + point.x.toFixed(1) + ' ' + point.y.toFixed(1) + ')">' +
-      '<circle r="10"></circle><text y="1">' + point.poi.id + '</text></g>').join('');
+    const coast = m.coasts.map(pts => '<path class="map-coast-glow" d="M' + line(pts) + '"></path><path class="map-coast" d="M' + line(pts) + '"></path>').join('');
+    const placed = projectedPois(W, H);
+    /* a pin nudged clear of its neighbours keeps a leader back to the true spot */
+    const leaders = placed.filter(p => Math.hypot(p.x - p.tx, p.y - p.ty) > 13).map(p =>
+      '<path class="map-leader" d="M' + p.tx.toFixed(1) + ' ' + p.ty.toFixed(1) + ' L' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + '"></path>' +
+      '<circle class="map-dot" cx="' + p.tx.toFixed(1) + '" cy="' + p.ty.toFixed(1) + '" r="2"></circle>').join('');
+    const pins = placed.map(point => '<g class="map-pin cat-' + point.poi.category + '" transform="translate(' + point.x.toFixed(1) + ' ' + point.y.toFixed(1) + ')">' +
+      '<circle class="halo" r="10.5"></circle><circle r="8.5"></circle><text y="1">' + point.poi.id + '</text></g>').join('');
     const legend = state.guide.categories.map(category => {
       const items = state.guide.pois.filter(poi => poi.category === category.id);
-      return items.length ? '<section><h3>' + esc(category.label) + '</h3><ol>' + items.map(poi =>
+      return items.length ? '<section class="cat-' + category.id + '"><h3>' + esc(category.label) + '</h3><ol>' + items.map(poi =>
         '<li><span class="n">' + String(poi.id).padStart(2, '0') + '</span>' + esc(poi.name) + '</li>').join('') + '</ol></section>' : '';
     }).join('');
+    const note = 'Schematic orientation / not to scale' + (m.credit ? '<br>' + esc(m.credit) : '');
     const body = '<div class="map-layout"><div class="map-frame" role="img" aria-label="Schematic map of the guide points of interest">' +
       '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      water + coast + m.labels.map(label => mapLabel(label, f, W, H)).join('') + pins + '</svg>' +
-      '<div class="map-note">Schematic orientation / not to scale</div></div>' +
+      L.under + water + coast + L.over + mapAbove(m, f, W, H, L) + m.labels.map(label => mapLabel(label, f, W, H)).join('') + leaders + pins + '</svg>' +
+      '<div class="map-note">' + note + '</div></div>' +
       '<aside class="map-legend" aria-label="Map key">' + legend + '</aside></div>';
     return shell('Map', m.title, body, n, total, 'dg-map' + (m.tall ? ' map-tall' : ''));
   }

@@ -138,8 +138,49 @@
 .map-water{fill:#073447;}
 .map-coast{fill:none;stroke:#53c7dc;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;}
 .map-label{fill:rgba(255,255,255,.62);font:800 9px 'Nunito Sans',sans-serif;letter-spacing:.2em;}
-.map-pin circle{fill:#00273a;stroke:#53c7dc;stroke-width:2;}
-.map-pin text{fill:#fff;font:800 10px 'Nunito Sans',sans-serif;text-anchor:middle;dominant-baseline:central;}
+.map-pin circle{fill:var(--pin,#00273a);stroke:#fff;stroke-width:1.8;}
+.map-pin circle.halo{fill:#00273a;fill-opacity:.28;stroke:none;}
+.map-pin text{fill:var(--pin-ink,#fff);font:800 9px 'Nunito Sans',sans-serif;text-anchor:middle;dominant-baseline:central;}
+.cat-restaurants{--pin:#e4572e;--pin-ink:#fff;}
+.cat-grocery{--pin:#8cb33b;--pin-ink:#00273a;}
+.cat-shopping{--pin:#d6479b;--pin-ink:#fff;}
+.cat-fitness{--pin:#f2b01e;--pin-ink:#00273a;}
+.cat-coffee{--pin:#a0714f;--pin-ink:#fff;}
+.cat-outdoors{--pin:#2e9e6b;--pin-ink:#fff;}
+.cat-transit{--pin:#3b82f6;--pin-ink:#fff;}
+.cat-healthcare{--pin:#8e5bd9;--pin-ink:#fff;}
+.cat-entertainment{--pin:#ff8a1f;--pin-ink:#00273a;}
+.map-legend section[class*="cat-"] .n{display:inline-grid;place-items:center;width:.2in;height:.13in;border-radius:.07in;background:var(--pin);color:var(--pin-ink);font-size:5.4pt;}
+/* optional map layers: see mapLayers() in destination-guide.js */
+.map-county{fill:#f4f1ea;stroke:#00273a;stroke-opacity:.5;stroke-width:1.1;stroke-dasharray:5 3;stroke-linejoin:round;}
+.map-park{fill:#cfdcbf;stroke:#a5bd8f;stroke-width:.6;stroke-linejoin:round;}
+.map-grid{fill:none;stroke:#00273a;stroke-opacity:.07;stroke-width:.6;}
+.map-tick{font:600 5.2px 'Nunito Sans',sans-serif;fill:#00273a;fill-opacity:.5;letter-spacing:.08em;}
+.map-coast-glow{fill:none;stroke:#53c7dc;stroke-opacity:.22;stroke-width:9;stroke-linejoin:round;stroke-linecap:round;}
+.map-river-edge{fill:none;stroke:#53c7dc;stroke-width:5.2;stroke-linecap:round;stroke-linejoin:round;}
+.map-river{fill:none;stroke:#073447;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
+.map-rail-bed{fill:none;stroke:#00273a;stroke-opacity:.82;stroke-width:2.3;stroke-linejoin:round;}
+.map-rail{fill:none;stroke:#f4f1ea;stroke-width:1.1;stroke-dasharray:3 3;}
+.map-road-case{fill:none;stroke:#00273a;stroke-opacity:.5;stroke-linejoin:round;stroke-linecap:round;}
+.map-road{fill:none;stroke:#fff;stroke-linejoin:round;stroke-linecap:round;}
+.map-road-case.map-road-motorway{stroke-width:4.6;}
+.map-road.map-road-motorway{stroke-width:3;stroke:#f2b01e;}
+.map-road-case.map-road-highway{stroke-width:3.2;}
+.map-road.map-road-highway{stroke-width:1.9;}
+.map-road-case.map-road-minor{stroke-width:2.2;stroke-opacity:.3;}
+.map-road.map-road-minor{stroke-width:1.2;}
+.map-road-label{font:800 4.8px 'Nunito Sans',sans-serif;fill:#00273a;fill-opacity:.72;letter-spacing:.1em;paint-order:stroke;stroke:#f4f1ea;stroke-width:2.2;stroke-linejoin:round;}
+.map-road-label.is-rail{font-style:italic;font-weight:700;fill-opacity:.55;letter-spacing:.14em;}
+.map-town{font:700 7px 'Nunito Sans',sans-serif;fill:#00273a;fill-opacity:.62;letter-spacing:.14em;text-transform:uppercase;paint-order:stroke;stroke:#f4f1ea;stroke-width:2.6;stroke-linejoin:round;}
+.map-town.is-major{font-size:9px;font-weight:800;fill-opacity:.92;letter-spacing:.1em;}
+.map-compass circle{fill:rgba(244,241,234,.94);stroke:#00273a;stroke-width:.8;}
+.map-compass circle.in{fill:none;stroke-opacity:.35;}
+.map-compass .n{fill:#00273a;}
+.map-compass .s{fill:#b9b4a8;}
+.map-compass text{font:800 7px 'Nunito Sans',sans-serif;fill:#00273a;text-anchor:middle;}
+.map-leader{fill:none;stroke:#00273a;stroke-width:.9;stroke-opacity:.55;}
+.map-dot{fill:#00273a;}
+.map-town-leader{fill:none;stroke:#00273a;stroke-width:.8;stroke-opacity:.55;}
 .map-note{position:absolute;left:.18in;bottom:.16in;font:500 6pt var(--mono);color:#00273a;background:rgba(239,237,232,.92);padding:.06in .08in;}
 .map-legend{flex:none;columns:3;column-gap:.26in;}
 .map-legend section{break-inside:avoid;margin-bottom:.07in;}

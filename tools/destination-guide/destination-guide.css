@@ -225,3 +225,12 @@
 @media print{
   .dg{overflow:hidden !important;}
 }
+
+/* the zoomed panel for a crowded core (map.inset) */
+.map-inset-bg{fill:#f4f1ea;}
+.map-inset-edge{fill:none;stroke:#00273a;stroke-width:1.4;}
+.map-inset-title{font:800 6.6px 'Nunito Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;fill:#00273a;paint-order:stroke;stroke:#f4f1ea;stroke-width:3;stroke-linejoin:round;}
+.map-inset-box{fill:none;stroke:#00273a;stroke-width:1.2;}
+.map-inset-link{fill:none;stroke:#00273a;stroke-width:.8;stroke-opacity:.5;stroke-dasharray:3 2;}
+.map-pin-dot{fill:var(--pin);stroke:#fff;stroke-width:.9;}
+.map-park-label{font:italic 700 5.4px 'Nunito Sans',sans-serif;fill:#4f6b3a;letter-spacing:.08em;paint-order:stroke;stroke:#f4f1ea;stroke-width:2;stroke-linejoin:round;}

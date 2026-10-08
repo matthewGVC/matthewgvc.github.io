@@ -158,28 +158,32 @@
      `map` data (polygons may run far past the frame; the SVG clips them), so
      the water sits where it really is; everything inland is blank on purpose.
      It orients; it does not measure. */
-  function mapFrame(W, H) {
-    const pois = state.guide.pois, extra = state.guide.map.bounds || [];
-    const lats = pois.map(p => p.lat).concat(extra.map(p => p[0]));
-    const lons = pois.map(p => p.lon).concat(extra.map(p => p[1]));
-    const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
-    const minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
-    const k = Math.cos((minLat + maxLat) / 2 * Math.PI / 180), pad = 34;
+  /* Fit a lat/lon box into a W x H frame (equirectangular, longitude scaled by
+     the cosine of the middle latitude), centred, with `pad` kept clear. */
+  function fitBounds(minLat, maxLat, minLon, maxLon, W, H, pad) {
+    const k = Math.cos((minLat + maxLat) / 2 * Math.PI / 180);
     const scale = Math.min((W - 2 * pad) / ((maxLon - minLon) * k), (H - 2 * pad) / (maxLat - minLat));
     const w = (maxLon - minLon) * k * scale, h = (maxLat - minLat) * scale;
     const ox = (W - w) / 2, oy = (H - h) / 2;
     return {
+      minLat, maxLat, minLon, maxLon,
       x: lon => ox + (lon - minLon) * k * scale,
       y: lat => oy + (maxLat - lat) * scale
     };
   }
 
-  function projectedPois(W, H) {
-    const f = mapFrame(W, H);
-    const pts = state.guide.pois.map(poi => ({ poi, x: f.x(poi.lon), y: f.y(poi.lat) }));
+  function mapFrame(W, H) {
+    const pois = state.guide.pois, extra = state.guide.map.bounds || [];
+    const lats = pois.map(p => p.lat).concat(extra.map(p => p[0]));
+    const lons = pois.map(p => p.lon).concat(extra.map(p => p[1]));
+    return fitBounds(Math.min.apply(null, lats), Math.max.apply(null, lats), Math.min.apply(null, lons), Math.max.apply(null, lons), W, H, 34);
+  }
+
+  /* Pins for a list of points of interest, nudged apart where they would
+     overlap. Each keeps its true spot (tx, ty) for a leader line. */
+  function placePins(list, f, W, H, gap) {
+    const pts = list.map(poi => ({ poi, x: f.x(poi.lon), y: f.y(poi.lat) }));
     pts.forEach(p => { p.tx = p.x; p.ty = p.y; });
-    /* push apart anything closer than a pin diameter; a few passes settle it */
-    const gap = 18;
     for (let pass = 0; pass < 90; pass++) {
       for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
         let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
@@ -214,82 +218,112 @@
        rail     [{ n, lines: [...] }] railway lines
        roads    [{ k: 'motorway' | 'highway' | 'minor', n, lines: [...] }]
        roadLabels  [{ text, lat, lon, rot, rail }] set along the lines
-       towns    [{ name, lat, lon, major }] place names
+       towns    [{ name, lat, lon, major, dx, dy }] place names; dx/dy set a
+                name beside a crowd of pins with a hairline to the true spot
        compass  'tl' | 'tr' | 'bl' | 'br'
        grid     true for the graticule and its degree ticks
-       credit   one line of data credit for the map note */
-  function mapLayers(m, f, W, H) {
+       credit   one line of data credit for the map note
+       inset    { title, bounds: [[lat, lon], [lat, lon]], at: { x, y, w, h },
+                  towns, parkLabels } a zoomed panel for a crowded core; the
+                  pins inside its bounds are numbered there and shown as dots
+                  on the main map */
+  function mapScene(cfg, f, W, H) {
     const P = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
     const path = (cls, pts, close) => '<path class="' + cls + '" d="M' + P(pts) + (close ? ' Z' : '') + '"></path>';
     const lines = (cls, list) => list.map(l => path(cls, l)).join('');
-    const under = [], over = [];
-    if (m.grid) {
-      const k = Math.cos(0); /* straight lat/lon lines; the frame is equirectangular */
+    const under = [], over = [], above = [];
+    if (cfg.grid) {
       const lats = [], lons = [];
-      const b = m.bounds || [];
-      const all = state.guide.pois.map(p => [p.lat, p.lon]).concat(b);
-      const minLat = Math.min.apply(null, all.map(p => p[0])), maxLat = Math.max.apply(null, all.map(p => p[0]));
-      const minLon = Math.min.apply(null, all.map(p => p[1])), maxLon = Math.max.apply(null, all.map(p => p[1]));
-      for (let v = Math.ceil(minLat * 20) / 20; v <= maxLat; v += 0.05) lats.push(+v.toFixed(2));
-      for (let v = Math.ceil(minLon * 10) / 10; v <= maxLon; v += 0.1) lons.push(+v.toFixed(1));
+      for (let v = Math.ceil(f.minLat * 20) / 20; v <= f.maxLat; v += 0.05) lats.push(+v.toFixed(2));
+      for (let v = Math.ceil(f.minLon * 10) / 10; v <= f.maxLon; v += 0.1) lons.push(+v.toFixed(1));
       under.push(lats.map(v => '<path class="map-grid" d="M0 ' + f.y(v).toFixed(1) + ' H' + W + '"></path>').join('') +
         lons.map(v => '<path class="map-grid" d="M' + f.x(v).toFixed(1) + ' 0 V' + H + '"></path>').join(''));
       over.push(lats.map(v => '<text class="map-tick" x="6" y="' + (f.y(v) - 3).toFixed(1) + '">' + v.toFixed(2) + '°N</text>').join('') +
         lons.map(v => '<text class="map-tick" x="' + (f.x(v) + 4).toFixed(1) + '" y="' + (H - 6) + '">' + Math.abs(v).toFixed(1) + '°W</text>').join(''));
     }
-    if (m.county) under.push(path('map-county', m.county, true));
-    if (m.parks) under.push(m.parks.map(p => path('map-park', p.pts, true)).join(''));
-    return { under: under.join(''), over: over.join(''), P, path, lines };
-  }
-
-  function mapAbove(m, f, W, H, L) {
-    const out = [];
-    (m.rivers || []).forEach(r => { out.push(L.path('map-river-edge', r), L.path('map-river', r)); });
-    (m.rail || []).forEach(r => { out.push(L.lines('map-rail-bed', r.lines), L.lines('map-rail', r.lines)); });
-    (m.roads || []).forEach(r => { out.push(L.lines('map-road-case map-road-' + r.k, r.lines), L.lines('map-road map-road-' + r.k, r.lines)); });
-    (m.roadLabels || []).forEach(l => {
+    if (cfg.county) under.push(path('map-county', cfg.county, true));
+    if (cfg.parks) under.push(cfg.parks.map(p => path('map-park', p.pts, true)).join(''));
+    const water = cfg.water.map(poly => path('map-water', poly, true)).join('');
+    const coast = cfg.coasts.map(pts => path('map-coast-glow', pts) + path('map-coast', pts)).join('');
+    (cfg.rivers || []).forEach(r => { above.push(path('map-river-edge', r), path('map-river', r)); });
+    (cfg.rail || []).forEach(r => { above.push(lines('map-rail-bed', r.lines), lines('map-rail', r.lines)); });
+    (cfg.roads || []).forEach(r => { above.push(lines('map-road-case map-road-' + r.k, r.lines), lines('map-road map-road-' + r.k, r.lines)); });
+    (cfg.roadLabels || []).forEach(l => {
       const x = f.x(l.lon).toFixed(1), y = f.y(l.lat).toFixed(1);
-      out.push('<text class="map-road-label' + (l.rail ? ' is-rail' : '') + '" x="' + x + '" y="' + y + '" transform="rotate(' + l.rot + ' ' + x + ' ' + y + ')" dy="-3" text-anchor="middle">' + esc(l.text) + '</text>');
+      above.push('<text class="map-road-label' + (l.rail ? ' is-rail' : '') + '" x="' + x + '" y="' + y + '" transform="rotate(' + l.rot + ' ' + x + ' ' + y + ')" dy="-3" text-anchor="middle">' + esc(l.text) + '</text>');
     });
+    if (cfg.parkLabels) {
+      const seen = {};
+      (cfg.parks || []).forEach(p => {
+        if (seen[p.name]) return;
+        const la = p.pts.map(q => q[0]), lo = p.pts.map(q => q[1]);
+        const lat = (Math.min.apply(null, la) + Math.max.apply(null, la)) / 2, lon = (Math.min.apply(null, lo) + Math.max.apply(null, lo)) / 2;
+        if (lat < f.minLat || lat > f.maxLat || lon < f.minLon || lon > f.maxLon) return;
+        seen[p.name] = 1;
+        above.push('<text class="map-park-label" x="' + f.x(lon).toFixed(1) + '" y="' + f.y(lat).toFixed(1) + '" text-anchor="middle">' + esc(p.name) + '</text>');
+      });
+    }
     /* A town name that would sit under a cluster of pins is set beside it (dx, dy
        in frame units) with a hairline back to the town's true centre. */
-    (m.towns || []).forEach(t => {
+    (cfg.towns || []).forEach(t => {
       const cx = f.x(t.lon), cy = f.y(t.lat), x = cx + (t.dx || 0), y = cy + (t.dy || 0);
-      if (t.dx || t.dy) out.push('<path class="map-town-leader" d="M' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' L' + x.toFixed(1) + ' ' + (y - 4).toFixed(1) + '"></path><circle class="map-dot" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="1.8"></circle>');
-      out.push('<text class="map-town' + (t.major ? ' is-major' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (t.anchor || 'middle') + '">' + esc(t.name) + '</text>');
+      if (t.dx || t.dy) above.push('<path class="map-town-leader" d="M' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' L' + x.toFixed(1) + ' ' + (y - 4).toFixed(1) + '"></path><circle class="map-dot" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="1.8"></circle>');
+      above.push('<text class="map-town' + (t.major ? ' is-major' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (t.anchor || 'middle') + '">' + esc(t.name) + '</text>');
     });
-    if (m.compass) {
-      const [cx, cy] = { tl: [46, 58], tr: [W - 46, 58], bl: [46, H - 64], br: [W - 46, H - 64] }[m.compass] || [46, 58];
-      out.push('<g class="map-compass" transform="translate(' + cx + ' ' + cy + ')"><circle r="19"></circle><circle class="in" r="14"></circle>' +
+    if (cfg.compass) {
+      const [cx, cy] = { tl: [46, 58], tr: [W - 46, 58], bl: [46, H - 64], br: [W - 46, H - 64] }[cfg.compass] || [46, 58];
+      above.push('<g class="map-compass" transform="translate(' + cx + ' ' + cy + ')"><circle r="19"></circle><circle class="in" r="14"></circle>' +
         '<path class="n" d="M0 -17 L5 3 L0 -1 L-5 3 Z"></path><path class="s" d="M0 17 L5 -3 L0 1 L-5 -3 Z"></path><text y="-23">N</text></g>');
     }
-    return out.join('');
+    const labels = (cfg.labels || []).map(label => mapLabel(label, f, W, H)).join('');
+    return under.join('') + water + coast + over.join('') + above.join('') + labels;
   }
+
+  const pinMarkup = p => '<g class="map-pin cat-' + p.poi.category + '" transform="translate(' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + ')">' +
+    '<circle class="halo" r="10.5"></circle><circle r="8.5"></circle><text y="1">' + p.poi.id + '</text></g>';
+  /* a pin nudged clear of its neighbours keeps a leader back to the true spot */
+  const leaderMarkup = p => Math.hypot(p.x - p.tx, p.y - p.ty) > 13
+    ? '<path class="map-leader" d="M' + p.tx.toFixed(1) + ' ' + p.ty.toFixed(1) + ' L' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + '"></path>' +
+      '<circle class="map-dot" cx="' + p.tx.toFixed(1) + '" cy="' + p.ty.toFixed(1) + '" r="2"></circle>' : '';
 
   function pageMap(n, total) {
     /* A region longer than it is wide (Ocean County's coast) gets a portrait
        frame with the key beside it rather than below. */
     const m = state.guide.map, W = m.tall ? 380 : 650, H = m.tall ? 820 : 490, f = mapFrame(W, H);
-    const L = mapLayers(m, f, W, H);
-    const line = pts => pts.map(p => f.x(p[1]).toFixed(1) + ' ' + f.y(p[0]).toFixed(1)).join(' L');
-    const water = m.water.map(poly => '<path class="map-water" d="M' + line(poly) + ' Z"></path>').join('');
-    const coast = m.coasts.map(pts => '<path class="map-coast-glow" d="M' + line(pts) + '"></path><path class="map-coast" d="M' + line(pts) + '"></path>').join('');
-    const placed = projectedPois(W, H);
-    /* a pin nudged clear of its neighbours keeps a leader back to the true spot */
-    const leaders = placed.filter(p => Math.hypot(p.x - p.tx, p.y - p.ty) > 13).map(p =>
-      '<path class="map-leader" d="M' + p.tx.toFixed(1) + ' ' + p.ty.toFixed(1) + ' L' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + '"></path>' +
-      '<circle class="map-dot" cx="' + p.tx.toFixed(1) + '" cy="' + p.ty.toFixed(1) + '" r="2"></circle>').join('');
-    const pins = placed.map(point => '<g class="map-pin cat-' + point.poi.category + '" transform="translate(' + point.x.toFixed(1) + ' ' + point.y.toFixed(1) + ')">' +
-      '<circle class="halo" r="10.5"></circle><circle r="8.5"></circle><text y="1">' + point.poi.id + '</text></g>').join('');
+    const pois = state.guide.pois;
+    let scene = mapScene(m, f, W, H), pinned = pois, insetSvg = '', insetBox = '';
+
+    if (m.inset) {
+      const ins = m.inset, a = ins.at, b = ins.bounds;
+      const inBox = poi => poi.lat <= b[0][0] && poi.lat >= b[1][0] && poi.lon >= b[0][1] && poi.lon <= b[1][1];
+      const inside = pois.filter(inBox);
+      pinned = pois.filter(poi => !inBox(poi));
+      const g = fitBounds(b[1][0], b[0][0], b[0][1], b[1][1], a.w, a.h, 12);
+      const cfg = Object.assign({}, m, { towns: ins.towns || [], roadLabels: ins.roadLabels || [], compass: null, grid: false, labels: [], parkLabels: ins.parkLabels });
+      const ip = placePins(inside, g, a.w, a.h, 18);
+      insetSvg = '<svg class="map-inset" x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="' + a.h + '" viewBox="0 0 ' + a.w + ' ' + a.h + '">' +
+        '<rect class="map-inset-bg" width="' + a.w + '" height="' + a.h + '"></rect>' + mapScene(cfg, g, a.w, a.h) +
+        ip.map(leaderMarkup).join('') + ip.map(pinMarkup).join('') + '</svg>' +
+        '<rect class="map-inset-edge" x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="' + a.h + '"></rect>' +
+        '<text class="map-inset-title" x="' + (a.x + 7) + '" y="' + (a.y + a.h - 8) + '">' + esc(ins.title) + '</text>';
+      /* the zoomed area, boxed on the main map and tied to the panel */
+      const x0 = f.x(b[0][1]), x1 = f.x(b[1][1]), y0 = f.y(b[0][0]), y1 = f.y(b[1][0]);
+      insetBox = '<path class="map-inset-link" d="M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' L' + (a.x + a.w) + ' ' + a.y + ' M' + x0.toFixed(1) + ' ' + y1.toFixed(1) + ' L' + (a.x + a.w) + ' ' + (a.y + a.h) + '"></path>' +
+        '<rect class="map-inset-box" x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + (x1 - x0).toFixed(1) + '" height="' + (y1 - y0).toFixed(1) + '"></rect>';
+      /* the pins inside the box are numbered in the panel; here they are dots */
+      insetBox += inside.map(poi => '<circle class="map-pin-dot cat-' + poi.category + '" cx="' + f.x(poi.lon).toFixed(1) + '" cy="' + f.y(poi.lat).toFixed(1) + '" r="2.6"></circle>').join('');
+    }
+
+    const placed = placePins(pinned, f, W, H, 18);
     const legend = state.guide.categories.map(category => {
-      const items = state.guide.pois.filter(poi => poi.category === category.id);
+      const items = pois.filter(poi => poi.category === category.id);
       return items.length ? '<section class="cat-' + category.id + '"><h3>' + esc(category.label) + '</h3><ol>' + items.map(poi =>
         '<li><span class="n">' + String(poi.id).padStart(2, '0') + '</span>' + esc(poi.name) + '</li>').join('') + '</ol></section>' : '';
     }).join('');
     const note = 'Schematic orientation / not to scale' + (m.credit ? '<br>' + esc(m.credit) : '');
     const body = '<div class="map-layout"><div class="map-frame" role="img" aria-label="Schematic map of the guide points of interest">' +
       '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      L.under + water + coast + L.over + mapAbove(m, f, W, H, L) + m.labels.map(label => mapLabel(label, f, W, H)).join('') + leaders + pins + '</svg>' +
+      scene + insetBox + placed.map(leaderMarkup).join('') + placed.map(pinMarkup).join('') + insetSvg + '</svg>' +
       '<div class="map-note">' + note + '</div></div>' +
       '<aside class="map-legend" aria-label="Map key">' + legend + '</aside></div>';
     return shell('Map', m.title, body, n, total, 'dg-map' + (m.tall ? ' map-tall' : ''));

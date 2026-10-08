@@ -660,6 +660,16 @@
           { name: 'Staten Island', lat: 40.585, lon: -74.17 }
         ],
         compass: 'tl',
+        inset: {
+          title: 'New Brunswick / Highland Park',
+          bounds: [[40.5040, -74.4620], [40.4835, -74.4180]],
+          at: { x: 12, y: 112, w: 236, h: 152 },
+          parkLabels: true,
+          towns: [
+            { name: 'New Brunswick', lat: 40.4865, lon: -74.4505, major: true },
+            { name: 'Highland Park', lat: 40.4950, lon: -74.4255, major: true }
+          ]
+        },
         grid: true,
         credit: 'Roads, rail, parks and shoreline: OpenStreetMap contributors. County outline: U.S. Census Bureau.',
         labels: [

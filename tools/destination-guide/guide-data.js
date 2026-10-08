@@ -347,7 +347,7 @@
       subtitle: 'Ocean, bay and pines: forty miles of barrier beach and the woods behind',
       issue: 'The GVC Team / Local Guide',
       coverImage: '../../assets/img/nj/ocean-county-cover.jpg',
-      coverAlt: 'A sandy path through beach grass to the ocean',
+      coverAlt: 'Barnegat Lighthouse rising above the dune grass on Long Beach Island',
       teamImage: '../../assets/team/founders-lifestyle.jpg',
       teamAlt: 'The GVC Team founders together outside a residence',
       welcomeTitle: 'A county built in layers',

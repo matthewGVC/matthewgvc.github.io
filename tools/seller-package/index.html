@@ -915,8 +915,20 @@ let assign = {}, uid = 0;
 /* The property page owns the 'hero' slot, so with that page switched off
    the slot is not offered a photo — otherwise the auto pass would quietly
    swallow one into a page that is not being printed. The role stays in the
-   menu either way: a photo pinned to it simply waits for the page. */
-function liveSlots() { return SLOTS.filter(s => s !== 'hero' || state.showProperty); }
+   menu either way: a photo pinned to it simply waits for the page.
+   The same goes for a video card: one whose film carries its own still, or
+   one that is not printed at all (fewer films picked), is not offered an
+   auto photo, so the tray never calls a photo a "Video still" that does not
+   print. A photo pinned there by hand still wins, as before. */
+function liveSlots() {
+  const vids = chosenVideos();
+  return SLOTS.filter(s => {
+    if (s === 'hero') return state.showProperty;
+    const m = /^video(\d)$/.exec(s);
+    if (m) { const v = vids[m[1] - 1]; return !!v && !v.photo; }
+    return true;
+  });
+}
 function reassign() { assign = P.assignRoles(state.photos, liveSlots()); }
 function slot(name) { return assign[name] ? assign[name].url : null; }
 

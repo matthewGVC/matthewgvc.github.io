@@ -22,7 +22,9 @@
    Drops are driven with real mouse events, because the system is built on
    pointer events and a synthetic drop would skip the part that breaks.
    ============================================================ */
-const { chromium } = require('playwright');
+/* BROWSER=webkit runs the same checks in Safari's engine (npx playwright install webkit, once) */
+const ENGINE = process.env.BROWSER || 'chromium';
+const engine = require('playwright')[ENGINE];
 
 const BASE = 'http://localhost:8080';
 const TOOLS = {
@@ -213,7 +215,7 @@ async function run(browser, tool) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await engine.launch();
   console.log('\nDragging photos on ' + WANTED.length + ' tool(s) at ' + BASE + '\n');
   let failed = 0;
   for (const tool of WANTED) {

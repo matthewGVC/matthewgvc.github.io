@@ -13,7 +13,9 @@
    What it will not catch: anything behind the property library, which needs a
    Supabase session. These are the checks that need no account.
    ============================================================ */
-const { chromium } = require('playwright');
+/* BROWSER=webkit runs the same checks in Safari's engine (npx playwright install webkit, once) */
+const ENGINE = process.env.BROWSER || 'chromium';
+const engine = require('playwright')[ENGINE];
 
 const BASE = 'http://localhost:8080';
 
@@ -101,7 +103,7 @@ async function check(page, label, path) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await engine.launch();
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
   console.log('\nChecking ' + PAGES.length + ' pages on ' + BASE + '\n');

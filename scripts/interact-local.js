@@ -82,7 +82,8 @@ async function run(browser, tool) {
   if (tool === 'showsheet') {
     await feed('#docxFile', SAMPLE + 'listing.docx'); await feed('#phFile', SAMPLE + 'hero.jpg'); await feed('#fpFile', SAMPLE + 'floorplan.jpg');
   }
-  if (tool === 'brochure' || tool === 'seller-package') await feed('#imgFile', [SAMPLE + 'hero.jpg', SAMPLE + 'hero.jpg']);
+  if (tool === 'brochure') await feed('#imgFile', [SAMPLE + 'hero.jpg', SAMPLE + 'hero.jpg']);
+  if (tool === 'seller-package') await feed('#filePhotos', [SAMPLE + 'hero.jpg', SAMPLE + 'floorplan.jpg']);
 
   let actions = 0;
   const count = await page.locator(CONTROLS).count();

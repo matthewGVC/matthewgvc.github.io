@@ -150,6 +150,27 @@
   color:rgba(0,39,58,.5);display:block;}
 .band.mid .bsr div{color:rgba(229,229,229,.85);}
 .band.mid .bsr b{color:var(--sky);}
+/* Contrast. The shared pitch.css sets small labels in --sky2 (3:1 on white) and the
+   running footer and stat captions at 42-60% ink, short of 4.5:1. Held to AA here
+   the way the Buyer's Guide holds it. */
+.pg:not(.rev){--sky2:#0b7a95;}
+.pg:not(.rev) .stat .l,.pg:not(.rev) .quote .who{color:rgba(0,39,58,.72);}
+.pg-foot .site{color:rgba(0,39,58,.72);}
+.pg-foot .pg-n{color:rgba(0,39,58,.7);}
+.pg.rev .pg-foot .site{color:rgba(229,229,229,.82);}
+.pg.rev .pg-foot .pg-n{color:rgba(229,229,229,.78);}
+.pg.rev .ag-who .ct .k,.pg.rev .ag-lrow .lk{color:rgba(229,229,229,.8);}
+/* Comparable Sales: a short list leaves most of the page empty, so the rows
+   open up and a summary of the comps themselves sits under the table. */
+table.tbl.roomy td{padding-top:.17in;padding-bottom:.17in;}
+table.tbl th.num{text-align:right;}
+.comp-sum{margin-top:.42in;}
+.comp-sum .row{display:flex;gap:.3in;}
+.comp-sum .row + .row{margin-top:.3in;}
+.comp-sum h3{margin:0 0 .12in;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
+.comp-sum .stat .v{font-size:19pt;white-space:nowrap;}
+.comp-sum .stat .l{font-size:7pt;}
+.comp-sum .note{margin:.2in 0 0;font:300 8.5pt/13pt var(--body);color:rgba(0,39,58,.78);}
 .strat-note{margin-top:.28in;padding-top:.22in;border-top:.75pt solid var(--rule);
   font:300 9.5pt/14pt var(--body);color:rgba(0,39,58,.78);}
 /* the reference closes this page on a property shot — it takes whatever
@@ -1220,6 +1241,31 @@ function pgMap(n) {
     title:'Where We Have Sold', body });
 }
 
+/* What the comparables say, worked out from the rows entered and nothing else:
+   the median sold price and $/sq ft, and (once the three prices and the
+   square footage are in) what each of the three prices comes to per square
+   foot against that median. Left off a long list, which already fills the page. */
+function compSummary(rows) {
+  const priced = rows.filter(c => P.num(c.price) > 0);
+  if (!priced.length || rows.length > 6) return '';
+  const med = a => { const v = a.slice().sort((x, y) => x - y), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+  const prices = priced.map(c => P.num(c.price));
+  const ppsf = priced.filter(c => P.num(c.sqft) > 0).map(c => P.num(c.price) / P.num(c.sqft));
+  const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
+  let h = '<div class="comp-sum"><h3>What the comparables show</h3><div class="row">' +
+    stat(P.moneyShort(med(prices)), 'Median sold price') +
+    (ppsf.length ? stat(P.money(med(ppsf)), 'Median $ / sq ft') : '') +
+    stat(P.moneyShort(Math.min.apply(null, prices)) + ' – ' + P.moneyShort(Math.max.apply(null, prices)), 'Sold price range') +
+    '</div>';
+  const sq = P.num(state.sqft), bands = [['Low', state.priceLow], ['Mid', state.priceMid], ['High', state.priceHigh]];
+  if (sq > 0 && ppsf.length && bands.every(b => P.num(b[1]) > 0)) {
+    h += '<div class="row">' + bands.map(b => stat(P.money(P.num(b[1]) / sq), b[0] + ' range, per sq ft')).join('') + '</div>' +
+      '<p class="note">The three recommended prices work out to the figures above per square foot of this home, against a comparable median of ' +
+      P.money(med(ppsf)) + '.</p>';
+  }
+  return h + '</div>';
+}
+
 function pgComps(n) {
   const rows = state.comps.filter(c => c.address);
   const sub = { address: state.address || 'Subject property', price:'', sqft: state.sqft,
@@ -1234,10 +1280,11 @@ function pgComps(n) {
       '<td class="num">' + esc(c.date || '—') + '</td>' +
     '</tr>';
   const body =
-    '<table class="tbl" id="compTable"><thead><tr>' +
+    '<table class="tbl' + (rows.length <= 6 ? ' roomy' : '') + '" id="compTable"><thead><tr>' +
       '<th>Address</th><th class="num">Sold</th><th class="num">' + (window.icon ? window.icon('ruler','hi') : '') + 'Sq ft</th>' +
       '<th class="num">$ / sq ft</th><th class="num">' + (window.icon ? window.icon('bed','hi') : '') + 'Bed / Bath</th><th class="num">Date</th>' +
     '</tr></thead><tbody>' + tr(sub, true) + rows.map(c => tr(c, false)).join('') + '</tbody></table>' +
+    compSummary(rows) +
     (rows.length ? '' : '<div class="empty-note on-white" style="position:relative;margin-top:.6in">Add comparables in the panel</div>');
   return P.page({ deck:DECK, n, of:OF, site:SITE,
     title:'Comparable Sales', body });

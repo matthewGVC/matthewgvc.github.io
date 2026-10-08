@@ -11,7 +11,7 @@
 
    Home fields:
      address   as printed
-     town      only where the source states it (405 Old Bridge Rd: not stated)
+     town      only where a source states it
      status    'construction' | 'planned' — the counts and the timeline are
                worked out from this, never typed
      price     asking price, as printed
@@ -55,14 +55,15 @@ window.GVC_DEV_SEED = {
       note: 'Planned with an elevator, first-floor bedroom, 2-car garage and pool.',
       image: 'seed:806-riverview-2400.webp', imageNote: 'Architect’s 3D view - subject to change' },
 
-    /* 405 Old Bridge Rd: the concept renderings are the PDF's own, about 700px
-       wide. That holds up at the size a subdivision card prints them (about
-       2.4in), not much bigger. Replace with the originals if they turn up. */
-    { address: '405 Old Bridge Rd - Home 1', site: '405 Old Bridge Rd', status: 'planned',
+    /* 405 Old Bridge Rd, Brielle (town from SSDG's project folder). The concept
+       renderings are the architect's 3D isometrics, rendered at 2400px from the
+       design PDFs (House 1: LOT 2.02 ELEVATIONS sheet A301; House 2: LOT 2.01
+       DESIGN DOCS sheet A301). */
+    { address: '405 Old Bridge Rd - Home 1', site: '405 Old Bridge Rd', town: 'Brielle', status: 'planned',
       price: '$2,650,000', beds: '4', baths: '4.5', living: '3,556 sq. ft.', basement: 'basement',
       garage: '2-car garage',
       image: 'seed:405-old-bridge-1.jpg', imageNote: 'Concept rendering - subject to change' },
-    { address: '405 Old Bridge Rd - Home 2', site: '405 Old Bridge Rd', status: 'planned',
+    { address: '405 Old Bridge Rd - Home 2', site: '405 Old Bridge Rd', town: 'Brielle', status: 'planned',
       price: '$2,250,000', beds: '4', baths: '4.5', living: '3,123 sq. ft.', basement: 'basement',
       garage: '1-car garage',
       image: 'seed:405-old-bridge-2.jpg', imageNote: 'Concept rendering - subject to change' },

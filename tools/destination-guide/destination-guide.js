@@ -19,13 +19,13 @@
   const pageDefs = [
     { key: 'cover', title: 'Cover', render: pageCover },
     { key: 'contents', title: 'Contents', render: pageContents },
-    { key: 'welcome', title: 'From The GVC Team', render: pageWelcome },
-    { key: 'overview', title: 'Field Notes', render: pageOverview },
-    { key: 'places', title: 'Places', render: pagePlaces },
-    { key: 'bucket', title: 'Do This First', render: pageBucket },
-    { key: 'directory', title: 'Directory', render: pageDirectory },
-    { key: 'map', title: 'Map', render: pageMap },
-    { key: 'favorites', title: 'Team Favorites', optional: true, render: pageFavorites },
+    { key: 'welcome', title: 'From The GVC Team', heading: () => state.guide.welcomeTitle, render: pageWelcome },
+    { key: 'overview', title: 'Field Notes', heading: () => 'What to expect', render: pageOverview },
+    { key: 'places', title: 'Places', heading: () => 'Nine ways into the county', render: pagePlaces },
+    { key: 'bucket', title: 'Do This First', heading: () => 'The local short list', render: pageBucket },
+    { key: 'directory', title: 'Directory', heading: () => state.guide.pois.length + ' points of interest', render: pageDirectory },
+    { key: 'map', title: 'Map', heading: () => state.guide.map.title, render: pageMap },
+    { key: 'favorites', title: 'Team Favorites', optional: true, heading: () => 'The places we return to', render: pageFavorites },
     { key: 'back', title: 'Back', render: pageBack }
   ];
 
@@ -60,6 +60,14 @@
       '<h2 class="dg-heading">' + esc(title) + '</h2>' + body + pageFoot(n, total) + '</div></article>';
   }
 
+  /* A captioned photograph that takes whatever height its page leaves. */
+  function pagePhoto(key) {
+    const photo = (state.guide.photos || {})[key];
+    if (!photo) return '';
+    return '<figure class="dg-photo"><div class="frame"><img src="' + esc(photo.src) + '" alt="' + esc(photo.alt) + '"' +
+      (photo.pos ? ' style="object-position:' + esc(photo.pos) + '"' : '') + '></div>' +
+      '<figcaption class="dg-caption">' + esc(photo.caption) + '</figcaption></figure>';
+  }
   /* The cover panel is 2.35in of type wide; a long county name at 40pt runs out
      of it (Monmouth already touched the edge). Step the size down by the
      longest word so any region fits. */
@@ -79,15 +87,15 @@
   }
 
   function pageContents(n, total) {
-    const items = pages.filter(page => page.key !== 'cover' && page.key !== 'back');
+    const items = pages.filter(page => page.heading);
     return '<article class="dg dg-contents"><div class="contents-grid">' +
       '<section class="contents-intro"><div class="roman">I</div><h2>Inside the guide</h2>' +
       '<p>One region, read through its communities, landscape, culture and useful connections.</p></section>' +
       '<section class="contents-list"><div class="issue">' + esc(state.guide.issue) + '</div><ol>' +
       items.map(page => {
         const index = pages.findIndex(item => item.key === page.key) + 1;
-        return '<li><span class="n">' + String(index).padStart(2, '0') + '</span><span class="t">' + esc(page.title) +
-          '</span><span class="p">' + String(index + 1).padStart(2, '0') + '</span></li>';
+        return '<li><span class="p">' + String(index + 1).padStart(2, '0') + '</span><span class="t">' + esc(page.title) +
+          '</span><span class="d">' + esc(page.heading()) + '</span></li>';
       }).join('') + '</ol><p class="note">Prepared as a practical orientation, not a ranking. Seasonal access and schedules should be checked before a visit.</p>' +
       '</section></div></article>';
   }
@@ -98,17 +106,17 @@
       '<div class="body">' + g.welcome.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
       '<div class="welcome-signoff">The GVC Team / Douglas Elliman</div></section>' +
       '<figure class="welcome-visual"><div class="welcome-photo"><img src="' + esc(g.teamImage) + '" alt="' + esc(g.teamAlt) + '"></div>' +
-      '<figcaption class="welcome-caption">Local context, clear guidance, and a team perspective across New York, New Jersey and Florida.</figcaption></figure></div>';
+      '<figcaption class="dg-caption">Local context, clear guidance, and a team perspective across New York, New Jersey and Florida.</figcaption></figure></div>';
     return shell('From The GVC Team', 'Welcome', body, n, total, 'dg-welcome');
   }
 
   function pageOverview(n, total) {
     const o = state.guide.overview;
-    const body = '<div class="field-lede"><div class="big">NJ</div><p>' + esc(state.guide.subtitle) + '</p></div>' +
+    const body = '<p class="field-lede">' + esc(state.guide.subtitle) + '</p>' +
       '<div class="field-columns">' +
       '<section class="field-note"><h3>What it is known for</h3><p>' + esc(o.knownFor) + '</p></section>' +
       '<section class="field-note"><h3>History</h3><p>' + esc(o.history) + '</p></section>' +
-      '<section class="field-note"><h3>Architecture</h3><p>' + esc(o.architecture) + '</p></section></div>' +
+      '<section class="field-note"><h3>Architecture</h3><p>' + esc(o.architecture) + '</p></section></div>' + pagePhoto('field') +
       '<div class="field-cite dg-source">Research: ' + o.sourceKeys.map(sourceLabel).map(esc).join(' / ') + '</div>';
     return shell('Field Notes', 'What to expect', body, n, total, 'dg-overview');
   }
@@ -120,7 +128,7 @@
         const text = town && town.tag ? town.tag : place.fallback;
         return '<section class="place"><div class="place-head"><h3>' + esc(place.name) + '</h3><span class="zone">' + esc(place.zone) +
           '</span></div><p>' + esc(text) + '</p></section>';
-      }).join('') + '</div>';
+      }).join('') + '</div>' + pagePhoto('places');
     return shell('Places', 'Nine ways into the county', body, n, total, 'dg-places');
   }
 
@@ -136,7 +144,7 @@
       category,
       items: state.guide.pois.filter(poi => poi.category === category.id)
     })).filter(group => group.items.length);
-    const body = '<div class="directory-lede"><p>' + state.guide.pois.length + ' places, numbered to match the map on the next page. Each one links to its own site or a maintained source in the guide data.</p></div>' +
+    const body = '<div class="directory-lede"><p>' + state.guide.pois.length + ' places across ' + groups.length + ' categories, numbered to match the map on the next page.</p></div>' +
       '<div class="dir-grid">' + groups.map(group => '<section class="dir-group"><h3>' + esc(group.category.label) + '</h3><ol>' +
         group.items.map(poi => '<li><span class="pin">' + String(poi.id).padStart(2, '0') + '</span><div><b>' + esc(poi.name) +
           '</b><span>' + esc(poi.place) + ' - ' + esc(poi.note) + '</span></div></li>').join('') + '</ol></section>').join('') + '</div>';
@@ -223,7 +231,8 @@
     const favorites = state.guide.favorites.filter(item => item.pick.trim());
     const body = '<div class="favorite-intro"><div class="mark">G</div><p>Personal recommendations belong to the people who know the area. Replace these starter picks with names and notes from the team before distribution.</p></div>' +
       '<div class="favorite-grid">' + favorites.map(item => '<section class="favorite"><div class="who">' + esc(item.person) + '</div><h3>' +
-        esc(item.pick) + '</h3><div class="loc">' + esc(item.location) + '</div><p class="note">' + esc(item.note) + '</p></section>').join('') + '</div>';
+        esc(item.pick) + '</h3><div class="loc">' + esc(item.location) + '</div><p class="note">' + esc(item.note) + '</p></section>').join('') + '</div>' +
+      pagePhoto('favorites');
     return shell('Team Favorites', 'The places we return to', body, n, total, 'dg-favorites');
   }
 

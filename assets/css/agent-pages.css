@@ -8,7 +8,7 @@
 /* DON'T FORGET TO ASK — the agent's list. Six groups of five, three to a
    column; every item has its box for a pen. */
 .ask{flex:1;min-height:0;display:flex;flex-direction:column;}
-.ask .lede{font-size:10pt;line-height:15pt;margin-bottom:.16in;max-width:none;color:rgba(0,39,58,.7);}
+.ask .lede{font-size:10pt;line-height:14pt;margin-bottom:.16in;max-width:none;color:rgba(0,39,58,.7);}
 .chk.ask-chk{columns:2;column-gap:.5in;}
 .chk.ask-chk .cgrp{margin-bottom:.2in;}
 .chk.ask-chk li{font-size:9.6pt;line-height:13.4pt;padding:.052in 0;}

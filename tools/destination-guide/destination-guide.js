@@ -370,7 +370,7 @@
     return '<article class="dg dg-back"><div class="back-photo"><img src="' + esc(state.guide.teamImage) + '" alt=""></div>' +
       '<div class="back-main"><img class="back-logo" src="../../assets/logos/sheet/lockup-sky.svg" alt="The Gasdaska Verdiglione Conlon Team">' +
       '<h2>Ready to find your place in ' + esc(state.guide.title) + '?</h2><div class="line"></div>' +
-      '<div class="contact"><p>We help buyers and sellers move with local context, disciplined advice and a connected team.</p>' +
+      '<div class="contact"><p>Whether you are buying or selling, you get a team that knows the ground, gives disciplined advice and works as one.</p>' +
       '<div class="site">gvcrealestateteam.com<br>@gvcrealestateteam</div></div>' +
       '<div class="back-sources">' + esc(state.guide.sourceNote) + (state.guide.photoCredits ? '<br>Photos: ' + esc(state.guide.photoCredits) : '') + '<br>Research set: ' + Object.keys(state.guide.sources).length + ' linked sources - ' + esc(state.guide.sourceSummary || sourceNames) + '.</div></div></article>';
   }
@@ -447,7 +447,7 @@
     buildFavoriteFields();
     document.getElementById('coverName').textContent = 'Starter regional image';
     document.getElementById('welcomeName').textContent = 'Starter regional image';
-    document.getElementById('teamName').textContent = 'GVC founders photograph';
+    document.getElementById('teamName').textContent = 'Starter shore photograph';
     ['coverFile', 'welcomeFile', 'teamFile'].forEach(inputId => { document.getElementById(inputId).value = ''; });
     buildBucketFields();
     redraw(); touch();

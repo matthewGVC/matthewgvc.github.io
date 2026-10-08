@@ -248,8 +248,8 @@
       },
       welcomeImage: '../../assets/img/nj/monmouth-welcome.jpg',
       welcomeAlt: 'The Navesink Twin Lights above Highlands harbor, seen from the water',
-      teamImage: '../../assets/team/founders-lifestyle.jpg',
-      teamAlt: 'The GVC Team founders together outside a residence',
+      teamImage: '../../assets/img/nj/back-shore.jpg',
+      teamAlt: 'Beach houses, dunes and salt marsh on the Jersey shore, from the air',
       welcomeTitle: 'A county with more than one center',
       welcome: [
         'Monmouth County changes character every few miles. The north shore looks toward New York Harbor; the ocean towns run from working boardwalks to quiet residential beaches; farther west, horse farms and Revolutionary-era landscapes take over.',
@@ -658,8 +658,8 @@
       welcomeImage: '../../assets/img/nj/ocean-welcome.jpg',
       welcomeAlt: 'An aerial view of Barnegat Bay and its salt marsh',
       photoCredits: 'Barnegat Bay aerial by James Loesch, CC BY 2.0.',
-      teamImage: '../../assets/team/founders-lifestyle.jpg',
-      teamAlt: 'The GVC Team founders together outside a residence',
+      teamImage: '../../assets/img/nj/back-shore.jpg',
+      teamAlt: 'Beach houses, dunes and salt marsh on the Jersey shore, from the air',
       welcomeTitle: 'A county built in layers',
       welcome: [
         'Ocean County is built in layers. On the east, roughly forty miles of barrier beach hold back the Atlantic, from Bay Head\'s shingled cottages to the full length of Long Beach Island. Behind them, Barnegat Bay and Little Egg Harbor form a sheltered inland water, and the river towns of Toms River and Island Heights look out across it.',
@@ -916,8 +916,8 @@
       welcomeImage: '../../assets/img/nj/middlesex-welcome.jpg',
       welcomeAlt: 'Kirkpatrick Chapel on the Rutgers campus in New Brunswick',
       photoCredits: 'New Brunswick skyline by Forevaclevah, CC BY 3.0.',
-      teamImage: '../../assets/team/founders-lifestyle.jpg',
-      teamAlt: 'The GVC Team founders together outside a residence',
+      teamImage: '../../assets/img/nj/back-shore.jpg',
+      teamAlt: 'Beach houses, dunes and salt marsh on the Jersey shore, from the air',
       welcomeTitle: 'A county on the river',
       welcome: [
         'Middlesex County sits in the middle of the state\'s busiest corridor. The Raritan River crosses it from Piscataway to the bay, New Brunswick anchors it with a university and a theater district, and the Northeast Corridor stations from Metuchen to New Brunswick connect it to New York Penn Station.',

@@ -806,8 +806,77 @@
   ];
   NYC_STEPS_FIFTY.note = PROCESS.nyc.note;
 
+  /* Florida, merged the same way (2026-10-09): the same fifty lines fiftyFor('fl') has always
+     printed, regrouped under the steps of PROCESS.fl. The total is checked in index.html. */
+  var FL_STEPS_FIFTY = [
+    { t: 'Consultation', items: [
+      'Set a realistic budget and timeline with you',
+      'Sort your must-haves from your deal-breakers',
+      'Explain the buyer agreement and how I am paid',
+      'Set up listing alerts so you see new homes first',
+      'Explain Florida insurance, flood and HOA costs',
+      'Explain condo reserves and milestone inspections'
+    ]},
+    { t: 'Pre-Approval', items: [
+      'Connect you with lenders for a written pre-approval',
+      'Show the real monthly cost, not just the mortgage'
+    ]},
+    { t: 'The Search', items: [
+      'Pre-screen listings so you tour only the right ones',
+      'Book and attend every private showing with you',
+      'Tap my network for off-market homes',
+      'Research price history and time on the market',
+      'Pull recent nearby sales to show real prices',
+      'Tell you honestly when a home is wrong for you',
+      'Point out what photos hide: noise, light, layout, street',
+      'Check flood zone, elevation and insurance quotes up front',
+      'Read HOA or condo documents, fees and assessments',
+      'Check roof, wiring, plumbing and HVAC ages (insurers will)'
+    ]},
+    { t: 'The Offer', items: [
+      'Price your offer against real comparable sales',
+      'Structure terms and dates to make it competitive',
+      'Find out what the seller actually needs',
+      'Write the offer on the FR/BAR contract',
+      'Set the deposit, inspection and financing deadlines',
+      'Build in an insurability check, not just price'
+    ]},
+    { t: 'Negotiation', items: [
+      'Negotiate counter-offers, credits and repairs for you',
+      'Keep every agreed term in writing'
+    ]},
+    { t: 'Contract & Diligence', items: [
+      'Recommend inspectors and specialists, and attend',
+      'Review the report with you and decide what to ask for',
+      'Track every deadline so nothing lapses',
+      'Coordinate lender, appraiser, attorney and title company',
+      'Chase the paperwork you would otherwise forget',
+      'Update you weekly, not just when things change',
+      'Order home, wind-mitigation and roof inspections',
+      'Get homeowner’s and flood quotes before inspections end',
+      'Review the condo SIRS and milestone inspection reports',
+      'Coordinate title, survey and closing agent',
+      'Track the inspection period and financing deadlines',
+      'Check open permits and claims history'
+    ]},
+    { t: 'Closing & Beyond', items: [
+      'Do the final walk-through with you',
+      'Check the closing figures before you sign',
+      'Warn you to confirm wire instructions by phone',
+      'Line up utilities, insurance and moving dates',
+      'Be at the closing table with you',
+      'Hand you the keys',
+      'Introduce movers, designers and trusted vendors',
+      'Stay your real estate resource long after closing',
+      'Help you file for the Florida homestead exemption',
+      'Line up hurricane prep and insurance papers',
+      'Coordinate HOA or condo approval and move-in',
+      'Introduce pool, landscaping and shutter pros'
+    ]}
+  ];
+
   /* The merged steps-and-fifty page, for the markets that have one. */
-  var STEPS_FIFTY = { nj: NJ_STEPS_FIFTY, nyc: NYC_STEPS_FIFTY };
+  var STEPS_FIFTY = { nj: NJ_STEPS_FIFTY, nyc: NYC_STEPS_FIFTY, fl: FL_STEPS_FIFTY };
   function stepsFifty(region) { return STEPS_FIFTY[region] || null; }
 
   /* OFFER & NEGOTIATION as live cards, editable in

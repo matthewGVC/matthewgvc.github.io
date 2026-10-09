@@ -521,8 +521,9 @@ const GG = window.GVC_GUIDE, REGIONS = GG.REGIONS;
 const state = {
   photos:[], pos:{},
   /* optional page key -> true when it is switched off */
-  off:{ referrals:true },   /* Marli's referral page stays out until her partner list exists */
-  offerNj:false,           /* NJ only: Offer & Negotiation is hidden for now */
+  /* Marli's referral page stays out until her partner list exists, and Offer & Negotiation is
+     hidden for now; both come back with a tick in the Pages list */
+  off:{ referrals:true, offer:true },
   region:'nj',   // NJ | NYC | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
   /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
@@ -654,7 +655,7 @@ const SPINE = [
   { key:'agents',    title:'Meet Your Agent',     agents:true },
   { key:'powerhaus', title:'Power Haus Women',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
   { key:'referrals', title:'Referral Partners',   only:['nj'], marli:true, opt:'Marli’s partners (list still needed)' },
-  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj','nyc'] },
+  { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj','nyc','fl'] },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
   { key:'discovery', title:'Don\u2019t Forget to Ask', opt:'For the agent: questions that get lost', not:['nj'] },
@@ -675,8 +676,7 @@ function optionalFor() {
   const list = SPINE.filter(p => p.opt && inMarket(p) && (!p.marli || hasMarli()));
   return state.region === 'nj' ? [NJ_AGENTS_TICK].concat(list) : list;
 }
-const isOn = key => key === 'njAgents' ? state.njAgents
-  : key === 'offer' && state.region === 'nj' ? state.offerNj : !state.off[key];
+const isOn = key => key === 'njAgents' ? state.njAgents : !state.off[key];
 
 function pageList() {
   const out = [];
@@ -687,7 +687,7 @@ function pageList() {
       agents().forEach(a => out.push({ key:'agent', title:p.title, agent:a }));
     } else if (p.key === 'costs' && state.region === 'nyc') {
       if (!state.off.costs) GG.COSTS.nyc.pages.forEach(c => out.push({ key:'costs', title:p.title, cost:c }));
-    } else if (!(p.opt && (p.key === 'offer' && state.region === 'nj' ? !state.offerNj : state.off[p.key]))) {
+    } else if (!(p.opt && state.off[p.key])) {
       out.push(p);
     }
   });
@@ -942,7 +942,7 @@ function pgFifty(n) {
    step keeps the Buying Process page's co-op/condo footnote, at the foot of
    the right-hand column. */
 const STEPS_FIFTY_TITLE = '50 Things We Do for You as Your Buyer’s Agent';
-const STEPS_SPLIT = { nj: 4, nyc: 3 };
+const STEPS_SPLIT = { nj: 4, nyc: 3, fl: 4 };
 /* New Jersey lines Matt is confirming with the agents (by number) get a
    printed "Check" tag; take a number out once it is confirmed. The last line
    gets a star. */
@@ -1259,7 +1259,6 @@ function paintTicks() {
     isOn,
     (key, on) => {
       if (key === 'njAgents') state.njAgents = on;
-      else if (key === 'offer' && state.region === 'nj') state.offerNj = on;
       else if (on) delete state.off[key]; else state.off[key] = true;
       redraw();
     });

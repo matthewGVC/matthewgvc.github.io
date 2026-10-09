@@ -83,6 +83,15 @@
 .why.njlay .sts svg.nj{width:.8in;}
 .why.njlay .sts b{width:.34in;}
 .why.njlay .qcard{margin-left:.38in;margin-right:.12in;}
+/* NYC in the same stacked layout: Manhattan is a tall strip, so it runs down the
+   right beside the copy, the tag line and the numbers (narrowed to clear it), and
+   the states and quote sit full width below as in NJ. */
+.why.nyclay .ph.fit{position:absolute;top:-.2in;right:.16in;width:1.75in;height:5.55in;padding:0;}
+.why.nyclay .ph.fit img{width:100%;height:100%;object-fit:contain;}
+.why.nyclay .copy{width:4.6in;}
+.why.nyclay .tag{margin:.4in 0 0 .21in;width:4.6in;}
+.why.nyclay .stats{margin:.3in 0 0 .21in;width:4.6in;}
+.why.nyclay .sts{margin-top:.9in;}
 
 /* ============================================================
    50 THINGS — five groups, numbered straight through. Two columns, set
@@ -101,22 +110,10 @@
 .fifty-lede{margin:0 0 .16in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
 
 /* ============================================================
-   MEET YOUR AGENT — one page per selected agent. A navy banner with the
-   cut-out standing on its foot, then the bio and the facts. All of it is
-   roster copy (assets/js/bios.js); nothing is written per page.
+   MEET YOUR AGENT — one page per selected agent, every market (the .agnj
+   rules further down lay it out). All of it is roster copy
+   (assets/js/bios.js); nothing is written per page.
    ============================================================ */
-.ab-top{flex:none;position:relative;height:3.3in;background:var(--navy);color:#fff;overflow:hidden;
-  display:flex;flex-direction:column;justify-content:flex-end;padding:0 .4in .34in;}
-.ab-top::before{content:'';position:absolute;left:-1.2in;top:-1.4in;width:5.4in;height:5.4in;
-  background:radial-gradient(circle,rgba(83,199,220,.2),rgba(83,199,220,0) 68%);}
-.ab-top img{position:absolute;right:.05in;bottom:0;height:3.3in;width:3.3in;max-width:none;object-fit:contain;object-position:50% 100%;}
-.ab-top .role{position:relative;font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
-.ab-top .nm{position:relative;margin:.08in 0 .06in;font:700 30pt/1.04 var(--serif);color:#fff;max-width:4.2in;}
-.ab-top .tt{position:relative;font:800 6.8pt/1.5 var(--sans);letter-spacing:.14em;text-transform:uppercase;
-  color:rgba(229,229,229,.75);}
-.ab-main{flex:1;min-height:0;display:flex;gap:.45in;padding-top:.3in;}
-.ab-main .l{flex:1.45;min-width:0;display:flex;flex-direction:column;}
-.ab-main .r{flex:1;min-width:0;display:flex;flex-direction:column;}
 .ab-lab{font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
   padding-bottom:.05in;border-bottom:1pt solid var(--navy);margin-bottom:.12in;}
 .ab-bio{margin:0;font:400 13pt/1.52 var(--serif);color:var(--navy);}
@@ -125,28 +122,10 @@
   font:300 9.5pt/1.4 var(--body);color:var(--navy);}
 .ab-facts .f b{flex:none;width:1.25in;font:800 6.6pt/1.9 var(--sans);letter-spacing:.14em;
   text-transform:uppercase;color:rgba(0,39,58,.72);}
-.ab-con .c{display:flex;gap:.1in;align-items:flex-start;padding:.07in 0;font:300 9.5pt/1.35 var(--body);color:var(--navy);}
-.ab-con .c .ci{flex:none;width:.17in;height:.17in;margin-top:.01in;color:var(--sky2);}
-.ab-con .c span{min-width:0;overflow-wrap:anywhere;}
-.ab-exp .e{padding:.1in 0;border-bottom:.75pt solid var(--rule);}
-.ab-exp .e b{display:block;font:800 7pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--navy);}
-.ab-exp .e span{display:block;margin-top:.03in;font:300 9pt/1.45 var(--body);color:rgba(0,39,58,.78);}
-
-/* the layout for an agent with a full bio: intro, the bio in two columns,
-   then the facts and the contact details side by side */
-.ab-top.short{height:2.55in;padding-bottom:.28in;}
-.ab-top.short img{height:2.55in;width:2.55in;}
-.ab-top.short .nm{font-size:27pt;}
-.ab-full{flex:1;min-height:0;display:flex;flex-direction:column;padding-top:.2in;}
 .ab-bio.sm{font-size:11pt;line-height:1.45;margin-bottom:.16in;}
 .ab-text{columns:2;column-gap:.4in;font:300 8.9pt/12.6pt var(--body);color:var(--navy);}
 .ab-text p{margin:0 0 .08in;}
 .ab-text.tight{font-size:8.4pt;line-height:11.6pt;}
-.ab-row{display:flex;gap:.45in;margin-top:auto;padding-top:.12in;}
-.ab-row > div{flex:1;min-width:0;}
-.ab-row .ab-facts{margin-top:0;}
-.ab-row .ab-facts .f{padding:.045in 0;}
-.ab-row .ab-con .c{padding:.045in 0;}
 
 /* "Know someone moving?" — a slim full-width band at the foot of the closing page, above the legal text: the
    question set in the serif, and the line about introducing them. */
@@ -332,8 +311,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .rf .row.tbd{border:1pt dashed rgba(140,58,43,.45);border-radius:2px;margin-top:.07in;padding:.07in .1in;
   color:rgba(140,58,43,.85);font-style:italic;}
 
-/* Meet Your Agent, NJ: the whole cut-out, larger, and no contact block. */
-/* Meet Your Agent, NJ: a compact name band at the top, the words down the
+/* Meet Your Agent (every market since 2026-10-09; first built for NJ): a compact name band at the top, the words down the
    left, and the agent's photograph (not the cut-out) beside them on the right,
    inside the page margins. No contact block. */
 .agnj{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
@@ -791,8 +769,9 @@ function pgWhy(n) {
     '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
     '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
     (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>';
+  const nycLay = !slot('portrait') && state.region === 'nyc';
   const body =
-    '<div class="why' + (map ? ' njlay' : '') + '">' +
+    '<div class="why' + (map ? ' njlay' : nycLay ? ' njlay nyclay' : '') + '">' +
       pic +
       '<div class="txt">' +
         '<div class="copy">' +
@@ -817,79 +796,11 @@ function pgWhy(n) {
 }
 
 /* ---------- Meet Your Agent ----------
-   One page per agent picked. Name, title, phone, email, Instagram, the
-   cut-out and every word of copy come from the roster (assets/js/roster.js
-   merges in assets/js/bios.js): the intro, the full bio and the facts are
-   edited there, once, for every package.
-
-   An agent with a full bio gets it in two columns under the intro, with the
-   facts and the contact details side by side beneath. One without keeps the
-   roomier layout: the intro set large, then facts, contact and the buying
-   process's promises. An agent with no bios.js block still gets the banner
-   and the contact column. The "what to expect" lines are the buying process
-   page's own promises, not claims about the person. */
-const EXPECT = [
-  ['Honest opinions', 'A straight answer about the homes that are wrong for you, not just the ones that are right.'],
-  ['Private showings', 'Curated listings and showings arranged around your schedule.'],
-  ['Offers built on terms', 'Priced against real comparables, with the terms to make it competitive.']
-];
-
-function pgAgent(n, p) {
-  const a = p.agent, first = esc(a.name.split(' ')[0]);
-  const full = (a.bio || []).length > 0;
-  const chars = (a.bio || []).join('').length;
-  /* The roster's `phone` is each agent's mobile (the master sheet agrees) unless they also have a
-     separate `mobile`, in which case `phone` is the office line. Labelled to match. */
-  const contact = [a.phone && ['phone', (a.mobile ? 'Office ' : 'Mobile ') + a.phone], a.mobile && ['phone', 'Mobile ' + a.mobile],
-                   a.email && ['mail', a.email], a.instagram && ['instagram', a.instagram]].filter(Boolean);
-  const factsHtml = (a.facts || []).length
-    ? '<div class="ab-facts">' + a.facts.map(f =>
-        '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
-    : '';
-  const conHtml = '<div class="ab-con">' + contact.map(c =>
-    '<div class="c">' + ic(c[0], 'ci') + '<span>' + esc(c[1]) + '</span></div>').join('') + '</div>';
-  const top =
-    '<div class="ab-top' + (full ? ' short' : '') + '">' +
-      '<img src="' + esc(headshotFor(a)) + '" alt="">' +
-      (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
-      '<div class="nm">' + esc(a.name) + '</div>' +
-      '<div class="tt">' + esc(a.title) + '</div>' +
-    '</div>';
-  let main;
-  if (full) {
-    main =
-      '<div class="ab-full">' +
-        (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
-        '<div class="ab-lab">About ' + first + '</div>' +
-        '<div class="ab-text' + (chars > 1700 ? ' tight' : '') + '">' +
-          a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
-        '<div class="ab-row">' +
-          '<div><div class="ab-lab">At a glance</div>' + factsHtml + '</div>' +
-          '<div><div class="ab-lab">Get in touch</div>' + conHtml + '</div>' +
-        '</div>' +
-      '</div>';
-  } else {
-    main =
-      '<div class="ab-main">' +
-        '<div class="l">' +
-          '<div class="ab-lab">About ' + first + '</div>' +
-          (a.blurb ? '<p class="ab-bio">' + esc(a.blurb) + '</p>' : '') + factsHtml +
-        '</div>' +
-        '<div class="r">' +
-          '<div class="ab-lab">Get in touch</div>' + conHtml +
-          '<div class="ab-lab" style="margin-top:.3in">What to expect</div>' +
-          '<div class="ab-exp">' + EXPECT.map(e =>
-            '<div class="e"><b>' + esc(e[0]) + '</b><span>' + esc(e[1]) + '</span></div>').join('') + '</div>' +
-        '</div>' +
-      '</div>';
-  }
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', body: top + main });
-}
-
-/* New Jersey's Meet Your Agent: a work in progress, off unless ticked. The
-   whole cut-out at full height, the About copy, the bio and the facts. No
-   contact details on this page. */
-/* The agent's photograph for the NJ page; an agent without one shows the
+   One page per agent picked, the same layout in every market. Name, title,
+   the photograph and every word of copy come from the roster
+   (assets/js/roster.js merges in assets/js/bios.js), edited there once for
+   every package. No contact details here: they are on the closing page. */
+/* The agent's photograph; an agent without one shows the
    roster cut-out on navy in the same place. */
 const AGENT_PHOTO = {
   'marli-silver': 'static/agent-marli-silver.jpg',
@@ -925,7 +836,6 @@ function pgAgentNj(n, p) {
     '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', cls:'nohead', body });
 }
-const pgAgentAny = (n, p) => state.region === 'nj' ? pgAgentNj(n, p) : pgAgent(n, p);
 
 /* ---------- 50 Things We Do ----------
    Five groups numbered straight through, the first three in the left column
@@ -1185,7 +1095,7 @@ function pgNext(n) {
 }
 
 const RENDER = {
-  cover:pgCover, why:pgWhy, agent:pgAgentAny, process:pgProcess,
+  cover:pgCover, why:pgWhy, agent:pgAgentNj, process:pgProcess,
   fifty:(n, p) => GG.stepsFifty(state.region) ? pgFiftySteps(n, p) : pgFifty(n, p),
   costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgOffer, next:pgNext,
   links:pgLinks, powerhaus:pgPowerhaus, referrals:pgReferrals

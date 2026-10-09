@@ -61,8 +61,8 @@
 .why .sts svg.fl{width:1.15in;}
 .why .sts b{width:.22in;height:0;border-top:1pt solid var(--sky);}
 /* the client's words in a card at the foot of the column */
-.why .qcard{margin-top:auto;background:#fff;border-left:3pt solid var(--sky);padding:.24in .14in .2in .04in;
-  box-shadow:0 .03in .16in rgba(0,39,58,.16);}
+.why .qcard{margin-top:auto;background:#ecece6;border-top:.08in solid var(--navy);padding:.2in .22in .18in .12in;}
+.why .qcard .who{margin-top:.14in;padding-top:.1in;border-top:.75pt solid rgba(0,39,58,.22);}
 .why .quote{font-size:10.5pt;}
 
 /* ============================================================
@@ -129,18 +129,18 @@
 .ab-row .ab-facts .f{padding:.045in 0;}
 .ab-row .ab-con .c{padding:.045in 0;}
 
-/* the referral line on the closing page, set beside "Thank you." */
-/* "Know someone moving?" — a slim full-width band under "Thank you.": the
+/* "Know someone moving?" — a slim full-width band at the foot of the closing page, above the legal text: the
    question set in the serif, and the line about introducing them. */
 .ag-hero{display:flex;flex-direction:column;align-items:stretch;}
 /* the band costs the page height, so the hero and the agent rows give a little back */
 .pg[data-key="next"] .ag:not(.solo) .ag-hero{padding-top:.16in;}
 .pg[data-key="next"] .ag-person + .ag-person{margin-top:.1in;}
-.ag-hero .ref{display:flex;align-items:center;gap:.16in;margin-top:.1in;padding:.07in .16in;
+.ag .ref{flex:none;display:flex;align-items:center;gap:.16in;margin-top:auto;padding:.07in .16in;
   border-left:3pt solid var(--sky);background:rgba(83,199,220,.09);}
 
-.ag-hero .ref b{flex:none;font:italic 400 13pt/1.1 var(--serif);color:#fff;}
-.ag-hero .ref p{margin:0;padding-left:.16in;border-left:.75pt solid rgba(229,229,229,.25);
+.pg[data-key="next"] .ag-foot{margin-bottom:.22in;}
+.ag .ref b{flex:none;font:italic 400 13pt/1.1 var(--serif);color:#fff;}
+.ag .ref p{margin:0;padding-left:.16in;border-left:.75pt solid rgba(229,229,229,.25);
   font:300 7.8pt/1.4 var(--body);color:var(--ow);}
 
 /* costs table — grouped by when the money leaves your hands */

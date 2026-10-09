@@ -509,7 +509,7 @@
        qrCap        its caption
        legal        the GVC_LEGAL block for this deck
        licensedLabel optional heading for the states column (default "Licensed in")
-       referral     optional markup set beside "Thank you." (the Buyer's Guide's
+       referral     optional markup set between the contact columns and the legal block (the Buyer's Guide's
                     "know someone moving?" line); omitted by the Brochure
        foot         the running page footer
      `.solo` widens the rail and steps the sign-off down to match — one class
@@ -547,8 +547,7 @@
           (o.qr ? '<div class="ag-qr"><div class="qbox">' + o.qr + '</div>' +
                   '<div class="qcap">' + esc(o.qrCap || '') + '</div></div>' : '') +
         '</div>' +
-        '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div>' +
-          (o.referral || '') + '</div>' +
+        '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div></div>' +
         '<div class="ag-people">' + people + '</div>' +
         '<div class="ag-foot">' +
           agentCol('Social', socialRows(list)) +
@@ -558,6 +557,7 @@
               '<div class="ag-st">' + stateMark(art) + '<span>' + esc(nm) + '</span></div>').join('') +
           '</div>' +
         '</div>' +
+        (o.referral || '') +
         (o.legal || '') +
       '</div>' +
       (o.foot || '') +

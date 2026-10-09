@@ -173,6 +173,8 @@
 .map-note{position:absolute;left:.18in;bottom:.16in;font:500 6pt var(--mono);color:#00273a;background:rgba(239,237,232,.92);padding:.06in .08in;}
 .map-legend{flex:none;columns:3;column-gap:.26in;}
 .map-legend section{break-inside:avoid;margin-bottom:.07in;}
+.map-tall .map-legend section{margin-bottom:.16in;}
+.map-tall .map-legend li{padding:.032in 0;}
 .map-legend h3{font:800 6pt var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--sky);padding-bottom:.03in;border-bottom:.5pt solid rgba(255,255,255,.3);}
 .map-legend ol{list-style:none;margin:0;padding:0;}
 .map-legend li{display:grid;grid-template-columns:.22in 1fr;gap:.05in;padding:.012in 0;font:400 6pt/1.28 var(--body);color:rgba(255,255,255,.86);}

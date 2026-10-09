@@ -9,6 +9,11 @@
    every package. index.html owns the layout; this file owns
    the copy, so a teammate can correct a sentence without touching markup.
 
+   Cover photographs are Pexels (free licence), IDs for the credit line:
+   NYC 14500449 (Matteo Milan, Manhattan skyline at golden hour), NJ 5116148
+   (Drew DePascale, Spring Lake beach at sunset), FL 11663815 (Omar Shinez,
+   Worth Avenue clock tower, Palm Beach). Copies sit in the shared Stock Photos folder.
+
    Nothing here is a quote written by us: the testimonials are the clients'
    own words from gvcrealestateteam.com.
 
@@ -36,7 +41,7 @@
     },
     nj: {
       id: 'nj', label: 'NJ', name: 'New Jersey',
-      cover: 'static/cover-nj-aerial.jpg',
+      cover: 'static/cover-nj-springlake.jpg',
       why: 'static/why-nj.jpg',
       quote: {
         text: 'This is my third closing with Marli and she is the best realtor I have ever worked with ' +

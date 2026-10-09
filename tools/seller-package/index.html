@@ -279,6 +279,12 @@ table.tbl th.num{text-align:right;}
    left here, which is the point: it can no longer drift from the Buyer
    Package's closing page. */
 
+/* New Jersey print contrast: the small grey labels were 3.2-4.3:1; held to the 4.5:1 floor
+   (.72 ink) for NJ only, so the New York deck is unchanged. */
+.mk-nj .pg .rh-t{color:rgba(0,39,58,.72) !important;}
+.mk-nj .tri .tb.c2 p{color:#fff;}
+.mk-nj .pg:not(.rev) :is(.rh-t,.grp-t,.spec .k,table th,em,.ps .pl,.ps .pv,.band:not(.mid) .bl,.band:not(.mid) .bsr b){color:rgba(0,39,58,.72);}
+
 </style>
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
@@ -1480,6 +1486,7 @@ let builder = null;
 
 function redraw() {
   if (!builder) return;
+  document.body.classList.toggle('mk-nj', state.market === 'nj');
   reassign();
   /* the property page is optional, so dropping it has to renumber every
      page after it and the running footers along with them */

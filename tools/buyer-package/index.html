@@ -55,7 +55,7 @@
 .why .stat .v{font-size:21pt;}
 .why .stat .l{font-size:6.4pt;}
 /* the three states, drawn inline (stateSvg) in the artwork's own blues */
-.why .sts{display:flex;align-items:center;justify-content:center;gap:.12in;margin-top:.26in;}
+.why .sts{display:grid;grid-template-columns:1fr .22in 1fr .22in 1fr;align-items:center;justify-items:center;margin-top:.26in;}
 .why .sts svg{display:block;height:.9in;}
 .why .sts svg.ny{width:1.15in;}
 .why .sts svg.nj{width:.6in;}
@@ -69,14 +69,15 @@
 /* New Jersey's page 2 follows Matt's markup: the county map small at the top right, the
    copy beside it, then the standing line, numbers, states and quote stacked full width. */
 .why.njlay{display:block;position:relative;}
-.why.njlay .ph.njmap{position:absolute;top:-.43in;right:.16in;width:2.19in;height:3.12in;}
+.why.njlay .ph.njmap{position:absolute;top:-.2in;right:.16in;width:2.19in;height:3.12in;}
 .why.njlay .txt{height:100%;}
 .why.njlay .copy{width:3.8in;margin-left:.21in;padding-top:.05in;padding-bottom:.4in;font-size:9.4pt;line-height:15.7pt;border-bottom:.75pt solid var(--rule);}
 .why.njlay .tag{border-top:0;margin:.55in auto 0;padding-top:0;width:4.6in;font-size:20pt;}
 .why.njlay .stats{width:5.6in;margin:.3in auto 0;gap:.28in;}
+.why.njlay .sts{width:5.6in;margin-left:auto;margin-right:auto;grid-template-columns:1fr .28in 1fr .28in 1fr;}
 .why.njlay .stat .v{font-size:27pt;}
 .why.njlay .stat .l{font-size:7pt;}
-.why.njlay .sts{margin-top:.36in;gap:.2in;}
+.why.njlay .sts{margin-top:.36in;}
 .why.njlay .sts svg{height:1.15in;}
 .why.njlay .sts svg.ny,.why.njlay .sts svg.fl{width:1.5in;}
 .why.njlay .sts svg.nj{width:.8in;}
@@ -152,14 +153,8 @@
 .ag-hero{display:flex;flex-direction:column;align-items:stretch;}
 /* the band costs the page height, so the hero and the agent rows give a little back */
 .pg[data-key="next"] .ag:not(.solo) .ag-hero{padding-top:.16in;}
-.pg[data-key="next"] .ag-person + .ag-person{margin-top:.1in;}
-.ag .ref{flex:none;display:flex;align-items:center;gap:.16in;margin-top:auto;padding:.07in .16in;
-  border-left:3pt solid var(--sky);background:rgba(83,199,220,.09);}
+.pg[data-key="next"] .ag-person + .ag-person{margin-top:0;}
 
-.pg[data-key="next"] .ag-foot{margin-bottom:.22in;}
-.ag .ref b{flex:none;font:italic 400 13pt/1.1 var(--serif);color:#fff;}
-.ag .ref p{margin:0;padding-left:.16in;border-left:.75pt solid rgba(229,229,229,.25);
-  font:300 7.8pt/1.4 var(--body);color:var(--ow);}
 
 /* costs table — grouped by when the money leaves your hands */
 table.tbl tr.grp td{border-bottom:1pt solid var(--navy);padding:.2in .1in .06in 0;
@@ -246,6 +241,9 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .nj-stamp{position:absolute;top:.52in;right:var(--pad);z-index:5;transform:rotate(-2deg);
   border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.94);padding:.04in .12in;
   font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
+
+.nj-stamp.warn{display:inline-flex;align-items:center;gap:.07in;}
+.nj-stamp.warn svg{width:.15in;height:.15in;flex:none;}
 
 /* Why Work With Us, NJ: the county map from the NJ Footprint page in the
    photo's place, with the four counties the team works lit. */
@@ -523,7 +521,8 @@ const GG = window.GVC_GUIDE, REGIONS = GG.REGIONS;
 const state = {
   photos:[], pos:{},
   /* optional page key -> true when it is switched off */
-  off:{},
+  off:{ referrals:true },   /* Marli's referral page stays out until her partner list exists */
+  offerNj:false,           /* NJ only: Offer & Negotiation is hidden for now */
   region:'nj',   // NJ | NYC | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
   /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
@@ -676,7 +675,8 @@ function optionalFor() {
   const list = SPINE.filter(p => p.opt && inMarket(p) && (!p.marli || hasMarli()));
   return state.region === 'nj' ? [NJ_AGENTS_TICK].concat(list) : list;
 }
-const isOn = key => key === 'njAgents' ? state.njAgents : !state.off[key];
+const isOn = key => key === 'njAgents' ? state.njAgents
+  : key === 'offer' && state.region === 'nj' ? state.offerNj : !state.off[key];
 
 function pageList() {
   const out = [];
@@ -687,10 +687,14 @@ function pageList() {
       agents().forEach(a => out.push({ key:'agent', title:p.title, agent:a }));
     } else if (p.key === 'costs' && state.region === 'nyc') {
       if (!state.off.costs) GG.COSTS.nyc.pages.forEach(c => out.push({ key:'costs', title:p.title, cost:c }));
-    } else if (!(p.opt && state.off[p.key])) {
+    } else if (!(p.opt && (p.key === 'offer' && state.region === 'nj' ? !state.offerNj : state.off[p.key]))) {
       out.push(p);
     }
   });
+  /* Power Haus follows Marli's own page directly, wherever the agents fall */
+  const ph = out.findIndex(p => p.key === 'powerhaus');
+  const mi = out.findIndex(p => p.key === 'agent' && p.agent.id === 'marli-silver');
+  if (ph > -1 && mi > -1 && ph !== mi + 1) out.splice(mi + 1, 0, out.splice(ph, 1)[0]);
   return out;
 }
 let PAGES = pageList(), OF = PAGES.length;
@@ -782,7 +786,7 @@ function pgWhy(n) {
             'innovation, and collaboration. Specializing in luxury residential, commercial, and new development ' +
             'transactions, the team serves high-net-worth clients across ' +
             esc(GG.joinStates(state.region, 'name', ', and ')) + '.</p>' +
-          '<p>The GVC Team is strengthened by a diverse group of talented professionals, and collaborates with a ' +
+          '<p><b>The GVC Team</b> is strengthened by a diverse group of talented professionals, and collaborates with a ' +
             'wide network of skilled agents across ' + esc(nycNames[0] + ', ' + nycNames[1] + ', and ' + nycNames[2]) +
             ', all of whom share the team’s ' +
             'core values and client-focused approach.</p>' +
@@ -891,7 +895,6 @@ function pgAgentNj(n, p) {
         '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
     : '';
   const body =
-    '<span class="nj-stamp">Work in progress</span>' +
     '<div class="agnj">' +
       '<div class="band">' +
         (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
@@ -984,6 +987,8 @@ function pgDiscovery(n) {
    and insurance that dwarf the other two. The rows are in guide-data.js
    COSTS with the sources they were checked against. New York runs to three
    pages (condos, co-ops, mansion tax), each a `cost` in COSTS.nyc.pages. */
+/* a warning triangle, drawn rather than typed, for the red Check stamp */
+const WARN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4.5"/><path d="M12 17.4v.1"/></svg>';
 function pgCosts(n, p) {
   if (p.cost) return pgCostsDe(n, p.cost);
   const c = GG.COSTS[state.region];
@@ -1002,7 +1007,8 @@ function pgCosts(n, p) {
       '<div class="stat"><div class="v">' + esc(h[0]) + '</div><div class="l">' + esc(h[1]) + '</div></div>').join('') +
     '</div>' +
     sections.map(s => sect(s[0], s[1])).join('') +
-    '<div class="foot-note">' + esc(c.note) + '</div>';
+    '<div class="foot-note">' + esc(c.note) + '</div>' +
+    (state.region === 'nj' ? '<span class="nj-stamp warn">' + WARN_ICON + 'Check</span>' : '');
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:c.title || 'What It Costs', key:'costs', body });
 }
 
@@ -1146,9 +1152,7 @@ function pgReferrals(n) {
    being referred is usually moving somewhere other than where this guide's
    reader is buying. */
 function referralNote() {
-  return '<div class="ref"><b>Know someone moving?</b>' +
-    '<p>A friend, colleague or relative relocating to ' + esc(GG.joinStates(state.region, 'name', ' or ')) + '? ' +
-    'Introduce them. Our team works in all three states and will connect them with the right agent.</p></div>';
+  return P.referralNote(esc(GG.joinStates(state.region, 'name', ' or ')));
 }
 
 function pgNext(n) {
@@ -1255,6 +1259,7 @@ function paintTicks() {
     isOn,
     (key, on) => {
       if (key === 'njAgents') state.njAgents = on;
+      else if (key === 'offer' && state.region === 'nj') state.offerNj = on;
       else if (on) delete state.off[key]; else state.off[key] = true;
       redraw();
     });

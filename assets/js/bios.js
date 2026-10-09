@@ -118,7 +118,7 @@ window.GVC_BIOS = {
   },
 
   'marli-silver': {
-    role: 'New Jersey',
+    role: 'Co-Founder, Power Haus Women',
     blurb: 'Marli Silver is a Monmouth County native with nearly a decade of experience serving buyers, sellers, investors, developers, and relocating clients throughout New Jersey. She is also co-founder and Chief of Development of Power Haus, a national referral network of 60+ female real estate professionals.',
     facts: [['Market', 'New Jersey, Monmouth County'], ['Experience', '10+ years'], ['Leadership', 'Co-founder, Power Haus']],
     bio: [

@@ -71,9 +71,18 @@
   font:800 8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#fff;}
 /* New Jersey: the agents presenting the listing, standing on a navy panel,
    in place of the founders photo. */
-.duo.cut{background:radial-gradient(ellipse at 50% 35%,#0d4a63 0%,#00273A 70%);}
-.duo.cut .people{position:absolute;inset:0 0 .36in;display:flex;justify-content:center;align-items:flex-end;gap:.2in;}
-.duo.cut .people img{width:auto;height:100%;max-width:3.4in;object-fit:contain;object-position:50% 100%;}
+.duo.cut{background:#00273A;}
+/* the team's own stone-and-glass doorway, out of focus and tinted navy, so the figures stand
+   in a place rather than on a flat colour */
+.duo.cut::before{content:'';position:absolute;inset:-.2in;
+  background:url(../../assets/team/founders-lifestyle.jpg) center 35%/cover;filter:blur(10px) saturate(.8);}
+.duo.cut::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,39,58,.62),rgba(0,39,58,.82)),radial-gradient(ellipse at 50% 100%,rgba(83,199,220,.22),transparent 62%);}
+.duo.cut .people{position:absolute;z-index:1;inset:0 0 .36in;display:flex;justify-content:center;align-items:flex-end;gap:0;}
+.duo.cut .people img{width:auto;height:96%;max-width:3.6in;object-fit:contain;object-position:50% 100%;
+  filter:drop-shadow(0 0 .12in rgba(0,20,32,.55));}
+.duo.cut .people img + img{margin-left:-.35in;}
+.duo.cut .cap{z-index:2;}
 .about-copy{font:300 9.3pt/14pt var(--body);color:var(--navy);text-align:center;margin-bottom:.22in;}
 .about-copy b{font-weight:700;}
 
@@ -199,17 +208,17 @@ table.tbl th.num{text-align:right;}
 .plan3 .ph3.p3 li::before{background:var(--sky);}
 
 /* p9 footer — follow the plan, follow along: a small QR per channel */
-.plan-social{flex:none;margin-top:.22in;padding-top:.2in;border-top:.75pt solid var(--rule);
-  display:flex;justify-content:center;gap:.55in;}
+.plan-social{flex:none;margin-top:.22in;padding-top:.26in;border-top:.75pt solid var(--rule);
+  display:flex;justify-content:center;gap:.4in;}
 /* fixed, equal width regardless of label length, so the three QR squares
    themselves stay evenly spaced and centered on the page */
-.plan-social .ps{flex:none;width:1.5in;text-align:center;}
-.plan-social .ps .qbox{width:.82in;height:.82in;margin:0 auto;background:#fff;
-  border:.75pt solid var(--rule);padding:.04in;}
+.plan-social .ps{flex:none;width:2in;text-align:center;}
+.plan-social .ps .qbox{width:1.7in;height:1.7in;margin:0 auto;background:#fff;
+  border:.75pt solid var(--rule);padding:.06in;}
 .plan-social .ps .qbox svg{width:100%;height:100%;display:block;}
-.plan-social .ps .pl{margin-top:.08in;font:800 6.8pt var(--sans);letter-spacing:.14em;
+.plan-social .ps .pl{margin-top:.12in;font:800 7.6pt var(--sans);letter-spacing:.14em;
   text-transform:uppercase;color:rgba(0,39,58,.6);}
-.plan-social .ps .pv{margin-top:.02in;font:300 7.6pt var(--body);color:rgba(0,39,58,.5);}
+.plan-social .ps .pv{margin-top:.03in;font:300 8.6pt var(--body);color:rgba(0,39,58,.5);}
 
 /* "Preparing Your Home" is the shared hand-ticked checklist — .chk in
    assets/css/pitch.css, the same page furniture as the Buyer Package's
@@ -908,7 +917,7 @@ function chosenVideos() {
    whatever is left. Round-robin rather
    than agent-by-agent because John and Marli together should print two of
    each: four quotes in one voice reads like one agent's page, and this one
-   is titled What Our Clients Say. Most of the roster has no attributed
+   is titled Testimonials. Most of the roster has no attributed
    review at all, so picking one of them fills from the team reviews and
    then the remainder — which is right rather than awkward. */
 function followedReviewIds() {
@@ -1062,7 +1071,7 @@ function pageList() {
     { key:'strategy',title:'The Listing Strategy' },
     { key:'plan',    title:'Marketing Plan' },
     { key:'prep',    title:'Preparing Your Home' },
-    { key:'reviews', title:'What Our Clients Say' },
+    { key:'reviews', title:'Testimonials' },
     { key:'videos',  title:'Professional Videos' },
     { key:'contact', title:'Thank You' }
   );
@@ -1340,10 +1349,10 @@ function pgStrategy(n) {
           '<div><b>Risk</b>' + risk + '</div>' +
         '</div>' +
       '</div>').join('') + '</div>' +
-    '<div class="strat-note">Price is the single biggest lever we control. Go out too high and the ' +
-    'listing goes stale &mdash; buyers read days-on-market before they read the description. Go out too ' +
-    'low and you leave money on the table. The three numbers above are the honest range the comparables ' +
-    'support, and the highlighted one is where we would go to market.</div>' +
+    '<div class="strat-note">Price decides how the rest of the sale goes. Set it too high and the home sits, ' +
+    'and buyers see the days on market before they see your photos. Set it too low and you give up money ' +
+    'you cannot get back. The three figures above are the range the comparable sales support, and we would ' +
+    'take the home to market at the middle one.</div>' +
     '<div class="ph strat-ph" data-drop="strategy"' + (photoFor('strategy') ? ' data-pos="strategy"' : '') + '>' + (photoFor('strategy')
       ? '<img src="' + photoFor('strategy') + '" alt="" style="object-position:' +
           posFor('strategy').x + '% ' + posFor('strategy').y + '%">'
@@ -1420,7 +1429,7 @@ function pgReviews(n) {
     '<div class="quote"><p>' + esc(r.quote) + '</p>' +
     (r.who ? '<div class="who">' + esc(r.who) + '</div>' : '') + '</div>').join('') + '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE,
-    title:'What Our Clients Say', body });
+    title:'Testimonials', body });
 }
 
 /* Up to three of the six real listing films, picked in the Professional
@@ -1482,6 +1491,7 @@ function pgContact(n) {
       agents: agents(), headshotFor,
       qr: qrSvg(TEAM_QR_URL), qrCap: 'Our properties',
       legal: GVC_LEGAL.block('listing'),
+      referral: P.referralNote(STATE_LINE().slice(0, -1).join(', ') + ' or ' + STATE_LINE().slice(-1)),
       states: STATE_LINE().map(nm => P.STATES.filter(s => s[0] === nm)[0]),
       foot: P.foot(SITE, true, n, OF)
     }) +

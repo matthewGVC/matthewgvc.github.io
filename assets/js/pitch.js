@@ -573,6 +573,16 @@
     '</div>';
   }
 
+  /* The closing page's referral band. It names all three states rather than the
+     market on the cover, because the person being referred is usually moving
+     somewhere other than where this guide's reader is buying. `states` is
+     already-escaped text such as "New Jersey, New York or Florida". */
+  function referralNote(states) {
+    return '<div class="ref"><b>Know someone moving?</b>' +
+      '<p>A friend, colleague or relative relocating to ' + states + '? ' +
+      'Introduce them. Our team works in all three states and will connect them with the right agent.</p></div>';
+  }
+
   /* ---------- roster picker ----------
      One implementation for the whole site, in roster.js. This stays as a
      thin wrapper so the packages keep their existing call signature. */
@@ -591,7 +601,7 @@
     linkCols, linkIcon,
     checkOverflow, overflowing, wireDrop, wireRoster, agentsOf,
     LOCKUP, STATES, TEAM_SOCIAL, TEAM_LINKS,
-    socialRows, agentRow, agentCol, closingPage,
+    socialRows, agentRow, agentCol, closingPage, referralNote,
     assignRoles, placementOf, compsEditor, blankComp,
     segPick, tickList
   };

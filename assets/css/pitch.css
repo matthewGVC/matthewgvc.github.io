@@ -387,7 +387,7 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
   --ag-crop:calc(var(--ag-fig) * .84);         /* how far down — chest, not collar */
   --ag-bleed:0in;                              /* how far left of the margin the window sits */
   --ag-rail:calc(var(--ag-fig) - var(--ag-bleed));   /* the grid column it is anchored to */
-  --ag-sill:.26in;                             /* the row's own slack under the window */
+  --ag-sill:.16in;                             /* nothing under the window: the figure stands on the next rule */
   --ag-gut:.24in;        /* silhouette to details — tight, so they read as one */
   --ag-rule:rgba(229,229,229,.26);
   --ag-rule-soft:rgba(229,229,229,.14);}
@@ -448,7 +448,7 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
   display:grid;grid-template-columns:var(--ag-rail) 1fr;column-gap:var(--ag-gut);
   align-items:start;border-top:1pt solid var(--ag-rule);padding-top:.16in;
   min-height:calc(var(--ag-crop) + var(--ag-sill));}
-.ag-person + .ag-person{margin-top:.2in;}
+.ag-person + .ag-person{margin-top:0;}
 /* A stated height rather than bottom:0 — the window is the crop, so it must
    not follow the row's height around. */
 .ag-shot{position:absolute;left:calc(var(--ag-bleed) * -1);top:.16in;
@@ -486,7 +486,7 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
    a block that outgrows the window grows upward and keeps the two bottoms
    together rather than sliding past. */
 .ag-who{grid-column:2;min-width:0;
-  align-self:end;margin-bottom:calc(var(--ag-sill) - .16in);}
+  align-self:end;margin-bottom:.14in;}
 .ag-who .nm{font:700 21pt/1.03 var(--serif);color:#fff;letter-spacing:-.008em;}
 .ag-who .tt{margin-top:.11in;padding-top:.09in;border-top:.75pt solid var(--ag-rule-soft);
   font:800 6.8pt/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--sky);}
@@ -527,7 +527,7 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
    to read as a gap. It also sets the room under the details block, via
    .ag-who's end-alignment: keep it above .16in or that margin goes negative
    and the email row hangs past the rule. */
-.ag.solo{--ag-fig:3.8in; --ag-bleed:.45in; --ag-crop:var(--ag-fig); --ag-sill:.22in;}
+.ag.solo{--ag-fig:3.8in; --ag-bleed:.45in; --ag-crop:var(--ag-fig); --ag-sill:.16in;}
 /* The solo page shows the WHOLE cut-out: --ag-crop is the full figure and the
    window drops its overflow:hidden, so nothing is cut off. The crop reasoning
    above still governs the two-up rows, where two figures share the page and
@@ -552,7 +552,7 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .ag.solo .ag-who .ct .v.num{font-size:12pt;}
 
 /* ---------- footer matter: three uneven columns ---------- */
-.ag-foot{flex:none;margin-top:.06in;padding-top:.16in;border-top:1pt solid var(--ag-rule);
+.ag-foot{flex:none;margin-top:0;padding-top:.16in;border-top:1pt solid var(--ag-rule);
   display:grid;grid-template-columns:1.5fr 1.7fr 1.45in;column-gap:.4in;}
 .ag-col{min-width:0;}
 .ag-col-t{font:900 6.6pt var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--sky);
@@ -583,3 +583,13 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .ag .legal{flex:none;margin-top:auto;padding-top:.11in;
   border-top:.75pt solid var(--ag-rule-soft);
   font:300 6.5pt/1.46 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
+
+/* "Know someone moving?" — a slim band at the foot of the closing page, above the legal text: the
+   question set in the serif, and the line about introducing them. */
+.ag .ref{flex:none;display:flex;align-items:center;gap:.16in;margin-top:auto;padding:.07in .16in;
+  border-left:3pt solid var(--sky);background:rgba(83,199,220,.09);}
+
+.ag-foot:has(+ .ref){margin-bottom:.22in;}
+.ag .ref b{flex:none;font:italic 400 13pt/1.1 var(--serif);color:#fff;}
+.ag .ref p{margin:0;padding-left:.16in;border-left:.75pt solid rgba(229,229,229,.25);
+  font:300 7.8pt/1.4 var(--body);color:var(--ow);}

@@ -65,6 +65,16 @@
 .why .qcard .who{margin-top:.14in;padding-top:.1in;border-top:.75pt solid rgba(0,39,58,.22);}
 .why .quote{font-size:10.5pt;}
 
+/* New Jersey's page 2 follows Matt's markup: the county map small at the top right, the
+   copy beside it, then the standing line, numbers, states and quote stacked full width. */
+.why.njlay{display:block;position:relative;}
+.why.njlay .ph.njmap{position:absolute;top:-.43in;right:.16in;width:2.19in;height:3.12in;}
+.why.njlay .txt{height:100%;}
+.why.njlay .copy{width:3.8in;margin-left:.21in;padding-top:.05in;padding-bottom:.4in;font-size:9.4pt;line-height:15.7pt;border-bottom:.75pt solid var(--rule);}
+.why.njlay .tag{border-top:0;margin:.52in auto 0;padding-top:0;width:3.8in;}
+.why.njlay .stats{width:4.55in;margin:.22in auto 0;}
+.why.njlay .qcard{margin-left:.38in;margin-right:.12in;}
+
 /* ============================================================
    50 THINGS — five groups, numbered straight through. Two columns, set
    by hand rather than CSS columns so a group never splits.
@@ -739,7 +749,7 @@ function pgWhy(n) {
     '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +
     (!slot('portrait') && REGION().whyFit ? ';object-fit:' + REGION().whyFit : '') + '"></div>';
   const body =
-    '<div class="why">' +
+    '<div class="why' + (map ? ' njlay' : '') + '">' +
       pic +
       '<div class="txt">' +
         '<div class="copy">' +

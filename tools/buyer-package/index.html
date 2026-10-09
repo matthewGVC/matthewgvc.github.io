@@ -251,6 +251,8 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .why .ph.njmap svg{display:block;width:100%;height:100%;}
 .njmap .cty{fill:#E7E4DC;stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
 .njmap .cty.lit{fill:#53C7DC;}
+.njmap .cl.end{text-anchor:end;}
+.njmap .cll{fill:none;stroke:#00273A;stroke-width:.8;}
 .njmap .cl{font:800 12px var(--sans);letter-spacing:.06em;fill:#00273A;text-anchor:middle;
   dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
 
@@ -503,6 +505,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 <script src="../../assets/js/state-shapes.js"></script>
 <script src="../../assets/js/agent-pages.js"></script>
 <script src="../nj-footprint/nj-counties.js"></script>
+<script src="fl-counties.js"></script>
 <script>
 'use strict';
 const P = window.Pitch, esc = P.esc;
@@ -740,20 +743,31 @@ const orderedStates = () => GG.statesFor(state.region);
    the team works lit (confirmed by Matt 2026-10-06).
    A dropped photo still takes the slot over. */
 const NJ_LIT = ['Monmouth', 'Ocean', 'Middlesex'];
-function njMapPanel() {
-  const M = window.NJ_COUNTIES;
+/* Florida the same way (tools/buyer-package/fl-counties.js). Matt asked for Palm Beach, Boca and
+   Delray "etc" (2026-10-09), so the three South Florida coast counties are lit. */
+const FL_LIT = ['Palm Beach', 'Broward', 'Miami-Dade'];
+function countyMapPanel(M, LIT, stateName) {
   if (!M) return '';
-  const lit = M.counties.filter(c => NJ_LIT.indexOf(c.name) >= 0);
+  const lit = M.counties.filter(c => LIT.indexOf(c.name) >= 0);
   return '<div class="ph njmap" data-drop="portrait">' +
 
-    '<svg viewBox="0 0 ' + M.width + ' ' + M.height + '" role="img" aria-label="New Jersey: ' +
-      esc(NJ_LIT.join(', ')) + ' counties">' +
-      M.counties.map(c => '<path class="cty' + (NJ_LIT.indexOf(c.name) >= 0 ? ' lit' : '') +
+    '<svg viewBox="0 0 ' + M.width + ' ' + M.height + '" role="img" aria-label="' + stateName + ': ' +
+      esc(LIT.join(', ')) + ' counties">' +
+      M.counties.map(c => '<path class="cty' + (LIT.indexOf(c.name) >= 0 ? ' lit' : '') +
         '" d="' + c.d + '"></path>').join('') +
-      lit.map(c => '<text class="cl" x="' + c.c[0] + '" y="' + c.c[1] + '">' + esc(c.name.toUpperCase()) + '</text>').join('') +
+      lit.map((c, i) => {
+        /* a state with a LABELS table (Florida: the lit counties are too narrow to hold their names)
+           sets each name in open water with a hairline back to its county */
+        const L = M.labels && M.labels[c.name];
+        return L ? '<path class="cll" d="M' + (L[0] + 4) + ',' + L[1] + 'L' + c.c[0] + ',' + c.c[1] + '"></path>' +
+            '<text class="cl end" x="' + L[0] + '" y="' + L[1] + '">' + esc(c.name.toUpperCase()) + '</text>'
+          : '<text class="cl" x="' + c.c[0] + '" y="' + c.c[1] + '">' + esc(c.name.toUpperCase()) + '</text>';
+      }).join('') +
     '</svg>' +
   '</div>';
 }
+const njMapPanel = () => countyMapPanel(window.NJ_COUNTIES, NJ_LIT, 'New Jersey');
+const flMapPanel = () => countyMapPanel(window.FL_COUNTIES, FL_LIT, 'Florida');
 
 /* One state's outline as inline SVG in the artwork's blues (state-shapes.js). */
 const STATE_GRAD = { ny: ['#00273A', '#0a7c99'], nj: ['#53C7DC', '#a9dce6'], fl: ['#7fcfe0', '#0a8aa6'] };
@@ -772,7 +786,7 @@ function pgWhy(n) {
   const sts = orderedStates();
   const nycNames = sts.map(s => s.id === 'ny' ? 'NYC' : s.name);
   const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
-  const map = state.region === 'nj' && !slot('portrait') ? njMapPanel() : '';
+  const map = !slot('portrait') ? (state.region === 'nj' ? njMapPanel() : state.region === 'fl' ? flMapPanel() : '') : '';
   const pic = map || '<div class="ph' + (!slot('portrait') && REGION().whyFit ? ' fit' : '') +
     '" data-drop="portrait" data-pos="portrait"><img src="' + esc(url) +
     '" alt="" style="object-position:' + pos.x + '% ' + pos.y + '%' +

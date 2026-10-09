@@ -1,0 +1,128 @@
+/* ============================================================
+   GUIDE LOOK — an alternate skin for the Buyer and Seller packages,
+   taken from the Destination Guide: Fraunces display type, a running
+   head over every page, hard navy rules, paper-toned panels, numbered
+   indexes and a split cover with a navy panel and a sky stripe.
+
+   Opt-in: everything is scoped to body.look-guide, set by the "Page
+   design" toggle in each builder's left panel (assets/js/look.js).
+   Nothing here touches the Classic look, and nothing changes the copy.
+   ============================================================ */
+body.look-guide{
+  --guide-paper:#ecece6;
+  --guide-teal:#0b7088;
+  --guide-ink-soft:rgba(0,39,58,.76);
+}
+body.look-guide .pg,
+body.look-guide .fcv{--serif:'Fraunces',Georgia,serif;font-optical-sizing:auto;}
+
+/* ---------- page furniture ---------- */
+/* Running head: deck and market on the left, a navy hairline under it. */
+body.look-guide .pg-h{padding:.4in var(--pad) 0;position:relative;}
+body.look-guide .pg-h::before{content:attr(data-run);display:block;padding-bottom:.06in;margin-bottom:.12in;
+  border-bottom:.75pt solid var(--navy);
+  font:800 6.4pt var(--sans);letter-spacing:.17em;text-transform:uppercase;color:var(--navy);}
+body.look-guide .pg-h h2{font:400 30pt/1.02 var(--serif);letter-spacing:-.022em;text-wrap:balance;}
+body.look-guide .pg-h::after{display:none;}
+body.look-guide .pg.rev .pg-h::before{border-bottom-color:rgba(255,255,255,.4);color:#fff;}
+body.look-guide .pg-body{padding-top:.2in;}
+
+/* Footer: a hairline and quieter type, as in the guides. */
+body.look-guide .pg-foot{border-top:.75pt solid rgba(0,39,58,.28);margin:0 var(--pad);padding:.1in 0 .26in;}
+body.look-guide .pg-foot .site{font-weight:600;letter-spacing:.14em;font-size:6.6pt;color:rgba(0,39,58,.72);}
+body.look-guide .pg-foot .pg-n{font:500 7pt var(--mono);letter-spacing:.08em;color:rgba(0,39,58,.72);}
+body.look-guide .pg-foot .pg-mono{bottom:.26in;height:.27in;}
+body.look-guide .pg.rev .pg-foot{border-top-color:rgba(255,255,255,.28);}
+body.look-guide .pg.rev .pg-foot .site,
+body.look-guide .pg.rev .pg-foot .pg-n{color:rgba(229,229,229,.82);}
+
+/* ---------- type ---------- */
+body.look-guide .lede{font:400 15pt/1.34 var(--serif);letter-spacing:-.012em;color:var(--navy);max-width:5.8in;text-wrap:balance;}
+body.look-guide .copy,
+body.look-guide .pg-body p{font-weight:400;}
+body.look-guide .fifty-lede,
+body.look-guide .rf-lede{font:400 13pt/1.38 var(--serif);color:var(--guide-ink-soft);}
+
+/* numbers and stats: large serif figures under a hard navy rule */
+body.look-guide .stat{border-top:1.5pt solid var(--navy);}
+body.look-guide .stat .v{font:400 28pt/1 var(--serif);letter-spacing:-.02em;}
+body.look-guide .pg:not(.rev) .stat .l{color:var(--guide-ink-soft);}
+
+/* cards and bands: paper panels with a navy top bar, like Team Favorites */
+body.look-guide .card,
+body.look-guide .band{border:0;border-top:.08in solid var(--navy);background:var(--guide-paper);}
+body.look-guide .card:nth-child(2n){border-top-color:var(--sky);}
+body.look-guide .band.mid{background:var(--navy);border-top-color:var(--sky);}
+body.look-guide .card h3{font:400 15pt/1.1 var(--serif);letter-spacing:-.01em;text-transform:none;}
+body.look-guide .card p{font-weight:400;color:var(--guide-ink-soft);}
+body.look-guide .card .ci{color:var(--guide-teal);}
+body.look-guide .band .bv{font-weight:400;font-size:26pt;letter-spacing:-.02em;}
+
+/* tables: navy rules, serif subject line */
+body.look-guide table.tbl th{border-bottom:1.5pt solid var(--navy);color:var(--navy);}
+body.look-guide table.tbl td{border-bottom:.5pt solid rgba(0,39,58,.2);}
+body.look-guide table.tbl tr.subject td{background:var(--guide-paper);}
+
+/* ---------- the cover: navy panel + stripe, photo beside it ---------- */
+body.look-guide .fcv{background:var(--navy);}
+body.look-guide .fcv::before{content:'';position:absolute;top:0;bottom:74pt;left:0;width:226pt;background:var(--navy);z-index:1;}
+body.look-guide .fcv::after{content:'';position:absolute;top:0;bottom:74pt;left:226pt;width:5.8pt;background:var(--sky);z-index:2;}
+body.look-guide .fcv-ph{left:232pt;right:0;top:0;width:auto;height:718pt;background:rgba(255,255,255,.04);}
+body.look-guide .fcv-ph img{filter:saturate(.96);}
+body.look-guide .fcv-kick{left:28pt;right:auto;width:172pt;top:36pt;z-index:3;text-align:left;white-space:normal;
+  font:800 7pt/1.5 var(--sans);letter-spacing:.18em;color:var(--sky);}
+body.look-guide .fcv-ttl{left:28pt;right:auto;width:176pt;top:150pt;z-index:3;text-align:left;white-space:normal;
+  transform:none;text-transform:none;
+  font:400 40pt/.96 var(--serif);letter-spacing:-.028em;text-wrap:balance;}
+body.look-guide .fcv-foot{left:28pt;right:auto;width:172pt;top:auto;bottom:112pt;z-index:3;text-align:left;white-space:normal;
+  font:800 6.6pt/1.9 var(--sans);letter-spacing:.16em;color:rgba(255,255,255,.78);
+  padding-top:12pt;border-top:.75pt solid rgba(255,255,255,.34);}
+body.look-guide .fcv-foot b{color:#fff;}
+body.look-guide .fcv-band{z-index:4;}
+
+/* ---------- Why Work With Us (buyer) ---------- */
+body.look-guide .why .tag{border-top:0;font:400 20pt/1.2 var(--serif);letter-spacing:-.015em;}
+body.look-guide .why .qcard{background:var(--guide-paper);}
+body.look-guide .quote p{font-family:var(--serif);font-style:italic;font-weight:300;}
+body.look-guide .pg:not(.rev) .quote .who{color:var(--guide-ink-soft);}
+
+/* ---------- indexes: 50 Things, process, links ---------- */
+body.look-guide .fifty .fg-h{font:800 7pt var(--sans);letter-spacing:.17em;border-bottom:0;border-top:1.5pt solid var(--navy);padding:.07in 0 .05in;color:var(--navy);}
+body.look-guide .fifty li .n{font:400 9.5pt var(--serif);color:var(--guide-teal);}
+body.look-guide .pg:not(.rev) .fifty li{font-weight:400;}
+body.look-guide .toc .n{font:400 14pt var(--serif);color:var(--guide-teal);}
+body.look-guide .proc li{border-bottom:.5pt solid rgba(0,39,58,.28);}
+body.look-guide .proc b{font-weight:800;}
+body.look-guide .lk-r span,body.look-guide .lk-note{font-weight:400;}
+
+/* ---------- agent pages (NJ band layout) ---------- */
+body.look-guide .agnj .band{margin:0 calc(var(--pad) * -1) .3in;padding:.3in var(--pad) .26in;border:0;background:var(--navy);
+  border-bottom:.07in solid var(--sky);}
+body.look-guide .agnj .band .nm{font:400 40pt/1 var(--serif);letter-spacing:-.025em;}
+body.look-guide .agnj .band .role{letter-spacing:.2em;}
+body.look-guide .agnj .shot{border-top:.08in solid var(--navy);}
+body.look-guide .ab-lab{letter-spacing:.17em;}
+
+/* ---------- closing page ---------- */
+body.look-guide .ag-hero .say h2{font:400 62pt/.92 var(--serif);letter-spacing:-.03em;}
+body.look-guide .ag-hero .say h2 em{font-style:italic;font-weight:300;}
+body.look-guide .ag .ref{background:rgba(83,199,220,.1);border-left:0;border-top:.07in solid var(--sky);padding:.12in .18in;}
+body.look-guide .ag .ref b{font-weight:400;}
+body.look-guide .ag-person .nm,
+body.look-guide .ag-who .nm{font-weight:400;font-family:var(--serif);}
+
+/* ---------- seller: pricing, plan, reviews ---------- */
+body.look-guide .bands{gap:.2in;}
+body.look-guide .crew .cell.lab .nm{font-family:var(--serif);font-weight:400;}
+body.look-guide .tri .tb h4{font:400 12pt/1.2 var(--serif);letter-spacing:-.01em;}
+body.look-guide .plan3 .grp-t{border-top:1.5pt solid var(--navy);padding-top:.06in;color:var(--navy);}
+body.look-guide .rev-badge .rb-stars{color:var(--sky);}
+
+/* the closing page keeps its classic footer: its legal block already fills the foot */
+body.look-guide .pg[data-key="next"] .pg-foot,
+body.look-guide .pg[data-key="contact"] .pg-foot{border-top:0;margin:0;padding:0 var(--pad) .34in;}
+body.look-guide .pg[data-key="next"] .pg-foot .pg-mono,
+body.look-guide .pg[data-key="contact"] .pg-foot .pg-mono{bottom:.34in;height:.3in;}
+
+/* the running head costs a little height on the busiest seller page */
+body.look-guide .tri .tb{padding-top:.16in;padding-bottom:.16in;}

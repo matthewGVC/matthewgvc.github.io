@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/builder.css">
 <link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/guide-look.css">
 <link rel="stylesheet" href="../../assets/css/photo-dnd.css">
 <link rel="stylesheet" href="../../assets/css/property-bar.css">
 <link rel="stylesheet" href="../../assets/css/panel-collapse.css">
@@ -299,6 +300,20 @@ table.tbl th.num{text-align:right;}
     <div class="ed-body">
 
       <details class="ed-sec" open>
+        <summary>Page design <span class="hint">classic &middot; guide</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <div class="seg pick" id="lookPick" role="group" aria-label="Page design">
+              <button type="button" data-look="classic">Classic</button>
+              <button type="button" data-look="guide">Guide</button>
+            </div>
+          </div>
+          <div class="sec-note">Guide borrows the Destination Guide&rsquo;s look: serif headlines, a running head on
+            every page, navy rules, paper panels and a split cover. The words and pages do not change.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
         <summary>Market <span class="hint">plan page &middot; videos page</span></summary>
         <div class="sec-in">
           <div class="field">
@@ -481,6 +496,7 @@ table.tbl th.num{text-align:right;}
 <script src="../../assets/js/roster.js"></script>
 <script src="../../assets/js/photo-dnd.js"></script>
 <script src="../../assets/js/pitch.js"></script>
+<script src="../../assets/js/look.js"></script>
 <script src="../../assets/js/state-shapes.js"></script>
 <script src="../../assets/js/icons.js"></script>
 <script src="../../assets/js/qr.js"></script>
@@ -1485,6 +1501,7 @@ let builder = null;
 
 function redraw() {
   if (!builder) return;
+  P.runHead = 'The GVC Team / Listing Presentation';
   reassign();
   /* the property page is optional, so dropping it has to renumber every
      page after it and the running footers along with them */
@@ -1564,6 +1581,7 @@ let paintRoster = () => {}, paintRec = () => {}, paintProp = () => {};
 let paintMarket = () => {}, paintVideoPick = () => {}, wireReviewPick = () => {};
 
 document.addEventListener('DOMContentLoaded', () => {
+  GVC_LOOK.wire(document.getElementById('lookPick'), () => redraw());
   bindFields();
   renderComps();
 

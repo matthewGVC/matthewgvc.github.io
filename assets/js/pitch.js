@@ -51,7 +51,8 @@
 
   /* ---------- page furniture ---------- */
   function heading(title) {
-    return '<div class="pg-h"><h2>' + esc(title) + '</h2></div>';
+    /* data-run is the running head the Guide look prints above the title */
+    return '<div class="pg-h" data-run="' + esc((global.Pitch && global.Pitch.runHead) || '') + '"><h2>' + esc(title) + '</h2></div>';
   }
   /* Footer: site left, monogram dead-center, page number bottom right.
      The monogram is centered against the full footer width regardless of
@@ -137,6 +138,14 @@
     if (w > measure) el.style.fontSize = (max * measure / w) + 'pt';
   }
   function fitCover() {
+    /* the Guide cover sets its own wrapped type; clear any size left by the classic fit */
+    if (document.body.classList.contains('look-guide')) {
+      ['.fcv-ttl', '.fcv-kick', '.fcv-foot'].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el) el.style.fontSize = '';
+      });
+      return;
+    }
     fitRun('.fcv-ttl',  COV_MAX,  COV_MEASURE);
     fitRun('.fcv-kick', CAPS_MAX, CAPS_MEASURE);
     fitRun('.fcv-foot', CAPS_MAX, CAPS_MEASURE);

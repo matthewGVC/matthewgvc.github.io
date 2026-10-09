@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/builder.css">
 <link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/guide-look.css">
 <link rel="stylesheet" href="../../assets/css/photo-dnd.css">
 <link rel="stylesheet" href="../../assets/css/agent-pages.css">
 <link rel="stylesheet" href="../../assets/css/panel-collapse.css">
@@ -378,6 +379,20 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
     <div class="ed-body">
 
       <details class="ed-sec" open>
+        <summary>Page design <span class="hint">classic &middot; guide</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <div class="seg pick" id="lookPick" role="group" aria-label="Page design">
+              <button type="button" data-look="classic">Classic</button>
+              <button type="button" data-look="guide">Guide</button>
+            </div>
+          </div>
+          <div class="sec-note">Guide borrows the Destination Guide&rsquo;s look: serif headlines, a running head on
+            every page, navy rules, paper panels and a split cover. The words and pages do not change.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
         <summary>Cover <span class="hint">market + title</span></summary>
         <div class="sec-in">
           <div class="field">
@@ -481,6 +496,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 <script src="../../assets/js/roster.js"></script>
 <script src="../../assets/js/photo-dnd.js"></script>
 <script src="../../assets/js/pitch.js"></script>
+<script src="../../assets/js/look.js"></script>
 <script src="../../assets/js/icons.js"></script>
 <script src="../../assets/js/qr.js"></script>
 <script src="../../assets/js/legal.js"></script>
@@ -1175,6 +1191,7 @@ function checkAll() {
 
 function redraw() {
   if (!builder) return;
+  P.runHead = 'The GVC Team / Buyer’s Guide · ' + REGION().name;
   reassign();
   PAGES = pageList(); OF = PAGES.length;
   if (builder.state.pages !== PAGES.length) builder.setPages(PAGES.length);
@@ -1269,6 +1286,7 @@ function paintPhotos() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  GVC_LOOK.wire(document.getElementById('lookPick'), () => redraw());
   P.wireDrop(document.getElementById('dropPhotos'), document.getElementById('filePhotos'), files => {
     files.forEach(f => state.photos.push({ id: ++uid, name: f.name, url: f.url, role: 'auto' }));
     redraw(); GVC_UNSAVED.touch();

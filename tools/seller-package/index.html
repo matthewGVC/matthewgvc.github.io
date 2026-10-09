@@ -42,7 +42,7 @@
 .tri .tb h4{margin:0 0 .08in;font:800 9.5pt/1.25 var(--sans);color:#fff;}
 .tri .tb.c3 h4{color:var(--navy);}
 .tri .tb p{margin:0;font:300 8.3pt/12.5pt var(--body);color:rgba(255,255,255,.9);}
-.tri .tb.c3 p{color:rgba(0,39,58,.82);}
+.tri .tb.c3 p{color:rgba(0,39,58,.95);}
 /* a quieter variant for short one-line claims */
 .tri.flat .tb{text-align:center;padding:.24in .18in;}
 .tri.flat .tb.c0{background:#EDEDEB;}
@@ -90,7 +90,7 @@
 .crew .cell.lab.n4{background:#EDEDEB;}
 .crew .cell.lab .nm{font:800 11pt/1.2 var(--sans);color:#fff;}
 .crew .cell.lab .tt{margin-top:.06in;font:400 8.5pt/1.35 var(--body);
-  text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.85);}
+  text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.97);}
 .crew .cell.lab.n3 .nm,.crew .cell.lab.n4 .nm{color:var(--navy);}
 .crew .cell.lab.n3 .tt,.crew .cell.lab.n4 .tt{color:rgba(0,39,58,.75);}
 /* New Jersey's marketing page, led by a full-width mockup of the team's work (blueprint, brochure,
@@ -279,11 +279,10 @@ table.tbl th.num{text-align:right;}
    left here, which is the point: it can no longer drift from the Buyer
    Package's closing page. */
 
-/* New Jersey print contrast: the small grey labels were 3.2-4.3:1; held to the 4.5:1 floor
-   (.72 ink) for NJ only, so the New York deck is unchanged. */
-.mk-nj .pg .rh-t{color:rgba(0,39,58,.72) !important;}
-.mk-nj .tri .tb.c2 p{color:#fff;}
-.mk-nj .pg:not(.rev) :is(.rh-t,.grp-t,.spec .k,table th,em,.ps .pl,.ps .pv,.band:not(.mid) .bl,.band:not(.mid) .bsr b){color:rgba(0,39,58,.72);}
+/* Print contrast: the small grey labels were 3.2-4.3:1; held to the 4.5:1 floor (.72 ink). */
+.pg .rh-t{color:rgba(0,39,58,.72) !important;}
+.tri .tb.c2 p{color:#fff;}
+.pg:not(.rev) :is(.rh-t,.grp-t,.spec .k,table th,em,.ps .pl,.ps .pv,.band:not(.mid) .bl,.band:not(.mid) .bsr b){color:rgba(0,39,58,.72);}
 
 </style>
 </head>
@@ -1486,7 +1485,6 @@ let builder = null;
 
 function redraw() {
   if (!builder) return;
-  document.body.classList.toggle('mk-nj', state.market === 'nj');
   reassign();
   /* the property page is optional, so dropping it has to renumber every
      page after it and the running footers along with them */

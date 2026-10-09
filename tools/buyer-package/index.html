@@ -357,8 +357,8 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
 .agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
 
-/* New Jersey: the costs footnote was ~3.8:1; the NY and FL footnotes are untouched. */
-.mk-nj .foot-note{color:rgba(0,39,58,.72);}
+/* the costs footnote was ~3.8:1 */
+.foot-note{color:rgba(0,39,58,.72);}
 </style>
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
@@ -1175,7 +1175,6 @@ function checkAll() {
 
 function redraw() {
   if (!builder) return;
-  document.body.classList.toggle('mk-nj', state.region === 'nj');
   reassign();
   PAGES = pageList(); OF = PAGES.length;
   if (builder.state.pages !== PAGES.length) builder.setPages(PAGES.length);

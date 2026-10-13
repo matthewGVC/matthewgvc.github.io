@@ -114,10 +114,11 @@
 .townmap .tn{stroke:#fff;stroke-width:.7;stroke-linejoin:round;fill-rule:evenodd;}
 .townmap .co{fill:none;stroke:#00273A;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;}
 .townmap .cn{font:800 15px var(--sans);letter-spacing:.24em;fill:rgba(0,39,58,.42);text-anchor:middle;dominant-baseline:central;}
-.townmap .ld{fill:none;stroke:#00273A;stroke-width:.7;}
+.townmap .ld{fill:none;stroke:rgba(0,39,58,.62);stroke-width:.6;stroke-linejoin:round;}
 .townmap .dt{fill:#00273A;stroke:#fff;stroke-width:1.2;}
-.townmap .lb{font:400 12.5px var(--body);fill:#00273A;dominant-baseline:central;white-space:pre;}
-.townmap .ln{font:800 12.5px var(--sans);}
+.townmap .lb{font-family:var(--body);font-weight:400;fill:#00273A;dominant-baseline:central;}
+.townmap .ln{font-family:var(--sans);font-weight:800;}
+.townmap .lbg{fill:#fff;fill-opacity:.85;}
 .townmap .lc{font:800 8.5px var(--sans);letter-spacing:.22em;fill:rgba(0,39,58,.6);text-anchor:middle;}
 .townmap .sea{font:italic 300 15px var(--serif);fill:rgba(0,39,58,.45);text-anchor:middle;}
 .key{flex:none;display:flex;align-items:center;gap:.28in;margin:.08in var(--pad) 0;padding-top:.11in;border-top:1px solid var(--rule);}
@@ -271,13 +272,10 @@
 
   /* ---------- the back: town by town ---------- */
   function back() {
-    const inCore = TOWNS.list.filter(t => F.CORE.indexOf(t.town.county) !== -1);
-    const coreDeals = inCore.reduce((a, t) => a + t.deals, 0);
     const key = window.NJTownMap.SHADES.map((c, i) => '<li><span class="sw" style="background:' + c + '"></span>' +
       (i + 1) + (i === window.NJTownMap.SHADES.length - 1 ? '+' : '') + '</li>').join('');
     return head('Monmouth &amp; Ocean · town by town') +
-      '<div class="title"><h1>Town by <em>town.</em></h1><p>' + coreDeals + ' of our ' + S.deals + ' New Jersey sales were in ' + inCore.length +
-        ' Monmouth and Ocean County towns. Each one is named below, with how many sales we closed there.</p></div>' +
+      '<div class="title"><h1>Town by <em>town.</em></h1></div>' +
       '<div class="tmap" id="tmap"></div>' +
       '<div class="key"><p class="eyebrow">Sales per town</p><ul>' + key + '</ul>' +
         '<p class="note">Towns are municipalities. A sale listed under its postal name is counted in its town (Lanoka Harbor in Lacey).</p></div>' +

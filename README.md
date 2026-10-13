@@ -28,6 +28,8 @@ Plain Node, no install — each exits non-zero on a failure:
 - `test-area-data.js` — the ranking claims in the area datasets ("fastest", "slowest") against their own figures
 - `test-destination-guide.js` — destination-guide POIs, source links, coordinates, and required page data
 - `test-listing.js` — the Showsheet's Word-document reader and its money math
+- `check-tools.js` — every tool against the house conventions (head, fonts, SRI, panel,
+  labels, homepage tile, test lists); `node scripts/check-tools.js <slug>` for one
 - `test-nj-footprint.js` — the NJ Footprint sales list (counties, agents, prices) and its totals
 
 Node + Playwright — `cd scripts && npm install`:

@@ -203,6 +203,11 @@ That script pulls the latest `main`, rebuilds all galleries, commits, and pushes
 before publishing, run `python scripts/build_photos.py` first, preview via §6's local server,
 then run the publish script.
 
+### Adding a new tool
+Follow the project skill `.claude/skills/building-gvc-tools/` (Claude loads it automatically):
+questions to settle first, copy-exact templates, the wiring checklist, and
+`node scripts/check-tools.js <slug>`, which must pass before the tool ships.
+
 ### Redesigning the Showsheet — the most common request
 - The sheet's look — its layout, type and colours — is all in **`tools/showsheet/index.html`**
   (HTML + CSS + JavaScript). That is the file to edit to restyle it. Beside it, `listing.js`

@@ -6,8 +6,9 @@
 (function (root) {
   'use strict';
 
-  const SHADES = ['#BCE8F0', '#53C7DC', '#00A1C4', '#00273A'];   // 1, 2, 3, 4+ sales
-  const shade = n => SHADES[Math.min(n, SHADES.length) - 1];
+  // Sales-per-town bands, lightest to darkest: each starts at `from` sales.
+  const SHADES = [{ from: 1, c: '#BCE8F0' }, { from: 2, c: '#53C7DC' }, { from: 4, c: '#00A1C4' }, { from: 8, c: '#00273A' }];
+  const shade = n => SHADES.filter(b => n >= b.from).pop().c;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // The y extent of an SVG path made of M/L/Z commands with absolute "x,y" pairs.

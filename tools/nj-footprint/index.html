@@ -51,7 +51,7 @@
 .stat .l{margin-top:.07in;font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ui-ink-soft);}
 
 /* map + panel */
-.body{flex:1;min-height:0;display:grid;grid-template-columns:4.45in 1fr;gap:.25in;padding:.16in var(--pad) 0;}
+.body{flex:1;min-height:0;display:grid;grid-template-columns:4.45in 1fr;grid-template-rows:minmax(0,1fr);gap:.25in;padding:.16in var(--pad) 0;}
 .mapcol{min-height:0;display:flex;align-items:center;justify-content:center;}
 .mapcol svg{display:block;width:100%;height:100%;}
 .county{stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
@@ -105,8 +105,6 @@
 .badge{width:.37in;height:.37in;display:block;}
 .badge svg,.badge img{width:100%;height:100%;display:block;}
 
-.overleaf{margin-top:auto;padding-top:.14in;font:300 8.5pt/1.4 var(--body);color:var(--ui-ink-soft);}
-.overleaf b{font-weight:700;color:var(--navy);}
 
 /* back page: town by town */
 .tmap{flex:1;min-height:0;display:flex;padding:.12in calc(var(--pad) - .1in) 0;}
@@ -180,7 +178,9 @@
   const F = window.NJFootprint, MAP = window.NJ_COUNTIES, ROWS = window.NJ_TRANSACTIONS;
   const S = F.summarize(ROWS);
   const TOWNS = F.byTown(ROWS, window.NJ_TOWNS.towns);
-  if (TOWNS.missing.length) console.warn('NJ Footprint: towns not on the town map:', TOWNS.missing.map(r => r.town + ' (' + r.county + ')'));
+  // Sales in counties the town map draws (Monmouth, Ocean and their neighbours) should all find their town.
+  const lost = TOWNS.missing.filter(r => window.NJ_TOWNS.towns.some(t => t.county === r.county));
+  if (lost.length) console.warn('NJ Footprint: towns not on the town map:', lost.map(r => r.town + ' (' + r.county + ')'));
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const money = F.moneyShort;
@@ -253,7 +253,7 @@
         '<div class="stat"><div class="n">' + money(S.volume) + '</div><div class="l">Total sales volume</div></div></div>' +
       '<div class="body"><div class="mapcol">' + mapSVG() + '</div>' +
         '<div class="panel"><p class="eyebrow">Our core markets</p><div class="core">' + core + '</div>' + also +
-        '<p class="overleaf">Overleaf: <b>town by town</b> across Monmouth and Ocean.</p></div></div>' +
+        '</div></div>' +
       '<div class="team"><p class="eyebrow">Meet the team</p><div class="team-row">' + team + '</div></div>' +
       snow +
       foot();
@@ -272,13 +272,17 @@
 
   /* ---------- the back: town by town ---------- */
   function back() {
-    const key = window.NJTownMap.SHADES.map((c, i) => '<li><span class="sw" style="background:' + c + '"></span>' +
-      (i + 1) + (i === window.NJTownMap.SHADES.length - 1 ? '+' : '') + '</li>').join('');
+    const B = window.NJTownMap.SHADES;
+    const key = B.map((b, i) => {
+      const to = i + 1 < B.length ? B[i + 1].from - 1 : null;
+      return '<li><span class="sw" style="background:' + b.c + '"></span>' +
+        (to === null ? b.from + '+' : to === b.from ? b.from : b.from + '–' + to) + '</li>';
+    }).join('');
     return head('Monmouth &amp; Ocean · town by town') +
       '<div class="title"><h1>Town by <em>town.</em></h1></div>' +
       '<div class="tmap" id="tmap"></div>' +
       '<div class="key"><p class="eyebrow">Sales per town</p><ul>' + key + '</ul>' +
-        '<p class="note">Towns are municipalities. A sale listed under its postal name is counted in its town (Lanoka Harbor in Lacey).</p></div>' +
+        '<p class="note">Towns are municipalities, as recorded in the MLS.</p></div>' +
       foot();
   }
 

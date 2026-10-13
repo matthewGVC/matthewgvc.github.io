@@ -1,5 +1,6 @@
 .superpowers/
-.claude/
+.claude/*
+!.claude/skills/
 _verify/
 docs/
 __pycache__/

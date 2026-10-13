@@ -118,6 +118,8 @@
 .townmap .ln{font-family:var(--sans);font-weight:800;}
 .townmap .lbg{fill:#fff;fill-opacity:.85;}
 .townmap .lc{font:800 8.5px var(--sans);letter-spacing:.22em;fill:rgba(0,39,58,.6);text-anchor:middle;}
+.townmap .nm{font:800 10px var(--sans);text-anchor:middle;dominant-baseline:central;}
+.townmap .nl{font:800 10px var(--sans);fill:#00273A;dominant-baseline:central;}
 .townmap .sea{font:italic 300 15px var(--serif);fill:rgba(0,39,58,.45);text-anchor:middle;}
 .key{flex:none;display:flex;align-items:center;gap:.28in;margin:.08in var(--pad) 0;padding-top:.11in;border-top:1px solid var(--rule);}
 .key .eyebrow{margin:0;}
@@ -139,6 +141,7 @@
 .alist .eyebrow{margin:.1in 0 0;padding-bottom:.05in;border-bottom:1px solid var(--navy);}
 .alist ul{list-style:none;margin:0;padding:0;columns:2;column-gap:.12in;font:400 8.1pt/1.42 var(--body);color:var(--navy);}
 .alist li{break-inside:avoid;white-space:nowrap;}
+.alist li b{display:inline-block;min-width:.2in;font:800 7.5pt var(--sans);}
 
 /* Draft stamp — prints. Removed by setting NJ_DRAFT_NOTE = '' in transactions.js. */
 .stamp{position:absolute;top:1.1in;right:.62in;transform:rotate(-2deg);z-index:5;
@@ -313,11 +316,14 @@
   /* ---------- the back: town by town ---------- */
   function back() {
     if (VIEW === 'towns') {
+      // One number per town, running down the list (county order, then A–Z); the map carries the same numbers.
+      const nums = new Map();
       const list = F.CORE.map(c => '<div><p class="eyebrow"><i style="background:' + COUNTY_COLOURS[c] + '"></i>' + esc(c) + ' County</p><ul>' +
-        window.NJ_TOWNS.towns.filter(t => t.county === c).map(t => t.name).sort().map(n => '<li>' + esc(n) + '</li>').join('') + '</ul></div>').join('');
+        window.NJ_TOWNS.towns.filter(t => t.county === c).sort((a, b) => a.name.localeCompare(b.name))
+          .map(t => { nums.set(t, nums.size + 1); return '<li><b>' + nums.size + '</b>' + esc(t.name) + '</li>'; }).join('') + '</ul></div>').join('');
       return head('Monmouth &amp; Ocean · town by town') +
         '<div class="title"><h1>Town by <em>town.</em></h1></div>' +
-        '<div class="abody"><div class="amap">' + window.NJTownMap.countySvg(window.NJ_TOWNS, COUNTY_COLOURS, MAP) + '</div>' +
+        '<div class="abody"><div class="amap">' + window.NJTownMap.countySvg(window.NJ_TOWNS, COUNTY_COLOURS, MAP, nums, { Monmouth: '#00273A', Ocean: '#fff' }) + '</div>' +
           '<div class="alist">' + list + '</div></div>' +
         foot();
     }

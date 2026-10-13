@@ -37,7 +37,40 @@
     return '$' + Math.round(n);
   }
 
-  const api = { CORE, AGENTS, summarize, tone, moneyShort };
+  /* Listings give the postal town ("Lanoka Harbor", "Morganville"); the town map is drawn by
+     municipality. A row's town is matched to the map by name within its county, then through
+     this list. Freehold could be the borough or the township; the township is the larger, so
+     postal "Freehold" goes there. Add a line here when a new row's town is not found. */
+  const TOWN_ALIASES = {
+    Monmouth: { 'Port Monmouth': 'Middletown', 'Morganville': 'Marlboro', 'Cliffwood': 'Aberdeen',
+      'Freehold': 'Freehold Twp', 'Ocean Township': 'Ocean Twp', 'Shrewsbury': 'Shrewsbury Boro',
+      'Wall Township': 'Wall', 'Neptune Township': 'Neptune' },
+    Ocean: { 'Lanoka Harbor': 'Lacey', 'Forked River': 'Lacey', 'Bayville': 'Berkeley', 'Brick Township': 'Brick',
+      'Point Pleasant Boro': 'Point Pleasant' }
+  };
+
+  // The map town a row belongs to, or null. towns: NJ_TOWNS.towns.
+  function townOf(row, towns) {
+    const here = towns.filter(t => t.county === row.county), want = String(row.town).trim().toLowerCase();
+    const alias = (TOWN_ALIASES[row.county] || {})[row.town];
+    return here.find(t => t.name.toLowerCase() === want) ||
+      (alias && here.find(t => t.name === alias)) || null;
+  }
+
+  // Sales per map town: [{ town, deals, volume }], biggest first, plus the rows that matched nothing.
+  function byTown(rows, towns) {
+    const m = new Map(), missing = [];
+    rows.forEach(r => {
+      const t = townOf(r, towns);
+      if (!t) { missing.push(r); return; }
+      const s = m.get(t) || { town: t, deals: 0, volume: 0 };
+      s.deals += 1; s.volume += r.price; m.set(t, s);
+    });
+    const list = Array.from(m.values()).sort((a, b) => b.deals - a.deals || b.volume - a.volume);
+    return { list, missing };
+  }
+
+  const api = { CORE, AGENTS, TOWN_ALIASES, summarize, tone, moneyShort, townOf, byTown };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.NJFootprint = api;
 })(typeof window !== 'undefined' ? window : globalThis);

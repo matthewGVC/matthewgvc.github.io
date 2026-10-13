@@ -83,7 +83,10 @@
     { id: 'colours', name: 'Team Colours', desc: 'Bands of Navy, Cyan, Sky, Bone and Paper sweep back and forth behind the lockup, which turns Bone wherever the Navy passes.' },
     { id: 'tide', name: 'Tide', desc: 'Bands of Paper, Bone, Sky, Cyan and Navy, each edge rising and falling like a slow wave.' },
     { id: 'quarter', name: 'Quarter Turns', desc: 'Eight big tiles in pairs of GVC colours; one at a time, a tile turns its quarter-circle to the next corner and settles.' },
-    { id: 'panels', name: 'Panels', desc: 'Seven flat panels parted by thin Navy gaps; one divider at a time slides to a new stop, like sliding doors.' }
+    { id: 'panels', name: 'Panels', desc: 'Seven flat panels parted by thin Navy gaps; one divider at a time slides to a new stop, like sliding doors.' },
+    { id: 'reeded', name: 'Reeded Glass', desc: 'Soft shapes of colour drift behind fluted glass, which bends and slices them into vertical reeds.' },
+    { id: 'halftone', name: 'Halftone', desc: 'Moving fields of colour printed as two overlapping dot screens, Cyan and Paper, whose dots swell and thin.' },
+    { id: 'trails', name: 'Light Trails', desc: 'Points of light trace slow figure-of-eight paths, leaving glowing trails that overlap like a long exposure.' }
   ];
   function render(id) { return id === 'places' ? window.PLACES.render : window.RENDER[id]; }
   function dur(id) { return id === 'places' ? window.PLACES.dur : window.DUR[id]; }
@@ -108,7 +111,7 @@
 
   // draw only what is on screen
   var io = new IntersectionObserver(function (es) {
-    es.forEach(function (e) { screens.forEach(function (s) { if (s.cv === e.target) s.vis = e.isIntersecting; }); });
+    es.forEach(function (e) { screens.forEach(function (s) { if (s.cv === e.target) { s.vis = e.isIntersecting; if (s.vis) s.stale = true; } }); });
   }, { rootMargin: '100px' });
   screens.forEach(function (s) { io.observe(s.cv); });
 
@@ -127,19 +130,22 @@
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var playing = !reduce, clock = reduce ? 13 : 0, last = performance.now(), btn = document.getElementById('play');
   btn.textContent = playing ? 'Pause' : 'Play';
-  btn.addEventListener('click', function () { playing = !playing; btn.textContent = playing ? 'Pause' : 'Play'; drawAll(true); });
+  btn.addEventListener('click', function () { playing = !playing; btn.textContent = playing ? 'Pause' : 'Play'; markStale(); });
 
-  function drawAll(force) { screens.forEach(function (s) { if (s.vis || force) paint(s, clock); }); }
+  // only screens in view are ever drawn; a paused screen that scrolls into view is drawn once
+  function markStale() { screens.forEach(function (s) { s.stale = true; }); }
+  function drawAll() { screens.forEach(function (s) { if (s.vis && (playing || s.stale)) { paint(s, clock); s.stale = false; } }); }
   function tick(now) {
     var dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (playing) { clock += dt; drawAll(false); }
+    if (playing) clock += dt;
+    drawAll();
     requestAnimationFrame(tick);
   }
-  var rz; addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { drawAll(true); }, 150); });
+  var rz; addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(markStale, 150); });
 
   var fonts = Promise.all([document.fonts.load('300 40px Fraunces'), document.fonts.load('800 20px "Nunito Sans"')]).catch(function () {});
   Promise.race([fonts, new Promise(function (r) { setTimeout(r, 2500); })]).then(function () {
-    window.PLACES.refresh(); drawAll(true); requestAnimationFrame(tick);
+    window.PLACES.refresh(); markStale(); requestAnimationFrame(tick);
   });
 })();
 </script>

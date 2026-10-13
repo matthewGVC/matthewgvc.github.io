@@ -712,21 +712,27 @@ function halftone(ctx,W,H,p,P){
 
 /*SIMPLE:trails*/
 /* Light Trails: points of light trace closed figure-of-eight paths (whole-number frequencies), each leaving a
-   tapered trail over the last eighth of the loop; drawn once wide and blurred for bloom, then sharp. */
+   tapered trail over the last fifth of the loop. The trails are drawn wide onto a glow layer that is blurred
+   once and screened on for bloom, then drawn sharp on top. */
 const TR=[[C.cyan,1,2,0,.36,.30],[C.sky,2,1,1.3,.30,.36],[C.bone,1,3,2.1,.40,.24],[C.paper,3,2,.7,.22,.30],[C.cyan,2,3,4,.34,.26]];
+let TG=null;
 function trails(ctx,W,H,p,P){
   ctx.fillStyle=C.navy;ctx.fillRect(0,0,W,H);
   const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.6);g.addColorStop(0,rgba(C.cyan,.10));g.addColorStop(1,rgba(C.cyan,0));ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  const U=Math.min(W,H),tau=.22,S=120,m=ctx.getTransform().a;
+  const U=Math.min(W,H),tau=.22,S=120,m=ctx.getTransform().a,cw=Math.round(W*m),ch=Math.round(H*m);
+  if(!TG||TG.width!==cw||TG.height!==ch){TG=document.createElement('canvas');TG.width=cw;TG.height=ch;}
+  const gl=TG.getContext('2d');gl.setTransform(1,0,0,1,0,0);gl.clearRect(0,0,cw,ch);gl.setTransform(m,0,0,m,0,0);
   const pt=(a,b,ph,ax,ay,q)=>[W/2+W*ax*Math.sin(TAU*q*a+ph),H/2+H*ay*Math.sin(TAU*q*b+ph*1.7)];
-  ctx.save();ctx.globalCompositeOperation='screen';ctx.lineCap='round';
-  for(const pass of [0,1]){ctx.filter=pass?'none':'blur('+(U*.012*m)+'px)';
+  const draw=(x,glow)=>{x.lineCap='round';x.globalCompositeOperation='screen';
     for(const [col,a,b,ph,ax,ay] of TR){let prev=pt(a,b,ph,ax,ay,p-tau);
       for(let k=1;k<=S;k++){const f=k/S,cur=pt(a,b,ph,ax,ay,p-tau*(1-f));
-        ctx.strokeStyle=rgba(col,(pass?.9:.5)*f*f);ctx.lineWidth=U*(pass?.006:.03)*(.25+.75*f);
-        ctx.beginPath();ctx.moveTo(prev[0],prev[1]);ctx.lineTo(cur[0],cur[1]);ctx.stroke();prev=cur;}
-      const h=pt(a,b,ph,ax,ay,p);ctx.fillStyle=rgba(C.paper,pass?.95:.6);ctx.beginPath();ctx.arc(h[0],h[1],U*(pass?.006:.02),0,TAU);ctx.fill();}}
-  ctx.filter='none';ctx.restore();}
+        x.strokeStyle=rgba(col,(glow?.5:.9)*f*f);x.lineWidth=U*(glow?.03:.006)*(.25+.75*f);
+        x.beginPath();x.moveTo(prev[0],prev[1]);x.lineTo(cur[0],cur[1]);x.stroke();prev=cur;}
+      const h=pt(a,b,ph,ax,ay,p);x.fillStyle=rgba(C.paper,glow?.6:.95);x.beginPath();x.arc(h[0],h[1],U*(glow?.02:.006),0,TAU);x.fill();}
+    x.globalCompositeOperation='source-over';};
+  draw(gl,true);
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='screen';ctx.filter='blur('+(U*.012*m)+'px)';ctx.drawImage(TG,0,0);ctx.restore();
+  ctx.save();draw(ctx,false);ctx.restore();}
 /*END*/
 
 const DRAW={lattice,facade,arcs,sweep,colours,states,tide,quarter,orbit,panels,reeded,passing,halftone,trails};

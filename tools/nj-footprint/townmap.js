@@ -98,5 +98,28 @@
       cname + sea + callouts + locator + '</svg>';
   }
 
-  root.NJTownMap = { svg, SHADES };
+  /* The "Areas" version: both counties whole, every town filled with its area's colour, no labels
+     (the page lists the towns beside the map). areas: NJ_AREAS. */
+  function areaSvg(T, areas, counties) {
+    const GL = 40, GR = 40, W = T.width, top = -14, vh = T.height + 28;
+    const colour = new Map();
+    areas.forEach(a => a.towns.forEach(n => colour.set(a.county + '|' + n, a.color)));
+    const fills = T.towns.map(t => {
+      const c = colour.get(t.county + '|' + t.name), core = T.core.indexOf(t.county) !== -1;
+      return '<path class="tn' + (core ? '' : ' nb') + '" d="' + t.d + '" fill="' + (c || (core ? '#E7E4DC' : '#F3F1EC')) + '"><title>' +
+        esc(t.full + ', ' + t.county + ' County') + '</title></path>';
+    }).join('');
+    const lines = T.core.map(c => '<path class="co" d="' + T.outlines[c] + '"/>').join('');
+    const lw = 96, ls = lw / counties.width, lh = counties.height * ls, lx = -GL + 8, ly = T.height - lh - 6;
+    const locator = '<rect class="lbg" x="' + (lx - 7) + '" y="' + (ly - 22) + '" width="' + (lw + 14) + '" height="' + (lh + 28) + '" rx="3"/>' +
+      '<g transform="translate(' + lx + ' ' + ly + ') scale(' + ls + ')">' +
+      counties.counties.map(c => '<path d="' + c.d + '" fill="' + (T.core.indexOf(c.name) !== -1 ? '#00273A' : '#E7E4DC') + '"/>').join('') +
+      '</g><text class="lc" x="' + (lx + lw / 2) + '" y="' + (ly - 8) + '">NEW JERSEY</text>';
+    return '<svg class="townmap" viewBox="' + (-GL) + ' ' + top + ' ' + (W + GL + GR) + ' ' + vh + '" preserveAspectRatio="xMidYMid meet" role="img" ' +
+      'aria-label="Map of Monmouth and Ocean county towns, coloured by area">' +
+      '<defs><clipPath id="amclip"><rect x="' + (-GL) + '" y="' + top + '" width="' + (W + GL + GR) + '" height="' + vh + '"/></clipPath></defs>' +
+      '<g clip-path="url(#amclip)">' + fills + lines + '</g>' + locator + '</svg>';
+  }
+
+  root.NJTownMap = { svg, areaSvg, SHADES };
 })(window);

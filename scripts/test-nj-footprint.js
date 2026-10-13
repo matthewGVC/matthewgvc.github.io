@@ -14,6 +14,7 @@ const dir = path.join(__dirname, '..', 'tools', 'nj-footprint');
 global.window = global;
 require(path.join(dir, 'nj-counties.js'));
 require(path.join(dir, 'nj-towns.js'));
+require(path.join(dir, 'areas.js'));
 require(path.join(dir, 'transactions.js'));
 const F = require(path.join(dir, 'footprint.js'));
 
@@ -38,6 +39,14 @@ F.CORE.forEach(c => {
 towns.forEach(t => check(t.d && t.c.length === 2 && t.c.every(Number.isFinite), 'bad town outline for ' + t.name));
 Object.keys(F.TOWN_ALIASES).forEach(c => Object.keys(F.TOWN_ALIASES[c]).forEach(k =>
   check(towns.some(t => t.county === c && t.name === F.TOWN_ALIASES[c][k]), 'alias ' + k + ' points at unknown town ' + F.TOWN_ALIASES[c][k])));
+
+// areas (the no-figures version): every Monmouth and Ocean town in exactly one area
+F.CORE.forEach(c => towns.filter(t => t.county === c).forEach(t => {
+  const n = window.NJ_AREAS.filter(a => a.county === c && a.towns.indexOf(t.name) !== -1).length;
+  check(n === 1, t.name + ' (' + c + ') is in ' + n + ' areas; it must be in exactly one (areas.js)');
+}));
+window.NJ_AREAS.forEach(a => a.towns.forEach(n =>
+  check(towns.some(t => t.county === a.county && t.name === n), 'area ' + a.name + ' lists unknown town ' + n)));
 
 // data contract
 check(Array.isArray(rows) && rows.length > 0, 'no transactions');

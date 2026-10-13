@@ -36,7 +36,8 @@ const PAGES = [
   ['Map Studio',      '/tools/map-studio/'],
   ['Watermark',       '/tools/watermark/'],
   ['Listing Rules',   '/listing-rules/'],
-  ['New Development', '/tools/new-development/']
+  ['New Development', '/tools/new-development/'],
+  ['Office Screens',  '/tools/office-screens/']
 ];
 
 /* Some browsers ask for these on their own whether or not a page links an

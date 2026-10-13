@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Office Screens — Matt Bloomfield</title>
+<meta name="description" content="Looping motion pieces for The GVC Team's office TVs, in landscape and portrait.">
+<meta property="og:title" content="Office Screens — Matt Bloomfield">
+<meta property="og:description" content="Looping motion pieces for The GVC Team's office TVs, in landscape and portrait.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/office-screens/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/components.css">
+<style>
+/* ============================================================
+   OFFICE SCREENS — previews of the looping TV pieces.
+
+   The 4K videos are hundreds of MB each, too big for the site, so every
+   preview is drawn live by the same code that rendered the videos
+   (screens.js, generated from exports/office-screens/source/). Each piece
+   shows its landscape and portrait versions at the same height, like two
+   TVs on one wall. Only screens in view are drawn.
+   ============================================================ */
+.os-bar{display:flex;align-items:center;gap:16px;padding:22px 0;border-bottom:1px solid var(--rule);}
+.os-bar p{margin:0;font:300 14px/1.6 var(--sans-body);color:var(--ink-soft);flex:1;}
+
+.os-list{padding:8px 0 80px;}
+.os-piece{padding:36px 0;border-bottom:1px solid var(--rule);}
+.os-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
+.os-head h2{margin:0;font:400 clamp(24px,3vw,32px)/1.1 var(--serif);color:var(--ink);}
+.os-desc{margin:0 0 20px;max-width:44rem;font:300 15px/1.6 var(--sans-body);color:var(--ink-soft);}
+
+/* two screens, one height: the landscape one is 16/9 of it, the portrait one 9/16 */
+.os-wall{--h:clamp(180px,26vw,360px);display:flex;gap:18px;align-items:flex-end;}
+.os-tv{margin:0;}
+.os-tv .scr{height:var(--h);background:#001A27;border:6px solid #0C1519;border-radius:6px;overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,39,58,.18);}
+.os-tv.l .scr{aspect-ratio:16/9;}
+.os-tv.p .scr{aspect-ratio:9/16;}
+.os-tv canvas{display:block;width:100%;height:100%;}
+.os-tv figcaption{margin-top:8px;}
+
+@media (max-width:640px){
+  .os-wall{--h:auto;flex-direction:column;align-items:stretch;}
+  .os-tv.l .scr{height:auto;width:100%;}
+  .os-tv.p{width:46%;}
+  .os-tv.p .scr{height:auto;width:100%;}
+}
+</style>
+</head>
+<body data-root="../../" data-nav="tools">
+<main class="page">
+  <div class="page-head" data-reveal>
+    <h1>Office Screens</h1>
+    <span class="t-mono">Looping motion for the office TVs</span>
+  </div>
+
+  <div class="os-bar">
+    <p>Each piece loops without a cut and comes in landscape and portrait. The finished videos are
+      4K (3840 × 2160) and silent; ask Matt for the files.</p>
+    <button class="btn" type="button" id="play">Pause</button>
+  </div>
+
+  <div class="os-list" id="list"></div>
+</main>
+
+<script src="screens.js"></script>
+<script>
+(function () {
+  var PIECES = [
+    { id: 'places', name: 'Places and Capabilities', desc: 'The team lockup, then New York, New Jersey and Florida, a resale home, a new development and in-house marketing, before returning to the lockup.' },
+    { id: 'states', name: 'States Line', desc: 'The New York to New Jersey to Florida line drawing scrolls past without end, with the lockup above and its reflection in the water below.' },
+    { id: 'lattice', name: 'Monogram Lattice', desc: 'A lattice of monograms drifts slowly while a soft cyan wave passes through it.' },
+    { id: 'facade', name: 'Facade', desc: 'A navy elevation draws itself on paper from the ground up, fills with glass, then erases.' },
+    { id: 'arcs', name: 'G and C Arcs', desc: 'Rings of broken arcs turn slowly around the monogram at different speeds.' },
+    { id: 'sweep', name: 'Light Sweep', desc: 'A band of light crosses the full lockup, with the Douglas Elliman line below.' }
+  ];
+  function render(id) { return id === 'places' ? window.PLACES.render : window.RENDER[id]; }
+  function dur(id) { return id === 'places' ? window.PLACES.dur : window.DUR[id]; }
+
+  var list = document.getElementById('list'), screens = [];
+  PIECES.forEach(function (pc) {
+    var el = document.createElement('section');
+    el.className = 'os-piece';
+    el.innerHTML = '<div class="os-head"><h2></h2><span class="t-mono">' + dur(pc.id) + ' s loop</span></div>' +
+      '<p class="os-desc"></p><div class="os-wall">' +
+      '<figure class="os-tv l"><div class="scr"><canvas></canvas></div><figcaption class="t-mono">Landscape</figcaption></figure>' +
+      '<figure class="os-tv p"><div class="scr"><canvas></canvas></div><figcaption class="t-mono">Portrait</figcaption></figure></div>';
+    el.querySelector('h2').textContent = pc.name;
+    el.querySelector('.os-desc').textContent = pc.desc;
+    el.querySelectorAll('canvas').forEach(function (cv, i) {
+      cv.setAttribute('role', 'img');
+      cv.setAttribute('aria-label', pc.name + ', ' + (i ? 'portrait' : 'landscape') + ' preview');
+      screens.push({ cv: cv, id: pc.id, P: i === 1, vis: false });
+    });
+    list.appendChild(el);
+  });
+
+  // draw only what is on screen
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { screens.forEach(function (s) { if (s.cv === e.target) s.vis = e.isIntersecting; }); });
+  }, { rootMargin: '100px' });
+  screens.forEach(function (s) { io.observe(s.cv); });
+
+  function paint(s, clock) {
+    var r = s.cv.getBoundingClientRect(), d = Math.min(1.5, window.devicePixelRatio || 1);
+    var w = Math.round(r.width * d), h = Math.round(r.height * d);
+    if (!w || !h) return;
+    if (s.cv.width !== w || s.cv.height !== h) { s.cv.width = w; s.cv.height = h; }
+    var ctx = s.cv.getContext('2d'), D = dur(s.id);
+    ctx.save();
+    try { render(s.id)(ctx, w, h, (clock % D) / D, s.P); } catch (err) { console.error(err); }
+    ctx.restore();
+  }
+
+  // reduced motion: hold a still from a third of the way in, and let the button start it
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var playing = !reduce, clock = reduce ? 13 : 0, last = performance.now(), btn = document.getElementById('play');
+  btn.textContent = playing ? 'Pause' : 'Play';
+  btn.addEventListener('click', function () { playing = !playing; btn.textContent = playing ? 'Pause' : 'Play'; drawAll(true); });
+
+  function drawAll(force) { screens.forEach(function (s) { if (s.vis || force) paint(s, clock); }); }
+  function tick(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (playing) { clock += dt; drawAll(false); }
+    requestAnimationFrame(tick);
+  }
+  var rz; addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { drawAll(true); }, 150); });
+
+  var fonts = Promise.all([document.fonts.load('300 40px Fraunces'), document.fonts.load('800 20px "Nunito Sans"')]).catch(function () {});
+  Promise.race([fonts, new Promise(function (r) { setTimeout(r, 2500); })]).then(function () {
+    window.PLACES.refresh(); drawAll(true); requestAnimationFrame(tick);
+  });
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+</body>
+</html>

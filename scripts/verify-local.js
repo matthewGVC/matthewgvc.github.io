@@ -17,7 +17,7 @@
 const ENGINE = process.env.BROWSER || 'chromium';
 const engine = require('playwright')[ENGINE];
 
-const BASE = 'http://localhost:8080';
+const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://localhost:8092 to test another copy */
 
 const PAGES = [
   ['Homepage',        '/'],
@@ -44,7 +44,7 @@ const PAGES = [
    icon, and every page here declares its real ones in <head>, so a 404 for
    one is the browser's doing rather than a broken reference. Headless
    Chromium does not currently request them — checked by turning this off and
-   watching all 13 still pass — but a headed run does, and this is cheaper
+   watching every page still pass — but a headed run does, and this is cheaper
    than a confusing failure. Nothing else is forgiven: a 404 for something a
    page actually references is a failure. */
 const BROWSER_PROBES = [/\/favicon\.ico$/, /\/apple-touch-icon(-precomposed)?\.png$/];

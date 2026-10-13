@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Map Studio — Matt Bloomfield</title>
-<meta name="description" content="Paste a list of addresses, place numbered pins on a 3D map, and export a labeled property-locations image. Built for The GVC Team." />
-<meta property="og:title" content="Map Studio — Matt Bloomfield" />
-<meta property="og:description" content="Address list → 3D map → exported labeled image." />
-<meta property="og:url" content="https://matthewgvc.github.io/tools/map-studio/" />
-<meta property="og:type" content="website" />
-<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml" />
-<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png" />
+<meta name="description" content="Paste a list of addresses, place numbered pins on a 3D map, and export a labeled property-locations image. Built for The GVC Team.">
+<meta property="og:title" content="Map Studio — Matt Bloomfield">
+<meta property="og:description" content="Address list → 3D map → exported labeled image.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/map-studio/">
+<meta property="og:type" content="website">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
 <!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
      printing to PDF, which validators reject as "fonts not embedded". Do not put a
      fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
 <link rel="stylesheet" href="../../assets/css/fonts.css">
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet" />
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js" defer></script>
-<link rel="stylesheet" href="../../assets/css/tokens.css" />
-<link rel="stylesheet" href="../../assets/css/base.css" />
-<link rel="stylesheet" href="../../assets/css/components.css" />
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" integrity="sha384-GTsgKcJXGSkBp0M68qpxkz9XovzVH0PwSrjYONvkn3tXtySOSq+a14bG2gVJHwQG" crossorigin="anonymous">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js" integrity="sha384-TgDWG1CxH3UwM5IL34LqCZPI9N5Qnr+getwHh3tUdDD/e4ajSh35TmGG271bDtka" crossorigin="anonymous" defer></script>
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/components.css">
 <link rel="stylesheet" href="../../assets/css/panel-collapse.css">
 <style>
   /* Map Studio — same light GVC Editorial system as the rest of the site.
@@ -42,8 +42,7 @@
     display:flex;flex-direction:column;z-index:2;
   }
   .brand{padding:24px 28px 18px;border-bottom:1px solid var(--rule);}
-  .brand .kicker{font-family:var(--sans-display);font-weight:800;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);}
-  .brand h1{font-family:var(--serif);font-weight:300;font-size:30px;letter-spacing:-0.02em;margin:6px 0 0;line-height:1.05;color:var(--ink);}
+  .brand h1{font-family:var(--serif);font-weight:300;font-size:30px;letter-spacing:-0.02em;margin:0;line-height:1.05;color:var(--ink);}
   .brand p{margin:7px 0 0;color:var(--ink-soft);font-size:12.5px;font-weight:400;line-height:1.45;}
   .scroll{flex:1;overflow-y:auto;padding:22px 28px 30px;}
   .scroll::-webkit-scrollbar{width:9px;}
@@ -130,11 +129,10 @@
   }
 </style>
 </head>
-<body data-root="../../" data-nav="tools">
+<body data-root="../../" data-nav="tools" data-foot="none">
 <main class="mapstudio">
   <aside class="sidebar">
     <div class="brand">
-      <div class="kicker">GVC Real Estate · Tool</div>
       <h1>Map Studio</h1>
       <p>Paste a list → place pins on a tilted 3D map → export a labeled static image.</p>
     </div>

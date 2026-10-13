@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Plain static HTML, CSS and JavaScript. No build step, no installation. Shared chrome is injected by JS, GSAP comes from a CDN, fonts are self-hosted static files (so printed PDFs embed them). Published straight from `main` on GitHub Pages at matthewgvc.github.io.
+Plain static HTML, CSS and JavaScript. No build step, no installation. Shared chrome is injected by JS, GSAP comes from a CDN, the tools use self-hosted static fonts (so printed PDFs embed them); the showcase pages (home, galleries, case studies, listing rules) load variable Fraunces from Google Fonts for its optical sizes, since they never print. Published straight from `main` on GitHub Pages at matthewgvc.github.io.
 
 ## Users
 
@@ -29,7 +29,7 @@ Built in-house for GVC's own listings. Every builder is made for this team's exa
 
 ## Operating Context
 
-- Tools live under `tools/`: showsheet generator, brochure, buyer package, seller pitch and CMA, destination guide, NJ footprint, New Development, agent info, calculator, floorplan converter, map studio, watermark, properties, CMA. Photo galleries live under `photos/`.
+- Tools live under `tools/`: showsheet generator, brochure, buyer package, seller pitch and CMA, destination guide, NJ footprint, New Development, agent info, calculator, floorplan converter, map studio, watermark, properties, office screens (`tools/cma/` now forwards to the seller pitch). Photo galleries live under `photos/`.
 - Printed pages are fixed-size canvases (the packages are US Letter portrait), previewed on screen and printed or saved as PDF through the browser. Print output is checked in Chromium and WebKit, including a rasterized printed PDF.
 - Markets are kept independent: New Jersey, New York City and Florida each have their own copy and page set, and a change for one must not alter another.
 - Copy for agents, bios, testimonials, referral partners and listings comes from real GVC sources; the shared drives hold headshots, stock and film originals.
@@ -37,7 +37,7 @@ Built in-house for GVC's own listings. Every builder is made for this team's exa
 
 ## Capabilities and Constraints
 
-- Static hosting, a local preview server for development (`file://` breaks the Word-document reader and image handling), Supabase for the New Development library only.
+- Static hosting, a local preview server for development (`file://` breaks the Word-document reader and image handling), Supabase for the property library (Showsheet, Brochure, Seller Pitch, Properties) and the New Development library.
 - Placeholder stamps are deliberate and stay visible until real content arrives ("Work in progress" on NJ agent pages, "List needed" and "Partner to be added" on Marli's referral page, red "Check" tags on NJ 50 Things items).
 - Standing decisions: the NJ seller deck uses NJ stock photos only, never specific home shots; the NYC buyer packet keeps Don't Forget to Ask and the FAQs; the seller Professional Videos page keeps its justified-text spacing.
 - Frozen outputs stay frozen: print- and pixel-verified generated artifacts (such as the showsheet's `.sheet`) are never restyled.

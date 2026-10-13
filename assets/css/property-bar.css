@@ -8,8 +8,7 @@
    selects, which on Windows look nothing like the fields below them.
 
    Written against the tokens.css variable names rather than builder.css's
-   --ui-* ones, because the Showsheet loads neither builder.css nor
-   pitch.css. That is why this lives in its own file: the bar is in every
+   --ui-* ones, and kept in its own file: the bar is in every
    builder that binds a document to a property, so its styling has to be too.
    ============================================================ */
 .plib{padding:13px 20px 15px;border-bottom:1px solid var(--rule);background:var(--paper-2);}

@@ -26,7 +26,7 @@
 const ENGINE = process.env.BROWSER || 'chromium';
 const engine = require('playwright')[ENGINE];
 
-const BASE = 'http://localhost:8080';
+const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://localhost:8092 to test another copy */
 const TOOLS = {
   'brochure':       '#imgFile',
   'seller-package': '#filePhotos',

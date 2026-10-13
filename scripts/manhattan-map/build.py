@@ -206,13 +206,7 @@ take('Tribeca', I(N_(s['chambers']), W_(a['bway_dt'])))
 take('Battery Park City', I(W_(a['west']), N_(line(['Battery Place'], lat=(40.704, 40.7065), axis=(1, 0)))))
 take('Lower East Side', I(E_(a['rutgers']), N_(s['ebway'])))
 take('Lower East Side', E_(a['montgomery']))
-cc_n = unary_union([I(S_(s['worth']), E_(a['baxter'])), I(S_(s['white']), W_(a['baxter']))])
-_x = s['parkrow'].intersection(s['bbridge'])
-_pr = [c for c in s['parkrow'].coords if s['parkrow'].project(Point(c)) < s['parkrow'].project(_x)]
-_bb = [c for c in s['bbridge'].coords if s['bbridge'].project(Point(c)) > s['bbridge'].project(_x)]
-cc_s = LineString(_pr + [(_x.x, _x.y)] + _bb)
-take('Civic Center', I(E_(a['bway_dt']), cc_n, side(cc_s, (_x.x, _x.y + 120)), W_(a['stjames'])))
-take('Chinatown', I(E_(a['bway_dt']), N_(s['henry']), W_(a['rutgers']), N_(s['bbridge'])))
+take('Chinatown', I(E_(a['bway_dt']), N_(s['henry']), N_(s['worth']), W_(a['rutgers'])))
 take('Two Bridges', I(E_(a['stjames']), N_(s['bbridge'])))
 take('Financial District', rest[0])
 for n in list(done):

@@ -581,10 +581,73 @@ function states(ctx,W,H,p,P){
   G.lock(ctx,W/2,H*.3,W*(P?.82:.42),C.sky);
   G.vignette(ctx,W,H,.4);}
 
-const DRAW={lattice,facade,arcs,sweep,colours,states};
+/* ---------- simple colour pieces: flat GVC colour, no marks ----------
+   Each sits between SIMPLE/END markers so make_scenes.py can lift it into the concept reel. */
+
+/*SIMPLE:tide*/
+/* Tide: bands from Paper down to Navy, each edge a slow wave; every term turns whole cycles per loop */
+function tide(ctx,W,H,p,P){
+  const BAND=[C.bone,C.sky,C.cyan,C.navy],A=H*(P?.035:.05);
+  ctx.fillStyle=C.paper;ctx.fillRect(0,0,W,H);
+  BAND.forEach((col,i)=>{const base=H*(.26+.17*i),f=.7+.25*i,k=i%2?-1:1,ph=i*1.9;
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=8){const u=x/W;ctx.lineTo(x,base+A*Math.sin(TAU*(u*f+p*k)+ph)+A*.4*Math.sin(TAU*(u*f*2.3-p*2)+ph*1.7));}
+    ctx.lineTo(W,H);ctx.closePath();ctx.fillStyle=col;ctx.fill();});}
+/*END*/
+
+/*SIMPLE:quarter*/
+/* Quarter Turns: eight big tiles, each its own pair of GVC colours with one large quarter-circle. One tile at a
+   time turns a quarter and settles, then the next along a snaking path; four rounds per loop bring every tile
+   a full turn, so the loop lands back on itself. Landscape is 4 x 2 tiles, portrait 2 x 4, bleeding off evenly. */
+// [tile colour, quarter-circle colour, starting corner in quarter turns], in snaking order
+const QT=[[C.navy,C.cyan,0],[C.paper,C.navy,1],[C.sky,C.navy,3],[C.cyan,C.paper,2],
+          [C.bone,C.cyan,1],[C.cyan,C.bone,0],[C.navy,C.sky,2],[C.paper,C.cyan,3]];
+function quarter(ctx,W,H,p,P){
+  const c=(P?W:H)/2,nx=P?2:4,ny=P?4:2,ox=(W-nx*c)/2,oy=(H-ny*c)/2,e=.6,mv=.16;
+  const ease=x=>{x=clamp(x);return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;};
+  QT.forEach(([bg,fg,o],k)=>{
+    const r=Math.floor(k/nx),col=r%2?nx-1-k%nx:k%nx,x=ox+col*c,y=oy+r*c;
+    const q=4*p-k/8,n=Math.floor(q),a=(Math.PI/2)*(o+(k%2?1:-1)*(n+ease((q-n)/mv)));
+    ctx.save();ctx.beginPath();ctx.rect(x-e,y-e,c+2*e,c+2*e);ctx.clip();
+    ctx.fillStyle=bg;ctx.fillRect(x-e,y-e,c+2*e,c+2*e);
+    ctx.translate(x+c/2,y+c/2);ctx.rotate(a);
+    // a quarter disc of radius c from the tile's corner at (c/2, c/2) in turned space
+    ctx.fillStyle=fg;ctx.beginPath();ctx.moveTo(c/2+e,c/2+e);ctx.arc(c/2+e,c/2+e,c+2*e,Math.PI,Math.PI*1.5);ctx.closePath();ctx.fill();ctx.restore();});}
+/*END*/
+
+/*SIMPLE:orbit*/
+/* Orbit: nested discs, each centre lagging a little further round one closed path, so the rings slide */
+const ORB=[C.navy,C.cyan,C.sky,C.bone,C.paper,C.cyan,C.navy];
+function orbit(ctx,W,H,p,P){
+  const U=Math.max(W,H),cx=W/2,cy=H/2;
+  ORB.forEach((col,i)=>{const k=i/(ORB.length-1),a=TAU*p-k*1.1,R=U*(.72-.095*i);
+    const x=cx+W*(P?.10:.16)*k*Math.cos(a),y=cy+H*(P?.08:.12)*k*Math.sin(a);
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.fill();});}
+/*END*/
+
+/*SIMPLE:panels*/
+/* Panels: seven flat panels in three columns, parted by thin Navy gaps. Like sliding doors, one divider at a
+   time glides to its other stop and settles, then the next; each goes out and comes home once per loop.
+   Portrait draws the same layout transposed, so its doors slide up and down. */
+// [stop A, stop B, leaves at, returns at] as fractions of the screen and of the loop
+const DOORS={x1:[.34,.52,.00,.50],b1:[.30,.46,.07,.57],a1:[.60,.32,.14,.64],x2:[.70,.84,.21,.71],c1:[.40,.72,.28,.78],b2:[.68,.82,.35,.85]};
+function panels(ctx,W,H,p,P){
+  if(P){ctx.save();ctx.transform(0,1,1,0,0,0);panels(ctx,H,W,p,false);ctx.restore();return;}
+  const ease=x=>x*x*x*(x*(x*6-15)+10),mv=.085;
+  const at=k=>{const [a,b,t0,t1]=DOORS[k];return lerp(a,b,ease(clamp((p-t0)/mv))-ease(clamp((p-t1)/mv)));};
+  const g=14,x1=W*at('x1'),x2=W*at('x2'),a1=H*at('a1'),b1=H*at('b1'),b2=H*at('b2'),c1=H*at('c1');
+  ctx.fillStyle=C.navy;ctx.fillRect(0,0,W,H);
+  const R=[[0,0,x1,a1,C.cyan],[0,a1,x1,H,C.paper],
+           [x1,0,x2,b1,C.bone],[x1,b1,x2,b2,C.navy],[x1,b2,x2,H,C.sky],
+           [x2,0,W,c1,C.paper],[x2,c1,W,H,C.cyan]];
+  // each panel is inset by half a gap, so neighbours always sit one gap apart and the outer frame is a half gap
+  for(const [l,t,r,b,col] of R){ctx.fillStyle=col;ctx.fillRect(l+g/2,t+g/2,r-l-g,b-t-g);}}
+/*END*/
+
+const DRAW={lattice,facade,arcs,sweep,colours,states,tide,quarter,orbit,panels};
 window.DRAW=DRAW;
 window.RENDER={};
 /* the design height follows the canvas, so a canvas a little off 16:9 or 9:16 (a preview) is still filled edge to edge */
 for(const k in DRAW)window.RENDER[k]=(ctx,W,H,p,P)=>{const w=P?1080:1920,u=W/w;ctx.save();ctx.scale(u,u);DRAW[k](ctx,w,H/u,p,!!P);ctx.restore();G.grain(ctx,W,H);};
-window.DUR={lattice:40,facade:40,arcs:40,sweep:40,colours:40,states:60};
+window.DUR={lattice:40,facade:40,arcs:40,sweep:40,colours:40,states:60,tide:40,quarter:40,orbit:40,panels:40};
 })();

@@ -3,7 +3,8 @@
    Source: MLS exports for TJ Verdiglione, James Huber and Marli Silver (received 2026-10-13).
    Kept: closed NJ sales the team was on, either side, one row per listing (a listing in more
    than one export, or with the team on both sides, counts once). Left out: rentals, pending
-   deals, and commercial leases (anything under $50,000). Town is the MLS municipality; no
+   deals, commercial leases (anything under $50,000), and one South Amboy sale (an outlier
+   outside our area). Town is the MLS municipality; no
    street addresses or client details are kept. `agent` is the first team member on the deal
    (listing side first); `side` is optional and not used by the page.
 
@@ -90,7 +91,6 @@ window.NJ_TRANSACTIONS = [
  {"date":"2022-05-27","town":"Red Bank","county":"Monmouth","price":525000,"agent":"TJ Verdiglione","side":"Buyer"},
  {"date":"2022-04-14","town":"Point Pleasant","county":"Ocean","price":535000,"agent":"Marli Silver","side":"Buyer"},
  {"date":"2022-04-08","town":"Union Beach","county":"Monmouth","price":705000,"agent":"Marli Silver","side":"Buyer"},
- {"date":"2022-04-05","town":"South Amboy","county":"Middlesex","price":340000,"agent":"Marli Silver","side":"Buyer"},
  {"date":"2022-03-25","town":"Newark","county":"Essex","price":595000,"agent":"TJ Verdiglione","side":"Seller"},
  {"date":"2022-03-25","town":"Newark","county":"Essex","price":535500,"agent":"TJ Verdiglione","side":"Seller"},
  {"date":"2022-02-11","town":"Tinton Falls","county":"Monmouth","price":332500,"agent":"TJ Verdiglione","side":"Buyer"},

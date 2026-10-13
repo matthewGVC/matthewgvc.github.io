@@ -42,19 +42,22 @@
      this list. Freehold could be the borough or the township; the township is the larger, so
      postal "Freehold" goes there. Add a line here when a new row's town is not found. */
   const TOWN_ALIASES = {
-    Monmouth: { 'Port Monmouth': 'Middletown', 'Morganville': 'Marlboro', 'Cliffwood': 'Aberdeen',
+    Monmouth: { 'Ocean': 'Ocean Twp', 'Port Monmouth': 'Middletown', 'Morganville': 'Marlboro', 'Cliffwood': 'Aberdeen',
       'Freehold': 'Freehold Twp', 'Ocean Township': 'Ocean Twp', 'Shrewsbury': 'Shrewsbury Boro',
       'Wall Township': 'Wall', 'Neptune Township': 'Neptune' },
     Ocean: { 'Lanoka Harbor': 'Lacey', 'Forked River': 'Lacey', 'Bayville': 'Berkeley', 'Brick Township': 'Brick',
       'Point Pleasant Boro': 'Point Pleasant' }
   };
 
-  // The map town a row belongs to, or null. towns: NJ_TOWNS.towns.
+  // The map town a row belongs to, or null. towns: NJ_TOWNS.towns. The MLS sometimes adds a
+  // suffix the map leaves off ("Toms River Twp"), so a second try drops it.
   function townOf(row, towns) {
     const here = towns.filter(t => t.county === row.county), want = String(row.town).trim().toLowerCase();
     const alias = (TOWN_ALIASES[row.county] || {})[row.town];
+    const bare = want.replace(/ (twp|township|boro|borough|city)$/, '');
     return here.find(t => t.name.toLowerCase() === want) ||
-      (alias && here.find(t => t.name === alias)) || null;
+      (alias && here.find(t => t.name === alias)) ||
+      here.find(t => t.name.toLowerCase() === bare) || null;
   }
 
   // Sales per map town: [{ town, deals, volume }], biggest first, plus the rows that matched nothing.

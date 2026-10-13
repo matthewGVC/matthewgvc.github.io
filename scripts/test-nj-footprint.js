@@ -13,6 +13,7 @@ const path = require('path');
 const dir = path.join(__dirname, '..', 'tools', 'nj-footprint');
 global.window = global;
 require(path.join(dir, 'nj-counties.js'));
+require(path.join(dir, 'nj-towns.js'));
 require(path.join(dir, 'transactions.js'));
 const F = require(path.join(dir, 'footprint.js'));
 
@@ -28,6 +29,16 @@ check(counties.length === 21, 'NJ has 21 counties, found ' + counties.length);
 F.CORE.forEach(c => check(names.has(c), 'core county missing from the map: ' + c));
 counties.forEach(c => check(c.d && c.c.length === 2 && c.c.every(Number.isFinite), 'bad outline for ' + c.name));
 
+// town map: every core county drawn by town, with an outline
+const towns = window.NJ_TOWNS.towns;
+F.CORE.forEach(c => {
+  check(towns.filter(t => t.county === c).length > 20, 'town map is missing the towns of ' + c);
+  check(window.NJ_TOWNS.outlines[c], 'town map has no outline for ' + c);
+});
+towns.forEach(t => check(t.d && t.c.length === 2 && t.c.every(Number.isFinite), 'bad town outline for ' + t.name));
+Object.keys(F.TOWN_ALIASES).forEach(c => Object.keys(F.TOWN_ALIASES[c]).forEach(k =>
+  check(towns.some(t => t.county === c && t.name === F.TOWN_ALIASES[c][k]), 'alias ' + k + ' points at unknown town ' + F.TOWN_ALIASES[c][k])));
+
 // data contract
 check(Array.isArray(rows) && rows.length > 0, 'no transactions');
 check(typeof window.NJ_DRAFT_NOTE === 'string', "NJ_DRAFT_NOTE must be a string ('' for a finished sheet)");
@@ -39,6 +50,8 @@ rows.forEach((r, i) => {
   check(names.has(r.county), at + 'county "' + r.county + '" is not an NJ county name (use "Monmouth", not "Monmouth County")');
   check(Number.isFinite(r.price) && r.price > 0, at + 'price must be a positive number');
   check(F.AGENTS.indexOf(r.agent) !== -1, at + 'unknown agent "' + r.agent + '"');
+  if (F.CORE.indexOf(r.county) !== -1) check(F.townOf(r, towns), at + 'town not found on the ' + r.county +
+    ' town map; add its municipality to TOWN_ALIASES in footprint.js');
 });
 
 // totals
@@ -46,7 +59,9 @@ const s = F.summarize(rows);
 const sum = (o, k) => Object.values(o).reduce((a, v) => a + v[k], 0);
 check(s.deals === rows.length, 'deal count off');
 check(s.volume === rows.reduce((a, r) => a + r.price, 0), 'volume off');
+const bt = F.byTown(rows, towns);
 ['deals', 'volume'].forEach(k => {
+  check(bt.list.reduce((a, t) => a + t[k], 0) + bt.missing.reduce((a, r) => a + (k === 'deals' ? 1 : r.price), 0) === s[k], 'town ' + k + ' do not add up');
   check(sum(s.byCounty, k) === s[k], 'county ' + k + ' do not add up to the total');
   check(sum(s.byAgent, k) === s[k], 'agent ' + k + ' do not add up to the total');
 });

@@ -6,7 +6,7 @@
    has:
      builder   #app > #editor        builder.css tools and the Showsheet
      map       .mapstudio > .sidebar Map Studio
-     watermark .tool > .controls     Watermark
+     watermark .wm-tool > .controls     Watermark
    A round handle sits on the panel's right edge; clicking it folds the
    panel away (or back) and the preview takes the width.
 
@@ -23,7 +23,7 @@
   const LAYOUTS = [
     { name: 'builder',   box: '#app',       panel: '#editor' },
     { name: 'map',       box: '.mapstudio', panel: '.mapstudio > .sidebar' },
-    { name: 'watermark', box: '.tool',      panel: '.tool > .controls' }
+    { name: 'watermark', box: '.wm-tool',      panel: '.wm-tool > .controls' }
   ];
 
   function start() {

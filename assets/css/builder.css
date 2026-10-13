@@ -1,7 +1,7 @@
 /* ============================================================
    GVC PACKAGE BUILDERS — shared shell
-   Used by tools/cma/, tools/buyer-package/, tools/seller-package/,
-   tools/brochure/. Mirrors the Showsheet Generator's editor chrome
+   Used by every tool with an editor panel and a page preview (the
+   Showsheet too, for its editor chrome). Mirrors the Showsheet Generator's editor chrome
    (left panel + preview well + bottom bar) but on a portrait
    8.5in x 11in design canvas.
 
@@ -79,7 +79,7 @@ details.ed-sec summary .hint{margin-left:auto;font:400 10px var(--ui-mono);lette
 .sec-in{padding:2px 20px 18px;}
 
 /* The property bar's styling lives in assets/css/property-bar.css — the bar
-   is in all four builders and the Showsheet does not load this file. */
+   is in every builder that binds a document to a property. */
 
 /* ================= FIELDS ================= */
 .f-row{display:flex;gap:10px;}

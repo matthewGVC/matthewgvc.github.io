@@ -156,9 +156,6 @@
 .pg.rev .stat .v{color:#fff;}
 .pg.rev .stat .l{color:rgba(229,229,229,.7);}
 
-.cards{display:grid;gap:.26in;}
-.cards.c2{grid-template-columns:1fr 1fr;}
-.cards.c3{grid-template-columns:repeat(3,1fr);}
 .card{border:.75pt solid var(--rule);padding:.2in;min-width:0;}
 .pg.rev .card{border-color:var(--rule-rev);}
 .card .ci{width:.26in;height:.26in;color:var(--sky2);margin-bottom:.1in;}

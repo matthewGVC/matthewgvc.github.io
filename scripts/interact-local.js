@@ -23,10 +23,10 @@ const path = require('path');
 const ENGINE = process.env.BROWSER || 'chromium';
 const engine = require('playwright')[ENGINE];
 
-const BASE = 'http://localhost:8080';
+const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://localhost:8092 to test another copy */
 const SAMPLE = path.resolve(__dirname, '../tools/showsheet/sample') + path.sep;
 const ALL = ['showsheet', 'seller-package', 'brochure', 'buyer-package', 'agent-info', 'destination-guide',
-  'nj-footprint', 'new-development', 'calculator', 'floorplan', 'map-studio', 'watermark', 'properties'];
+  'nj-footprint', 'new-development', 'calculator', 'floorplan', 'map-studio', 'watermark', 'properties', 'office-screens'];
 const TOOLS = process.argv[2] ? process.argv[2].split(',') : ALL;
 
 const CONTROLS = 'button, [role=button], select, input[type=checkbox], input[type=radio], input[type=range], ' +

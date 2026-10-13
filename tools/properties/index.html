@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Properties — Matt Bloomfield</title>
-<meta name="description" content="Manage the shared property library behind The GVC Team's four listing builders.">
+<meta name="description" content="Manage the shared property library behind The GVC Team's listing builders.">
 <meta property="og:title" content="Properties — Matt Bloomfield">
-<meta property="og:description" content="Manage the shared property library behind The GVC Team's four listing builders.">
+<meta property="og:description" content="Manage the shared property library behind The GVC Team's listing builders.">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/properties/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -24,7 +24,7 @@
 /* ============================================================
    PROPERTIES — the shared library's own page.
 
-   The four builders can load and save a property; none of them can show
+   The Showsheet, Brochure and Seller Pitch can load and save a property; none of them can show
    the library itself. This page is that view: every property including
    the archived ones, what has been built for each, how much room the
    photos are taking, and the two things the builders cannot do — rename
@@ -134,14 +134,14 @@ table.props tr.is-busy{opacity:.45;pointer-events:none;}
 <main class="page">
   <div class="page-head" data-reveal>
     <h1>Properties</h1>
-    <span class="t-mono">The shared library behind the four listing builders</span>
+    <span class="t-mono">The shared library behind the listing builders</span>
   </div>
 
   <!-- Nothing here is readable without the team session, so the password is
        the page rather than a prompt over an empty table. -->
   <section class="gate" id="gate" hidden>
     <p>The property library is shared by the whole team and needs the team password.
-       It is the same one the four builders ask for.</p>
+       It is the same one the builders ask for.</p>
     <form id="gateForm" autocomplete="on">
       <input type="password" id="pw" placeholder="Team password" autocomplete="current-password"
              aria-label="Team password">
@@ -455,5 +455,6 @@ table.props tr.is-busy{opacity:.45;pointer-events:none;}
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
 <script src="../../assets/js/chrome.js"></script>
 <script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
 </body>
 </html>

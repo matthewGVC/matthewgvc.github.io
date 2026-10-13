@@ -7,7 +7,6 @@
 <meta name="description" content="Add a Virtually Staged or Virtually Renovated watermark to one listing photo or a whole folder. Runs entirely in the browser — nothing is uploaded.">
 <meta property="og:title" content="Watermark — Matt Bloomfield">
 <meta property="og:description" content="Add a Virtually Staged or Virtually Renovated watermark to one listing photo or a whole folder. Runs entirely in the browser — nothing is uploaded.">
-<meta property="og:image" content="https://matthewgvc.github.io/assets/img/tile-showsheet.webp">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/watermark/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -27,10 +26,14 @@
    GVC WATERMARK TOOL
    Uses the GVC Workspace token system (tokens.css) — no local palette.
    ============================================================ */
-.tool{
+.wm-tool{
   display:grid;
   grid-template-columns:300px 1fr;
   align-items:start;
+  /* framed like a panel; overflow clips the folded-away controls */
+  position:relative;overflow:hidden;
+  background:var(--paper);border:1px solid var(--rule);border-radius:10px;
+  padding:18px 18px 18px 20px;
 }
 .controls{
   border-right:1px solid var(--rule);
@@ -131,7 +134,7 @@
 }
 
 @media (max-width:820px){
-  .tool{grid-template-columns:1fr}
+  .wm-tool{grid-template-columns:1fr}
   .controls{
     border-right:0;border-bottom:1px solid var(--rule);
     padding:20px 0;gap:20px;
@@ -148,7 +151,7 @@
     <span class="t-mono">Virtually staged &amp; renovated labels</span>
   </div>
 
-  <section class="tool">
+  <section class="wm-tool">
     <aside class="controls">
       <div class="ctl-group">
         <h4>Photos</h4>
@@ -501,5 +504,6 @@ downloadBtn.addEventListener("click", async () => {
 <script src="../../assets/js/chrome.js"></script>
 <script src="../../assets/js/motion.js"></script>
 <script src="../../assets/js/panel-collapse.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
 </body>
 </html>

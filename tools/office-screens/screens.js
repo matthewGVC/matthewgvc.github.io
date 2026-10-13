@@ -644,10 +644,95 @@ function panels(ctx,W,H,p,P){
   for(const [l,t,r,b,col] of R){ctx.fillStyle=col;ctx.fillRect(l+g/2,t+g/2,r-l-g,b-t-g);}}
 /*END*/
 
-const DRAW={lattice,facade,arcs,sweep,colours,states,tide,quarter,orbit,panels};
+/* ---------- simple colour pieces with texture: overlays, blur and long exposure ---------- */
+
+/*SIMPLE:reeded*/
+/* Reeded Glass: soft colour shapes drift on closed paths behind fluted glass. The scene is drawn blurred off
+   screen at full resolution, then laid back in vertical reeds, each squeezing a wider slice of it, with a soft
+   highlight and shade per reed. */
+const RBLOBS=[[C.cyan,.28,.42,.14,.12,1,0,.42],[C.sky,.70,.38,.12,.15,1,2,.34],[C.bone,.52,.78,.18,.10,2,4,.24],[C.paper,.14,.85,.08,.06,1,5,.16],[C.cyan,.88,.86,.06,.08,1,1,.26]];
+let RC=null;
+function reeded(ctx,W,H,p,P){
+  const m=ctx.getTransform(),u=m.a,cw=Math.round(W*u),ch=Math.round(H*u);
+  if(!RC||RC.width!==cw||RC.height!==ch){RC=document.createElement('canvas');RC.width=cw;RC.height=ch;}
+  const x=RC.getContext('2d'),U=Math.min(W,H);x.setTransform(u,0,0,u,0,0);x.filter='blur('+(U*.045*u)+'px)';
+  x.fillStyle=C.navy;x.fillRect(-50,-50,W+100,H+100);
+  for(const [col,ox,oy,ax,ay,k,ph,r] of RBLOBS){x.fillStyle=col;x.beginPath();
+    x.arc(W*(ox+ax*Math.sin(TAU*p*k+ph)),H*(oy+ay*Math.cos(TAU*p*k+ph*.8)),U*r*(1+.08*Math.sin(TAU*p+ph)),0,TAU);x.fill();}
+  x.filter='none';
+  const sw=(P?W:H)*.07,n=Math.ceil(W/sw)+1,sq=2.6;
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);
+  for(let i=0;i<n;i++){const x0=i*sw,cx=x0+sw/2,sx=clamp(cx-sw*sq/2,0,W-sw*sq);
+    ctx.drawImage(RC,sx*u,0,sw*sq*u,ch,x0*u,0,sw*u+1,ch);}
+  ctx.restore();
+  for(let i=0;i<n;i++){const x0=i*sw,g=ctx.createLinearGradient(x0,0,x0+sw,0);
+    g.addColorStop(0,'rgba(255,255,255,.10)');g.addColorStop(.35,'rgba(255,255,255,0)');g.addColorStop(.8,'rgba(0,10,16,.10)');g.addColorStop(1,'rgba(0,10,16,.22)');
+    ctx.fillStyle=g;ctx.fillRect(x0,0,sw,H);}}
+/*END*/
+
+/*SIMPLE:passing*/
+/* Passing: rounded bars glide across in rows at whole-number speeds (so each wraps exactly per loop), shot as a
+   long exposure: each frame adds up equal slices of 32 whole moments across the shutter (added, not layered, so
+   8-bit colour keeps its precision), so the bars streak. */
+const PROWS=[[.14,.07,C.cyan,2,[0,.45]],[.26,.035,C.bone,3,[.2,.6,.85]],[.37,.10,C.sky,1,[.1,.62]],[.52,.05,C.paper,-2,[.3,.75]],
+  [.63,.08,C.cyan,-1,[0,.5]],[.76,.04,C.sky,3,[.15,.4,.8]],[.87,.09,C.bone,-1,[.35,.9]]];
+let PC=null,PF=null;
+function passing(ctx,W,H,p,P){
+  const N=32,shutter=.03,L=W*1.6,m=ctx.getTransform().a,cw=Math.round(W*m),ch=Math.round(H*m);
+  if(!PC||PC.width!==cw||PC.height!==ch){PC=document.createElement('canvas');PC.width=cw;PC.height=ch;PF=document.createElement('canvas');PF.width=cw;PF.height=ch;}
+  const acc=PC.getContext('2d'),f=PF.getContext('2d');
+  acc.setTransform(1,0,0,1,0,0);acc.globalCompositeOperation='source-over';acc.globalAlpha=1;acc.fillStyle='#000';acc.fillRect(0,0,cw,ch);
+  acc.globalCompositeOperation='lighter';acc.globalAlpha=1/N;
+  for(let s=0;s<N;s++){const q=p-shutter*s/(N-1);
+    // one whole moment, opaque, then added into the exposure
+    f.setTransform(m,0,0,m,0,0);f.fillStyle=C.navy;f.fillRect(0,0,W,H);
+    for(const [y,h,col,v,starts] of PROWS){const bh=H*h,bw=L*(.18+h*1.6);f.fillStyle=col;
+      for(const s0 of starts){const xx=((s0+v*q)%1+1)%1*L-(L-W)/2-bw/2;
+        f.beginPath();f.roundRect(xx,H*y-bh/2,bw,bh,bh/2);f.fill();}}
+    acc.drawImage(PF,0,0);}
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(PC,0,0);ctx.restore();}
+/*END*/
+
+/*SIMPLE:halftone*/
+/* Halftone: soft colour fields on closed paths, printed as two dot screens at different angles: Cyan dots and
+   finer Paper dots. Each dot's size follows its field, so the print swells and thins. */
+function halftone(ctx,W,H,p,P){
+  ctx.fillStyle=C.navy;ctx.fillRect(0,0,W,H);
+  const U=Math.min(W,H),A=W/H;
+  const field=(hs,u,v)=>{let z=0;for(const [x,y,s] of hs){const dx=(u-x)*A,dy=v-y;z+=Math.exp(-(dx*dx+dy*dy)/(s*s));}return Math.min(1,z);};
+  const L1=[[.3+.15*Math.sin(TAU*p),.4+.12*Math.cos(TAU*p),.32],[.75+.1*Math.cos(TAU*p+1),.65+.15*Math.sin(TAU*p*2+1),.26]];
+  const L2=[[.6+.18*Math.cos(TAU*p+2),.3+.1*Math.sin(TAU*p+2),.22],[.2+.1*Math.sin(TAU*p*2+3),.75+.1*Math.cos(TAU*p+3),.2]];
+  for(const [hs,step,ang,col,a] of [[L1,U*.026,.26,C.cyan,1],[L2,U*.016,-.5,C.paper,.9]]){
+    const ca=Math.cos(ang),sa=Math.sin(ang),R=Math.hypot(W,H)/2;ctx.fillStyle=rgba(col,a);ctx.beginPath();
+    for(let gy=-R;gy<R;gy+=step)for(let gx=-R;gx<R;gx+=step){const X=W/2+gx*ca-gy*sa,Y=H/2+gx*sa+gy*ca;
+      if(X<-step||Y<-step||X>W+step||Y>H+step)continue;const r=step*.62*field(hs,X/W,Y/H);
+      if(r<.4)continue;ctx.moveTo(X+r,Y);ctx.arc(X,Y,r,0,TAU);}
+    ctx.fill();}}
+/*END*/
+
+/*SIMPLE:trails*/
+/* Light Trails: points of light trace closed figure-of-eight paths (whole-number frequencies), each leaving a
+   tapered trail over the last eighth of the loop; drawn once wide and blurred for bloom, then sharp. */
+const TR=[[C.cyan,1,2,0,.36,.30],[C.sky,2,1,1.3,.30,.36],[C.bone,1,3,2.1,.40,.24],[C.paper,3,2,.7,.22,.30],[C.cyan,2,3,4,.34,.26]];
+function trails(ctx,W,H,p,P){
+  ctx.fillStyle=C.navy;ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.6);g.addColorStop(0,rgba(C.cyan,.10));g.addColorStop(1,rgba(C.cyan,0));ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const U=Math.min(W,H),tau=.22,S=120,m=ctx.getTransform().a;
+  const pt=(a,b,ph,ax,ay,q)=>[W/2+W*ax*Math.sin(TAU*q*a+ph),H/2+H*ay*Math.sin(TAU*q*b+ph*1.7)];
+  ctx.save();ctx.globalCompositeOperation='screen';ctx.lineCap='round';
+  for(const pass of [0,1]){ctx.filter=pass?'none':'blur('+(U*.012*m)+'px)';
+    for(const [col,a,b,ph,ax,ay] of TR){let prev=pt(a,b,ph,ax,ay,p-tau);
+      for(let k=1;k<=S;k++){const f=k/S,cur=pt(a,b,ph,ax,ay,p-tau*(1-f));
+        ctx.strokeStyle=rgba(col,(pass?.9:.5)*f*f);ctx.lineWidth=U*(pass?.006:.03)*(.25+.75*f);
+        ctx.beginPath();ctx.moveTo(prev[0],prev[1]);ctx.lineTo(cur[0],cur[1]);ctx.stroke();prev=cur;}
+      const h=pt(a,b,ph,ax,ay,p);ctx.fillStyle=rgba(C.paper,pass?.95:.6);ctx.beginPath();ctx.arc(h[0],h[1],U*(pass?.006:.02),0,TAU);ctx.fill();}}
+  ctx.filter='none';ctx.restore();}
+/*END*/
+
+const DRAW={lattice,facade,arcs,sweep,colours,states,tide,quarter,orbit,panels,reeded,passing,halftone,trails};
 window.DRAW=DRAW;
 window.RENDER={};
 /* the design height follows the canvas, so a canvas a little off 16:9 or 9:16 (a preview) is still filled edge to edge */
 for(const k in DRAW)window.RENDER[k]=(ctx,W,H,p,P)=>{const w=P?1080:1920,u=W/w;ctx.save();ctx.scale(u,u);DRAW[k](ctx,w,H/u,p,!!P);ctx.restore();G.grain(ctx,W,H);};
-window.DUR={lattice:40,facade:40,arcs:40,sweep:40,colours:40,states:60,tide:40,quarter:40,orbit:40,panels:40};
+window.DUR={lattice:40,facade:40,arcs:40,sweep:40,colours:40,states:60,tide:40,quarter:40,orbit:40,panels:40,reeded:40,passing:40,halftone:40,trails:40};
 })();

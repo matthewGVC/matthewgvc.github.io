@@ -98,25 +98,48 @@
       cname + sea + callouts + locator + '</svg>';
   }
 
-  /* The "Towns" version: both counties whole, every town outlined and filled with its county's
-     colour, no labels (the page lists the towns beside the map). colours: { county: '#hex' }. */
-  function countySvg(T, colours, counties) {
-    const GL = 40, GR = 40, W = T.width, top = -14, vh = T.height + 28;
+  /* The "Towns" version: both counties whole, every town filled with its county's colour and
+     numbered to match the list beside the map. A town roomy enough (r >= MIN_R map units) carries
+     its number inside it; a smaller one gets a leader out to a number in the margin, east of the
+     coast, or west of the map for the few far inland. colours: { county: '#hex' }.
+     nums: Map of town -> its number in the list. ink: { county: '#hex' } number colour per county. */
+  const MIN_R = 7;
+  function countySvg(T, colours, counties, nums, ink) {
+    const GL = 70, GR = 78, W = T.width, top = -14, vh = T.height + 28;
     const fills = T.towns.map(t => {
       const c = colours[t.county], core = T.core.indexOf(t.county) !== -1;
       return '<path class="tn' + (core ? '' : ' nb') + '" d="' + t.d + '" fill="' + (c || '#F3F1EC') + '"><title>' +
-        esc(t.full + ', ' + t.county + ' County') + '</title></path>';
+        esc((nums && nums.has(t) ? nums.get(t) + '. ' : '') + t.full + ', ' + t.county + ' County') + '</title></path>';
     }).join('');
     const lines = T.core.map(c => '<path class="co" d="' + T.outlines[c] + '"/>').join('');
+
+    let marks = '';
+    if (nums) {
+      const big = [], east = [], west = [];
+      nums.forEach((n, t) => (t.r >= MIN_R ? big : t.c[0] < 260 ? west : east).push({ t, n, want: t.c[1] }));
+      marks = big.map(it => '<text class="nm" x="' + it.t.c[0] + '" y="' + it.t.c[1] + '" fill="' + (ink[it.t.county] || '#00273A') + '">' + it.n + '</text>').join('');
+      // Leaders run level from the town to the map's edge, then slant to the number, so none cross.
+      const callouts = (items, edge, col, dir) => {
+        spread(items, 17, top + 12, top + vh - 12);
+        return items.map(it => {
+          const [cx, cy] = it.t.c;
+          return '<path class="ld" d="M' + cx + ' ' + cy + 'L' + edge + ' ' + cy + 'L' + (col - 9 * dir) + ' ' + it.y + 'L' + col + ' ' + it.y + '"/>' +
+            '<circle class="dt" cx="' + cx + '" cy="' + cy + '" r="2.2"/>' +
+            '<text class="nl" x="' + (col + 3 * dir) + '" y="' + it.y + '" text-anchor="' + (dir > 0 ? 'start' : 'end') + '">' + it.n + '</text>';
+        }).join('');
+      };
+      marks += callouts(east, W + 6, W + 42, 1) + callouts(west, -6, -36, -1);
+    }
+
     const lw = 96, ls = lw / counties.width, lh = counties.height * ls, lx = -GL + 8, ly = T.height - lh - 6;
     const locator = '<rect class="lbg" x="' + (lx - 7) + '" y="' + (ly - 22) + '" width="' + (lw + 14) + '" height="' + (lh + 28) + '" rx="3"/>' +
       '<g transform="translate(' + lx + ' ' + ly + ') scale(' + ls + ')">' +
       counties.counties.map(c => '<path d="' + c.d + '" fill="' + (T.core.indexOf(c.name) !== -1 ? '#00273A' : '#E7E4DC') + '"/>').join('') +
       '</g><text class="lc" x="' + (lx + lw / 2) + '" y="' + (ly - 8) + '">NEW JERSEY</text>';
     return '<svg class="townmap" viewBox="' + (-GL) + ' ' + top + ' ' + (W + GL + GR) + ' ' + vh + '" preserveAspectRatio="xMidYMid meet" role="img" ' +
-      'aria-label="Map of the towns of Monmouth and Ocean counties">' +
+      'aria-label="Map of the towns of Monmouth and Ocean counties, numbered to match the list">' +
       '<defs><clipPath id="amclip"><rect x="' + (-GL) + '" y="' + top + '" width="' + (W + GL + GR) + '" height="' + vh + '"/></clipPath></defs>' +
-      '<g clip-path="url(#amclip)">' + fills + lines + '</g>' + locator + '</svg>';
+      '<g clip-path="url(#amclip)">' + fills + lines + '</g>' + locator + marks + '</svg>';
   }
 
   root.NJTownMap = { svg, countySvg, SHADES };

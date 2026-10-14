@@ -26,6 +26,12 @@
 .pg:not(.rev){--sky2:#0b7a95;}
 .pg-foot .site{color:rgba(0,39,58,.72);}
 .pg-foot .pg-n{color:rgba(0,39,58,.7);}
+/* Buyer Cheat Sheet draft: the Check warning sits above the outline */
+.cs-check{display:flex;align-items:center;gap:.12in;margin-bottom:.18in;font:400 9.5pt var(--body);color:var(--ink);}
+.cs-tag{border:1.2pt solid var(--danger);color:var(--danger);font:800 8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:.03in .09in;border-radius:2pt;}
+.cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:.2in .3in;}
+.cs-grid h4{margin:0 0 .06in;font:800 9pt var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);}
+.cs-grid ul{margin:0;padding-left:.16in;font:400 9pt/1.45 var(--body);color:var(--ink);}
 </style>
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
@@ -99,15 +105,32 @@ const state = { region: 'nj', off: {} };
 
 const SPINE = [
   { key: 'discovery', title: 'Don’t Forget to Ask', opt: 'For the agent: questions that get lost' },
-  { key: 'questions', title: 'FAQ’s',                opt: 'A checklist for the buyer and for us' }
+  { key: 'questions', title: 'FAQ’s',                opt: 'A checklist for the buyer and for us' },
+  { key: 'cheatsheet', title: 'Buyer Cheat Sheet',    opt: 'Draft: combines the two above; Check before use' }
 ];
 const pageList = () => SPINE.filter(p => !state.off[p.key]);
 let PAGES = pageList(), OF = PAGES.length;
 
 const RENDER = {
   discovery: n => P.page({ deck: DECK, n, of: OF, site: SITE, title: 'Don’t Forget to Ask', key: 'discovery', body: AP.discovery(state.region) }),
-  questions: n => P.page({ deck: DECK, n, of: OF, site: SITE, title: 'FAQ’s', key: 'questions', body: AP.faq(state.region) })
+  questions: n => P.page({ deck: DECK, n, of: OF, site: SITE, title: 'FAQ’s', key: 'questions', body: AP.faq(state.region) }),
+  cheatsheet: n => P.page({ deck: DECK, n, of: OF, site: SITE, title: 'Buyer Cheat Sheet', key: 'cheatsheet', body: CHEATSHEET_BODY })
 };
+
+/* Draft outline for the combined sheet, built from the team's notes. Headings
+   and the questions the agent should ask are the notes' own; no facts yet. */
+const CHEATSHEET_BODY =
+  '<div class="cs-check"><span class="cs-tag">Check</span> Draft outline. Not for use until the team has reviewed it.</div>' +
+  '<div class="cs-grid">' +
+  '<section><h4>What do you know about Manhattan real estate?</h4></section>' +
+  '<section><h4>Location and neighbourhood</h4><ul>' +
+  '<li>When you walk out the front door, what do you want to see? Quiet, active, the heart of the city?</li>' +
+  '<li>Subway, bus line, water, a park next door?</li></ul></section>' +
+  '<section><h4>Co-op or condo</h4><ul>' +
+  '<li>What do you know about co-ops and condos?</li>' +
+  '<li>Structural and functional differences between the two (to be written up).</li></ul></section>' +
+  '<section><h4>Building and amenities</h4><ul><li>Which amenities matter, and why?</li></ul></section>' +
+  '</div>';
 
 let builder = null;
 function redraw() {

@@ -63,7 +63,7 @@ const RULES = [
     test: l => /#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/.test(l) },
   { sev: 'WARN', id: 'sky-or-cyan-text', why: 'Sky is never text on Paper; Cyan is decorative on Paper. Confirm the surface is Navy',
     applies: f => /\.(html|css|js)$/.test(f),
-    test: l => /color\s*:\s*var\(--(sky|sky2|cyan)\)/.test(l) },
+    test: l => /(^|[;{\s])color\s*:\s*var\(--(sky|sky2|cyan)\)/.test(l) },
   { sev: 'WARN', id: 'backdrop-filter', why: 'glass panels are rejected unless deliberate',
     applies: f => /\.(html|css|js)$/.test(f),
     test: l => /backdrop-filter\s*:/.test(l) },

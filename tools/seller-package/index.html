@@ -653,13 +653,14 @@ const REVIEWS = [
   { id:'conor-hagen', agents:['john-gasdaska'], market:'nyc',
     quote:'John and his associates at Gasdaska Conlon are top notch professionals. It was a very smooth, easy and overall enjoyable experience working with them to buy and sell our apartment in NYC.',
     who:'Conor Hagen, Buyer & Seller' },
-  { id:'bardia-fd', agents:['john-gasdaska'], market:'nyc',
+  /* held out of the fill (fill:false): a referring agent's note, not a client review */
+  { id:'bardia-fd', agents:['john-gasdaska'], market:'nyc', fill:false,
     quote:'I am a realtor in Orange County, California and I referred a client to John Gasdaska to work with. I knew John was the right recommendation for my client based on his knowledge and his style. He successfully navigated my buyer to a successful closing.',
     who:'Bardia Fd, Referring Agent' },
   { id:'jenny-kane', agents:[],
     quote:'The whole team is a pleasure to work with. Super responsive, knowledgeable and helpful. They helped us with both buying and selling and did a fantastic job. Highly recommend!',
     who:'Jenny Sharfstein Kane, Buyer & Seller' },
-  { id:'megan-grant', agents:[],
+  { id:'megan-grant', agents:[], market:'nyc',
     quote:'Simply the best real estate team in NYC! Charismatic and treats you like family. Goes above and beyond for clients and expects nothing in return. I never thought buying a home could be so stress free and FUN!',
     who:'Megan Grant, Buyer' }
 ];
@@ -918,15 +919,18 @@ function chosenVideos() {
    review at all, so picking one of them fills from the team reviews and
    then the remainder — which is right rather than awkward. */
 function followedReviewIds() {
+  const usable = REVIEWS.filter(r => r.fill !== false);
   const picked = agents().map(a => a.id);
-  const queues = picked.map(id => REVIEWS.filter(r => r.agents.indexOf(id) > -1));
+  const queues = picked.map(id => usable.filter(r => r.agents.indexOf(id) > -1));
   const out = [];
   const take = r => { if (r && out.indexOf(r.id) < 0) out.push(r.id); };
-  for (let i = 0; out.length < REVIEW_SLOTS && i < REVIEWS.length; i++)
+  for (let i = 0; out.length < REVIEW_SLOTS && i < usable.length; i++)
     queues.forEach(q => { if (out.length < REVIEW_SLOTS) take(q[i]); });
-  REVIEWS.filter(r => !r.agents.length).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
-  REVIEWS.filter(r => r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
-  REVIEWS.forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  /* unattributed reviews: this market's own first, then any */
+  usable.filter(r => !r.agents.length && r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  usable.filter(r => !r.agents.length).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  usable.filter(r => r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  usable.forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
   return out;
 }
 function reviewIds() {

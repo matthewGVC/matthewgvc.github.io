@@ -90,7 +90,21 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 - [ ] Branch is clean: no stray `_edit*.py` scripts, no temp files, no committed exports.
 - [ ] Teammate change: a pull request to `main`. Matt's own change: merged to `main` after verifying (no force-push).
 
-## J. Judgement
+## J. Designer and client lenses (full detail in perspectives.md)
+
+- [ ] Reader named (buyer, seller, prospect or team member) and the review judged against that reader's job.
+- [ ] Designer: one primary element per page; a clear step-down in size, weight and colour; consistent margins; no orphaned lines, stranded headings or stub rows; line length about 45–85 characters; no widows; images cropped deliberately at both paper sizes.
+- [ ] Client walkthrough done and written up: the headline alone says what it is, who it is for and what to do next.
+- [ ] Every figure, name and claim is dated, labelled or sourced; a worried reader would believe it.
+- [ ] Jargon and acronyms are defined on the page or familiar to that reader.
+- [ ] No placeholder or stamp on a piece that is due to ship.
+- [ ] Print-size legibility and contrast suitable for an older reader at arm's length.
+- [ ] One clear next step; the contact path is the team's, correct and current.
+- [ ] No pressure, no promised outcome, no timeline the team cannot keep.
+- [ ] Nothing that assumes a single kind of buyer or household; flagged as a question if it does.
+- [ ] High-stakes pieces: a cold read by one or two people outside the team recommended.
+
+## K. Judgement
 
 - [ ] Small layout and data-mapping calls made by the author are sensible and noted in one line at most.
 - [ ] Anything that touches the live site's content for clients, another person's work, or a source only Matt holds is raised with Matt before it ships.

@@ -316,8 +316,8 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 /* the brokerage disclaimer, at the foot of a closing page. Small and quiet,
    but never optional — the text itself lives in assets/js/legal.js so all
    four builders print the same words. */
-.legal{flex:none;margin-top:.2in;padding-top:.16in;border-top:.75pt solid var(--rule-rev);
-  font:300 6.5pt/1.5 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
+.legal{flex:none;margin-top:.12in;padding-top:.1in;border-top:.75pt solid var(--rule-rev);
+  font:300 7pt/1.34 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
 /* map */
 .map-wrap{flex:1;min-height:0;position:relative;overflow:hidden;background:rgba(0,39,58,.06);}
 .map-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -577,9 +577,9 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 /* The shared legal paragraph, on this page's own rule. margin-top:auto makes
    this the page's one flexible joint: whatever height the sheet has spare
    opens up here, above the small print, rather than under the portrait. */
-.ag .legal{flex:none;margin-top:auto;padding-top:.11in;
+.ag .legal{flex:none;margin-top:auto;padding-top:.08in;
   border-top:.75pt solid var(--ag-rule-soft);
-  font:300 6.5pt/1.46 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
+  font:300 7pt/1.34 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
 
 /* "Know someone moving?" — a slim band at the foot of the closing page, above the legal text: the
    question set in the serif, and the line about introducing them. */

@@ -38,7 +38,8 @@ const PAGES = [
   ['To-do',           '/tools/todo/'],
   ['Listing Rules',   '/listing-rules/'],
   ['New Development', '/tools/new-development/'],
-  ['Office Screens',  '/tools/office-screens/']
+  ['Office Screens',  '/tools/office-screens/'],
+  ['Postcards',       '/tools/postcard/']
 ];
 
 /* Some browsers ask for these on their own whether or not a page links an

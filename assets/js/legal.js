@@ -33,6 +33,21 @@
     'The Gasdaska Verdiglione Conlon Team at Douglas Elliman Real Estate · ' +
     '575 Madison Avenue, New York, NY 10022. Equal Housing Opportunity.';
 
+  /* Mailers. The wording on every postcard the team has sent through
+     Vistaprint (Marketing > Just Sold & Expireds - Postcards): a card lands
+     in mailboxes it was not asked into, so it carries the "if your property
+     is currently listed" line. The year is the year it prints. */
+  var MAILER =
+    '575 Madison Ave, New York, NY 10022. 732.387.3807 © ' + new Date().getFullYear() +
+    ' Douglas Elliman Real Estate. All material presented herein is intended for information ' +
+    'purposes only. While this information is believed to be correct, it is represented subject ' +
+    'to errors, omissions, changes or withdrawal without notice. All property information, ' +
+    'including, but not limited to square footage, room count, number of bedrooms and the school ' +
+    'district in property listings should be verified by your own attorney, architect or zoning ' +
+    'expert. If your property is currently listed with another real estate broker, please ' +
+    'disregard this offer. It is not our intention to solicit the offerings of other real estate ' +
+    'brokers. We cooperate with them fully. Equal Housing Opportunity.';
+
   /* Printed under any floor plan, in every tool that shows one. */
   var FLOORPLAN =
     'Floor plans are for illustrative purposes only. Dimensions and square footage are ' +
@@ -54,6 +69,7 @@
   global.GVC_LEGAL = {
     DISCLAIMER: DISCLAIMER,
     BROKERAGE: BROKERAGE,
+    MAILER: MAILER,
     FLOORPLAN: FLOORPLAN,
     FLOORPLAN_SHORT: FLOORPLAN_SHORT,
     block: block

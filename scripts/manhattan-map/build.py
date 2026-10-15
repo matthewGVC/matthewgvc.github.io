@@ -1,5 +1,5 @@
 # Manhattan neighbourhoods carved along real OpenStreetMap street centrelines.
-# usage: build2.py pediacities.geojson osm_streets.json out_parts.json
+# usage: python build.py <neighbourhoods.geojson> <osm_streets.json> <out_parts.json>
 import json, sys, math
 import numpy as np
 from shapely.geometry import shape, box, Polygon, LineString, Point

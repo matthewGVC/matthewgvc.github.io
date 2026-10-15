@@ -1,5 +1,5 @@
 -- ============================================================
--- PROPERTY LIBRARY — the shared store behind the four listing builders.
+-- PROPERTY LIBRARY — the shared store behind the three listing builders.
 --
 -- A property is three things: the core facts every builder wants, one saved
 -- document per builder, and the photos of the place. Whichever tool an agent

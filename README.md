@@ -91,3 +91,7 @@ stamp. To finish it, paste in the full MLS list (TJ, James, Marli), set
 
 - Design spec: `docs/superpowers/specs/2026-06-10-gvc-workspace-site-design.md`
   (local only — `docs/` is gitignored, so it does not ship with a clone)
+
+## To-do tool
+
+`tools/todo/` is the team to-do list (internal, not indexed). Rows live in the Supabase `todos` table (migration `0003_todos.sql`), behind the team sign-in. Tested by `node scripts/interact-local.js todo`.

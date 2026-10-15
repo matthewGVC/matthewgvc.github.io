@@ -35,6 +35,7 @@ const PAGES = [
   ['CMA',             '/tools/cma/'],
   ['Map Studio',      '/tools/map-studio/'],
   ['Watermark',       '/tools/watermark/'],
+  ['To-do',           '/tools/todo/'],
   ['Listing Rules',   '/listing-rules/'],
   ['New Development', '/tools/new-development/'],
   ['Office Screens',  '/tools/office-screens/']

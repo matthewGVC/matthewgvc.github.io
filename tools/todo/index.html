@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-do — Matt Bloomfield</title>
+<meta name="description" content="The GVC team to-do list, shared through the property library.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
+     printing to PDF, which validators reject as "fonts not embedded". Do not put a
+     fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/components.css">
+<style>
+/* To-do: rows live in Supabase (table todos, migration 0003). Team sign-in only. */
+.todo-app{max-width:820px;margin:32px 0 64px}
+.todo-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:24px}
+.todo-bar .status{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+.todo-bar .status.warn{color:var(--danger)}
+.todo-bar label{font-family:var(--sans-body);font-size:14px;color:var(--ink);display:flex;gap:6px;align-items:center}
+.todo-sec{margin:0 0 32px}
+.todo-sec h2{font-family:var(--serif);font-weight:500;font-size:22px;color:var(--ink);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.todo-list{list-style:none;margin:0;padding:0}
+.todo-item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--rule)}
+.todo-item input[type=checkbox]{margin-top:4px;width:18px;height:18px;flex:none;accent-color:var(--ink)}
+.todo-item .body{flex:1;font-family:var(--sans-body);font-size:15px;line-height:1.5;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.todo-item.done .body{color:var(--ink-soft);text-decoration:line-through}
+.todo-item .del{background:none;border:0;color:var(--ink-soft);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px}
+.todo-item .del:hover{color:var(--danger)}
+.todo-add{display:flex;gap:8px;margin-top:10px}
+.todo-add input{flex:1;min-width:0;font:15px var(--sans-body);color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:4px;padding:8px 10px}
+.todo-add input:focus{outline:2px solid var(--sky);outline-offset:1px}
+.todo-new{display:flex;gap:8px;margin-top:8px}
+.todo-new input{flex:1;min-width:0;font:15px var(--sans-body);color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:4px;padding:8px 10px}
+</style>
+</head>
+<body data-root="../../" data-nav="tools">
+<main class="page">
+  <div class="page-head" data-reveal>
+    <h1>To-do</h1>
+    <span class="t-mono">The team's shared to-do list</span>
+  </div>
+  <div class="app todo-app">
+    <div class="todo-bar">
+      <button type="button" class="btn" id="btnSignIn" hidden>Sign in</button>
+      <label><input type="checkbox" id="showDone"> Show done</label>
+      <span class="status" id="status" role="status"></span>
+    </div>
+    <div id="sections"></div>
+    <div class="todo-new" id="newSec" hidden>
+      <label class="visually-hidden" for="newSecInput">New section name</label>
+      <input type="text" id="newSecInput" placeholder="New section name">
+      <button type="button" class="btn" id="btnNewSec">Add section</button>
+    </div>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script>
+'use strict';
+const P = window.GVC_PROPS;
+const SHOW_KEY = 'gvc.todo.showDone';
+const MISSING = 'The todos table is not set up. Run supabase/migrations/0003_todos.sql in the Supabase SQL Editor, then reload.';
+let rows = [];
+
+const $ = id => document.getElementById(id);
+function say(msg, kind) { const s = $('status'); s.textContent = msg || ''; s.className = 'status' + (kind ? ' ' + kind : ''); }
+const explain = e => (e && (e.status === 404 || /todos|relation|schema cache/i.test(e.message))) ? MISSING : (e && e.message) || 'Something went wrong.';
+
+/* Same gate as the property bar: a prompt, only when the library is needed. */
+function ensureSignedIn() {
+  if (P.signedIn()) return Promise.resolve(true);
+  const pw = prompt('Team password to open the to-do list:');
+  if (!pw) return Promise.resolve(false);
+  return P.signIn(pw).then(() => true).catch(e => { say(e.message, 'warn'); return false; });
+}
+
+function load() {
+  say('Loading…');
+  return P.call('/rest/v1/todos?select=*&order=position.asc,created_at.asc').then(r => {
+    rows = r || []; render(); say('');
+  }).catch(e => { say(explain(e), 'warn'); });
+}
+
+function patch(id, fields) {
+  return P.call('/rest/v1/todos?id=eq.' + id, { method: 'PATCH', body: JSON.stringify(fields) })
+    .catch(e => { say(explain(e), 'warn'); return load(); });
+}
+
+function add(section, body) {
+  const pos = rows.reduce((m, r) => Math.max(m, r.position), 0) + 1;
+  return P.call('/rest/v1/todos', {
+    method: 'POST', prefer: 'return=representation',
+    body: JSON.stringify({ section: section, body: body, position: pos })
+  }).then(r => { rows.push(r[0]); render(); }).catch(e => say(explain(e), 'warn'));
+}
+
+function remove(id) {
+  if (!confirm('Delete this item?')) return;
+  P.call('/rest/v1/todos?id=eq.' + id, { method: 'DELETE' })
+    .then(() => { rows = rows.filter(r => r.id !== id); render(); })
+    .catch(e => say(explain(e), 'warn'));
+}
+
+function sections() {
+  const order = [];
+  rows.forEach(r => { if (!order.includes(r.section)) order.push(r.section); });
+  return order;
+}
+
+function render() {
+  const showDone = $('showDone').checked;
+  const host = $('sections');
+  host.innerHTML = '';
+  sections().forEach((name, si) => {
+    const sec = document.createElement('section');
+    sec.className = 'todo-sec';
+    const h = document.createElement('h2');
+    h.textContent = name;
+    const ul = document.createElement('ul');
+    ul.className = 'todo-list';
+    rows.filter(r => r.section === name && (showDone || !r.done)).forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'todo-item' + (r.done ? ' done' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = r.done;
+      cb.setAttribute('aria-label', 'Done: ' + r.body.slice(0, 60));
+      cb.addEventListener('change', () => { r.done = cb.checked; render(); patch(r.id, { done: r.done }); });
+      const body = document.createElement('div');
+      body.className = 'body'; body.textContent = r.body;
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'del'; del.textContent = '×';
+      del.setAttribute('aria-label', 'Delete item');
+      del.addEventListener('click', () => remove(r.id));
+      li.append(cb, body, del);
+      ul.appendChild(li);
+    });
+    const form = document.createElement('form');
+    form.className = 'todo-add';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.id = 'add' + si; inp.placeholder = 'Add to ' + name;
+    inp.setAttribute('aria-label', 'Add to ' + name);
+    const btn = document.createElement('button');
+    btn.type = 'submit'; btn.className = 'btn'; btn.textContent = 'Add';
+    form.append(inp, btn);
+    form.addEventListener('submit', ev => {
+      ev.preventDefault();
+      const v = inp.value.trim();
+      if (v) { inp.value = ''; add(name, v); }
+    });
+    sec.append(h, ul, form);
+    host.appendChild(sec);
+  });
+  $('newSec').hidden = false;
+}
+
+function start() {
+  $('btnSignIn').hidden = true;
+  return ensureSignedIn().then(ok => {
+    if (ok) return load();
+    $('btnSignIn').hidden = false;
+    say('Sign in with the team password to see the list.');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  try { $('showDone').checked = localStorage.getItem(SHOW_KEY) === '1'; } catch (e) { /* private window */ }
+  $('showDone').addEventListener('change', () => {
+    try { localStorage.setItem(SHOW_KEY, $('showDone').checked ? '1' : '0'); } catch (e) { /* private window */ }
+    render();
+  });
+  $('btnSignIn').addEventListener('click', start);
+  $('btnNewSec').addEventListener('click', () => {
+    const v = $('newSecInput').value.trim();
+    if (!v) return;
+    const body = prompt('First item in "' + v + '":');
+    if (body && body.trim()) { $('newSecInput').value = ''; add(v, body.trim()); }
+  });
+  if (P.signedIn()) load();
+  else { $('btnSignIn').hidden = false; say('Sign in with the team password to see the list.'); }
+});
+</script>
+<script src="../../assets/js/field-labels.js"></script>
+</body>
+</html>

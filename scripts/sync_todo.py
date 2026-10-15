@@ -17,7 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Notes for Claude, history and settled decisions: not tasks, so not synced
+# Session notes, history and settled decisions: not tasks, so not synced
 SKIP = ('Start here', 'Done recently', 'Destination Guide decisions', "Matt's standing decisions")
 # todo.md heading (up to any " (") -> the shorter name the page uses
 PAGE_NAME = {'Up next': 'Up next', 'From Asana, open tasks': 'From Asana',

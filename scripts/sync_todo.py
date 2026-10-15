@@ -2,7 +2,7 @@
 
 docs/todo.md is the master copy. This prints SQL that replaces every open row in
 `todos` with the items in todo.md; rows ticked done on the page are kept. Run it in
-the Supabase SQL Editor (project "GVC Tools"), or Claude runs it through Supabase.
+the Supabase SQL Editor or through the Supabase MCP (project "GVC Tools").
 
     python scripts/sync_todo.py            # print the SQL
     python scripts/sync_todo.py --copy     # also copy it to the clipboard (Windows)

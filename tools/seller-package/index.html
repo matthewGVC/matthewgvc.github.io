@@ -630,10 +630,10 @@ const planFor = m => PLAN_ROWS.map(r =>
    deck cannot name someone it has no way to introduce, and cutting the name
    out of a quote is rewording rather than trimming.
 
-   TJ Verdiglione has no publicly attributed review, so he has no group in
-   the picker. That waits on text from Matt: a fabricated client quote in a
-   listing presentation is a different order of risk from a placeholder
-   photo. */
+   TJ Verdiglione has no publicly attributed review. At Matt's request
+   (2026-10-15) he leads with a team review that credits nobody (generic:true):
+   it sits in TJ's group and queue, and still counts as a Team review for
+   everyone else. Never invent an attributed quote for him. */
 const REVIEWS = [
   { id:'lenny-z', agents:['marli-silver'], market:'nj',
     quote:'Marli was absolutely fantastic. We were selling a property in New Jersey while living in Florida, and she was instrumental in reducing the stress of a long-distance sale — incredibly responsive, and very open and honest about our expectations.',
@@ -657,7 +657,7 @@ const REVIEWS = [
   { id:'bardia-fd', agents:['john-gasdaska'], market:'nyc', fill:false,
     quote:'I am a realtor in Orange County, California and I referred a client to John Gasdaska to work with. I knew John was the right recommendation for my client based on his knowledge and his style. He successfully navigated my buyer to a successful closing.',
     who:'Bardia Fd, Referring Agent' },
-  { id:'jenny-kane', agents:[],
+  { id:'jenny-kane', agents:['tj-verdiglione'], generic:true,
     quote:'The whole team is a pleasure to work with. Super responsive, knowledgeable and helpful. They helped us with both buying and selling and did a fantastic job. Highly recommend!',
     who:'Jenny Sharfstein Kane, Buyer & Seller' },
   { id:'megan-grant', agents:[], market:'nyc',
@@ -918,6 +918,8 @@ function chosenVideos() {
    is titled Testimonials. Most of the roster has no attributed
    review at all, so picking one of them fills from the team reviews and
    then the remainder — which is right rather than awkward. */
+/* Credits nobody: unattributed, or a generic team review lent to an agent. */
+const teamReview = r => !r.agents.length || r.generic;
 function followedReviewIds() {
   const usable = REVIEWS.filter(r => r.fill !== false);
   const picked = agents().map(a => a.id);
@@ -927,8 +929,8 @@ function followedReviewIds() {
   for (let i = 0; out.length < REVIEW_SLOTS && i < usable.length; i++)
     queues.forEach(q => { if (out.length < REVIEW_SLOTS) take(q[i]); });
   /* unattributed reviews: this market's own first, then any */
-  usable.filter(r => !r.agents.length && r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
-  usable.filter(r => !r.agents.length).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  usable.filter(r => teamReview(r) && r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
+  usable.filter(teamReview).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
   usable.filter(r => r.market === state.market).forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
   usable.forEach(r => { if (out.length < REVIEW_SLOTS) take(r); });
   return out;
@@ -1663,9 +1665,12 @@ document.addEventListener('DOMContentLoaded', () => {
   wireReviewPick = () => {
     const host = document.getElementById('revPick');
     host.replaceChildren();
-    const groups = agents()
-      .map(a => [a.name, REVIEWS.filter(r => r.agents.indexOf(a.id) > -1)])
-      .concat([['Team', REVIEWS.filter(r => !r.agents.length)]])
+    const mine = agents()
+      .map(a => [a.name, REVIEWS.filter(r => r.agents.indexOf(a.id) > -1)]);
+    /* a generic review lent to a picked agent shows under that agent only */
+    const lent = mine.reduce((all, g) => all.concat(g[1]), []);
+    const groups = mine
+      .concat([['Team', REVIEWS.filter(r => teamReview(r) && lent.indexOf(r) < 0)]])
       .filter(g => g[1].length);
     /* Whatever a picked agent has no group for still has to be reachable,
        or a following selection could show ticks the panel cannot untick. */

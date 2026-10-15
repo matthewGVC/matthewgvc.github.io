@@ -1,5 +1,5 @@
 -- ============================================================
--- TODOS — the team to-do list behind tools/todo/.
+-- TODOS — Matt's to-do list behind tools/todo/ (mirrors docs/todo.md).
 --
 -- One row per item. Sections are free text so new headings need no
 -- migration. Team only, like the property library: nothing here is

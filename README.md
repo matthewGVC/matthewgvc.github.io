@@ -94,4 +94,4 @@ town-by-town map; `?view=towns` gives a no-figures version. After replacing rows
 
 ## To-do tool
 
-`tools/todo/` is the team to-do list (internal, not indexed). Rows live in the Supabase `todos` table (migration `0003_todos.sql`), behind the team sign-in. Tested by `node scripts/interact-local.js todo`.
+`tools/todo/` is Matt's to-do list (the team can see it; internal, not indexed). It mirrors `docs/todo.md`: run `python scripts/sync_todo.py` and paste the SQL it prints into the Supabase SQL Editor. Rows live in the Supabase `todos` table (migration `0003_todos.sql`), behind the team sign-in. Tested by `node scripts/interact-local.js todo`.

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postcards — Matt Bloomfield</title>
+<meta name="description" content="Just Sold and For Sale postcards for The GVC Team: a 6 x 9 in two-sided card, ready for Vistaprint with bleed.">
+<meta property="og:title" content="Postcards — Matt Bloomfield">
+<meta property="og:description" content="Just Sold and For Sale postcards for The GVC Team: a 6 x 9 in two-sided card, ready for Vistaprint with bleed.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/postcard/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
+     printing to PDF, which validators reject as "fonts not embedded". Do not put a
+     fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/panel-collapse.css">
+<style>
+/* ============================================================
+   The card. 6 x 9 in landscape, the size of every postcard the team has
+   sent through Vistaprint. "With bleed" is Vistaprint's upload size,
+   9.21 x 6.21 in: 0.105 in of extra picture on every side, cut off at the
+   printer. --bl is that bleed; everything that must survive the cut sits
+   at least --safe inside the trim.
+
+   The look is the team's own recent cards (Marketing > Just Sold &
+   Expireds - Postcards: 40 E 78th St 6F, April 2026, and 7 Allen St): photos
+   beside a navy panel that carries the message, or one photo over a navy
+   band; a navy back with the monogram behind it, the agents, the call to
+   action, the team paragraph, the Where We Work map and a cyan QR.
+
+   Set on the body element, not :root: builder.css sets the Letter canvas on
+   :root and builder.js reads the live size off the body.
+   ============================================================ */
+body{--pw:9.21in;--ph:6.21in;--bl:.105in;--safe:.32in;}
+body.trim{--pw:9in;--ph:6in;--bl:0in;}
+
+.pc{position:absolute;inset:0;overflow:hidden;background:var(--navy);color:#fff;}
+.pc b,.pc strong{font-weight:700;}
+
+/* missing content: visible until it is filled in */
+.pc-stamp{display:inline-block;border:1.2pt solid var(--danger);color:var(--danger);background:#fff;
+  font:800 7.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:.03in .09in;border-radius:2pt;}
+
+/* ---------- photos (both fronts) ---------- */
+.pc-photos{position:absolute;display:grid;gap:.05in;background:#fff;}
+.pc-ph{position:relative;overflow:hidden;background:var(--ui-ink-soft);cursor:grab;touch-action:none;}
+.pc-ph.empty{display:flex;align-items:center;justify-content:center;cursor:default;}
+.pc-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+.pc-ph.over{outline:3px solid var(--sky);outline-offset:-3px;}
+
+/* the team's lines on every front */
+.pc-tag{font:800 9pt/1.25 var(--sans);letter-spacing:.06em;text-transform:uppercase;text-align:center;}
+.pc-tag span{display:block;color:var(--sky);}
+.pc-de{display:block;color:#fff;}
+.pc-de svg{display:block;width:100%;height:auto;}
+
+/* ---------- front: photos + panel ---------- */
+.f-panel .pc-photos{left:0;top:0;bottom:0;width:calc(var(--bl) + 5.3in);grid-template-rows:1fr;}
+.f-panel .pc-photos.two{grid-template-rows:1fr 1fr;}
+.pc-panel{position:absolute;top:0;right:0;bottom:0;left:calc(var(--bl) + 5.3in);
+  padding:calc(var(--bl) + .2in) calc(var(--bl) + .3in) calc(var(--bl) + .22in) .2in;display:flex;flex-direction:column;}
+.pc-kick{font:800 18.5pt/1.1 var(--sans);color:var(--cyan);}
+.pc-price{margin-top:.03in;font:800 33pt/1.05 var(--sans);color:#fff;letter-spacing:-.005em;}
+.pc-street{margin-top:.06in;font:800 16pt/1.15 var(--sans);color:#fff;}
+.pc-addr{margin-top:.05in;font:800 9.2pt/1.35 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--sky);}
+.pc-msg{font:400 8.6pt/1.5 var(--body);}
+.pc-msg p{margin:0 0 .12in;}
+.pc-panel .pc-msg{margin-top:.2in;flex:1;min-height:0;overflow:hidden;}
+.pc-sign{font:400 8.6pt/1.5 var(--body);margin-top:-.04in;}
+.pc-brand{flex:none;margin:.12in auto 0;width:2.15in;text-align:center;}
+.pc-brand .lk{display:block;width:1.85in;height:auto;margin:0 auto;color:#fff;}
+.pc-brand .pc-de{width:1.95in;margin:.1in auto .15in;}
+
+/* ---------- front: one photo over a band ---------- */
+.f-band .pc-photos{left:0;right:0;top:0;bottom:calc(var(--bl) + 1.25in);grid-template-columns:1fr;}
+.pc-band{position:absolute;left:0;right:0;bottom:0;height:calc(var(--bl) + 1.25in);
+  padding:.14in calc(var(--bl) + .36in) var(--bl);display:flex;align-items:center;gap:.4in;}
+.pc-band .words{flex:1;min-width:0;}
+.pc-band .pc-kick{font:400 13pt/1.2 var(--body);color:var(--sky);}
+.pc-band .pc-big{margin-top:.03in;font:800 24pt/1.1 var(--sans);color:#fff;}
+.pc-band .pc-big small{font:800 24pt var(--sans);}
+.pc-band .pc-addr{font-weight:600;font-family:var(--body);color:var(--bone);text-transform:uppercase;letter-spacing:.04em;margin-top:.05in;}
+.pc-band .side{flex:none;width:2.3in;}
+.pc-band .pc-de{margin-bottom:.12in;}
+.pc-band .pc-tag{text-align:right;font-weight:600;font-family:var(--body);font-size:7.6pt;}
+
+/* ---------- back ---------- */
+.pc-mono{position:absolute;left:1.4in;top:-.3in;height:7in;width:auto;opacity:.05;pointer-events:none;}
+.pc-left{position:absolute;left:calc(var(--bl) + var(--safe));top:calc(var(--bl) + .3in);bottom:calc(var(--bl) + .26in);
+  width:4.62in;display:flex;flex-direction:column;}
+.pc-back .pc-kick{font-size:18.5pt;}
+.pc-back .pc-msg{margin-top:.12in;}
+.pc-back .pc-msg p:last-child{margin-bottom:0;}
+.pc-agents{display:flex;flex-direction:column;gap:.1in;margin-top:.14in;}
+.pc-ag{display:flex;gap:.16in;align-items:flex-start;min-width:0;flex:1;}
+.pc-ag .shot{flex:none;width:.78in;height:.78in;background:var(--bone);overflow:hidden;position:relative;}
+.pc-agents.one .shot{width:1.65in;height:1.65in;}
+.pc-agents.one.msg .shot{width:1.05in;height:1.05in;}
+/* two agents and a message on the back: side by side, smaller */
+.pc-agents.msg:not(.one){flex-direction:row;gap:.18in;}
+.pc-agents.msg:not(.one) .pc-ag{gap:.1in;}
+.pc-agents.msg:not(.one) .shot{width:.62in;height:.62in;}
+.pc-agents.msg:not(.one) .nm{font-size:9.4pt;}
+.pc-agents.msg:not(.one) .tt{font-size:6.6pt;}
+.pc-agents.msg:not(.one) .ct{font-size:7pt;margin-top:.03in;}
+.pc-agents.msg:not(.one) .em{font-size:6.3pt;}
+.pc-ag .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.pc-ag .nm{font:700 11pt/1.15 var(--body);}
+.pc-agents.one .nm{font-size:13pt;}
+.pc-ag .tt{font:600 8pt/1.3 var(--body);margin-top:.02in;}
+.pc-ag .ct{font:600 8pt/1.4 var(--body);margin-top:.05in;}
+.pc-agents.one .ct{font-size:9pt;margin-top:.1in;}
+.pc-ag .em{font:600 7.4pt var(--body);margin-top:.02in;overflow-wrap:anywhere;}
+.pc-cta{margin-top:.17in;font:700 14.5pt/1.2 var(--body);}
+.pc-team{margin-top:.12in;font:400 7.3pt/1.42 var(--body);}
+.pc-legal{margin-top:.12in;font:400 5.1pt/1.42 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--cyan);}
+.pc-foot{margin-top:auto;display:flex;align-items:center;gap:.18in;padding-top:.1in;}
+.pc-foot .lk{display:block;width:1.35in;height:auto;color:#fff;}
+.pc-foot .rule{width:.6pt;height:.34in;background:rgba(229,229,229,.4);}
+.pc-foot .pc-de{width:1.25in;}
+.pc-right{position:absolute;top:calc(var(--bl) + .3in);right:calc(var(--bl) + var(--safe));display:flex;gap:.22in;align-items:flex-start;}
+.pc-map{display:block;width:1.5in;height:auto;}
+.pc-qr{width:1.3in;}
+.pc-qr svg{display:block;width:1.3in;height:1.3in;}
+.pc-qr svg path{fill:var(--cyan);}
+.pc-qr .cap{margin-top:.07in;text-align:center;font:800 6.6pt/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);}
+/* Lower right of the back: where the mail house prints the address, the
+   indicia and the barcode. Nothing of ours goes in it; the dashed outline
+   is a screen guide and never prints. */
+.pc-mail{position:absolute;right:var(--bl);bottom:var(--bl);width:3.9in;height:2.35in;}
+@media screen{
+  .pc-mail{border:1px dashed rgba(229,229,229,.4);display:flex;align-items:center;justify-content:center;
+    font:400 9px var(--ui-mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(229,229,229,.7);text-align:center;line-height:1.6;}
+  /* trim guide, so "with bleed" shows where the cut falls */
+  body:not(.trim) .pc::after{content:'';position:absolute;inset:var(--bl);border:1px dashed rgba(83,199,220,.85);pointer-events:none;}
+}
+@media print{ .pc-mail{display:none;} }
+
+/* editor: photo rows */
+.ph-row{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1px solid var(--ui-rule);border-radius:8px;background:#fff;}
+.ph-row img{width:64px;height:44px;object-fit:cover;border-radius:4px;display:block;}
+.ph-row b{display:block;font:800 10px var(--sans);letter-spacing:.06em;color:var(--navy);}
+.ph-row i{display:block;font:400 9.5px var(--ui-mono);font-style:normal;color:var(--ui-ink-soft);margin-top:2px;overflow-wrap:anywhere;}
+.ph-acts{display:flex;gap:6px;}
+</style>
+<style id="pagesize">@page{size:9.21in 6.21in;margin:0;}</style>
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">Postcards</h1>
+
+<div id="app">
+  <aside id="editor">
+    <div class="ed-body">
+      <details class="ed-sec" open>
+        <summary>Card <span class="hint">6 &times; 9 in, two sides</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Kind</label>
+            <div class="seg pick" id="kindPick" role="group" aria-label="Kind">
+              <button type="button" data-kind="sold">Just Sold</button>
+              <button type="button" data-kind="sale">For Sale</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Front</label>
+            <div class="seg pick" id="layoutPick" role="group" aria-label="Front layout">
+              <button type="button" data-layout="panel">Photos + panel</button>
+              <button type="button" data-layout="band">Full photo</button>
+            </div>
+            <div class="note">Photos + panel puts the message on the front, beside one or two photos. Full photo moves it to the back.</div>
+          </div>
+          <div class="field">
+            <label>File</label>
+            <div class="seg pick" id="bleedPick" role="group" aria-label="File size">
+              <button type="button" data-bleed="bleed">With bleed</button>
+              <button type="button" data-bleed="trim">Trim size</button>
+            </div>
+            <div class="note">With bleed is 9.21 &times; 6.21 in, the size Vistaprint asks for. The dashed line on the preview is the cut.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Property</summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Address</label>
+            <input type="text" id="fAddress" placeholder="176 East 71st Street">
+          </div>
+          <div class="f-row">
+            <div class="field">
+              <label>Unit</label>
+              <input type="text" id="fUnit" placeholder="PHD">
+            </div>
+            <div class="field">
+              <label>Town line</label>
+              <input type="text" id="fTown" placeholder="New York, NY 10021">
+            </div>
+          </div>
+          <div class="f-row">
+            <div class="field">
+              <label>Price</label>
+              <input type="text" id="fPrice" placeholder="Blank leaves it off">
+            </div>
+            <div class="field">
+              <label>Price label</label>
+              <input type="text" id="fPriceLabel">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Wording</summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Front headline</label>
+            <input type="text" id="fHeadline">
+          </div>
+          <div class="field">
+            <label>Message</label>
+            <textarea id="fMessage" rows="7" placeholder="A blank line starts a new paragraph. **Two asterisks** make a word bold."></textarea>
+          </div>
+          <div class="field">
+            <label>Sign-off</label>
+            <textarea id="fSign" rows="2" placeholder="Sincerely,&#10;Jessica Wolf and the entire GVC Team."></textarea>
+            <div class="note">Optional. Prints under the message.</div>
+          </div>
+          <div class="field">
+            <label>Back headline</label>
+            <input type="text" id="fBackHead">
+          </div>
+          <div class="field">
+            <label>Call to action</label>
+            <input type="text" id="fCta">
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Photos <span class="hint" id="photoHint"></span></summary>
+        <div class="sec-in">
+          <div class="drop" id="photoDrop" tabindex="0" role="button" aria-label="Add photos">
+            <div class="d-big">Drop photos</div>
+            <div class="d-sub">or click to choose. The first is the main photo.</div>
+          </div>
+          <input type="file" id="photoFile" accept="image/*" multiple hidden>
+          <div id="photoList"></div>
+          <div class="sec-note">Drag a photo on the card to move it in its frame. Drop a photo straight onto a frame to replace it.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Agents <span class="hint">up to 2, on the back</span></summary>
+        <div class="sec-in"><div id="rosterPick"></div></div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Warnings</summary>
+        <div class="sec-in"><div class="warn" id="warnGeneral" hidden></div></div>
+      </details>
+    </div>
+  </aside>
+
+  <div id="stage"><div id="pages"></div></div>
+
+  <div id="stageBar">
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button type="button" class="btn sm ghost" id="btnZoom">Zoom 100%</button>
+    <button type="button" class="btn lg" id="btnPrint" title="In the print dialog: Destination 'Save as PDF' &middot; Margins 'None' &middot; enable 'Background graphics'. The paper size is set by the card.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
+<script src="../../assets/js/bios.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/legal.js"></script>
+<script src="../../assets/js/qr.js"></script>
+<script src="../../assets/js/images.js"></script>
+<script src="../../assets/js/pitch.js"></script>
+<script>
+'use strict';
+const P = window.Pitch;
+const esc = P.esc;
+const $ = s => document.querySelector(s);
+
+/* Fixed team material, as printed on the team's recent cards. Not fields. */
+const TEAM_QR_URL = 'https://www.gvcrealestateteam.com/property';
+const TAGLINE = ['Your next home is waiting', 'Let’s find it together'];
+const TEAM_PARA = '<b>The Gasdaska Verdiglione Conlon (GVC) Team</b> is a premier real estate team specializing ' +
+  'in luxury transactions across New Jersey, Florida, and NYC. Founded on the principles of excellence and ' +
+  'collaboration, our team brings over 60 years of combined experience and has closed over $2 billion in ' +
+  'career deals. The GVC Team is supported by skilled professionals and a network of agents dedicated to ' +
+  'delivering exceptional service. Reach out today to see how we can help you!';
+const MAP = '../../assets/img/where-we-work.png';
+const MONO = '../../assets/logos/monogram-white.svg';
+
+/* Inline, so the print dialog can never catch it half-loaded (the
+   Showsheet's reason for inlining its logos too). */
+let DE = '';
+fetch('../../assets/logos/sheet/douglas-elliman.svg').then(r => r.ok ? r.text() : '').catch(() => '')
+  .then(t => { DE = /^\s*<svg[\s>]/.test(t) ? t.trim() : ''; redraw(); });
+const deMark = () => '<span class="pc-de" role="img" aria-label="Douglas Elliman">' + DE + '</span>';
+
+/* What changes with the kind of card. Headlines, price label and call to
+   action are only defaults: whatever is typed wins. */
+const KINDS = {
+  sold: { headline: 'Just Sold!', back: 'Sold in Your Neighborhood!', priceLabel: 'Sold Price',
+          cta: 'Reach out for a free consultation and home valuation with our team!' },
+  sale: { headline: 'For Sale', back: 'Now Available', priceLabel: 'List Price',
+          cta: 'Reach out today to arrange a private showing with our team!' }
+};
+
+/* Saved between visits: the words and choices, never the photos (data URLs
+   are too big for localStorage) and nothing about any client. */
+const KEY = 'gvc.postcard.state';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* private window or full */ } };
+
+const state = Object.assign({
+  kind: 'sold', layout: 'panel', bleed: 'bleed',
+  address: '', unit: '', town: '', price: '', priceLabel: '',
+  headline: '', message: '', sign: '', backHead: '', cta: '', agents: []
+}, load(), { photos: [] });   // photos: [{url, name, x, y, w}] — x/y are object-position %
+if (state.layout !== 'band') state.layout = 'panel';
+
+function persist() {
+  const s = Object.assign({}, state); delete s.photos;
+  save(s);
+}
+
+/* ---------- derived ---------- */
+const kind = () => KINDS[state.kind] || KINDS.sold;
+const pick = (typed, dflt) => String(typed || '').trim() || dflt;
+const headline = () => pick(state.headline, kind().headline);
+const backHead = () => pick(state.backHead, kind().back);
+const cta = () => pick(state.cta, kind().cta);
+const priceLabel = () => pick(state.priceLabel, kind().priceLabel);
+/* typed text to markup: escaped first, then **bold** and line breaks */
+const rich = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+const paragraphs = s => String(s || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
+  .map(p => '<p>' + rich(p) + '</p>').join('');
+/* "UNIT · TOWN", or the whole address when the street is printed elsewhere */
+function addrCaps(withStreet) {
+  const parts = [withStreet ? state.address : '', state.unit, state.town].map(v => String(v || '').trim()).filter(Boolean);
+  return parts.map(esc).join(' &middot; ');
+}
+
+/* ---------- front ---------- */
+function photoSlot(i) {
+  const ph = state.photos[i];
+  if (!ph) return '<div class="pc-ph empty" data-slot="' + i + '"><span class="pc-stamp">Photo needed</span></div>';
+  return '<div class="pc-ph" data-slot="' + i + '"><img src="' + ph.url + '" alt="" ' +
+    'style="object-position:' + ph.x + '% ' + ph.y + '%"></div>';
+}
+
+function frontPanel() {
+  const n = state.photos.length > 1 ? 2 : 1;
+  const price = P.money(state.price);
+  const street = state.address.trim();
+  const msg = paragraphs(state.message);
+  return '<div class="pc pc-front f-panel">' +
+    '<div class="pc-photos' + (n === 2 ? ' two' : '') + '">' + photoSlot(0) + (n === 2 ? photoSlot(1) : '') + '</div>' +
+    '<div class="pc-panel">' +
+      '<div class="pc-kick">' + esc(headline()) + '</div>' +
+      (price
+        ? '<div class="pc-price">' + esc(price) + '</div><div class="pc-addr">' + (addrCaps(true) || '<span class="pc-stamp">Address needed</span>') + '</div>'
+        : '<div class="pc-street">' + (street ? esc(street) : '<span class="pc-stamp">Address needed</span>') + '</div>' +
+          (addrCaps(false) ? '<div class="pc-addr">' + addrCaps(false) + '</div>' : '')) +
+      '<div class="pc-msg">' + (msg || '<span class="pc-stamp">Message needed</span>') +
+        (state.sign.trim() ? '<div class="pc-sign">' + rich(state.sign.trim()) + '</div>' : '') + '</div>' +
+      '<div class="pc-brand">' + P.LOCKUP + deMark() +
+        '<div class="pc-tag"><span>' + esc(TAGLINE[0]) + '</span>' + esc(TAGLINE[1]) + '</div></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function frontBand() {
+  const price = P.money(state.price);
+  const big = price ? esc(price) + ' <small>' + esc(priceLabel()) + '</small>'
+                    : (state.address.trim() ? esc(state.address.trim()) : '<span class="pc-stamp">Address needed</span>');
+  return '<div class="pc pc-front f-band">' +
+    '<div class="pc-photos">' + photoSlot(0) + '</div>' +
+    '<div class="pc-band">' +
+      '<div class="words">' +
+        '<div class="pc-kick">' + esc(headline()) + '</div>' +
+        '<div class="pc-big">' + big + '</div>' +
+        '<div class="pc-addr">' + addrCaps(!!price) + '</div>' +
+      '</div>' +
+      '<div class="side">' + deMark() + '<div class="pc-tag"><span>' + esc(TAGLINE[0]) + '</span>' + esc(TAGLINE[1]) + '</div></div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------- back ---------- */
+function agentBlock(a) {
+  const phones = [a.phone, a.mobile].map(v => String(v || '').trim()).filter(Boolean);
+  return '<div class="pc-ag">' +
+    '<div class="shot"><img src="' + esc(a.photo) + '" alt=""></div>' +
+    '<div><div class="nm">' + esc(a.name) + '</div><div class="tt">' + esc(a.title) + '</div>' +
+    (phones.length ? '<div class="ct">' + phones.map(esc).join('<br>') + '</div>' : '') +
+    (String(a.email || '').trim() ? '<div class="em">' + esc(a.email.trim()) + '</div>' : '') +
+    '</div></div>';
+}
+
+function back() {
+  const agents = state.agents.map(id => window.GVC_AGENT(id)).filter(Boolean);
+  /* the message prints on the back only when the front has no panel for it */
+  const msgHere = state.layout === 'band';
+  const msg = paragraphs(state.message);
+  const cls = (agents.length === 1 ? ' one' : '') + (msgHere ? ' msg' : '');
+  return '<div class="pc pc-back">' +
+    '<img class="pc-mono" src="' + MONO + '" alt="">' +
+    '<div class="pc-left">' +
+      '<div class="pc-kick">' + esc(backHead()) + '</div>' +
+      (msgHere ? '<div class="pc-msg">' + (msg || '<span class="pc-stamp">Message needed</span>') +
+        (state.sign.trim() ? '<div class="pc-sign">' + rich(state.sign.trim()) + '</div>' : '') + '</div>' : '') +
+      '<div class="pc-agents' + cls + '">' + (agents.length ? agents.map(agentBlock).join('') : '<span class="pc-stamp">Pick an agent</span>') + '</div>' +
+      '<div class="pc-cta">' + esc(cta()) + '</div>' +
+      '<div class="pc-team">' + TEAM_PARA + '</div>' +
+      '<div class="pc-legal">' + esc(window.GVC_LEGAL.MAILER) + '</div>' +
+      '<div class="pc-foot">' + P.LOCKUP + '<span class="rule"></span>' + deMark() + '</div>' +
+    '</div>' +
+    '<div class="pc-right">' +
+      '<img class="pc-map" src="' + MAP + '" alt="Where we work: New York, New Jersey and Florida">' +
+      '<div class="pc-qr">' + window.GVC_QR_URL(TEAM_QR_URL) + '<div class="cap">Our listings</div></div>' +
+    '</div>' +
+    '<div class="pc-mail">Mailing area<br>address &middot; postage &middot; barcode</div>' +
+  '</div>';
+}
+
+/* ---------- size ---------- */
+function syncSize() {
+  document.body.classList.toggle('trim', state.bleed === 'trim');
+  const w = state.bleed === 'trim' ? 9 : 9.21, h = state.bleed === 'trim' ? 6 : 6.21;
+  $('#pagesize').textContent = '@page{size:' + w + 'in ' + h + 'in;margin:0;}';
+}
+
+/* ---------- warnings ---------- */
+function checkWarnings() {
+  const msgs = [];
+  const over = sel => [...document.querySelectorAll(sel)].some(el => P.overflowing(el));
+  if (over('.pc-panel .pc-msg')) msgs.push('The message is longer than the front panel holds. Shorten it, or it will be cut off.');
+  if (over('.pc-band .words')) msgs.push('The front band text is too long. Shorten the headline or address.');
+  const left = document.querySelector('.pc-left');
+  if (left && P.overflowing(left)) msgs.push('The back has more than fits. Shorten the message or the call to action, or pick one agent.');
+  if (!state.photos.length) msgs.push('No photo yet: drop one into Photos.');
+  if (state.layout === 'band' && state.photos.length > 1) msgs.push('Full photo uses the main photo only.');
+  state.agents.map(id => window.GVC_AGENT(id)).filter(Boolean).forEach(a => {
+    if (!String(a.email || '').trim()) msgs.push(a.name + ' has no email on file in the roster, so none prints.');
+  });
+  state.photos.forEach((ph, i) => {
+    if (ph.w && ph.w < 1800) msgs.push('Photo ' + (i + 1) + ' is only ' + ph.w + ' px wide and may print soft.');
+  });
+  const box = $('#warnGeneral');
+  box.innerHTML = msgs.map(m => '<div class="warn-item">' + esc(m) + '</div>').join('');
+  box.hidden = !msgs.length;
+}
+
+/* ---------- photos ---------- */
+const MAX_EDGE = 3200;   // 9.21 in at ~350 ppi
+
+async function addFiles(files, slot) {
+  const imgs = [...files].filter(f => /^image\//.test(f.type));
+  for (const f of imgs) {
+    try {
+      const img = await window.GVC_IMAGES.fileToImage(f);
+      const ph = { url: window.GVC_IMAGES.reencode(img, MAX_EDGE, 0.9), name: f.name, x: 50, y: 50, w: img.naturalWidth };
+      if (slot != null) { state.photos[slot] = ph; slot = null; }
+      else state.photos.push(ph);
+    } catch (e) { /* not an image we can read */ }
+  }
+  state.photos = state.photos.filter(Boolean).slice(0, 2);
+  GVC_UNSAVED.touch();
+  paintPhotoList(); redraw();
+}
+
+function paintPhotoList() {
+  const host = $('#photoList');
+  host.innerHTML = '';
+  state.photos.forEach((ph, i) => {
+    const row = document.createElement('div');
+    row.className = 'ph-row';
+    row.innerHTML = '<img src="' + ph.url + '" alt=""><div><b>' + (i === 0 ? 'Main photo' : 'Second photo') + '</b><i>' + esc(ph.name) + '</i></div>' +
+      '<div class="ph-acts">' +
+        (i === 1 ? '<button type="button" class="btn sm ghost" data-act="swap">Make main</button>' : '') +
+        '<button type="button" class="btn sm ghost" data-act="del" aria-label="Remove ' + esc(ph.name) + '">Remove</button>' +
+      '</div>';
+    row.querySelector('[data-act="del"]').addEventListener('click', () => { state.photos.splice(i, 1); GVC_UNSAVED.touch(); paintPhotoList(); redraw(); });
+    const sw = row.querySelector('[data-act="swap"]');
+    if (sw) sw.addEventListener('click', () => { state.photos.reverse(); GVC_UNSAVED.touch(); paintPhotoList(); redraw(); });
+    host.appendChild(row);
+  });
+  $('#photoHint').textContent = state.photos.length + ' of 2';
+}
+
+/* Drag inside a frame to move the photo in it; drop a file on a frame to
+   replace that photo. Wired once on #pages, so it survives every redraw. */
+function wireFrames() {
+  const host = $('#pages');
+  let drag = null;
+  host.addEventListener('pointerdown', e => {
+    const slot = e.target.closest('.pc-ph:not(.empty)');
+    if (!slot) return;
+    const ph = state.photos[+slot.dataset.slot];
+    const img = slot.querySelector('img');
+    if (!ph || !img) return;
+    const r = slot.getBoundingClientRect();
+    /* how far the cover-fitted photo overflows its frame, per axis, in screen px */
+    const sc = Math.max(r.width / img.naturalWidth, r.height / img.naturalHeight);
+    drag = { ph, img, sx: e.clientX, sy: e.clientY, x0: ph.x, y0: ph.y,
+             ox: img.naturalWidth * sc - r.width, oy: img.naturalHeight * sc - r.height };
+    slot.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  host.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const clamp = v => Math.max(0, Math.min(100, v));
+    if (drag.ox > 1) drag.ph.x = clamp(drag.x0 - (e.clientX - drag.sx) / drag.ox * 100);
+    if (drag.oy > 1) drag.ph.y = clamp(drag.y0 - (e.clientY - drag.sy) / drag.oy * 100);
+    drag.img.style.objectPosition = drag.ph.x + '% ' + drag.ph.y + '%';
+  });
+  const end = () => { if (drag) { drag = null; GVC_UNSAVED.touch(); } };
+  host.addEventListener('pointerup', end);
+  host.addEventListener('pointercancel', end);
+
+  host.addEventListener('dragover', e => {
+    const slot = e.target.closest('.pc-ph');
+    if (!slot) return;
+    e.preventDefault();
+    slot.classList.add('over');
+  });
+  host.addEventListener('dragleave', e => { const s = e.target.closest('.pc-ph'); if (s) s.classList.remove('over'); });
+  host.addEventListener('drop', e => {
+    const slot = e.target.closest('.pc-ph');
+    if (!slot) return;
+    e.preventDefault();
+    addFiles(e.dataTransfer.files, Math.min(+slot.dataset.slot, state.photos.length));
+  });
+}
+
+function wireDropZone() {
+  const box = $('#photoDrop'), input = $('#photoFile');
+  box.addEventListener('click', () => input.click());
+  box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+  box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('over'); });
+  box.addEventListener('dragleave', () => box.classList.remove('over'));
+  box.addEventListener('drop', e => { e.preventDefault(); box.classList.remove('over'); addFiles(e.dataTransfer.files); });
+  input.addEventListener('change', () => { addFiles(input.files); input.value = ''; });
+}
+
+/* ---------- fields ---------- */
+const FIELDS = [
+  ['#fAddress', 'address'], ['#fUnit', 'unit'], ['#fTown', 'town'],
+  ['#fPrice', 'price'], ['#fPriceLabel', 'priceLabel'],
+  ['#fHeadline', 'headline'], ['#fMessage', 'message'], ['#fSign', 'sign'],
+  ['#fBackHead', 'backHead'], ['#fCta', 'cta']
+];
+function paintPlaceholders() {
+  $('#fHeadline').placeholder = kind().headline;
+  $('#fBackHead').placeholder = kind().back;
+  $('#fCta').placeholder = kind().cta;
+  $('#fPriceLabel').placeholder = kind().priceLabel;
+}
+
+let builder = null;
+function redraw() {
+  if (!builder) return;
+  builder.rebuild();
+  setTimeout(checkWarnings, 0);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  syncSize();
+  FIELDS.forEach(([sel, k]) => {
+    const el = $(sel);
+    el.value = state[k] || '';
+    el.addEventListener('input', () => { state[k] = el.value; persist(); redraw(); });
+  });
+  paintPlaceholders();
+  P.segPick($('#kindPick'), 'kind', () => state.kind, v => { state.kind = v; paintPlaceholders(); persist(); redraw(); });
+  P.segPick($('#layoutPick'), 'layout', () => state.layout, v => { state.layout = v; persist(); redraw(); });
+  P.segPick($('#bleedPick'), 'bleed', () => state.bleed, v => { state.bleed = v; syncSize(); persist(); redraw(); });
+  window.GVC_PICKER($('#rosterPick'), state, { key: 'agents', max: 2, onChange: () => { persist(); redraw(); } });
+  wireDropZone();
+  wireFrames();
+  paintPhotoList();
+
+  builder = Builder.init({
+    pages: 2, label: 'Side',
+    sizeLabel: () => state.bleed === 'trim' ? '9 × 6 in' : '9.21 × 6.21 in, with bleed',
+    printName: () => ['Postcard', [state.address, state.unit].map(v => String(v || '').trim()).filter(Boolean).join(' ')].filter(Boolean).join(' - '),
+    render: (page, i) => { page.innerHTML = i === 0 ? (state.layout === 'band' ? frontBand() : frontPanel()) : back(); }
+  });
+  redraw();
+  /* fonts change line breaks: check again once they are in */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkWarnings);
+  GVC_UNSAVED.watch();
+});
+</script>
+<script src="../../assets/js/panel-collapse.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
+</body>
+</html>

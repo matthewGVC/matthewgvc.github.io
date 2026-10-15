@@ -40,6 +40,9 @@
     {id:'katie-cook',        name:'Katie Cook',        title:'Licensed Real Estate Salesperson',      phone:'516.319.9732', mobile:'',    email:'katie.cook@elliman.com', instagram:''},
     {id:'nicole-sobol',      name:'Nicole Sobol',      title:'Licensed Real Estate Salesperson',      phone:'201.240.7544', mobile:'',    email:'nicole.sobol@elliman.com', instagram:''},
     {id:'gary-kasparov',     name:'Gary Kasparov',     title:'Licensed Real Estate Salesperson',      phone:'718.980.8777', mobile:'',    email:'gary.kasparov@elliman.com', instagram:''},
+    /* Elyse's number is from the team's 2024 pitch template; her Elliman email
+       is not on file yet, so it stays blank and the tools skip it. */
+    {id:'elyse-gutman',      name:'Elyse Gutman',      title:'Licensed Associate Real Estate Broker', phone:'917.796.3144', mobile:'',    email:'', instagram:''},
     {id:'ayuen-gai',         name:'Ayuen Gai',         title:'Licensed Real Estate Salesperson',      phone:'315.679.0088', mobile:'',    email:'ayuen.gai@elliman.com', instagram:''},
 
     /* New Jersey */

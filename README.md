@@ -87,6 +87,13 @@ and Marli). The front page is NJ by county and the back is a Monmouth + Ocean
 town-by-town map; `?view=towns` gives a no-figures version. After replacing rows, run
 `node scripts/test-nj-footprint.js`.
 
+## Postcards tool
+
+`tools/postcard/` makes a two-sided 6 x 9 in Just Sold or For Sale postcard, at
+Vistaprint's 9.21 x 6.21 in bleed size or at trim size. Everything is typed or dropped in
+(photos are not saved; the words are, in `localStorage`); agents come from the roster.
+The back keeps its lower right clear for the mail house. Tested by `node scripts/interact-local.js postcard`.
+
 ## Docs
 
 - Design spec: `docs/superpowers/specs/2026-06-10-gvc-workspace-site-design.md`

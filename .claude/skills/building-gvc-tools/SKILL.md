@@ -34,6 +34,14 @@ build once answered.** Never guess them:
 
 Record the answers in `docs/superpowers/specs/YYYY-MM-DD-<slug>-design.md`.
 
+**Start from the team's own recent designs, not a fresh restyle.** If the tool makes
+collateral the team already produces by hand (postcards, sheets, social posts), find the
+**most recent** examples on the shared drive (`G:\Shared drives\GVC - Marketing\02 - Assets\...`,
+sorted by date folder) and match their layout, hierarchy and fixed copy (taglines, team
+paragraph, legal). Render them with PyMuPDF and pull exact text, sizes and colours from
+`page.get_text('dict')`. A "cleaner" house-style reinterpretation was sent back once
+(Postcards, 2026-10-15): the recent cards are the brief.
+
 ## 2. Pick the shell
 
 | Tool kind | Shell | Reference tool |
@@ -76,6 +84,22 @@ icons `icons.js`, property library `property-library.js` (+ `property-bar.js` to
 - **Class names:** check `components.css` before naming a class. `.tool` is the homepage tile, and Watermark's panel inherited its border and padding by reusing it.
 - **Other tools' folders:** don't load another tool's files; move shared data to `assets/js/`.
 - **`data-foot="none"`** on full-height tools, or chrome.js adds the site footer under the app and the page scrolls.
+- **Not US Letter?** Set `--pw`/`--ph` on `body` (builder.js reads the size off the body, and
+  `builder.css` puts Letter on `:root`), write `@page` into a `<style id="pagesize">` you rewrite
+  when the size changes, and pass `sizeLabel` to `Builder.init`. Chrome rounds the page to whole
+  CSS px, so 6.21in prints as 6.207in. Reference: `tools/postcard/` (9.21 x 6.21 bleed / 9 x 6 trim).
+- **Mailed pieces** carry `GVC_LEGAL.MAILER` (the "if your property is currently listed" wording)
+  and keep the back's lower right clear for the mail house (about 3.9 x 2.35 in).
+- **Agent not in the roster?** Look in `G:\Shared drives\GVC - Marketing\GVC - Headshots\`
+  (folder names carry the title). Cut the largest portrait out with `rembg`, frame it to 1100 px
+  like the others (head about 0.3–0.38 of the width, top of hair ~100 px down, torso off the
+  bottom), add the row, run `node scripts/test-agent-photos.js`. A field with no current source
+  (an old Corcoran email) stays blank; tools skip blanks.
+- **Shared brand art:** `assets/logos/sheet/douglas-elliman.svg` (the wordmark, `currentColor`),
+  `assets/img/where-we-work.png` (NY/NJ/FL map from the postcards). Inline SVGs with `fetch`, as the
+  Showsheet does.
+- **Comments in `<head>`:** check-tools finds the first `<body` in the file, so a CSS comment that
+  says "`<body>`" fails it. Write "the body element".
 
 ## 5. Verify, in this order
 
@@ -89,6 +113,12 @@ node scripts/dnd-local.js <slug>        # photo tools only
 
 check-tools can't see every control a script builds: if the page has inputs, load
 `field-labels.js` even when check-tools passes.
+
+interact-local types `'Long '.repeat(60)` into every field, so overflow WARN lines at the end are
+expected and prove the warnings work. A warning box inside a closed `<details>` has an empty
+`innerText`: read `textContent` in tests. If the browser pane refuses localhost, drive the page
+with Playwright from `scripts/node_modules` against the :8080 server and `page.pdf({preferCSSPageSize:true,
+printBackground:true})`, then look at the PDF (PyMuPDF render), not the screen.
 
 Non-print tools: check the mobile preset (375px) and edge inputs (blank, zero, "$1,250,000").
 Print tools: print → Save as PDF in Chromium **and** WebKit, for every paper size and market:
@@ -116,3 +146,4 @@ Never force-push either way.
 | Unpinned or SRI-less CDN script | Pin + hash |
 | Only checked the screen | The PDF is the product; check both engines |
 | Mounted the property bar for a new tool | Read-only until Matt's migration runs |
+| Redesigned collateral the team already makes | Match their most recent files on the drive first |

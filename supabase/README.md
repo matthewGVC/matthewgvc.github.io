@@ -1,7 +1,7 @@
 # The property library's database
 
-The four listing builders — Showsheet, Brochure, Buyer Package, Seller Pitch & CMA — share one
-saved property each. This folder holds the schema for that shared store.
+Three listing builders — Showsheet, Brochure and Seller Pitch — share one saved property each.
+The Buyer Package does not use the library. This folder holds the schema for that shared store.
 
 - **Project:** `hoszxrrlfhzbbrzenqvp` (Supabase, free tier, region `us-west-2`)
 - **Client config:** `assets/js/supabase-config.js` — the project URL and the publishable key,
@@ -15,6 +15,7 @@ saved property each. This folder holds the schema for that shared store.
 | `properties` | One row per address. `core` is the facts every builder shares: address, city/state/zip, price, beds, baths, sqft, description, features, agents, comps. |
 | `documents` | One saved document per tool per property (`showsheet`, `brochure`, `seller`, `buyer`). `state` is stored verbatim and handed back untouched. |
 | `developments` | One row per developer pipeline for `tools/new-development/` (migration 0002). `data` is the whole printable document, stored verbatim; uploaded renderings go in the `property-photos` bucket under `developments/<slug>/`. |
+| `todos` | The team to-do list for `tools/todo/` (migration 0003). |
 | `photos` | The index of the photo shelf. The files themselves live in the private `property-photos` bucket; pages render them through short-lived signed URLs. |
 
 A property may have no documents at all — core facts alone are a perfectly normal property, and

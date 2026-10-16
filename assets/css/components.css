@@ -86,6 +86,11 @@
 .tool:hover .t-mono,.tool:focus-visible .t-mono{color:var(--ink)}
 .tool:focus-visible{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--sky)}
 
+/* the To-do tile, alone in the page's bottom-right corner: the same grid
+   as the tool rows, so it takes exactly one cell, in the last column */
+.home-corner{margin-top:clamp(44px,6vw,68px)}
+.home-corner .tool{grid-column:-2 / -1}
+
 /* websites — full-width navy bars at a fixed height. Same rule: colour and
    weight only, no growth and no screenshot reveal. */
 .site-stack{display:flex;flex-direction:column;gap:14px}

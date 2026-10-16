@@ -10,7 +10,8 @@
    tool must meet; WARN lines are worth fixing but older tools may carry
    them for a reason. Exit code 1 on any FAIL.
 
-   Redirect stubs (a meta refresh, like tools/cma/) are skipped.
+   Redirect stubs (a meta refresh, like tools/cma/) are skipped, and so
+   are ARCHIVED tools: kept in the repo, but off the homepage and tests.
    ============================================================ */
 const fs = require('fs');
 const path = require('path');
@@ -26,6 +27,8 @@ const slugs = process.argv[2]
   ? process.argv[2].split(',')
   : fs.readdirSync(path.join(ROOT, 'tools')).filter(d => fs.existsSync(path.join(ROOT, 'tools', d, 'index.html')));
 
+const ARCHIVED = ['new-development'];
+
 /* pinned = an exact x.y.z version in the URL */
 const PINNED = /[@/]v?\d+\.\d+\.\d+/;
 
@@ -38,6 +41,8 @@ for (const slug of slugs) {
      fonts.googleapis.com link back", which must not count as the link */
   const html = read(file).replace(/<!--[\s\S]*?-->/g, '');
   if (/http-equiv=["']refresh/i.test(html)) { console.log(`\n${slug}  (redirect stub, skipped)`); continue; }
+  if (ARCHIVED.includes(slug)) { console.log(`
+${slug}  (archived, skipped)`); continue; }
 
   const fail = [], warn = [];
   const head = (html.match(/<head>([\s\S]*?)<\/head>/i) || [, ''])[1];

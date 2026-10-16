@@ -25,8 +25,10 @@
 <main class="page home">
   <h1 class="visually-hidden">Matt Bloomfield — GVC Workspace</h1>
 
-  <!-- The tools that print for clients lead the page as their own set
-       rather than sitting among the odd-job utilities. -->
+  <!-- The tools that print for clients lead the page as their own set,
+       then the odd-job utilities, then the sheets and libraries agents
+       look things up in. New Development is archived: its files stay in
+       tools/new-development/ but it has no tile. -->
   <section class="home-sec" aria-label="Listing suite">
     <div class="sec-head">
       <h2 class="sec-label">Listing Suite</h2>
@@ -41,7 +43,7 @@
 
       <a class="tool" href="tools/brochure/" data-enter>
         <span class="t-mono">Builder</span>
-        <span class="tool-name">Brochure</span>
+        <span class="tool-name">Property Brochure</span>
       </a>
 
       <a class="tool" href="tools/buyer-package/" data-enter>
@@ -49,44 +51,19 @@
         <span class="tool-name">Buyer Package</span>
       </a>
 
-      <a class="tool" href="tools/agent-info/" data-enter>
-        <span class="t-mono">Sheet</span>
-        <span class="tool-name">Useful Agent Info</span>
+      <a class="tool" href="tools/seller-package/" data-enter>
+        <span class="t-mono">Builder</span>
+        <span class="tool-name">Seller Package</span>
       </a>
 
       <a class="tool" href="tools/destination-guide/" data-enter>
         <span class="t-mono">Builder</span>
-        <span class="tool-name">Destination Guide</span>
-      </a>
-
-      <a class="tool" href="tools/new-development/" data-enter>
-        <span class="t-mono">Builder</span>
-        <span class="tool-name">New Development</span>
-      </a>
-
-      <a class="tool" href="tools/nj-footprint/" data-enter>
-        <span class="t-mono">Sheet</span>
-        <span class="tool-name">NJ Footprint</span>
-      </a>
-
-      <a class="tool" href="tools/seller-package/" data-enter>
-        <span class="t-mono">Builder</span>
-        <span class="tool-name">Seller Pitch &amp; CMA</span>
+        <span class="tool-name">Local Guide</span>
       </a>
 
       <a class="tool" href="tools/postcard/" data-enter>
         <span class="t-mono">Builder</span>
         <span class="tool-name">Postcards</span>
-      </a>
-
-      <a class="tool" href="tools/properties/" data-enter>
-        <span class="t-mono">Library</span>
-        <span class="tool-name">Properties</span>
-      </a>
-
-      <a class="tool" href="tools/office-screens/" data-enter>
-        <span class="t-mono">Motion</span>
-        <span class="tool-name">Office Screens</span>
       </a>
 
     </div>
@@ -119,13 +96,38 @@
         <span class="tool-name">Watermark</span>
       </a>
 
-      <a class="tool" href="tools/todo/" data-enter>
-        <span class="t-mono">List</span>
-        <span class="tool-name">To-do</span>
+      <a class="tool" href="tools/office-screens/" data-enter>
+        <span class="t-mono">Motion</span>
+        <span class="tool-name">Office Screens</span>
+      </a>
+
+    </div>
+  </section>
+
+  <section class="home-sec" aria-label="Reference">
+    <div class="sec-head">
+      <h2 class="sec-label">Reference</h2>
+      <span class="sec-rule" aria-hidden="true"></span>
+    </div>
+    <div class="tool-row">
+
+      <a class="tool" href="tools/agent-info/" data-enter>
+        <span class="t-mono">Sheet</span>
+        <span class="tool-name">Useful Agent Info</span>
+      </a>
+
+      <a class="tool" href="tools/nj-footprint/" data-enter>
+        <span class="t-mono">Sheet</span>
+        <span class="tool-name">NJ Footprint</span>
+      </a>
+
+      <a class="tool" href="tools/properties/" data-enter>
+        <span class="t-mono">Library</span>
+        <span class="tool-name">Properties</span>
       </a>
 
       <a class="tool" href="listing-rules/" data-enter>
-        <span class="t-mono">Reference</span>
+        <span class="t-mono">Rules</span>
         <span class="tool-name">Listing Media Rules</span>
       </a>
 
@@ -207,6 +209,14 @@
       </div>
     </div>
   </details>
+
+  <!-- Matt's own list: a quiet corner link, not one of the team's tools. -->
+  <div class="tool-row home-corner">
+    <a class="tool" href="tools/todo/" data-enter>
+      <span class="t-mono">List</span>
+      <span class="tool-name">To-do</span>
+    </a>
+  </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
 <script src="assets/js/chrome.js"></script>

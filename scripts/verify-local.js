@@ -23,7 +23,7 @@ const PAGES = [
   ['Homepage',        '/'],
   ['404',             '/404.html'],
   ['Showsheet',       '/tools/showsheet/'],
-  ['Seller Pitch',    '/tools/seller-package/'],
+  ['Seller Package',  '/tools/seller-package/'],
   ['Brochure',        '/tools/brochure/'],
   ['Buyer Package',   '/tools/buyer-package/'],
   ['Agent Info',      '/tools/agent-info/'],
@@ -37,7 +37,6 @@ const PAGES = [
   ['Watermark',       '/tools/watermark/'],
   ['To-do',           '/tools/todo/'],
   ['Listing Rules',   '/listing-rules/'],
-  ['New Development', '/tools/new-development/'],
   ['Office Screens',  '/tools/office-screens/'],
   ['Postcards',       '/tools/postcard/']
 ];

@@ -1,5 +1,5 @@
 ' Starts the GVC helper with no window. Task Scheduler runs this at log on
-' (helper/install-task.ps1). Output goes to %APPDATA%\gvc-helper\helper.log.
+' (helper/install-task.ps1). Output goes to %USERPROFILE%\.gvc-helper\helper.log.
 '
 ' Task Scheduler's own "restart on failure" only covers a task that fails to
 ' start, not a program that crashes later, so this script restarts node itself:
@@ -9,7 +9,7 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh = CreateObject("WScript.Shell")
 helperDir = fso.GetParentFolderName(WScript.ScriptFullName)
 repoDir = fso.GetParentFolderName(helperDir)
-logDir = sh.ExpandEnvironmentStrings("%APPDATA%") & "\gvc-helper"
+logDir = sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\.gvc-helper"
 If Not fso.FolderExists(logDir) Then fso.CreateFolder(logDir)
 sh.CurrentDirectory = repoDir
 waitMs = sh.ExpandEnvironmentStrings("%GVC_HELPER_RESTART_MS%")

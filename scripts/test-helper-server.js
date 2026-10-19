@@ -41,6 +41,14 @@ function req(method, p, headers, body) {
 }
 
 (async () => {
+  /* The default home sits outside AppData: Windows gives packaged apps (the
+     Claude app) a private copy of AppData, so a pairing code written from
+     there would never reach the real helper. */
+  const saved = process.env.GVC_HELPER_HOME;
+  delete process.env.GVC_HELPER_HOME;
+  check('default home outside AppData', require('../helper/config.js').home(), path.join(os.homedir(), '.gvc-helper'));
+  process.env.GVC_HELPER_HOME = saved;
+
   const cfg = Object.assign(loadConfig(), { port: 47611 });
   check('config created', fs.existsSync(path.join(process.env.GVC_HELPER_HOME, 'config.json')), true);
   check('pair code is 6 digits', /^\d{6}$/.test(cfg.pairCode), true);

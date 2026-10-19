@@ -21,8 +21,9 @@ hidden at every log on and restarts it if it stops. Run it from the main repo fo
 
 ## Where its files live
 
-- Settings, pairing code, caches: `%APPDATA%\gvc-helper\` (never in this repo).
-- Log: `%APPDATA%\gvc-helper\helper.log`.
+- Settings, pairing code, caches: `%USERPROFILE%\.gvc-helper\` (never in this repo). Not under
+  AppData: Windows gives the Claude desktop app its own private copy of AppData.
+- Log: `%USERPROFILE%\.gvc-helper\helper.log`.
 - DE dry-run reports: `exports/de-dry-run-<date>.md` (gitignored).
 - Real DE recordings: `helper/fixtures/recorded/` (gitignored). The repo's tests use the
   made-up `helper/fixtures/synthetic/`.

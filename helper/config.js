@@ -1,7 +1,7 @@
 /* ============================================================
    HELPER CONFIG — the desktop helper's settings, kept OUTSIDE the repo.
 
-   Lives in %APPDATA%\gvc-helper\config.json (or $GVC_HELPER_HOME, used by
+   Lives in %USERPROFILE%\.gvc-helper\config.json (or $GVC_HELPER_HOME, used by
    tests). Created on first use with a random six-digit pairing code. The
    repo is public: never copy this file, its pairing code or (from Slice 1)
    the helper account's password into it.
@@ -19,9 +19,11 @@ const DEFAULTS = {
   port: 47610
 };
 
+/* Not under AppData: Windows gives packaged apps (the Claude desktop app) a
+   private copy of AppData, so a pairing code written from there never reached
+   the real helper (2026-10-19). The user folder itself isn't virtualised. */
 function home() {
-  return process.env.GVC_HELPER_HOME ||
-    path.join(process.env.APPDATA || path.join(require('os').homedir(), 'AppData', 'Roaming'), 'gvc-helper');
+  return process.env.GVC_HELPER_HOME || path.join(require('os').homedir(), '.gvc-helper');
 }
 
 function loadConfig() {

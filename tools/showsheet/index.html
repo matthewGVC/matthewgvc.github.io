@@ -1058,7 +1058,9 @@ function arrangeFpPair(pair){
   const colW = Math.max(0, Math.min(W - FP_INSET, (H - g - 2 * FP_INSET) / colS));
   const col = colW * colW * colS > rowH * rowH * rowA;
   pair.dataset.dir = col ? 'col' : 'row';
-  wraps.forEach((w, i) => { w.style.flex = (col ? 1 / a[i] : a[i]).toFixed(4) + ' 1 0'; });
+  // each frame is its image margin plus a share of the rest in proportion to
+  // its shape, which lands both plans at exactly the same height (or width)
+  wraps.forEach((w, i) => { w.style.flex = (col ? 1 / a[i] : a[i]).toFixed(4) + ' 1 ' + FP_INSET + 'px'; });
   return col ? {aspect: 1 / colS, insetW: FP_INSET, insetH: 2 * FP_INSET + g}
              : {aspect: rowA, insetW: 2 * FP_INSET + g, insetH: FP_INSET};
 }
@@ -1471,8 +1473,9 @@ document.addEventListener('click', e=>{
     state.floorplan = state.floorplan2 || null;
     state.floorplanView = normFpView(state.floorplan2 ? state.floorplan2View : null);
     state.floorplan2 = null; state.floorplan2View = normFpView(null);
+    edited();
   }
-  if(what==='floorplan2'){ state.floorplan2=null; state.floorplan2View = normFpView(null); }
+  if(what==='floorplan2'){ state.floorplan2=null; state.floorplan2View = normFpView(null); edited(); }
   if(what==='docx'){
     // dropping the doc means starting the next listing — clear everything unit-specific
     state = freshListing();
@@ -1600,8 +1603,9 @@ async function setFloorplanFile(f, slot = 0){
 }
 /* the floorplan zone takes one plan, or two at once: the first and the second */
 async function addFloorplanFiles(files){
-  const imgs = [...(files||[])].filter(x=>/^image\//.test(x.type));
-  if(!imgs.length) return;
+  // a file with no type (HEIC, some Windows drags) still gets a try, as it always did
+  const imgs = [...(files||[])].filter(x=>!x.type || /^image\//.test(x.type));
+  if(!imgs.length){ if(files && files.length) toast('Could not read the floorplan image.', true); return; }
   await setFloorplanFile(imgs[0], 0);
   if(imgs[1]) await setFloorplanFile(imgs[1], 1);
   if(imgs.length > 2) toast('The sheet holds two floorplans — the first two were used.', true);

@@ -32,6 +32,17 @@ function home() {
    `node helper/install-browser.js`. */
 if (!process.env.PLAYWRIGHT_BROWSERS_PATH) process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(home(), 'browsers');
 
+/* The project address and its public key come from the site's own
+   assets/js/supabase-config.js, so the helper and the pages never disagree. */
+function siteSupabase() {
+  try {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', 'supabase-config.js'), 'utf8');
+    const win = {};
+    require('vm').runInNewContext(src, { window: win });
+    return { supabaseUrl: win.GVC_SUPABASE.url, publishableKey: win.GVC_SUPABASE.publishableKey };
+  } catch (e) { return {}; }
+}
+
 function loadConfig() {
   const dir = home(), file = path.join(dir, 'config.json');
   fs.mkdirSync(dir, { recursive: true });
@@ -41,7 +52,7 @@ function loadConfig() {
     saved.pairCode = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     fs.writeFileSync(file, JSON.stringify(Object.assign({}, DEFAULTS, saved), null, 2));
   }
-  return Object.assign({}, DEFAULTS, saved, { home: dir });
+  return Object.assign({}, DEFAULTS, siteSupabase(), saved, { home: dir });
 }
 
 module.exports = { loadConfig, home };

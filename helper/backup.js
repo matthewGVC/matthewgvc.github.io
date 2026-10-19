@@ -54,12 +54,22 @@ async function backup(o) {
 
   if (o.bucket) {
     const files = await o.client.listBucket(o.bucket);
+    const root = path.resolve(out, 'files'), skipped = [];
+    let written = 0;
     for (const f of files) {
-      const dest = path.join(out, 'files', ...f.split('/'));
+      // a stored name must stay inside files/: no "..", ".", empty parts, drive letters or backslashes
+      const segs = f.split('/');
+      const dest = path.resolve(root, ...segs);
+      if (segs.some(s => s === '' || /^[.\s]+$/.test(s) || /[\\:]/.test(s)) || dest.indexOf(root + path.sep) !== 0) {
+        skipped.push(f);
+        continue;
+      }
       fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.writeFileSync(dest, await o.client.download(o.bucket, f));
+      written++;
     }
-    manifest.bucket = { name: o.bucket, files: files.length };
+    manifest.bucket = { name: o.bucket, files: written };
+    if (skipped.length) manifest.bucket.skipped = skipped;
   }
 
   fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2));

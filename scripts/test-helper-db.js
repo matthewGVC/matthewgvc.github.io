@@ -116,6 +116,13 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   check('restore notes', fs.existsSync(path.join(out, 'README.txt')), true);
   check('never overwrites a backup', await throwsName(() => backup({ client: c, outDir: out, tables: ['todos'] })), 'Error');
 
+  /* a bucket file whose name climbs out of the folder is skipped and listed, never written */
+  const evilOut = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-bk-')), 'b');
+  const evil = fakeSupabase({ todos: [] }, { 'ok/a.jpg': 'A', '../../escape.txt': 'X', 'x/../../y.txt': 'Y', 'c:/z.txt': 'Z' });
+  const m2 = await backup({ client: createClient(CFG, { fetch: evil.fetch }), outDir: evilOut, tables: ['todos'], bucket: 'property-photos' });
+  check('unsafe names skipped', [m2.bucket.files, m2.bucket.skipped.length], [1, 3]);
+  check('nothing written outside', fs.existsSync(path.join(path.dirname(evilOut), 'escape.txt')) || fs.existsSync(path.join(evilOut, 'y.txt')), false);
+
   /* a count that disagrees with the rows read fails loudly */
   const wrong = fakeSupabase({ todos: [{ id: 1 }] }, {});
   const orig = wrong.fetch;

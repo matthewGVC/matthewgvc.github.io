@@ -124,10 +124,8 @@
        one-off document without ever seeing this. */
     function ensureSignedIn() {
       if (P.signedIn()) return Promise.resolve(true);
-      var pw = global.prompt('Team password to open the property library:');
-      if (!pw) return Promise.resolve(false);
-      return P.signIn(pw).then(function () { say('Signed in.', 'ok'); return true; })
-                         .catch(function (e) { say(e.message, 'warn'); return false; });
+      return P.askSignIn('Sign in to open the property library.')
+        .then(function (ok) { if (ok) say('Signed in.', 'ok'); return ok; });
     }
 
     /* ---------------- load ---------------- */

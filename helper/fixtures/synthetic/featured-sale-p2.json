@@ -1,0 +1,61 @@
+{
+ "data": [
+  {
+   "coreListingId": 900003,
+   "listPrice": 3000000,
+   "closePrice": null,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "listingStatus": "Active",
+   "address": {
+    "city": "New York",
+    "unitNumber": "PH1",
+    "streetName": "TEST PL",
+    "streetNumber": "30",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NY",
+    "postalCode": null,
+    "samlsFullAddress": "30 TEST PL PH1, New York, NY 10003",
+    "samlsPartialAddress": "30 TEST PL PH1"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-30.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": -5,
+   "openHouses": []
+  },
+  {
+   "coreListingId": 900004,
+   "listPrice": 900000,
+   "closePrice": null,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "listingStatus": "Pending",
+   "address": {
+    "city": "Testtown",
+    "unitNumber": null,
+    "streetName": "Sample Lane",
+    "streetNumber": "12",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NJ",
+    "postalCode": null,
+    "samlsFullAddress": "12 Sample Lane, Testtown, NJ 07001",
+    "samlsPartialAddress": "12 Sample Lane"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-12.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": 0,
+   "openHouses": []
+  }
+ ],
+ "totalCount": 4
+}

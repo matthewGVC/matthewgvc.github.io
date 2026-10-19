@@ -1,0 +1,33 @@
+{
+ "data": [
+  {
+   "coreListingId": 900005,
+   "listPrice": 5000,
+   "closePrice": null,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "listingStatus": "Active",
+   "address": {
+    "city": "New York",
+    "unitNumber": "2C",
+    "streetName": "DEMO ST",
+    "streetNumber": "40",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NY",
+    "postalCode": null,
+    "samlsFullAddress": "40 DEMO ST 2C, New York, NY 10004",
+    "samlsPartialAddress": "40 DEMO ST 2C"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-40.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": 0,
+   "openHouses": []
+  }
+ ],
+ "totalCount": 1
+}

@@ -1,0 +1,32 @@
+{
+ "data": [
+  {
+   "coreListingId": 900007,
+   "listPrice": 4000,
+   "closePrice": 4000,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "address": {
+    "city": "New York",
+    "unitNumber": "1A",
+    "streetName": "MOCK ST",
+    "streetNumber": "60",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NY",
+    "postalCode": null,
+    "samlsFullAddress": "60 MOCK ST 1A, New York, NY 10006",
+    "samlsPartialAddress": "60 MOCK ST 1A"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-60.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": 0,
+   "openHouses": []
+  }
+ ],
+ "totalCount": 1
+}

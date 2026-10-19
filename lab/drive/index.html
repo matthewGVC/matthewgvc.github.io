@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drive access test — Matt Bloomfield</title>
+<meta name="description" content="Workspace v2 Slice 0 test: does this site keep its Google Drive access across reloads, restarts and reboots.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/components.css">
+<style>
+  .app { max-width: 760px; margin: 32px auto 0; display: grid; gap: 18px; }
+  .lab-banner { border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 12px 16px; }
+  .lab-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lab-row .btn[disabled] { opacity: .45; pointer-events: none; }
+  .lab-state { font-family: var(--mono); font-size: 13px; }
+  .lab-log { font-family: var(--mono); font-size: 12px; line-height: 1.6; background: var(--paper-2); border-radius: 8px; padding: 14px 16px; min-height: 160px; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body data-root="../../" data-nav="tools">
+<main class="page">
+  <div class="page-head" data-reveal>
+    <h1>Drive access test</h1>
+    <span class="t-mono">Slice 0 · does this site keep its access to G:\Shared drives</span>
+  </div>
+  <div class="app">
+    <p class="lab-banner" id="ro" hidden>Read-only here: Drive isn't connected on this device.</p>
+    <p class="lab-state">State: <b id="state">checking…</b></p>
+    <div class="lab-row">
+      <button class="btn" type="button" id="connect">Connect Drive</button>
+      <button class="btn" type="button" id="reconnect">Reconnect Drive</button>
+    </div>
+    <div class="lab-row">
+      <button class="btn" type="button" id="lnk">List active listings</button>
+      <button class="btn" type="button" id="details">Read 1050 Fifth 2E details doc</button>
+      <button class="btn" type="button" id="paper">Try a paperwork file</button>
+      <button class="btn" type="button" id="big">Read a large photo (20 s limit)</button>
+    </div>
+    <div class="lab-log" id="log" aria-live="polite"></div>
+  </div>
+</main>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/drive-rules.js"></script>
+<script src="../../assets/js/drive.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = window.GVC_DRIVE, $ = function (id) { return document.getElementById(id); };
+  var NY = 'GVC - New York';
+  var FIFTH = NY + '/Building Information/1050 Fifth Ave/2E';
+  var PHD = NY + '/Building Information/176 E71/PHD';
+
+  function log(msg) { $('log').textContent += new Date().toISOString() + '  ' + msg + '\n'; }
+
+  function refresh(why) {
+    return D.state().then(function (s) {
+      $('state').textContent = s;
+      $('ro').hidden = s !== 'unsupported';
+      ['connect', 'reconnect', 'lnk', 'details', 'paper', 'big'].forEach(function (id) {
+        $(id).disabled = s === 'unsupported' || (id !== 'connect' && s === 'not-connected');
+      });
+      log((why || 'state') + ': ' + s);
+      return s;
+    });
+  }
+
+  function act(id, fn) {
+    $(id).addEventListener('click', function () {
+      Promise.resolve().then(fn).catch(function (e) { log('error: ' + (e && e.message || e)); })
+        .then(function () { return refresh('after ' + id); });
+    });
+  }
+
+  act('connect', function () {
+    return D.connect().then(function (names) { log('roots held: ' + names.join(', ')); });
+  });
+  act('reconnect', function () {
+    return D.reconnect().then(function (ok) { log('reconnect: ' + (ok ? 'access back' : 'not granted')); });
+  });
+  act('lnk', function () {
+    var t = performance.now();
+    return D.list(NY + '/ACTIVE LISTINGS & DEALS').then(function (items) {
+      var n = items.filter(function (x) { return /\.lnk$/i.test(x.name); }).length;
+      log(n + ' shortcuts (.lnk) in ACTIVE LISTINGS & DEALS, ' + Math.round(performance.now() - t) + ' ms');
+    });
+  });
+  act('details', function () {
+    return D.list(FIFTH).then(function (items) {
+      var doc = items.filter(function (x) { return x.kind === 'file' && window.GVC_DRIVE_RULES.allowedInJob(x.name); })[0];
+      if (!doc) { log('no details doc at the top of 2E'); return; }
+      return D.readJobFile(FIFTH, doc.name).then(function (f) { log('read "' + f.name + '", ' + f.size + ' bytes'); });
+    });
+  });
+  act('paper', function () {
+    return D.readJobFile(FIFTH, 'Docs/contract.pdf').then(
+      function () { log('PROBLEM: a paperwork path was read'); },
+      function (e) { log('refused as it should be: ' + e.message); });
+  });
+  act('big', function () {
+    return D.list(PHD + '/Photos/Photos').then(function (items) {
+      var f = items.filter(function (x) { return /\.jpe?g$/i.test(x.name); })[0];
+      if (!f) { log('no photo found'); return; }
+      var t = performance.now();
+      return D.readJobFile(PHD, 'Photos/Photos/' + f.name, { timeoutMs: 20000 }).then(function (file) {
+        log('read ' + file.name + ', ' + (file.size / 1048576).toFixed(1) + ' MB in ' + Math.round(performance.now() - t) + ' ms');
+      });
+    });
+  });
+
+  refresh('on load');
+})();
+</script>
+</body>
+</html>

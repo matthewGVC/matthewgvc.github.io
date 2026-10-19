@@ -1,0 +1,61 @@
+{
+ "data": [
+  {
+   "coreListingId": 900001,
+   "listPrice": 1000000,
+   "closePrice": null,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "listingStatus": "Active",
+   "address": {
+    "city": "New York",
+    "unitNumber": "4A",
+    "streetName": "EXAMPLE ST",
+    "streetNumber": "100",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NY",
+    "postalCode": null,
+    "samlsFullAddress": "100 EXAMPLE ST 4A, New York, NY 10001",
+    "samlsPartialAddress": "100 EXAMPLE ST 4A"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-100.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": 0,
+   "openHouses": []
+  },
+  {
+   "coreListingId": 900002,
+   "listPrice": 2000000,
+   "closePrice": null,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "listingStatus": "ActiveUnderContract",
+   "address": {
+    "city": "New York",
+    "unitNumber": "7B",
+    "streetName": "SAMPLE AVE",
+    "streetNumber": "20",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NY",
+    "postalCode": null,
+    "samlsFullAddress": "20 SAMPLE AVE 7B, New York, NY 10002",
+    "samlsPartialAddress": "20 SAMPLE AVE 7B"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-20.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": 0,
+   "openHouses": []
+  }
+ ],
+ "totalCount": 4
+}

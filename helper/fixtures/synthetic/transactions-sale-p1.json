@@ -1,0 +1,32 @@
+{
+ "data": [
+  {
+   "coreListingId": 900006,
+   "listPrice": 1500000,
+   "closePrice": 1450000,
+   "bedroomsTotal": 2,
+   "bathroomsFull": 2,
+   "bathroomsHalf": 0,
+   "livingAreaSquareFeet": 1200,
+   "currency": "USD",
+   "address": {
+    "city": "New York",
+    "unitNumber": "3D",
+    "streetName": "FAKE RD",
+    "streetNumber": "50",
+    "neighborhood": "Testville",
+    "stateOrProvince": "NY",
+    "postalCode": null,
+    "samlsFullAddress": "50 FAKE RD 3D, New York, NY 10005",
+    "samlsPartialAddress": "50 FAKE RD 3D"
+   },
+   "coverImage": {
+    "url": "https://example.com/cover-50.jpg"
+   },
+   "closeDate": null,
+   "priceChangePercent": 0,
+   "openHouses": []
+  }
+ ],
+ "totalCount": 1
+}

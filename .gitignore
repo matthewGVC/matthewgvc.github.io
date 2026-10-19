@@ -8,3 +8,5 @@ node_modules/
 *.pyc
 exports/
 .impeccable/
+helper/fixtures/recorded/
+helper/node_modules/

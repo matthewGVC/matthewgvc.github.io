@@ -98,8 +98,23 @@
 
   /* ---------------- one place that talks to the API ---------------- */
 
-  function call(path, opts) {
+  /* Supabase restarts the database now and then, and a request that lands in
+     the gap comes back as a 5xx ("The connection to the database timed
+     out"). Reads are safe to repeat, so they wait and try again before
+     giving up; writes are not, so they fail at once and the agent decides. */
+  var RETRY_WAITS = [1500, 4000];
+
+  function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+
+  function call(path, opts, attempt) {
     opts = opts || {};
+    attempt = attempt || 0;
+    var reading = !opts.method || opts.method === 'GET';
+    var canRetry = function () { return reading && attempt < RETRY_WAITS.length; };
+    var retry = function () {
+      return wait(RETRY_WAITS[attempt]).then(function () { return call(path, opts, attempt + 1); });
+    };
+
     return fresh().then(function (s) {
       var headers = {
         apikey: CFG.publishableKey,
@@ -116,6 +131,7 @@
       });
     }).then(function (r) {
       if (r.status === 204) return null;
+      if (r.status >= 500 && canRetry()) return retry();
       return r.text().then(function (text) {
         var data = null;
         try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
@@ -124,6 +140,7 @@
       });
     }, function (e) {
       if (!navigator.onLine) throw new Error('You are offline — the library needs a connection.');
+      if (e instanceof TypeError && canRetry()) return retry();
       throw e;
     });
   }
@@ -133,6 +150,7 @@
     var msg = (data && (data.message || data.msg || data.error)) || ('Request failed (' + status + ')');
     if (status === 409) msg = 'A property already exists at that address.';
     if (/violates check constraint/.test(msg)) msg = 'That value is not one the library accepts.';
+    if (status >= 500) msg = 'The library is not answering right now — it is usually back within a minute. Try again shortly.';
     var e = new Error(msg);
     e.status = status;
     return e;

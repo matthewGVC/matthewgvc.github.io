@@ -24,6 +24,40 @@
     'Douglas Elliman Real Estate · 575 Madison Avenue, New York, NY 10022. ' +
     'Equal Housing Opportunity.';
 
+  /* New Jersey and Florida listings. The same disclaimer without the
+     sentence about flip tax, sublets, pied-à-terre and board approval: those
+     are New York co-op terms, and on a house in Rumson or a condo in Delray
+     they describe rules that do not exist. Nothing is added in its place, so
+     every other word is the New York text exactly. The brokerage line keeps
+     575 Madison Avenue, as elliman.com does under its listings in every state. */
+  var CO_OP_SENTENCE =
+    'Carrying costs, financing limits, flip tax, assessments, and sublet ' +
+    'and pied-à-terre policies are subject to building documents and board approval. ';
+  var DISCLAIMER_NJ_FL = DISCLAIMER.replace(CO_OP_SENTENCE, '');
+
+  /* The listing disclaimer for a market: 'nj' and 'fl' drop the co-op
+     sentence; anything else, including no market at all, is New York. */
+  function listing(market) {
+    return market === 'nj' || market === 'fl' ? DISCLAIMER_NJ_FL : DISCLAIMER;
+  }
+
+  /* A property's market from its address, for a tool that has no market
+     control of its own (the Brochure). The state field is typed freely, so
+     it reads the name or the code, and falls back to the zip: 07–08 is New
+     Jersey, 32–34 is Florida. A zip masked as "07***" still reads. Anything
+     it cannot place is New York, which is how every document printed before. */
+  function marketOf(where) {
+    where = where || {};
+    var st = String(where.state || '').trim().toLowerCase().replace(/\./g, '');
+    if (st === 'nj' || st === 'new jersey') return 'nj';
+    if (st === 'fl' || st === 'florida') return 'fl';
+    if (st === 'ny' || st === 'new york') return 'nyc';
+    var zip = String(where.zip || '').trim();
+    if (/^0[78]/.test(zip)) return 'nj';
+    if (/^3[234]/.test(zip)) return 'fl';
+    return 'nyc';
+  }
+
   /* The shorter form, for a document that is not about one listing — a
      buyer consultation carries no property to disclaim, but the brokerage
      and the housing line still belong on it. */
@@ -60,9 +94,10 @@
 
   /* The block as it prints at the foot of a closing page. `kind` picks the
      wording: 'listing' (default) for a property document, 'brokerage' for
-     one that is not about a specific listing. */
-  function block(kind) {
-    var text = kind === 'brokerage' ? BROKERAGE : DISCLAIMER;
+     one that is not about a specific listing. `market` ('nyc', 'nj', 'fl')
+     picks the listing wording; left out, it is New York. */
+  function block(kind, market) {
+    var text = kind === 'brokerage' ? BROKERAGE : listing(market);
     return '<div class="legal">' + text + '</div>';
   }
 
@@ -72,6 +107,8 @@
     MAILER: MAILER,
     FLOORPLAN: FLOORPLAN,
     FLOORPLAN_SHORT: FLOORPLAN_SHORT,
+    listing: listing,
+    marketOf: marketOf,
     block: block
   };
 })(window);

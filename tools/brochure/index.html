@@ -839,7 +839,7 @@ body.paper-half .ag.solo .ag-hero{padding:1.2in 0 1.9in;}
 <script src="../../assets/js/state-shapes.js"></script>
 <script src="../../assets/js/icons.js"></script>
 <script src="../../assets/js/qr.js"></script>
-<script src="../../assets/js/legal.js"></script>
+<script src="../../assets/js/legal.js?v=2"></script>
 <script src="../../assets/js/unsaved.js"></script>
 <script src="../../assets/js/supabase-config.js"></script>
 <script src="../../assets/js/property-library.js"></script>
@@ -1646,7 +1646,7 @@ function renderAgent(page, n, of) {
   page.innerHTML = P.closingPage({
     agents: agentObjs(), headshotFor,
     qr: qrSvg(TEAM_QR_URL), qrCap: 'Our properties',
-    legal: GVC_LEGAL.block('listing'),
+    legal: GVC_LEGAL.block('listing', GVC_LEGAL.marketOf(state)),
     foot: pageFoot(n, of, true)
   });
 }

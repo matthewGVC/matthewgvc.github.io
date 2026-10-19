@@ -509,7 +509,7 @@ table.tbl th.num{text-align:right;}
 <script src="../../assets/js/state-shapes.js"></script>
 <script src="../../assets/js/icons.js"></script>
 <script src="../../assets/js/qr.js"></script>
-<script src="../../assets/js/legal.js"></script>
+<script src="../../assets/js/legal.js?v=2"></script>
 <script src="../../assets/js/unsaved.js"></script>
 <script src="../../assets/js/supabase-config.js"></script>
 <script src="../../assets/js/property-library.js"></script>
@@ -1493,7 +1493,7 @@ function pgContact(n) {
     P.closingPage({
       agents: agents(), headshotFor,
       qr: qrSvg(TEAM_QR_URL), qrCap: 'Our properties',
-      legal: GVC_LEGAL.block('listing'),
+      legal: GVC_LEGAL.block('listing', state.market),
       referral: P.referralNote(STATE_LINE().slice(0, -1).join(', ') + ' or ' + STATE_LINE().slice(-1)),
       states: STATE_LINE().map(nm => P.STATES.filter(s => s[0] === nm)[0]),
       foot: P.foot(SITE, true, n, OF)

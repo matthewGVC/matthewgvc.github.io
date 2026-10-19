@@ -216,9 +216,11 @@ questions to settle first, copy-exact templates, the wiring checklist, and
   `assets/logos/sheet/`.
 - It outputs a two-sided listing sheet and can print to **A5 or US Letter** (there's a paper-size
   toggle under the preview).
-- The panel has a **Text size** section: one control per section, 70–200%, where 100% is the
+- The panel has a **Text & floorplan size** section: one control per section, 70–200%, where 100% is the
   automatic fit. A section only grows while it and its neighbours still fit, and the panel says
-  "Largest that fits here" when it stops short. The floorplan can be **cropped on the sheet
+  "Largest that fits here" when it stops short. The same section has a **Floorplan** row
+  (70–130%) that sizes the plan itself: it takes width from The Numbers and, when the plan needs
+  height, shrinks the agent headshots. The floorplan can also be **cropped on the sheet
   itself** — hover the plan to zoom, then drag to move it.
   Both are saved with the sheet.
 - Typical loop: edit `tools/showsheet/index.html` → refresh `localhost:8080/tools/showsheet/`

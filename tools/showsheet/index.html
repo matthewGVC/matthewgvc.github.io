@@ -268,14 +268,14 @@ body.bleed .safe{display:block;}
 .b-main{flex:1;display:flex;gap:.34in;margin-top:.17in;min-height:0;}
 .b-col{min-width:0;overflow:hidden;display:flex;flex-direction:column;}
 .b-col.c1{flex:1;}
-.b-col.c3{flex:3;}
+.b-col.c3{flex:3;}   /* Floorplan size overrides this with a set width (fitSheets) */
 .col-h{display:flex;align-items:center;gap:.1in;margin-bottom:.11in;}
 .col-h .ich{width:.24in;height:.24in;color:var(--sky2);flex:none;}
 .col-h .ich svg{width:100%;height:100%;display:block;}
 .col-h span{font:900 var(--t-sub) var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--navy);white-space:nowrap;}
 .col-h::after{content:'';flex:1;height:.6pt;background:var(--hairline);}
 /* ledger — label stacked over its value; em-scaled so the column autofits */
-.num-fit{flex:1;font-size:10pt;}
+.num-fit{flex:1;font-size:10pt;padding-bottom:.03in;}   /* room for the last line's descenders: the fit allows 1px over */
 .lg-row{padding:.54em 0;border-bottom:.6pt solid var(--hairline);}
 .lg-lab{display:block;font:900 .78em var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(0,39,58,.62);}
 .lg-val{display:block;font:500 1.15em var(--body);color:var(--navy);margin-top:.25em;}
@@ -525,10 +525,10 @@ body.bleed .crop{display:block;}
   </details>
 
   <details class="ed-sec" id="textSec">
-    <summary>Text size <span class="hint">per section &middot; 100% is auto-fit</span></summary>
+    <summary>Text &amp; floorplan size <span class="hint">100% is auto-fit</span></summary>
     <div class="sec-in">
       <div id="tsRows"></div>
-      <div class="field"><div class="note">Sizes are relative to what the sheet picks on its own, so they keep working as the text changes. A section only grows as far as it still fits &mdash; making text bigger never cuts anything to make room.</div></div>
+      <div class="field"><div class="note">Sizes are relative to what the sheet picks on its own, so they keep working as the text changes. A section only grows as far as it still fits &mdash; making text bigger never cuts anything to make room. Floorplan sizes the plan itself: it takes width from The Numbers and, when it needs height, shrinks the agent photos.</div></div>
       <div class="btn-row"><button type="button" class="btn sm ghost" id="tsReset">Reset all to auto</button></div>
     </div>
   </details>
@@ -650,6 +650,9 @@ function blankUnit(){
     /* the floorplan's crop inside its frame: zoom 1 shows the whole plan; once
        zoomed in, x/y (0–100) say where the view sits, like object-position */
     floorplanView:{zoom:1, x:50, y:50},
+    /* how wide the floorplan's column is, in percent of the usual 3/4 of the
+       back page; the ledger beside it gives up the width. 100 is the default */
+    floorplanSize:100,
     /* manual text size per section, in percent of the autofit (see TEXT_SECTIONS);
        a section left out is at 100 — auto */
     textScale:{},
@@ -978,6 +981,41 @@ function textPct(key){
   return Number.isFinite(v) && v ? clampN(v, TS_MIN, TS_MAX) : 100;
 }
 const textK = key => textPct(key) / 100;
+/* The floorplan sits in the same panel, as one more back-page row. It sizes
+   the plan as printed: 100% is what the sheet shows on its own. Growing it
+   takes width from The Numbers and, for a plan that is short of height, takes
+   height from the agent headshots. It stops where the ledger would no longer
+   fit at its smallest or the headshots are as small as they go; smaller hands
+   the room back to The Numbers. */
+const FP_SIZE = {key:'floorplan', label:'Floorplan', side:'Back', sel:'.fp-wrap', min:70, max:130};
+const SIZE_ROWS = [...TEXT_SECTIONS, FP_SIZE];
+const FP_HEADSHOT_MIN = .6;   // a bigger plan may shrink the agent headshots to this share of their size
+function fpSizePct(){
+  const v = Math.round(Number(state.floorplanSize));
+  return Number.isFinite(v) && v ? clampN(v, FP_SIZE.min, FP_SIZE.max) : 100;
+}
+const sizePct = key => key === FP_SIZE.key ? fpSizePct() : textPct(key);
+function setSizePct(key, v){
+  if(key === FP_SIZE.key) state.floorplanSize = v;
+  else if(v === 100) delete state.textScale[key];
+  else state.textScale[key] = v;
+}
+/* the plan's width/height, read once per image off the page; until it has
+   loaded, only the ledger caps the column, and the load re-fits */
+let fpShape = {src:null, aspect:null};
+function fpAspect(src){
+  if(!src) return null;
+  if(fpShape.src === src) return fpShape.aspect;
+  fpShape = {src, aspect:null};
+  const im = new Image();
+  im.onload = () => {
+    if(fpShape.src !== src) return;
+    fpShape.aspect = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : null;
+    if(fpShape.aspect) render();
+  };
+  im.src = src;
+  return null;
+}
 /* what the last fit actually managed, per section — the panel reads this */
 let textFit = {};
 
@@ -1134,7 +1172,7 @@ function sayBackRoom(fits){
   const el = $('#backNote');
   if(!el) return;
   el.textContent = (!fits && backPhoto())
-    ? 'No room for the back photo on this sheet — shorten the residence text, trim a feature, or make The Residence smaller under Text size.'
+    ? 'No room for the back photo on this sheet — shorten the residence text, trim a feature, or make The Residence smaller under Text &amp; floorplan size.'
     : '';
 }
 /* The toast about cut features fires once a session; this stays for as long
@@ -1142,7 +1180,7 @@ function sayBackRoom(fits){
 function sayCutFeatures(){
   const el = $('#featNote');
   if(el) el.textContent = cutFeatures
-    ? `${cutFeatures} feature line${cutFeatures > 1 ? 's' : ''} did not fit and are left off the sheet — trim the list, or make The Residence smaller under Text size.`
+    ? `${cutFeatures} feature line${cutFeatures > 1 ? 's' : ''} did not fit and are left off the sheet — trim the list, or make The Residence smaller under Text &amp; floorplan size.`
     : '';
 }
 function fitSheets(){
@@ -1209,14 +1247,9 @@ function fitSheets(){
   // longest line is an email, which cannot wrap; it may run into its card's own
   // right padding (a long one already does, at 100%, beside a QR code) but has
   // to stop .06in short of the divider to the next card or the QR.
-  const cards = back ? [...back.querySelectorAll('.ag-card')] : [];
-  const cardsHold = () => cards.every(card => {
-    const ct = card.querySelector('.ag-ct');
-    const room = parseFloat(getComputedStyle(card).paddingRight) - .06 * 96;
-    return !ct || ct.scrollWidth - ct.clientWidth <= Math.max(room, 0) + 1;
-  });
-  // A taller band also takes height from the ledger column beside it, which
-  // shrinks to make room — down to its own smallest size and no further.
+  // The ledger column gives up room to its neighbours — height to a taller
+  // agents band, width to a wider floorplan — shrinking down to its own
+  // smallest size and no further.
   const num = document.querySelector('#sheetBack .num-fit');
   const kN = textK('numbers');
   const ledgerHolds = () => {
@@ -1224,8 +1257,58 @@ function fitSheets(){
     num.style.fontSize = (NUM_MIN * Math.min(1, kN)).toFixed(2) + 'pt';
     return num.scrollHeight <= num.clientHeight + 1 && num.scrollWidth <= num.clientWidth + 1;
   };
+
+  const cards = back ? [...back.querySelectorAll('.ag-card')] : [];
+  const cardsHold = () => cards.every(card => {
+    const ct = card.querySelector('.ag-ct');
+    const room = parseFloat(getComputedStyle(card).paddingRight) - .06 * 96;
+    return !ct || ct.scrollWidth - ct.clientWidth <= Math.max(room, 0) + 1;
+  });
+  // A taller band takes height from the ledger column beside it (see ledgerHolds).
   report('agents', textK('agents'),
     cards.length ? growTo(setK(back, '--k-ag'), () => cardsHold() && ledgerHolds(), textK('agents')) : 1, cards.length > 0);
+
+  // Floorplan size scales the plan itself, from what the sheet shows at 100%.
+  // Width comes from The Numbers; height, when the plan's shape needs it, from
+  // the agent headshots, which shrink as far as FP_HEADSHOT_MIN. It runs after
+  // the agents band, so the text there is already final.
+  const fpWrap = back && back.querySelector('.fp-wrap');
+  const kF = fpSizePct() / 100;
+  const aspect = fpWrap ? fpAspect(state.floorplan) : null;
+  let gotF = 1, fpWhy = '';
+  if(fpWrap && kF !== 1 && aspect){
+    const col = back.querySelector('.b-col.c3');
+    const heads = [...back.querySelectorAll('.ag-card img')];
+    const inset = .1 * 96;   // the image's own margin inside the frame
+    const W0 = fpWrap.clientWidth, H0 = fpWrap.clientHeight;
+    const extra = col.clientWidth - W0;   // the vertical note beside the frame
+    const shown = () => Math.min(fpWrap.clientWidth - inset, (fpWrap.clientHeight - inset) * aspect);
+    const D0 = shown();
+    const head0 = heads.length ? heads[0].offsetHeight : 0;
+    const setHeads = f => heads.forEach(img => {
+      if(f >= 1){ img.style.width = img.style.height = ''; return; }
+      img.style.width = img.style.height = (head0 * f / 96).toFixed(3) + 'in';
+    });
+    const apply = k => {
+      const D = k * D0;
+      // wider only as far as the plan uses; smaller hugs the plan and hands the rest back
+      const w = k >= 1 ? Math.max(W0, D + inset) : D + inset;
+      col.style.flex = '0 0 ' + ((w + extra) / 96).toFixed(3) + 'in';
+      setHeads(1);
+      if(k > 1 && (D / aspect) + inset > fpWrap.clientHeight + .5 && heads.length)
+        largest(FP_HEADSHOT_MIN, 1, setHeads, () => (D / aspect) + inset <= fpWrap.clientHeight + .5, 7);
+    };
+    let tried = 1;
+    const fits = () => ledgerHolds() && cardsHold() && shown() >= tried * D0 - 1;
+    gotF = growTo(k => { tried = k; apply(k); }, fits, kF);
+    if(gotF < kF - .005){
+      tried = Math.min(kF, gotF + .02); apply(tried);
+      fpWhy = !ledgerHolds() ? 'numbers' : 'height';
+      tried = gotF; apply(gotF);
+    }
+  }
+  report('floorplan', kF, gotF, !!fpWrap);
+  if(textFit.floorplan) textFit.floorplan.why = fpWhy;
 
   // the back-page ledger never clips — it shrinks to fit its column (10pt is full size)
   const autoN = fitBlock(num, NUM_MIN, 10);
@@ -1776,13 +1859,13 @@ let tsLit = null;   // the section whose row is hovered or focused
 function buildTextPanel(){
   const host = $('#tsRows');
   let side = null, html = '';
-  TEXT_SECTIONS.forEach(s => {
+  SIZE_ROWS.forEach(s => {
     if(s.side !== side){ side = s.side; html += `<div class="ts-group">${side}</div>`; }
     html += `<div class="ts-row" data-ts="${s.key}">
       <label for="ts-${s.key}">${s.label}</label>
       <div class="ts-ctl">
         <button type="button" class="ts-step" data-step="-1" aria-label="${s.label}: smaller">&minus;</button>
-        <input type="range" id="ts-${s.key}" min="${TS_MIN}" max="${TS_MAX}" step="${TS_STEP}" value="100">
+        <input type="range" id="ts-${s.key}" min="${s.min || TS_MIN}" max="${s.max || TS_MAX}" step="${TS_STEP}" value="100">
         <button type="button" class="ts-step" data-step="1" aria-label="${s.label}: larger">+</button>
         <output class="ts-val" for="ts-${s.key}"></output>
       </div>
@@ -1794,8 +1877,8 @@ function buildTextPanel(){
   host.addEventListener('input', e => {
     const row = e.target.closest('.ts-row');
     if(!row || e.target.type !== 'range') return;
-    const v = clampN(Math.round(Number(e.target.value) / TS_STEP) * TS_STEP, TS_MIN, TS_MAX);
-    if(v === 100) delete state.textScale[row.dataset.ts]; else state.textScale[row.dataset.ts] = v;
+    const v = clampN(Math.round(Number(e.target.value) / TS_STEP) * TS_STEP, Number(e.target.min), Number(e.target.max));
+    setSizePct(row.dataset.ts, v);
     syncTextPanel(); render();
   });
   // the steppers move the slider and let its input event do the rest, so
@@ -1813,8 +1896,9 @@ function buildTextPanel(){
   host.addEventListener('focusout', e => { if(!host.contains(e.relatedTarget)) lightSection(null); });
 
   $('#tsReset').addEventListener('click', () => {
-    if(!Object.keys(state.textScale).length) return;
+    if(!Object.keys(state.textScale).length && fpSizePct() === 100) return;
     state.textScale = {};
+    state.floorplanSize = 100;
     syncTextPanel(); render(); edited();
   });
 }
@@ -1822,32 +1906,36 @@ function buildTextPanel(){
 function lightSection(key){
   tsLit = key;
   $$('#sheets .ts-hl').forEach(el => el.classList.remove('ts-hl'));
-  const s = TEXT_SECTIONS.find(x => x.key === key);
+  const s = SIZE_ROWS.find(x => x.key === key);
   if(s) $$(s.sel.split(',').map(x => '#sheets ' + x.trim()).join(',')).forEach(el => el.classList.add('ts-hl'));
 }
 /* the controls, from state — after a load, a reset, or a change */
 function syncTextPanel(){
-  TEXT_SECTIONS.forEach(s => {
+  SIZE_ROWS.forEach(s => {
     const row = document.querySelector(`.ts-row[data-ts="${s.key}"]`); if(!row) return;
-    const pct = textPct(s.key);
+    const pct = sizePct(s.key);
     row.querySelector('input[type=range]').value = pct;
     const val = row.querySelector('.ts-val');
     val.textContent = pct === 100 ? 'Auto' : pct + '%';
     val.classList.toggle('set', pct !== 100);
     const [down, up] = row.querySelectorAll('.ts-step');
-    down.disabled = pct <= TS_MIN; up.disabled = pct >= TS_MAX;
+    down.disabled = pct <= (s.min || TS_MIN); up.disabled = pct >= (s.max || TS_MAX);
   });
 }
 /* after each render: what each section actually managed */
 function paintTextPanel(){
-  TEXT_SECTIONS.forEach(s => {
+  SIZE_ROWS.forEach(s => {
     const row = document.querySelector(`.ts-row[data-ts="${s.key}"]`); if(!row) return;
-    const f = textFit[s.key], want = textPct(s.key);
+    const f = textFit[s.key], want = sizePct(s.key);
     const note = row.querySelector('.ts-note');
     row.classList.toggle('absent', !f);
     const got = f ? Math.round(f.got * 100) : 100;
     const capped = !!f && got < want - 1;
-    note.textContent = !f ? 'Not on this sheet' : capped ? `Largest that fits here: ${got}%` : '';
+    const why = !capped || !f.why ? ''
+      : f.why === 'height' ? ' — the agent photos are as small as they go'
+      : ' — The Numbers need the rest of the width';
+    note.textContent = !f ? (s === FP_SIZE ? 'No floorplan on this sheet' : 'Not on this sheet')
+      : capped ? `Largest that fits here: ${got}%${why}` : '';
     note.classList.toggle('warn', capped);
     row.querySelector('.ts-val').title = f && f.pt ? `Prints at ${f.pt.toFixed(1)}pt` : '';
   });
@@ -1865,6 +1953,8 @@ function normalizeLayout(){
   });
   state.textScale = clean;
   state.floorplanView = normFpView(state.floorplanView);
+  const fs = Math.round(Number(state.floorplanSize));
+  state.floorplanSize = Number.isFinite(fs) && fs ? clampN(Math.round(fs / TS_STEP) * TS_STEP, FP_SIZE.min, FP_SIZE.max) : 100;
 }
 /* ============================================================
    AGENTS PICKER

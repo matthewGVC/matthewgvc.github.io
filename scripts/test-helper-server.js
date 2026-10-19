@@ -48,6 +48,10 @@ function req(method, p, headers, body) {
   delete process.env.GVC_HELPER_HOME;
   check('default home outside AppData', require('../helper/config.js').home(), path.join(os.homedir(), '.gvc-helper'));
   process.env.GVC_HELPER_HOME = saved;
+  /* the helper's own browser for Playwright lives in its home too, for the same reason */
+  check('browsers live in the helper home', process.env.PLAYWRIGHT_BROWSERS_PATH, path.join(saved, 'browsers'));
+  check('capture and render load the config first',
+    ['de/capture.js', 'pdf/render.js'].every(f => /require\('\.\.\/config\.js'\)/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', f), 'utf8'))), true);
 
   const cfg = Object.assign(loadConfig(), { port: 47611 });
   check('config created', fs.existsSync(path.join(process.env.GVC_HELPER_HOME, 'config.json')), true);

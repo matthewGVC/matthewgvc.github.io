@@ -26,6 +26,12 @@ function home() {
   return process.env.GVC_HELPER_HOME || path.join(require('os').homedir(), '.gvc-helper');
 }
 
+/* Playwright's browser lives in the helper's home as well (the default,
+   AppData\Local\ms-playwright, has the same private-copy problem). Set on
+   load, before anything requires playwright. Install it with
+   `node helper/install-browser.js`. */
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(home(), 'browsers');
+
 function loadConfig() {
   const dir = home(), file = path.join(dir, 'config.json');
   fs.mkdirSync(dir, { recursive: true });

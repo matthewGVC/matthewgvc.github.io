@@ -15,6 +15,8 @@
    ============================================================ */
 'use strict';
 
+require('../config.js');   // points Playwright at the helper's own browser
+
 const TOOLS = {
   showsheet: {
     path: '/tools/showsheet/',

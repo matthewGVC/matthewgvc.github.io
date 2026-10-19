@@ -11,6 +11,7 @@ from a browser that has been paired with it once.
 ```bash
 cd helper
 npm install
+node install-browser.js
 node pair.js
 powershell -ExecutionPolicy Bypass -File install-task.ps1
 ```

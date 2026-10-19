@@ -22,6 +22,7 @@
 'use strict';
 
 const fs = require('fs'), path = require('path');
+require('../config.js');   // points Playwright at the helper's own browser
 
 const API = 'https://core.api.elliman.com/listing/';
 const TEAM_ID = '226645';

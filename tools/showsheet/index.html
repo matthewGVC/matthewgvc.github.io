@@ -296,6 +296,8 @@ body.bleed .safe{display:block;}
    the image scales about its transform-origin, which is the pan position (x%/y%
    behaves exactly like object-position), and the frame clips what falls outside.
    A transform never changes layout, so cropping cannot disturb the autofit. */
+.fp-pair{flex:1;min-width:0;min-height:0;display:flex;gap:.12in;}   /* two plans share the frame; fitSheets picks row or column and sizes each by its shape */
+.fp-pair[data-dir="col"]{flex-direction:column;}
 .fp-wrap{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;background:#fff;border:.6pt solid rgba(0,39,58,.18);}
 .fp-wrap img{position:absolute;left:.05in;top:.05in;width:calc(100% - .1in);height:calc(100% - .1in);object-fit:contain;display:block;user-select:none;-webkit-user-drag:none;}
 @media screen{
@@ -438,6 +440,13 @@ body.bleed .crop{display:block;}
           <div class="d-loaded"><span class="d-check">&#10003;</span><span class="d-name">Floorplan</span><button class="d-x" data-clear="floorplan" title="Remove floorplan">&#10005;</button></div>
         </div>
       </div>
+      <div class="drop" id="fp2Drop" tabindex="0" role="button" aria-label="Add a second floorplan" hidden>
+        <div class="d-idle">
+          <div class="d-big">Second floorplan</div>
+          <div class="d-sub">optional &middot; another level or unit &middot; shares the plan&rsquo;s space</div>
+        </div>
+        <div class="d-loaded"><span class="d-check">&#10003;</span><span class="d-name">Second floorplan</span><button class="d-x" data-clear="floorplan2" title="Remove second floorplan">&#10005;</button></div>
+      </div>
       <div id="imgList"></div>
       <div id="imgNote"></div>
       <div class="note" id="backNote"></div>
@@ -445,7 +454,8 @@ body.bleed .crop{display:block;}
       <div class="field"><label>Positioning — one sentence</label><input type="text" data-field="positioning" placeholder="A sun-flooded penthouse with three private terraces atop Lenox Hill."></div>
       <input type="file" id="docxFile" accept=".docx" hidden>
       <input type="file" id="phFile" accept="image/*" hidden>
-      <input type="file" id="fpFile" accept="image/*" hidden>
+      <input type="file" id="fpFile" accept="image/*" multiple hidden>
+      <input type="file" id="fp2File" accept="image/*" hidden>
     </div>
   </details>
 
@@ -650,6 +660,9 @@ function blankUnit(){
     /* the floorplan's crop inside its frame: zoom 1 shows the whole plan; once
        zoomed in, x/y (0–100) say where the view sits, like object-position */
     floorplanView:{zoom:1, x:50, y:50},
+    /* an optional second plan (another level, a second unit) that shares the
+       floorplan's space; it only exists beside a first one */
+    floorplan2:null, floorplan2View:{zoom:1, x:50, y:50},
     /* how wide the floorplan's column is, in percent of the usual 3/4 of the
        back page; the ledger beside it gives up the width. 100 is the default */
     floorplanSize:100,
@@ -855,10 +868,15 @@ function renderBack(){
       <div class="lg-foot">${carry.what}; excludes mortgage financing.</div>
     </div>` : '';
 
-  const fp = state.floorplan
+  const plans = fpPlans();
+  const fpCell = (p, i) => {
+    const name = plans.length > 1 ? 'Floorplan ' + (i + 1) : 'Floorplan';
+    return `<div class="fp-wrap${normFpView(p.view).zoom > 1 ? ' is-zoomed' : ''}" data-fp="${i}" tabindex="0" role="group"
+              aria-label="${name} crop. Drag to move it, plus and minus to zoom, 0 to fit."><img src="${esc(p.src)}" alt="${name}" draggable="false" style="${fpTransform(p.view)}"></div>`;
+  };
+  const fp = plans.length
     ? `<div class="fp-area">
-         <div class="fp-wrap${state.floorplanView.zoom > 1 ? ' is-zoomed' : ''}" tabindex="0" role="group"
-              aria-label="Floorplan crop. Drag to move it, plus and minus to zoom, 0 to fit."><img src="${esc(state.floorplan)}" alt="Floorplan" draggable="false" style="${fpTransform(state.floorplanView)}"></div>
+         ${plans.length > 1 ? `<div class="fp-pair">${plans.map(fpCell).join('')}</div>` : fpCell(plans[0], 0)}
          <div class="fp-note">${GVC_LEGAL.FLOORPLAN_SHORT}</div>
        </div>`
     : `<div class="fp-empty">Floorplan available upon request</div>`;
@@ -1002,19 +1020,47 @@ function setSizePct(key, v){
 }
 /* the plan's width/height, read once per image off the page; until it has
    loaded, only the ledger caps the column, and the load re-fits */
-let fpShape = {src:null, aspect:null};
+const fpShapes = new Map();   // src -> aspect, or null while it loads
 function fpAspect(src){
   if(!src) return null;
-  if(fpShape.src === src) return fpShape.aspect;
-  fpShape = {src, aspect:null};
+  if(fpShapes.has(src)) return fpShapes.get(src);
+  fpShapes.set(src, null);
+  if(fpShapes.size > 6) fpShapes.delete(fpShapes.keys().next().value);
   const im = new Image();
   im.onload = () => {
-    if(fpShape.src !== src) return;
-    fpShape.aspect = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : null;
-    if(fpShape.aspect) render();
+    const a = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : null;
+    if(!fpShapes.has(src)) return;
+    fpShapes.set(src, a);
+    if(a) render();
   };
   im.src = src;
   return null;
+}
+/* the plans on the sheet, in order: the first, then the optional second */
+function fpPlans(){
+  return [{src:state.floorplan, view:state.floorplanView}, {src:state.floorplan2, view:state.floorplan2View}]
+    .filter(p => p.src);
+}
+/* Two plans share the floorplan's frame. Each gets a share of the frame in
+   proportion to its shape, so both print at the same height (side by side)
+   or the same width (stacked), and the pair behaves like one wider or taller
+   plan. Which way round is whichever shows more plan in this frame. Returns
+   that combined shape and the margins the pair adds, for Floorplan size. */
+const FP_INSET = .1 * 96;   // the image's own margin inside its frame
+function arrangeFpPair(pair){
+  const wraps = [...pair.querySelectorAll('.fp-wrap')];
+  const a = [fpAspect(state.floorplan), fpAspect(state.floorplan2)];
+  if(wraps.length !== 2 || !a[0] || !a[1]) return null;
+  const W = pair.clientWidth, H = pair.clientHeight;
+  const g = parseFloat(getComputedStyle(pair).columnGap) || 0;
+  const rowA = a[0] + a[1], colS = 1 / a[0] + 1 / a[1];
+  const rowH = Math.max(0, Math.min(H - FP_INSET, (W - g - 2 * FP_INSET) / rowA));
+  const colW = Math.max(0, Math.min(W - FP_INSET, (H - g - 2 * FP_INSET) / colS));
+  const col = colW * colW * colS > rowH * rowH * rowA;
+  pair.dataset.dir = col ? 'col' : 'row';
+  wraps.forEach((w, i) => { w.style.flex = (col ? 1 / a[i] : a[i]).toFixed(4) + ' 1 0'; });
+  return col ? {aspect: 1 / colS, insetW: FP_INSET, insetH: 2 * FP_INSET + g}
+             : {aspect: rowA, insetW: 2 * FP_INSET + g, insetH: FP_INSET};
 }
 /* what the last fit actually managed, per section — the panel reads this */
 let textFit = {};
@@ -1272,17 +1318,21 @@ function fitSheets(){
   // Width comes from The Numbers; height, when the plan's shape needs it, from
   // the agent headshots, which shrink as far as FP_HEADSHOT_MIN. It runs after
   // the agents band, so the text there is already final.
+  // Two plans are sized as one: the pair's combined shape stands in for the plan's.
   const fpWrap = back && back.querySelector('.fp-wrap');
+  const fpPair = back && back.querySelector('.fp-pair');
+  const pairShape = fpPair ? arrangeFpPair(fpPair) : null;
+  const fpBox = fpPair || fpWrap;
   const kF = fpSizePct() / 100;
-  const aspect = fpWrap ? fpAspect(state.floorplan) : null;
+  const aspect = fpPair ? (pairShape && pairShape.aspect) : fpWrap ? fpAspect(state.floorplan) : null;
+  const insetW = pairShape ? pairShape.insetW : FP_INSET, insetH = pairShape ? pairShape.insetH : FP_INSET;
   let gotF = 1, fpWhy = '';
-  if(fpWrap && kF !== 1 && aspect){
+  if(fpBox && kF !== 1 && aspect){
     const col = back.querySelector('.b-col.c3');
     const heads = [...back.querySelectorAll('.ag-card img')];
-    const inset = .1 * 96;   // the image's own margin inside the frame
-    const W0 = fpWrap.clientWidth, H0 = fpWrap.clientHeight;
+    const W0 = fpBox.clientWidth;
     const extra = col.clientWidth - W0;   // the vertical note beside the frame
-    const shown = () => Math.min(fpWrap.clientWidth - inset, (fpWrap.clientHeight - inset) * aspect);
+    const shown = () => Math.min(fpBox.clientWidth - insetW, (fpBox.clientHeight - insetH) * aspect);
     const D0 = shown();
     const head0 = heads.length ? heads[0].offsetHeight : 0;
     const setHeads = f => heads.forEach(img => {
@@ -1292,11 +1342,11 @@ function fitSheets(){
     const apply = k => {
       const D = k * D0;
       // wider only as far as the plan uses; smaller hugs the plan and hands the rest back
-      const w = k >= 1 ? Math.max(W0, D + inset) : D + inset;
+      const w = k >= 1 ? Math.max(W0, D + insetW) : D + insetW;
       col.style.flex = '0 0 ' + ((w + extra) / 96).toFixed(3) + 'in';
       setHeads(1);
-      if(k > 1 && (D / aspect) + inset > fpWrap.clientHeight + .5 && heads.length)
-        largest(FP_HEADSHOT_MIN, 1, setHeads, () => (D / aspect) + inset <= fpWrap.clientHeight + .5, 7);
+      if(k > 1 && (D / aspect) + insetH > fpBox.clientHeight + .5 && heads.length)
+        largest(FP_HEADSHOT_MIN, 1, setHeads, () => (D / aspect) + insetH <= fpBox.clientHeight + .5, 7);
     };
     let tried = 1;
     const fits = () => ledgerHolds() && cardsHold() && shown() >= tried * D0 - 1;
@@ -1407,13 +1457,22 @@ function syncDropZones(){
   const n = state.photos.length;
   if($('#phCount')) $('#phCount').textContent = n === 1 ? '1 photo' : n + ' photos';
   $('#fpDrop').classList.toggle('loaded', !!state.floorplan);
+  // the second plan's zone appears once there is a first
+  $('#fp2Drop').hidden = !state.floorplan;
+  $('#fp2Drop').classList.toggle('loaded', !!state.floorplan2);
 }
 document.addEventListener('click', e=>{
   const x = e.target.closest('.d-x'); if(!x) return;
   e.preventDefault(); e.stopPropagation();
   const what = x.dataset.clear;
   if(what==='photo'){ state.photos=[]; state.heroIndex=0; state.secondaryIndex=null; renderTray(); }
-  if(what==='floorplan'){ state.floorplan=null; state.floorplanView = normFpView(null); }
+  if(what==='floorplan'){
+    // the second plan, if there is one, moves up to take the first's place
+    state.floorplan = state.floorplan2 || null;
+    state.floorplanView = normFpView(state.floorplan2 ? state.floorplan2View : null);
+    state.floorplan2 = null; state.floorplan2View = normFpView(null);
+  }
+  if(what==='floorplan2'){ state.floorplan2=null; state.floorplan2View = normFpView(null); }
   if(what==='docx'){
     // dropping the doc means starting the next listing — clear everything unit-specific
     state = freshListing();
@@ -1517,21 +1576,35 @@ async function addPhotoFiles(files){
   if(added) toast(added === 1 ? 'Photo added.' : `${added} photos added.`);
   if(failed) toast(`Couldn't read ${failed} ${failed===1?'file':'files'}.`, true);
 }
-async function setFloorplanFile(f){
+/* slot 0 is the floorplan, slot 1 the optional second plan beside it; a
+   second plan with no first one becomes the first */
+async function setFloorplanFile(f, slot = 0){
   try{
     const img = await fileToImage(f);
     const cropY = floorplanHeaderY(img);
     const rect = trimRect(img, cropY);
     const box = rect.w < img.naturalWidth || rect.h < img.naturalHeight - cropY;   // did the trim take anything
-    state.floorplan = reencode(img, 2400, .9, rect);
-    state.floorplanView = normFpView(null);   // a new plan starts uncropped
+    const src = reencode(img, 2400, .9, rect);
+    if(slot === 1 && !state.floorplan) slot = 0;
+    // a new plan starts uncropped
+    if(slot === 1){ state.floorplan2 = src; state.floorplan2View = normFpView(null); }
+    else { state.floorplan = src; state.floorplanView = normFpView(null); }
     syncDropZones();
     render();
     edited();
     const did = [cropY && 'header strip cropped off', box && 'margins trimmed'].filter(Boolean).join(', ');
-    toast(did ? `Floorplan added — ${did}. Hover it on the sheet to zoom and move it.`
-              : 'Floorplan added. Hover it on the sheet to zoom and move it.');
+    const what = slot === 1 ? 'Second floorplan added — the two plans share the space' : 'Floorplan added';
+    toast(did ? `${what} — ${did}. Hover it on the sheet to zoom and move it.`
+              : `${what}. Hover it on the sheet to zoom and move it.`);
   }catch(e){ toast('Could not read the floorplan image.', true); }
+}
+/* the floorplan zone takes one plan, or two at once: the first and the second */
+async function addFloorplanFiles(files){
+  const imgs = [...(files||[])].filter(x=>/^image\//.test(x.type));
+  if(!imgs.length) return;
+  await setFloorplanFile(imgs[0], 0);
+  if(imgs[1]) await setFloorplanFile(imgs[1], 1);
+  if(imgs.length > 2) toast('The sheet holds two floorplans — the first two were used.', true);
 }
 function wireDrop(zone, input, handler, multiple){
   zone.addEventListener('click', ()=>input.click());
@@ -1549,7 +1622,8 @@ function wireDrop(zone, input, handler, multiple){
   });
 }
 wireDrop($('#phDrop'), $('#phFile'), addPhotoFiles, true);
-wireDrop($('#fpDrop'), $('#fpFile'), setFloorplanFile, false);
+wireDrop($('#fpDrop'), $('#fpFile'), addFloorplanFiles, true);
+wireDrop($('#fp2Drop'), $('#fp2File'), f => setFloorplanFile(f, 1), false);
 
 
 /* ============================================================
@@ -1754,10 +1828,12 @@ function fpTransform(v){
     : '';
 }
 function paintFloorplanTools(){
-  const wrap = document.querySelector('#sheetBack .fp-wrap');
-  const img = wrap && wrap.querySelector('img');
-  if(!img) return;
-  const v = state.floorplanView;
+  document.querySelectorAll('#sheetBack .fp-wrap').forEach(wrap =>
+    paintFpCrop(wrap, wrap.dataset.fp === '1' ? state.floorplan2View : state.floorplanView));
+}
+function paintFpCrop(wrap, v){
+  const img = wrap.querySelector('img');
+  if(!img || !v) return;
   wrap.title = 'Zoom with + and − (or pinch / Ctrl + scroll), then drag to move the plan';
   const tools = document.createElement('div');
   tools.className = 'fp-tools';
@@ -1953,6 +2029,11 @@ function normalizeLayout(){
   });
   state.textScale = clean;
   state.floorplanView = normFpView(state.floorplanView);
+  if(typeof state.floorplan2 !== 'string' || !state.floorplan2) state.floorplan2 = null;
+  if(state.floorplan2 && !state.floorplan){   // a lone second plan is the plan
+    state.floorplan = state.floorplan2; state.floorplanView = normFpView(state.floorplan2View); state.floorplan2 = null;
+  }
+  state.floorplan2View = normFpView(state.floorplan2View);
   const fs = Math.round(Number(state.floorplanSize));
   state.floorplanSize = Number.isFinite(fs) && fs ? clampN(Math.round(fs / TS_STEP) * TS_STEP, FP_SIZE.min, FP_SIZE.max) : 100;
 }
@@ -2241,7 +2322,11 @@ window.__test = {
     renderTray(); syncDropZones(); render();
   },
   placePhoto, unusePhoto, renderTray, migratePhotos,
-  setFloorplanDataUrl(dataUrl){ state.floorplan = dataUrl; render(); },
+  setFloorplanDataUrl(dataUrl, slot){
+    if(slot === 1){ state.floorplan2 = dataUrl; state.floorplan2View = normFpView(null); }
+    else state.floorplan = dataUrl;
+    syncDropZones(); render();
+  },
   /* the real upload path — header crop and margin trim included */
   setFloorplanFile, textFit: () => textFit, TEXT_SECTIONS,
   async importDocxBuffer(buf){

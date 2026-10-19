@@ -32,6 +32,17 @@ route('GET', '/lab/samples', () => Promise.resolve({
 
 route('POST', '/de/dry-run', () => require('./de-sync.js').dryRun({}));
 
+/* "Sync now" on the overview. Refused (with the reason) until the helper has its account. */
+let syncing = null;
+route('POST', '/de/sync', () => {
+  if (!syncing) {
+    syncing = require('./de-sync.js').syncNow({})
+      .then(r => ({ ok: !!r.report.ok, changes: r.changes, created: r.created, skipped: r.errors.length, aborted: r.report.aborted || null }))
+      .finally(() => { syncing = null; });
+  }
+  return syncing;
+});
+
 route('POST', '/pdf', async (body, cfg) => {
   if (!PIECE[body.tool]) throw fail(400, 'The helper can\'t make a ' + body.tool + ' yet.');
   if (!insideRoots(body.outDir, cfg.outputRoots)) throw fail(403, 'That folder is outside the places the helper may write to.');

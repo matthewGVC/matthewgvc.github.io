@@ -93,7 +93,7 @@
         headers: { apikey: CFG.publishableKey, authorization: 'Bearer ' + s.access_token }
       }).then(function (r) { return r.json(); });
     }).then(function (u) {
-      var fallback = { email: u.email, name: u.email, initials: String(u.email || '?').slice(0, 2).toUpperCase(), role: null };
+      var fallback = { email: u.email, name: u.email, initials: (String(u.email || '').split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2) || '?').toUpperCase(), role: null };
       return rest('/members?user_id=eq.' + encodeURIComponent(u.id) + '&select=name,initials,role')
         .then(function (rows) {
           var m = rows && rows[0];

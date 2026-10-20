@@ -119,7 +119,7 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .kbd{font-family:var(--mono);font-size:10.5px;background:var(--paper-2);border-radius:4px;padding:1px 6px}
 
 
-@media (max-width:1200px){ .split{grid-template-columns:1fr} .grid4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1200px){ .split{grid-template-columns:minmax(0,1fr)} .grid4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:900px){ .grid3{grid-template-columns:1fr} .top .pill-ok{display:none} }
 @media (max-width:720px){
   .top{padding:0 16px;gap:12px}

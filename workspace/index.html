@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview · GVC Workspace</title>
+<meta name="description" content="Every GVC listing, pitch and development, with its stage, DE status and folder activity.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../assets/css/fonts.css">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/workspace.css">
+<style>
+.recent{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;padding:14px}
+.recent .when{height:84px;border-radius:6px;background:var(--ink);color:var(--bone);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.recent .when b{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1}
+.recent .when span{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--sky)}
+.recent .when.contract{background:var(--cyan);color:var(--ink)}
+.recent .when.contract span{color:var(--ink)}
+.recent .when.pre,.recent .when.sold{background:var(--paper-2);color:var(--ink)}
+.recent .when.pre span,.recent .when.sold span{color:var(--ink-soft)}
+.recent h3{font-size:19px;margin:3px 0}
+.recent:hover{border-color:var(--ink)}
+.pipe{display:flex;flex-direction:column;gap:12px}
+.pj{background:color-mix(in srgb,var(--paper-2) 45%,var(--paper));border-radius:8px;padding:16px 18px;display:block}
+.pj:hover{outline:1px solid var(--ink)}
+.pj-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.pj-h h3{font-size:19px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pj-h > div{min-width:0}
+.pj-h h3,.recent h3{overflow-wrap:anywhere}
+.pj-h .sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
+.pj-h .r{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.pj-h .r.warn{color:var(--danger)}
+.prog{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:14px 0 6px}
+.track{height:6px;border-radius:3px;background:var(--paper-2);display:flex;gap:2px;overflow:hidden}
+.track i{flex:1;background:var(--rule)}
+.track i.d{background:var(--ink)}
+.track i.c{background:var(--cyan)}
+.tl-row{display:grid;grid-template-columns:180px 1fr;align-items:center;min-height:40px;border-bottom:1px solid var(--rule)}
+.tl-row .n{font-size:13.5px;font-weight:600;padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-row .n:hover{text-decoration:underline}
+.tl-t{position:relative;height:40px}
+.tl-ax{display:grid;grid-template-columns:180px 1fr;border-bottom:1px solid var(--ink)}
+.tl-ax .m{position:absolute;top:0;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;color:var(--ink-soft);padding:6px 0 6px 5px;border-left:1px solid var(--rule);height:100%}
+.tl-g{position:absolute;top:0;bottom:0;border-left:1px solid var(--rule)}
+.tl-today{position:absolute;top:0;bottom:0;border-left:2px solid var(--sky);z-index:2}
+.bar{position:absolute;top:13px;height:14px;border-radius:3px}
+.bar.pitch{border:1px dashed var(--ink-soft);background:var(--paper)}
+.bar.won{background:var(--bone)}
+.bar.live{background:var(--ink)}
+.bar.contract{background:var(--cyan)}
+.bar.sold{background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)}
+.tk{position:absolute;top:30px;width:2px;height:6px;background:var(--ink)}
+.heat{position:absolute;left:0;right:0;bottom:2px;height:3px;display:flex;gap:1px}
+.heat i{flex:1}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend b{display:inline-block;width:18px;height:9px;border-radius:2px}
+.dep{display:flex;gap:12px;background:color-mix(in srgb,var(--paper-2) 45%,var(--paper));border-radius:6px;padding:12px;margin-top:8px;font-size:14px}
+.dep small{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:3px}
+.health{display:flex;gap:12px;align-items:center}
+.health .ic{width:34px;height:34px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chart svg{width:100%;height:120px;display:block}
+.addt{display:flex;gap:8px;margin-top:12px}
+.addt .inp{flex:1}
+.todo-i .bx{cursor:pointer;background:none;padding:0}
+.todo-i .bx:hover{border-color:var(--ink)}
+@media (max-width:720px){ .tl-row,.tl-ax{grid-template-columns:110px 1fr} .tl-wrap{overflow-x:auto} .tl{min-width:640px} .recent{grid-template-columns:72px 1fr} .recent .when{height:72px} }
+</style>
+</head>
+<body data-nav="overview" data-root="./">
+<main class="wrap">
+  <div class="page-h">
+    <div>
+      <div class="eyebrow" id="today"></div>
+      <h1>Overview</h1>
+      <p id="lead">Loading the jobs…</p>
+    </div>
+    <div class="seg" role="group" aria-label="Market" id="mkt">
+      <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="NYC">NYC</button><button type="button" aria-pressed="false" data-v="NJ">NJ</button><button type="button" aria-pressed="false" data-v="FL">FL</button>
+    </div>
+  </div>
+
+  <div id="gate" hidden></div>
+
+  <div id="board" hidden>
+    <div class="grid3" id="stats"></div>
+    <div class="grid3" id="recent" style="margin-top:20px"></div>
+
+    <div class="split" style="margin-top:24px">
+      <section class="card" aria-labelledby="pipe-h">
+        <div class="card-h">
+          <div><h2 id="pipe-h">Jobs</h2><p>Every listing, pitch and development, newest activity first</p></div>
+          <div class="seg" role="group" aria-label="View" id="view"><button type="button" aria-pressed="true" data-v="list">List</button><button type="button" aria-pressed="false" data-v="time">Timeline</button></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+          <div class="seg" role="group" aria-label="Type" id="typ">
+            <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="listing">Listings</button><button type="button" aria-pressed="false" data-v="pitch">Pitches</button><button type="button" aria-pressed="false" data-v="development">Developments</button>
+          </div>
+          <label class="search" style="min-width:220px;flex:1"><span id="si"></span><input id="wsSearch" placeholder="Search address, unit" aria-label="Search jobs"></label>
+          <label class="soft" style="font-size:13px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="arch"> Show archived</label>
+        </div>
+        <div id="jobs"></div>
+        <div class="chart">
+          <div class="card-h" style="margin:22px 0 4px"><div><h2 style="font-size:18px">Folder activity</h2><p>Files touched per week, all jobs</p></div><span class="mono soft" style="font-size:11px" id="range"></span></div>
+          <div id="chart"></div>
+        </div>
+      </section>
+
+      <aside class="stack">
+        <section class="card" id="tasks" aria-labelledby="tasks-h">
+          <div class="card-h"><div><h2 id="tasks-h">Tasks</h2><p>Flagged by the workspace, then yours</p></div><span class="chip made" id="tcount"></span></div>
+          <div id="tlist"></div>
+          <form class="addt" id="addTask"><input class="inp" id="newTask" placeholder="Add a task" aria-label="New task"><button class="b ghost" type="submit" id="addBtn"></button></form>
+        </section>
+        <section class="card" aria-labelledby="wait-h">
+          <div class="card-h"><div><h2 id="wait-h">Waiting on others</h2><p>Needed before a piece can be finished</p></div></div>
+          <div id="wait"></div>
+        </section>
+        <section class="card health" id="deCard">
+          <span class="ic" id="deIc"></span>
+          <div style="flex:1"><div style="font-weight:600" id="deTitle">DE sync</div><div class="mono soft" style="font-size:11px" id="deText"></div><div class="why" id="deWhy" hidden></div></div>
+          <button class="b sm" type="button" id="deBtn">Sync now</button>
+        </section>
+      </aside>
+    </div>
+  </div>
+</main>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/property-library.js"></script>
+<script src="../assets/js/drive-rules.js"></script>
+<script src="../assets/js/drive.js"></script>
+<script src="../assets/js/workspace-data.js"></script>
+<script src="../assets/js/workspace-shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
+  var f = { market: '', type: '', view: 'list', q: '', archived: false };
+  var data = null, shell = null;
+  var TODAY = new Date(), today = TODAY.toISOString().slice(0, 10);
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  /* six months back, one ahead (spec §2.8) */
+  var R0 = new Date(TODAY.getFullYear(), TODAY.getMonth() - 6, TODAY.getDate()), R1 = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, TODAY.getDate());
+  var span = R1 - R0, D = function (s) { return new Date(s + 'T12:00:00'); };
+  var pct = function (s) { return Math.max(0, Math.min(100, (D(s) - R0) / span * 100)); };
+  var weeks = []; for (var d = new Date(R0); d < R1; d = new Date(d.getTime() + 6048e5)) weeks.push(d.toISOString().slice(0, 10));
+  var wcount = function (j, w) { var a = j.activity || {}, s = D(w), e = new Date(s.getTime() + 6048e5), n = 0; for (var k in a) { var x = D(k); if (x >= s && x < e) n += a[k]; } return n; };
+
+  $('today').textContent = TODAY.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('si').innerHTML = I('search');
+  $('addBtn').innerHTML = I('plus') + ' Add';
+  $('deIc').innerHTML = I('sync');
+  $('range').textContent = R0.getDate() + ' ' + MON[R0.getMonth()] + ' – ' + TODAY.getDate() + ' ' + MON[TODAY.getMonth()];
+
+  function gate(title, text, button) {
+    $('board').hidden = true; $('gate').hidden = false;
+    $('gate').innerHTML = '<div class="card empty"><b>' + esc(title) + '</b>' + esc(text) + (button ? '<div style="margin-top:14px"><button class="b primary" type="button" id="gateBtn">' + esc(button) + '</button></div>' : '') + '</div>';
+    $('lead').textContent = '';
+  }
+
+  function rest(path) { return P.call('/rest/v1' + path); }
+  function load() {
+    return Promise.all([
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,scan,version&stage=not.is.null'),
+      rest('/pitches?select=*'),
+      rest('/dev_projects?select=*'),
+      rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
+      rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1'),
+      rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc')
+    ]).then(function (r) {
+      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [] };
+      $('gate').hidden = true; $('board').hidden = false;
+      render(); tasks(); health();
+    }, function (e) {
+      if (e.status === 404 || e.status === 400 || /does not exist|schema cache/i.test(e.message)) {
+        gate('The workspace tables aren\'t set up yet', 'Migrations 0004 and 0005 haven\'t been applied to the database. Nothing is lost; the overview fills in once they are.');
+      } else gate('The overview couldn\'t load', e.message);
+    });
+  }
+
+  function pass(j) {
+    return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')) &&
+      (!f.q || (j.name + ' ' + (j.place || '')).toLowerCase().indexOf(f.q) !== -1);
+  }
+  function jobsNow() { return W.buildJobs(data, today, { archived: f.archived }).filter(pass); }
+
+  function stats(js) {
+    var s = W.overviewStats(js), n = Math.max(1, s.total);
+    var card = function (t, ic, v, small, w, c) {
+      return '<div class="card stat"><div class="top-l">' + t + I(ic) + '</div><div class="v">' + v + '<small>' + esc(small) + '</small></div><div class="bar"><i class="' + (c || '') + '" style="width:' + w + '%"></i></div></div>';
+    };
+    $('stats').innerHTML = card('Live', 'arrow', s.live, 'on DE now', s.live / n * 100) +
+      card('In contract', 'file', s.contract, 'contract signed on DE', s.contract / n * 100, 'c') +
+      card('To link', 'link', s.toLink, 'folder or DE match missing', s.toLink / n * 100);
+    $('lead').textContent = s.total + ' job' + (s.total === 1 ? '' : 's') + ' across ' + (f.market || 'NYC, NJ and FL') + '. Statuses from DE, files from Drive.';
+  }
+
+  function recent(js) {
+    var items = W.recentChanges(data.changes, js, 3);
+    $('recent').innerHTML = items.map(function (x) {
+      var p = W.fmtDay(x.when).split(' ');
+      return '<a class="card recent" href="' + esc(x.href) + '"><div class="when ' + esc(x.kind) + '"><b>' + esc(p[0]) + '</b><span>' + esc(p[1]) + '</span></div><div><div class="eyebrow">' +
+        esc(x.market) + ' · ' + esc(x.stage) + '</div><h3>' + esc(x.job) + '</h3><div class="soft" style="font-size:13.5px">' + esc(x.title) + (x.note ? '. ' + esc(x.note) : '') + '</div></div></a>';
+    }).join('');
+  }
+
+  function note(j) {
+    if (j.flags.some(function (x) { return x.k === 'relink'; })) return 'The linked folder moved or was renamed. Relink it.';
+    if (j.flags.some(function (x) { return x.k === 'link'; })) return 'No Drive folder linked yet.';
+    if (j.flags.some(function (x) { return x.k === 'de'; })) return 'Not matched to a DE listing yet.';
+    if (j.type === 'pitch') return 'Pitched ' + W.fmtDay(j.pitchedOn) + '.';
+    if (j.type === 'development') return j.stageIdx < 0 ? 'No milestones ticked yet.' : 'Latest milestone: ' + j.stage + '.';
+    return j.last ? 'Last activity ' + W.fmtDay(j.last) + '.' : 'No activity recorded yet.';
+  }
+
+  function list(js) {
+    if (!js.length) return '<div class="empty"><b>No jobs here</b>' + (data.properties.length + data.pitches.length + data.devProjects.length
+      ? 'Nothing matches these filters.' : 'The database is ready but empty. Jobs arrive from the seed and the first DE sync.') + '</div>';
+    return '<div class="pipe">' + js.map(function (j) {
+      var right = j.flags.length ? '<span class="r warn">' + I('alert') + esc(j.flags.map(function (x) { return x.t; }).join(' · ')) + '</span>'
+        : '<span class="r">' + I('clock') + (j.last ? 'Last ' + esc(W.fmtDay(j.last)) : 'No dates') + '</span>';
+      var meta = [j.market];
+      if (j.type === 'rental') meta.push('Rental'); if (j.type === 'pitch') meta.push('Pitch'); if (j.type === 'development') meta.push('Development');
+      if (j.price) meta.push(j.price); if (j.rooms) meta.push(j.rooms); if (j.place) meta.push(j.place);
+      var segs = j.steps.map(function (s, i) {
+        var done = j.type === 'development' ? i <= j.stageIdx : (j.done[s] || i < j.stageIdx);
+        return '<i class="' + (i === j.stageIdx ? 'c' : done ? 'd' : '') + '" title="' + esc(s) + (j.done[s] ? ' · ' + esc(W.fmtDay(j.done[s])) : '') + '"></i>';
+      }).join('');
+      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div></div>' + right + '</div>' +
+        '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div></a>';
+    }).join('') + '</div>';
+  }
+
+  function timeline(js) {
+    var months = [], d = new Date(R0.getFullYear(), R0.getMonth(), 1);
+    while (d < R1) { var s = new Date(Math.max(d, R0)); months.push({ l: MON[d.getMonth()], x: (s - R0) / span * 100 }); d = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+    var grid = months.map(function (m) { return '<div class="tl-g" style="left:' + m.x + '%"></div>'; }).join('') + '<div class="tl-today" style="left:' + pct(today) + '%"></div>';
+    var h = '<div class="tl-wrap"><div class="tl"><div class="tl-ax"><div></div><div class="tl-t" style="height:26px">' + months.map(function (m) { return '<div class="m" style="left:' + m.x + '%">' + m.l.toUpperCase() + '</div>'; }).join('') + '</div></div>';
+    js.forEach(function (j) {
+      var b = '';
+      j.bars.forEach(function (s) { var l = pct(s.from), r = s.to ? pct(s.to) : pct(today); b += '<div class="bar ' + s.s + '" style="left:' + l + '%;width:' + Math.max(0.4, r - l) + '%" title="' + esc(s.s) + ' from ' + esc(W.fmtDay(s.from)) + '"></div>'; });
+      j.ticks.forEach(function (t) { b += '<div class="tk" style="left:' + pct(t.d) + '%" title="' + esc(t.label + ', ' + W.fmtDay(t.d)) + '"></div>'; });
+      b += '<div class="heat">' + weeks.map(function (w) { var n = wcount(j, w); return '<i style="background:' + (n ? 'color-mix(in srgb,var(--ink) ' + Math.round(Math.min(100, 20 + Math.log10(n + 1) * 32)) + '%,var(--paper))' : 'transparent') + '"></i>'; }).join('') + '</div>';
+      h += '<div class="tl-row"><a class="n" href="' + esc(j.href) + '">' + esc(j.name) + '</a><div class="tl-t">' + grid + b + '</div></div>';
+    });
+    h += '</div></div><div class="legend"><span><b style="border:1px dashed var(--ink-soft)"></b>Pitch</span><span><b style="background:var(--bone)"></b>Won / milestone</span><span><b style="background:var(--ink)"></b>Live</span><span><b style="background:var(--cyan)"></b>In contract</span><span><b style="background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)"></b>Sold</span><span>| piece found in the folder</span><span>bottom line: files touched per week</span></div>';
+    return h;
+  }
+
+  function chart(js) {
+    var ws = weeks.filter(function (w) { return w <= today; });
+    var v = ws.map(function (w) { return js.reduce(function (a, j) { return a + wcount(j, w); }, 0); });
+    if (!v.some(Boolean)) { $('chart').innerHTML = '<p class="soft" style="font-size:13px">No folder activity yet. The helper counts files each night once folders are linked.</p>'; return; }
+    var mx = Math.max.apply(null, v.concat([1])), Wd = 600, H = 110, bw = Wd / v.length;
+    var bars = v.map(function (n, i) { var h = n ? Math.max(2, Math.log10(n + 1) / Math.log10(mx + 1) * (H - 14)) : 0; return '<rect x="' + (i * bw + 1) + '" y="' + (H - h) + '" width="' + (bw - 2) + '" height="' + h + '" rx="1.5" fill="' + (i === v.length - 1 ? 'var(--cyan)' : 'var(--ink)') + '"><title>Week of ' + esc(W.fmtDay(ws[i])) + ': ' + n + ' files</title></rect>'; }).join('');
+    $('chart').innerHTML = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Files touched per week">' + bars + '<line x1="0" x2="' + Wd + '" y1="' + H + '" y2="' + H + '" stroke="var(--rule)"/></svg>';
+  }
+
+  function render() {
+    var js = jobsNow().sort(function (a, b) { return (b.flags.length - a.flags.length) || ((b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0); });
+    stats(js); recent(js); chart(js);
+    $('jobs').innerHTML = f.view === 'list' ? list(js) : timeline(js);
+  }
+
+  function tasks() {
+    var flags = W.taskFlags(W.buildJobs(data, today)).map(function (t) {
+      return '<div class="todo-i"><span class="dm"></span><div><a href="' + esc(t.href) + '">' + esc(t.job) + '</a>: ' + esc(t.text) + '<div class="meta"><span class="chip">' + esc(t.market) + '</span>Flagged by the workspace</div></div></div>';
+    });
+    var mine = data.todos.filter(function (t) { return t.section !== 'Waiting on others'; }).map(function (t) {
+      return '<div class="todo-i"><button class="bx" type="button" data-done="' + esc(t.id) + '" aria-label="Done: ' + esc(t.body) + '"></button><div>' + esc(t.body) + '<div class="meta"><span class="chip">' + esc(t.section) + '</span></div></div></div>';
+    });
+    $('tlist').innerHTML = flags.concat(mine).join('') || '<p class="soft" style="font-size:13.5px">Nothing to do.</p>';
+    $('tcount').textContent = (flags.length + mine.length) + ' open';
+    var wait = data.todos.filter(function (t) { return t.section === 'Waiting on others'; });
+    $('wait').innerHTML = wait.length ? wait.map(function (t) {
+      var lines = String(t.body).split('\n');
+      return '<div class="dep">' + I('people') + '<div>' + esc(lines[0]) + (lines[1] ? '<small>' + esc(lines.slice(1).join(' ')) + '</small>' : '') + '</div></div>';
+    }).join('') : '<p class="soft" style="font-size:13.5px">Nothing waiting. Add a to-do in the section "Waiting on others" to list it here.</p>';
+  }
+
+  function health() {
+    var h = W.syncHealth(data.lastDe, new Date());
+    shell.setSync(h);
+    $('deCard').className = 'card health' + (h.state === 'amber' ? ' amber' : h.state === 'red' ? ' red' : '');
+    $('deIc').className = 'ic' + (h.state === 'amber' ? ' amber' : h.state === 'red' ? ' red' : '');
+    $('deTitle').textContent = h.state === 'red' ? 'DE sync failed' : h.state === 'amber' ? 'DE sync is late' : h.state === 'never' ? 'DE hasn\'t synced yet' : 'DE sync ran';
+    $('deText').textContent = h.text;
+    $('deWhy').hidden = !h.why; $('deWhy').textContent = h.why || '';
+  }
+
+  /* ---------- events ---------- */
+  function seg(id, key) {
+    $(id).addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      f[key] = b.dataset.v; if (data) render();
+    });
+  }
+  seg('mkt', 'market'); seg('typ', 'type'); seg('view', 'view');
+  $('wsSearch').addEventListener('input', function () { f.q = this.value.trim().toLowerCase(); if (data) render(); });
+  $('arch').addEventListener('change', function () { f.archived = this.checked; if (data) render(); });
+  $('tlist').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-done]'); if (!b) return;
+    b.disabled = true;
+    P.call('/rest/v1/todos?id=eq.' + encodeURIComponent(b.dataset.done), { method: 'PATCH', body: JSON.stringify({ done: true }) })
+      .then(load, function (err) { b.disabled = false; alertLine(err.message); });
+  });
+  $('addTask').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = $('newTask').value.trim(); if (!v) return;
+    P.call('/rest/v1/todos', { method: 'POST', body: JSON.stringify({ section: 'Up next', body: v }) })
+      .then(function () { $('newTask').value = ''; load(); }, function (err) { alertLine(err.message); });
+  });
+  function alertLine(msg) { $('tcount').textContent = msg; }
+  $('deBtn').addEventListener('click', function () { $('wsSync').click(); });
+
+  shell = GVC_SHELL.mount({ onSynced: function () { load(); } });
+
+  function start() {
+    if (P.signedIn()) return load();
+    gate('Sign in', 'The overview is for the GVC team. Sign in with your own email and password.', 'Sign in');
+    $('gateBtn').addEventListener('click', function () {
+      P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) { shell.paintMe(); load(); } });
+    });
+  }
+  start();
+})();
+</script>
+</body>
+</html>

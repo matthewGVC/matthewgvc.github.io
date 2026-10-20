@@ -67,6 +67,9 @@ const P = require('../assets/js/property-library.js');
   membersReply = 404;
   P.signOut(); await P.signIn('matt@example.com', 'right');
   check('before the migration', (await P.whoAmI()).initials, 'MA');
+  P.signOut(); global.fetch = ((orig) => (url, o) => /auth\/v1\/user/.test(url) ? reply(200, { id: 'u-2', email: 'm.1@example.com' }) : orig(url, o))(global.fetch);
+  await P.signIn('m.1@example.com', 'right');
+  check('initials are letters only', (await P.whoAmI()).initials, 'M');
   check('askSignIn exists', typeof P.askSignIn, 'function');
 
   /* ---------- part 2: the dialog, in a real tool ---------- */

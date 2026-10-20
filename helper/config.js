@@ -6,7 +6,8 @@
    repo is public: never copy this file, its pairing code or (from Slice 1)
    the helper account's password into it.
 
-     const cfg = loadConfig();   // { home, pairCode, siteBase, teamUrl, outputRoots, port }
+     const cfg = loadConfig();   // { home, pairCode, siteBase, teamUrl, outputRoots, port, asana }
+     DEFAULTS                    the shipped defaults (asana gids aren't secret)
    ============================================================ */
 'use strict';
 
@@ -63,7 +64,15 @@ function loadConfig() {
     saved.pairCode = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     fs.writeFileSync(file, JSON.stringify(Object.assign({}, DEFAULTS, saved), null, 2));
   }
-  return Object.assign({}, DEFAULTS, siteSupabase(), saved, { home: dir });
+  return Object.assign({}, DEFAULTS, siteSupabase(), saved, { asana: mergeAsana(saved.asana) }, { home: dir });
 }
 
-module.exports = { loadConfig, home };
+/* A user config naming only part of "asana" (say, its own loose list) keeps
+   the default gids for the rest: one level deep, and "listings" one more. */
+function mergeAsana(own) {
+  const o = own || {};
+  return Object.assign({}, DEFAULTS.asana, o,
+    { listings: Object.assign({}, DEFAULTS.asana.listings, o.listings || {}) });
+}
+
+module.exports = { loadConfig, home, DEFAULTS };

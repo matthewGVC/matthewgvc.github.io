@@ -74,7 +74,7 @@ function createClient(cfg, opts) {
 
   /* pages are read in key order: without an order, Postgres may hand rows back
      in a different order per page and a long read could skip or repeat rows */
-  const KEY = { members: 'user_id', de_listings: 'de_listing_id', documents: 'property_id,tool' };
+  const KEY = { members: 'user_id', de_listings: 'de_listing_id', documents: 'property_id,tool', asana_tasks: 'gid', asana_people: 'gid' };
   async function select(table, match, cols) {
     const rows = [];
     for (let offset = 0; ; offset += 1000) {

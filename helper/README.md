@@ -26,6 +26,9 @@ hidden at every log on and restarts it if it stops. Run it from the main repo fo
   AppData: Windows gives the Claude desktop app its own private copy of AppData.
 - Log: `%USERPROFILE%\.gvc-helper\helper.log`.
 - DE dry-run reports: `exports/de-dry-run-<date>.md` (gitignored).
+- Asana (read-only, never written to): `node helper/asana-sync.js --plan` writes the first link plan,
+  `exports/asana-link-plan-<date>.md`, for Matt to tick; `--apply-plan <that file>` makes the jobs;
+  `--write` is one sync after that. Needs `asanaToken` in the helper's config.
 - Real DE recordings: `helper/fixtures/recorded/` (gitignored). The repo's tests use the
   made-up `helper/fixtures/synthetic/`.
 
@@ -36,4 +39,5 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 
 ## Tests
 
-`node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`.
+`node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`, `node scripts/test-de-apply.js`,
+`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`.

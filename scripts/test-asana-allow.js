@@ -130,7 +130,8 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   check('missing kept field: no tasks, nothing to judge', allow.missingKept([]), []);
 
   /* ---------- client ---------- */
-  const files = fs.readdirSync(path.join(__dirname, '..', 'helper', 'asana')).map(f => fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana', f), 'utf8'));
+  const files = fs.readdirSync(path.join(__dirname, '..', 'helper', 'asana')).map(f => fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana', f), 'utf8'))
+    .concat([fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana-sync.js'), 'utf8')]);
   files.forEach((src, i) => {
     check('client is GET-only (verb strings) #' + i, /method:\s*['"](POST|PUT|PATCH|DELETE)/i.test(src), false);
     check('client is GET-only (calls) #' + i, /\.(post|put|patch|delete)\(/i.test(src), false);

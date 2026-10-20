@@ -8,7 +8,8 @@
 
 // never this computer's own helper settings (they may be in starter mode)
 process.env.GVC_HELPER_HOME = require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'gvc-apply-'));
-const { applyRun, canMove } = require('../helper/de/apply.js');
+const deApply = require('../helper/de/apply.js');
+const { applyRun } = deApply;
 const { ConflictError } = require('../helper/supabase.js');
 
 let pass = 0;
@@ -57,14 +58,8 @@ const gvc = async () => ({ gvcListed: true, line: 'Douglas Elliman: Test Agent' 
 const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMPLE REALTY' });
 
 (async () => {
-  /* ---------- stage rules ---------- */
-  check('forward', canMove('Live', 'In contract'), true);
-  check('contract fell through', canMove('In contract', 'Live'), true);
-  check('never back from sold', canMove('Sold', 'Live'), false);
-  check('archived stays', canMove('Archived', 'Live'), false);
-  check('pre-live to live', canMove('Photos', 'Live'), true);
-  check('no stage yet', canMove(null, 'Live'), true);
-  check('same stage', canMove('Live', 'Live'), false);
+  /* ---------- DE no longer moves the stage (D50, S8): no stage rules left ---------- */
+  check('no stage rules exported', typeof deApply.canMove, 'undefined');
 
   /* ---------- an aborted run writes only its log line ---------- */
   let db = fakeDb({ properties: [{ id: 'p1', slug: 's', core: { price: 1 }, stage: 'Live', de_listing_id: '900001' }] });
@@ -80,10 +75,10 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   const p1 = db.T.properties[0];
   check('price from DE', p1.core.price, 1000000);
   check('agents untouched', p1.core.agentIds, ['x']);
-  check('stage moved', [p1.stage, p1.stage_source], ['In contract', 'DE']);
+  check('stage left alone, DE stage recorded', [p1.stage, p1.stage_source, p1.de_stage], ['Live', undefined, 'In contract']);
   check('de snapshot', [p1.de.status, p1.de_status, p1.de.listingUrl], ['ActiveUnderContract', 'ActiveUnderContract', 'https://example.com/l/900001']);
   const fields = db.T.changes.map(c => c.field).sort();
-  check('changes logged', fields, ['price', 'sqft', 'stage']);
+  check('changes logged', fields, ['de_stage', 'price', 'sqft']);
   const pc = db.T.changes.find(c => c.field === 'price');
   check('price change row', [pc.old_value, pc.new_value, pc.source, pc.run_id, pc.property_id, /9\.1%/.test(pc.note)], [1100000, 1000000, 'DE', db.T.sync_runs[0].id, 'p1', true]);
   check('run logged ok', [db.T.sync_runs[0].ok, db.T.sync_runs[0].changes], [true, 3]);
@@ -95,27 +90,40 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
     rows: [row('900001', { status: 'ActiveUnderContract', stage: 'In contract', price: 1000000, priceChangePercent: -9.1 })] });
   check('second run: no new changes', db.T.changes.length, before);
 
-  /* ---------- starter mode (addNew: false): known jobs update, nothing new arrives ---------- */
+  /* ---------- a library row (no stage): DE's facts and DE's stage, never a stage ---------- */
   db = fakeDb({ properties: [{ id: 'lib1', slug: 'lib', stage: null, de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 1100000 } }] });
-  await applyRun({ client: db, report: report([{ id: '900001', folder: null }]), now: NOW, addNew: false, courtesy: gvc, rows: [row('900001')] });
-  check('starter mode: a library row keeps off the overview (no stage)', [db.T.properties[0].stage, db.T.changes.some(c => c.field === 'stage')], [null, false]);
+  await applyRun({ client: db, report: report([{ id: '900001', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900001')] });
+  check('library row keeps off the overview (no stage)', [db.T.properties[0].stage, db.T.changes.some(c => c.field === 'stage')], [null, false]);
+  check('library row gets DE\'s stage and price', [db.T.properties[0].de_stage, db.T.properties[0].core.price], ['Live', 1000000]);
 
-  db = fakeDb();
-  let askedStarter = 0;
-  out = await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, addNew: false,
-    courtesy: async () => { askedStarter++; return { gvcListed: true }; }, rows: [row('900002')] });
-  check('starter mode: no new job, no DE page read', [db.T.properties.length, out.created, askedStarter], [0, 0, 0]);
-
-  /* ---------- a new GVC listing on DE becomes a job ---------- */
+  /* ---------- a new GVC listing on DE is remembered, never a job (D54: jobs come from Asana) ---------- */
   db = fakeDb();
   out = await applyRun({ client: db, report: report([{ id: '900002', folder: 'GVC - New York/Building Information/100 Example St/4A', via: 'lnk' }]),
     now: NOW, courtesy: gvc, rows: [row('900002')] });
-  const np = db.T.properties[0] || {};
-  check('created', [db.T.properties.length, np.market, np.kind, np.stage, np.stage_source, np.de_listing_id], [1, 'NYC', 'sale', 'Live', 'DE', '900002']);
-  check('created with its folder', [np.drive_folder, np.folder_state], ['GVC - New York/Building Information/100 Example St/4A', 'linked']);
-  check('created core', [np.core.address, np.core.unit, np.core.price, np.slug], ['100 EXAMPLE ST', '4A', 1000000, '100-example-st-residence-4a']);
-  check('creation logged', db.T.changes.map(c => c.note || c.field), ['Found on DE']);
-  check('courtesy cached', [db.T.de_listings[0].gvc_listed, db.T.de_listings[0].courtesy], [true, 'Douglas Elliman: Test Agent']);
+  check('DE never creates a job', [out.created, db.T.properties.length, db.T.changes.length], [0, 0, 0]);
+  check('the GVC listing is kept in de_listings', [db.T.de_listings.length, db.T.de_listings[0].de_listing_id, db.T.de_listings[0].property_id || null], [1, '900002', null]);
+  check('courtesy cached (the M2 evidence)', [db.T.de_listings[0].gvc_listed, db.T.de_listings[0].courtesy], [true, 'Douglas Elliman: Test Agent']);
+  /* an old starter-mode setting changes nothing */
+  db = fakeDb();
+  out = await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, addNew: true, courtesy: gvc, rows: [row('900002')] });
+  check('addNew is ignored', [out.created, db.T.properties.length], [0, 0]);
+
+  /* ---------- an open Asana-made job at the same unit gets DE's id ---------- */
+  db = fakeDb({ properties: [{ id: 'a1', slug: 'a1', stage: 'Live', stage_source: 'Asana', asana_gid: '9000000000041', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 990000 } }] });
+  await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900002')] });
+  check('matched by address: DE id, DE stage, Asana stage kept', [db.T.properties[0].de_listing_id, db.T.properties[0].de_stage, db.T.properties[0].stage, db.T.properties[0].stage_source],
+    ['900002', 'Live', 'Live', 'Asana']);
+
+  /* ---------- D78: Matt's typed price holds while DE's own price hasn't moved ---------- */
+  const mattFacts = { price: { value: 2250000, source: 'Matt', bySource: { DE: 2400000, Matt: 2250000 } } };
+  db = fakeDb({ properties: [{ id: 'm1', slug: 'm1', stage: 'Live', de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 2250000, facts: mattFacts } }] });
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, rows: [row('900001', { price: 2400000 })] });
+  check('Matt kept while DE unchanged', [db.T.properties[0].core.price, db.T.properties[0].core.facts.price.source, db.T.changes.some(c => c.field === 'price')], [2250000, 'Matt', false]);
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, rows: [row('900001', { price: 2300000 })] });
+  const tookOver = db.T.changes.find(c => c.field === 'price');
+  check('DE\'s own change takes over, logged', [db.T.properties[0].core.price, db.T.properties[0].core.facts.price.source, tookOver && tookOver.old_value, tookOver && tookOver.new_value],
+    [2300000, 'DE', 2250000, 2300000]);
+  check('DE facts keep their sources', db.T.properties[0].core.facts.beds, { value: 2, source: 'DE', bySource: { DE: 2 } });
 
   /* a new listing that isn't GVC's is remembered, not created */
   db = fakeDb();
@@ -129,10 +137,11 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   /* ---------- sold: only by the listing's own DE id ---------- */
   db = fakeDb({ properties: [{ id: 'p1', slug: 's', stage: 'In contract', de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 1000000 } }] });
   await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, rows: [
-    row('900001', { feed: 'transactions', status: 'Sold', stage: 'Sold', closePrice: 950000 }),
+    row('900001', { feed: 'transactions', status: 'Sold', stage: 'Sold', closePrice: 950000, closeDate: '2026-10-01' }),
     row('777777', { feed: 'transactions', status: 'Sold', stage: 'Sold', closePrice: 500000 })   // an old sale of the same unit
   ] });
-  check('sold', [db.T.properties[0].stage, db.T.properties[0].core.closePrice], ['Sold', 950000]);
+  check('sold: DE stage and close recorded, stage left to Asana', [db.T.properties[0].stage, db.T.properties[0].de_stage, db.T.properties[0].core.closePrice, db.T.properties[0].core.closeDate],
+    ['In contract', 'Sold', 950000, '2026-10-01']);
   check('old sale of the same unit ignored', db.T.properties.length, 1);
   check('transactions never create jobs (D31)', db.T.de_listings.find(d => d.de_listing_id === '777777').property_id || null, null);
 
@@ -171,7 +180,7 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   /* a new DE listing never attaches to an old sold job at the same unit */
   db = fakeDb({ properties: [{ id: 'old', slug: 'old', stage: 'Sold', de_listing_id: null, kind: 'sale', core: { address: '100 Example St', unit: '4A' } }] });
   await applyRun({ client: db, report: report([{ id: '900010', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900010')] });
-  check('old sold job left alone', [db.T.properties.length, db.T.properties[0].stage, db.T.properties[0].de_listing_id], [2, 'Sold', null]);
+  check('old sold job left alone', [db.T.properties.length, db.T.properties[0].stage, db.T.properties[0].de_listing_id], [1, 'Sold', null]);
 
   /* ---------- the whole sync on the made-up fixtures ---------- */
   const os = require('os'), fs = require('fs'), path = require('path');
@@ -182,9 +191,9 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   const starterDb = fakeDb();
   const starter = await syncNow({ cfg: { deAddsNew: false }, client: starterDb, courtesy: gvc, fixturesDir: path.join(__dirname, '..', 'helper', 'fixtures', 'synthetic'),
     outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-sync-')), drive: false, lnks: [] });
-  check('sync in starter mode adds no jobs', [starter.created, starterDb.T.properties.length], [0, 0]);
-  check('sync: every live GVC listing a job', [out.created, db.T.properties.map(p => p.stage).sort()], [5, ['In contract', 'In contract', 'Live', 'Live', 'Live']]);
-  check('sync: transactions remembered only', db.T.de_listings.length, 7);
+  check('sync: the retired deAddsNew setting changes nothing', [starter.created, starterDb.T.properties.length, starterDb.T.de_listings.length], [0, 0, 7]);
+  check('sync: DE adds no jobs', [out.created, db.T.properties.length], [0, 0]);
+  check('sync: every DE listing remembered', [db.T.de_listings.length, db.T.de_listings.filter(d => d.gvc_listed).length], [7, 5]);
   check('sync: run logged', [db.T.sync_runs.length, db.T.sync_runs[0].ok], [1, true]);
   db = fakeDb();
   let refused = null;

@@ -91,6 +91,9 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   check('select', (await c.select('properties')).map(r => r.slug), ['a', 'b']);
   check('signs in once', fake.log.filter(l => /token/.test(l)).length, 1);
   check('paged reads are ordered (no skipped rows)', fake.log.filter(l => /^GET \/rest\/v1\/properties/.test(l)).every(l => /[?&]order=/.test(l)), true);
+  T.asana_tasks = [{ gid: 'g1' }]; T.asana_people = [{ gid: 'u1' }];
+  await c.select('asana_tasks'); await c.select('asana_people');
+  check('Asana tables are read in gid order (they have no id)', fake.log.filter(l => /^GET \/rest\/v1\/asana_/.test(l)).every(l => /[?&]order=gid/.test(l)), true);
   check('filtered select',(await c.select('properties', { slug: 'b' })).map(r => r.id), ['p2']);
   check('count', await c.count('properties'), 2);
   await c.insert('todos', { id: 't2', body: 'x' });

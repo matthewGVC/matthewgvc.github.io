@@ -63,7 +63,7 @@
   var slug = kind ? q.get(kind) : '';
   var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
   var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
-  var today = new Date().toISOString().slice(0, 10);
+  var today = W.today();
   var shell = GVC_SHELL.mount({ onDrive: function () { if (state.row) render(); } });
   var state = { row: null, job: null, changes: [], won: null, helper: false };
 

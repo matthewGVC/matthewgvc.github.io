@@ -28,8 +28,17 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  function day(s) { return s ? String(s).slice(0, 10) : null; }
-  function fmtDay(s) { var d = new Date(day(s) + 'T12:00:00'); return d.getDate() + ' ' + MON[d.getMonth()]; }
+  function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  /* a timestamp's day on this computer's clock (a 9:30 pm change in New York
+     is that day, not the next UTC day); a plain date is left as it is */
+  function day(s) {
+    if (!s) return null;
+    s = String(s);
+    return s.indexOf('T') === -1 ? s.slice(0, 10) : ymd(new Date(s));
+  }
+  function today(now) { return ymd(now || new Date()); }
+  function mondayOf(s) { var d = new Date(day(s) + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); }
+  function fmtDay(s) { if (!s) return ''; var d = new Date(day(s) + 'T12:00:00'); return d.getDate() + ' ' + MON[d.getMonth()]; }
   function fmtWhen(iso) {
     var d = new Date(iso), h = d.getHours(), m = d.getMinutes();
     return DAY[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + ', ' + h + ':' + (m < 10 ? '0' : '') + m;
@@ -203,6 +212,6 @@
   var DE_WORDS = { Active: 'Active', ActiveUnderContract: 'Contract signed', Pending: 'Pending', Sold: 'Sold', Rented: 'Rented' };
   function deLabel(s) { return s ? DE_WORDS[s] || s : ''; }
 
-  return { STAGES: STAGES, DEV: DEV, deLabel: deLabel, buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags,
+  return { STAGES: STAGES, DEV: DEV, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags,
     recentChanges: recentChanges, syncHealth: syncHealth, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
 });

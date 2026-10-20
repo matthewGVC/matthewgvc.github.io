@@ -6,6 +6,7 @@
    ============================================================ */
 'use strict';
 
+process.env.TZ = 'America/New_York';   // dates are shown in the office's local time, not UTC
 const W = require('../assets/js/workspace-data.js');
 
 let pass = 0;
@@ -92,6 +93,13 @@ check('fresh', W.syncHealth({ started_at: '2026-10-20T07:00:00Z', ok: true }, no
 check('over 36 h', W.syncHealth({ started_at: '2026-10-18T21:00:00Z', ok: true }, now).state, 'amber');
 const red = W.syncHealth({ started_at: '2026-10-20T07:00:00Z', ok: false, errors: [{ what: 'aborted', detail: 'DE used a status the workspace doesn\'t know: "Withdrawn".' }] }, now);
 check('failed run in plain words', [red.state, /Withdrawn/.test(red.why)], ['red', true]);
+
+/* ---------- local dates ---------- */
+check('a 9:30 pm change stays on its own day', W.day('2026-10-13T01:30:00Z'), '2026-10-12');
+check('a plain date is left alone', W.day('2026-10-13'), '2026-10-13');
+check('no date, no NaN', W.fmtDay(null), '');
+check('today is the local date', W.today(new Date('2026-10-21T02:00:00Z')), '2026-10-20');
+check('Monday of a week', W.mondayOf('2026-10-21'), '2026-10-19');
 
 /* ---------- empty database ---------- */
 const none = W.buildJobs({ properties: [], pitches: [], devProjects: [], changes: [] }, TODAY);

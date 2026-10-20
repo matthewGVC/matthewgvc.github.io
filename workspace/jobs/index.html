@@ -75,7 +75,7 @@
   'use strict';
   var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   var f = { market: '', type: '', q: '' }, data = null, agentsOf = {};
-  var today = new Date().toISOString().slice(0, 10);
+  var today = W.today();
   var TYPES = [['', 'All'], ['listing', 'Listings'], ['pitch', 'Pitches'], ['development', 'Developments']];
   $('si').innerHTML = I('search');
   var shell = GVC_SHELL.mount({});

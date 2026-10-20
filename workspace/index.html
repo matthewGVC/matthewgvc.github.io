@@ -142,14 +142,15 @@
   var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   var f = { market: '', type: '', view: 'list', q: '', archived: false };
   var data = null, shell = null;
-  var TODAY = new Date(), today = TODAY.toISOString().slice(0, 10);
+  var TODAY = new Date(), today = W.today(TODAY);
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   /* six months back, one ahead (spec §2.8) */
   var R0 = new Date(TODAY.getFullYear(), TODAY.getMonth() - 6, TODAY.getDate()), R1 = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, TODAY.getDate());
   var span = R1 - R0, D = function (s) { return new Date(s + 'T12:00:00'); };
   var pct = function (s) { return Math.max(0, Math.min(100, (D(s) - R0) / span * 100)); };
-  var weeks = []; for (var d = new Date(R0); d < R1; d = new Date(d.getTime() + 6048e5)) weeks.push(d.toISOString().slice(0, 10));
+  // weeks start on Monday, like the helper's weekly counts
+  var weeks = []; for (var d = D(W.mondayOf(W.today(R0))); d < R1; d = new Date(d.getTime() + 6048e5)) weeks.push(W.today(d));
   var wcount = function (j, w) { var a = j.activity || {}, s = D(w), e = new Date(s.getTime() + 6048e5), n = 0; for (var k in a) { var x = D(k); if (x >= s && x < e) n += a[k]; } return n; };
 
   $('today').textContent = TODAY.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

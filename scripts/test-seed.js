@@ -98,6 +98,23 @@ const plan2 = buildPlan({ report: { ok: true, live: [], lnk: [] }, drive: { unit
     { id: 'e3', label: 'z', core: { address: '52 East 4th Street, 10th Floor', unit: '' } }] });
 check('unit inside the address line merges', plan2.listings.map(l => l.existingId), ['e1', 'e2', 'e3']);
 
+/* a library row merges once: the sale, not also the rental of the same unit */
+const plan3 = buildPlan({ report: { ok: true, live: [], lnk: [] }, drive: { units: [], pitches: [], devs: { NJ: [], FL: [] } }, today: NOW,
+  rows: [live('7001', '404 PARK AVE S', '6A', 'Live', null, { kind: 'rental' }), live('7002', '404 PARK AVE S', '6A', 'Live', null)],
+  existing: [{ id: 'e9', label: 'p', core: { address: '404 Park Ave South, Residence 6A', unit: null } }] });
+check('one merge per library row, sale first', plan3.listings.map(l => [l.kind, l.existingId]), [['rental', null], ['sale', 'e9']]);
+
+/* a recent building folder whose subfolders aren't units is one job */
+const plan4 = buildPlan({ report: { ok: true, live: [], lnk: [] }, rows: [], existing: [], today: NOW, drive: { pitches: [], devs: { NJ: [], FL: [] },
+  units: [{ building: '8 Woolley NJ', name: 'Raw', created: '2026-09-07' }, { building: '8 Woolley NJ', name: 'Virtually Staged', created: '2026-09-07' },
+    { building: '194 RSD', name: 'Floorplan', created: '2026-10-08' }, { building: '11 Bray', name: 'Photos', created: '2026-10-01' },
+    { building: '11 Bray', name: 'edits', created: '2026-10-01' },{ building: '70 Fresh St', name: '6G', created: '2026-09-25' },
+    { building: '70 Fresh St', name: '11B Rental', created: '2026-09-25' }] } });
+check('content subfolders: the building is the job', plan4.listings.map(l => [l.folder, l.kind]), [
+  ['GVC - New York/Building Information/8 Woolley NJ', 'sale'], ['GVC - New York/Building Information/194 RSD', 'sale'],
+  ['GVC - New York/Building Information/11 Bray', 'sale'],
+  ['GVC - New York/Building Information/70 Fresh St/6G', 'sale'], ['GVC - New York/Building Information/70 Fresh St/11B Rental', 'rental']]);
+
 /* ---------- apply ---------- */
 (async () => {
   const T = { properties: [{ id: 'old-1', slug: '20-sample-ave-residence-7b', version: 1, core: { address: '20 Sample Avenue', unit: '7B', agentIds: ['x'] } }],
@@ -123,6 +140,17 @@ check('unit inside the address line merges', plan2.listings.map(l => l.existingI
   check('history back-dated from the folder', T.changes.some(c => c.source === 'seed' && c.field === 'stage' && c.new_value === 'Won' && /^2026-09-25/.test(c.at)), true);
   check('pitch date in the history', T.changes.some(c => c.pitch_id === won.id && /^2026-06-08/.test(c.at)), true);
   check('seed run logged', [T.sync_runs[0].kind, T.sync_runs[0].ok], ['seed', true]);
+
+  /* a 2026 pitch "won" by a listing Matt didn't tick stays, as an open pitch */
+  const T2 = { properties: [], pitches: [], dev_projects: [], changes: [], sync_runs: [] };
+  const db2 = Object.assign({}, db, {
+    insert: async (t, rows2) => [].concat(rows2).map(r => { const x = Object.assign({ id: t + (++n), version: 1 }, r); T2[t].push(x); return x; }),
+    update: async (t, m, patch) => { const r = T2[t].find(x => x.id === m.id); Object.assign(r, patch); return [r]; },
+    select: async t => T2[t] });
+  await applyPlan({ client: db2, now: new Date('2026-10-20T12:00:00Z'), plan: { listings: [{ include: false, street: '9 A St', unit: '1', stage: 'Won' }],
+    pitches: [{ include: true, date: '2026-08-04', street: '9 A St', unit: '1', outcome: 'won', wonStreet: '9 A St', wonUnit: '1', market: 'NYC', folder: 'f' },
+      { include: true, date: '2025-08-04', street: '8 B St', unit: '2', outcome: 'won', wonStreet: '8 B St', wonUnit: '2', market: 'NYC', folder: 'g' }], devs: [] } });
+  check('unticked listing: 2026 pitch kept as open, older one dropped', T2.pitches.map(p => [p.pitched_on, p.outcome]), [['2026-08-04', 'open']]);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

@@ -35,6 +35,7 @@ const NYC_UNITS = 'GVC - New York/Building Information';
 const DEV_DIRS = { NJ: 'GVC - New Jersey/New Development', FL: 'GVC - Florida/New Development' };
 const DEV_SKIP = /^0+(\s|-)|templat|^archive$|^master template|^new dev -|^print ready|\.[a-z]{2,4}$/i;
 const UNIT_SKIP = /due diligence|archive|building|^0+\s/i;
+const UNIT_NAME = /^(\d+[a-z]*|[a-z]{1,2}\d+[a-z]?|ph-?[a-z0-9]{0,2}|garden)(\s|$)/i;   // "PHA", "PH-2", not "Photos"
 
 function cleanUnit(u) { return String(u || '').trim().replace(/^(apt\.?|apartment|unit|no\.)\s*/i, '').replace(/^#\s*/, '').trim(); }
 
@@ -84,10 +85,17 @@ function buildPlan(o) {
     const u = streetUnitOf(e.core); return A.same(u.street || u.address, street) && sameUnit(u.unit, unit);
   });
 
-  (o.rows || []).filter(r => r.feed === 'featured').forEach(r => {
-    const folder = liveFolder.get(r.id) || null;
+  // a library row merges into one listing only: sales choose first, then rentals
+  const featured = (o.rows || []).filter(r => r.feed === 'featured');
+  const mergeFor = new Map();
+  featured.slice().sort((a, b) => (a.kind === 'sale' ? 0 : 1) - (b.kind === 'sale' ? 0 : 1)).forEach(r => {
     const ex = findExisting(r.street, r.unit);
-    if (ex) merged.add(ex.id);
+    if (ex && !merged.has(ex.id)) { merged.add(ex.id); mergeFor.set(r.id, ex); }
+  });
+
+  featured.forEach(r => {
+    const folder = liveFolder.get(r.id) || null;
+    const ex = mergeFor.get(r.id);
     if (folder) used.add(folder);
     listings.push({ source: 'DE', include: true, street: r.street, unit: r.unit, kind: r.kind, market: MARKET[r.state] || null,
       stage: r.stage, deId: r.id, deStatus: r.status, price: r.price, beds: r.beds, baths: r.baths, state: r.state,
@@ -107,13 +115,29 @@ function buildPlan(o) {
       stage: 'Won', folder: l.target, opened: createdOf.get(l.target) || null, existingId: null, note: 'In ACTIVE LISTINGS & DEALS, not on DE' });
   });
 
-  (o.drive.units || []).forEach(u => {
-    const folder = NYC_UNITS + '/' + u.building + '/' + u.name;
-    if (u.created < cutoff || UNIT_SKIP.test(u.name)) return;
-    if ([...used].some(f => f === folder || f.indexOf(folder + '/') === 0)) return;
-    listings.push({ source: 'recent folder', include: false, street: u.building, unit: u.name.split(' - ')[0].replace(/\s*rental$/i, '').trim(),
-      kind: /rental/i.test(u.name) ? 'rental' : 'sale', market: 'NYC', stage: 'Won', folder, opened: u.created, existingId: null,
-      note: 'Unit folder made ' + u.created });
+  // Recent unit folders. A building folder whose subfolders aren't units
+  // ("8 Woolley NJ/Raw", "194 RSD/Floorplan") is itself the job.
+  const isClaimed = folder => [...used].some(f => f === folder || f.indexOf(folder + '/') === 0 || folder.indexOf(f + '/') === 0);
+  const byBuilding = new Map();
+  (o.drive.units || []).forEach(u => { if (!byBuilding.has(u.building)) byBuilding.set(u.building, []); byBuilding.get(u.building).push(u); });
+  byBuilding.forEach((units, building) => {
+    const unitLike = units.filter(u => UNIT_NAME.test(u.name.replace(/^#\s*/, '')) && !UNIT_SKIP.test(u.name));
+    if (!unitLike.length) {
+      const newest = units.map(u => u.created).sort().pop();
+      const folder = NYC_UNITS + '/' + building;
+      if (newest >= cutoff && !isClaimed(folder)) {
+        listings.push({ source: 'recent folder', include: false, street: building, unit: '', kind: 'sale', market: 'NYC', stage: 'Won',
+          folder, opened: units.map(u => u.created).sort()[0], existingId: null, note: 'Folder with ' + units.map(u => u.name).join(', ') });
+      }
+      return;
+    }
+    unitLike.forEach(u => {
+      const folder = NYC_UNITS + '/' + building + '/' + u.name;
+      if (u.created < cutoff || isClaimed(folder)) return;
+      listings.push({ source: 'recent folder', include: false, street: building, unit: u.name.split(' - ')[0].replace(/\s*rental$/i, '').replace(/^#\s*/, '').trim(),
+        kind: /rental/i.test(u.name) ? 'rental' : 'sale', market: 'NYC', stage: 'Won', folder, opened: u.created, existingId: null,
+        note: 'Unit folder made ' + u.created });
+    });
   });
 
   const pitches = [];
@@ -170,7 +194,8 @@ async function applyPlan(o) {
 
   for (const p of plan.pitches.filter(x => x.include)) {
     const won = p.outcome === 'won' ? ids.get(key(p.wonStreet, p.wonUnit)) : null;
-    if (p.outcome === 'won' && !won) continue;          // its listing wasn't ticked
+    // won by a listing Matt didn't tick: a 2026 pitch stays as an open one, an older one is left out
+    if (p.outcome === 'won' && !won && p.date < '2026-01-01') continue;
     const label = [p.street, p.unit].filter(Boolean).join(' ');
     const row = (await client.insert('pitches', { slug: P.slugOf(label + ' ' + p.date), label, market: p.market, pitched_on: p.date,
       core: { address: p.street, unit: p.unit }, drive_folder: p.folder, folder_state: 'linked', outcome: won ? 'won' : 'open',

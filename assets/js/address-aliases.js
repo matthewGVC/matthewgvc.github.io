@@ -109,7 +109,9 @@
       .replace(/\b(APT|APARTMENT|RESIDENCE|UNIT|NO)\b\.?/g, ' ')
       .replace(/#/g, ' ')
       .split(/\s+-\s+|\s+(?=RENTAL\b)/)[0];
+    var floor = /\b(FLOOR|FL)\b|^\d+FL$/.test(t.trim());
     t = t.replace(/\bRENTAL\b/g, '').replace(/\s*\b(FLOOR|FL)\b/g, '').replace(/^(\d+)FL$/, '$1');
+    if (floor) t = t.trim().replace(/^(\d+)(ST|ND|RD|TH)$/, '$1');   // "6th Floor" is floor 6
     return t.replace(/[^A-Z0-9]/g, '');
   }
 

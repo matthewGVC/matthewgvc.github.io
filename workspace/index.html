@@ -114,6 +114,7 @@
       <aside class="stack">
         <section class="card" id="tasks" aria-labelledby="tasks-h">
           <div class="card-h"><div><h2 id="tasks-h">Tasks</h2><p>Flagged by the workspace, then yours</p></div><span class="chip made" id="tcount"></span></div>
+          <p id="tmsg" role="alert" style="color:var(--danger);font-size:13px;margin:0 0 6px"></p>
           <div id="tlist"></div>
           <form class="addt" id="addTask"><input class="inp" id="newTask" placeholder="Add a task" aria-label="New task"><button class="b ghost" type="submit" id="addBtn"></button></form>
         </section>
@@ -146,7 +147,7 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   /* six months back, one ahead (spec §2.8) */
-  var R0 = new Date(TODAY.getFullYear(), TODAY.getMonth() - 6, TODAY.getDate()), R1 = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, TODAY.getDate());
+  var R0 = W.addMonths(TODAY, -6), R1 = W.addMonths(TODAY, 1);
   var span = R1 - R0, D = function (s) { return new Date(s + 'T12:00:00'); };
   var pct = function (s) { return Math.max(0, Math.min(100, (D(s) - R0) / span * 100)); };
   // weeks start on Monday, like the helper's weekly counts
@@ -176,8 +177,8 @@
       rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc')
     ]).then(function (r) {
       data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [] };
+      try { render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
       $('gate').hidden = true; $('board').hidden = false;
-      render(); tasks(); health();
     }, function (e) {
       if (e.status === 404 || e.status === 400 || /does not exist|schema cache/i.test(e.message)) {
         gate('The workspace tables aren\'t set up yet', 'Migrations 0004 and 0005 haven\'t been applied to the database. Nothing is lost; the overview fills in once they are.');
@@ -204,6 +205,7 @@
 
   function recent(js) {
     var items = W.recentChanges(data.changes, js, 3);
+    if (!items.length) { $('recent').innerHTML = '<div class="card empty" style="grid-column:1/-1">No changes yet. They show here as DE and Drive report them.</div>'; return; }
     $('recent').innerHTML = items.map(function (x) {
       var p = W.fmtDay(x.when).split(' ');
       return '<a class="card recent" href="' + esc(x.href) + '"><div class="when ' + esc(x.kind) + '"><b>' + esc(p[0]) + '</b><span>' + esc(p[1]) + '</span></div><div><div class="eyebrow">' +
@@ -318,10 +320,13 @@
     P.call('/rest/v1/todos', { method: 'POST', body: JSON.stringify({ section: 'Up next', body: v }) })
       .then(function () { $('newTask').value = ''; load(); }, function (err) { alertLine(err.message); });
   });
-  function alertLine(msg) { $('tcount').textContent = msg; }
+  function alertLine(msg) { $('tmsg').textContent = msg; }
   $('deBtn').addEventListener('click', function () { $('wsSync').click(); });
+  // the DE card's button follows the top bar's Sync: greyed, with the same reason, when the helper can't sync
+  var mirror = function () { $('deBtn').disabled = $('wsSync').disabled; $('deBtn').title = $('wsSync').title; };
 
   shell = GVC_SHELL.mount({ onSynced: function () { load(); } });
+  mirror(); new MutationObserver(mirror).observe($('wsSync'), { attributes: true, attributeFilter: ['disabled', 'title'] });
 
   function start() {
     if (P.signedIn()) return load();

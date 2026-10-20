@@ -93,6 +93,8 @@
         state.won = (r[2] || [])[0] || null;
         if (!state.job) return missing();   // a listing with no stage yet
         render();
+      }).catch(function (e) {
+        page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
       });
     }, function (e) {
       page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');

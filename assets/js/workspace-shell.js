@@ -155,9 +155,17 @@
       if (!P || !P.signedIn()) { me.textContent = '·'; me.title = 'Not signed in'; return; }
       P.whoAmI().then(function (w) { me.textContent = w.initials; me.title = 'Signed in as ' + w.name; shell.me = w; }, function () { me.textContent = '?'; });
     }
+    me.setAttribute('aria-haspopup', 'true'); me.setAttribute('aria-expanded', 'false');
+    function closeMenu(refocus) {
+      var old = doc.getElementById('wsMenu'); if (!old) return;
+      old.remove(); me.setAttribute('aria-expanded', 'false');
+      doc.removeEventListener('keydown', onKey); doc.removeEventListener('click', onOutside, true);
+      if (refocus) me.focus();
+    }
+    function onKey(e) { if (e.key === 'Escape') closeMenu(true); }
+    function onOutside(e) { var m = doc.getElementById('wsMenu'); if (m && !m.contains(e.target) && e.target !== me) closeMenu(false); }
     me.addEventListener('click', function () {
-      var old = doc.getElementById('wsMenu');
-      if (old) { old.remove(); return; }
+      if (doc.getElementById('wsMenu')) { closeMenu(false); return; }
       var m = doc.createElement('div'); m.className = 'menu'; m.id = 'wsMenu';
       var p = doc.createElement('p'); p.textContent = shell.me ? 'Signed in as ' + shell.me.name : 'Not signed in';
       var b = doc.createElement('button'); b.type = 'button'; b.textContent = P && P.signedIn() ? 'Sign out' : 'Sign in';
@@ -166,6 +174,8 @@
         else P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) global.location.reload(); });
       });
       m.appendChild(p); m.appendChild(b); top.appendChild(m);
+      me.setAttribute('aria-expanded', 'true');
+      doc.addEventListener('keydown', onKey); doc.addEventListener('click', onOutside, true);
     });
     shell.paintMe = paintMe;
     paintMe();

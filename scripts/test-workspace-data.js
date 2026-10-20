@@ -100,6 +100,16 @@ check('a plain date is left alone', W.day('2026-10-13'), '2026-10-13');
 check('no date, no NaN', W.fmtDay(null), '');
 check('today is the local date', W.today(new Date('2026-10-21T02:00:00Z')), '2026-10-20');
 check('Monday of a week', W.mondayOf('2026-10-21'), '2026-10-19');
+check('31 Aug minus six months is 28 Feb', W.today(W.addMonths(new Date(2026, 7, 31), -6)), '2026-02-28');
+
+/* ---------- odd rows ---------- */
+const odd = W.buildJobs({ properties: [
+  { id: 'q1', slug: 'x', label: 'Hudson Yards Penthouse', stage: 'Live', core: {}, market: 'NYC' },
+  { id: 'q2', slug: 'y', label: 'Library row', stage: null, core: { address: '9 Elm St' }, market: 'NJ' }
+], pitches: [{ id: 'w1', slug: 'w', label: '9 Elm St', market: 'NJ', outcome: 'won', won_property_id: 'q2', pitched_on: '2026-05-01' }],
+  devProjects: [], changes: [] }, TODAY);
+check('no address: named by its label', odd.find(j => j.id === 'q1').name, 'Hudson Yards Penthouse');
+check('won pitch whose listing has no stage still shows', odd.some(j => j.id === 'w1'), true);
 
 /* ---------- empty database ---------- */
 const none = W.buildJobs({ properties: [], pitches: [], devProjects: [], changes: [] }, TODAY);

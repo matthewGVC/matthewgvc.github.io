@@ -41,6 +41,7 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .card-h p{font-size:13px;color:var(--ink-soft);margin-top:3px}
 .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.grid3.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .split{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start}
 .stack > * + *{margin-top:20px}
 
@@ -120,7 +121,7 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 
 
 @media (max-width:1200px){ .split{grid-template-columns:minmax(0,1fr)} .grid4{grid-template-columns:repeat(2,minmax(0,1fr))} }
-@media (max-width:900px){ .grid3{grid-template-columns:1fr} .top .pill-ok{display:none} }
+@media (max-width:900px){ .grid3,.grid3.two{grid-template-columns:1fr} .top .pill-ok{display:none} }
 @media (max-width:720px){
   .top{padding:0 16px;gap:12px}
   .nav{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--rule);justify-content:space-around;padding:6px 4px;z-index:60}

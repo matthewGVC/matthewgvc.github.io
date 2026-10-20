@@ -146,6 +146,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   /* helper off: Sync greyed with the reason */
   t = await open(browser, { helper: false });
   check('helper off', [await t.page.$eval('#wsSync', b => b.disabled), (await t.page.$eval('#wsSync', b => b.title)).includes('isn\'t running')], [true, true]);
+  check('helper off: the DE card\'s Sync is greyed too', await t.page.$eval('#deBtn', b => b.disabled), true);
   await t.ctx.close();
 
   /* before the migrations; and an empty database */
@@ -155,6 +156,14 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { rows: rowsFor({ properties: [], pitches: [], dev_projects: [], changes: [], todos: [] }) });
   check('empty database', [(await text(t.page, '#jobs')).includes('ready but empty'), await p.evaluate(() => 1).catch(() => 1), t.errors], [true, 1, []]);
   check('empty: zeros, no NaN', (await text(t.page, '#stats')).includes('NaN'), false);
+  check('empty: recent changes says so', (await text(t.page, '#recent')).includes('No changes yet'), true);
+  // the account menu works from the keyboard
+  await t.page.click('#wsMe');
+  const opened = [await visible(t.page, '#wsMenu'), await t.page.$eval('#wsMe', b => b.getAttribute('aria-expanded'))];
+  await t.page.keyboard.press('Escape');
+  check('account menu: opens, Escape closes', [opened, await visible(t.page, '#wsMenu'), await t.page.$eval('#wsMe', b => b.getAttribute('aria-expanded'))], [[true, 'true'], false, 'false']);
+  await t.page.click('#wsMe'); await t.page.mouse.click(5, 400);
+  check('account menu: a click elsewhere closes it', await visible(t.page, '#wsMenu'), false);
   await t.ctx.close();
 
   /* phone width */
@@ -166,6 +175,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await pp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
   await pp.goto(BASE + '/workspace/', { waitUntil: 'networkidle' });
   check('phone: no sideways scroll', await pp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
+  await pp.goto(BASE + '/workspace/jobs/', { waitUntil: 'networkidle' });
+  check('phone: jobs boxes stack', await pp.evaluate(() => { const g = document.getElementById('n2').closest('.grid3'); return getComputedStyle(g).gridTemplateColumns.split(' ').length; }), 1);
   await phone.close();
 
   /* ---------- the jobs list ---------- */

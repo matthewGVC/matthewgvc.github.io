@@ -37,6 +37,11 @@
     return s.indexOf('T') === -1 ? s.slice(0, 10) : ymd(new Date(s));
   }
   function today(now) { return ymd(now || new Date()); }
+  /* n months from d, kept inside the target month (31 Aug - 6 months = 28 Feb) */
+  function addMonths(d, n) {
+    var t = new Date(d.getFullYear(), d.getMonth() + n, 1), last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    t.setDate(Math.min(d.getDate(), last)); return t;
+  }
   function mondayOf(s) { var d = new Date(day(s) + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); }
   function fmtDay(s) { if (!s) return ''; var d = new Date(day(s) + 'T12:00:00'); return d.getDate() + ' ' + MON[d.getMonth()]; }
   function fmtWhen(iso) {
@@ -78,7 +83,9 @@
       (m[k] = m[k] || []).push(c);
     });
     var wonPitch = {};
-    (rows.pitches || []).forEach(function (p) { if (p.outcome === 'won' && p.won_property_id) wonPitch[p.won_property_id] = p; });
+    // a won pitch folds into its listing only when that listing is on the overview (it has a stage)
+    var staged = {}; (rows.properties || []).forEach(function (p) { if (p.stage) staged[p.id] = true; });
+    (rows.pitches || []).forEach(function (p) { if (p.outcome === 'won' && staged[p.won_property_id]) wonPitch[p.won_property_id] = p; });
     var jobs = [];
 
     (rows.properties || []).forEach(function (p) {
@@ -111,7 +118,7 @@
 
       jobs.push({
         id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '',
-        name: readable(au.address) + (au.unit ? ' ' + au.unit : ''), stage: p.stage, stageSource: p.stage_source || null,
+        name: au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing'), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
         rooms: beds != null && baths != null ? beds + ' bd · ' + baths + ' ba' : '', place: core.neighborhood || core.city || '',
         deStatus: p.de_status || de.status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
@@ -123,7 +130,7 @@
     });
 
     (rows.pitches || []).forEach(function (q) {
-      if (q.outcome === 'won' && q.won_property_id) return;
+      if (q.outcome === 'won' && staged[q.won_property_id]) return;
       var ch = byPitch[q.id] || [], flags = [];
       if (q.folder_state === 'unlinked') flags.push({ t: 'Link folder', k: 'link' });
       if (q.folder_state === 'broken') flags.push({ t: 'Relink folder', k: 'relink' });
@@ -212,6 +219,6 @@
   var DE_WORDS = { Active: 'Active', ActiveUnderContract: 'Contract signed', Pending: 'Pending', Sold: 'Sold', Rented: 'Rented' };
   function deLabel(s) { return s ? DE_WORDS[s] || s : ''; }
 
-  return { STAGES: STAGES, DEV: DEV, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags,
+  return { STAGES: STAGES, DEV: DEV, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths, buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags,
     recentChanges: recentChanges, syncHealth: syncHealth, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
 });

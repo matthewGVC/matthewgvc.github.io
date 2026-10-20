@@ -72,6 +72,8 @@ const USERS = {
   await db.query(`insert into public.documents (property_id, tool, state) values ($1, 'showsheet', '{"x":1}')`, [prop]);
   await db.query(`insert into public.todos (body) values ('Florida office signage')`);
   await db.query(`insert into public.developments (slug, label, data) values ('example-dev', 'Example Developer', '{}')`);
+  // a rule someone once added by hand in the dashboard: it must not survive
+  await db.exec(`create policy "anyone reads properties" on public.properties for select to authenticated using (true)`);
 
   for (let round = 0; round < 2; round++) {
     for (const f of fresh) {
@@ -122,7 +124,8 @@ const USERS = {
   const stale = await as('helper', `update public.properties set stage = 'Sold' where id = $1 and version = 1`, [prop]);
   check('stale version changes nothing', stale.affectedRows, 0);
   await as('helper', `update public.documents set state = '{"x":2}' where property_id = $1`, [prop]);
-  check('saving a piece bumps the property', (await db.query('select version from public.properties where id = $1', [prop])).rows[0].version, 3);
+  // saving a piece touches the property's date but isn't a change to it: no false version conflicts
+  check('saving a piece keeps the version', (await db.query('select version from public.properties where id = $1', [prop])).rows[0].version, 2);
   const pit = (await as('matt', `insert into public.pitches (slug, label, pitched_on) values ('250-w94-11b-2026-08-04', '250 W94 11B', '2026-08-04') returning version, updated_by, outcome`)).rows[0];
   check('new pitch stamped', [pit.version, pit.updated_by, pit.outcome], [1, id.matt, 'open']);
 
@@ -143,10 +146,36 @@ const USERS = {
   check('helper logs a run', run.kind, 'de');
   check('bad run kind refused', await fails('helper', `insert into public.sync_runs (kind) values ('social')`), true);
 
+  /* ---------- the change log survives, and is honest ---------- */
+  check('a job with history can\'t be deleted', await fails('matt', 'delete from public.properties where id = $1', [prop]), true);
+  check('its change log is still there', (await db.query('select count(*)::int n from public.changes where property_id = $1', [prop])).rows[0].n, 1);
+  check('no change written in someone else\'s name', await fails('matt',
+    `insert into public.changes (property_id, source, user_id) values ($1, 'Matt', $2)`, [prop, id.helper]), true);
+
+  /* an account that wrote things can still be removed later */
+  const tmp = (await db.query(`insert into auth.users (email) values ('temp@example.com') returning id`)).rows[0].id;
+  await db.query(`insert into public.members (user_id, name, initials) values ($1, 'Temp', 'T')`, [tmp]);
+  id.temp = tmp;
+  await as('temp', `insert into public.pitches (slug, label) values ('temp-pitch', 'Temp pitch')`);
+  await db.query("select set_config('request.jwt.claim.sub', '', false)");   // as the dashboard does it: nobody signed in
+  check('removing an account that wrote works', await db.query('delete from auth.users where id = $1', [tmp]).then(() => true, () => false), true);
+  check('its rows stay, unstamped', (await db.query(`select updated_by from public.pitches where slug = 'temp-pitch'`)).rows[0].updated_by, null);
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);
   check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 1);
+
+  /* ---------- run before the accounts exist: refuse rather than lock everyone out ---------- */
+  if (fresh.length) {
+    const db2 = new PGlite();
+    await db2.exec(STUBS);
+    for (const f of old) await db2.exec(fs.readFileSync(path.join(DIR, f), 'utf8'));
+    let err = null;
+    try { await db2.exec(fs.readFileSync(path.join(DIR, fresh[0]), 'utf8')); } catch (e) { err = e.message; }
+    check('0004 refuses when no account is a member yet', /create the accounts first/i.test(err || ''), true);
+    check('nothing changed: old rules still open to the team', (await db2.query(`select count(*)::int n from pg_policies where policyname = 'team reads properties'`)).rows[0].n, 1);
+  }
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

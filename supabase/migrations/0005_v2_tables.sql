@@ -27,7 +27,7 @@ create table if not exists public.pitches (
   won_property_id uuid references public.properties(id) on delete set null,
   scan            jsonb,
   version         integer not null default 1,
-  updated_by      uuid references auth.users(id),
+  updated_by      uuid references auth.users(id) on delete set null,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
@@ -75,9 +75,9 @@ create index if not exists sync_runs_kind_idx on public.sync_runs (kind, started
 -- ---------- changes ----------
 create table if not exists public.changes (
   id             uuid primary key default gen_random_uuid(),
-  property_id    uuid references public.properties(id) on delete cascade,
-  pitch_id       uuid references public.pitches(id) on delete cascade,
-  dev_project_id uuid references public.dev_projects(id) on delete cascade,
+  property_id    uuid references public.properties(id) on delete restrict,
+  pitch_id       uuid references public.pitches(id) on delete restrict,
+  dev_project_id uuid references public.dev_projects(id) on delete restrict,
   at             timestamptz not null default now(),
   field          text,
   old_value      jsonb,
@@ -86,7 +86,7 @@ create table if not exists public.changes (
   asked_by       text,
   source         text not null check (source in ('DE', 'Matt', 'form', 'doc', 'folder', 'seed')),
   run_id         uuid references public.sync_runs(id) on delete set null,
-  user_id        uuid references auth.users(id) default auth.uid(),
+  user_id        uuid references auth.users(id) on delete set null default auth.uid(),
   check (num_nonnulls(property_id, pitch_id, dev_project_id) = 1)
 );
 comment on column public.changes.asked_by is 'Who asked for it: an agent''s name or "Matt". Never a client''s name (D2).';
@@ -105,7 +105,7 @@ create table if not exists public.floorplans (
   geometry_path text,
   note          text,
   asked_by      text,
-  created_by    uuid references auth.users(id) default auth.uid(),
+  created_by    uuid references auth.users(id) on delete set null default auth.uid(),
   created_at    timestamptz not null default now(),
   unique (property_id, version, layout)
 );
@@ -161,7 +161,8 @@ create policy "members write sync runs" on public.sync_runs for all    to authen
 drop policy if exists "members read changes" on public.changes;
 drop policy if exists "members add changes"  on public.changes;
 create policy "members read changes" on public.changes for select to authenticated using (public.is_member());
-create policy "members add changes"  on public.changes for insert to authenticated with check (public.is_member());
+create policy "members add changes"  on public.changes for insert to authenticated
+  with check (public.is_member() and user_id = auth.uid());   -- only in your own name
 
 drop policy if exists "members read floorplans"  on public.floorplans;
 drop policy if exists "members write floorplans" on public.floorplans;

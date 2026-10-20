@@ -37,14 +37,22 @@ $$;
 -- By email, so this file holds no ids. A person whose account doesn't exist
 -- yet is simply skipped; run the file again after creating it.
 insert into public.members (user_id, name, initials, role)
-select id, 'Matt Bloomfield', 'MB', 'owner' from auth.users where email = 'matthew@gvcrealestateteam.com'
+select id, 'Matt Bloomfield', 'MB', 'owner' from auth.users where lower(email) = 'matthew@gvcrealestateteam.com'
 on conflict (user_id) do nothing;
 insert into public.members (user_id, name, initials, role)
-select id, 'Desktop helper', 'H', 'helper' from auth.users where email = 'helper@gvcrealestateteam.com'
+select id, 'Desktop helper', 'H', 'helper' from auth.users where lower(email) = 'helper@gvcrealestateteam.com'
 on conflict (user_id) do nothing;
 insert into public.members (user_id, name, initials, role)
-select id, 'Team (shared)', 'GVC', 'shared' from auth.users where email = 'team@gvcrealestateteam.com'
+select id, 'Team (shared)', 'GVC', 'shared' from auth.users where lower(email) = 'team@gvcrealestateteam.com'
 on conflict (user_id) do nothing;
+
+-- Stop here, before any rule changes, if nobody would be let in: running this
+-- before the accounts exist would otherwise lock the whole team out.
+do $$ begin
+  if not exists (select 1 from public.members where active and role in ('owner', 'shared')) then
+    raise exception 'No account is a member yet: create the accounts first (Matt''s and the helper''s), then run this again.';
+  end if;
+end $$;
 
 alter table public.members enable row level security;
 drop policy if exists "members read members" on public.members;
@@ -52,11 +60,20 @@ create policy "members read members" on public.members
   for select to authenticated using (public.is_member());
 
 -- ---------- stamping + versions ----------
+-- A "touch" (only updated_at moves: 0001's touch_property after a piece is
+-- saved) isn't a change to the row, so it keeps its version and author; any
+-- other change bumps the version and records who made it.
 create or replace function public.stamp_row() returns trigger
 language plpgsql as $$
 begin
-  new.updated_by := auth.uid();
   new.updated_at := now();
+  if tg_op = 'UPDATE' and (to_jsonb(new) - 'updated_at' - 'version')
+                        = (to_jsonb(old) - 'updated_at' - 'version') then
+    new.version := old.version;
+    new.updated_by := old.updated_by;
+    return new;
+  end if;
+  new.updated_by := auth.uid();
   if tg_op = 'UPDATE' then new.version := old.version + 1; end if;
   return new;
 end;
@@ -81,7 +98,7 @@ alter table public.properties
   add column if not exists photo_hero    text,
   add column if not exists photo_order   text[],
   add column if not exists version       integer not null default 1,
-  add column if not exists updated_by    uuid references auth.users(id);
+  add column if not exists updated_by    uuid references auth.users(id) on delete set null;
 
 do $$ begin
   alter table public.properties add constraint properties_kind_check check (kind in ('sale', 'rental'));
@@ -110,7 +127,7 @@ comment on column public.properties.status is 'Old library status, still read by
 
 alter table public.developments
   add column if not exists version    integer not null default 1,
-  add column if not exists updated_by uuid references auth.users(id);
+  add column if not exists updated_by uuid references auth.users(id) on delete set null;
 alter table public.documents
   add column if not exists version    integer not null default 1;
 
@@ -127,6 +144,16 @@ create trigger developments_stamp before insert or update on public.developments
   for each row execute function public.stamp_row();
 
 -- ---------- rules: active members only ----------
+-- Every existing rule on these tables goes first, whatever its name (one
+-- added by hand in the dashboard would otherwise still let others in), then
+-- the member-only rules are created. Storage keeps other buckets' rules.
+do $$ declare r record; begin
+  for r in select policyname, tablename from pg_policies
+           where schemaname = 'public' and tablename in ('properties', 'documents', 'photos', 'developments', 'todos')
+  loop
+    execute format('drop policy %I on public.%I', r.policyname, r.tablename);
+  end loop;
+end $$;
 drop policy if exists "team reads properties"    on public.properties;
 drop policy if exists "team writes properties"   on public.properties;
 drop policy if exists "members read properties"  on public.properties;

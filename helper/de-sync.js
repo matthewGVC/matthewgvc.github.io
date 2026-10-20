@@ -270,7 +270,7 @@ async function syncOnce(opts) {
     return r;
   });
   try {
-    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy,
+    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy, addNew: cfg.deAddsNew !== false,
       helperVersion: require('./package.json').version }), { report });
   } finally {
     if (browser) await browser.close();

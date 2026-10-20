@@ -93,6 +93,13 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
     rows: [row('900001', { status: 'ActiveUnderContract', stage: 'In contract', price: 1000000, priceChangePercent: -9.1 })] });
   check('second run: no new changes', db.T.changes.length, before);
 
+  /* ---------- starter mode (addNew: false): known jobs update, nothing new arrives ---------- */
+  db = fakeDb();
+  let askedStarter = 0;
+  out = await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, addNew: false,
+    courtesy: async () => { askedStarter++; return { gvcListed: true }; }, rows: [row('900002')] });
+  check('starter mode: no new job, no DE page read', [db.T.properties.length, out.created, askedStarter], [0, 0, 0]);
+
   /* ---------- a new GVC listing on DE becomes a job ---------- */
   db = fakeDb();
   out = await applyRun({ client: db, report: report([{ id: '900002', folder: 'GVC - New York/Building Information/100 Example St/4A', via: 'lnk' }]),

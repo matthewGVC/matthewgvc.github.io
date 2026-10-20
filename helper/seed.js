@@ -166,8 +166,8 @@ function buildPlan(o) {
 async function applyPlan(o) {
   const { client, plan } = o;
   const now = (o.now || new Date()).toISOString();
-  const done = (await client.select('sync_runs', { kind: 'seed' })).filter(r => r.ok);
-  if (done.length) throw new Error('The seed has already been applied (' + String(done[0].started_at).slice(0, 10) + '). Running it again would duplicate jobs.');
+  // safe to run again after ticking more: a job already in the database is skipped, never added twice
+  const first = async (table, where) => (await client.select(table, where))[0];
   const run = (await client.insert('sync_runs', { kind: 'seed', started_at: now }))[0];
   const out = { listings: 0, pitches: 0, devs: 0 };
   const ids = new Map();
@@ -178,12 +178,15 @@ async function applyPlan(o) {
     const fields = { kind: l.kind, market: l.market, stage: l.stage, stage_source: 'seed', units: l.unit ? [l.unit] : [],
       de_listing_id: l.deId || null, drive_folder: l.folder || null, folder_state: l.folder ? 'linked' : 'unlinked' };
     let row;
+    const core = { address: l.street, unit: l.unit, state: l.state || null, price: l.price || null, beds: l.beds || null, baths: l.baths || null };
+    Object.keys(core).forEach(k => { if (core[k] == null || core[k] === '') delete core[k]; });
+    const there = l.existingId ? await first('properties', { id: l.existingId })
+      : (l.deId && await first('properties', { de_listing_id: l.deId })) || await first('properties', { slug: P.slugOfCore(core) });
+    if (there && there.stage) { ids.set(key(l.street, l.unit), there.id); continue; }   // seeded before
     if (l.existingId) {
-      const cur = (await client.select('properties', { id: l.existingId }))[0];
+      const cur = there;
       row = (await client.update('properties', { id: l.existingId }, fields, { version: cur.version }))[0];
     } else {
-      const core = { address: l.street, unit: l.unit, state: l.state || null, price: l.price || null, beds: l.beds || null, baths: l.baths || null };
-      Object.keys(core).forEach(k => { if (core[k] == null || core[k] === '') delete core[k]; });
       row = (await client.insert('properties', Object.assign({ slug: P.slugOfCore(core), label: P.labelOf(core), core }, fields)))[0];
     }
     ids.set(key(l.street, l.unit), row.id);
@@ -199,6 +202,7 @@ async function applyPlan(o) {
     // won by a listing Matt didn't tick: a 2026 pitch stays as an open one, an older one is left out
     if (p.outcome === 'won' && !won && p.date < '2026-01-01') continue;
     const label = [p.street, p.unit].filter(Boolean).join(' ');
+    if (await first('pitches', { slug: P.slugOf(label + ' ' + p.date) })) continue;
     const row = (await client.insert('pitches', { slug: P.slugOf(label + ' ' + p.date), label, market: p.market, pitched_on: p.date,
       core: { address: p.street, unit: p.unit }, drive_folder: p.folder, folder_state: 'linked', outcome: won ? 'won' : 'open',
       won_property_id: won || null }))[0];
@@ -211,6 +215,7 @@ async function applyPlan(o) {
   }
 
   for (const d of plan.devs.filter(x => x.include)) {
+    if (await first('dev_projects', { slug: P.slugOf(d.label) })) continue;
     await client.insert('dev_projects', { slug: P.slugOf(d.label), label: d.label, market: d.market, drive_folder: d.folder, folder_state: 'linked' });
     out.devs++;
   }

@@ -124,7 +124,7 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
     ready: () => true,
     insert: async (t, rows2) => [].concat(rows2).map(r => { const x = Object.assign({ id: t + (++n), version: 1 }, r); T[t].push(x); return x; }),
     update: async (t, m, patch) => { const r = T[t].find(x => x.id === m.id); Object.assign(r, patch); r.version++; return [r]; },
-    select: async t => T[t]
+    select: async (t, m) => T[t].filter(r => Object.keys(m || {}).every(k => String(r[k]) === String(m[k])))
   };
   const ticked = JSON.parse(JSON.stringify(plan));
   ticked.devs[1].include = true;                                         // Matt ticks Casa Example
@@ -140,16 +140,21 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
   check('history back-dated from the folder', T.changes.some(c => c.source === 'seed' && c.field === 'stage' && c.new_value === 'Won' && /^2026-09-25/.test(c.at)), true);
   check('pitch date in the history', T.changes.some(c => c.pitch_id === won.id && /^2026-06-08/.test(c.at)), true);
   check('seed run logged', [T.sync_runs[0].kind, T.sync_runs[0].ok], ['seed', true]);
-  let again = null;
-  try { await applyPlan({ client: db, plan: ticked, now: new Date('2026-10-21T12:00:00Z') }); } catch (e) { again = e.message; }
-  check('seeding twice is refused', [/already/i.test(again || ''), T.properties.length], [true, 4]);
+  // a second run (Matt ticks more later) adds only what isn't there yet
+  const sizes = () => [T.properties.length, T.pitches.length, T.dev_projects.length, T.changes.length];
+  const before = sizes();
+  const again = await applyPlan({ client: db, plan: ticked, now: new Date('2026-10-21T12:00:00Z') });
+  check('seeding twice adds nothing twice', [[again.listings, again.pitches, again.devs], sizes()], [[0, 0, 0], before]);
+  const more = JSON.parse(JSON.stringify(ticked)); more.devs[0].include = true;
+  const added = await applyPlan({ client: db, plan: more, now: new Date('2026-10-22T12:00:00Z') });
+  check('a newly ticked job arrives on a later run', [added.listings, added.pitches, added.devs, T.dev_projects.length], [0, 0, 1, before[2] + 1]);
 
   /* a 2026 pitch "won" by a listing Matt didn't tick stays, as an open pitch */
   const T2 = { properties: [], pitches: [], dev_projects: [], changes: [], sync_runs: [] };
   const db2 = Object.assign({}, db, {
     insert: async (t, rows2) => [].concat(rows2).map(r => { const x = Object.assign({ id: t + (++n), version: 1 }, r); T2[t].push(x); return x; }),
     update: async (t, m, patch) => { const r = T2[t].find(x => x.id === m.id); Object.assign(r, patch); return [r]; },
-    select: async t => T2[t] });
+    select: async (t, m) => T2[t].filter(r => Object.keys(m || {}).every(k => String(r[k]) === String(m[k]))) });
   await applyPlan({ client: db2, now: new Date('2026-10-20T12:00:00Z'), plan: { listings: [{ include: false, street: '9 A St', unit: '1', stage: 'Won' }],
     pitches: [{ include: true, date: '2026-08-04', street: '9 A St', unit: '1', outcome: 'won', wonStreet: '9 A St', wonUnit: '1', market: 'NYC', folder: 'f' },
       { include: true, date: '2025-08-04', street: '8 B St', unit: '2', outcome: 'won', wonStreet: '8 B St', wonUnit: '2', market: 'NYC', folder: 'g' }], devs: [] } });

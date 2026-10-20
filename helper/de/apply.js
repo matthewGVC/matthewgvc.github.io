@@ -130,7 +130,7 @@ async function writeRows(o, run, out, now) {
       }
       await write(p, patch, changes);
       entry.property_id = p.id;
-    } else if (r.feed === 'featured') {
+    } else if (r.feed === 'featured' && o.addNew !== false) {   // starter mode (deAddsNew: false) only updates known jobs
       let gvc = cached.gvc_listed;
       if (gvc === undefined || gvc === null) {
         const c = await o.courtesy(r);

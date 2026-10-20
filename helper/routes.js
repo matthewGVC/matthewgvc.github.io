@@ -32,6 +32,17 @@ route('GET', '/lab/samples', () => Promise.resolve({
 
 route('POST', '/de/dry-run', () => require('./de-sync.js').dryRun({}));
 
+/* "Sync now" on the overview. Refused (with the reason) until the helper has its account. */
+let syncing = null;
+route('POST', '/de/sync', () => {
+  if (!syncing) {
+    syncing = require('./de-sync.js').syncNow({})
+      .then(r => ({ ok: !!r.report.ok, changes: r.changes, created: r.created, skipped: r.errors.length, aborted: r.report.aborted || null }))
+      .finally(() => { syncing = null; });
+  }
+  return syncing;
+});
+
 route('POST', '/pdf', async (body, cfg) => {
   if (!PIECE[body.tool]) throw fail(400, 'The helper can\'t make a ' + body.tool + ' yet.');
   if (!insideRoots(body.outDir, cfg.outputRoots)) throw fail(403, 'That folder is outside the places the helper may write to.');
@@ -47,3 +58,23 @@ route('POST', '/pdf', async (body, cfg) => {
   const file = await savePdf(r.pdf, body.outDir, PIECE[body.tool], r.label, today());
   return { ok: true, path: file, pages: r.pages };
 });
+
+/* "Open folder" on a job page: opens the job's folder in File Explorer.
+   Only a folder that exists under G:\Shared drives; launched without a shell. */
+function openFolderRoute(o) {
+  const root = path.resolve(o.driveRoot);
+  const launch = o.launch || (p => require('child_process').spawn('explorer.exe', [p], { detached: true, stdio: 'ignore' }).unref());
+  return async body => {
+    const rel = String(body.folder || '');
+    const segs = rel.split(/[\\/]+/).filter(Boolean);
+    if (!segs.length || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?]/.test(s))) throw fail(400, 'That isn\'t a folder path the helper opens.');
+    const abs = path.resolve(root, ...segs);
+    if (abs.indexOf(root + path.sep) !== 0) throw fail(403, 'Only folders in Shared drives can be opened.');
+    if (!fs.existsSync(abs) || !fs.statSync(abs).isDirectory()) throw fail(404, 'That folder isn\'t on Drive any more.');
+    launch(abs);
+    return { ok: true };
+  };
+}
+route('POST', '/open-folder', openFolderRoute({ driveRoot: 'G:\\Shared drives' }));
+
+module.exports = { openFolderRoute };

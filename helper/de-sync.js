@@ -4,6 +4,7 @@
    and nothing else (no Supabase, no Drive).
 
      node helper/de-sync.js --dry-run [--record] [--fixtures <dir>]
+     node helper/de-sync.js --write         read DE and write the changes (needs the helper account)
      node helper/de-sync.js --courtesy <deId,deId>
 
    --record   also saves DE's raw pages to helper/fixtures/recorded/<date>/
@@ -136,6 +137,8 @@ async function dryRun(opts) {
       f.rows.forEach(raw => rows.push(normalize(raw, name)));
     });
     rows.forEach(r => { r.stage = mapStage(r); });
+    // every row, for syncNow(); not written into the report file
+    Object.defineProperty(report, 'rows', { value: rows, enumerable: false });
     report.statusesSeen = Array.from(new Set(rows.map(r => r.status))).sort();
 
     const live = rows.filter(r => r.feed === 'featured');
@@ -236,13 +239,57 @@ async function courtesyFor(ids, opts) {
   return out;
 }
 
-module.exports = { dryRun, courtesyFor, writeReport, addressFolderMatch };
+/* ---------- the real sync (Slice 1): read, check, then write ---------- */
+
+/* Same reading and checks as the dry run, then helper/de/apply.js writes the
+   result. A run the checks abort writes only its sync_runs row. The GVC-listed
+   check opens a listing page only for a DE listing it has never seen. */
+/* One sync at a time: "Sync now" during the 7:00 run joins the run in progress. */
+let running = null;
+function syncNow(opts) {
+  if (!running) running = syncOnce(opts).finally(() => { running = null; });
+  return running;
+}
+
+async function syncOnce(opts) {
+  opts = opts || {};
+  const cfg = opts.cfg || require('./config.js').loadConfig();
+  if (opts.fixturesDir && !opts.client) throw new Error('Refusing to write made-up listings (fixtures) into the real database.');
+  const client = opts.client || require('./supabase.js').createClient(cfg);
+  if (!client.ready()) throw new Error('No helper account yet: add helperEmail and helperPassword to the helper\'s config.');
+  const report = await dryRun(opts);
+  let browser = null, page = null;
+  const names = opts.courtesy ? null : require('./roster.js').rosterNames();
+  const courtesy = opts.courtesy || (async row => {
+    if (!page) {
+      const { chromium } = require('playwright');
+      browser = await chromium.launch(); page = await browser.newPage();
+    }
+    const r = await require('./de/courtesy.js').checkCourtesy(page, row, new Map(), names);
+    await new Promise(res => setTimeout(res, 3000));
+    return r;
+  });
+  try {
+    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy, addNew: cfg.deAddsNew !== false,
+      helperVersion: require('./package.json').version }), { report });
+  } finally {
+    if (browser) await browser.close();
+  }
+}
+
+module.exports = { dryRun, syncNow, courtesyFor, writeReport, addressFolderMatch };
 
 if (require.main === module) {
   const a = process.argv.slice(2), arg = k => { const i = a.indexOf(k); return i === -1 ? null : a[i + 1]; };
   const fixturesDir = arg('--fixtures');
   if (a.includes('--courtesy')) {
     courtesyFor(arg('--courtesy').split(','), { fixturesDir }).then(r => { console.log(JSON.stringify(r, null, 2)); });
+  } else if (a.includes('--write')) {
+    syncNow({ fixturesDir }).then(r => {
+      console.log(r.report.ok ? 'Sync done: ' + r.changes + ' change(s), ' + r.created + ' new job(s), ' + r.errors.length + ' skipped.'
+        : 'Sync ABORTED (nothing changed): ' + r.report.aborted);
+      process.exit(r.report.ok ? 0 : 1);
+    }, e => { console.log('Sync failed: ' + e.message); process.exit(1); });
   } else if (a.includes('--dry-run')) {
     dryRun({ fixturesDir, record: a.includes('--record') }).then(r => {
       console.log(r.ok ? 'Dry run OK: ' + r.live.length + ' live, ' + r.live.filter(x => x.folder).length + ' matched to a folder. Report: ' + r.reportFile

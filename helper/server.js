@@ -24,6 +24,7 @@ const VERSION = require('./package.json').version || '0.1.0';
 const ORIGINS = ['https://matthewgvc.github.io', 'http://localhost:8080'];
 const MAX_BODY = 1024 * 1024;
 const routes = {};
+let runner = null;   // the daily jobs (runner.js), started only with the helper's account
 
 function route(method, path, handler) { routes[method + ' ' + path] = handler; }
 
@@ -70,7 +71,11 @@ function handle(cfg) {
     }
 
     if (req.method === 'GET' && path === '/health') {
-      return send(res, 200, { ok: true, version: VERSION, paired: req.headers['x-gvc-pair'] === cfg.pairCode }, origin);
+      // unpaired: liveness only; the account and run details only for a paired browser
+      const paired = req.headers['x-gvc-pair'] === cfg.pairCode;
+      const body = { ok: true, version: VERSION, paired };
+      if (paired) { body.account = !!(cfg.helperEmail && cfg.helperPassword); body.lastRuns = runner ? runner.lastRuns() : {}; }
+      return send(res, 200, body, origin);
     }
 
     if (req.headers['x-gvc-pair'] !== cfg.pairCode) {
@@ -101,5 +106,9 @@ module.exports = { startServer, route, VERSION };
 if (require.main === module) {
   require('./routes.js');
   const cfg = loadConfig();
+  require('./runner.js').startRunner(cfg).then(r => {
+    runner = r;
+    console.log(r ? 'Daily jobs on: DE 7:00, scan 2:00, backup 2:30.' : 'No helper account yet: daily jobs off.');
+  }, e => console.log('Daily jobs failed to start: ' + e.message));
   startServer(cfg).then(() => console.log('GVC helper listening on http://127.0.0.1:' + cfg.port));
 }

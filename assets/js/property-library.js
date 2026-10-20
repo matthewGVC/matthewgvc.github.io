@@ -63,10 +63,14 @@
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); });
   }
 
-  /* The shared team password. One account for the whole team — see
-     supabase/README.md for what that buys and what it costs. */
-  function signIn(password) {
-    return auth('token?grant_type=password', { email: CFG.teamEmail, password: password })
+  /* signIn(email, password): a person's own account (workspace v2, D3).
+     signIn(password), or an empty email: the shared team account, as before,
+     so nothing changes for anyone until the team account is switched off. */
+  function signIn(email, password) {
+    if (password === undefined) { password = email; email = ''; }
+    email = String(email || '').trim() || CFG.teamEmail;
+    me = null;
+    return auth('token?grant_type=password', { email: email, password: password })
       .then(function (r) {
         if (!r.ok || !r.body.access_token) {
           throw new Error(r.body.error_description || r.body.msg || 'That password was not accepted.');
@@ -76,7 +80,75 @@
       });
   }
 
-  function signOut() { keepSession(null); }
+  function signOut() { me = null; keepSession(null); }
+
+  /* Who is signed in: { email, name, initials, role } from the members table
+     (migration 0004). Before that table exists, or for an account that isn't
+     a member yet, the email stands in for the name and role is null. */
+  var me = null;
+  function whoAmI() {
+    if (me) return Promise.resolve(me);
+    return fresh().then(function (s) {
+      return fetch(CFG.url + '/auth/v1/user', {
+        headers: { apikey: CFG.publishableKey, authorization: 'Bearer ' + s.access_token }
+      }).then(function (r) { return r.json(); });
+    }).then(function (u) {
+      var fallback = { email: u.email, name: u.email, initials: (String(u.email || '').split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2) || '?').toUpperCase(), role: null };
+      return rest('/members?user_id=eq.' + encodeURIComponent(u.id) + '&select=name,initials,role')
+        .then(function (rows) {
+          var m = rows && rows[0];
+          return m ? { email: u.email, name: m.name, initials: m.initials, role: m.role } : fallback;
+        }, function () { return fallback; });
+    }).then(function (who) { me = who; return who; });
+  }
+
+  /* The one sign-in box every tool uses: email + password, in a dialog.
+     Leaving the email empty uses the team password. Resolves true when
+     signed in, false when cancelled. The email is remembered on this device. */
+  var EMAIL_KEY = 'gvc.signin.email';
+  function askSignIn(reason) {
+    if (signedIn()) return Promise.resolve(true);
+    var doc = global.document;
+    return new Promise(function (resolve) {
+      var d = doc.createElement('dialog');
+      d.className = 'gvc-signin';
+      d.setAttribute('aria-labelledby', 'gvcSigninH');
+      d.style.cssText = 'border:1px solid var(--rule,#c9c4b8);border-radius:10px;padding:22px 24px;max-width:360px;width:calc(100% - 32px);' +
+        'background:var(--paper,#f4f1ea);color:var(--ink,#00273a);font:15px/1.45 var(--sans,system-ui,sans-serif)';
+      d.innerHTML =
+        '<form method="dialog" style="display:grid;gap:12px">' +
+          '<h2 id="gvcSigninH" style="margin:0;font:400 22px/1.2 var(--serif,Georgia,serif)">Sign in</h2>' +
+          '<p class="gvc-signin-why" style="margin:0;color:var(--ink-soft,#4a5a63);font-size:13.5px"></p>' +
+          '<label style="display:grid;gap:4px;font-size:13px">Email<input type="email" name="email" autocomplete="username" ' +
+            'placeholder="Leave empty for the team password" style="font:inherit;padding:8px 10px;border:1px solid var(--rule,#c9c4b8);border-radius:6px;background:#fff;color:inherit"></label>' +
+          '<label style="display:grid;gap:4px;font-size:13px">Password<input type="password" name="password" autocomplete="current-password" required ' +
+            'style="font:inherit;padding:8px 10px;border:1px solid var(--rule,#c9c4b8);border-radius:6px;background:#fff;color:inherit"></label>' +
+          '<p class="gvc-signin-msg" role="alert" style="margin:0;min-height:1.2em;color:var(--danger,#9b2c2c);font-size:13px"></p>' +
+          '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+            '<button type="button" value="cancel" class="btn">Cancel</button>' +
+            '<button type="submit" class="btn">Sign in</button>' +
+          '</div>' +
+        '</form>';
+      d.querySelector('.gvc-signin-why').textContent = reason || 'Sign in to open the workspace.';
+      var email = d.querySelector('input[name=email]'), pw = d.querySelector('input[name=password]');
+      var msg = d.querySelector('.gvc-signin-msg');
+      try { email.value = global.localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { /* no storage */ }
+      var done = function (ok) { d.close(); d.remove(); resolve(ok); };
+      d.querySelector('button[value=cancel]').addEventListener('click', function () { done(false); });
+      d.addEventListener('cancel', function (e) { e.preventDefault(); done(false); });
+      d.querySelector('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        msg.textContent = 'Signing in…';
+        signIn(email.value, pw.value).then(function () {
+          try { if (email.value.trim()) global.localStorage.setItem(EMAIL_KEY, email.value.trim()); } catch (x) { /* no storage */ }
+          done(true);
+        }, function (err) { msg.textContent = err.message; pw.select(); });
+      });
+      doc.body.appendChild(d);
+      d.showModal();
+      (email.value ? pw : email).focus();
+    });
+  }
 
   function signedIn() { return !!(session || loadSession()); }
 
@@ -677,7 +749,7 @@
 
   global.GVC_PROPS = {
     TOOLS: TOOLS, STATUSES: STATUSES,
-    signIn: signIn, signOut: signOut, signedIn: signedIn,
+    signIn: signIn, signOut: signOut, signedIn: signedIn, whoAmI: whoAmI, askSignIn: askSignIn,
     list: list, load: load, create: create, findByAddress: findByAddress,
     saveCore: saveCore, mergeCore: mergeCore, saveDoc: saveDoc, saveDocument: saveDocument,
     hydrate: hydrate, retokenize: retokenize, docSavedAt: docSavedAt,

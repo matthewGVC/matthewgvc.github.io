@@ -38,7 +38,10 @@ const PAGES = [
   ['To-do',           '/tools/todo/'],
   ['Listing Rules',   '/listing-rules/'],
   ['Office Screens',  '/tools/office-screens/'],
-  ['Postcards',       '/tools/postcard/']
+  ['Postcards',       '/tools/postcard/'],
+  ['Workspace',       '/workspace/'],
+  ['Workspace jobs',  '/workspace/jobs/'],
+  ['Workspace job',   '/workspace/job/?listing=none']
 ];
 
 /* Some browsers ask for these on their own whether or not a page links an
@@ -63,6 +66,9 @@ async function check(page, label, path) {
     if (m.type() !== 'error') return;
     // a failed request is logged against the resource, not the page
     if (isProbe(m.location().url || '')) return;
+    // the desktop helper (localhost:47610) is optional: the workspace pages ask
+    // whether it's running and say so when it isn't; that probe isn't a page bug
+    if (/localhost:47610/.test(m.text()) || /localhost:47610/.test(m.location().url || '')) return;
     consoleErrors.push(m.text());
   });
   page.on('pageerror', e => pageErrors.push(e.message));
@@ -80,8 +86,9 @@ async function check(page, label, path) {
 
   const r = await page.evaluate(() => ({
     title: document.title,
-    masthead: !!document.querySelector('.masthead'),
-    monogram: !!document.querySelector('#mast-monogram svg'),
+    // the /workspace/ pages have their own top bar (workspace-shell.js) instead of chrome.js's masthead
+    masthead: !!document.querySelector('.masthead') || !!document.querySelector('header.top .brand'),
+    monogram: !!document.querySelector('#mast-monogram svg') || !!document.querySelector('header.top .brand img[src*="monogram"]'),
     h1: (document.querySelector('h1') || {}).textContent || null,
     // a page that renders nothing still passes every listener check above
     bodyText: (document.body.innerText || '').trim().length,

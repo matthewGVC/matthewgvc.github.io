@@ -75,12 +75,10 @@ const $ = id => document.getElementById(id);
 function say(msg, kind) { const s = $('status'); s.textContent = msg || ''; s.className = 'status' + (kind ? ' ' + kind : ''); }
 const explain = e => (e && (e.status === 404 || /todos|relation|schema cache/i.test(e.message))) ? MISSING : (e && e.message) || 'Something went wrong.';
 
-/* Same gate as the property bar: a prompt, only when the library is needed. */
+/* Same gate as the property bar: the shared sign-in box, only when the library is needed. */
 function ensureSignedIn() {
   if (P.signedIn()) return Promise.resolve(true);
-  const pw = prompt('Team password to open the to-do list:');
-  if (!pw) return Promise.resolve(false);
-  return P.signIn(pw).then(() => true).catch(e => { say(e.message, 'warn'); return false; });
+  return P.askSignIn('Sign in to open the to-do list.');
 }
 
 function load() {
@@ -167,7 +165,7 @@ function start() {
   return ensureSignedIn().then(ok => {
     if (ok) return load();
     $('btnSignIn').hidden = false;
-    say('Sign in with the team password to see the list.');
+    say('Sign in to see the list.');
   });
 }
 
@@ -185,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (body && body.trim()) { $('newSecInput').value = ''; add(v, body.trim()); }
   });
   if (P.signedIn()) load();
-  else { $('btnSignIn').hidden = false; say('Sign in with the team password to see the list.'); }
+  else { $('btnSignIn').hidden = false; say('Sign in to see the list.'); }
 });
 </script>
 <script src="../../assets/js/field-labels.js"></script>

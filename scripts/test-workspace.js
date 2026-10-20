@@ -90,6 +90,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   /* signed out: sign-in only, nothing else */
   let t = await open(browser, { signedIn: false });
   check('signed out: gate shown', [await visible(t.page, '#gate'), await visible(t.page, '#board')], [true, false]);
+  check('signed out: footer says why there is no sync status', await text(t.page, '#wsFootSync'), 'Sign in to see the DE sync');
   await t.page.click('#gateBtn');
   check('signed out: sign-in dialog', await visible(t.page, 'dialog.gvc-signin'), true);
   await t.ctx.close();

@@ -185,7 +185,7 @@
       P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1')
         .then(function (rows) { shell.setSync(global.GVC_WS.syncHealth((rows || [])[0] || null, new Date())); },
           function () { shell.setSync({ state: 'never', text: 'DE sync status unknown' }); });
-    }
+    } else shell.setSync({ state: 'never', text: 'Sign in to see the DE sync' });
     return shell;
   }
 

@@ -124,7 +124,8 @@ async function writeRows(o, run, out, now) {
       const snap = snapshot(r);
       if (JSON.stringify(snap) !== JSON.stringify(p.de)) { patch.de = snap; patch.de_status = r.status; }
       if (p.de_listing_id !== r.id) patch.de_listing_id = r.id;
-      if (canMove(p.stage, r.stage)) {
+      // starter mode: a library row that isn't on the overview yet gets DE's facts but no stage
+      if (canMove(p.stage, r.stage) && (p.stage || o.addNew !== false)) {
         changes.push(log(p.id, 'stage', p.stage || null, r.stage));
         patch.stage = r.stage; patch.stage_source = 'DE';
       }

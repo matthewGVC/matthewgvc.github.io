@@ -96,6 +96,10 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   check('second run: no new changes', db.T.changes.length, before);
 
   /* ---------- starter mode (addNew: false): known jobs update, nothing new arrives ---------- */
+  db = fakeDb({ properties: [{ id: 'lib1', slug: 'lib', stage: null, de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 1100000 } }] });
+  await applyRun({ client: db, report: report([{ id: '900001', folder: null }]), now: NOW, addNew: false, courtesy: gvc, rows: [row('900001')] });
+  check('starter mode: a library row keeps off the overview (no stage)', [db.T.properties[0].stage, db.T.changes.some(c => c.field === 'stage')], [null, false]);
+
   db = fakeDb();
   let askedStarter = 0;
   out = await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, addNew: false,

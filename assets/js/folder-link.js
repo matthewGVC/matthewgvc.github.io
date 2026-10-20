@@ -1,0 +1,125 @@
+/* ============================================================
+   FOLDER LINK — "Link folder" / "Relink" on a job (spec §2.7).
+
+     GVC_LINK.open({ table, row, job }) → Promise<boolean>  (true once saved)
+       table  'properties' | 'pitches' | 'dev_projects'
+       row    the job's database row (id, version, drive_folder, core/label, market)
+       job    the GVC_WS job (name, type)
+
+   Shows up to five suggestions — the job's address run through the alias
+   matcher against the market's folder names — and a Browse button (the
+   folder picker, which must land inside the connected Drive root). Saving
+   writes drive_folder + folder_state 'linked' with the version check, and a
+   change-log row (source Matt). Nothing on Drive is created, moved or
+   renamed (D7, D10). Needs Drive connected; says so otherwise.
+   Needs: property-library.js, drive.js, address-aliases.js, workspace-shell.js.
+   ============================================================ */
+(function (global) {
+  'use strict';
+
+  var NY = 'GVC - New York/Building Information';
+  var NJ = 'GVC - New Jersey/1. Residential Sales/1. Resale';
+  var PLACES = {
+    NYC: [NY], NJ: [NJ, 'GVC - New Jersey/Rentals'], FL: ['GVC - Florida/Resale'],
+    pitch: ['GVC - Marketing/02 - Assets/Pitches'], devNJ: ['GVC - New Jersey/New Development'], devFL: ['GVC - Florida/New Development']
+  };
+  var OWNER = { properties: 'property_id', pitches: 'pitch_id', dev_projects: 'dev_project_id' };
+
+  function addrOf(row) {
+    var core = row.core || {}, a = String(core.address || row.label || '').trim(), u = String(core.unit || '').trim();
+    if (!u && a.indexOf(',') !== -1) { u = a.slice(a.lastIndexOf(',') + 1).trim().replace(/^residence\s+/i, ''); a = a.slice(0, a.lastIndexOf(',')).trim(); }
+    return { street: a, unit: u };
+  }
+
+  /* folder names only (GVC_DRIVE.list); nothing is opened */
+  function suggest(D, A, table, row) {
+    var au = addrOf(row), out = [];
+    var dirs = function (p) { return D.list(p).then(function (xs) { return xs.filter(function (x) { return x.kind === 'directory'; }).map(function (x) { return x.name; }); }, function () { return []; }); };
+    var nameMatches = function (n) {
+      var base = n.split(',')[0].replace(/^\d{4}-\d{1,2}-\d{1,2}\s+/, '').split(' - ')[0].trim();
+      return A.same(base, au.street) || A.startsWithAddress(base, au.street);
+    };
+    if (table === 'properties' && row.market === 'NYC') {
+      return dirs(NY).then(function (bs) {
+        return Promise.all(bs.filter(function (b) { return A.same(b, au.street); }).map(function (b) {
+          return dirs(NY + '/' + b).then(function (us) {
+            var hit = au.unit ? A.matchFolder(au.street, au.unit, us.map(function (u) { return { name: u, path: NY + '/' + b + '/' + u }; })) : null;
+            if (hit) out.push(hit.path);
+            out.push(NY + '/' + b);
+          });
+        }));
+      }).then(function () { return out.slice(0, 5); });
+    }
+    var places = table === 'pitches' ? PLACES.pitch : table === 'dev_projects' ? PLACES['dev' + row.market] || [] : PLACES[row.market] || [];
+    return Promise.all(places.map(function (p) {
+      return dirs(p).then(function (names) {
+        if (p === NJ) {   // NJ resale is filed by town
+          return Promise.all(names.map(function (town) {
+            return dirs(p + '/' + town).then(function (xs) { xs.filter(nameMatches).forEach(function (x) { out.push(p + '/' + town + '/' + x); }); });
+          }));
+        }
+        names.filter(table === 'dev_projects' ? function (n) { return n.replace(/^\d+\s*-\s*/, '').toLowerCase() === String(row.label).toLowerCase(); } : nameMatches)
+          .forEach(function (x) { out.push(p + '/' + x); });
+      });
+    })).then(function () { return out.slice(0, 5); });
+  }
+
+  function save(table, row, folder) {
+    var P = global.GVC_PROPS;
+    return P.call('/rest/v1/' + table + '?id=eq.' + encodeURIComponent(row.id) + '&version=eq.' + encodeURIComponent(row.version), {
+      method: 'PATCH', prefer: 'return=representation', body: JSON.stringify({ drive_folder: folder, folder_state: 'linked' })
+    }).then(function (rows) {
+      if (!rows || !rows.length) { var e = new Error('Someone changed this job meanwhile. Reload the page and link it again.'); e.conflict = true; throw e; }
+      var c = { field: 'drive_folder', old_value: row.drive_folder || null, new_value: folder, source: 'Matt' };
+      c[OWNER[table]] = row.id;
+      return P.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify(c) }).then(function () { return rows[0]; });
+    });
+  }
+
+  function open(o) {
+    var doc = global.document, D = global.GVC_DRIVE, A = global.GVC_ADDR, esc = global.GVC_ESC;
+    return new Promise(function (resolve) {
+      var d = doc.createElement('dialog');
+      d.className = 'gvc-link';
+      d.style.cssText = 'border:1px solid var(--rule);border-radius:10px;padding:22px 24px;max-width:560px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)';
+      d.innerHTML = '<h2 style="font-size:22px;margin:0 0 4px">' + (o.row.folder_state === 'broken' ? 'Relink the folder' : 'Link the Drive folder') + '</h2>' +
+        '<p class="soft" style="margin:0 0 14px;font-size:13.5px" id="lkWhat"></p><div id="lkList"><p class="soft">Looking for the folder…</p></div>' +
+        '<p id="lkMsg" role="alert" style="min-height:1.2em;color:var(--danger);font-size:13px;margin:10px 0 0"></p>' +
+        '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button type="button" class="b" id="lkBrowse">Browse…</button><button type="button" class="b" id="lkCancel">Cancel</button></div>';
+      d.querySelector('#lkWhat').textContent = o.job.name + '. Nothing on Drive is moved or renamed; the job just remembers where its folder is.';
+      var msg = d.querySelector('#lkMsg'), list = d.querySelector('#lkList');
+      var done = function (ok) { d.close(); d.remove(); resolve(ok); };
+      d.querySelector('#lkCancel').addEventListener('click', function () { done(false); });
+      d.addEventListener('cancel', function (e) { e.preventDefault(); done(false); });
+      var pick = function (folder) {
+        msg.textContent = 'Saving…';
+        save(o.table, o.row, folder).then(function () { done(true); }, function (e) { msg.textContent = e.message; });
+      };
+      d.querySelector('#lkBrowse').addEventListener('click', function () {
+        if (!D || !global.showDirectoryPicker) { msg.textContent = 'This browser can\'t open Drive folders. Use Chrome on the desktop.'; return; }
+        global.showDirectoryPicker({ id: 'gvc-drive', mode: 'read' }).then(function (h) { return D.relPathOf(h); }).then(function (rel) {
+          if (!rel) { msg.textContent = 'That folder isn\'t inside G:\\Shared drives. Pick one there.'; return; }
+          pick(rel);
+        }, function () { /* picker closed */ });
+      });
+      doc.body.appendChild(d);
+      d.showModal();
+
+      (D ? D.state() : Promise.resolve('unsupported')).then(function (s) {
+        if (s !== 'connected') {
+          list.innerHTML = '<p class="soft">Connect Drive (top right) to look for this job\'s folder.</p>';
+          d.querySelector('#lkBrowse').disabled = true;
+          return;
+        }
+        return suggest(D, A, o.table, o.row).then(function (paths) {
+          list.innerHTML = paths.length ? '<p class="lbl" style="margin:0 0 8px">Suggestions</p>' + paths.map(function (p, i) {
+            return '<button type="button" class="b" style="display:flex;width:100%;justify-content:flex-start;margin-bottom:6px;white-space:normal;text-align:left" data-i="' + i + '">' + esc(p) + '</button>';
+          }).join('') : '<p class="soft">No folder with this address turned up. Use Browse to pick it.</p>';
+          list.querySelectorAll('button[data-i]').forEach(function (b) { b.addEventListener('click', function () { pick(paths[+b.dataset.i]); }); });
+        });
+      });
+    });
+  }
+
+  global.GVC_LINK = { open: open, suggest: suggest, save: save };
+})(window);

@@ -68,6 +68,7 @@ check('status bars for the timeline', J('p1').bars.map(b => [b.s, b.from, b.to])
   [['pitch', '2026-06-08', '2026-06-08'], ['won', '2026-06-08', '2026-09-17'], ['live', '2026-09-17', '2026-10-12'], ['contract', '2026-10-12', null]]);
 check('ticks for pieces found', J('p1').ticks.map(t => t.label), ['Showsheet', 'Floorplan']);
 
+check('DE status in DE words', [W.deLabel('Active'), W.deLabel('ActiveUnderContract'), W.deLabel('Pending'), W.deLabel(null)], ['Active', 'Contract signed', 'Pending', '']);
 /* ---------- flags and tasks ---------- */
 check('flags', [J('p1').flags, J('p2').flags.map(f => f.t), J('p3').flags.map(f => f.t)], [[], ['Link folder'], ['Relink folder', 'Match DE']]);
 const tasks = W.taskFlags(jobs);

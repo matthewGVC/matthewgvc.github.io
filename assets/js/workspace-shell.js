@@ -168,6 +168,13 @@
     });
     shell.paintMe = paintMe;
     paintMe();
+
+    /* the DE sync status for the footer, on every page */
+    if (P && P.signedIn() && global.GVC_WS) {
+      P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1')
+        .then(function (rows) { shell.setSync(global.GVC_WS.syncHealth((rows || [])[0] || null, new Date())); },
+          function () { shell.setSync({ state: 'never', text: 'DE sync status unknown' }); });
+    }
     return shell;
   }
 

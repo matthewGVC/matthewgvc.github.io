@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job · GVC Workspace</title>
+<meta name="description" content="One GVC job: its stage, DE facts, Drive folder and change log.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/workspace.css">
+<style>
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin:10px 0 24px}
+.hd h1{font-size:40px;line-height:1.1;display:flex;gap:14px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere}
+.hd .sub{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:14px;color:var(--ink-soft)}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px}
+.facts .k{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+.facts .v{font-family:var(--mono);font-size:20px;margin-top:6px;overflow-wrap:anywhere}
+.facts .s{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start;margin-top:24px}
+.log{list-style:none;margin:0;padding:0}
+.log li{display:grid;grid-template-columns:14px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.log li:last-child{border-bottom:0}
+.log .dt{width:8px;height:8px;border-radius:50%;background:var(--rule);margin-top:6px}
+.log .dt.de{background:var(--cyan)}
+.log .dt.m{background:var(--ink)}
+.log small{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.log .w{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.path{font-family:var(--mono);font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere}
+.later{border-style:dashed;color:var(--ink-soft);font-size:13.5px}
+.steps-wrap{overflow-x:auto}
+.steps{min-width:640px}
+@media (max-width:1100px){ .two{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:720px){ .hd h1{font-size:30px} }
+</style>
+</head>
+<body data-nav="job" data-root="../">
+<main class="wrap">
+  <div class="crumb" id="crumb"><a href="../jobs/">Jobs</a></div>
+  <div id="page"><p class="soft" style="margin-top:20px">Loading the job…</p></div>
+</main>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/address-aliases.js"></script>
+<script src="../../assets/js/drive-rules.js"></script>
+<script src="../../assets/js/drive.js"></script>
+<script src="../../assets/js/workspace-data.js"></script>
+<script src="../../assets/js/workspace-shell.js"></script>
+<script src="../../assets/js/folder-link.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
+  var q = new URLSearchParams(location.search);
+  var kind = q.has('listing') ? 'listing' : q.has('pitch') ? 'pitch' : q.has('dev') ? 'dev' : null;
+  var slug = kind ? q.get(kind) : '';
+  var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
+  var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
+  var today = new Date().toISOString().slice(0, 10);
+  var shell = GVC_SHELL.mount({ onDrive: function () { if (state.row) render(); } });
+  var state = { row: null, job: null, changes: [], won: null, helper: false };
+
+  function rest(path) { return P.call('/rest/v1' + path); }
+  function page(html) { $('page').innerHTML = html; }
+  function missing() {
+    page('<div class="card empty" style="margin-top:20px"><b>No job called "' + esc(slug || '(none)') + '"</b>It may have been renamed or never existed. <a class="link" href="../">Back to the overview</a></div>');
+  }
+
+  function load() {
+    if (!TABLE || !slug) return Promise.resolve(missing());
+    return rest('/' + TABLE + '?slug=eq.' + encodeURIComponent(slug) + '&select=*').then(function (rows) {
+      var row = rows && rows[0];
+      if (!row) return missing();
+      state.row = row;
+      return Promise.all([
+        rest('/changes?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=at.desc&limit=500'),
+        kind === 'listing' ? rest('/pitches?won_property_id=eq.' + encodeURIComponent(row.id) + '&select=*') : Promise.resolve([]),
+        kind === 'pitch' && row.won_property_id ? rest('/properties?id=eq.' + encodeURIComponent(row.won_property_id) + '&select=slug,label,core') : Promise.resolve([])
+      ]).then(function (r) {
+        state.changes = r[0] || [];
+        var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
+        if (kind === 'listing') { data.properties = [row]; data.pitches = r[1] || []; }
+        if (kind === 'pitch') data.pitches = [Object.assign({}, row, { won_property_id: null })];   // show the pitch itself even when won
+        if (kind === 'dev') data.devProjects = [row];
+        state.job = W.buildJobs(data, today, { archived: true })[0];
+        state.won = (r[2] || [])[0] || null;
+        if (!state.job) return missing();   // a listing with no stage yet
+        render();
+      });
+    }, function (e) {
+      page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
+    });
+  }
+
+  function fact(k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">—</span>') + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; }
+
+  function facts() {
+    var r = state.row, j = state.job;
+    if (kind === 'dev') {
+      var ms = r.milestones || {};
+      return '<div class="card"><div class="card-h"><div><h2>Milestones</h2><p>Ticked by Matt (from Slice 2). Developments are on the overview only for now.</p></div></div><ul class="log">' +
+        W.DEV.map(function (m) { var x = ms[m] || {}; return '<li><span class="dt' + (x.done ? ' m' : '') + '"></span><div>' + esc(m) + '</div><span class="w">' + (x.on ? esc(W.fmtDay(x.on)) : x.done ? 'done' : '') + '</span></li>'; }).join('') + '</ul></div>';
+    }
+    if (kind === 'pitch') {
+      return '<div class="card"><div class="facts">' + fact('Pitched', r.pitched_on ? W.fmtDay(r.pitched_on) + ' ' + r.pitched_on.slice(0, 4) : '') +
+        fact('Outcome', r.outcome === 'won' ? 'Won' : r.outcome === 'not won' ? 'Not won' : 'Open') + fact('Market', r.market) + '</div>' +
+        (state.won ? '<p style="margin-top:16px">Became the listing <a class="link" href="?listing=' + encodeURIComponent(state.won.slug) + '">' + esc(state.won.label) + '</a>.</p>' : '') + '</div>';
+    }
+    var core = r.core || {}, de = r.de || {};
+    var src = function (k) { return de[k] != null ? 'from DE' : core[k] != null ? 'on the job' : ''; };
+    var agents = (core.agentIds || []).map(function (id) { var a = window.GVC_AGENT && GVC_AGENT(id); return a ? a.name : null; }).filter(Boolean);
+    return '<div class="card"><div class="card-h"><div><h2>Facts</h2><p>DE wins where it has a value (D6). Editing facts arrives in Slice 2.</p></div></div><div class="facts">' +
+      fact(r.kind === 'rental' ? 'Rent' : 'Price', j.price, src('price')) +
+      fact('Beds · baths', j.rooms, (de.halfBaths ? de.halfBaths + ' half' : '') ) +
+      fact('Sq ft', (de.sqft || core.sqft) ? Number(de.sqft || core.sqft).toLocaleString('en-US') + ' approx.' : '', src('sqft')) +
+      fact('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
+      fact('Neighbourhood', core.neighborhood || core.city || '') +
+      fact('Agents', agents.join(', '), agents.length ? '' : 'picked in Slice 2') +
+      '</div></div>';
+  }
+
+  function steps() {
+    var j = state.job;
+    if (kind === 'dev') return '';
+    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2><p>Any stage can be skipped</p></div></div><div class="steps-wrap"><div class="steps">' +
+      j.steps.map(function (s, i) {
+        var cls = i === j.stageIdx ? 'cur' : (j.done[s] || (s === 'Pitch' && j.pitchedOn)) ? 'done' : i < j.stageIdx ? 'skip' : '';
+        var d = s === 'Pitch' ? (j.pitchedOn || j.done.Pitch) : j.done[s];
+        return '<div class="step ' + cls + '"><span class="dot">' + (cls === 'done' ? I('check') : (i + 1)) + '</span>' + esc(s) + '<span class="d">' + (d ? esc(W.fmtDay(d)) : '') + '</span></div>';
+      }).join('') + '</div></div></div>';
+  }
+
+  function log() {
+    var items = state.changes.map(function (c) {
+      var t = c.field === 'stage' ? 'Stage moved to ' + c.new_value : c.field === 'price' ? 'Price ' + W.money(c.old_value) + ' → ' + W.money(c.new_value)
+        : c.field === 'drive_folder' ? 'Folder linked' : c.field === 'folder_state' ? (c.new_value === 'broken' ? 'Folder moved or renamed' : 'Folder found again')
+        : c.field ? c.field + ': ' + JSON.stringify(c.old_value) + ' → ' + JSON.stringify(c.new_value) : (c.note || 'Changed');
+      var cls = c.source === 'DE' ? 'de' : c.source === 'Matt' ? 'm' : '';
+      return '<li><span class="dt ' + cls + '"></span><div>' + esc(t) + (c.note && c.field ? '<small>' + esc(c.note) + '</small>' : '') + '</div><span class="w">' + esc(W.fmtDay(c.at) + ' · ' + c.source) + '</span></li>';
+    });
+    return '<div class="card"><div class="card-h"><div><h2>Change log</h2><p>Newest first. Logging a change by hand arrives in Slice 2.</p></div></div>' +
+      (items.length ? '<ul class="log">' + items.join('') + '</ul>' : '<p class="soft">Nothing logged yet.</p>') + '</div>';
+  }
+
+  function render() {
+    var r = state.row, j = state.job;
+    document.title = j.name + ' · GVC Workspace';
+    $('crumb').innerHTML = '<a href="../jobs/">Jobs</a><span>/</span><span>' + esc({ listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
+    var sub = ['<span class="chip">' + esc(j.market || '?') + '</span>'];
+    if (j.place) sub.push(esc(j.place));
+    if (j.pitchedOn && kind !== 'pitch') sub.push('Pitched ' + esc(W.fmtDay(j.pitchedOn)));
+    var link = r.folder_state === 'linked' ? 'Change folder' : r.folder_state === 'broken' ? 'Relink folder' : 'Link folder';
+    var acts = '<div class="acts">' +
+      '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
+      '<button class="b" type="button" id="copy"' + (r.drive_folder ? '' : ' disabled') + '>' + I('copy') + 'Copy folder path</button>' +
+      (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
+      '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button></div>';
+    page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' +
+      '<div class="path" style="margin-top:8px">' + (r.drive_folder ? 'G:\\Shared drives\\' + esc(r.drive_folder.split('/').join('\\')) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
+      '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
+      facts() + steps() +
+      '<div class="two"><div>' + log() + '</div><div class="card later"><b style="font-family:var(--serif);font-weight:400;font-size:20px;color:var(--ink)">Kit, floorplans, photos</b><p style="margin-top:6px">The pieces made for this job, floorplan versions and photo picks arrive in Slices 2 and 3.</p></div></div>');
+
+    $('open').addEventListener('click', function () {
+      GVC_SHELL.helper('POST', '/open-folder', { folder: r.drive_folder }).then(function (x) { $('actMsg').textContent = x.ok ? 'Opened in File Explorer.' : (x.error || 'Couldn\'t open it.'); },
+        function (e) { $('actMsg').textContent = e.message + ' Use Copy folder path instead.'; });
+    });
+    $('copy').addEventListener('click', function () {
+      var p = 'G:\\Shared drives\\' + r.drive_folder.split('/').join('\\');
+      (navigator.clipboard ? navigator.clipboard.writeText(p) : Promise.reject()).then(function () { $('actMsg').textContent = 'Copied: paste it into File Explorer\'s address bar.'; },
+        function () { $('actMsg').textContent = p; });
+    });
+    $('link').addEventListener('click', function () {
+      GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
+    });
+  }
+
+  if (P.signedIn()) load();
+  else {
+    page('<div class="card empty" style="margin-top:20px"><b>Sign in</b>This page is for the GVC team.<div style="margin-top:14px"><button class="b primary" type="button" id="gateBtn">Sign in</button></div></div>');
+    $('gateBtn').addEventListener('click', function () { P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) { shell.paintMe(); load(); } }); });
+  }
+})();
+</script>
+</body>
+</html>

@@ -105,7 +105,7 @@
         name: readable(au.address) + (au.unit ? ' ' + au.unit : ''), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
         rooms: beds != null && baths != null ? beds + ' bd · ' + baths + ' ba' : '', place: core.neighborhood || core.city || '',
-        deStatus: p.de_status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
+        deStatus: p.de_status || de.status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
         folder: p.drive_folder || null, folderState: p.folder_state, pitchedOn: pitch ? pitch.pitched_on : null,
         steps: STAGES, stageIdx: stageIndex(p.stage), done: done, bars: bars, ticks: ticks,
         activity: (p.scan && p.scan.weeks) || {}, flags: flags, last: dates.length ? dates[dates.length - 1] : null,
@@ -199,6 +199,10 @@
     return { state: 'ok', text: 'DE synced ' + fmtWhen(run.started_at), why: null };
   }
 
-  return { STAGES: STAGES, DEV: DEV, buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags,
+  /* DE's status codes in the words DE's own site uses */
+  var DE_WORDS = { Active: 'Active', ActiveUnderContract: 'Contract signed', Pending: 'Pending', Sold: 'Sold', Rented: 'Rented' };
+  function deLabel(s) { return s ? DE_WORDS[s] || s : ''; }
+
+  return { STAGES: STAGES, DEV: DEV, deLabel: deLabel, buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags,
     recentChanges: recentChanges, syncHealth: syncHealth, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
 });

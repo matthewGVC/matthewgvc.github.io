@@ -59,9 +59,17 @@ async function open(browser, opts) {
   const T = opts.rows || rowsFor();
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
-    if (m !== 'GET') { writes.push(m + ' ' + table + ' ' + (r.request().postData() || '')); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
-    if (opts.missing && opts.missing.indexOf(table) !== -1) return r.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'relation "public.' + table + '" does not exist' }) });
     if (table === 'members') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]) });
+    const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
+    const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
+    if (m === 'PATCH') {
+      writes.push(m + ' ' + table + ' ' + u.search + ' ' + (r.request().postData() || ''));
+      const rows = opts.conflict ? [] : (T[table] || []).filter(hit);
+      return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
+    }
+    if (m !== 'GET') { writes.push(m + ' ' + table + ' ' + (r.request().postData() || '')); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
+    if (eqs.length) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((T[table] || []).filter(hit)) });
+    if (opts.missing && opts.missing.indexOf(table) !== -1) return r.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'relation "public.' + table + '" does not exist' }) });
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T[table] || []) });
   });
   await page.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'u1', email: 'matt@example.com' }) }));
@@ -158,6 +166,88 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await pp.goto(BASE + '/workspace/', { waitUntil: 'networkidle' });
   check('phone: no sideways scroll', await pp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
   await phone.close();
+
+  /* ---------- the jobs list ---------- */
+  t = await open(browser, { path: '/workspace/jobs/' });
+  check('jobs: rows', await t.page.$$eval('#rows tr', els => els.length), 6);
+  check('jobs: link to the job page', await t.page.$eval('#rows a[href*="100-example"]', a => a.getAttribute('href')), '../job/?listing=100-example-st-residence-4a');
+  check('jobs: DE status in words', (await text(t.page, '#rows')).includes('Contract signed'), true);
+  await t.page.click('#typ button[data-v="pitch"]');
+  check('jobs: type filter', await t.page.$$eval('#rows tr', els => els.length), 1);
+  check('jobs: to link box', (await text(t.page, '#n2')).includes('20 Sample Ave 7B'), true);
+  check('jobs: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  /* ---------- one job ---------- */
+  const R = rowsFor();
+  R.properties[0].core.listingUrl = 'https://www.elliman.com/listing/x/9001';
+  R.properties[0].core.agentIds = ['elyse-gutman'];
+  R.properties[2].core.listingUrl = 'javascript:alert(1)';
+  t = await open(browser, { rows: R, path: '/workspace/job/?listing=100-example-st-residence-4a' });
+  let jp = t.page;
+  check('job: its own name', (await text(jp, 'h1')).startsWith('100 Example St 4A'), true);
+  check('job: facts from DE', (await text(jp, '.facts')).includes('$4,500,000'), true);
+  check('job: agent from the roster', (await text(jp, '.facts')).includes('Elyse Gutman'), true);
+  check('job: current stage', await text(jp, '.step.cur'), '8In contract' + (await jp.$eval('.step.cur .d', e => e.textContent)));
+  check('job: DE status in words', (await text(jp, '.facts')).includes('Contract signed'), true);
+  check('job: skipped stages dashed', await jp.$$eval('.step.skip', els => els.map(e => e.childNodes[1].textContent.trim())), ['Pitch', 'Won', 'Showsheet', 'Photos', 'Brochure']);
+  check('job: footer shows the sync', (await text(jp, '#wsFootSync')).startsWith('DE synced'), true);
+  check('job: change log', await jp.$$eval('.log li', els => els.length), 3);
+  check('job: DE listing link', await jp.$eval('a.b[href^="https://www.elliman.com"]', a => a.target), '_blank');
+  check('job: folder path shown', (await text(jp, '.path')).includes('G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A'), true);
+  await jp.route('http://localhost:47610/open-folder', r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' }));
+  await jp.click('#open');
+  await jp.waitForTimeout(200);
+  check('job: open folder through the helper', await text(jp, '#actMsg'), 'Opened in File Explorer.');
+  check('job: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  t = await open(browser, { rows: R, path: '/workspace/job/?listing=12-sample-lane' });
+  check('job: unsafe link never rendered', await t.page.$$eval('a[href^="javascript"]', els => els.length), 0);
+  check('job: broken folder flagged', [(await text(t.page, '#link')).includes('Relink'), (await text(t.page, '.path')).includes('moved or renamed')], [true, true]);
+  await t.ctx.close();
+
+  t = await open(browser, { path: '/workspace/job/?listing=nobody-lives-here' });
+  check('job: unknown address', (await text(t.page, '#page')).includes('No job called "nobody-lives-here"'), true);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?pitch=90-pitch-st-11b-2026-08-04' });
+  check('pitch page', [(await text(t.page, 'h1')).startsWith('90 Pitch St 11B'), (await text(t.page, '.facts')).includes('Open')], [true, true]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
+  check('development page', await t.page.$$eval('.log li', els => els.length), 10);
+  await t.ctx.close();
+
+  /* ---------- linking a folder ---------- */
+  const FAKE = `window.__fakeDrive = {
+    state: async () => 'connected',
+    list: async p => ({ 'GVC - New York/Building Information': [{ name: '20 Sample Ave', kind: 'directory' }, { name: '21 Other St', kind: 'directory' }],
+      'GVC - New York/Building Information/20 Sample Ave': [{ name: '7B', kind: 'directory' }, { name: '8C', kind: 'directory' }] })[p] || [],
+    relPathOf: async () => null };`;
+  t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b' });
+  jp = t.page;
+  await jp.click('#link');
+  check('link: needs Drive here', (await text(jp, 'dialog.gvc-link')).includes('Connect Drive'), true);
+  await jp.click('#lkCancel');
+  await jp.evaluate(FAKE + 'window.GVC_DRIVE = window.__fakeDrive;');
+  await jp.click('#link');
+  await jp.waitForSelector('dialog.gvc-link button[data-i]');
+  check('link: suggestion for the unit first', await jp.$eval('dialog.gvc-link button[data-i="0"]', b => b.textContent), 'GVC - New York/Building Information/20 Sample Ave/7B');
+  await jp.click('dialog.gvc-link button[data-i="0"]');
+  await jp.waitForTimeout(400);
+  const patch = t.writes.find(w => /^PATCH properties/.test(w)) || '';
+  check('link: saved with the version check', [/id=eq\.p2/.test(patch), /version=eq\.1/.test(patch), /"folder_state":"linked"/.test(patch)], [true, true, true]);
+  check('link: logged in the change log', t.writes.some(w => /^POST changes .*"field":"drive_folder".*"source":"Matt"/.test(w)), true);
+  check('link: dialog closed', await visible(jp, 'dialog.gvc-link'), false);
+  await t.ctx.close();
+
+  t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b', conflict: true });
+  await t.page.evaluate(FAKE + 'window.GVC_DRIVE = window.__fakeDrive;');
+  await t.page.click('#link');
+  await t.page.waitForSelector('dialog.gvc-link button[data-i]');
+  await t.page.click('dialog.gvc-link button[data-i="0"]');
+  await t.page.waitForTimeout(400);
+  check('link: conflict refused, not overwritten', [(await text(t.page, '#lkMsg')).includes('Someone changed this job'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
+  await t.ctx.close();
 
   await browser.close();
   if (failures.length) {

@@ -90,6 +90,23 @@ function req(method, p, headers, body) {
   r = await req('POST', '/nothing-here', { origin: 'http://localhost:8080', 'x-gvc-pair': cfg.pairCode }, {});
   check('unknown route', [r.status, r.json && r.json.ok], [404, false]);
 
+  /* open a job folder in File Explorer: only existing folders under the Drive root, never a shell */
+  const { openFolderRoute } = require('../helper/routes.js');
+  const opened = [];
+  const fakeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-root-'));
+  fs.mkdirSync(path.join(fakeRoot, 'GVC - New York', 'A'), { recursive: true });
+  const openFolder = openFolderRoute({ driveRoot: fakeRoot, launch: p => opened.push(p) });
+  let o = await openFolder({ folder: 'GVC - New York/A' });
+  check('opens a job folder', [o.ok, opened.length && opened[0] === path.join(fakeRoot, 'GVC - New York', 'A')], [true, true]);
+  for (const bad of ['GVC - New York/../..', '..', 'C:/Windows', 'GVC - New York/missing', '', 'GVC - New York/A" & calc']) {
+    o = await openFolder({ folder: bad }).catch(e => ({ ok: false, error: e.message }));
+    check('refuses ' + JSON.stringify(bad), o.ok, false);
+  }
+  check('nothing else opened', opened.length, 1);
+  o = await openFolder({ folder: 'GVC - New York\\A' });
+  check('backslash paths too', [o.ok, opened[1] === path.join(fakeRoot, 'GVC - New York', 'A')], [true, true]);
+  check('the real route points at the Drive root', /driveRoot: 'G:\\\\Shared drives'/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'routes.js'), 'utf8')), true);
+
   check('bound to loopback', server.address().address, '127.0.0.1');
   server.close();
 

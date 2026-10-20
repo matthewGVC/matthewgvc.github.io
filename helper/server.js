@@ -71,8 +71,11 @@ function handle(cfg) {
     }
 
     if (req.method === 'GET' && path === '/health') {
-      return send(res, 200, { ok: true, version: VERSION, paired: req.headers['x-gvc-pair'] === cfg.pairCode,
-        account: !!(cfg.helperEmail && cfg.helperPassword), lastRuns: runner ? runner.lastRuns() : {} }, origin);
+      // unpaired: liveness only; the account and run details only for a paired browser
+      const paired = req.headers['x-gvc-pair'] === cfg.pairCode;
+      const body = { ok: true, version: VERSION, paired };
+      if (paired) { body.account = !!(cfg.helperEmail && cfg.helperPassword); body.lastRuns = runner ? runner.lastRuns() : {}; }
+      return send(res, 200, body, origin);
     }
 
     if (req.headers['x-gvc-pair'] !== cfg.pairCode) {

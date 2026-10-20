@@ -64,7 +64,9 @@ function req(method, p, headers, body) {
 
   let r = await req('GET', '/health', { origin: 'https://matthewgvc.github.io' });
   check('health ok', [r.status, r.json && r.json.ok], [200, true]);
-  check('health says whether the helper has its account', [r.json && r.json.account, r.json && r.json.lastRuns], [false, {}]);
+  check('unpaired health: liveness only', [r.json && 'account' in r.json, r.json && 'lastRuns' in r.json], [false, false]);
+  r = await req('GET', '/health', { origin: 'https://matthewgvc.github.io', 'x-gvc-pair': cfg.pairCode });
+  check('paired health: account and last runs', [r.json && r.json.paired, r.json && r.json.account, r.json && r.json.lastRuns], [true, false, {}]);
   check('acao exact', r.headers['access-control-allow-origin'], 'https://matthewgvc.github.io');
 
   r = await req('OPTIONS', '/de/dry-run', { origin: 'https://matthewgvc.github.io',

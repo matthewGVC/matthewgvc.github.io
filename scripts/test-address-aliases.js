@@ -49,6 +49,29 @@ check('rental-named folder', A.matchFolder('1050 PARK AVE', '11B', units).path, 
 check('no unit (house)', A.matchFolder('6 Johnny Dr', '', [{ name: '6 Johnny Dr', path: 'Resale/6 Johnny Dr' }]).path, 'Resale/6 Johnny Dr');
 check('no match', A.matchFolder('1 Main St', '2A', units), null);
 
+/* Slice 2: Asana's short task names (D62) */
+check('W59 short form', A.same('555 W59', '555 West 59th Street'), true);
+check('WEA short form', A.same('565 WEA', '565 West End Avenue'), true);
+check('CPS short form', A.same('106 CPS', '106 Central Park South'), true);
+check('E86 short form', A.same('170 E86', '170 East 86th Street'), true);
+check('Park S short form', A.same('404 Park S', '404 Park Avenue South'), true);
+check('SPS short form', A.same('2 SPS', '2 Sutton Place South'), true);
+check('NJ town and "- 1st" suffix', A.same('619 Bradley Ave, Brielle - 1st', '619 Bradley Ave'), true);
+check('NJ "Ln, Wall"', A.same('1006 Pheasant Ln, Wall', '1006 Pheasant Lane'), true);
+check('NYC unit suffix ignored for the street', A.same('555 W59 - PHC', '555 W 59TH ST'), true);
+check('long form with Apt', A.same('250 East 53rd Street, Apt. 504', '250 E53'), true);
+check('House 1 is not House 2', A.same('405 Old Bridge Rd (House 1)', '405 Old Bridge Rd (House 2)'), false);
+check('House 1 is House 1', A.same('405 Old Bridge Rd (House 1)', '405 Old Bridge Road (house 1)'), true);
+check('combined units stable', A.unitKey('10BCD'), '10BCD');
+check('combined units with slash', A.unitKey('18/19E'), '1819E');
+check('split NYC name', A.splitName('555 W59 - PHC'), { street: '555 W59', unit: 'PHC', town: '', house: '' });
+check('split NJ name', A.splitName('619 Bradley Ave, Brielle - 1st'), { street: '619 Bradley Ave', unit: '', town: 'Brielle', house: '' });
+check('split NJ " - town" name', A.splitName('207 Example Ct - Brick'), { street: '207 Example Ct', unit: '', town: 'Brick', house: '' });
+check('split long form', A.splitName('250 East 53rd Street, Apt. 504'), { street: '250 East 53rd Street', unit: '504', town: '', house: '' });
+check('split house', A.splitName('405 Old Bridge Rd (House 2)'), { street: '405 Old Bridge Rd', unit: '', town: '', house: '2' });
+check('split combined unit', A.splitName('401 E89 - 18/19E'), { street: '401 E89', unit: '18/19E', town: '', house: '' });
+check('split trims whitespace', A.splitName('  12 Dup Street - 4A\n'), { street: '12 Dup Street', unit: '4A', town: '', house: '' });
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

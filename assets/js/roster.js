@@ -74,6 +74,43 @@
   });
 
   global.GVC_ROSTER = PEOPLE;
+
+  /* INITIALS — Asana's "🧑‍💼 Point Person" field holds initials ("JG/KC"),
+     and the workspace suggests agents from them (D53). Written out by hand
+     (D71), never computed, because initials clash. Each value is one of:
+       'katie-cook'           the roster id
+       null                   ambiguous: always ask Matt (CB = Colton Bryan
+                              or Catherine Ballard)
+       'past:Jessica Wolf'    a past team member, not on the roster
+       'other:Alexandra Lynch' on the team in Asana's People, not on the roster
+     KC is Katie Cook on listings (Karen Conlon isn't an agent). Initials not
+     listed here are asked about too. Sources: the Asana rest crawl §4 and the
+     listings survey (VB was seen on old listings). */
+  global.GVC_ROSTER_INITIALS = {
+    JG: 'john-gasdaska',
+    TJ: 'tj-verdiglione', TV: 'tj-verdiglione',
+    JC: 'jonathan-conlon',
+    KC: 'katie-cook',
+    NS: 'nicole-sobol',
+    GK: 'gary-kasparov',
+    EG: 'elyse-gutman',
+    AG: 'ayuen-gai',
+    MS: 'marli-silver',
+    GP: 'george-putykewycz',
+    JH: 'james-huber',
+    NM: 'nicole-melveney',
+    KB: 'karl-brisard',
+    AL: 'other:Alexandra Lynch',
+    CB: null,
+    KG: 'past:Kathy Grabowy',
+    JW: 'past:Jessica Wolf',
+    CR: 'past:CJ Reid',
+    AR: 'past:Anthony Romano',
+    SB: 'past:Sharon Baum',
+    MSa: 'past:Mariana Santelli',
+    VB: 'past:Victor Barbenes'
+  };
+
   var BY_ID = {};
   PEOPLE.forEach(function (a) { BY_ID[a.id] = a; });
   global.GVC_AGENT = function (id) { return BY_ID[id] || null; };

@@ -9,6 +9,14 @@
      GVC_ADDR.normalize('347 W BROADWAY')        → '347 west broadway'
      GVC_ADDR.same('176 E 71ST ST', '176 E71')   → true
      GVC_ADDR.matchFolder(street, unit, folders) → the folder for that unit, or null
+     GVC_ADDR.splitName('555 W59 - PHC')         → { street: '555 W59', unit: 'PHC', town: '', house: '' }
+
+   Asana task names carry more than the street (D62): NYC "555 W59 - PHC"
+   (a unit after " - "), NJ "619 Bradley Ave, Brielle - 1st" (a town after
+   the comma, then a note), "207 McKinley Ct - Brick" (a town after " - "),
+   the 2025 long form "250 East 53rd Street, Apt. 504", and two houses on
+   one lot as "(House 1)" / "(House 2)". same() compares the street part
+   only and keeps the house number apart, so House 1 never matches House 2.
 
    The canonical form drops "street" (NYC folders leave it off: "176 E71")
    and writes ordinals as digits ("Fifth", "5TH" → "5").
@@ -32,7 +40,8 @@
     EEA: 'EAST END AVENUE',
     RSD: 'RIVERSIDE DRIVE',
     CPW: 'CENTRAL PARK WEST',
-    CPS: 'CENTRAL PARK SOUTH'
+    CPS: 'CENTRAL PARK SOUTH',
+    SPS: 'SUTTON PLACE SOUTH'
   };
 
   /* single-word abbreviations */
@@ -70,6 +79,9 @@
       if (SHORT[t]) { out.push.apply(out, SHORT[t].split(' ')); return; }
       out.push(WORDS[t] || t);
     });
+    // "404 Park S" is Park Avenue South
+    var n = out.length;
+    if (n >= 2 && out[n - 2] === 'PARK' && out[n - 1] === 'SOUTH') out.splice(n - 1, 0, 'AVENUE');
     var type = out.length > 1 && TYPES[out[out.length - 1]] ? out.pop() : null;
     return { core: out, type: type };
   }
@@ -96,8 +108,38 @@
     return have.indexOf(want + ' ') === 0;
   }
 
+  /* a unit after " - " has a digit in it or is a named one (PHC, TH, Garden);
+     anything else there is a town ("207 McKinley Ct - Brick") */
+  function unitLike(t) {
+    return /\d/.test(t) || /^(PH[A-Z0-9]*|PENTHOUSE|TH|GARDEN)$/i.test(t);
+  }
+
+  function splitName(name) {
+    var out = { street: '', unit: '', town: '', house: '' };
+    var s = String(name || '').replace(/\s+/g, ' ').trim();
+    var h = /\(\s*house\s*([A-Z0-9]+)\s*\)/i.exec(s);
+    if (h) out.house = h[1].toUpperCase();
+    s = s.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+    var segs = s.split(/\s*,\s*/);
+    var first = segs.shift().split(/\s+-\s+/);
+    out.street = first[0].trim();
+    if (first.length > 1) {
+      var tail = first[1].trim();
+      if (unitLike(tail)) out.unit = tail; else out.town = tail;
+    }
+    segs.forEach(function (seg) {
+      var u = /^(?:APT|APARTMENT|UNIT|#)\.?\s*(.+)$/i.exec(seg);
+      if (u && !out.unit) { out.unit = u[1].split(/\s+-\s+/)[0].trim(); return; }
+      if (!out.town && seg) out.town = seg.split(/\s+-\s+/)[0].trim();
+    });
+    return out;
+  }
+
+  /* the street part of each, and the same house number when either has one */
   function same(a, b) {
-    var x = parts(a), y = parts(b);
+    var sa = splitName(a), sb = splitName(b);
+    if (sa.house !== sb.house) return false;
+    var x = parts(sa.street), y = parts(sb.street);
     if (!x.core.length || x.core.join(' ') !== y.core.join(' ')) return false;
     return !x.type || !y.type || x.type === y.type;
   }
@@ -128,5 +170,6 @@
     return null;
   }
 
-  return { normalize: normalize, same: same, full: full, startsWithAddress: startsWithAddress, unitKey: unitKey, matchFolder: matchFolder };
+  return { normalize: normalize, same: same, full: full, startsWithAddress: startsWithAddress, unitKey: unitKey, matchFolder: matchFolder,
+    splitName: splitName };
 });

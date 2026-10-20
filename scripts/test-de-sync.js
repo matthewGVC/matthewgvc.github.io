@@ -35,7 +35,7 @@ function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-de-')); }
 /* a copy of the synthetic fixtures with one page edited */
 function copyWith(file, edit) {
   const dir = tmp();
-  fs.readdirSync(SYN).forEach(f => fs.copyFileSync(path.join(SYN, f), path.join(dir, f)));
+  fs.readdirSync(SYN).filter(f => f.endsWith('.json')).forEach(f => fs.copyFileSync(path.join(SYN, f), path.join(dir, f)));
   const p = path.join(dir, file), json = JSON.parse(fs.readFileSync(p, 'utf8'));
   edit(json);
   fs.writeFileSync(p, JSON.stringify(json));

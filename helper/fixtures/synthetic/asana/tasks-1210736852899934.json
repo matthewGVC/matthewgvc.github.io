@@ -1,0 +1,1349 @@
+{
+  "data": [
+    {
+      "gid": "9000000000240",
+      "name": "Step 1",
+      "completed": true,
+      "completed_at": "2026-05-27T15:01:00.000Z",
+      "due_on": "2026-02-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000241",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Design"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000233",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000234",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000235",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000236",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000237",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000238",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000239",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000240",
+      "notes": "SECRET NOTES for Step 1: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000249",
+      "name": "Step 2",
+      "completed": true,
+      "completed_at": "2026-05-27T15:02:00.000Z",
+      "due_on": "2026-03-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000250",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Approvals"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000242",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000243",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000244",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000245",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000246",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000247",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000248",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000249",
+      "notes": "SECRET NOTES for Step 2: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000258",
+      "name": "Step 3",
+      "completed": true,
+      "completed_at": "2026-05-27T15:03:00.000Z",
+      "due_on": "2026-04-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000259",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Build"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000251",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000252",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000253",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000254",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000255",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000256",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000257",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000258",
+      "notes": "SECRET NOTES for Step 3: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000267",
+      "name": "Step 4",
+      "completed": true,
+      "completed_at": "2026-05-27T15:04:00.000Z",
+      "due_on": "2026-01-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000268",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Land"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000260",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000261",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000262",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000263",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000264",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000265",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000266",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000267",
+      "notes": "SECRET NOTES for Step 4: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000276",
+      "name": "Step 5",
+      "completed": true,
+      "completed_at": "2026-05-27T15:05:00.000Z",
+      "due_on": "2026-02-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000277",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Design"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000269",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000270",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000271",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000272",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000273",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000274",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000275",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000276",
+      "notes": "SECRET NOTES for Step 5: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000285",
+      "name": "Step 6",
+      "completed": true,
+      "completed_at": "2026-05-27T15:06:00.000Z",
+      "due_on": "2026-03-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000286",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Approvals"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000278",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000279",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000280",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000281",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000282",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000283",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000284",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000285",
+      "notes": "SECRET NOTES for Step 6: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000294",
+      "name": "Step 7",
+      "completed": true,
+      "completed_at": "2026-05-27T15:07:00.000Z",
+      "due_on": "2026-04-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000295",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Build"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000287",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000288",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000289",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000290",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000291",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000292",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000293",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000294",
+      "notes": "SECRET NOTES for Step 7: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000303",
+      "name": "Step 8",
+      "completed": true,
+      "completed_at": "2026-05-27T15:08:00.000Z",
+      "due_on": "2026-01-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000304",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Land"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000296",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000297",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000298",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000299",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000300",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000301",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000302",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000303",
+      "notes": "SECRET NOTES for Step 8: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000312",
+      "name": "Step 9",
+      "completed": true,
+      "completed_at": "2026-05-27T15:09:00.000Z",
+      "due_on": "2026-02-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000313",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Design"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000305",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000306",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000307",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000308",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000309",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000310",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000311",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000312",
+      "notes": "SECRET NOTES for Step 9: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000321",
+      "name": "Step 10",
+      "completed": true,
+      "completed_at": "2026-05-27T15:10:00.000Z",
+      "due_on": "2026-03-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000322",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Approvals"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000314",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000315",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000316",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000317",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000318",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000319",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000320",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000321",
+      "notes": "SECRET NOTES for Step 10: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000330",
+      "name": "Step 11",
+      "completed": true,
+      "completed_at": "2026-05-27T15:11:00.000Z",
+      "due_on": "2026-04-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000331",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Build"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000323",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000324",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000325",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000326",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000327",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000328",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000329",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000330",
+      "notes": "SECRET NOTES for Step 11: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000339",
+      "name": "Step 12",
+      "completed": true,
+      "completed_at": "2026-05-27T15:12:00.000Z",
+      "due_on": "2026-01-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000340",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Land"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000332",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000333",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000334",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000335",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000336",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000337",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000338",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000339",
+      "notes": "SECRET NOTES for Step 12: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000348",
+      "name": "Early tick milestone",
+      "completed": true,
+      "completed_at": "2026-05-27T16:30:00.000Z",
+      "due_on": "2026-07-15",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000349",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Build"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000341",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000342",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000343",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000344",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000345",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000346",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000347",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000348",
+      "notes": "SECRET NOTES for Early tick milestone: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000357",
+      "name": "Future step",
+      "completed": false,
+      "completed_at": null,
+      "due_on": "2026-12-01",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000358",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1210736852899934"
+          },
+          "section": {
+            "name": "Build"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000350",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000351",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000352",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000353",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000354",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000355",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000356",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1210736852899934/9000000000357",
+      "notes": "SECRET NOTES for Future step: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    }
+  ],
+  "next_page": null
+}

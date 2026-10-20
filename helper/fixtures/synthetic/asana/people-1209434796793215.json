@@ -1,0 +1,331 @@
+{
+  "data": [
+    {
+      "gid": "9000000000385",
+      "name": "Agent A",
+      "completed": false,
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209434796793215"
+          },
+          "section": {
+            "name": "Sales Agents"
+          }
+        }
+      ],
+      "custom_fields": [
+        {
+          "gid": "9000000000386",
+          "name": "Title",
+          "display_value": "Licensed Salesperson",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000387",
+          "name": "Agent Title",
+          "display_value": "Agent A | a@example.com | 555-0100",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000388",
+          "name": "📍 State",
+          "display_value": "NY",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NY"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000389",
+          "name": "GVC Internal Team",
+          "display_value": "Sales",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": [
+            {
+              "name": "Sales"
+            }
+          ]
+        },
+        {
+          "gid": "9000000000390",
+          "name": "DE Bio",
+          "display_value": "https://example.com/bio/agent-a",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000391",
+          "name": "Douglas Elliman",
+          "display_value": "https://example.com/profile/agent-a",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000392",
+          "name": "Phone Number",
+          "display_value": "555-0100",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000393",
+          "name": "Birthday",
+          "display_value": "1990-01-02",
+          "number_value": null,
+          "date_value": {
+            "date": "1990-01-02"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000394",
+          "name": "GVC Email",
+          "display_value": "a@example.com",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "notes": "private"
+    },
+    {
+      "gid": "9000000000395",
+      "name": "Agent B",
+      "completed": false,
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209434796793215"
+          },
+          "section": {
+            "name": "Sales Agents"
+          }
+        }
+      ],
+      "custom_fields": [
+        {
+          "gid": "9000000000396",
+          "name": "Title",
+          "display_value": "Licensed Salesperson",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000397",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000398",
+          "name": "GVC Internal Team",
+          "display_value": "Sales, Ops",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": [
+            {
+              "name": "Sales"
+            },
+            {
+              "name": "Ops"
+            }
+          ]
+        },
+        {
+          "gid": "9000000000399",
+          "name": "Phone Number",
+          "display_value": "555-0101",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000400",
+          "name": "Birthday",
+          "display_value": "1988-05-06",
+          "number_value": null,
+          "date_value": {
+            "date": "1988-05-06"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "notes": "private"
+    },
+    {
+      "gid": "9000000000401",
+      "name": "Ops C",
+      "completed": false,
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209434796793215"
+          },
+          "section": {
+            "name": "Operations"
+          }
+        }
+      ],
+      "custom_fields": [
+        {
+          "gid": "9000000000402",
+          "name": "Title",
+          "display_value": "NYC Operations Manager",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000403",
+          "name": "📍 State",
+          "display_value": "NY",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NY"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000404",
+          "name": "Phone Number",
+          "display_value": "555-0102",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "notes": "private"
+    },
+    {
+      "gid": "9000000000405",
+      "name": "Lead D",
+      "completed": false,
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209434796793215"
+          },
+          "section": {
+            "name": "Leadership"
+          }
+        }
+      ],
+      "custom_fields": [
+        {
+          "gid": "9000000000406",
+          "name": "Title",
+          "display_value": "Co-Founder",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000407",
+          "name": "📍 State",
+          "display_value": "Multiple",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Multiple"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000408",
+          "name": "Birthday",
+          "display_value": "1980-03-04",
+          "number_value": null,
+          "date_value": {
+            "date": "1980-03-04"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "notes": "private"
+    },
+    {
+      "gid": "9000000000409",
+      "name": "Former E",
+      "completed": true,
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209434796793215"
+          },
+          "section": {
+            "name": "Past Team Members"
+          }
+        }
+      ],
+      "custom_fields": [
+        {
+          "gid": "9000000000410",
+          "name": "Title",
+          "display_value": "Licensed Salesperson",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000411",
+          "name": "📍 State",
+          "display_value": "NY",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NY"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000412",
+          "name": "Departure Date",
+          "display_value": "2025-06-30",
+          "number_value": null,
+          "date_value": {
+            "date": "2025-06-30"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "notes": "private"
+    }
+  ],
+  "next_page": null
+}

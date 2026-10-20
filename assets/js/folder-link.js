@@ -72,7 +72,11 @@
       if (!rows || !rows.length) { var e = new Error('Someone changed this job meanwhile. Reload the page and link it again.'); e.conflict = true; throw e; }
       var c = { field: 'drive_folder', old_value: row.drive_folder || null, new_value: folder, source: 'Matt' };
       c[OWNER[table]] = row.id;
-      return P.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify(c) }).then(function () { return rows[0]; });
+      // the folder is saved by now; if only the log entry fails, say so rather than invite a retry that can only conflict
+      return P.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify(c) }).then(function () { return rows[0]; }, function (err) {
+        var e = new Error('Linked, but the change log didn\'t save (' + err.message + '). The folder is remembered; there\'s nothing to redo.');
+        e.linked = true; throw e;
+      });
     });
   }
 
@@ -88,12 +92,20 @@
         '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button type="button" class="b" id="lkBrowse">Browse…</button><button type="button" class="b" id="lkCancel">Cancel</button></div>';
       d.querySelector('#lkWhat').textContent = o.job.name + '. Nothing on Drive is moved or renamed; the job just remembers where its folder is.';
       var msg = d.querySelector('#lkMsg'), list = d.querySelector('#lkList');
-      var done = function (ok) { d.close(); d.remove(); resolve(ok); };
-      d.querySelector('#lkCancel').addEventListener('click', function () { done(false); });
-      d.addEventListener('cancel', function (e) { e.preventDefault(); done(false); });
+      var opener = doc.activeElement, saved = false, busy = false;
+      var done = function (ok) { d.close(); d.remove(); if (opener && opener.focus) opener.focus(); resolve(ok); };
+      var lock = function (on) { d.querySelectorAll('#lkBrowse, button[data-i]').forEach(function (b) { b.disabled = on; }); };
+      d.querySelector('#lkCancel').addEventListener('click', function () { done(saved); });
+      d.addEventListener('cancel', function (e) { e.preventDefault(); done(saved); });
       var pick = function (folder) {
+        if (busy) return;   // a double click saves once
+        busy = true; lock(true);
         msg.textContent = 'Saving…';
-        save(o.table, o.row, folder).then(function () { done(true); }, function (e) { msg.textContent = e.message; });
+        save(o.table, o.row, folder).then(function () { done(true); }, function (e) {
+          msg.textContent = e.message;
+          if (e.linked) { saved = true; d.querySelector('#lkCancel').textContent = 'Close'; return; }
+          busy = false; lock(false);
+        });
       };
       d.querySelector('#lkBrowse').addEventListener('click', function () {
         if (!D || !global.showDirectoryPicker) { msg.textContent = 'This browser can\'t open Drive folders. Use Chrome on the desktop.'; return; }
@@ -117,7 +129,7 @@
           }).join('') : '<p class="soft">No folder with this address turned up. Use Browse to pick it.</p>';
           list.querySelectorAll('button[data-i]').forEach(function (b) { b.addEventListener('click', function () { pick(paths[+b.dataset.i]); }); });
         });
-      });
+      }).catch(function () { list.innerHTML = '<p class="soft">Couldn\'t look through Drive just now. Use Browse to pick the folder.</p>'; });
     });
   }
 

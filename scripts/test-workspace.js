@@ -67,6 +67,7 @@ async function open(browser, opts) {
       const rows = opts.conflict ? [] : (T[table] || []).filter(hit);
       return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
     }
+    if (m === 'POST' && table === 'changes' && opts.changeFails) { writes.push('POST changes (refused)'); return r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'connection lost' }) }); }
     if (m !== 'GET') { writes.push(m + ' ' + table + ' ' + (r.request().postData() || '')); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
     if (eqs.length) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((T[table] || []).filter(hit)) });
     if (opts.missing && opts.missing.indexOf(table) !== -1) return r.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'relation "public.' + table + '" does not exist' }) });
@@ -247,6 +248,22 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.page.click('dialog.gvc-link button[data-i="0"]');
   await t.page.waitForTimeout(400);
   check('link: conflict refused, not overwritten', [(await text(t.page, '#lkMsg')).includes('Someone changed this job'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
+  await t.ctx.close();
+
+  // the folder saves but the change log doesn't: say so, don't invite a retry that can only conflict
+  t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b', changeFails: true });
+  await t.page.evaluate(FAKE + 'window.GVC_DRIVE = window.__fakeDrive;');
+  await t.page.click('#link');
+  await t.page.waitForSelector('dialog.gvc-link button[data-i]');
+  await t.page.dblclick('dialog.gvc-link button[data-i="0"]');
+  await t.page.waitForTimeout(400);
+  check('link: one save for a double click', t.writes.filter(w => /^PATCH properties/.test(w)).length, 1);
+  const half = await text(t.page, '#lkMsg');
+  check('link: half-saved says Linked, with the reason', [/^Linked/.test(half), /change log/.test(half), /Someone changed/.test(half)], [true, true, false]);
+  check('link: half-saved offers Close, not Browse', [await text(t.page, '#lkCancel'), await t.page.$eval('#lkBrowse', b => b.disabled)], ['Close', true]);
+  await t.page.click('#lkCancel');
+  await t.page.waitForTimeout(300);
+  check('link: Close after a half save reloads the job', [await visible(t.page, 'dialog.gvc-link'), t.errors], [false, []]);
   await t.ctx.close();
 
   await browser.close();

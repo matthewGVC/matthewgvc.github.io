@@ -160,6 +160,16 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
       { include: true, date: '2025-08-04', street: '8 B St', unit: '2', outcome: 'won', wonStreet: '8 B St', wonUnit: '2', market: 'NYC', folder: 'g' }], devs: [] } });
   check('unticked listing: 2026 pitch kept as open, older one dropped', T2.pitches.map(p => [p.pitched_on, p.outcome]), [['2026-08-04', 'open']]);
 
+  // later Matt ticks the listing that won it: the open pitch becomes won, linked both ways
+  await applyPlan({ client: db2, now: new Date('2026-10-22T12:00:00Z'), plan: { listings: [{ include: true, street: '9 A St', unit: '1', stage: 'Won', kind: 'sale', market: 'NYC' }],
+    pitches: [{ include: true, date: '2026-08-04', street: '9 A St', unit: '1', outcome: 'won', wonStreet: '9 A St', wonUnit: '1', market: 'NYC', folder: 'f' }], devs: [] } });
+  const wp = T2.pitches[0], wl = T2.properties[0] || {};
+  check('re-run: open pitch now won, linked both ways', [T2.pitches.length, wp.outcome, wp.won_property_id === wl.id, wl.from_pitch_id === wp.id], [1, 'won', true, true]);
+
+  // a library row deleted between plan and apply: added as new instead of crashing the run
+  const gone = await applyPlan({ client: db2, now: new Date('2026-10-23T12:00:00Z'), plan: { listings: [{ include: true, existingId: 'nope', street: '7 C St', unit: '3', stage: 'Live', kind: 'sale', market: 'NYC' }], pitches: [], devs: [] } });
+  check('missing library row: added, run finished', [gone.listings, T2.properties.some(p => p.core && p.core.address === '7 C St'), T2.sync_runs[T2.sync_runs.length - 1].ok], [1, true, true]);
+
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');
     failures.forEach(f => console.log('  FAIL ' + f));

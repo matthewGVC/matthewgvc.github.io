@@ -94,16 +94,17 @@
       var msg = d.querySelector('#lkMsg'), list = d.querySelector('#lkList');
       var opener = doc.activeElement, saved = false, busy = false;
       var done = function (ok) { d.close(); d.remove(); if (opener && opener.focus) opener.focus(); resolve(ok); };
-      var lock = function (on) { d.querySelectorAll('#lkBrowse, button[data-i]').forEach(function (b) { b.disabled = on; }); };
+      // while saving, Cancel and Escape wait: closing early would miss the save and leave the page on an old version
+      var lock = function (on) { d.querySelectorAll('#lkBrowse, #lkCancel, button[data-i]').forEach(function (b) { b.disabled = on; }); };
       d.querySelector('#lkCancel').addEventListener('click', function () { done(saved); });
-      d.addEventListener('cancel', function (e) { e.preventDefault(); done(saved); });
+      d.addEventListener('cancel', function (e) { e.preventDefault(); if (!busy || saved) done(saved); });
       var pick = function (folder) {
         if (busy) return;   // a double click saves once
         busy = true; lock(true);
         msg.textContent = 'Saving…';
         save(o.table, o.row, folder).then(function () { done(true); }, function (e) {
           msg.textContent = e.message;
-          if (e.linked) { saved = true; d.querySelector('#lkCancel').textContent = 'Close'; return; }
+          if (e.linked) { saved = true; var c = d.querySelector('#lkCancel'); c.textContent = 'Close'; c.disabled = false; return; }
           busy = false; lock(false);
         });
       };

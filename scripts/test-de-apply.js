@@ -6,6 +6,8 @@
    ============================================================ */
 'use strict';
 
+// never this computer's own helper settings (they may be in starter mode)
+process.env.GVC_HELPER_HOME = require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'gvc-apply-'));
 const { applyRun, canMove } = require('../helper/de/apply.js');
 const { ConflictError } = require('../helper/supabase.js');
 
@@ -171,8 +173,12 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   const os = require('os'), fs = require('fs'), path = require('path');
   const { syncNow } = require('../helper/de-sync.js');
   db = fakeDb();
-  out = await syncNow({ client: db, courtesy: gvc, fixturesDir: path.join(__dirname, '..', 'helper', 'fixtures', 'synthetic'),
+  out = await syncNow({ cfg: {}, client: db, courtesy: gvc, fixturesDir: path.join(__dirname, '..', 'helper', 'fixtures', 'synthetic'),
     outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-sync-')), drive: false, lnks: [] });
+  const starterDb = fakeDb();
+  const starter = await syncNow({ cfg: { deAddsNew: false }, client: starterDb, courtesy: gvc, fixturesDir: path.join(__dirname, '..', 'helper', 'fixtures', 'synthetic'),
+    outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-sync-')), drive: false, lnks: [] });
+  check('sync in starter mode adds no jobs', [starter.created, starterDb.T.properties.length], [0, 0]);
   check('sync: every live GVC listing a job', [out.created, db.T.properties.map(p => p.stage).sort()], [5, ['In contract', 'In contract', 'Live', 'Live', 'Live']]);
   check('sync: transactions remembered only', db.T.de_listings.length, 7);
   check('sync: run logged', [db.T.sync_runs.length, db.T.sync_runs[0].ok], [1, true]);

@@ -65,6 +65,7 @@ async function open(browser, opts) {
     if (m === 'PATCH') {
       writes.push(m + ' ' + table + ' ' + u.search + ' ' + (r.request().postData() || ''));
       const rows = opts.conflict ? [] : (T[table] || []).filter(hit);
+      if (opts.slowPatch) return new Promise(res => setTimeout(res, 800)).then(() => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) }));
       return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
     }
     if (m === 'POST' && table === 'changes' && opts.changeFails) { writes.push('POST changes (refused)'); return r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'connection lost' }) }); }
@@ -261,6 +262,19 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.page.click('dialog.gvc-link button[data-i="0"]');
   await t.page.waitForTimeout(400);
   check('link: conflict refused, not overwritten', [(await text(t.page, '#lkMsg')).includes('Someone changed this job'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
+  await t.ctx.close();
+
+  // while a link is saving, Cancel and Escape wait for it
+  t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b', slowPatch: true });
+  await t.page.evaluate(FAKE + 'window.GVC_DRIVE = window.__fakeDrive;');
+  await t.page.click('#link');
+  await t.page.waitForSelector('dialog.gvc-link button[data-i]');
+  await t.page.click('dialog.gvc-link button[data-i="0"]');
+  const midSave = await t.page.$eval('#lkCancel', b => b.disabled);
+  await t.page.keyboard.press('Escape');
+  check('link: Cancel and Escape wait while saving', [midSave, await visible(t.page, 'dialog.gvc-link')], [true, true]);
+  await t.page.waitForTimeout(1200);
+  check('link: closes once saved', await visible(t.page, 'dialog.gvc-link'), false);
   await t.ctx.close();
 
   // the folder saves but the change log doesn't: say so, don't invite a retry that can only conflict

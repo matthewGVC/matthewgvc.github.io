@@ -183,7 +183,7 @@ async function applyPlan(o) {
     const there = l.existingId ? await first('properties', { id: l.existingId })
       : (l.deId && await first('properties', { de_listing_id: l.deId })) || await first('properties', { slug: P.slugOfCore(core) });
     if (there && there.stage) { ids.set(key(l.street, l.unit), there.id); continue; }   // seeded before
-    if (l.existingId) {
+    if (l.existingId && there) {
       const cur = there;
       row = (await client.update('properties', { id: l.existingId }, fields, { version: cur.version }))[0];
     } else {
@@ -202,7 +202,15 @@ async function applyPlan(o) {
     // won by a listing Matt didn't tick: a 2026 pitch stays as an open one, an older one is left out
     if (p.outcome === 'won' && !won && p.date < '2026-01-01') continue;
     const label = [p.street, p.unit].filter(Boolean).join(' ');
-    if (await first('pitches', { slug: P.slugOf(label + ' ' + p.date) })) continue;
+    const had = await first('pitches', { slug: P.slugOf(label + ' ' + p.date) });
+    if (had) {
+      if (won && had.outcome === 'open' && !had.won_property_id) {
+        await client.update('pitches', { id: had.id }, { outcome: 'won', won_property_id: won }, { version: had.version });
+        const cur = (await client.select('properties', { id: won }))[0];
+        await client.update('properties', { id: won }, { from_pitch_id: had.id }, { version: cur.version });
+      }
+      continue;
+    }
     const row = (await client.insert('pitches', { slug: P.slugOf(label + ' ' + p.date), label, market: p.market, pitched_on: p.date,
       core: { address: p.street, unit: p.unit }, drive_folder: p.folder, folder_state: 'linked', outcome: won ? 'won' : 'open',
       won_property_id: won || null }))[0];

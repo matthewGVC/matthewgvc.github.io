@@ -118,7 +118,8 @@
 
     /* ---------- sync now ---------- */
     var syncBtn = doc.getElementById('wsSync'), syncText = 'DE sync status loading';
-    helper('GET', '/health').then(function (h) {
+    // no helper can run where Drive can't (phones, Safari): don't even ask
+    (D && D.supported() ? helper('GET', '/health') : Promise.reject(new Error('no helper here'))).then(function (h) {
       syncBtn.disabled = false;
       if (!h.paired) syncBtn.title = 'Pair this browser with the helper first (Slice 0 lab page).';
     }, function () {

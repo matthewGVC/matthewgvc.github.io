@@ -107,10 +107,13 @@
   }
   function render() {
     var all = W.buildJobs(data, today);
-    $('typ').innerHTML = TYPES.map(function (t) {
-      var n = all.filter(function (j) { return !t[0] || j.type === t[0] || (t[0] === 'listing' && j.type === 'rental'); }).length;
-      return '<button type="button" aria-pressed="' + (f.type === t[0]) + '" data-v="' + t[0] + '">' + t[1] + '<span class="n">' + n + '</span></button>';
-    }).join('');
+    // built once, then updated in place so a keyboard user keeps focus on the button they pressed
+    if (!$('typ').children.length) $('typ').innerHTML = TYPES.map(function (t) { return '<button type="button" data-v="' + t[0] + '">' + t[1] + '<span class="n"></span></button>'; }).join('');
+    TYPES.forEach(function (t, i) {
+      var b = $('typ').children[i];
+      b.setAttribute('aria-pressed', f.type === t[0]);
+      b.querySelector('.n').textContent = all.filter(function (j) { return !t[0] || j.type === t[0] || (t[0] === 'listing' && j.type === 'rental'); }).length;
+    });
     var js = all.filter(pass).sort(function (a, b) { return (b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0; });
     $('rows').innerHTML = js.length ? js.map(function (j) {
       var pctv = j.steps.length ? Math.max(0, (j.stageIdx + 1) / j.steps.length * 100) : 0;

@@ -176,6 +176,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.page.click('#typ button[data-v="pitch"]');
   check('jobs: type filter', await t.page.$$eval('#rows tr', els => els.length), 1);
   check('jobs: to link box', (await text(t.page, '#n2')).includes('20 Sample Ave 7B'), true);
+  await t.page.focus('#typ button[data-v="development"]'); await t.page.keyboard.press('Enter');
+  check('jobs: keyboard focus stays on the Type button', await t.page.evaluate(() => [document.activeElement.dataset.v, document.activeElement.getAttribute('aria-pressed'), document.querySelector('#typ button[data-v="pitch"]').getAttribute('aria-pressed')]), ['development', 'true', 'false']);
   check('jobs: no page errors', t.errors, []);
   await t.ctx.close();
 

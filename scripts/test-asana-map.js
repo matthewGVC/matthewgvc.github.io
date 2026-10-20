@@ -188,7 +188,8 @@ check('live tick 66 days late → due date, approx', hint('renders').map(h => [h
 check('slips', H.slips[tco.gid], { count: 3, days: 127 });
 check('no slips for unmoved tasks', H.slips[brand.gid], undefined);
 check('construction progress', H.construction, { done: 4, total: 9 });
-check('next open milestone', H.next, { key: 'construction', name: 'Foundation Complete', dueOn: '2026-11-04' });
+check('next: a task ticked ahead of its date is still open (D64)', H.next, { key: 'groundbreaking', name: ground.name, dueOn: '2026-06-14' });
+check('next without the early tick', M.devHints(project, all.filter(t => t !== ground), { tz: 'America/New_York' }, TODAY).next, { key: 'construction', name: 'Foundation Complete', dueOn: '2026-11-04' });
 check('hints in MILESTONES order', H.hints.map(h => h.key), ['agreement', 'renders', 'branding']);
 check('MILESTONES', M.MILESTONES, ['agreement', 'landClosed', 'architecturals', 'permits', 'renders', 'finishes', 'floorplans',
   'branding', 'listingAgreement', 'websiteLive', 'groundbreaking', 'launchEvent', 'showingAssets', 'listedUnits',

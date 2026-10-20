@@ -49,7 +49,8 @@
                 'loose' a ticked loose task (Creative Requests etc.) → its tick day
                 'house' the NJ Listings house row (Exclusive Date, → Active, CS date)
                 'land'  the Buy-Side land row's Closing date → Land closed
-         A tick on a batch day BEFORE its due date is no hint; it goes in early (M13).
+         A tick on a batch day BEFORE its due date is no hint; it goes in early (M13)
+         and still counts as open when picking next (it hasn't happened yet, D64).
          A batch day = 10 or more ticks on one local day in that project.
          Only past dates are hints. Construction counts live ticks only (D66),
          over the tasks in a section named "…Construction…", leaving out tasks
@@ -458,10 +459,12 @@
     var done = build.filter(function (t) { return t.completed && t.completedAt && batch.indexOf(localDay(t.completedAt, tz)) === -1; }).length;
     build.forEach(function (t) { mapped[t.gid] = mapped[t.gid] || 'construction'; });
 
-    // next: the earliest open milestone task by due date
-    var next = null;
+    // next: the earliest open milestone task by due date; a task ticked ahead
+    // of its date on a batch day hasn't happened yet (D64), so it counts as open
+    var next = null, earlyGid = {};
+    early.forEach(function (e) { earlyGid[e.gid] = true; });
     list.forEach(function (t) {
-      if (t.completed || !mapped[t.gid] || !t.dueOn) return;
+      if ((t.completed && !earlyGid[t.gid]) || !mapped[t.gid] || !t.dueOn) return;
       var due = dayOf(t.dueOn);
       if (!next || due < next.dueOn) next = { key: mapped[t.gid], name: t.name, dueOn: due };
     });

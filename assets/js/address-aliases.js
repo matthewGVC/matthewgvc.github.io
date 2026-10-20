@@ -13,10 +13,13 @@
 
    Asana task names carry more than the street (D62): NYC "555 W59 - PHC"
    (a unit after " - "), NJ "619 Bradley Ave, Brielle - 1st" (a town after
-   the comma, then a note), "207 McKinley Ct - Brick" (a town after " - "),
-   the 2025 long form "250 East 53rd Street, Apt. 504", and two houses on
-   one lot as "(House 1)" / "(House 2)". same() compares the street part
-   only and keeps the house number apart, so House 1 never matches House 2.
+   the comma, then a note), "207 Example Ct - Brick" (a town after " - "),
+   the 2025 long form "250 East 99th Street, Apt. 504", and two houses on
+   one lot as "(House 1)" / "(House 2)".
+     same(a, b)        one address: street, house number and unit must agree
+                       ("555 W59 - PHC" is not "555 W59"); a town may be on one
+                       side only, but two different towns never match
+     sameStreet(a, b)  the street and house number only, unit and town ignored
 
    The canonical form drops "street" (NYC folders leave it off: "176 E71")
    and writes ordinals as digits ("Fifth", "5TH" → "5").
@@ -109,7 +112,7 @@
   }
 
   /* a unit after " - " has a digit in it or is a named one (PHC, TH, Garden);
-     anything else there is a town ("207 McKinley Ct - Brick") */
+     anything else there is a town ("207 Example Ct - Brick") */
   function unitLike(t) {
     return /\d/.test(t) || /^(PH[A-Z0-9]*|PENTHOUSE|TH|GARDEN)$/i.test(t);
   }
@@ -135,13 +138,32 @@
     return out;
   }
 
-  /* the street part of each, and the same house number when either has one */
-  function same(a, b) {
-    var sa = splitName(a), sb = splitName(b);
+  function streetsMatch(sa, sb) {
     if (sa.house !== sb.house) return false;
     var x = parts(sa.street), y = parts(sb.street);
     if (!x.core.length || x.core.join(' ') !== y.core.join(' ')) return false;
     return !x.type || !y.type || x.type === y.type;
+  }
+
+  /* "Rumson NJ" is "Rumson" */
+  function townKey(t) {
+    return String(t || '').toUpperCase().replace(/[.,]/g, ' ').replace(/\b(NJ|NY|FL)\b/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  /* one address: same street, same house number, same unit (none on both
+     sides counts as the same), and the same town when both name one */
+  function same(a, b) {
+    var sa = splitName(a), sb = splitName(b);
+    if (!streetsMatch(sa, sb)) return false;
+    if (unitKey(sa.unit) !== unitKey(sb.unit)) return false;
+    var ta = townKey(sa.town), tb = townKey(sb.town);
+    return !ta || !tb || ta === tb;
+  }
+
+  /* the street alone (unit and town ignored, house number kept): for finding
+     the candidates an Asana task might be, before the unit decides */
+  function sameStreet(a, b) {
+    return streetsMatch(splitName(a), splitName(b));
   }
 
   /* "11B Rental" → "11B", "Apt 4A - Lawson" → "4A", "18 19E" → "1819E",
@@ -171,5 +193,5 @@
   }
 
   return { normalize: normalize, same: same, full: full, startsWithAddress: startsWithAddress, unitKey: unitKey, matchFolder: matchFolder,
-    splitName: splitName };
+    splitName: splitName, sameStreet: sameStreet };
 });

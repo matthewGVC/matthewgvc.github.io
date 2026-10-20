@@ -34,6 +34,7 @@ const RANK = s => (s === 'Rented' ? ORDER.indexOf('Sold') : ORDER.indexOf(s));
 const DE_FACTS = ['price', 'beds', 'baths', 'halfBaths', 'sqft'];
 const FILL_FACTS = ['city', 'state', 'zip', 'neighborhood'];
 const MARKET = { NY: 'NYC', NJ: 'NJ', FL: 'FL' };
+const CLOSED = ['Sold', 'Rented', 'Archived'];
 
 function canMove(from, to) {
   if (!to || from === to || from === 'Archived') return false;
@@ -58,7 +59,19 @@ async function applyRun(o) {
     { finished_at: new Date().toISOString(), ok, changes: out.changes, errors: errs && errs.length ? errs : null });
 
   if (!report.ok) { await finish(false, [{ what: 'aborted', detail: report.aborted }]); return out; }
+  try {
+    await writeRows(o, run, out, now);
+  } catch (e) {
+    // the run row is always finished, with the reason
+    await finish(false, out.errors.concat([{ what: 'failed', detail: e.message }]));
+    throw e;
+  }
+  await finish(true, out.errors);
+  return out;
+}
 
+async function writeRows(o, run, out, now) {
+  const { client, report } = o;
   const props = await client.select('properties');
   const known = new Map((await client.select('de_listings')).map(d => [d.de_listing_id, d]));
   const byDe = new Map(props.filter(p => p.de_listing_id).map(p => [p.de_listing_id, p]));
@@ -83,11 +96,12 @@ async function applyRun(o) {
   for (const r of o.rows) {
     const cached = known.get(r.id) || {};
     const entry = { de_listing_id: r.id, feed: r.feed, kind: r.kind, last_seen: now, raw: snapshot(Object.assign({ street: r.street, unit: r.unit }, r)) };
+    try {
     let p = byDe.get(r.id);
 
     if (r.feed === 'featured' && !p) {
-      // an existing job for this address that hasn't been tied to DE yet
-      p = props.find(x => !x.de_listing_id && x.kind === r.kind && (() => {
+      // an open job for this address that hasn't been tied to DE yet (never an old sold or archived one)
+      p = props.find(x => !x.de_listing_id && x.kind === r.kind && CLOSED.indexOf(x.stage) === -1 && (() => {
         const u = P.unitOf(x.core); return A.same(u.address, r.street) && A.unitKey(u.unit) === A.unitKey(r.unit);
       })());
     }
@@ -136,12 +150,20 @@ async function applyRun(o) {
         entry.property_id = made.id;
       }
     }
+    } catch (e) {
+      // one listing failing (a network blip, a slug clash) is logged; the rest still sync
+      out.errors.push({ what: 'listing', detail: e.message, listing: r.id });
+    }
     cache.push(entry);
   }
 
-  for (let i = 0; i < cache.length; i += 500) await client.upsert('de_listings', cache.slice(i, i + 500), 'de_listing_id');
-  await finish(true, out.errors);
-  return out;
+  // PostgREST writes one column list per batch and fills the gaps with null, so
+  // entries are sent in groups with the same fields: a cached GVC check is never blanked
+  const groups = new Map();
+  cache.forEach(e => { const k = Object.keys(e).sort().join(','); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
+  for (const g of groups.values()) {
+    for (let i = 0; i < g.length; i += 500) await client.upsert('de_listings', g.slice(i, i + 500), 'de_listing_id');
+  }
 }
 
 module.exports = { applyRun, canMove };

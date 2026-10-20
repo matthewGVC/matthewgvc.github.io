@@ -166,6 +166,8 @@ function buildPlan(o) {
 async function applyPlan(o) {
   const { client, plan } = o;
   const now = (o.now || new Date()).toISOString();
+  const done = (await client.select('sync_runs', { kind: 'seed' })).filter(r => r.ok);
+  if (done.length) throw new Error('The seed has already been applied (' + String(done[0].started_at).slice(0, 10) + '). Running it again would duplicate jobs.');
   const run = (await client.insert('sync_runs', { kind: 'seed', started_at: now }))[0];
   const out = { listings: 0, pitches: 0, devs: 0 };
   const ids = new Map();

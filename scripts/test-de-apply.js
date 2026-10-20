@@ -133,6 +133,33 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   check('conflict logged', [out.errors.length, /changed this/.test(out.errors[0].detail)], [1, true]);
   check('run marked with errors', db.T.sync_runs[0].ok, true);
 
+  /* ---------- review fixes ---------- */
+  /* one row failing doesn't stop the run or leave it unfinished */
+  db = fakeDb({ properties: [
+    { id: 'p1', slug: 'a', stage: 'Live', de_listing_id: '900001', kind: 'sale', core: { price: 1 } },
+    { id: 'p2', slug: 'b', stage: 'Live', de_listing_id: '900002', kind: 'sale', core: { price: 1 } }] });
+  const realInsert = db.insert;
+  db.insert = async (t, rows) => { if (t === 'changes' && [].concat(rows)[0].property_id === 'p1') throw new Error('network dropped'); return realInsert(t, rows); };
+  out = await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, rows: [row('900001'), row('900002')] });
+  check('row error: run still finished', [!!db.T.sync_runs[0].finished_at, out.errors.some(e => /network dropped/.test(e.detail))], [true, true]);
+  check('row error: the next row still synced', db.T.properties[1].core.price, 1000000);
+
+  /* the DE cache keeps what it knows when rows in one batch carry different fields */
+  db = fakeDb({ de_listings: [{ de_listing_id: '900001', gvc_listed: true, courtesy: 'Douglas Elliman: Test Agent', feed: 'featured', kind: 'sale' }],
+    properties: [{ id: 'p1', slug: 'a', stage: 'Live', de_listing_id: '900001', kind: 'sale', core: {} }] });
+  db.upsert = async (t, rows, key) => {   // like PostgREST: one column list for the whole batch, missing keys become null
+    const keys = [...new Set([].concat(rows).flatMap(r => Object.keys(r)))];
+    return [].concat(rows).map(r => { const full = {}; keys.forEach(k => { full[k] = r[k] === undefined ? null : r[k]; });
+      const hit = db.T[t].find(x => x[key] === full[key]); return hit ? Object.assign(hit, full) : (db.T[t].push(full), full); });
+  };
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: notGvc, rows: [row('900001'), row('900009', { street: '9 OTHER ST' })] });
+  check('cache keeps its GVC check', db.T.de_listings.find(d => d.de_listing_id === '900001').gvc_listed, true);
+
+  /* a new DE listing never attaches to an old sold job at the same unit */
+  db = fakeDb({ properties: [{ id: 'old', slug: 'old', stage: 'Sold', de_listing_id: null, kind: 'sale', core: { address: '100 Example St', unit: '4A' } }] });
+  await applyRun({ client: db, report: report([{ id: '900010', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900010')] });
+  check('old sold job left alone', [db.T.properties.length, db.T.properties[0].stage, db.T.properties[0].de_listing_id], [2, 'Sold', null]);
+
   /* ---------- the whole sync on the made-up fixtures ---------- */
   const os = require('os'), fs = require('fs'), path = require('path');
   const { syncNow } = require('../helper/de-sync.js');
@@ -146,6 +173,13 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   let refused = null;
   try { await syncNow({ client: { ready: () => false }, fixturesDir: 'x' }); } catch (e) { refused = e.message; }
   check('sync: no account, nothing runs', /helper account/.test(refused || ''), true);
+  refused = null;
+  try { await syncNow({ fixturesDir: 'x', cfg: { helperEmail: 'h', helperPassword: 'p', supabaseUrl: 'https://x', publishableKey: 'k' } }); } catch (e) { refused = e.message; }
+  check('sync: made-up listings never reach the real database', /made-up/.test(refused || ''), true);
+  db = fakeDb();
+  const SYN = path.join(__dirname, '..', 'helper', 'fixtures', 'synthetic');
+  const both = await Promise.all([1, 2].map(() => syncNow({ client: db, courtesy: gvc, fixturesDir: SYN, outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-sync-')), drive: false, lnks: [] })));
+  check('sync: two at once run once', [db.T.sync_runs.length, both[0] === both[1]], [1, true]);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

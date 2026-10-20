@@ -244,9 +244,17 @@ async function courtesyFor(ids, opts) {
 /* Same reading and checks as the dry run, then helper/de/apply.js writes the
    result. A run the checks abort writes only its sync_runs row. The GVC-listed
    check opens a listing page only for a DE listing it has never seen. */
-async function syncNow(opts) {
+/* One sync at a time: "Sync now" during the 7:00 run joins the run in progress. */
+let running = null;
+function syncNow(opts) {
+  if (!running) running = syncOnce(opts).finally(() => { running = null; });
+  return running;
+}
+
+async function syncOnce(opts) {
   opts = opts || {};
   const cfg = opts.cfg || require('./config.js').loadConfig();
+  if (opts.fixturesDir && !opts.client) throw new Error('Refusing to write made-up listings (fixtures) into the real database.');
   const client = opts.client || require('./supabase.js').createClient(cfg);
   if (!client.ready()) throw new Error('No helper account yet: add helperEmail and helperPassword to the helper\'s config.');
   const report = await dryRun(opts);

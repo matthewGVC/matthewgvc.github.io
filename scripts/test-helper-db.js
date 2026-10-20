@@ -90,7 +90,8 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   check('not ready without one', createClient({ supabaseUrl: 'x', publishableKey: 'k' }, { fetch: fake.fetch }).ready(), false);
   check('select', (await c.select('properties')).map(r => r.slug), ['a', 'b']);
   check('signs in once', fake.log.filter(l => /token/.test(l)).length, 1);
-  check('filtered select', (await c.select('properties', { slug: 'b' })).map(r => r.id), ['p2']);
+  check('paged reads are ordered (no skipped rows)', fake.log.filter(l => /^GET \/rest\/v1\/properties/.test(l)).every(l => /[?&]order=/.test(l)), true);
+  check('filtered select',(await c.select('properties', { slug: 'b' })).map(r => r.id), ['p2']);
   check('count', await c.count('properties'), 2);
   await c.insert('todos', { id: 't2', body: 'x' });
   check('insert', T.todos.length, 2);

@@ -29,7 +29,12 @@ function createRunner(o) {
       for (const k of due(now || new Date(), last)) {
         if (!o.jobs[k]) continue;
         last[k] = now || new Date();
-        try { await o.jobs[k](); results[k] = { at: last[k].toISOString(), ok: true }; }
+        try {
+          const r = await o.jobs[k]();
+          // a job can finish without throwing yet report an abort (a DE run its checks stopped)
+          const stopped = r && ((r.report && r.report.ok === false && r.report.aborted) || r.aborted);
+          results[k] = stopped ? { at: last[k].toISOString(), ok: false, error: stopped } : { at: last[k].toISOString(), ok: true };
+        }
         catch (e) { results[k] = { at: last[k].toISOString(), ok: false, error: e.message }; }
       }
     } finally { busy = false; }

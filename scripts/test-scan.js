@@ -83,6 +83,13 @@ function file(root, rel, date) {
   check('stage move logged', T.changes.some(c => c.property_id === 'a' && c.field === 'stage' && c.new_value === 'Floorplan'), true);
   check('run logged', [T.sync_runs[0].kind, T.sync_runs[0].ok], ['scan', true]);
 
+  /* Drive not mounted at 2:00: nothing is marked broken, the run says why */
+  T.properties.forEach(p => { if (p.folder_state === 'broken') p.folder_state = 'linked'; });
+  const before = T.changes.length;
+  const gone = await scanAll({ client: db, driveRoot: path.join(root, 'not-mounted'), now: new Date('2026-10-21T02:00:00Z') });
+  check('unmounted Drive: nothing broken', [T.properties.filter(p => p.folder_state === 'broken').length, T.changes.length - before], [0, 0]);
+  check('unmounted Drive: run fails with the reason', [gone.aborted ? true : false, T.sync_runs[T.sync_runs.length - 1].ok], [true, false]);
+
   /* ---------- the schedule ---------- */
   const at = s2 => new Date(s2);   // local time strings
   check('nothing ran yet: all due', due(at('2026-10-20T08:00:00'), {}).sort(), ['backup', 'de', 'scan']);
@@ -108,6 +115,9 @@ function file(root, rel, date) {
   check('runner remembers results', [lr.de.ok, lr.backup.ok, lr.backup.error], [true, false, 'disk full']);
   await runner.tick(at('2026-10-20T08:01:00'));
   check('nothing twice in one slot', ran, ['de']);
+  const r2 = createRunner({ jobs: { de: async () => ({ report: { ok: false, aborted: 'DE used an unknown status' } }) }, last: {} });
+  await r2.tick(at('2026-10-20T08:00:00'));
+  check('an aborted sync shows as not ok', [r2.lastRuns().de.ok, r2.lastRuns().de.error], [false, 'DE used an unknown status']);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

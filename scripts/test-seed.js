@@ -140,6 +140,9 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
   check('history back-dated from the folder', T.changes.some(c => c.source === 'seed' && c.field === 'stage' && c.new_value === 'Won' && /^2026-09-25/.test(c.at)), true);
   check('pitch date in the history', T.changes.some(c => c.pitch_id === won.id && /^2026-06-08/.test(c.at)), true);
   check('seed run logged', [T.sync_runs[0].kind, T.sync_runs[0].ok], ['seed', true]);
+  let again = null;
+  try { await applyPlan({ client: db, plan: ticked, now: new Date('2026-10-21T12:00:00Z') }); } catch (e) { again = e.message; }
+  check('seeding twice is refused', [/already/i.test(again || ''), T.properties.length], [true, 4]);
 
   /* a 2026 pitch "won" by a listing Matt didn't tick stays, as an open pitch */
   const T2 = { properties: [], pitches: [], dev_projects: [], changes: [], sync_runs: [] };

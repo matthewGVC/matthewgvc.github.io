@@ -72,10 +72,14 @@ function createClient(cfg, opts) {
     return q.concat(extra || []).join('&');
   }
 
+  /* pages are read in key order: without an order, Postgres may hand rows back
+     in a different order per page and a long read could skip or repeat rows */
+  const KEY = { members: 'user_id', de_listings: 'de_listing_id', documents: 'property_id,tool' };
   async function select(table, match, cols) {
     const rows = [];
     for (let offset = 0; ; offset += 1000) {
-      const r = await request('GET', '/rest/v1/' + table + '?' + query(match, ['select=' + (cols || '*'), 'limit=1000', 'offset=' + offset]));
+      const r = await request('GET', '/rest/v1/' + table + '?' + query(match, ['select=' + (cols || '*'), 'order=' + (KEY[table] || 'id'),
+        'limit=1000', 'offset=' + offset]));
       const page = await r.json();
       rows.push.apply(rows, page);
       if (page.length < 1000) return rows;

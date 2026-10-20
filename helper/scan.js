@@ -79,6 +79,12 @@ async function scanAll(o) {
   const since = new Date(now.getTime() - 400 * 864e5).toISOString().slice(0, 10);   // the overview shows six months
   const run = (await client.insert('sync_runs', { kind: 'scan', started_at: now.toISOString() }))[0];
   const out = { scanned: 0, broken: 0, moved: 0 };
+  // G: not mounted (Drive for Desktop not running): every folder would look gone
+  if (!fs.existsSync(o.driveRoot)) {
+    out.aborted = 'Google Drive isn\'t mounted (no ' + o.driveRoot + '), so nothing was scanned or marked.';
+    await client.update('sync_runs', { id: run.id }, { finished_at: new Date().toISOString(), ok: false, errors: [{ what: 'aborted', detail: out.aborted }] });
+    return out;
+  }
   const log = (owner, id, field, oldV, newV) => Object.assign({ [owner]: id, at: now.toISOString(), field,
     old_value: oldV, new_value: newV, source: 'folder', run_id: run.id });
 

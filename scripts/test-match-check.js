@@ -344,6 +344,8 @@ const house = Object.assign({}, offDe, { core: { address: '1 Carriage Ln', unit:
 check('M19: a job with no unit takes the DE row at its address even when the page check missed it', has(M.check(job(house),
   ctx({ deListings: [deRow({ gvc_listed: false, courtesy: null, raw: { street: '1 CARRIAGE LN', unit: '1118', status: 'Active' } })] })), 'M19').map(m => m.text),
   ['DE has 1 Carriage Ln 1118 (sale, Active) with no job; this job has no unit. Probably the same listing: check the unit in Asana, or link the DE listing to this job.']);
+check('M19: DE\'s stray comma after the street is left out', has(M.check(job(house), ctx({ deListings: [deRow({ raw: { street: '1 CARRIAGE LN,', unit: '1118', status: 'Active' } })] })), 'M19')
+  .map(m => m.text.slice(0, 26)), ['DE has 1 Carriage Ln 1118 ']);
 check('M19: a Sold job: nothing', has(M.check(job(Object.assign({}, offDe, { stage: 'Sold', asana: { status: 'Complete', section: 'Complete', stageFromStatus: 'Sold', stageFromSection: 'Sold' } })),
   ctx({ deListings: [deRow()] })), 'M19').length, 0);
 check('M19: no DE rows given (the page): nothing', has(M.check(job(offDe), ctx()), 'M19').length, 0);
@@ -360,6 +362,8 @@ check('M20: "6th Floor" and "Residence 6" are one unit', has(M.check(job({ core:
   ctx({ library: [lib({ label: '347 West Broadway, 6th Floor', core: { address: '347 West Broadway', unit: '6th Floor' } })] })), 'M20').length, 1);
 check('M20: a job with no unit and a row with one (one house)', has(M.check(job({ core: { address: '1006 Pheasant Ln, Wall', unit: '' } }),
   ctx({ library: [lib({ label: '1006 Pheasant Lane #204', core: { address: '1006 Pheasant Lane', unit: '204' } })] })), 'M20').length, 1);
+check('M20: a unit written into the address with # ("1006 Pheasant Lane #204")', has(M.check(job({ core: { address: '1006 Pheasant Ln, Wall', unit: '' } }),
+  ctx({ library: [lib({ label: '1006 Pheasant Lane #204', core: { address: '1006 Pheasant Lane #204' } })] })), 'M20').length, 1);
 check('M20: another unit: nothing', has(M.check(job(), ctx({ library: [lib({ core: { address: '100 Example St', unit: '5B' } })] })), 'M20').length, 0);
 check('M20: a row with a stage, an Asana link, or the job itself: nothing', [lib({ stage: 'Live' }), lib({ asana_gid: '123' }), lib({ id: 'p1' })]
   .map(r => has(M.check(job(), ctx({ library: [r] })), 'M20').length), [0, 0, 0]);

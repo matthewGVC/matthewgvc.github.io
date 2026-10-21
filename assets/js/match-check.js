@@ -167,7 +167,7 @@
   function plainName(s) { return String(s || '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().toLowerCase(); }
   /* "400 E 59TH ST" → "400 E 59th St" */
   function titleStreet(s) {
-    return String(s || '').trim().split(/\s+/).map(function (w) {
+    return String(s || '').replace(/[,\s]+$/, '').trim().split(/\s+/).map(function (w) {
       if (/^\d+(ST|ND|RD|TH)$/i.test(w)) return w.toLowerCase();
       if (/^[NSEW]$/i.test(w) || /\d/.test(w)) return w.toUpperCase();
       return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
@@ -222,11 +222,18 @@
     return { agents: r, names: names, byId: byId };
   }
 
+  /* a row's address and unit (property-library's unitOf, plus a unit written as "#204" at the end) */
+  function addrOf(P, core) {
+    var u = P.unitOf(core || {});
+    var m = !u.unit && /^(.*\S)\s*#\s*([A-Za-z0-9-]+)$/.exec(u.address || '');
+    return m ? { address: m[1], unit: m[2] } : u;
+  }
+
   /* ---------- M19: a DE listing with no job at the job's building (probably the same listing) ---------- */
   function sameListing(job, rows, stage) {
     var L = libs ? libs() : {}, A = L.A, P = L.P;
     if (!Array.isArray(rows) || !rows.length || !A || !P || CLOSED.indexOf(stage) !== -1) return [];
-    var u = P.unitOf(job.core || {});
+    var u = addrOf(P, job.core);
     if (!u.address) return [];
     var onDe = !!(job.de_listing_id || job.de), mine = A.unitKey(u.unit), kind = job.kind || null;
     return rows.filter(function (r) {
@@ -245,17 +252,17 @@
     });
   }
 
-  function P0(r) { var L = libs ? libs() : {}; return L.P ? L.P.unitOf(r.core || {}) : {}; }
+  function P0(r) { var L = libs ? libs() : {}; return L.P ? addrOf(L.P, r.core) : {}; }
 
   /* ---------- M20: a row with no stage at the job's address ---------- */
   function libraryTwins(job, rows) {
     var L = libs ? libs() : {}, A = L.A, P = L.P;
     if (!Array.isArray(rows) || !rows.length || !A || !P) return [];
-    var mine = P.unitOf(job.core || {});
+    var mine = addrOf(P, job.core);
     if (!mine.address) return [];
     return rows.filter(function (r) {
       if (!r || r.id === job.id || r.stage || r.asana_gid) return false;
-      var o = P.unitOf(r.core || {});
+      var o = addrOf(P, r.core);
       if (!o.address || !A.sameStreet(o.address, mine.address)) return false;
       var ua = A.unitKey(mine.unit), ub = A.unitKey(o.unit);
       return !ua || !ub || ua === ub;

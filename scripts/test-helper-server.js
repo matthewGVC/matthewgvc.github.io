@@ -196,6 +196,28 @@ function req(method, p, headers, body) {
   await Promise.all([sched, click]);
   check('a scheduled run and a Sync now click share one run', n, 1);
 
+  /* a different kind of run is never swallowed by the one in flight */
+  const callsB = []; let relB;
+  const gB = new Promise(res => { relB = res; });
+  const syncB = async o => { callsB.push(o.full ? 'full' : o.kind === 'people' ? 'people' : 'plain'); if (callsB.length === 1) await gB; return { report: { ok: true }, changes: 0, created: 0, errors: [] }; };
+  const jb = asanaJobs({ asanaToken: 'x' }, {}, syncB);
+  const plainRun = jb.asana();
+  const fullRun = jb.asanaFull();
+  const peopleRun = jb.people();
+  await new Promise(res => setImmediate(res));
+  check('full and People wait while a plain run is in flight', callsB, ['plain']);
+  relB();
+  await Promise.all([plainRun, fullRun, peopleRun]);
+  check('then each runs its own, one at a time', callsB, ['plain', 'full', 'people']);
+  const callsC = []; let relC;
+  const gC = new Promise(res => { relC = res; });
+  const syncC = async o => { callsC.push(o.full ? 'full' : 'plain'); await gC; return { report: { ok: true }, changes: 0, created: 0, errors: [] }; };
+  const fullC = asanaJobs({ asanaToken: 'x' }, {}, syncC).asanaFull();
+  const clickC = asanaSyncRoute(syncC)();
+  relC();
+  await Promise.all([fullC, clickC]);
+  check('a plain click during a full read shares it', callsC, ['full']);
+
   check('bound to loopback', server.address().address, '127.0.0.1');
   server.close();
 

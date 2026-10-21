@@ -53,7 +53,7 @@ function shapeRun(r) {
 }
 function asanaSyncRoute(syncNow) {
   // the same in-flight run the scheduled jobs use (inflight.js)
-  return () => require('./inflight.js').runAsana(syncNow).then(shapeRun);
+  return () => require('./inflight.js').runAsana('plain', syncNow).then(shapeRun);
 }
 /* Sync now: Asana first, then DE. A problem in one never stops the other. */
 function syncRoute(o) {

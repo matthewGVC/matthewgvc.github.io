@@ -61,8 +61,8 @@ const NIGHTLY_KEEP = 14;
 function asanaJobs(cfg, client, syncNow) {
   if (!cfg.asanaToken) return {};
   const sync = syncNow || (o => require('./asana-sync.js').syncNow(o));
-  const go = extra => () => require('./inflight.js').runAsana(() => sync(Object.assign({ cfg, client }, extra)));
-  return { asana: go({}), asanaFull: go({ full: true }), people: go({ kind: 'people' }) };
+  const go = (kind, extra) => () => require('./inflight.js').runAsana(kind, () => sync(Object.assign({ cfg, client }, extra)));
+  return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }) };
 }
 
 /* last-run map from sync_runs rows; the last full read is the asana row with totals.full */

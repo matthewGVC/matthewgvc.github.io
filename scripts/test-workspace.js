@@ -129,6 +129,23 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('recent: newest first', (await text(p, '#recent')).includes('Price $4,750,000 → $4,500,000'), true);
   check('tasks: flags and own items', [(await text(p, '#tlist')).includes('20 Sample Ave 7B: Link the Drive folder'), (await text(p, '#tlist')).includes('Florida office signage')], [true, true]);
   check('no won-or-lost task', /won or lost/i.test(await text(p, '#tlist')), false);
+  {
+    // the To-do page is Matt's own: the team sign-in sees a note, and the list is never read
+    const tt = await open(browser, { path: '/tools/todo/', members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+    check('to-do page, team sign-in: no list, a plain note, nothing read', [((await text(tt.page, '#sections')) || '').includes('Florida office signage'),
+      ((await text(tt.page, '#status')) || '').includes('only for Matt'), tt.reads.includes('GET todos')], [false, true, false]);
+    await tt.ctx.close();
+    const to = await open(browser, { path: '/tools/todo/' });
+    check('to-do page, owner: the list shows', ((await text(to.page, '#sections')) || '').includes('Florida office signage'), true);
+    await to.ctx.close();
+  }
+  {
+    const tt = await open(browser, { members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+    const tl = (await text(tt.page, '#tlist')) || '';
+    check('team sign-in: workspace flags only, no personal tasks', [tl.includes('20 Sample Ave 7B: Link the Drive folder'), tl.includes('Florida office signage'),
+      await visible(tt.page, '#addTask'), await visible(tt.page, '#waitCard')], [true, false, false, false]);
+    await tt.ctx.close();
+  }
   check('waiting on others', (await text(p, '#wait')).includes('Real headshot for an agent'), true);
   check('sync card ok', [await p.$eval('#deCard', e => e.className), (await text(p, '#deTitle'))], ['card health', 'DE sync ran']);
   check('read-only banner without Drive', [(await text(p, '.banner')).includes('Read-only here'), await text(p, '#wsDrive')], [true, 'Read-only here']);
@@ -184,6 +201,12 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('Asana refused: red with the reason', [await t.page.$eval('#asCard', e => e.className), await text(t.page, '#asWhy')], ['card health red', 'Asana refused the token']);
   await t.ctx.close();
   t = await open(browser, { drive: true, syncResult: { ok: false, asana: { ok: false, error: 'No Asana token yet. Add asanaToken to the helper config.' }, de: { ok: true, changes: 2, created: 0, skipped: 0, aborted: null } } });
+  let asked = null, answer = false;
+  t.page.on('dialog', d => { asked = d.message(); return answer ? d.accept() : d.dismiss(); });
+  await t.page.click('#wsSync');
+  await t.page.waitForTimeout(300);
+  check('Sync asks first; No runs nothing', [asked, t.helperCalls.includes('POST /sync')], ['This takes approx. 5 minutes, are you sure?', false]);
+  answer = true;
   await t.page.click('#wsSync');
   await t.page.waitForTimeout(400);
   const st = await t.page.$eval('#wsSync', b => b.title);
@@ -232,6 +255,17 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('jobs: rows', await t.page.$$eval('#rows tr', els => els.length), 6);
   check('jobs: link to the job page', await t.page.$eval('#rows a[href*="100-example"]', a => a.getAttribute('href')), '../job/?listing=100-example-st-residence-4a');
   check('jobs: DE status in words', (await text(t.page, '#rows')).includes('Contract signed'), true);
+  const firstName = () => t.page.$eval('#rows tr:first-child td.nm a', a => a.textContent);
+  const sortState = () => t.page.$$eval('thead th[aria-sort]', ths => ths.map(th => th.querySelector('button').dataset.sort + ':' + th.getAttribute('aria-sort')));
+  check('jobs: every column has a sort button', await t.page.$$eval('thead th button[data-sort]', bs => bs.length), 7);
+  await t.page.click('thead th button[data-sort="price"]');
+  const hi = await firstName();
+  check('jobs: price sorts high to low first, arrow shown', [await sortState(), (await text(t.page, 'thead th[aria-sort] button')).includes('↓')], [['price:descending'], true]);
+  await t.page.click('thead th button[data-sort="price"]');
+  check('jobs: a second click flips it', [await sortState(), (await firstName()) !== hi], [['price:ascending'], true]);
+  await t.page.click('thead th button[data-sort="name"]');
+  const names = await t.page.$$eval('#rows tr td.nm a', as => as.map(a => a.textContent));
+  check('jobs: name sorts A to Z', names, names.slice().sort((a, b) => a.localeCompare(b)));
   await t.page.click('#typ button[data-v="pitch"]');
   check('jobs: type filter', await t.page.$$eval('#rows tr', els => els.length), 1);
   check('jobs: to link box', (await text(t.page, '#n2')).includes('20 Sample Ave 7B'), true);
@@ -394,6 +428,25 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
   check('match: nothing to fix', (await text(t.page, '#groups')).includes('Nothing to fix'), true);
+  await t.ctx.close();
+
+  /* deepen: M18 (folder found on Drive) and M19 (probably the same listing) are the workspace's to fix;
+     the DE line M19 names says which job, and keeps Link to a job / Not ours */
+  const RD = rowsFor({ de_listings: [{ de_listing_id: '9301', kind: 'rental', gvc_listed: true, property_id: null, ignored: false, raw: { street: '20 SAMPLE AVE', unit: '7C', state: 'NY' }, checked_at: iso(NOW - 864e5) }] });
+  RD.properties[1].match = { list: [
+    { code: 'M18', key: 'M18', text: 'A folder for this job is on Drive at GVC - New York/Building Information/20 Sample Ave/7B; link it.', values: { candidate: 'GVC - New York/Building Information/20 Sample Ave/7B', stage: 'Live' }, fixAt: 'Matt', who: ['Elyse Gutman'], since: '2026-10-20' },
+    { code: 'M19', key: 'M19:9301', text: 'DE has 20 Sample Ave 7C (rental, Active) with no job; this job is 7B. Probably the same listing: check the unit in Asana, or link the DE listing to this job.',
+      values: { deListingId: '9301', deUnit: '7C', deKind: 'rental', unit: '7B', kind: 'rental' }, fixAt: 'Matt', who: ['Elyse Gutman'], since: '2026-10-20' }], dismissed: {} };
+  t = await open(browser, { path: '/workspace/match/', rows: RD });
+  mp = t.page;
+  check('deepen: no page errors', t.errors, []);
+  const mattGroup = await mp.$$eval('.mg', gs => gs.filter(g => g.querySelector('h2').textContent.trim() === 'Matt').map(g => [g.querySelector('.card-h p').textContent.trim(), g.querySelectorAll('.mline').length]));
+  check('deepen: M18 and M19 sit in the workspace (Matt) group, which says what it holds', mattGroup,
+    [['Yours to settle in the workspace: folders and DE listings to link, rows to tidy, and values you typed that disagree with DE or Asana.', 2]]);
+  check('deepen: M18 is its own line, not folded into the Drive group', await mp.$$eval('.bulk', els => els.length), 0);
+  const deLine = (await text(mp, '.mline[data-key="M2:de:9301"]')) || '';
+  check('deepen: the DE line names the job M19 points at, and keeps its buttons', [deLine.includes('Probably the same listing as 20 Sample Ave 7B'),
+    await mp.$$eval('.mline[data-key="M2:de:9301"] button[data-link], .mline[data-key="M2:de:9301"] button[data-aside]', els => els.length)], [true, 2]);
   await t.ctx.close();
 
   /* ---------- the team Status page ---------- */
@@ -611,6 +664,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const g8 = (await text(t.page, '#groups')) || '';
   // asked of the database directly, so a long Asana outage (many failed runs) can't push the good run out of reach
   const runAsk = await t.page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name).filter(u => /sync_runs\?select=[^&]*totals.*kind=eq\.asana/.test(u)));
+  check('match: the key lists every code, folded away until opened', [await t.page.$$eval('#key li', li => li.length), await t.page.$eval('#key', d => d.open)], [27, false]);
+  check('match: a line\'s code says what it means on hover', await t.page.$$eval('#groups .mline .code[title]', els => els.length > 0), true);
   check('B8 match: only the newest ok run is asked for', [runAsk.length > 0, runAsk.every(u => /ok=is\.true/.test(u) && /limit=1(&|$)/.test(u))], [true, true]);
   check('B8 match: unlinked from the newest ok run, never a failed one', [g8.includes('70 Good Run Pl'), g8.includes('71 Failed Run Pl')], [true, false]);
   await t.ctx.close();

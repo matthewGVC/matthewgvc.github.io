@@ -575,6 +575,21 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   await applyRun({ client: dA3, run: await read(wA3, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
   check('A3 the next run leaves the won pitch alone', dA3.T.changes.filter(c => c.pitch_id === 'q-a3' && c.field === 'outcome').length, 1);
 
+  // D3 (deepen 3b). A List-Side task at Prep to In contract that no job links to is reported, even when an
+  // incremental run doesn't read it again (404 Park S - 6A: linked by the plan to the sale row, unlinked by hand,
+  // then never re-read, so nothing said it had no job)
+  const dD3 = await planned();
+  const jD3 = PF(dD3, '9000000000054');
+  jD3.asana_gid = null;
+  dD3.T.asana_tasks.find(c => c.gid === '9000000000054').property_id = null;
+  const oD3 = await applyRun({ client: dD3, run: await read(world(), { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('D3 an unchanged cached task with no job is listed, with why and market', (dD3.T.sync_runs.slice(-1)[0].totals.unlinked || []).filter(u => u.gid === '9000000000054'),
+    [{ gid: '9000000000054', name: (dD3.T.asana_tasks.find(c => c.gid === '9000000000054') || {}).name, why: 'no job yet', market: 'NYC' }]);
+  check('D3 it is reported, not linked or made (the linking rules are unchanged)', [oD3.created, dD3.T.properties.filter(p => p.asana_gid === '9000000000054').length], [0, 0]);
+  check('D3 a job linked to its task, an ignored task, a Sold task: never listed', (dD3.T.sync_runs.slice(-1)[0].totals.unlinked || [])
+    .filter(u => ['9000000000041', '9000000000079', '9000000000152'].indexOf(u.gid) !== -1).length, 0);
+  check('D3 the Match pass reads de_listings once for M19', dD3.calls.filter(c => c.t === 'de_listings').length >= 1, true);
+
   // B8. a run that isn't good (partial read) never stores totals.unlinked
   const dB8 = await planned();
   await applyRun({ client: dB8, run: await read(world(), { asana: asanaOf(world(), { fail: { [NJ]: 500 } }) }), now: NOW });

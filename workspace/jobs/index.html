@@ -52,10 +52,10 @@
     </div>
     <div class="card tbl-card"><div class="tbl-wrap">
       <table class="tbl">
-        <thead><tr><th>Job</th><th>Type</th><th>Market</th><th>Stage</th><th class="r">Price</th><th>Agents</th><th class="r">DE status</th></tr></thead>
+        <thead><tr id="heads"></tr></thead>
         <tbody id="rows"></tbody>
       </table></div>
-      <div class="tbl-foot"><span id="count"></span><span>Sorted by last activity</span></div>
+      <div class="tbl-foot"><span id="count"></span><span id="sortedBy">Sorted by last activity</span></div>
     </div>
     <div class="grid3 two" style="margin-top:20px">
       <section class="card need"><div class="eyebrow">Drive and DE</div><h3>To link</h3><ul id="n2"></ul></section>
@@ -75,6 +75,37 @@
   'use strict';
   var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   var f = { market: '', type: '', q: '' }, data = null, agentsOf = {};
+  /* column sorting: no column chosen = last activity, newest first */
+  var sort = { key: null, dir: 1 };
+  var COLS = [['name', 'Job', ''], ['type', 'Type', ''], ['market', 'Market', ''], ['stage', 'Stage', ''], ['price', 'Price', 'r'], ['agents', 'Agents', ''], ['de', 'DE status', 'r']];
+  var TYPE_WORD = { listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' };
+  var num = function (s) { var n = Number(String(s || '').replace(/[^0-9.]/g, '')); return s && !isNaN(n) ? n : null; };
+  var SORT_BY = {
+    name: function (j) { return String(j.name || '').toLowerCase(); },
+    type: function (j) { return TYPE_WORD[j.type] || ''; },
+    market: function (j) { return j.market || ''; },
+    stage: function (j) { var i = (W.STAGES || []).indexOf(j.stage); return i === -1 ? 999 : i; },
+    price: function (j) { return num(j.price); },
+    agents: function (j) { return (agentsOf[j.id] || []).join(', ').toLowerCase(); },
+    de: function (j) { return W.deLabel(j.deStatus) || ''; }
+  };
+  function heads() {
+    $('heads').innerHTML = COLS.map(function (c) {
+      var on = sort.key === c[0], arrow = on ? (sort.dir === 1 ? ' ↑' : ' ↓') : ' ↕';
+      return '<th' + (c[2] ? ' class="' + c[2] + '"' : '') + (on ? ' aria-sort="' + (sort.dir === 1 ? 'ascending' : 'descending') + '"' : '') + '>' +
+        '<button type="button" class="sortb" data-sort="' + c[0] + '">' + c[1] + '<span class="arr" aria-hidden="true">' + arrow + '</span></button></th>';
+    }).join('');
+    $('sortedBy').textContent = sort.key ? 'Sorted by ' + COLS.filter(function (c) { return c[0] === sort.key; })[0][1].toLowerCase() : 'Sorted by last activity';
+  }
+  heads();
+  $('heads').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-sort]'); if (!b) return;
+    var k = b.dataset.sort;
+    // a first click sorts A to Z (prices and stages high/late first reads better for money: price starts high to low)
+    if (sort.key === k) sort.dir = -sort.dir; else { sort.key = k; sort.dir = k === 'price' ? -1 : 1; }
+    heads(); if (data) render();
+    var again = $('heads').querySelector('button[data-sort="' + k + '"]'); if (again) again.focus();
+  });
   var today = W.today();
   var TYPES = [['', 'All'], ['listing', 'Listings'], ['pitch', 'Pitches'], ['development', 'Developments']];
   $('si').innerHTML = I('search');
@@ -114,7 +145,15 @@
       b.setAttribute('aria-pressed', f.type === t[0]);
       b.querySelector('.n').textContent = all.filter(function (j) { return !t[0] || j.type === t[0] || (t[0] === 'listing' && j.type === 'rental'); }).length;
     });
-    var js = all.filter(pass).sort(function (a, b) { return (b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0; });
+    var byLast = function (a, b) { return (b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0; };
+    var js = all.filter(pass).sort(function (a, b) {
+      if (!sort.key) return byLast(a, b);
+      var x = SORT_BY[sort.key](a), y = SORT_BY[sort.key](b);
+      if (x === y || (x == null && y == null)) return byLast(a, b);
+      if (x == null || x === '') return 1;   // blanks always last, whichever way
+      if (y == null || y === '') return -1;
+      return (typeof x === 'string' ? x.localeCompare(y) : (x > y ? 1 : -1)) * sort.dir;
+    });
     $('rows').innerHTML = js.length ? js.map(function (j) {
       var pctv = j.steps.length ? Math.max(0, (j.stageIdx + 1) / j.steps.length * 100) : 0;
       var ag = agentsOf[j.id] || [];

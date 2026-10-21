@@ -26,7 +26,8 @@
      closePrice and closeDate in core. Transactions that aren't a job are
      remembered and otherwise ignored (D31).
    - the job's `de` snapshot keeps DE's closeDate when the row has one: Match's
-     M5 compares it with Asana's Closing. DE publishes no listing date, so
+     M5 compares it with Asana's Closing. It also keeps DE's zip, neighbourhood
+     and property label (Match's M26 compares the zip). DE publishes no listing date, so
      there is none to keep (tune-up B2, checked 2026-10-21).
    - match: after the run, every staged job's Match check is stored in `match`
      where it changed (helper/match-store.js; found / cleared logged as 'match').
@@ -53,7 +54,8 @@ const CLOSED = ['Sold', 'Rented', 'Archived'];
 
 function snapshot(r) {
   const s = { status: r.status, price: r.price, closePrice: r.closePrice, beds: r.beds, baths: r.baths, halfBaths: r.halfBaths,
-    sqft: r.sqft, priceChangePercent: r.priceChangePercent, openHouses: r.openHouses, listingUrl: r.listingUrl, cover: r.cover };
+    sqft: r.sqft, priceChangePercent: r.priceChangePercent, openHouses: r.openHouses, listingUrl: r.listingUrl, cover: r.cover,
+    zip: r.zip || null, neighborhood: r.neighborhood || null, propertyLabel: r.propertyLabel || null };
   if (r.closeDate) s.closeDate = r.closeDate;   // Match's M5 compares it with Asana's Closing (tune-up B2)
   return s;
 }
@@ -170,8 +172,9 @@ async function writeRows(o, run, out, now) {
     cache.push(entry);
   }
 
-  // Match, from the rows as they now stand (spec §5)
-  const ms = await storeMatches({ client, rows: props, now, runId: run.id, roster: o.roster, initials: o.initials, skip: conflicted });
+  // Match, from the rows as they now stand (spec §5), with this run's DE listings as they will be cached (M19)
+  const deListings = cache.map(e => Object.assign({}, known.get(e.de_listing_id) || {}, e));
+  const ms = await storeMatches({ client, rows: props, now, runId: run.id, roster: o.roster, initials: o.initials, skip: conflicted, deListings });
   out.errors.push(...ms.errors);
 
   // PostgREST writes one column list per batch and fills the gaps with null, so

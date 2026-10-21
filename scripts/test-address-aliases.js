@@ -18,6 +18,7 @@ function check(name, got, want) {
 }
 
 check('W BROADWAY', A.same('347 W BROADWAY', '347 West Broadway'), true);
+check('PLZ is Plaza (DE: "1 Carriage City Plz,")', A.sameStreet('1 Carriage City Plz,', '1 Carriage City Plaza'), true);
 check('PARK AVE S', A.same('404 PARK AVE S', '404 PAS'), true);
 check('W END AVE', A.same('565 W END AVE', '565 WEA'), true);
 check('EAST END AVE', A.same('45 EAST END AVE', '45 EEA'), true);

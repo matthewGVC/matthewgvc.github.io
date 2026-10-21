@@ -11,7 +11,9 @@
        are stored in sync_runs.errors as { what: 'warning' }.
        sync_runs.totals.unlinked ([{ gid, name, why, market }], always there on
        a good run (ok) that read listings, never on a failed one) is what the Match page lists as "Asana task not
-       linked"; tasks cached as ignored are left out of it. A task Matt links
+       linked"; tasks cached as ignored are left out of it. It also lists, as 'no job yet', every
+       List-Side task at Prep to In contract that no job or pitch holds, the cached ones an
+       incremental run didn't read again included. A task Matt links
        to a job there (properties.asana_gid, tune-up A) is found by that stored
        gid first on the next run, whatever its name says; one he ignores
        (asana_tasks.ignored) stays ignored.
@@ -429,8 +431,24 @@ async function writeRun(o, sr, out, now) {
     const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && L.sameAddress(t.name, p.core));
     if (hit) out.unlinked.push({ gid: e.gid, name: t.name, why: 'same address', propertyId: hit.id });
   });
+  /* a List-Side task at Prep to In contract that no job or pitch holds: listed as "no job yet", whether
+     or not this run read it again (an incremental run skips unchanged tasks, so a task unlinked by hand,
+     or one not on the link plan, would otherwise sit unreported; 404 Park S - 6A, 2026-10-21).
+     Reported only: nothing is linked or made here. A full read only lists the tasks it read. */
+  const holds = new Set(props.map(p => p.asana_gid).concat(pitches.map(p => p.asana_gid)).filter(Boolean));
+  const marketOf = new Map();
+  Object.entries(require('../config.js').DEFAULTS.asana.listings || {}).forEach(([m, g]) => marketOf.set(g, m));
+  props.forEach(p => { if (p.asana && p.asana.projectGid && p.market) marketOf.set(p.asana.projectGid, p.market); });
+  run.listings.forEach(t => { if (t.projectGid && t.market) marketOf.set(t.projectGid, t.market); });
+  const known = entries.filter(e => e.kind === 'listing').map(e => ({ e, t: fresh.get(e.gid) || e }))
+    .concat(run.full ? [] : cacheRows.filter(c => c.kind === 'listing' && !fresh.has(c.gid)).map(c => ({ e: c, t: c })));
+  known.forEach(({ e, t }) => {
+    if (e.ignored || holds.has(e.gid) || out.unlinked.some(u => u.gid === e.gid) || !MAP.isGvcListing(t)) return;
+    if (ACTIVE.indexOf(MAP.stageOf(t).stage) === -1) return;
+    out.unlinked.push({ gid: e.gid, name: t.name, why: 'no job yet', market: t.market || marketOf.get(t.projectGid || t.project_gid) || null });
+  });
   // each unlinked task's market, so the Match page's "Link to a job" offers that market's jobs
-  out.unlinked.forEach(u => { const t = fresh.get(u.gid); u.market = (t && t.market) || null; });
+  out.unlinked.forEach(u => { const t = fresh.get(u.gid); u.market = (t && t.market) || u.market || null; });
 
   /* ---------- absence is not deletion (plan §8a) ---------- */
   if (run.full) {

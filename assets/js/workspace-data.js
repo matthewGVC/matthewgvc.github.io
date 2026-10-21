@@ -36,7 +36,9 @@
                            leave the people lists and become one collapsed line:
                            the group gains bulk: [{ code, key, text, items }]
                            ("38 jobs have no Drive folder linked yet"), one item per job
-     looseMatch({ deListings, asanaRun, ignoredGids, linkedGids, linkedDeIds }, GVC_MATCH) → [{ fixAt, who, item }]
+     looseMatch({ deListings, asanaRun, ignoredGids, linkedGids, linkedDeIds, claims }, GVC_MATCH) → [{ fixAt, who, item }]
+                          claims { DE id: job name }: a DE line a job's M19 ("probably the same
+                          listing") names says which job, and keeps its Link / Not ours
                            de_listings rows GVC-listed on DE with no job (M2 "On DE, not
                            in Asana", through GVC_MATCH.checkDeListing; ignored rows and
                            the DE ids a job already holds, linkedDeIds, left out) and the tasks the last Asana sync couldn't link
@@ -391,11 +393,12 @@
     'same address': 'another task is linked to the job at this address',
     'more than one job at this address': 'more than one job is at this address',
     'more than one pitch at this address': 'more than one pitch is at this address',
-    'no street number': 'its name has no street number, so it is never guessed'
+    'no street number': 'its name has no street number, so it is never guessed',
+    'no job yet': 'no job is linked to it yet, so check whether it should be one'
   };
   var STATE_MARKET = { NY: 'NYC', NJ: 'NJ', FL: 'FL' };
   function looseMatch(o, M) {
-    var out = [], ign = {}, held = {};
+    var out = [], ign = {}, held = {}, claims = o.claims || {};   // claims: { DE id: job name } from the jobs' M19 lines
     (o.ignoredGids || []).concat(o.linkedGids || []).forEach(function (g) { ign[g] = true; });
     (o.linkedDeIds || []).forEach(function (id) { held[id] = true; });
     (o.deListings || []).forEach(function (r) {
@@ -403,7 +406,8 @@
       if (!m) return;
       var raw = r.raw || {}, street = raw.street ? String(raw.street).trim() : null, unit = street && raw.unit ? String(raw.unit).trim() : null;
       out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: (street ? readable(street) + (unit ? ' ' + unit : '') + ' · ' : '') + 'DE listing ' + r.de_listing_id, href: null, id: null, table: null, code: m.code, key: m.key,
-        text: m.text + (r.courtesy ? ' DE shows: ' + r.courtesy + '.' : ''), since: m.since || null, asanaUrl: null, paste: null,
+        text: m.text + (claims[r.de_listing_id] ? ' Probably the same listing as ' + claims[r.de_listing_id] + ': see that job\'s line.' : '') +
+          (r.courtesy ? ' DE shows: ' + r.courtesy + '.' : ''), since: m.since || null, asanaUrl: null, paste: null,
         deUrl: web(m.values && m.values.listingUrl),
         link: { type: 'de', id: r.de_listing_id, kind: r.kind || null, market: STATE_MARKET[String(raw.state || '').toUpperCase()] || null, street: street, unit: unit } } });
     });

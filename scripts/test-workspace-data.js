@@ -258,6 +258,14 @@ check('loose: an Asana line carries its market; a task linked by hand since the 
 const looseD = W.looseMatch({ deListings: [{ de_listing_id: '9301', kind: 'sale', gvc_listed: true, property_id: null }, { de_listing_id: '9302', kind: 'sale', gvc_listed: true, property_id: null }],
   linkedDeIds: ['9301'] }, MC);
 check('loose: a DE listing a job already holds is left out', looseD.map(l => l.item.link.id), ['9302']);
+// deepen M19: a DE line a job's "probably the same listing" line names says so (and keeps Link to a job / Not ours)
+const looseM19 = W.looseMatch({ deListings: [{ de_listing_id: '9302', kind: 'rental', gvc_listed: true, property_id: null, raw: { street: '52 E 4TH ST', unit: '10', state: 'NY' } }],
+  claims: { '9302': '52 E4, 10FL' } }, MC);
+check('loose: a DE line claimed by a job\'s M19 names that job', [looseM19[0].item.text, !!looseM19[0].item.link],
+  ['On DE, not in Asana. Probably the same listing as 52 E4, 10FL: see that job\'s line.', true]);
+// deepen 3b: a cached task no job links to
+const looseNoJob = W.looseMatch({ asanaRun: { started_at: '2026-10-21T06:00:00Z', totals: { unlinked: [{ gid: '1700', name: '404 Park S - 6A', why: 'no job yet', market: 'NYC' }] } } }, MC);
+check('loose: a task with no job yet says so', looseNoJob[0].item.text, 'Asana task not linked: no job is linked to it yet, so check whether it should be one.');
 // tune-up B6: the chip colour of a stage
 check('chipOf: each stage\'s chip', ['Live', 'In contract', 'Accepted offer', 'Sold', 'Rented', 'Prep', 'Pitch', undefined].map(W.chipOf),
   ['live', 'contract', 'contract', 'sold', 'sold', 'pre', 'pre', 'pre']);

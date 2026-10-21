@@ -150,6 +150,7 @@
       syncBtn.title = 'The helper isn\'t running on this PC. ' + syncText + '.';
     });
     syncBtn.addEventListener('click', function () {
+      if (!global.confirm('This takes approx. 5 minutes, are you sure?')) return;
       syncBtn.disabled = true;
       syncBtn.title = 'Syncing Asana, then DE…';
       helper('POST', '/sync').then(function (r) {

@@ -47,7 +47,9 @@
     </div>
   </div>
   <div id="gate" hidden></div>
-  <div id="board" hidden><div id="groups"></div></div>
+  <div id="board" hidden><div id="groups"></div>
+    <details class="card" id="key" style="margin-top:20px;padding:16px 20px"><summary style="cursor:pointer;font-weight:600">What the codes mean</summary><ul id="keyList" style="margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px"></ul></details>
+  </div>
 </main>
 <script src="../../assets/js/supabase-config.js"></script>
 <script src="../../assets/js/property-library.js"></script>
@@ -65,11 +67,14 @@
 (function () {
   'use strict';
   var P = window.GVC_PROPS, W = window.GVC_WS, M = window.GVC_MATCH, L = window.GVC_MATCH_LINK, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
+  // the key: every code in plain words (fixed text from match-check.js, still escaped)
+  var KEY = (M && M.KEY) || {};
+  $('keyList').innerHTML = Object.keys(KEY).map(function (c) { return '<li style="display:grid;grid-template-columns:52px 1fr;gap:10px"><span class="code" style="justify-self:start">' + esc(c) + '</span><span>' + esc(KEY[c]) + '</span></li>'; }).join('');
   var today = W.today(), data = null;
   var shell = GVC_SHELL.mount({ noDrive: true, onSynced: function () { load(); } });
   var WHERE = {
     Asana: 'Fix these in Asana.', DE: 'Fix these on DE, or ask the agent to.', Drive: 'Fix these on Drive.',
-    Matt: 'Values you typed that disagree with DE or Asana. Yours hold until DE\'s own value changes.',
+    Matt: 'Yours to settle in the workspace: folders and DE listings to link, rows to tidy, and values you typed that disagree with DE or Asana.',
     Roster: 'Asana\'s People and the workspace roster disagree. The roster is updated by hand.'
   };
   var OWNER = { properties: 'property_id', dev_projects: 'dev_project_id', pitches: 'pitch_id' };
@@ -104,11 +109,16 @@
       var run = (r[4] || []).filter(function (x) { return x.ok === true; })
         .sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; })[0] || null;
       var props = r[0] || [];
+      // a DE listing a job's M19 ("probably the same listing") names: its line says which job
+      var claims = {};
+      W.buildJobs({ properties: props, pitches: [], devProjects: [], changes: [] }, today).forEach(function (j) {
+        (j.match || []).forEach(function (m) { if (m.code === 'M19' && m.values && m.values.deListingId) claims[m.values.deListingId] = j.name; });
+      });
       data = { properties: props, devProjects: r[1] || [], people: people.filter(function (p) { return (p.seen_at || '') === latest; }),
         // a task or DE listing linked to a job by hand since is no longer "not linked", even when only the job's half saved
         loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }),
           linkedGids: props.map(function (p) { return p.asana_gid; }).filter(Boolean),
-          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean) }, M) };
+          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean), claims: claims }, M) };
       data.links = {};
       data.loose.forEach(function (l) { if (l.item.link) data.links[l.item.key] = l.item; });
       render();
@@ -129,7 +139,7 @@
     if (it.id) meta.push('<button class="lnk" type="button" data-dismiss>Dismiss</button>');
     // a line that belongs to no job: tie it to one, or set it aside (tune-up A)
     if (it.link && L) meta.push('<button class="lnk" type="button" data-link>Link to a job</button><button class="lnk" type="button" data-aside>' + (it.link.type === 'de' ? 'Not ours' : 'Ignore') + '</button>');
-    return '<li class="mline" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code">' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
+    return '<li class="mline" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code"' + (KEY[it.code] ? ' title="' + esc(KEY[it.code]) + '"' : '') + '>' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
       (it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
       (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
       (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +

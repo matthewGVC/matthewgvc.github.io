@@ -96,7 +96,7 @@
       // lines that belong to no job: GVC-listed on DE with no job, and Asana tasks the last sync couldn't link
       // (either failing to read leaves those lines out, never the page)
       rest('/de_listings?select=de_listing_id,kind,gvc_listed,property_id,ignored,courtesy,raw,checked_at&gvc_listed=is.true&property_id=is.null&ignored=is.false').catch(function () { return []; }),
-      rest('/sync_runs?select=kind,started_at,ok,totals&kind=eq.asana&order=started_at.desc&limit=20').catch(function () { return []; }),
+      rest('/sync_runs?select=kind,started_at,ok,totals&kind=eq.asana&ok=is.true&order=started_at.desc&limit=1').catch(function () { return []; }),
       rest('/asana_tasks?select=gid&ignored=eq.true').catch(function () { return []; })
     ]).then(function (r) {
       var people = r[2] || [], latest = people.reduce(function (m, p) { return p.seen_at && p.seen_at > m ? p.seen_at : m; }, '');

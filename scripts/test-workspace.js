@@ -609,6 +609,9 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     { kind: 'asana', started_at: iso(NOW - 7200e3), ok: true, totals: { unlinked: [{ gid: '1700', name: '70 Good Run Pl', why: 'same address' }] } },
     { kind: 'asana', started_at: iso(NOW - 3600e3), ok: false, totals: { unlinked: [{ gid: '1701', name: '71 Failed Run Pl', why: 'same address' }] } }] }) });
   const g8 = (await text(t.page, '#groups')) || '';
+  // asked of the database directly, so a long Asana outage (many failed runs) can't push the good run out of reach
+  const runAsk = await t.page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name).filter(u => /sync_runs\?select=[^&]*totals.*kind=eq\.asana/.test(u)));
+  check('B8 match: only the newest ok run is asked for', [runAsk.length > 0, runAsk.every(u => /ok=is\.true/.test(u) && /limit=1(&|$)/.test(u))], [true, true]);
   check('B8 match: unlinked from the newest ok run, never a failed one', [g8.includes('70 Good Run Pl'), g8.includes('71 Failed Run Pl')], [true, false]);
   await t.ctx.close();
   // A1: a DE listing whose id a job already holds is left out (a half-saved hand link)

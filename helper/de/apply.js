@@ -25,6 +25,9 @@
      sale of the same unit must not close today's listing): de_stage, plus
      closePrice and closeDate in core. Transactions that aren't a job are
      remembered and otherwise ignored (D31).
+   - the job's `de` snapshot keeps DE's closeDate when the row has one: Match's
+     M5 compares it with Asana's Closing. DE publishes no listing date, so
+     there is none to keep (tune-up B2, checked 2026-10-21).
    - match: after the run, every staged job's Match check is stored in `match`
      where it changed (helper/match-store.js; found / cleared logged as 'match').
    - de_listings.raw is the DE snapshot plus the address (street, unit, city,
@@ -49,8 +52,10 @@ const FILL_FACTS = ['city', 'state', 'zip', 'neighborhood'];
 const CLOSED = ['Sold', 'Rented', 'Archived'];
 
 function snapshot(r) {
-  return { status: r.status, price: r.price, closePrice: r.closePrice, beds: r.beds, baths: r.baths, halfBaths: r.halfBaths,
+  const s = { status: r.status, price: r.price, closePrice: r.closePrice, beds: r.beds, baths: r.baths, halfBaths: r.halfBaths,
     sqft: r.sqft, priceChangePercent: r.priceChangePercent, openHouses: r.openHouses, listingUrl: r.listingUrl, cover: r.cover };
+  if (r.closeDate) s.closeDate = r.closeDate;   // Match's M5 compares it with Asana's Closing (tune-up B2)
+  return s;
 }
 function sameValue(k, a, b) { return a === b || (k === 'halfBaths' && (a == null ? 0 : a) === (b == null ? 0 : b)); }
 

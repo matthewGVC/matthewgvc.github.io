@@ -1,0 +1,107 @@
+/* ============================================================
+   DETAILS DOC — the job's details .docx, as the job's facts.
+
+   The Showsheet's reader (tools/showsheet/listing.js) already turns the Word
+   document into the sheet's own field names. This file renames those to the
+   job's fact names (docs/workspace-v2-facts.md) and picks which file in a job
+   folder is the details doc:
+
+     GVC_DOC.toFacts(readResult)  → { <fact name>: value }
+       Only stored fields. Maintenance and common charges stay separate; money
+       is the reader's own monthly figure; an empty or unreadable value is
+       dropped. ownership → propertyType ('Co-op', 'Condo'), residence.features
+       → interiorFeatures, building.amenities → buildingFeatures,
+       building.builtYear → yearBuilt.
+     GVC_DOC.pick(files)          → the newest top-level .docx with "details"
+                                    in its name, or null. Files are
+                                    { name, size, modified }.
+     GVC_DOC.changed(prev, file)  → true when name, size or modified differ
+                                    from the details_doc record (null = new).
+
+   Loads in the browser (window.GVC_DOC, after listing.js) and in Node.
+   Tested by scripts/test-details-doc.js.
+   ============================================================ */
+(function (global, factory) {
+  'use strict';
+  var listing = typeof module === 'object' && module.exports
+    ? require('../../tools/showsheet/listing.js') : global.GVC_LISTING;
+  var api = factory(listing);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else global.GVC_DOC = api;
+})(typeof window !== 'undefined' ? window : globalThis, function (L) {
+  'use strict';
+
+  var TYPES = { 'co-op': 'Co-op', condo: 'Condo' };
+
+  function text(v) { return typeof v === 'string' && v.trim() ? v.trim() : null; }
+  function num(v) {
+    var m = /\d[\d,]*(?:\.\d+)?/.exec(String(v == null ? '' : v));
+    return m ? Number(m[0].replace(/,/g, '')) : null;
+  }
+  /* a price that is a figure; "Call for price" is not one */
+  function price(v) {
+    var t = text(v);
+    return t && /^[\s$\d,.]+$/.test(t) ? L.moneyNum(t) : null;
+  }
+  function monthly(v) {
+    var n = L.monthlyAmount(v);
+    return n === null ? null : Math.round(n * 100) / 100;
+  }
+  function list(v) {
+    var items = (Array.isArray(v) ? v : v ? [v] : []).map(text).filter(Boolean);
+    return items.length ? items : null;
+  }
+
+  function toFacts(r) {
+    r = r || {};
+    var b = r.building || {}, res = r.residence || {};
+    var baths = text(r.baths) ? Number(r.baths) : null;
+    var out = {
+      address: text(r.address),
+      unit: text(r.unit),
+      propertyType: TYPES[r.ownership] || null,
+      price: price(r.price),
+      maintenance: monthly(r.maintenance),
+      commonCharges: monthly(r.commonCharges),
+      taxesMonthly: monthly(r.taxesMonthly),
+      maxFinancing: num(r.maxFinancing),
+      flipTax: text(r.flipTax),
+      assessments: text(r.assessments),
+      beds: text(r.beds) ? Number(r.beds) : null,
+      baths: baths === null ? null : Math.floor(baths),
+      halfBaths: baths !== null && baths % 1 !== 0 ? 1 : null,
+      yearBuilt: num(b.builtYear),
+      stories: num(b.stories),
+      interiorFeatures: list(res.features),
+      buildingFeatures: list(b.amenities),
+      exposures: list(res.exposures),
+      outdoorSpace: text(res.outdoor),
+      ceilingHeight: text(res.ceiling)
+    };
+    var facts = {};
+    Object.keys(out).forEach(function (k) {
+      var v = out[k];
+      if (v !== null && v !== undefined && !(typeof v === 'number' && !isFinite(v))) facts[k] = v;
+    });
+    return facts;
+  }
+
+  function pick(files) {
+    var best = null;
+    (files || []).forEach(function (f) {
+      if (!f || typeof f.name !== 'string') return;
+      if (!/\.docx$/i.test(f.name) || !/details/i.test(f.name) || /^~\$/.test(f.name)) return;
+      if (!best || new Date(f.modified) > new Date(best.modified)) best = f;
+    });
+    return best;
+  }
+
+  function changed(prev, file) {
+    if (!file) return false;
+    if (!prev) return true;
+    return prev.name !== file.name || prev.size !== file.size ||
+      new Date(prev.modified).getTime() !== new Date(file.modified).getTime();
+  }
+
+  return { toFacts: toFacts, pick: pick, changed: changed };
+});

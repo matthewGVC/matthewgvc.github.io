@@ -288,6 +288,89 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: they count in the header', (await text(mp, '#lead')).startsWith('6 mismatches'), true);
   check('match: no page errors with loose lines', t.errors, []);
   await t.ctx.close();
+  /* Link by hand (tune-up A): a loose line can be linked to a job, or set aside */
+  const handRows = over => {
+    const R = rowsFor(Object.assign({
+      de_listings: [{ de_listing_id: '9201', kind: 'sale', gvc_listed: true, property_id: null, ignored: false, courtesy: 'Douglas Elliman: Test Agent', raw: { street: '1006 PHEASANT LN', unit: '204', state: 'NJ' }, checked_at: iso(NOW - 864e5) },
+        { de_listing_id: '9202', kind: 'rental', gvc_listed: true, property_id: null, ignored: false, raw: { street: '12 SAMPLE LN', state: 'NJ' }, checked_at: iso(NOW - 864e5) }],
+      sync_runs: [{ kind: 'asana', started_at: iso(NOW - 3600e3), ok: true, totals: { unlinked: [{ gid: '1600', name: '52 E4 - 10', why: 'same address', market: 'NYC' }] } }],
+      asana_tasks: [{ gid: '1600', ignored: false, property_id: null }] }, over));
+    R.properties.push({ id: 'pw', slug: '1006-pheasant-ln-wall', label: 'w', kind: 'sale', market: 'NJ', stage: 'Live', stage_source: 'Asana', version: 2, core: { address: '1006 Pheasant Ln, Wall' }, folder_state: 'linked', drive_folder: 'w' },
+      { id: 'pe', slug: '52-e4-10fl', label: 'e4', kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Asana', version: 5, core: { address: '52 E4', unit: '10FL' }, folder_state: 'linked', drive_folder: 'e' });
+    return R;
+  };
+  const pickerList = pg => pg.$$eval('dialog.gvc-mlink #mlList > *', els => els.map(e => e.tagName === 'P' ? '# ' + e.textContent.trim() : e.querySelector('span').textContent.trim()));
+  t = await open(browser, { path: '/workspace/match/', rows: handRows() });
+  mp = t.page;
+  check('hand link: no page errors', t.errors, []);
+  check('hand link: DE line offers Link to a job and Not ours', await mp.$$eval('.mline[data-key="M2:de:9201"] button[data-link], .mline[data-key="M2:de:9201"] button[data-aside]', els => els.map(e => e.textContent.trim())), ['Link to a job', 'Not ours']);
+  check('hand link: Asana line offers Link to a job and Ignore', await mp.$$eval('.mline[data-key="link:1600"] button[data-link], .mline[data-key="link:1600"] button[data-aside]', els => els.map(e => e.textContent.trim())), ['Link to a job', 'Ignore']);
+  check('hand link: a job\'s own mismatch has neither', await mp.$$eval('.mline[data-key="M3"] button[data-link], .mline[data-key="M3"] button[data-aside]', els => els.length), 0);
+  check('hand link: the DE line shows its address', ((await text(mp, '.mline[data-key="M2:de:9201"]')) || '').includes('DE listing 9201, 1006 Pheasant Ln 204'), true);
+  await mp.click('.mline[data-key="M2:de:9201"] button[data-link]').catch(() => {});
+  check('picker: opens', await visible(mp, 'dialog.gvc-mlink'), true);
+  check('picker: same street first, then the market\'s other jobs; no other market', await pickerList(mp).catch(() => null),
+    ['# Same street', '1006 Pheasant Ln Wall', '# Other jobs in NJ', '12 Sample Lane']);
+  await mp.fill('#mlSearch', 'sample').catch(() => {});
+  check('picker: search', await mp.$$eval('dialog.gvc-mlink #mlList button span:first-child', els => els.map(e => e.textContent.trim())), ['12 Sample Lane']);
+  await mp.click('#mlCancel').catch(() => {});
+  check('picker: Cancel closes, nothing written', [await visible(mp, 'dialog.gvc-mlink'), t.writes], [false, []]);
+  await mp.click('.mline[data-key="M2:de:9201"] button[data-link]').catch(() => {});
+  const readsBefore = t.reads.length;
+  await mp.click('dialog.gvc-mlink button[data-id="pw"]').catch(() => {});
+  await mp.waitForTimeout(500);
+  check('link DE: the job gets the DE id, versioned', t.writes.filter(w => /^PATCH properties/.test(w)), ['PATCH properties ?id=eq.pw&version=eq.2 {"de_listing_id":"9201"}']);
+  check('link DE: the DE listing gets the job', t.writes.filter(w => /^PATCH de_listings/.test(w)), ['PATCH de_listings ?de_listing_id=eq.9201 {"property_id":"pw"}']);
+  check('link DE: one change row, Linked to DE by hand, source Matt', t.writes.filter(w => /^POST changes/.test(w)).map(w => JSON.parse(w.slice(w.indexOf('{')))),
+    [{ property_id: 'pw', field: 'de_listing_id', old_value: null, new_value: '9201', note: 'Linked to DE by hand', source: 'Matt' }]);
+  check('link DE: the picker closes and the page reloads', [await visible(mp, 'dialog.gvc-mlink'), t.reads.length > readsBefore, t.errors], [false, true, []]);
+  await t.ctx.close();
+
+  t = await open(browser, { path: '/workspace/match/', rows: handRows() });
+  mp = t.page;
+  await mp.click('.mline[data-key="M2:de:9202"] button[data-link]').catch(() => {});
+  await mp.click('dialog.gvc-mlink button[data-id="p3"]').catch(() => {});
+  await mp.waitForTimeout(300);
+  check('link DE: a rental DE listing and a sale job: refused in plain words, nothing written', [await text(mp, '#mlMsg'), t.writes],
+    ['This DE listing is a rental and that job is a sale, so they can\'t be linked.', []]);
+  await mp.click('#mlCancel').catch(() => {});
+  await mp.click('.mline[data-key="link:1600"] button[data-link]').catch(() => {});
+  check('link Asana: the job on the same street, in the task\'s market', await pickerList(mp).then(x => x.slice(0, 3)).catch(() => null),
+    ['# Same street', '52 E4 10FL', '# Other jobs in NYC']);
+  await mp.click('dialog.gvc-mlink button[data-id="pe"]').catch(() => {});
+  await mp.waitForTimeout(500);
+  check('link Asana: the job gets the gid, the task gets the job, one change row', [t.writes.filter(w => /^PATCH/.test(w)),
+    t.writes.filter(w => /^POST changes/.test(w)).map(w => JSON.parse(w.slice(w.indexOf('{'))))],
+    [['PATCH properties ?id=eq.pe&version=eq.5 {"asana_gid":"1600"}', 'PATCH asana_tasks ?gid=eq.1600 {"property_id":"pe"}'],
+      [{ property_id: 'pe', field: 'asana_gid', old_value: null, new_value: '1600', note: 'Linked to Asana by hand', source: 'Matt' }]]);
+  await t.ctx.close();
+
+  t = await open(browser, { path: '/workspace/match/', rows: handRows() });
+  mp = t.page;
+  await mp.click('.mline[data-key="M2:de:9201"] button[data-aside]').catch(() => {});
+  await mp.waitForTimeout(400);
+  await mp.click('.mline[data-key="link:1600"] button[data-aside]').catch(() => {});
+  await mp.waitForTimeout(400);
+  check('not ours / ignore: ignored = true, no change row without an owner', t.writes,
+    ['PATCH de_listings ?de_listing_id=eq.9201 {"ignored":true}', 'PATCH asana_tasks ?gid=eq.1600 {"ignored":true}']);
+  check('not ours / ignore: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  t = await open(browser, { path: '/workspace/match/', rows: handRows(), conflict: true });
+  mp = t.page;
+  await mp.click('.mline[data-key="M2:de:9201"] button[data-link]').catch(() => {});
+  await mp.click('dialog.gvc-mlink button[data-id="pw"]').catch(() => {});
+  await mp.waitForTimeout(400);
+  check('link: a version conflict says so and writes nothing more', [(await text(mp, '#mlMsg')), t.writes.filter(w => !/^PATCH properties/.test(w))],
+    ['Someone changed this job meanwhile. Reload the page and link it again.', []]);
+  await t.ctx.close();
+
+  const linkedRows = handRows();
+  linkedRows.properties.find(p => p.id === 'pe').asana_gid = '1600';
+  t = await open(browser, { path: '/workspace/match/', rows: linkedRows });
+  check('link Asana: a task linked by hand since the last run is off the list', await t.page.$$eval('.mline[data-key="link:1600"]', els => els.length), 0);
+  await t.ctx.close();
+
   /* M6 "no Drive folder linked" collapses to one line per fix group, with a show/hide list */
   const R6 = rowsFor();
   const m6 = (stage, who) => ({ list: [{ code: 'M6', key: 'M6', text: 'No Drive folder is linked, and the job is ' + stage + '.', values: { folder: null, stage }, fixAt: 'Drive', who, since: '2026-10-14' }], dismissed: {} });

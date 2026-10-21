@@ -525,7 +525,24 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const oF6 = await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
   check('F6 no street number: no job, no pitch', [dF6.T.properties.some(p => p.asana_gid === '9000000000905'), dF6.T.pitches.some(p => p.asana_gid === '9000000000906')], [false, false]);
   check('F6 no street number: listed as unlinked, with why', oF6.unlinked.filter(u => /^900000000090[56]$/.test(u.gid)).map(u => u.why), ['no street number', 'no street number']);
-  check('F6 the stored list names it', (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).find(u => u.gid === '9000000000905'), { gid: '9000000000905', name: 'Sample Penthouse', why: 'no street number' });
+  check('F6 the stored list names it, with its market (for the Match page\'s job picker)', (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).find(u => u.gid === '9000000000905'), { gid: '9000000000905', name: 'Sample Penthouse', why: 'no street number', market: 'NYC' });
+
+  // A1. Link by hand (tune-up A): a job Matt linked to the task on the Match page is found by its stored asana_gid,
+  // even though the task's name has no address that matches; it is filled in and no longer listed as unlinked
+  dF6.T.properties.push({ id: 'p-hand', slug: '52-e4-10fl', version: 1, kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Matt', asana_gid: '9000000000905',
+    core: { address: '52 E4', unit: '10FL' }, folder_state: 'unlinked' });
+  dF6.T.asana_tasks.find(c => c.gid === '9000000000905').property_id = 'p-hand';
+  const jobsA1 = dF6.T.properties.length;
+  const oA1 = await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  const pA1 = dF6.T.properties.find(p => p.id === 'p-hand');
+  check('A1 hand link: the stored asana_gid is used first', [pA1.asana && pA1.asana.gid, pA1.asana && pA1.asana.name, dF6.T.properties.length], ['9000000000905', 'Sample Penthouse', jobsA1]);
+  check('A1 hand link: no longer unlinked, the cache row stays on the job', [oA1.unlinked.some(u => u.gid === '9000000000905'),
+    (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).some(u => u.gid === '9000000000905'), dF6.T.asana_tasks.find(c => c.gid === '9000000000905').property_id], [false, false, 'p-hand']);
+  // Ignore on the Match page: a task set aside stays set aside and off the list
+  dF6.T.asana_tasks.find(c => c.gid === '9000000000906').ignored = true;
+  await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('A1 ignore: a task set aside stays ignored and is not listed', [dF6.T.asana_tasks.find(c => c.gid === '9000000000906').ignored,
+    (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).some(u => u.gid === '9000000000906')], [true, false]);
 
   // F10. applyRun says what sync_runs.ok says
   check('F10 ok on a good run', oF6.ok, true);

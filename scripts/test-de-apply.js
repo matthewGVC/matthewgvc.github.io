@@ -227,6 +227,26 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   const both = await Promise.all([1, 2].map(() => syncNow({ client: db, courtesy: gvc, fixturesDir: SYN, outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-sync-')), drive: false, lnks: [] })));
   check('sync: two at once run once', [db.T.sync_runs.length, both[0] === both[1]], [1, true]);
 
+  /* ---------- Link by hand (tune-up A) ---------- */
+  // a GVC listing with no job keeps its address on the cache row, so the Match page can find the job it belongs to
+  db = fakeDb();
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc,
+    rows: [row('930001', { street: '1006 PHEASANT LN', unit: '204', city: 'Wall', state: 'NJ' })] });
+  const cachedA = db.T.de_listings.find(d => d.de_listing_id === '930001');
+  check('hand link: the cache row keeps the street, unit, city and state', [cachedA.raw.street, cachedA.raw.unit, cachedA.raw.city, cachedA.raw.state], ['1006 PHEASANT LN', '204', 'Wall', 'NJ']);
+  // a job Matt linked by hand (its address doesn't match DE's) is found by its stored DE id; a listing set aside stays set aside
+  db = fakeDb({
+    properties: [{ id: 'pw', slug: '1006-pheasant-ln-wall', stage: 'Live', kind: 'sale', de_listing_id: '930001', core: { address: '1006 Pheasant Ln, Wall', price: 900000 } }],
+    de_listings: [{ de_listing_id: '930001', feed: 'featured', kind: 'sale', gvc_listed: true, property_id: 'pw', raw: {} },
+      { de_listing_id: '930002', feed: 'featured', kind: 'sale', gvc_listed: true, property_id: null, ignored: true, raw: {} }] });
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc,
+    rows: [row('930001', { street: '1006 PHEASANT LN', unit: '204', city: 'Wall', state: 'NJ', price: 950000 }), row('930002', { street: '9 OTHER RD', unit: '' })] });
+  const pw = db.T.properties.find(p => p.id === 'pw');
+  check('hand link: the stored DE id is used, and the job filled in', [pw.core.price, pw.de.price, pw.de_listing_id], [950000, 950000, '930001']);
+  check('hand link: the job snapshot carries no address', 'street' in pw.de, false);
+  check('hand link: the cache row stays on the job', db.T.de_listings.find(d => d.de_listing_id === '930001').property_id, 'pw');
+  check('not ours: a listing set aside stays set aside after a run', db.T.de_listings.find(d => d.de_listing_id === '930002').ignored, true);
+
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');
     failures.forEach(f => console.log('  FAIL ' + f));

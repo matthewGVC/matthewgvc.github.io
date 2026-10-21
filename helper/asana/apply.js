@@ -5,13 +5,16 @@
        client   helper/supabase.js (or a fake with the same shape)
        run      readRun()'s result (helper/asana/read.js)
        plan     the ticked link plan (link.js readPlanFile) on the first link run
-     → { runId, ok, changes, created, errors, unlinked: [{ gid, name, why, propertyId? }] }
+     → { runId, ok, changes, created, errors, unlinked: [{ gid, name, why, market, propertyId? }] }
        ok is what sync_runs.ok says: false when the read was partial
        (run.partial), aborted, or stopped (no plan yet); the read's warnings
        are stored in sync_runs.errors as { what: 'warning' }.
-       sync_runs.totals.unlinked ([{ gid, name, why }], always there on a run
-       that read listings) is what the Match page lists as "Asana task not
-       linked"; tasks cached as ignored are left out of it.
+       sync_runs.totals.unlinked ([{ gid, name, why, market }], always there on
+       a run that read listings) is what the Match page lists as "Asana task not
+       linked"; tasks cached as ignored are left out of it. A task Matt links
+       to a job there (properties.asana_gid, tune-up A) is found by that stored
+       gid first on the next run, whatever its name says; one he ignores
+       (asana_tasks.ignored) stays ignored.
 
    What it writes:
    - asana_tasks: every task read (listing, dev, loose), allowlisted fields and
@@ -81,7 +84,7 @@ async function applyRun(o) {
   // a project that failed to read (or a renamed field) is kept with the run, so the overview can say why
   const warned = (run.warnings || []).map(w => ({ what: 'warning', detail: w }));
   // the stored list leaves out tasks cached as ignored (decided by Matt or first met closed)
-  const listed = () => out.unlinked.filter(u => !(out.ignored && out.ignored.has(u.gid))).map(u => ({ gid: u.gid, name: u.name || null, why: u.why }));
+  const listed = () => out.unlinked.filter(u => !(out.ignored && out.ignored.has(u.gid))).map(u => ({ gid: u.gid, name: u.name || null, why: u.why, market: u.market || null }));
   const finish = (ok, errs) => { out.ok = ok; return client.update('sync_runs', { id: sr.id }, {
     finished_at: new Date().toISOString(), ok, changes: out.changes, errors: errs.concat(warned).length ? errs.concat(warned) : null,
     totals: Object.assign({}, run.totals || {}, kind === 'asana' && run.ok && !out.stopped ? { unlinked: listed() } : {}) }); };
@@ -416,6 +419,8 @@ async function writeRun(o, sr, out, now) {
     const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && L.sameAddress(t.name, p.core));
     if (hit) out.unlinked.push({ gid: e.gid, name: t.name, why: 'same address', propertyId: hit.id });
   });
+  // each unlinked task's market, so the Match page's "Link to a job" offers that market's jobs
+  out.unlinked.forEach(u => { const t = fresh.get(u.gid); u.market = (t && t.market) || null; });
 
   /* ---------- absence is not deletion (plan §8a) ---------- */
   if (run.full) {

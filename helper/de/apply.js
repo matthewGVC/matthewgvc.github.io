@@ -27,6 +27,11 @@
      remembered and otherwise ignored (D31).
    - match: after the run, every staged job's Match check is stored in `match`
      where it changed (helper/match-store.js; found / cleared logged as 'match').
+   - de_listings.raw is the DE snapshot plus the address (street, unit, city,
+     state), so the Match page's "Link to a job" can put the jobs on the same
+     street first (tune-up A). A job linked by hand has its de_listing_id
+     stored, and that id is what finds it on the next run; `ignored` (Not ours)
+     is never written here, so it stays.
    - an aborted run writes nothing but its `sync_runs` row.
    - a row someone else changed meanwhile (version check) is skipped and
      logged, never overwritten.
@@ -96,7 +101,9 @@ async function writeRows(o, run, out, now) {
 
   for (const r of o.rows) {
     const cached = known.get(r.id) || {};
-    const entry = { de_listing_id: r.id, feed: r.feed, kind: r.kind, last_seen: now, raw: snapshot(Object.assign({ street: r.street, unit: r.unit }, r)) };
+    // the cache row also keeps the address (never the job's own snapshot), so the Match page can offer the job it belongs to
+    const entry = { de_listing_id: r.id, feed: r.feed, kind: r.kind, last_seen: now,
+      raw: Object.assign(snapshot(r), { street: r.street || null, unit: r.unit || null, city: r.city || null, state: r.state || null }) };
     try {
     let p = byDe.get(r.id);
 

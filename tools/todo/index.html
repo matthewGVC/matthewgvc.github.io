@@ -81,11 +81,17 @@ function ensureSignedIn() {
   return P.askSignIn('Sign in to open the to-do list.');
 }
 
+/* The list is Matt's own: other sign-ins (the team's shared one included) see a note and nothing is read */
+const NOT_YOURS = 'This to-do list is only for Matt. Sign in with his account to see it.';
 function load() {
   say('Loading…');
-  return P.call('/rest/v1/todos?select=*&order=position.asc,created_at.asc').then(r => {
+  return P.whoAmI().then(w => {
+    if (w && w.checkFailed) { say('Couldn\'t check your account just now. Reload the page to try again.', 'warn'); return false; }
+    if (!w || w.role !== 'owner') { rows = []; render(); say(NOT_YOURS, 'warn'); return false; }
+    return true;
+  }, () => { say('Couldn\'t check your account just now. Reload the page to try again.', 'warn'); return false; }).then(ok => ok && P.call('/rest/v1/todos?select=*&order=position.asc,created_at.asc').then(r => {
     rows = r || []; render(); say('');
-  }).catch(e => { say(explain(e), 'warn'); });
+  })).catch(e => { say(explain(e), 'warn'); });
 }
 
 function patch(id, fields) {

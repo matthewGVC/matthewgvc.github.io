@@ -40,7 +40,6 @@
 .logf #noteText{flex:1 1 200px}
 .logf select{flex:0 1 auto;max-width:100%}
 .path{font-family:var(--mono);font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere}
-.later{border-style:dashed;color:var(--ink-soft);font-size:13.5px}
 .steps-wrap{overflow-x:auto}
 .steps{min-width:640px}
 .ck-block{margin-top:14px}
@@ -94,6 +93,69 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .mr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .mtick{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .mtick .inp{width:auto}
+/* Drive cards (mockup .kr, .fpm, .phg, .hl) */
+.scanl{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+.kit{display:flex;flex-direction:column;gap:10px}
+.kr{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px}
+.kr > div{min-width:0;overflow-wrap:anywhere}
+.kr .ic{width:44px;height:44px;border-radius:6px;background:var(--paper-2);display:flex;align-items:center;justify-content:center}
+.kr .ic svg{width:20px;height:20px}
+.kr.stale{border-color:var(--danger)}
+.kr.none{background:transparent;border-style:dashed}
+.kr .t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600;font-size:15px}
+.kr .d{font-size:13px;color:var(--ink-soft);margin-top:3px}
+.kr .kmm{color:var(--danger)}
+.kr .a{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.code{font-family:var(--mono);font-size:11px}
+.fpm{display:grid;grid-template-columns:110px repeat(3,minmax(0,1fr));gap:10px;align-items:center}
+.fpm .h{font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+.fpm .ver{font-family:var(--serif);font-size:17px;overflow-wrap:anywhere;min-width:0}
+.fpm .ver small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.fpm .old{opacity:.6}
+.th{aspect-ratio:11.25/8.75;border-radius:6px;background:var(--paper-2);position:relative;overflow:hidden;color:var(--ink);min-width:0}
+.th .tg{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10px;background:var(--paper);border-radius:3px;padding:1px 5px}
+.th .tn{position:absolute;left:6px;right:6px;top:6px;font-size:11px;overflow-wrap:anywhere;max-height:60%;overflow:hidden}
+.th.empty{background:transparent;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--ink-soft)}
+.fpalt{font-size:13px;margin-top:10px;overflow-wrap:anywhere}
+.fpform{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.fpform #fpNote{flex:1 1 220px}
+.fpform select{max-width:100%}
+.fpform .fbtn,.fpform .fmsg{flex-basis:100%}
+.phs{margin-bottom:12px}
+.phraw{font-size:13.5px;padding:6px 13px;color:var(--ink-soft)}
+.phg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.phg .pair{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0}
+.pt{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pt .pi{aspect-ratio:3/2;border-radius:5px;background:var(--paper-2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-soft);padding:4px;text-align:center}
+.pt .pi img{width:100%;height:100%;object-fit:cover}
+.pt .pi.pfail{color:var(--danger)}
+.pt.hero .pi{outline:2px solid var(--ink);outline-offset:1px}
+.pt .pn{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);overflow-wrap:anywhere}
+.pt .pb{display:flex;gap:4px;flex-wrap:wrap}
+#phPicks{margin-top:14px}
+.phh{font-size:14px;margin-bottom:6px}
+.picks{margin:0 0 6px;padding-left:22px;font-size:13.5px}
+.picks li{padding:4px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.picks .pn{overflow-wrap:anywhere;min-width:0}
+.picks .pa{display:flex;gap:4px;margin-left:auto}
+.hl{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper-2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:14px}
+.hl .x{display:flex;align-items:center;gap:10px;min-width:0;overflow-wrap:anywhere}
+.hl .x svg{width:16px;height:16px;flex-shrink:0}
+.hl .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.hl.warn .x svg{color:var(--danger)}
+.tree{margin-top:10px}
+.trd summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;padding:6px 0;font-size:14px;border-bottom:1px solid var(--rule)}
+.trd summary .x{overflow-wrap:anywhere;min-width:0}
+.trd summary .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.tri{padding-left:14px}
+.trf{list-style:none;margin:0;padding:2px 0 6px}
+.trf li{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0}
+.trf li span:first-child{overflow-wrap:anywhere;min-width:0}
+.trf .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.troff{font-size:13px;color:var(--ink-soft);opacity:.7;margin-top:8px}
+.docl{font-size:14px;overflow-wrap:anywhere}
+#docNow{font-size:13px;margin-top:6px;overflow-wrap:anywhere}
+@media (max-width:640px){ .fpm{grid-template-columns:64px repeat(3,minmax(0,1fr))} .kr{grid-template-columns:minmax(0,1fr)} .kr .ic{display:none} .kr .a{justify-content:flex-start} }
 @media (max-width:1100px){ .two{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:720px){ .hd h1{font-size:30px} }
 /* phone: the stages wrap into rows of three so every one stays in view (no hidden scroll) */
@@ -120,6 +182,18 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/agents.js"></script>
 <script src="../../assets/js/job-page/log.js"></script>
 <script src="../../assets/js/job-page/dev.js"></script>
+<!-- Drive cards: the folder tree and health, the marketing track, floorplans, photos, the details doc.
+     The details doc is read with the Showsheet's own reader (same pinned mammoth as tools/showsheet). -->
+<script async id="mammothJs" src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" integrity="sha384-/cXAMbzovUIKbBERjPmR3SnPTh8siWr5lsvFYj1Uq4XP0yaJUZJmsh0YXyGv5P0y" crossorigin="anonymous" onerror="this.dataset.failed='1'"></script>
+<script src="../../tools/showsheet/listing.js"></script>
+<script src="../../assets/js/details-doc.js"></script>
+<script src="../../assets/js/folder-health.js"></script>
+<script src="../../assets/js/kit-track.js"></script>
+<script src="../../assets/js/job-page/folder.js"></script>
+<script src="../../assets/js/job-page/kit.js"></script>
+<script src="../../assets/js/job-page/floorplans.js"></script>
+<script src="../../assets/js/job-page/photos.js"></script>
+<script src="../../assets/js/job-page/doc.js"></script>
 <script>
 (function () {
   'use strict';
@@ -130,8 +204,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
   var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
   var today = W.today();
-  var shell = GVC_SHELL.mount({ onDrive: function () { if (state.row) render(); } });
-  var state = { row: null, job: null, changes: [], won: null, me: null };
+  var state = { row: null, job: null, changes: [], won: null, me: null, drive: null };
+  var shell = GVC_SHELL.mount({ onDrive: function (s) { var was = state.drive; state.drive = s; if (state.row && s !== was) render(); } });
 
   function rest(path) { return P.call('/rest/v1' + path); }
   function page(html) { $('page').innerHTML = html; }
@@ -175,9 +249,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     });
   }
   JP.reload = load;
+  JP.redraw = function () { if (state.row) render(); };
 
   function ctx() {
-    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, W: W, I: I, esc: esc };
+    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc };
   }
 
   function tile(k, v, s, badge) {
@@ -258,18 +333,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   /* S8: the only stage button. Unarchive goes back to the stage Asana shows now. */
   function unarchiveTo() { var a = state.row.asana || {}; return a.stageFromStatus || a.stageFromSection || 'Prep'; }
 
-  /* S13: the folder's Drive link, from the helper, else last night's scan, else the G: path */
-  function gPath() { return 'G:\\Shared drives\\' + state.row.drive_folder.split('/').join('\\'); }
-  function driveLink() {
-    var r = state.row, stored = r.scan && /^https:\/\/drive\.google\.com\//.test(r.scan.folderUrl || '') ? r.scan.folderUrl : null;
-    return GVC_SHELL.helper('POST', '/drive-link', { folder: r.drive_folder }).then(function (x) {
-      return x && /^https:\/\/drive\.google\.com\//.test(x.url || '') ? x.url : stored;
-    }, function () { return stored; });
-  }
-  function copy(text, ok) {
-    return (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { $('actMsg').textContent = ok; },
-      function () { $('actMsg').textContent = text; });
-  }
+  /* S13: the folder's Drive link, from the helper, else last night's scan, else the G: path (GVC_JP.drive) */
+  function gPath() { return JP.drive.gPath(state.row); }
 
   function render() {
     var r = state.row, j = state.job, c = ctx();
@@ -288,33 +353,34 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
       (kind === 'listing' && JP.canEdit ? '<button class="b" type="button" id="archive">' + esc(archived ? 'Unarchive (back to ' + unarchiveTo() + ')' : 'Archive') + '</button>' : '') +
       '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button></div>';
-    var right = [];
+    var right = [], left = [];
+    if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c) + '</div>', '<div id="fpHost">' + JP.floorplans.html(c) + '</div>',
+      '<div id="photosHost">' + JP.photos.html(c) + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
+    left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
+    if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
+    if (kind !== 'dev') right.push('<div id="folderHost">' + JP.folder.html(c) + '</div>');
     if (kind === 'listing') right.push(asanaCard());
-    if (kind !== 'dev') right.push('<div class="card later"><b style="font-family:var(--serif);font-weight:400;font-size:20px;color:var(--ink)">Kit, floorplans, photos</b><p style="margin-top:6px">The marketing track, floorplan versions, photo picks and folder health read the Drive folder. They arrive with the next part of Slice 3.</p></div>');
     page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' +
       '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + steps() +
-      '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + (kind === 'listing' ? '<div id="factsHost">' + JP.facts.html(c) + '</div>' : '') +
-      '<div id="logHost">' + JP.log.html(c) + '</div></div><div class="stack">' + right.join('') + '</div></div>');
+      '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'dev') JP.dev.wire($('topHost'), c);
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);
     JP.log.wire($('logHost'), c);
+    // the Drive cards: each reads on its own and fails on its own, never blocking the rest
+    [['kitHost', 'kit'], ['fpHost', 'floorplans'], ['photosHost', 'photos'], ['docHost', 'doc'], ['folderHost', 'folder']].forEach(function (x) {
+      if ($(x[0])) JP[x[1]].wire($(x[0]), c);
+    });
 
     $('open').addEventListener('click', function () {
       GVC_SHELL.helper('POST', '/open-folder', { folder: r.drive_folder }).then(function (x) { $('actMsg').textContent = x.ok ? 'Opened in File Explorer.' : (x.error || 'Couldn\'t open it.'); },
         function (e) { $('actMsg').textContent = e.message + ' Use Copy folder path instead.'; });
     });
-    $('copy').addEventListener('click', function () { copy(gPath(), 'Copied: paste it into File Explorer\'s address bar.'); });
-    $('copyLink').addEventListener('click', function () {
-      $('actMsg').textContent = 'Finding the Drive link…';
-      driveLink().then(function (u) {
-        if (u) copy(u, 'Copied the Drive link.');
-        else copy(gPath(), 'No Drive link known yet, so the folder path was copied instead.');
-      });
-    });
+    $('copy').addEventListener('click', function () { JP.drive.copy(gPath(), 'Copied: paste it into File Explorer\'s address bar.', $('actMsg')); });
+    $('copyLink').addEventListener('click', function () { JP.drive.copyLink(r, null, null, $('actMsg')); });
     $('link').addEventListener('click', function () {
       GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
     });

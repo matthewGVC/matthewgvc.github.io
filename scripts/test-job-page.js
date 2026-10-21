@@ -35,8 +35,18 @@ function rowsFor() {
             sqft: { value: 1500, source: 'Asana', bySource: { Asana: 1500 } }
           } },
         de: { price: 2250000, beds: 4, baths: 3 }, de_listing_id: '9001', drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
-        asana_gid: '1201', asana: { gid: '1201', permalink: 'https://app.asana.com/0/1/1201', status: 'Active', stageFromStatus: 'Live', pointPerson: 'JG/KC/CB', checklist: [] },
-        match: { list: [], dismissed: {} } },
+        asana_gid: '1201', asana: { gid: '1201', permalink: 'https://app.asana.com/0/1/1201', status: 'Active', stageFromStatus: 'Live', pointPerson: 'JG/KC/CB', checklist: [
+          { block: 'prep', steps: [{ name: 'Create Show Sheet', done: true, doneOn: '2026-10-12', who: 'Ayuen' }, { name: 'Brand Floor Plan', done: false },
+            { name: 'Advertising Spots', done: true, doneOn: '2026-10-13' }, { name: 'Send Just Listed Email', done: false }] }] },
+        match: { list: [], dismissed: {} },
+        details_doc: { file: '100 Example St 4A details.docx', size: 1234, modified: '2026-10-10T10:00:00.000Z', readAt: '2026-10-11T09:00:00.000Z', found: ['price'] },
+        photo_hero: 'Photos/Edited/03.jpg', photo_order: ['Photos/Edited/03.jpg', 'Photos/Edited/99.jpg'],
+        scan: { weeks: [], found: {}, scannedAt: iso(NOW - 0.4 * 864e5), folderUrl: 'https://drive.google.com/drive/folders/FOLDER1',
+          pieces: { showsheet: [{ name: 'Showsheet - 100 Example St 4A - 2026-10-12.pdf', modified: '2026-10-12T10:00:00.000Z', archived: false, url: 'https://drive.google.com/file/d/SS1/view' }],
+            floorplan: [{ name: 'Floorplan - 100 Example St 4A v2.pdf', modified: '2026-10-09T10:00:00.000Z', archived: false, url: 'https://drive.google.com/file/d/FP2/view' }] },
+          health: { notes: [{ code: 'pieceAtTop', text: 'A brochure file sits loose at the top of the folder. The standard keeps it in its own folder.' }],
+            counts: { photos: { edited: 6, staged: 1, print: 0, web: 0, raw: 2 }, looseTop: 1 } },
+          detailsDoc: { name: '100 Example St 4A details.docx', size: 1234, modified: '2026-10-10T10:00:00.000Z' } } },
       { id: 'p2', slug: '20-sample-ave-7b', label: 'y', kind: 'sale', market: 'NYC', stage: 'Archived', stage_source: 'Matt', version: 2,
         core: { address: '20 Sample Ave', unit: '7B', agentIds: ['katie-cook', 'gone-agent'], agentsConfirmed: { from: ['katie-cook'], on: '2026-09-01', by: 'Matt Bloomfield' } },
         folder_state: 'unlinked', asana_gid: '1202', asana: { gid: '1202', stageFromStatus: 'Live', pointPerson: 'KC' } },
@@ -51,6 +61,7 @@ function rowsFor() {
       milestones: { agreement: { done: true, on: '2026-01-10', source: 'Matt' }, landClosed: { done: true, on: '2026-02-01', asanaGid: 'g1', confirmedBy: 'Matt Bloomfield' } },
       asana_map: {}, milestone_hints: [],
       next_milestone: { key: 'permits', dueOn: ymd(NOW + 12 * 864e5), slips: { g1: { count: 2, days: 9 } }, construction: { done: 3, total: 12 } } }],
+    floorplans: [{ id: 'f1', property_id: 'p1', version: 3, layout: 'current', note: 'Move the kitchen door', asked_by: 'Katie Cook', created_at: iso(NOW - 2 * 864e5) }],
     changes: [
       { id: 'c1', property_id: 'p1', at: iso(NOW - 3 * 864e5), field: 'beds', old_value: 3, new_value: 4, source: 'Matt', no_rebuild: true },
       { id: 'c2', property_id: 'p1', at: iso(NOW - 2 * 864e5), field: null, note: 'Katie says the price drops Friday', asked_by: 'Katie Cook', source: 'Matt' },
@@ -59,13 +70,78 @@ function rowsFor() {
   };
 }
 
+/* A fake GVC_DRIVE served in place of assets/js/drive.js: a made-up job folder, deliberately RAW
+   (paperwork loose at the top, an Offers folder, paperwork files inside Marketing and Photos), so the
+   page's own filtering is what keeps paperwork names off the page. One file never arrives. */
+const FAKE_DRIVE = `(function () {
+  var cfg = window.__FAKE_DRIVE || {};
+  var PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), function (c) { return c.charCodeAt(0); });
+  function f(name, day, size) { return { name: name, kind: 'file', size: size || 1000, modified: '2026-10-' + day + 'T10:00:00.000Z' }; }
+  function d(name, children) { return { name: name, kind: 'directory', children: children }; }
+  var tree = d('4A', [
+    f('Exclusive - Jane Client.pdf', '02'), f('Brochure draft.pdf', '03'), f('100 Example St 4A details.docx', '10', 1234),
+    d('Offers', [f('Offer from Jane Client.pdf', '05')]), d('Docs', [f('Contract.pdf', '01')]),
+    d('Marketing', [f('Offer from Jane Client.pdf', '06'), d('Showsheet', [f('Showsheet - 100 Example St 4A - 2026-10-12.pdf', '12'),
+      d('Archive', [f('Showsheet - 100 Example St 4A - 2026-09-14.pdf', '01')])])]),
+    d('Floorplan', [d('v1', [f('Floorplan - 100 Example St 4A.pdf', '04')]), d('v2', [f('Floorplan - 100 Example St 4A v2.pdf', '09'), f('Floorplan unbranded v2.pdf', '09')])]),
+    d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08')])),
+      d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
+  ]);
+  var log = window.__driveLog = { tree: 0, list: [], read: [], inflight: 0, max: 0 };
+  function find(path) {
+    var node = tree;
+    String(path).split('/').filter(Boolean).forEach(function (seg) {
+      node = node && (node.children || []).filter(function (c) { return c.name === seg; })[0];
+    });
+    return node;
+  }
+  window.GVC_DRIVE = {
+    supported: function () { return true; },
+    state: function () { return Promise.resolve(cfg.state || 'connected'); },
+    connect: function () { return Promise.resolve([]); }, reconnect: function () { return Promise.resolve(true); },
+    list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
+    tree: function () { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(tree))); },
+    listJob: function (folder, sub) {
+      log.list.push(sub);
+      var n = find(sub);
+      if (!n || n.kind !== 'directory') { var e = new Error('not found'); e.name = 'NotFoundError'; return Promise.reject(e); }
+      return Promise.resolve(n.children.map(function (c) { return { name: c.name, kind: c.kind, size: c.size, modified: c.modified }; }));
+    },
+    readJobFile: function (folder, path) {
+      log.read.push(path);
+      if (path === (cfg.slow || 'Photos/Edited/05.jpg')) return new Promise(function () {});
+      log.inflight++; log.max = Math.max(log.max, log.inflight);
+      return new Promise(function (res) {
+        setTimeout(function () {
+          log.inflight--;
+          res(/docx$/.test(path) ? new File([new Uint8Array([80, 75, 3, 4])], path) : new File([PNG], path.split('/').pop(), { type: 'image/png' }));
+        }, 60);
+      });
+    }
+  };
+})();`;
+/* mammoth: the CDN is never asked (SRI would refuse a fake body anyway); an init script stands in for it */
+const DOC_HTML = '<p>100 Example St - 4A</p><table><tr><td>Price</td><td>$2,350,000</td></tr><tr><td>Maintenance/CC</td><td>$1,900/mo</td></tr></table>';
+const MAMMOTH_URL = 'https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js';
+
 async function open(browser, opts) {
   const ctx = await browser.newContext(opts.phone ? { viewport: { width: 375, height: 812 } } : {});
+  if (opts.drive) await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
   const errors = [], saves = [], writes = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => { delete window.showDirectoryPicker; });
+  await page.route(MAMMOTH_URL, r => r.abort());
+  if (opts.drive) {
+    await page.addInitScript(([cfg, html]) => {
+      window.__FAKE_DRIVE = cfg;
+      window.GVC_JP_TIMEOUT_MS = 300;
+      window.__mammothCalls = 0;
+      window.mammoth = { convertToHtml: () => { window.__mammothCalls++; return Promise.resolve({ value: html }); } };
+    }, [opts.drive, DOC_HTML]);
+    await page.route('**/assets/js/drive.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FAKE_DRIVE }));
+  }
   const T = opts.rows || rowsFor();
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
@@ -77,7 +153,7 @@ async function open(browser, opts) {
       const row = (T[body.p_table] || []).find(x => x.id === body.p_id) || {};
       return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(Object.assign({}, row, body.p_set, { version: row.version + 1 })) });
     }
-    if (m !== 'GET') { writes.push(m + ' ' + table); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
+    if (m !== 'GET') { writes.push(m + ' ' + table + ' ' + (r.request().postData() || '')); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
     const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
     const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((T[table] || []).filter(hit)) });
@@ -271,6 +347,159 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('dev: no ticks for a teammate', await t.page.$$eval('[data-tick], [data-untick]', e => e.length), 0);
+  await t.ctx.close();
+
+  /* ---------- Drive cards (Task 8), Drive connected, the owner ---------- */
+  const FOLDER = 'GVC - New York/Building Information/100 Example St/4A';
+  const allText = page => page.evaluate(() => document.body.innerHTML + ' ' + document.body.innerText);
+  t = await open(browser, { path: LISTING, drive: {} });
+  p = t.page;
+  await p.waitForSelector('#kitCard .kr');
+  await p.waitForSelector('#folderBody .tree');
+  /* folder tree and health */
+  const fb = await text(p, '#folderBody');
+  check('folder: readable folders in the tree', ['Floorplan\\', 'Marketing\\', 'Photos\\'].map(n => fb.includes(n)), [true, true, true]);
+  check('folder: two levels open, deeper closed', [await p.$$eval('#folderBody .tree > details, #folderBody .tree > details > .tri > details', ds => ds.length > 3 && ds.every(d => d.open)),
+    await p.$$eval('#folderBody .tri .tri details', ds => ds.length > 0 && ds.every(d => !d.open))], [true, true]);
+  check('folder: Docs never read, Offers only counted', [fb.includes('Docs\\ · never read'), fb.includes('1 paperwork folder · never read'), fb.includes('Offers')], [true, true, false]);
+  check('folder: loose top files a count only', /Loose files at the top ?1, not read/.test(fb), true);
+  check('folder: health note from the tree', (await text(p, '#folderBody [data-note="pieceAtTop"]')) || '', 'A brochure file sits loose at the top of the folder. The standard keeps it in its own folder.');
+  check('folder: the tree is read once for every card', await p.evaluate(() => window.__driveLog.tree), 1);
+  /* the marketing track */
+  check('kit: eight rows', await p.$$eval('#kitCard .kr', e => e.length), 8);
+  const kit = async key => text(p, '#kitCard [data-kit="' + key + '"]');
+  check('kit: showsheet done, Asana ticked', [(await kit('showsheet')).includes('Done'), (await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older')], [true, true, true]);
+  check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
+  check('kit: brochure says there is no Asana step', (await kit('brochure')).includes('No Asana step for this piece'), true);
+  check('kit: signage not used in NYC, video tracked', [(await kit('signage')).includes('Not used here'), (await kit('video')).includes('Tracked only')], [true, true]);
+  check('kit: checklist only', await p.$$eval('#kitCard .ck-block li', els => els.map(e => e.textContent.replace(/\d+ \w+$/, '').trim())), ['Advertising Spots', 'Send Just Listed Email']);
+  check('kit: count', await text(p, '#kitCount'), '3 of 6 done');
+  const links = [];
+  await p.route('http://localhost:47610/drive-link', r => { links.push(JSON.parse(r.request().postData())); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"url":"https://drive.google.com/file/d/SS1live/view"}' }); });
+  await p.click('#kitCard [data-kit="showsheet"] [data-copy]');
+  await settle(p);
+  check('kit: Copy Drive link asks the helper for the file', links, [{ folder: FOLDER, file: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-12.pdf' }]);
+  check('kit: the link is copied', [await text(p, '#kitMsg'), await p.evaluate(() => navigator.clipboard.readText())], ['Copied the Drive link.', 'https://drive.google.com/file/d/SS1live/view']);
+  /* floorplans */
+  check('floorplans: versions down, the recorded one first', await p.$$eval('#fpCard .ver', els => els.map(e => e.dataset.ver)), ['3', '2', '1']);
+  check('floorplans: a recorded version with no file yet', (await text(p, '#fpCard .ver[data-ver="3"]')).includes('no file yet'), true);
+  check('floorplans: v2 branded and unbranded, no blank sheet', await p.evaluate(() => {
+    const cells = [...document.querySelectorAll('#fpCard .fpm > *')], i = cells.findIndex(c => c.dataset && c.dataset.ver === '2');
+    return cells.slice(i + 1, i + 4).map(c => c.classList.contains('empty') ? 'none' : c.title);
+  }), ['Floorplan - 100 Example St 4A v2.pdf', 'Floorplan unbranded v2.pdf', 'none']);
+  check('floorplans: MLS-safe label', (await text(p, '#fpCard .fpm')).includes('Unbranded (MLS-safe)'), true);
+  await p.click('#fpNew');
+  await p.fill('#fpNote', 'Swap the bedroom labels');
+  await p.selectOption('#fpWho', 'Katie Cook');
+  await p.click('#fpSave');
+  await settle(p);
+  const fpPost = t.writes.find(w => /^POST floorplans /.test(w)) || '';
+  check('floorplans: Record new version adds a floorplans row', JSON.parse(fpPost.slice('POST floorplans '.length) || '{}'),
+    { property_id: 'p1', version: 4, layout: 'current', note: 'Swap the bedroom labels', asked_by: 'Katie Cook' });
+  s = t.saves.find(x => (x.p_changes || []).some(c => c.field === 'floorplan')) || {};
+  check('floorplans: and a change-log row through save_job', [s.p_table, JSON.stringify(s.p_set), s.p_changes], ['properties', '{}', [{ field: 'floorplan', new_value: { version: 4, note: 'Swap the bedroom labels' }, asked_by: 'Katie Cook' }]]);
+  /* photos */
+  await p.$eval('#photosCard', e => e.scrollIntoView());
+  await p.waitForFunction(() => document.querySelectorAll('#phGrid img').length >= 5 && /downloaded/.test(document.querySelector('#phGrid').textContent), null, { timeout: 5000 }).catch(() => {});
+  check('photos: sets with counts, raws a count only', await p.$$eval('#photosCard .phs > *', els => els.map(e => e.textContent.trim())), ['Edited6', 'Staged1', 'Raws2']);
+  check('photos: the edited grid', await p.$$eval('#phGrid [data-ph]', els => els.map(e => e.dataset.ph.split('/').pop())), ['01.jpg', '02.jpg', '03.jpg', '04.jpg', '05.jpg', '06.jpg']);
+  check('photos: thumbnails four at a time', await p.evaluate(() => [window.__driveLog.max <= 4, window.__driveLog.max >= 2]), [true, true]);
+  check('slow file times out on its own tile', [await text(p, '#phGrid [data-ph="Photos/Edited/05.jpg"] .pi'), await p.$$eval('#phGrid img', e => e.length)],
+    ['Drive hasn\'t downloaded this yet.', 5]);
+  check('photos: the hero and a pick missing on Drive', [await text(p, '#phPicks .phh'), (await text(p, '#phPicks [data-pk="Photos/Edited/99.jpg"]')).includes('Missing on Drive'),
+    (await text(p, '#phPicks [data-pk="Photos/Edited/03.jpg"]')).includes('Missing')], ['Hero: 03.jpg', true, false]);
+  await p.click('#phGrid [data-ph="Photos/Edited/01.jpg"] [data-pick]');
+  await p.click('#phGrid [data-ph="Photos/Edited/02.jpg"] [data-hero]');
+  await p.click('#phPicks [data-up="2"]');
+  check('photos: picks reorder', await p.$$eval('#phPicks [data-pk]', els => els.map(e => e.dataset.pk.split('/').pop())), ['03.jpg', '01.jpg', '99.jpg']);
+  await p.click('#phSave');
+  await settle(p);
+  s = t.saves.find(x => x.p_set && 'photo_order' in x.p_set) || {};
+  check('photos: Save picks saves hero and order', [s.p_set && s.p_set.photo_hero, s.p_set && s.p_set.photo_order],
+    ['Photos/Edited/02.jpg', ['Photos/Edited/03.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/99.jpg']]);
+  check('photos: one change-log line', (s.p_changes || []).map(c => c.field), ['photo_order']);
+  /* the details doc: unchanged, so not read on open; Read details doc reads it anyway */
+  check('doc: unchanged file not read on open', [await p.evaluate(() => window.__mammothCalls), await p.evaluate(() => window.__driveLog.read.filter(x => /docx$/.test(x)).length),
+    (await text(p, '#docNow')).includes('unchanged')], [0, 0, true]);
+  await p.click('#docRead');
+  await settle(p);
+  s = t.saves.find(x => x.p_set && x.p_set.details_doc) || {};
+  const dc = (s.p_set && s.p_set.core) || {};
+  check('doc: Read details doc reads it regardless', await p.evaluate(() => window.__mammothCalls), 1);
+  check('doc: the record', s.p_set && [s.p_set.details_doc.file, s.p_set.details_doc.size, s.p_set.details_doc.modified, s.p_set.details_doc.found, !!s.p_set.details_doc.readAt],
+    ['100 Example St 4A details.docx', 1234, '2026-10-10T10:00:00.000Z', ['address', 'unit', 'price', 'maintenance'], true]);
+  check('doc: values at source doc, under the others', [dc.facts && dc.facts.maintenance, dc.facts && dc.facts.price.value, dc.facts && dc.facts.price.bySource.doc, dc.maintenance],
+    [{ value: 1900, source: 'doc', bySource: { doc: 1900 } }, 2400000, 2350000, 1900]);
+  check('doc: change rows only for what now shows', (s.p_changes || []).map(c => c.field), ['maintenance']);
+  check('no paperwork name on the page', /Jane Client|Offer from/.test(await allText(p)), false);
+  check('drive cards: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  /* the doc changed since the last read: read on open, once */
+  let R8 = rowsFor();
+  R8.properties[0].details_doc = null;
+  t = await open(browser, { rows: R8, path: LISTING, drive: {} });
+  await t.page.waitForTimeout(900);
+  s = t.saves.find(x => x.p_set && x.p_set.details_doc) || {};
+  check('doc: changed file read on open', [await t.page.evaluate(() => window.__mammothCalls), s.p_set && s.p_set.details_doc.file], [1, '100 Example St 4A details.docx']);
+  check('doc: read once, not again after the reload', [await t.page.evaluate(() => window.__driveLog.read.filter(x => /docx$/.test(x)).length), t.saves.filter(x => x.p_set && x.p_set.details_doc).length], [1, 1]);
+  await t.ctx.close();
+
+  /* a doc Drive won't serve: its card says so on its own, the rest keeps working */
+  t = await open(browser, { rows: R8, path: LISTING, drive: { slow: '100 Example St 4A details.docx' } });
+  await t.page.waitForTimeout(900);
+  check('slow file times out: the doc card says so', await text(t.page, '#docMsg'), 'Drive hasn\'t downloaded this yet.');
+  check('slow file times out: nothing saved, other cards fine', [t.saves.length, await t.page.$$eval('#kitCard .kr', e => e.length), await t.page.$$eval('#factsCard tr', e => e.length) > 5], [0, 8, true]);
+  await t.ctx.close();
+
+  /* a teammate on the desktop: everything read-only, the doc not read for them */
+  t = await open(browser, { rows: R8, path: LISTING, drive: {}, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
+  await t.page.waitForSelector('#kitCard .kr');
+  await t.page.waitForTimeout(400);
+  check('team: no Drive-card edits', [await t.page.$$eval('#fpNew, #docRead, [data-hero], [data-pick], [data-drop]', e => e.length), await t.page.evaluate(() => window.__mammothCalls), t.saves.length], [0, 0, 0]);
+  await t.ctx.close();
+
+  /* Drive not connected here: last night's scan */
+  t = await open(browser, { path: LISTING, drive: { state: 'not-connected' } });
+  p = t.page;
+  check('scan: every Drive card says where it came from', await p.$$eval('#kitCard .scanl, #fpCard .scanl, #photosCard .scanl, #docCard .scanl, #folderCard .scanl', els => els.map(e => e.textContent.startsWith('From last night\'s scan'))), [true, true, true, true, true]);
+  check('scan: the line', (await text(p, '#kitCard .scanl')).endsWith('Connect Drive on the desktop to see it live.'), true);
+  check('scan: kit from the stored pieces', [(await text(p, '#kitCard [data-kit="showsheet"]')).includes('Done'), await p.$eval('#kitCard [data-kit="showsheet"] a', a => a.getAttribute('href')).catch(() => null)],
+    [true, 'https://drive.google.com/file/d/SS1/view']);
+  check('scan: health notes and counts', [(await text(p, '#folderBody')).includes('brochure file sits loose'), (await text(p, '#folderBody')).includes('edited 6 · raws 2')], [true, true]);
+  check('scan: floorplans from the stored names', await p.$$eval('#fpCard .ver', els => els.map(e => e.dataset.ver)), ['3', '2']);
+  check('scan: picks as names', [await text(p, '#phPicks .phh'), await p.$$eval('#phPicks [data-pk]', els => els.length)], ['Hero: 03.jpg', 2]);
+  check('scan: doc card says when it was last read', (await text(p, '#docRec')).startsWith('Last read 11 Oct from 100 Example St 4A details.docx'), true);
+  check('scan: Drive never touched', await p.evaluate(() => [window.__driveLog.tree, window.__driveLog.read.length]), [0, 0]);
+  links.length = 0;
+  await p.route('http://localhost:47610/drive-link', r => r.abort());
+  await p.click('#kitCard [data-kit="showsheet"] [data-copy]');
+  await settle(p);
+  check('scan: Copy Drive link falls back to the stored link', await p.evaluate(() => navigator.clipboard.readText()), 'https://drive.google.com/file/d/SS1/view');
+  check('scan: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  /* the real drive.js walker over made-up handles: rules before any handle is opened */
+  t = await open(browser, { path: LISTING });
+  check('Drive reads wait 20 s by default', await t.page.evaluate(() => GVC_JP.drive.ms()), 20000);
+  const walked = await t.page.evaluate(async () => {
+    const opened = [];
+    const file = (name, day) => ({ kind: 'file', name, getFile: async () => { opened.push(name); return { size: 10, lastModified: Date.parse('2026-10-' + day + 'T10:00:00Z') }; } });
+    const dir = (name, kids) => ({ kind: 'directory', name, values: () => (async function* () { yield* kids; })(),
+      getDirectoryHandle: async n => { const k = kids.find(x => x.name === n && x.kind === 'directory'); if (!k) { const e = new Error('nf'); e.name = 'NotFoundError'; throw e; } return k; } });
+    const root = dir('4A', [file('Exclusive - Jane Client.pdf', '02'), file('Brochure draft.pdf', '03'), file('4A details.docx', '10'),
+      dir('Offers', [file('Offer from Jane Client.pdf', '05')]), dir('Old', [file('x.pdf', '01')]),
+      dir('Marketing', [file('Offer from Jane Client.pdf', '06'), dir('Showsheet', [file('Showsheet 1.pdf', '12')])])]);
+    const tree = await GVC_DRIVE._treeOf(root, { depth: 4 });
+    const list = await GVC_DRIVE._listOf(root, 'Marketing', {});
+    return { tree, list, opened };
+  });
+  check('walker: only allowed files opened', walked.opened.sort(), ['4A details.docx', 'Showsheet 1.pdf']);
+  check('walker: tree shape', [walked.tree.looseCount, walked.tree.otherCount, walked.tree.children.map(c => c.name + (c.skipped ? ' (skipped)' : ''))],
+    [1, 1, ['4A details.docx', 'Brochure draft.pdf', 'Marketing', 'Paperwork (skipped)']]);
+  check('walker: nested paperwork dropped, dates kept', walked.tree.children.find(c => c.name === 'Marketing').children[0].children, [{ name: 'Showsheet 1.pdf', kind: 'file', size: 10, modified: '2026-10-12T10:00:00.000Z' }]);
+  check('walker: listJob leaves paperwork out', walked.list.map(x => x.name), ['Showsheet']);
+  check('walker: no paperwork name', /Jane Client|Offer/.test(JSON.stringify(walked)), false);
   await t.ctx.close();
 
   /* ---------- phone, hostile text, dashes ---------- */

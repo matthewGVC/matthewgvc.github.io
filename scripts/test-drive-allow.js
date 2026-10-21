@@ -45,6 +45,36 @@ check('paper word: mid-name', ['Signed Contract Floorplan.pdf', 'Showsheet - Off
 check('paper word: whole words only', ['Dealer.pdf', 'Floorplan v2.pdf', 'Listing details doc.docx', 'Offering plan.pdf', 'Photos'].some(R.hasPaperworkWord), false);
 check('paper word: empty', [R.hasPaperworkWord(''), R.hasPaperworkWord(null)], [false, false]);
 check('older top-level marketing folders readable', ['Show Sheet', 'Open House', 'Postcard', 'Postcards', 'Signage', 'Signs'].every(n => R.allowedInJob(n) && R.allowedInJob(n + '/a.pdf')), true);
+/* R10: paperwork anywhere in a nested path is refused, not only in the first segment */
+check('nested paperwork word refused', ['Marketing/Offer from Jane Client.pdf', 'Photos/Edited/Signed Contract.jpg', 'Marketing/Showsheet/Exclusive.pdf'].some(R.allowedInJob), false);
+check('nested paperwork folder refused', ['Marketing/Offers/a.pdf', 'Photos/Docs/a.jpg', 'Floorplan/Contracts/v1.pdf', 'Marketing/Deal Sheet/a.pdf'].some(R.allowedInJob), false);
+check('nested marketing still fine', ['Marketing/Showsheet/Showsheet - 1 Example St - 2026-10-01.pdf', 'Floorplan/v2/Floorplan unbranded.pdf', 'Photos/Edited/01.jpg'].every(R.allowedInJob), true);
+
+/* jobTree: what the page and the tree builder may show */
+const f = (name, extra) => Object.assign({ name, kind: 'file' }, extra || {});
+const d = (name, children) => ({ name, kind: 'directory', children: children || [] });
+const raw = d('4A', [
+  f('Exclusive - Jane Client.pdf'), f('Brochure draft.pdf'), f('100 Example St 4A details.docx', { size: 10, modified: '2026-10-10T10:00:00Z' }),
+  d('Offers', [f('Offer from Jane Client.pdf')]), d('Docs', [f('x.pdf')]), d('Old stuff', [f('a.pdf')]), { name: 'Contract Jane Client', kind: 'directory', skipped: true },
+  d('Marketing', [f('Offer from Jane Client.pdf'), d('Showsheet', [f('Showsheet - 1.pdf', { size: 5, modified: '2026-10-01T10:00:00Z' }), d('Archive', [f('Showsheet - 0.pdf')])])]),
+  d('Photos', [d('Edited', [f('01.jpg'), f('Closing gift.jpg')])])
+]);
+raw.looseCount = 2;
+const t = R.jobTree(raw);
+const names = n => (n.children || []).map(c => c.name);
+check('jobTree: top shows readable folders, the doc, non-paperwork loose files, paperwork as Docs/Paperwork',
+  names(t), ['Brochure draft.pdf', '100 Example St 4A details.docx', 'Paperwork', 'Docs', 'Paperwork', 'Marketing', 'Photos']);
+check('jobTree: paperwork folders skipped, never opened', t.children.filter(c => c.skipped).map(c => (c.children || []).length), [0, 0, 0]);
+check('jobTree: loose paperwork counted on top of the count given', t.looseCount, 3);
+check('jobTree: other folders counted', t.otherCount, 1);
+check('jobTree: nested paperwork dropped', names(t.children.find(c => c.name === 'Marketing')), ['Showsheet']);
+check('jobTree: nested files keep size and date', t.children.find(c => c.name === 'Marketing').children[0].children[0], { name: 'Showsheet - 1.pdf', kind: 'file', size: 5, modified: '2026-10-01T10:00:00Z' });
+check('jobTree: photos with a paperwork word dropped', names(t.children.find(c => c.name === 'Photos').children[0]), ['01.jpg']);
+check('jobTree: no paperwork name anywhere', /Jane Client|Offer|Contract|Exclusive|Old stuff/.test(JSON.stringify(t)), false);
+check('jobTree: twice is the same', JSON.stringify(R.jobTree(t)), JSON.stringify(t));
+check('jobTree: input untouched', raw.children.length, 9);
+check('jobTree: a broken link passes through', R.jobTree({ name: 'x', kind: 'directory', broken: true }), { name: 'x', kind: 'directory', broken: true });
+
 check('rel', R.rel('\\Photos\\Edited\\'), 'Photos/Edited');
 check('rel dotdot', R.rel('Photos/../Docs'), null);
 

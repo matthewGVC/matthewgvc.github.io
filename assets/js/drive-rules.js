@@ -11,6 +11,8 @@
      GVC_DRIVE_RULES.isPaperworkFolder('Offers')          → true  (skipped by the folder scan)
      GVC_DRIVE_RULES.hasPaperworkWord('Signed Contract.pdf') → true (whole word, anywhere)
      GVC_DRIVE_RULES.rel('\\Photos\\Edited\\')            → 'Photos/Edited' ('..' → null)
+     GVC_DRIVE_RULES.allowedInJob('Marketing/Offer 2.pdf') → false (paperwork in ANY segment)
+     GVC_DRIVE_RULES.jobTree(rawTree)                   → the tree cut down to what may be shown
 
    Paths are relative to the job folder; "\" or "/" both work.
    Loads in the browser (window.GVC_DRIVE_RULES) and in Node (require).
@@ -52,6 +54,8 @@
     var r = rel(path);
     if (!r) return false;
     var parts = r.split('/');
+    // a paperwork folder or a paperwork word in ANY segment: "Marketing/Offer from Buyer.pdf" is paperwork
+    for (var i = 0; i < parts.length; i++) if (isPaperworkFolder(parts[i]) || hasPaperworkWord(parts[i])) return false;
     if (parts.length === 1) {
       var name = parts[0].toLowerCase();
       if (READABLE.indexOf(name) !== -1) return true;              // the folder itself
@@ -61,6 +65,50 @@
   }
 
   function isPaperworkFolder(name) { return PAPERWORK.test(String(name || '').trim()); }
+  function isPaperwork(name) { return isPaperworkFolder(name) || hasPaperworkWord(name); }
 
-  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord };
+  /* A job folder's listing cut down to what the workspace may show (plan §9):
+       - a paperwork folder at the top stays as one { name: 'Docs' | 'Paperwork',
+         kind: 'directory', skipped: true } line, its own name never kept;
+       - another top folder that isn't readable is only counted (otherCount);
+       - a paperwork file at the top is only counted (looseCount), never named;
+       - any other top file stays (the details doc, or a loose file that
+         GVC_HEALTH counts or reports as a piece at the top);
+       - below the top, anything allowedInJob refuses is dropped entirely.
+     The input is not changed; running it twice gives the same tree. */
+  function jobTree(raw) {
+    if (!raw || raw.kind !== 'directory' || raw.broken) return raw;
+    var out = { name: raw.name, kind: 'directory', children: [], looseCount: +raw.looseCount || 0, otherCount: +raw.otherCount || 0 };
+    function file(c) {
+      var f = { name: c.name, kind: 'file' };
+      if (c.size != null) f.size = c.size;
+      if (c.modified != null) f.modified = c.modified;
+      return f;
+    }
+    function inside(node, segs) {
+      var d = { name: node.name, kind: 'directory', children: [] };
+      if (node.more) d.more = true;
+      (node.children || []).forEach(function (c) {
+        if (!c || c.skipped) return;
+        var path = segs.concat(String(c.name));
+        if (!allowedInJob(path.join('/'))) return;
+        d.children.push(c.kind === 'directory' ? inside(c, path) : file(c));
+      });
+      return d;
+    }
+    (raw.children || []).forEach(function (c) {
+      if (!c) return;
+      var name = String(c.name == null ? '' : c.name);
+      var paper = c.skipped || isPaperwork(name);
+      if (c.kind === 'directory') {
+        if (paper) out.children.push({ name: /^docs?$/i.test(name.trim()) ? 'Docs' : 'Paperwork', kind: 'directory', skipped: true });
+        else if (allowedInJob(name)) out.children.push(inside(c, [name]));
+        else out.otherCount++;
+      } else if (paper) out.looseCount++;
+      else if (rel(name)) out.children.push(file(c));
+    });
+    return out;
+  }
+
+  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord, jobTree: jobTree };
 });

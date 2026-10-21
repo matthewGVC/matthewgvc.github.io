@@ -64,6 +64,7 @@ function rowsFor(over) {
 
 async function open(browser, opts) {
   const ctx = await browser.newContext();
+  await ctx.route(/mammoth\.browser\.min\.js/, r => r.abort());   // the job page's Word reader: tests never use the network
   const page = await ctx.newPage();
   const errors = [], writes = [], reads = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -461,6 +462,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('status: read-only, nothing written', t.writes, []);
   await t.ctx.close();
   const sphone = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  await sphone.route(/mammoth\.browser\.min\.js/, r => r.abort());
   const spp = await sphone.newPage();
   await spp.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   const T1 = rowsFor({ members: [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] });

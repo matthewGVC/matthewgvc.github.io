@@ -222,6 +222,18 @@ check('loose: plain words and links', [loose[0].item.text, loose[0].item.deUrl, 
   ['On DE, not in Asana. DE shows: Douglas Elliman: Test Agent.', 'https://www.elliman.com/x/9101', 'Asana task not linked: another task is linked to the job at this address.', 'https://app.asana.com/0/0/1500']);
 const mgL = W.matchGroups([], [], loose);
 check('loose: in the Asana group, no one named', [mgL.map(g => g.fixAt), mgL[0].people.map(p => p.who), mgL[0].people[0].items.length], [['Asana'], [''], 2]);
+// Link by hand (tune-up A): each loose line says what it is, so the page can link it to a job or set it aside
+check('loose: what a DE line links (no address kept yet: no street, no market)', loose[0].item.link, { type: 'de', id: '9101', kind: null, market: null, street: null, unit: null });
+check('loose: what an Asana line links', loose[1].item.link, { type: 'asana', gid: '1500', name: '7 Lone Pl', market: null });
+const looseA = W.looseMatch({
+  deListings: [{ de_listing_id: '9201', kind: 'sale', gvc_listed: true, property_id: null, raw: { street: '1006 PHEASANT LN', unit: '204', state: 'NJ' } },
+    { de_listing_id: '9202', kind: 'rental', gvc_listed: true, property_id: null, raw: { street: '52 E 4TH ST', unit: '10', state: 'NY' } }],
+  asanaRun: { started_at: '2026-10-20T06:00:00Z', totals: { unlinked: [{ gid: '1600', name: '1006 Pheasant Ln, Wall', why: 'same address', market: 'NJ' }, { gid: '1601', name: '9 Linked Pl', why: 'same address', market: 'NJ' }] } },
+  linkedGids: ['1601'] }, MC);
+check('loose: a DE line with its address: street, market from the state, kind', looseA.slice(0, 2).map(l => l.item.link),
+  [{ type: 'de', id: '9201', kind: 'sale', market: 'NJ', street: '1006 PHEASANT LN', unit: '204' }, { type: 'de', id: '9202', kind: 'rental', market: 'NYC', street: '52 E 4TH ST', unit: '10' }]);
+check('loose: the DE address shows beside its id', looseA[0].item.job, 'DE listing 9201, 1006 Pheasant Ln 204');
+check('loose: an Asana line carries its market; a task linked by hand since the run is left out', looseA.slice(2).map(l => [(l.item.link || {}).gid, (l.item.link || {}).market]), [['1600', 'NJ']]);
 
 check('asana: refused token in plain words', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }, now).why, 'Asana refused the token');
 

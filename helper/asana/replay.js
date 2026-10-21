@@ -14,6 +14,7 @@
      projects  { <projectGid>: { gid, name } }
      status    every request answers this HTTP status (e.g. 401)
      fail      { <projectGid>: status }      that project's task list fails
+     failTask  { <taskGid>: status }         that task's subtasks and stories fail
    modified_since is honoured, like Asana: only tasks modified after it.
    ============================================================ */
 'use strict';
@@ -42,6 +43,7 @@ function replayFetch(dir, over) {
       if (since) rows = rows.filter(r => r.modified_at && r.modified_at > since);
       return list(rows);
     }
+    if ((m = p.match(/^\/tasks\/(\d+|[\w-]+)\/(subtasks|stories)$/)) && o.failTask && o.failTask[m[1]]) return res({ errors: [{ message: 'failed' }] }, o.failTask[m[1]]);
     if ((m = p.match(/^\/tasks\/(\d+|[\w-]+)\/subtasks$/))) return list((o.subtasks && o.subtasks[m[1]]) || []);
     if ((m = p.match(/^\/tasks\/(\d+|[\w-]+)\/stories$/))) return list((o.stories && o.stories[m[1]]) || []);
     if ((m = p.match(/^\/projects\/(\d+)$/))) {

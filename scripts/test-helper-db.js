@@ -10,7 +10,7 @@
 const fs = require('fs'), os = require('os'), path = require('path');
 process.env.GVC_HELPER_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-db-'));
 const { createClient, ConflictError } = require('../helper/supabase.js');
-const { backup } = require('../helper/backup.js');
+const { backup, TABLES } = require('../helper/backup.js');
 
 let pass = 0;
 const failures = [];
@@ -108,6 +108,7 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   check('wrong password explained', /helper account/.test(msg || ''), true);
 
   /* ---------- backup ---------- */
+  check('backup covers every workspace table, the Asana cache and People too', ['properties', 'pitches', 'dev_projects', 'changes', 'sync_runs', 'de_listings', 'asana_tasks', 'asana_people'].every(t => TABLES.indexOf(t) !== -1), true);
   const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-bk-')), 'supabase-backup-2026-10-19');
   fake = fakeSupabase(T, F);
   c = createClient(CFG, { fetch: fake.fetch });

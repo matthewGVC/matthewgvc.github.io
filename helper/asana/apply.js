@@ -5,14 +5,21 @@
        client   helper/supabase.js (or a fake with the same shape)
        run      readRun()'s result (helper/asana/read.js)
        plan     the ticked link plan (link.js readPlanFile) on the first link run
-     → { runId, changes, created, errors, unlinked: [{ gid, name, why, propertyId? }] }
-       sync_runs.ok is false when the read was partial (run.partial); the
-       read's warnings are stored in sync_runs.errors as { what: 'warning' }.
+     → { runId, ok, changes, created, errors, unlinked: [{ gid, name, why, propertyId? }] }
+       ok is what sync_runs.ok says: false when the read was partial
+       (run.partial), aborted, or stopped (no plan yet); the read's warnings
+       are stored in sync_runs.errors as { what: 'warning' }.
+       sync_runs.totals.unlinked ([{ gid, name, why }], always there on a run
+       that read listings) is what the Match page lists as "Asana task not
+       linked"; tasks cached as ignored are left out of it.
 
    What it writes:
    - asana_tasks: every task read (listing, dev, loose), allowlisted fields and
      kept history only, with its link to a listing / pitch / development.
-   - a linked listing: stage (stage_source 'Asana'; never over Archived), the
+   - a linked listing: stage (stage_source 'Asana'; never over Archived; only
+     from a task that has the Listing Status field, and never on a run that
+     found the field missing from every task: a renamed field must not move
+     stages by section alone), the
      `asana` snapshot (status, section, the stage each implies, kept fields,
      checklist names and ticks), `milestones` (deal dates, planned flagged),
      facts at Asana's rank through GVC_FACTS (a fact DE or Matt holds stays
@@ -21,7 +28,8 @@
    - which tasks become rows: on the plan run, the ticked rows (unticked ones
      are cached as ignored and never come back by themselves); after that, an
      unlinked List-Side task at Pitch (with a pitch date) → In contract, checked
-     again every run (a Lead gains its pitch date later). A task first met as a
+     again every run (a Lead gains its pitch date later), and only with a
+     street number (else it is listed as unlinked, "no street number"). A task first met as a
      candidate already Sold / Rented / Off market is cached as ignored: that
      decision is kept and it never becomes a job (D54).
    - facts: a value changed in core outside the helper (a builder's save) is
@@ -69,12 +77,14 @@ async function applyRun(o) {
   const kind = run.kind === 'people' ? 'people' : 'asana';
   const sr = (await client.insert('sync_runs', { kind, started_at: now, rows_read: run.rowsRead || null, totals: run.totals || null,
     helper_version: o.helperVersion || null }))[0];
-  const out = { runId: sr.id, changes: 0, created: 0, errors: [], unlinked: [] };
+  const out = { runId: sr.id, ok: false, changes: 0, created: 0, errors: [], unlinked: [] };
   // a project that failed to read (or a renamed field) is kept with the run, so the overview can say why
   const warned = (run.warnings || []).map(w => ({ what: 'warning', detail: w }));
-  const finish = (ok, errs) => client.update('sync_runs', { id: sr.id }, {
+  // the stored list leaves out tasks cached as ignored (decided by Matt or first met closed)
+  const listed = () => out.unlinked.filter(u => !(out.ignored && out.ignored.has(u.gid))).map(u => ({ gid: u.gid, name: u.name || null, why: u.why }));
+  const finish = (ok, errs) => { out.ok = ok; return client.update('sync_runs', { id: sr.id }, {
     finished_at: new Date().toISOString(), ok, changes: out.changes, errors: errs.concat(warned).length ? errs.concat(warned) : null,
-    totals: Object.assign({}, run.totals || {}, out.unlinked.length ? { unlinked: out.unlinked.map(u => ({ gid: u.gid, why: u.why })) } : {}) });
+    totals: Object.assign({}, run.totals || {}, kind === 'asana' && run.ok && !out.stopped ? { unlinked: listed() } : {}) }); };
 
   if (!run.ok) { await finish(false, [{ what: 'aborted', detail: run.aborted }]); return out; }
   try {
@@ -86,6 +96,7 @@ async function applyRun(o) {
   }
   // a run that missed a listing project isn't a good run: the next one asks from the last good one
   await finish(!out.stopped && !run.partial, out.errors);
+  delete out.ignored;
   return out;
 }
 
@@ -129,6 +140,12 @@ async function writeRun(o, sr, out, now) {
   const entries = [];
   const fresh = new Map(run.listings.map(t => [t.gid, t]));
   const conflicted = new Set();
+  // Listing Status renamed or removed: a section alone never moves a stage (plan Review Focus 2).
+  // Present but empty still uses the section (D69); absent on the task, or missing from every
+  // task on a full read, leaves stages, pitch outcomes and new jobs alone.
+  const statusGone = (run.missing || []).indexOf('Listing Status') !== -1;
+  const hasStatus = t => !statusGone && !!t.fields && Object.prototype.hasOwnProperty.call(t.fields, 'Listing Status');
+  let noStatus = 0;
 
   const log = (owner, field, oldV, newV, note) => Object.assign({ at: now, field: field || null, old_value: oldV === undefined ? null : oldV,
     new_value: newV === undefined ? null : newV, note: note || null, source: 'Asana', run_id: sr.id }, owner);
@@ -255,7 +272,7 @@ async function writeRun(o, sr, out, now) {
     const core = clone(p.core) || {}, patch = {}, changes = [];
     if (link) { patch.asana_gid = t.gid; changes.push(log(own, 'asana_gid', null, t.gid, fromPitch ? 'Pitch won in Asana' : 'Linked to Asana')); }
     if (fromPitch && p.from_pitch_id !== fromPitch.id) { patch.from_pitch_id = fromPitch.id; changes.push(log(own, 'from_pitch_id', p.from_pitch_id || null, fromPitch.id)); }
-    if (stage !== 'Pitch' && p.stage !== 'Archived' && p.stage !== stage) {
+    if (stage && stage !== 'Pitch' && p.stage !== 'Archived' && p.stage !== stage) {
       patch.stage = stage; patch.stage_source = 'Asana';
       changes.push(log(own, 'stage', p.stage || null, stage));
     } else if (link && p.stage === stage && p.stage_source !== 'Asana') patch.stage_source = 'Asana';
@@ -331,6 +348,12 @@ async function writeRun(o, sr, out, now) {
     if (prop) entry.property_id = prop.id;
     if (pitch) entry.pitch_id = pitch.id;
     if (st.unknown) { out.errors.push({ what: 'unknown status', detail: 'Listing Status not known yet: "' + st.unknown + '"', gid: t.gid }); return; }
+    if (!hasStatus(t)) {                                // no Listing Status field: facts and snapshot only
+      noStatus++;
+      if (prop) return updateListing(prop, t, null, false);
+      if (pitch) return updatePitch(pitch, t, false);
+      return;
+    }
     if (prop) return updateListing(prop, t, st.stage, false);
     if (pitch) {
       if (WON.indexOf(st.stage) !== -1 && pitch.outcome !== 'won') {
@@ -363,8 +386,11 @@ async function writeRun(o, sr, out, now) {
       return linkOrCreate(t, st.stage, 'listing', pr.kind === 'listing' ? pr.match : null, entry);
     }
     if ((c && c.ignored) || !MAP.isGvcListing(t)) return;   // decided (by Matt or as closed), or not GVC-listed
-    if (st.stage === 'Pitch') { if (t.fields['🗓️ Pitch']) await linkOrCreate(t, 'Pitch', 'pitch', null, entry); return; }
-    if (ACTIVE.indexOf(st.stage) === -1) { entry.ignored = true; return; }   // first met closed: never a job, remembered
+    if (st.stage === 'Pitch' && !t.fields['🗓️ Pitch']) return;
+    if (st.stage !== 'Pitch' && ACTIVE.indexOf(st.stage) === -1) { entry.ignored = true; return; }   // first met closed: never a job, remembered
+    // never guessed from a name with no street number (as on the plan): listed for Matt instead
+    if (!L.hasNumber(t.name)) { out.unlinked.push({ gid: t.gid, name: t.name, why: 'no street number' }); return; }
+    if (st.stage === 'Pitch') return linkOrCreate(t, 'Pitch', 'pitch', null, entry);
     return linkOrCreate(t, st.stage, 'listing', null, entry);
   }
 
@@ -376,6 +402,10 @@ async function writeRun(o, sr, out, now) {
     try { await oneTask(t, c, entry); }
     catch (e) { out.errors.push({ what: 'task', detail: e.message, gid: t.gid }); }
   }
+
+  if (noStatus) out.errors.push({ what: 'no status field', detail: noStatus + ' task' + (noStatus === 1 ? '' : 's') + ' had no Listing Status field' +
+    (statusGone ? ' (it is missing from every task: renamed in Asana?)' : '') + ', so no stage was moved from the section alone.' });
+  out.ignored = new Set(entries.filter(e => e.ignored).map(e => e.gid));
 
   /* tasks left unlinked at the address of a job linked to another task */
   entries.filter(e => e.kind === 'listing' && !e.property_id && !e.pitch_id).forEach(e => {

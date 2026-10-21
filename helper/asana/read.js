@@ -17,10 +17,14 @@
          missing, readProjects, totals, rowsRead }
 
    listings  allowlisted tasks (allow.keepTask) + market; tasks changed since
-             `since` (all of them on the first run) also carry subtasks
-             (allow.keepSubtask) and history (allow.keepStory, kept kinds only)
+             `since` (all of them on a full read: ticking a subtask doesn't move
+             its parent's modified_at) also carry subtasks (allow.keepSubtask)
+             and history (allow.keepStory, kept kinds only). A task whose
+             subtasks or history fail to read keeps neither (the writer keeps
+             what it had) and the run gets a warning.
    devs      [{ project: { gid, name }, tasks }] for every 🚧 project: all its tasks
-             (batch days need every tick), history for the changed ones
+             (batch days need every tick), history for the changed ones (every
+             one on a full read)
    loose     allow.keepLoose rows that name a linked development
    people    allow.keepPerson rows, or null when not asked
    missing   kept field names no listing task has (a renamed field), judged on a
@@ -84,11 +88,21 @@ async function readRun(o) {
   const full = !!(o.full || !since);
   const out = { ok: true, full, since, listings: [], devs: [], loose: [], people: null, warnings: [], missing: null,
     readProjects: [], totals: { full, open: {} }, rowsRead: {} };
-  const changed = t => !since || (t.modifiedAt && t.modifiedAt > since);
+  // a full read refreshes every task's checklist and history (a subtask tick doesn't touch the parent's modified_at)
+  const changed = t => full || !since || (t.modifiedAt && t.modifiedAt > since);
 
+  /* one task's subtasks and history; a failure there is that task's warning, not the run's end
+     (a refused token still stops everything) */
   async function detail(t, withSubtasks) {
-    if (withSubtasks) t.subtasks = (await asana.get('/tasks/' + t.gid + '/subtasks', { opt_fields: SUBTASK_FIELDS })).map(allow.keepSubtask);
-    t.history = (await asana.get('/tasks/' + t.gid + '/stories', { opt_fields: allow.STORY_FIELDS })).map(allow.keepStory).filter(Boolean);
+    try {
+      const subtasks = withSubtasks ? (await asana.get('/tasks/' + t.gid + '/subtasks', { opt_fields: SUBTASK_FIELDS })).map(allow.keepSubtask) : undefined;
+      const history = (await asana.get('/tasks/' + t.gid + '/stories', { opt_fields: allow.STORY_FIELDS })).map(allow.keepStory).filter(Boolean);
+      if (withSubtasks) t.subtasks = subtasks;
+      t.history = history;
+    } catch (e) {
+      if (stopFor(e)) throw e;
+      out.warnings.push("a task's checklist or history could not be read (" + t.gid + '): ' + e.message + '; what was known before is kept');
+    }
   }
 
   try {

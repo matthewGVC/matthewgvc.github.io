@@ -13,7 +13,10 @@
    --dry-run     reads the projects through the allowlist and writes
                  exports/asana-dry-run-<date>.md (counts and field names only)
    --record      also saves the KEPT data (never the raw answer) to
-                 helper/fixtures/recorded/<date>/ (gitignored)
+                 helper/fixtures/recorded/<date>/ (gitignored); loose-project
+                 tasks only when they name a linked development (D65, as the
+                 sync keeps them; none when no development is linked or the
+                 database can't be read)
    --plan        the first link plan (S5, D54): reads every listing task and
                  writes exports/asana-link-plan-<date>.md/.json for Matt to tick.
                  Reads the database (to match existing jobs) but writes nothing.
@@ -39,7 +42,7 @@ const fs = require('fs'), path = require('path');
 const { createAsana, NO_TOKEN } = require('./asana/client.js');
 const allow = require('./asana/allow.js');
 const { recordKept } = require('./asana/record.js');
-const { readRun, looseNeedles } = require('./asana/read.js');
+const { readRun, looseNeedles, namesOne } = require('./asana/read.js');
 const { makePlan, writePlanFiles, readPlanFile } = require('./asana/link.js');
 const { applyRun } = require('./asana/apply.js');
 const { replayFetch } = require('./asana/replay.js');
@@ -92,6 +95,14 @@ async function dryRun(opts) {
   if (!asana.ready()) return { ok: false, aborted: NO_TOKEN };
   const date = o.date || today();
   const projects = projectsOf(cfg.asana), listingTasks = [];
+  // D65: a recorded loose task must name a linked development (o.looseNames, else from the database)
+  let looseNames = o.looseNames || [];
+  if (o.record && !o.looseNames) {
+    try {
+      const client = o.client || require('./supabase.js').createClient(cfg);
+      if (client.ready()) looseNames = looseNeedles((await client.select('dev_projects')).filter(d => d.asana_project_gid));
+    } catch (e) { looseNames = []; }
+  }
 
   for (const p of projects) {
     try {
@@ -100,7 +111,8 @@ async function dryRun(opts) {
       p.tasks = kept.length;
       p.open = kept.filter(t => !t.completed).length;
       if (p.kind === 'listings') listingTasks.push.apply(listingTasks, kept);
-      if (o.record) recordKept(p.kind === 'listings' ? 'listings-' + p.label : p.label, kept, { dir: o.recordDir, date });
+      if (o.record) recordKept(p.kind === 'listings' ? 'listings-' + p.label : p.label,
+        p.kind === 'loose' ? kept.filter(t => namesOne(t.name, looseNames)) : kept, { dir: o.recordDir, date });
     } catch (e) {
       if (e.status === 401 || e.status === 403) return { ok: false, aborted: e.message };
       p.error = e.message;
@@ -150,8 +162,9 @@ async function syncOnce(o) {
     const last = runs[0], lastOpen = {};
     runs.filter(r => r.totals && r.totals.full).reverse().forEach(r => Object.assign(lastOpen, r.totals.open || {}));
     const linked = (await client.select('dev_projects')).filter(d => d.asana_project_gid);
-    run = await readRun({ asana, cfg, full: !!(o.full || o.plan || !last), since: o.plan || !last ? null : last.started_at,
-      lastOpen, looseNames: looseNeedles(linked) });
+    const full = !!(o.full || o.plan || !last);
+    // since is only for the modified_since query; a full read asks for (and details) every task
+    run = await readRun({ asana, cfg, full, since: full ? null : last.started_at, lastOpen, looseNames: looseNeedles(linked) });
   }
   const res = await applyRun({ client, run, now, plan: o.plan, helperVersion: require('./package.json').version });
   return Object.assign(res, { report: summary(run) });

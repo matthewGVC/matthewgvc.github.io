@@ -61,6 +61,12 @@ check('no record: legacy by default', F.adoptEdit({}, 'sqft', 900).sqft, { value
 check('no record: the given source', F.adoptEdit({}, 'sqft', 900, 'DE').sqft.source, 'DE');
 check('same value: unchanged', F.adoptEdit(f, 'price', 880000), f);
 check('empty value: unchanged', F.adoptEdit(f, 'price', null), f);
+/* builders save numbers as text: the same figure typed as a string is no edit */
+const fde = F.applyFact({}, 'price', 'DE', 2250000).facts;
+check('numeric string equal to the number: unchanged', F.adoptEdit(fde, 'price', '2250000'), fde);
+check('numeric string with commas: unchanged', F.adoptEdit(fde, 'price', '2,250,000'), fde);
+check('a different figure as text is still an edit', F.adoptEdit(fde, 'price', '2200000').price.source, 'Matt');
+check('text that is not a number still compares as text', F.adoptEdit(F.applyFact({}, 'zip', 'Asana', '07030').facts, 'zip', '7030').zip.source, 'Matt');
 
 /* ranks below */
 f = F.applyFact({}, 'beds', 'doc', 3).facts;

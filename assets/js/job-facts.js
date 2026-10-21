@@ -30,7 +30,10 @@
          shown differs from the record → it becomes Matt's (a signed-in edit
          is Matt's, D78); no record yet → noRecordSource (default 'legacy',
          D79). Callers run it before applyFact so a source repeating its old
-         value never overwrites the edit.
+         value never overwrites the edit. A number and the same number
+         written as text are the same value (the builders save numbers as
+         strings, e.g. "2250000"), so a save that only re-types DE's figure
+         is not an edit.
 
    The rules:
      - An empty value (null, undefined, '') is ignored: a source going quiet
@@ -59,6 +62,19 @@
   function rankOf(source) { return RANK.indexOf(source); }
   function empty(v) { return v === null || v === undefined || v === ''; }
   function eq(a, b) { return a === b || JSON.stringify(a) === JSON.stringify(b); }
+  /* a number and the same number as text ("2250000", " 2,250,000 ") are one value */
+  function numOf(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    if (typeof v !== 'string') return null;
+    var s = v.replace(/[\s,$]/g, '');
+    return /^-?\d+(\.\d+)?$/.test(s) ? Number(s) : null;
+  }
+  function sameValue(a, b) {
+    if (eq(a, b)) return true;
+    if (typeof a !== 'number' && typeof b !== 'number') return false;
+    var x = numOf(a), y = numOf(b);
+    return x !== null && y !== null && x === y;
+  }
 
   /* the warning a shown fact carries, or undefined */
   function warnOf(fact) {
@@ -101,7 +117,7 @@
   function adoptEdit(facts, field, shown, noRecordSource) {
     if (empty(shown)) return facts;
     var cur = facts && facts[field];
-    if (cur && eq(cur.value, shown)) return facts;
+    if (cur && sameValue(cur.value, shown)) return facts;
     var out = Object.assign({}, facts || {});
     if (!cur) {
       var src = noRecordSource || 'legacy', by = {};

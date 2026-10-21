@@ -277,8 +277,8 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   out = await applyRun({ client: db, run: await read(w), now: NOW });
   const gone = db.T.properties.find(p => p.id === goneId);
   check('absence: the job is kept, stage and all', [!!gone, gone.stage], [true, 'In contract']);
-  check('absence: Match says the task is gone', ((gone.match || {}).list || []).filter(m => m.code === 'M2').map(m => m.text), ['Asana task gone']);
-  check('match: found is logged (S14)', db.T.changes.filter(c => c.property_id === goneId && c.source === 'match').map(c => c.note).filter(n => /gone/.test(n)), ['Mismatch found: Asana task gone']);
+  check('absence: Match says the task is gone', ((gone.match || {}).list || []).filter(m => m.code === 'M2').map(m => m.text), ['Asana task gone.']);
+  check('match: found is logged (S14)', db.T.changes.filter(c => c.property_id === goneId && c.source === 'match').map(c => c.note).filter(n => /gone/.test(n)), ['Mismatch found: Asana task gone.']);
   check('match: every staged job has a stored result', db.T.properties.filter(p => p.stage).every(p => p.match && Array.isArray(p.match.list) && typeof p.match.dismissed === 'object'), true);
   check('match: the snapshot keeps the status date for M1', 'statusSince' in gone.asana, true);
   gone.match.dismissed = { M3: { values: { asana: 1, de: 2 }, reason: 'test', at: '2026-10-20' } };
@@ -286,7 +286,7 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   out = await applyRun({ client: db, run: await read(world()), now: NOW });
   const back = db.T.properties.find(p => p.id === goneId);
   check('absence: back again, the mismatch clears', ((back.match || {}).list || []).filter(m => m.code === 'M2').length, 0);
-  check('match: cleared is logged', db.T.changes.filter(c => c.property_id === goneId && c.source === 'match').map(c => c.note).filter(n => /gone/.test(n)).pop(), 'Mismatch cleared: Asana task gone');
+  check('match: cleared is logged', db.T.changes.filter(c => c.property_id === goneId && c.source === 'match').map(c => c.note).filter(n => /gone/.test(n)).pop(), 'Mismatch cleared: Asana task gone.');
   check('match: dismissals are kept by the writer', back.match.dismissed.M3 && back.match.dismissed.M3.reason, 'test');
   const nChanges = db.T.changes.length;
   await applyRun({ client: db, run: await read(world()), now: NOW });
@@ -443,6 +443,107 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const merged = require('../helper/config.js').loadConfig();
   check('config: asana merges one level deep, listings too', [merged.asana.loose, merged.asana.listings.NYC, merged.asana.listings.NJ, merged.asana.people],
     [[], '42', '1209188026968552', '1209434796793215']);
+
+  /* ================= final review fixes ================= */
+  const MARK = { gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true };
+  const planned = async () => {
+    const d = fakeDb({ dev_projects: [DEVROW] }), w0 = world();
+    await applyRun({ client: d, run: await read(w0), now: NOW, plan: makePlan(await read(w0), await existingOf(d)) });
+    return d;
+  };
+  const PF = (d, gid) => d.T.properties.find(p => p.asana_gid === gid) || {};
+
+  // F1. the nightly full read refreshes every checklist: a subtask tick doesn't move the parent's modified_at
+  const dF1 = await planned();
+  const wF1 = world();
+  wF1.subtasks['9000000000041'][1] = Object.assign({}, wF1.subtasks['9000000000041'][1], { completed: true, completed_at: '2026-10-20T11:00:00.000Z' });
+  const rF1 = await read(wF1, { full: true, since: '2026-10-20T12:30:00.000Z' });
+  check('F1 full read: an unmodified task still gets its subtasks', (rF1.listings.find(t => t.gid === '9000000000041').subtasks || []).length, 2);
+  await applyRun({ client: dF1, run: rF1, now: NOW });
+  check('F1 full read: the ticked subtask reaches the checklist', PF(dF1, '9000000000041').asana.checklist[0].steps.map(x => x.done), [true, true]);
+  const dF1b = fakeDb({ asana_tasks: [MARK], sync_runs: [{ id: 'r1', kind: 'asana', ok: true, started_at: '2026-10-20T12:30:00.000Z', finished_at: 'x', totals: { full: true, open: {} } }] });
+  const seenF1 = [];
+  await syncNow({ cfg, client: dF1b, fetch: async (u, i) => { seenF1.push(String(u)); return replayFetch(FIX, world())(u, i); }, full: true, now: NOW });
+  check('F1 syncNow --full after a good run: every task detailed, no modified_since',
+    [seenF1.some(u => /\/tasks\/9000000000041\/subtasks/.test(u)), seenF1.some(u => /modified_since/.test(u))], [true, false]);
+
+  // F2. a renamed / removed Listing Status never moves a stage by the section alone
+  const dF2 = await planned();
+  let wF2 = world();
+  const t54 = find(wF2, '9000000000054');
+  t54.custom_fields = t54.custom_fields.filter(c => c.name !== 'Listing Status');
+  t54.memberships[0].section.name = 'Active';
+  t54.modified_at = LATER;
+  const oF2 = await applyRun({ client: dF2, run: await read(wF2, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('F2 no Listing Status field on the task: stage kept, noted', [PF(dF2, '9000000000054').stage, oF2.errors.some(e => e.what === 'no status field')], ['Accepted offer', true]);
+  wF2 = world();
+  setField(find(wF2, '9000000000023'), 'Listing Status', {});      // present but empty: the section decides (D69)
+  find(wF2, '9000000000023').memberships[0].section.name = 'Active';
+  find(wF2, '9000000000023').modified_at = LATER;
+  await applyRun({ client: dF2, run: await read(wF2, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('F2 Listing Status present but empty: the section still moves the stage', PF(dF2, '9000000000023').stage, 'Live');
+  wF2 = world();
+  status(find(wF2, '9000000000041'), 'In Contract', 'Fully Executed/Board Package');
+  const rF2 = await read(wF2);
+  rF2.missing = ['Listing Status'];
+  await applyRun({ client: dF2, run: rF2, now: NOW });
+  check('F2 a run that found Listing Status missing writes no stage', PF(dF2, '9000000000041').stage, 'Live');
+  wF2 = world();
+  Object.values(wF2.tasks).forEach(list => list.forEach(t => { t.custom_fields = t.custom_fields.filter(c => c.name !== 'Listing Status'); }));
+  find(wF2, '9000000000068').memberships[0].section.name = 'Complete';
+  const rF2b = await read(wF2);
+  await applyRun({ client: dF2, run: rF2b, now: NOW });
+  check('F2 the field gone from every task: missing reported, stage kept', [(rF2b.missing || []).indexOf('Listing Status') !== -1, PF(dF2, '9000000000068').stage], [true, 'In contract']);
+
+  // F3. the stored "not linked" list names each task and leaves ignored tasks out
+  check('F3 stored unlinked: the ignored Graveyard duplicate is left out', (db.T.sync_runs[0].totals.unlinked || []).some(u => u.gid === '9000000000152'), false);
+  check('F3 stored unlinked: always a list on a run that read listings', Array.isArray(db.T.sync_runs[0].totals.unlinked), true);
+
+  // F4. one task's subtasks / history failing is a warning; the run goes on and keeps what it had
+  const dF4 = await planned();
+  let rF4 = null, threwF4 = null;
+  try { rF4 = await read(world(), { asana: asanaOf(world(), { failTask: { '9000000000041': 500 } }) }); } catch (e) { threwF4 = e.message; }
+  check('F4 a 5xx on one task: no crash, a warning, the task read without detail',
+    [threwF4, rF4 && rF4.ok, rF4 && rF4.warnings.some(x => /9000000000041/.test(x)), rF4 && 'subtasks' in rF4.listings.find(t => t.gid === '9000000000041'), rF4 && rF4.listings.length], [null, true, true, false, 22]);
+  if (rF4) {
+    await applyRun({ client: dF4, run: rF4, now: NOW });
+    check('F4 the checklist known before is kept', PF(dF4, '9000000000041').asana.checklist[0].steps.length, 2);
+    check('F4 the run is stored with the warning', dF4.T.sync_runs.slice(-1)[0].errors.some(e => e.what === 'warning' && /9000000000041/.test(e.detail)), true);
+  }
+  let rF4b = null;
+  try { rF4b = await read(world(), { asana: asanaOf(world(), { failTask: { '9000000000041': 404 } }) }); } catch (e) { rF4b = { threw: e.message }; }
+  check('F4 a 404 on one task: a warning too', [rF4b.ok, rF4b.threw || null], [true, null]);
+  const rF4c = await read(world(), { asana: asanaOf(world(), { failTask: { '9000000000041': 401 } }) });
+  check('F4 a 401 on one task still stops the run', [rF4c.ok, rF4c.aborted], [false, 'Asana refused the token']);
+
+  // F6. after the plan, a task with no street number never becomes a job or a pitch by itself
+  const dF6 = await planned();
+  const wF6 = world(), nyF6 = wF6.tasks[NYC], baseF6 = nyF6.find(t => t.gid === '9000000000023');
+  nyF6.push(clone(baseF6, '9000000000905', 'Sample Penthouse', { modified_at: LATER }));
+  wF6.tasks[NJ].push(clone(find(wF6, '9000000000901'), '9000000000906', 'Pitch Road Lead', { modified_at: LATER }));
+  const oF6 = await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('F6 no street number: no job, no pitch', [dF6.T.properties.some(p => p.asana_gid === '9000000000905'), dF6.T.pitches.some(p => p.asana_gid === '9000000000906')], [false, false]);
+  check('F6 no street number: listed as unlinked, with why', oF6.unlinked.filter(u => /^900000000090[56]$/.test(u.gid)).map(u => u.why), ['no street number', 'no street number']);
+  check('F6 the stored list names it', (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).find(u => u.gid === '9000000000905'), { gid: '9000000000905', name: 'Sample Penthouse', why: 'no street number' });
+
+  // F10. applyRun says what sync_runs.ok says
+  check('F10 ok on a good run', oF6.ok, true);
+  check('F10 not ok before a plan', (await applyRun({ client: fakeDb(), run: await read(world()), now: NOW })).ok, false);
+  check('F10 not ok on a partial read', (await applyRun({ client: await planned(), run: await read(world(), { asana: asanaOf(world(), { fail: { [NJ]: 500 } }) }), now: NOW })).ok, false);
+
+  // F12. --dry-run --record keeps only loose tasks that name a linked development (D65)
+  const wF12 = world();
+  wF12.tasks['1211384244337827'] = [clone(fx('tasks-1211384244337827.json').data[0], '9000000000960', 'New Renderings for 30 Lot Rd'),
+    clone(fx('tasks-1211384244337827.json').data[0], '9000000000961', 'Unrelated social post')];
+  const recF12 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-rec-'));
+  const dryF12 = await dryRun({ cfg, fetch: replayFetch(FIX, wF12), record: true, recordDir: recF12, looseNames: ['30 lot rd'], outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-dry-')), date: '2026-10-20' });
+  const looseIdx = cfg.asana.loose.indexOf('1211384244337827') + 1;
+  const recFile = path.join(recF12, '2026-10-20', 'asana-loose-' + looseIdx + '.json');
+  check('F12 dry run ok', dryF12.ok, true);
+  check('F12 recorded loose tasks: only those naming a linked development', fs.existsSync(recFile) ? JSON.parse(fs.readFileSync(recFile, 'utf8')).map(t => t.gid) : 'no file', ['9000000000960']);
+  const dryF12b = await dryRun({ cfg, fetch: replayFetch(FIX, wF12), record: true, recordDir: recF12, client: fakeDb(), outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-dry-')), date: '2026-10-21' });
+  const recFileB = path.join(recF12, '2026-10-21', 'asana-loose-' + looseIdx + '.json');
+  check('F12 no linked development known: no loose task recorded', [dryF12b.ok, fs.existsSync(recFileB) ? JSON.parse(fs.readFileSync(recFileB, 'utf8')).length : 0], [true, 0]);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

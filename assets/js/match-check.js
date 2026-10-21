@@ -168,7 +168,7 @@
 
     if (a) {
       /* M2: the task is gone from Asana (Task 4 sets asana.gone on a full read) */
-      if (a.gone) add('M2', 'M2', 'Asana task gone', { asanaGid: a.gid || null }, 'Asana', MAP.localDay(a.gone));
+      if (a.gone) add('M2', 'M2', 'Asana task gone.', { asanaGid: a.gid || null }, 'Asana', MAP.localDay(a.gone));
 
       /* M1: stages disagree; Asana ahead gets 14 days from its status change */
       var since = a.statusSince || msOn(STAGE_DATE[stage]) || null;
@@ -186,7 +186,7 @@
       if (stage === 'Live' && !onDe && !de) {
         var live = a.statusSince || msOn('listedOn');
         if (!live || days(live, now) > GRACE_AHEAD) {
-          add('M2', 'M2:live', 'Asana says Live' + (live ? ' since ' + fmtDay(live, now) : '') + '; the listing isn\'t on DE.', { stage: 'Live' }, 'Asana', live);
+          add('M2', 'M2:live', 'Asana says Live' + (live ? ' since ' + fmtDay(live, now) : '') + '; the listing isn\'t on DE.', { stage: 'Live' }, 'DE', live);
         }
       }
     }

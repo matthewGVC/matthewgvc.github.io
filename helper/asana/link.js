@@ -177,4 +177,4 @@ function readPlanFile(file) {
   return plan;
 }
 
-module.exports = { addrOf, sameAddress, matchTask, makePlan, writePlanFiles, readPlanFile, devAddresses, devFor, ACTIVE };
+module.exports = { addrOf, hasNumber, sameAddress, matchTask, makePlan, writePlanFiles, readPlanFile, devAddresses, devFor, ACTIVE };

@@ -47,9 +47,15 @@ function deSync() {
 route('POST', '/de/sync', deSync);
 
 /* Asana: one sync at a time (a second call joins the one running). Refused with
-   the reason until the token is in the config. */
+   the reason until the token is in the config. ok is the stored run's ok
+   (sync_runs.ok): a partial read or a run before the link plan is not OK, and
+   aborted then says why. */
 function shapeRun(r) {
-  return { ok: !!r.report.ok, changes: r.changes, created: r.created, skipped: (r.errors || []).length, aborted: r.report.aborted || null };
+  const ok = r.ok === undefined ? !!r.report.ok : !!r.ok;
+  const errs = r.errors || [];
+  const why = r.report.aborted || (ok ? null
+    : ((errs.find(e => e.what === 'no plan') || errs.find(e => e.what === 'failed') || {}).detail || (r.report.warnings || [])[0] || 'the run was not complete'));
+  return { ok, changes: r.changes, created: r.created, skipped: errs.length, aborted: why || null };
 }
 function asanaSyncRoute(syncNow) {
   // the same in-flight run the scheduled jobs use (inflight.js)

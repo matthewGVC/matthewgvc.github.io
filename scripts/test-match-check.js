@@ -89,9 +89,9 @@ check('M1: statusSince none', M.statusSince([], 'Live'), null);
 
 /* ---------- M2: Asana task gone / Live in Asana, not on DE ---------- */
 let m2 = has(M.check(job({ asana: { gone: '2026-10-19T07:00:00Z' } }), ctx()), 'M2');
-check('M2: gone', m2.map(m => [m.text, m.fixAt, m.since]), [['Asana task gone', 'Asana', '2026-10-19']]);
+check('M2: gone', m2.map(m => [m.text, m.fixAt, m.since]), [['Asana task gone.', 'Asana', '2026-10-19']]);
 m2 = has(M.check(job({ de_listing_id: null, de: null, de_stage: null, asana: { statusSince: '2026-09-01' } }), ctx()), 'M2');
-check('M2: Live in Asana for weeks, not on DE', m2.map(m => m.text), ['Asana says Live since 1 Sep; the listing isn\'t on DE.']);
+check('M2: Live in Asana for weeks, not on DE (Asana ahead: fix on DE, as M1)', m2.map(m => [m.text, m.fixAt]), [['Asana says Live since 1 Sep; the listing isn\'t on DE.', 'DE']]);
 check('M2: Live a week, not on DE yet → grace', has(M.check(job({ de_listing_id: null, de: null, de_stage: null, asana: { statusSince: '2026-10-13' } }), ctx()), 'M2').length, 0);
 check('M2: DE-only listing', M.checkDeListing({ de_listing_id: '900009', gvc_listed: true, courtesy: 'Douglas Elliman: Test Agent', raw: { listingUrl: 'https://x/9' } }).text,
   'On DE, not in Asana.');

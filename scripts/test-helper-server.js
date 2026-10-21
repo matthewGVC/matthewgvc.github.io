@@ -160,6 +160,10 @@ function req(method, p, headers, body) {
   release();
   const [a1, a2] = await Promise.all([p1, p2]);
   check('two /asana/sync at once share one run', [calls, JSON.stringify(a1) === JSON.stringify(a2), a1.ok, a1.changes], [1, true, true, 3]);
+  const partialRun = await asanaSyncRoute(async () => ({ ok: false, report: { ok: true, aborted: null, warnings: ['NJ listings could not be read: x'] }, changes: 1, created: 0, errors: [] }))();
+  check('/asana/sync: a partial run is not OK, and says why', [partialRun.ok, partialRun.aborted], [false, 'NJ listings could not be read: x']);
+  const noPlanRun = await asanaSyncRoute(async () => ({ ok: false, report: { ok: true, aborted: null, warnings: [] }, changes: 0, created: 0, errors: [{ what: 'no plan', detail: 'No link plan applied yet' }] }))();
+  check('/asana/sync: no plan yet is not OK, and says why', [noPlanRun.ok, noPlanRun.aborted], [false, 'No link plan applied yet']);
   const both = await syncRoute({
     asana: async () => ({ ok: true, changes: 2, created: 0, skipped: 0, aborted: null }),
     de: async () => ({ ok: true, changes: 5, created: 1, skipped: 0, aborted: null }) })();

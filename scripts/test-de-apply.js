@@ -108,6 +108,25 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   out = await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, addNew: true, courtesy: gvc, rows: [row('900002')] });
   check('addNew is ignored', [out.created, db.T.properties.length], [0, 0]);
 
+  /* ---------- deepen: DE's zip, neighbourhood and property label are kept (M26) ---------- */
+  const { normalize } = require('../helper/de/normalize.js');
+  const nz = normalize({ coreListingId: 7, propertyLabel: 'Co-op', address: { postalCode: null, neighborhood: 'Lenox Hill', unitNumber: '2B',
+    samlsFullAddress: '1 EXAMPLE ST 2B, New York, NY 10021', samlsPartialAddress: '1 EXAMPLE ST 2B' } }, 'featured-sale');
+  check('deepen normalize: zip, neighbourhood and property label', [nz.zip, nz.neighborhood, nz.propertyLabel], ['10021', 'Lenox Hill', 'Co-op']);
+  db = fakeDb({ properties: [{ id: 'pz', slug: 'z', stage: 'Live', de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A' } }] });
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, roster: [], initials: {}, rows: [row('900001', { propertyLabel: 'Condo' })] });
+  check('deepen snapshot: the job\'s DE snapshot keeps zip, neighbourhood and property label', [db.T.properties[0].de.zip, db.T.properties[0].de.neighborhood, db.T.properties[0].de.propertyLabel], ['10001', 'Testville', 'Condo']);
+  check('deepen snapshot: so does de_listings.raw', [db.T.de_listings[0].raw.zip, db.T.de_listings[0].raw.neighborhood, db.T.de_listings[0].raw.propertyLabel], ['10001', 'Testville', 'Condo']);
+
+  /* ---------- deepen: the Match pass sees this run's DE listings with no job (M19) and the stageless rows (M20) ---------- */
+  db = fakeDb({ properties: [
+    { id: 'pj', slug: 'j', stage: 'Live', kind: 'sale', core: { address: '100 Example St', unit: '5B' }, folder_state: 'linked', drive_folder: 'x',
+      asana: { gid: '1', name: '100 Example St - 5B', status: 'Active', section: 'Active', stageFromStatus: 'Live', stageFromSection: 'Live', statusSince: '2026-09-01', fields: {} } },
+    { id: 'old', slug: 'old', label: '100 Example St, Residence 5B', stage: null, core: { address: '100 Example St', unit: '5B' } }] });
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, roster: [], initials: {}, rows: [row('900077', { unit: '4A' })] });
+  const mj = ((db.T.properties[0].match || {}).list || []).map(m => m.key);
+  check('deepen: M19 from this run\'s DE listing, M20 from the stageless row, no M2 half', [mj.indexOf('M19:900077') !== -1, mj.indexOf('M20:old') !== -1, mj.indexOf('M2:live') !== -1], [true, true, false]);
+
   /* ---------- an open Asana-made job at the same unit gets DE's id ---------- */
   db = fakeDb({ properties: [{ id: 'a1', slug: 'a1', stage: 'Live', stage_source: 'Asana', asana_gid: '9000000000041', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 990000 } }] });
   await applyRun({ client: db, report: report([{ id: '900002', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900002')] });

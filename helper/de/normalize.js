@@ -7,6 +7,7 @@
                             // 'Sold' / 'Rented' on transactions (DE sends none)
          street, unit,      // "555 W 59TH ST", "PHC" ('' for a house)
          city, state, zip, neighborhood,
+         propertyLabel,     // "Condo", "Co-op", "Single Family Home" (transactions; null on featured rows)
          price, closePrice, closeDate, beds, baths, halfBaths, sqft,
          priceChangePercent, openHouses, listingUrl, cover }
 
@@ -36,6 +37,7 @@ function normalize(raw, feedName) {
     street: street.replace(/\s+/g, ' '), unit,
     city: a.city || null, state: a.stateOrProvince || null, zip,
     neighborhood: a.neighborhood || null,
+    propertyLabel: raw.propertyLabel || null,
     price: num(raw.listPrice), closePrice: num(raw.closePrice), closeDate: raw.closeDate || null,
     beds: num(raw.bedroomsTotal), baths: num(raw.bathroomsFull), halfBaths: num(raw.bathroomsHalf),
     sqft: num(raw.livingAreaSquareFeet),

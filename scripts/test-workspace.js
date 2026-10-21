@@ -75,6 +75,7 @@ async function open(browser, opts) {
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
     reads.push(m + ' ' + table);
+    if (table === 'members' && opts.membersFail) return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'could not read' }) });
     if (table === 'members') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(opts.members || [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]) });
     const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
     const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
@@ -582,6 +583,12 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     t = await open(browser, { path, members: [] });
     check('B5 ' + name + ': not on the team list says so', [await visible(t.page, '#gate'), await visible(t.page, '#board'),
       ((await text(t.page, '#gate')) || '').includes('Your account isn\'t on the GVC team list yet. Ask Matt to add you.'), t.errors], [true, false, true, []]);
+    await t.ctx.close();
+    // B5-fix: the team list couldn't be read: say that, never "not on the team list"
+    t = await open(browser, { path, membersFail: true });
+    const g = (await text(t.page, '#gate')) || '';
+    check('B5-fix ' + name + ': a failed team-list read says it couldn\'t check', [await visible(t.page, '#gate'), await visible(t.page, '#board'),
+      g.includes('Couldn\'t check your account just now. Reload the page to try again.'), g.includes('team list'), /[\u2013\u2014]/.test(g), t.errors], [true, false, true, false, false, []]);
     await t.ctx.close();
   }
   // B6: the Asana card's chip follows the stage it shows (Asana's), not the job's

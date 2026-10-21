@@ -79,6 +79,7 @@
   function load() {
     return GVC_SHELL.onTeam().then(function (ok) {
       if (ok) return read();
+      if (ok === null) return gate('Couldn\'t check your account', GVC_SHELL.CANT_CHECK);
       gate('Not on the team list', GVC_SHELL.NOT_ON_TEAM);
     });
   }

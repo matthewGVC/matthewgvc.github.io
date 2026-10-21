@@ -83,8 +83,11 @@
   function signOut() { me = null; keepSession(null); }
 
   /* Who is signed in: { email, name, initials, role } from the members table
-     (migration 0004). Before that table exists, or for an account that isn't
-     a member yet, the email stands in for the name and role is null. */
+     (migration 0004). For an account that isn't a member yet, the email
+     stands in for the name and role is null. When the members table can't be
+     read (a network blip, or before that table exists) the same stand-in comes
+     back with checkFailed: true, so a page can tell "not on the team list"
+     from "couldn't check"; that answer isn't kept, the next ask reads again. */
   var me = null;
   function whoAmI() {
     if (me) return Promise.resolve(me);
@@ -98,8 +101,8 @@
         .then(function (rows) {
           var m = rows && rows[0];
           return m ? { email: u.email, name: m.name, initials: m.initials, role: m.role } : fallback;
-        }, function () { return fallback; });
-    }).then(function (who) { me = who; return who; });
+        }, function () { return Object.assign({}, fallback, { checkFailed: true }); });
+    }).then(function (who) { if (!who.checkFailed) me = who; return who; });
   }
 
   /* The one sign-in box every tool uses: email + password, in a dialog.

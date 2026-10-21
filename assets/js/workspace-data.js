@@ -34,11 +34,18 @@
                            leave the people lists and become one collapsed line:
                            the group gains bulk: [{ code, key, text, items }]
                            ("38 jobs have no Drive folder linked yet"), one item per job
-     looseMatch({ deListings, asanaRun, ignoredGids }, GVC_MATCH) → [{ fixAt, who, item }]
+     looseMatch({ deListings, asanaRun, ignoredGids, linkedGids, linkedDeIds }, GVC_MATCH) → [{ fixAt, who, item }]
                            de_listings rows GVC-listed on DE with no job (M2 "On DE, not
-                           in Asana", through GVC_MATCH.checkDeListing; ignored rows left
-                           out) and the tasks the last Asana sync couldn't link
-                           (asanaRun.totals.unlinked, minus ignoredGids)
+                           in Asana", through GVC_MATCH.checkDeListing; ignored rows and
+                           the DE ids a job already holds, linkedDeIds, left out) and the tasks the last Asana sync couldn't link
+                           (asanaRun.totals.unlinked, minus ignoredGids and the gids a
+                           job has been linked to by hand since, linkedGids).
+                           Each item has link, what "Link to a job" works on (tune-up A):
+                             { type: 'de', id, kind, market, street, unit }   street, unit
+                               and market (from DE's state) once the DE sync keeps the
+                               address, else null
+                             { type: 'asana', gid, name, market }
+     chipOf(stage)        → the chip class for a stage ('live', 'contract', 'sold', else 'pre')
      fmtDay('2026-10-12') → '12 Oct'; money(4500000) → '$4,500,000'
 
    Pure: no fetch, no DOM. Loads in the browser (window.GVC_WS) and in Node.
@@ -121,6 +128,7 @@
 
   var BAR = { Prep: 'won', Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'sold' };
   var CHIP = { Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold' };
+  function chipOf(stage) { return CHIP[stage] || 'pre'; }
 
   /* a listing's steps: the pitch, Prep → In contract, then Sold or Rented;
      Off market / Archived only when the job is there */
@@ -356,22 +364,27 @@
     'more than one pitch at this address': 'more than one pitch is at this address',
     'no street number': 'its name has no street number, so it is never guessed'
   };
+  var STATE_MARKET = { NY: 'NYC', NJ: 'NJ', FL: 'FL' };
   function looseMatch(o, M) {
-    var out = [], ign = {};
-    (o.ignoredGids || []).forEach(function (g) { ign[g] = true; });
+    var out = [], ign = {}, held = {};
+    (o.ignoredGids || []).concat(o.linkedGids || []).forEach(function (g) { ign[g] = true; });
+    (o.linkedDeIds || []).forEach(function (id) { held[id] = true; });
     (o.deListings || []).forEach(function (r) {
-      var m = r && !r.ignored && M && M.checkDeListing ? M.checkDeListing(r) : null;
+      var m = r && !r.ignored && !held[r.de_listing_id] && M && M.checkDeListing ? M.checkDeListing(r) : null;
       if (!m) return;
-      out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: 'DE listing ' + r.de_listing_id, href: null, id: null, table: null, code: m.code, key: m.key,
+      var raw = r.raw || {}, street = raw.street ? String(raw.street).trim() : null, unit = street && raw.unit ? String(raw.unit).trim() : null;
+      out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: 'DE listing ' + r.de_listing_id + (street ? ', ' + readable(street) + (unit ? ' ' + unit : '') : ''), href: null, id: null, table: null, code: m.code, key: m.key,
         text: m.text + (r.courtesy ? ' DE shows: ' + r.courtesy + '.' : ''), since: m.since || null, asanaUrl: null, paste: null,
-        deUrl: web(m.values && m.values.listingUrl) } });
+        deUrl: web(m.values && m.values.listingUrl),
+        link: { type: 'de', id: r.de_listing_id, kind: r.kind || null, market: STATE_MARKET[String(raw.state || '').toUpperCase()] || null, street: street, unit: unit } } });
     });
     var run = o.asanaRun, list = run && run.totals && Array.isArray(run.totals.unlinked) ? run.totals.unlinked : [];
     list.forEach(function (u) {
       if (!u || !u.gid || ign[u.gid]) return;
       out.push({ fixAt: 'Asana', who: [], item: { job: u.name || 'Asana task ' + u.gid, href: null, id: null, table: null, code: 'Link', key: 'link:' + u.gid,
         text: 'Asana task not linked: ' + (UNLINKED_WHY[u.why] || u.why || 'no reason recorded') + '.', since: run.started_at ? day(run.started_at) : null,
-        asanaUrl: /^\d+$/.test(String(u.gid)) ? 'https://app.asana.com/0/0/' + u.gid : null, paste: null } });
+        asanaUrl: /^\d+$/.test(String(u.gid)) ? 'https://app.asana.com/0/0/' + u.gid : null, paste: null,
+        link: { type: 'asana', gid: u.gid, name: u.name || null, market: u.market || null } } });
     });
     return out;
   }
@@ -424,5 +437,5 @@
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
-    fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
+    chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
 });

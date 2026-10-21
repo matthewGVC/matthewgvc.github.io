@@ -65,6 +65,16 @@ function asanaJobs(cfg, client, syncNow) {
   return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }) };
 }
 
+/* startup: only the newest run of each kind, and the newest full Asana read (C1) */
+const RUN_KINDS = ['de', 'scan', 'asana', 'people'];
+async function readLastRuns(client) {
+  const newest = { order: 'started_at.desc', limit: 1 };
+  const rows = [];
+  for (const kind of RUN_KINDS) rows.push.apply(rows, await client.select('sync_runs', { kind }, 'kind,started_at', newest));
+  const full = await client.select('sync_runs', { kind: 'asana', 'totals->>full': 'true' }, 'kind,started_at', newest);
+  return rows.concat(full.map(r => Object.assign({}, r, { totals: { full: true } })));
+}
+
 /* last-run map from sync_runs rows; the last full read is the asana row with totals.full */
 function lastFromRuns(runs) {
   const last = {};
@@ -81,7 +91,7 @@ async function startRunner(cfg) {
   if (!client.ready()) return null;
   let last = {};
   try {
-    last = lastFromRuns(await client.select('sync_runs', {}, 'kind,started_at,totals'));
+    last = lastFromRuns(await readLastRuns(client));
   } catch (e) { /* table not there yet: everything is due */ }
   const exportsDir = path.join(__dirname, '..', 'exports');
   const runner = createRunner({
@@ -102,4 +112,4 @@ async function startRunner(cfg) {
   return runner;
 }
 
-module.exports = { createRunner, startRunner, asanaJobs, lastFromRuns };
+module.exports = { createRunner, startRunner, asanaJobs, lastFromRuns, readLastRuns };

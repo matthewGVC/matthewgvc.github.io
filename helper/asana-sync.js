@@ -157,10 +157,14 @@ async function syncOnce(o) {
   let run;
   if (o.kind === 'people') run = await readRun({ asana, cfg, only: 'people' });
   else {
-    const runs = (await client.select('sync_runs', { kind: 'asana' })).filter(r => r.ok && r.finished_at)
-      .sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
-    const last = runs[0], lastOpen = {};
-    runs.filter(r => r.totals && r.totals.full).reverse().forEach(r => Object.assign(lastOpen, r.totals.open || {}));
+    // only the newest good runs: the last one (for since) and the last few full reads (their open counts)
+    const newest = n => ({ order: 'started_at.desc', limit: n });
+    const good = { kind: 'asana', ok: true };
+    const last = (await client.select('sync_runs', good, 'started_at,finished_at', newest(5))).filter(r => r.finished_at)[0];
+    const fulls = (await client.select('sync_runs', Object.assign({ 'totals->>full': 'true' }, good), 'started_at,finished_at,totals', newest(10)))
+      .filter(r => r.finished_at && r.totals);
+    const lastOpen = {};
+    fulls.reverse().forEach(r => Object.assign(lastOpen, r.totals.open || {}));
     const linked = (await client.select('dev_projects')).filter(d => d.asana_project_gid);
     const full = !!(o.full || o.plan || !last);
     // since is only for the modified_since query; a full read asks for (and details) every task

@@ -95,6 +95,20 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   await c.select('asana_tasks'); await c.select('asana_people');
   check('Asana tables are read in gid order (they have no id)', fake.log.filter(l => /^GET \/rest\/v1\/asana_/.test(l)).every(l => /[?&]order=gid/.test(l)), true);
   check('filtered select',(await c.select('properties', { slug: 'b' })).map(r => r.id), ['p2']);
+  /* C1: order and limit read just the newest rows, in one request */
+  T.sync_runs = [1, 2, 3].map(i => ({ id: 'r' + i, kind: 'de', started_at: '2026-10-1' + i, totals: { full: i === 2 } }));
+  fake.log.length = 0;
+  const newest = await c.select('sync_runs', { kind: 'de' }, 'kind,started_at', { order: 'started_at.desc', limit: 2 }).catch(e => e.message);
+  const runGets = fake.log.filter(l => /^GET \/rest\/v1\/sync_runs/.test(l)).map(decodeURIComponent);
+  check('order and limit: one request, at most the limit back', [runGets.length, Array.isArray(newest) && newest.length], [1, 2]);
+  check('order and limit: asks newest first (key as tie-break), limit 2, no paging', runGets.map(l => [/[?&]order=started_at\.desc,id(&|$)/.test(l), /[?&]limit=2(&|$)/.test(l), /offset=/.test(l)]), [[true, true, false]]);
+  check('order and limit: only the columns asked for', runGets.map(l => /[?&]select=kind,started_at(&|$)/.test(l)), [true]);
+  fake.log.length = 0;
+  await c.select('sync_runs', { kind: 'asana', 'totals->>full': 'true' }, 'kind,started_at', { order: 'started_at.desc', limit: 1 });
+  check('a JSON field filter goes through as PostgREST\'s ->> (eq)', fake.log.map(decodeURIComponent).some(l => /[?&]totals->>full=eq\.true(&|$)/.test(l)), true);
+  fake.log.length = 0;
+  await c.select('properties', {}, 'id', { order: 'slug.desc' });
+  check('order without a limit still pages, key as tie-break', fake.log.filter(l => /^GET /.test(l)).map(decodeURIComponent).every(l => /order=slug\.desc,id&/.test(l) && /limit=1000/.test(l) && /offset=0/.test(l)), true);
   check('count', await c.count('properties'), 2);
   await c.insert('todos', { id: 't2', body: 'x' });
   check('insert', T.todos.length, 2);

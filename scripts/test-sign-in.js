@@ -41,6 +41,7 @@ global.fetch = (url, opts) => {
     return reply(200, { access_token: 'tok-' + body.email, refresh_token: 'r', expires_in: 3600 });
   }
   if (/\/auth\/v1\/user/.test(url)) return reply(200, { id: 'u-1', email: 'matt@example.com' });
+  if (/\/rest\/v1\/members/.test(url) && membersReply === 'fail') return reply(400, { message: 'could not read' });
   if (/\/rest\/v1\/members/.test(url)) return membersReply === 404 ? reply(404, { message: 'relation "members" does not exist' }) : reply(200, membersReply);
   return reply(404, {});
 };
@@ -64,6 +65,16 @@ const P = require('../assets/js/property-library.js');
   membersReply = [];
   P.signOut(); await P.signIn('matt@example.com', 'right');
   check('not a member yet', await P.whoAmI(), { email: 'matt@example.com', name: 'matt@example.com', initials: 'MA', role: null });
+  // B5-fix: a members read that fails is not "not a member": it says it couldn't check, and isn't kept
+  membersReply = 'fail';
+  P.signOut(); await P.signIn('matt@example.com', 'right');
+  check('members read failed: initials still work, role unknown, flagged', await P.whoAmI(),
+    { email: 'matt@example.com', name: 'matt@example.com', initials: 'MA', role: null, checkFailed: true });
+  membersReply = [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }];
+  check('a failed check is not kept: the next ask reads again', (await P.whoAmI()).role, 'owner');
+  membersReply = [];
+  P.signOut(); await P.signIn('matt@example.com', 'right');
+  check('a true empty answer is not flagged', 'checkFailed' in (await P.whoAmI()), false);
   membersReply = 404;
   P.signOut(); await P.signIn('matt@example.com', 'right');
   check('before the migration', (await P.whoAmI()).initials, 'MA');

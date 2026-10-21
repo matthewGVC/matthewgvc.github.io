@@ -177,6 +177,13 @@
 
   function rest(path) { return P.call('/rest/v1' + path); }
   function load() {
+    return GVC_SHELL.onTeam().then(function (ok) {
+      if (ok) return read();
+      if (ok === null) return gate('Couldn\'t check your account', GVC_SHELL.CANT_CHECK);
+      gate('Not on the team list', GVC_SHELL.NOT_ON_TEAM);
+    });
+  }
+  function read() {
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'),

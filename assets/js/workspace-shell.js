@@ -17,6 +17,16 @@
      shell.driveState()         → Promise<'connected'|'needs-click'|…> (GVC_DRIVE)
      GVC_SHELL.helper(method, path, body) → the desktop helper's JSON, or
                                 throws "The helper isn't running on this PC."
+     GVC_SHELL.onTeam()         → Promise<true|false|null>: false when the
+                                signed-in account has no role on the team list
+                                (whoAmI().role empty), so a page says so
+                                instead of an empty "all clear" (tune-up B5);
+                                null when the team list couldn't be read
+                                (whoAmI().checkFailed); true when it has a role,
+                                or when whoAmI itself fails (the page's own
+                                read then says what went wrong)
+     GVC_SHELL.NOT_ON_TEAM      what those pages say when it's false
+     GVC_SHELL.CANT_CHECK       what they say when it's null
      GVC_ICON(name)             the mockup's line icons
      GVC_ESC(text)              HTML-escapes anything from the database
 
@@ -223,7 +233,17 @@
     return part('Asana', r.asana) + ' ' + part('DE', r.de);
   }
 
-  global.GVC_SHELL = { mount: mount, helper: helper, syncWords: syncWords };
+  /* a signed-in account with no role on the team list reads nothing (row security): say so (tune-up B5) */
+  var NOT_ON_TEAM = 'Your account isn\'t on the GVC team list yet. Ask Matt to add you.';
+  var CANT_CHECK = 'Couldn\'t check your account just now. Reload the page to try again.';
+  function onTeam() {
+    return global.GVC_PROPS.whoAmI().then(function (w) {
+      if (w && w.checkFailed) return null;
+      return !!(w && w.role);
+    }, function () { return true; });
+  }
+
+  global.GVC_SHELL = { mount: mount, helper: helper, syncWords: syncWords, onTeam: onTeam, NOT_ON_TEAM: NOT_ON_TEAM, CANT_CHECK: CANT_CHECK };
   global.GVC_ICON = icon;
   global.GVC_ESC = esc;
 })(window);

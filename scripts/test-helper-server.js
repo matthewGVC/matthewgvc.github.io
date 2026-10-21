@@ -176,7 +176,28 @@ function req(method, p, headers, body) {
   check('/asana/sync from an unpaired origin is refused', r.status, 403);
 
   /* startRunner's pieces: token gate, last-run map, one shared Asana run */
-  const { asanaJobs, lastFromRuns } = require('../helper/runner.js');
+  const { asanaJobs, lastFromRuns, readLastRuns } = require('../helper/runner.js');
+  /* C1: startup reads only the newest run of each kind (and the newest full Asana read) */
+  const runRows = [
+    { kind: 'asana', started_at: '2026-10-18T03:00:00Z', totals: { full: true, unlinked: [] } },
+    { kind: 'asana', started_at: '2026-10-19T03:00:00Z', totals: { full: true, unlinked: [] } },
+    { kind: 'asana', started_at: '2026-10-20T10:00:00Z', totals: { full: false, unlinked: [] } },
+    { kind: 'people', started_at: '2026-10-20T03:15:00Z', totals: null },
+    { kind: 'de', started_at: '2026-10-19T07:00:00Z' }, { kind: 'de', started_at: '2026-10-20T07:00:00Z' },
+    { kind: 'scan', started_at: '2026-10-20T06:00:00Z' }];
+  const runCalls = [];
+  const runClient = { select: async (t, m, cols, o) => {
+    runCalls.push({ t, m, cols, o });
+    const hit = runRows.filter(r => Object.keys(m || {}).every(k => {
+      const j = /^(\w+)->>(\w+)$/.exec(k);
+      return String(j ? (r[j[1]] || {})[j[2]] : r[k]) === String(m[k]);
+    })).sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
+    return hit.slice(0, o && o.limit ? o.limit : hit.length).map(r => { const x = {}; String(cols || '*').split(',').forEach(c => { if (c === '*' || c in r) Object.assign(x, c === '*' ? r : { [c]: r[c] }); }); return x; });
+  } };
+  const lr = typeof readLastRuns === 'function' ? lastFromRuns(await readLastRuns(runClient)) : {};
+  check('startup last map from small reads: plain, full, people, de, scan', ['asana', 'asanaFull', 'people', 'de', 'scan'].map(k => lr[k] ? lr[k].toISOString() : null),
+    ['2026-10-20T10:00:00.000Z', '2026-10-19T03:00:00.000Z', '2026-10-20T03:15:00.000Z', '2026-10-20T07:00:00.000Z', '2026-10-20T06:00:00.000Z']);
+  check('startup reads: every one newest first, limit 1, never the totals', runCalls.length > 0 && runCalls.every(c => c.t === 'sync_runs' && c.o && c.o.order === 'started_at.desc' && c.o.limit === 1 && !/totals/.test(c.cols || '*') && (c.cols || '*') !== '*'), true);
   check('no token: no Asana jobs', Object.keys(asanaJobs({}, {})), []);
   check('token: asana, asanaFull, people jobs', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaFull', 'people']);
   const seen = [];

@@ -138,7 +138,13 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   /* ---------- client ---------- */
   const files = fs.readdirSync(path.join(__dirname, '..', 'helper', 'asana')).map(f => fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana', f), 'utf8'))
     .concat([fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana-sync.js'), 'utf8')]);
+  // C3: no write verb anywhere in these files, as a whole word in capitals (a comment saying so counts too)
+  const writeVerb = src => /\b(POST|PUT|PATCH|DELETE)\b/.test(src);
+  check('the write-verb check catches a verb kept in a variable', writeVerb("const verb = 'POST'; fetch(u, { method: verb })"), true);
+  check('the write-verb check catches DELETE in a comment', writeVerb('// sends DELETE to clear it'), true);
+  check('the write-verb check ignores lower-case words', writeVerb('post a note, put it back, patch it up, delete nothing'), false);
   files.forEach((src, i) => {
+    check('no POST, PUT, PATCH or DELETE in helper/asana/ or asana-sync.js #' + i, writeVerb(src), false);
     check('client is GET-only (verb strings) #' + i, /method:\s*['"](POST|PUT|PATCH|DELETE)/i.test(src), false);
     check('client is GET-only (calls) #' + i, /\.(post|put|patch|delete)\(/i.test(src), false);
   });
@@ -173,6 +179,26 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   const flaky = async () => (++calls === 1 ? mkRes({}, 429, { 'retry-after': '0' }) : mkRes({ data: [{ gid: 'z' }], next_page: null }));
   check('client retries a 429', (await createAsana(cfg, { fetch: flaky }).get('/x')).length, 1);
   check('client made two calls for the 429', calls, 2);
+
+  /* C2: a 429 with no (or an empty) Retry-After waits 5 s; a number waits that long */
+  for (const [label, hdr, want] of [['missing', {}, 5000], ['empty', { 'retry-after': '' }, 5000], ['2', { 'retry-after': '2' }, 2000]]) {
+    const waits = [];
+    let n429 = 0;
+    const f429 = async () => (++n429 === 1 ? mkRes({}, 429, hdr) : mkRes({ data: [{ gid: 'z' }], next_page: null }));
+    await createAsana(cfg, { fetch: f429, sleep: async ms => { waits.push(ms); } }).get('/x');
+    check('C2 a 429 with a ' + label + ' Retry-After waits ' + want + ' ms', waits, [want]);
+  }
+  /* C2: timeouts, network errors and unreadable answers become plain Errors */
+  const failWith = async fetchFn => { try { await createAsana(cfg, { fetch: fetchFn, sleep: async () => {} }).get('/x'); return null; } catch (e) { return e; } };
+  const timeoutErr = Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' });
+  const tOut = await failWith(async () => { throw timeoutErr; });
+  check('C2 a timeout is a plain Error saying so', [tOut && tOut.name, tOut && tOut.message], ['Error', 'Asana didn\'t answer in time']);
+  const offline = await failWith(async () => { throw new TypeError('fetch failed'); });
+  check('C2 a network error is a plain Error saying so', [offline && offline.name, offline && offline.message], ['Error', 'Asana couldn\'t be reached']);
+  const garbled = await failWith(async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => { throw new SyntaxError('Unexpected token < in JSON'); } }));
+  check('C2 a non-JSON answer is a plain Error with .status', [garbled && garbled.name, garbled && garbled.message, garbled && garbled.status],
+    ['Error', 'Asana sent an answer the helper can\'t read', 200]);
+  check('C2 none of them print the token', [tOut, offline, garbled].some(e => e && /tok-secret/.test(e.message)), false);
 
   let refused = null;
   try { await createAsana(cfg, { fetch: async () => mkRes({ errors: [{ message: 'Not Authorized' }] }, 401) }).get('/x'); } catch (e) { refused = e; }

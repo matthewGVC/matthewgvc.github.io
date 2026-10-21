@@ -35,12 +35,24 @@ function fakeDb(seed) {
   TABLES.forEach(t => { T[t] = []; });
   Object.keys(seed || {}).forEach(k => { T[k] = seed[k].map(r => Object.assign(k === 'asana_tasks' || k === 'asana_people' ? {} : { version: 1 }, r)); });
   let n = 0;
-  const matches = (row, m) => Object.keys(m || {}).every(k => String(row[k]) === String(m[k]));
+  // 'totals->>full' reads a JSON field, as PostgREST does
+  const field = (row, k) => { const j = /^(\w+)->>(\w+)$/.exec(k); return j ? (row[j[1]] || {})[j[2]] : row[k]; };
+  const matches = (row, m) => Object.keys(m || {}).every(k => String(field(row, k)) === String(m[k]));
   const copy = x => JSON.parse(JSON.stringify(x));
   const db = {
     T, conflictOn: null,
     ready: () => true,
-    select: async (t, m) => T[t].filter(r => matches(r, m)).map(copy),
+    calls: [],
+    select: async (t, m, cols, o) => {
+      db.calls.push({ t, m, cols, o });
+      let rows = T[t].filter(r => matches(r, m));
+      if (o && o.order) {
+        const [f, dir] = o.order.split('.');
+        rows = rows.slice().sort((a, b) => (a[f] < b[f] ? -1 : a[f] > b[f] ? 1 : 0) * (dir === 'desc' ? -1 : 1));
+      }
+      if (o && o.limit) rows = rows.slice(0, o.limit);
+      return rows.map(copy);
+    },
     insert: async (t, rows) => [].concat(rows).map(r => {
       const x = Object.assign({ id: t + '-' + (++n) }, TABLES.indexOf(t) < 3 ? { version: 1 } : {}, copy(r)); T[t].push(x); return copy(x);
     }),
@@ -381,6 +393,10 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
     { id: 'r2', kind: 'asana', ok: true, started_at: '2026-10-19T03:00:00.000Z', finished_at: 'x', totals: { full: true, open: { NJ: 8 } } }] });
   await syncNow({ cfg, client: db10, fetch: replayFetch(FIX, world()), full: true, now: NOW });
   check('a market missing from the last full run keeps its earlier open count', /fewer than half the open NYC/.test(JSON.stringify(db10.T.sync_runs[2].errors)), true);
+  // C1: the sync reads only the newest runs it needs, newest first, a small limit
+  const runReads = db10.calls.filter(c => c.t === 'sync_runs');
+  check('C1 sync_runs reads are newest first with a small limit', runReads.length > 0 && runReads.every(c => c.o && c.o.order === 'started_at.desc' && c.o.limit > 0 && c.o.limit <= 20), true);
+  check('C1 sync_runs reads ask for good Asana runs only', runReads.every(c => c.m && c.m.kind === 'asana' && c.m.ok === true), true);
 
   // 2. a task first seen as a Lead becomes a pitch once it has a pitch date
   w = world();
@@ -525,7 +541,45 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const oF6 = await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
   check('F6 no street number: no job, no pitch', [dF6.T.properties.some(p => p.asana_gid === '9000000000905'), dF6.T.pitches.some(p => p.asana_gid === '9000000000906')], [false, false]);
   check('F6 no street number: listed as unlinked, with why', oF6.unlinked.filter(u => /^900000000090[56]$/.test(u.gid)).map(u => u.why), ['no street number', 'no street number']);
-  check('F6 the stored list names it', (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).find(u => u.gid === '9000000000905'), { gid: '9000000000905', name: 'Sample Penthouse', why: 'no street number' });
+  check('F6 the stored list names it, with its market (for the Match page\'s job picker)', (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).find(u => u.gid === '9000000000905'), { gid: '9000000000905', name: 'Sample Penthouse', why: 'no street number', market: 'NYC' });
+
+  // A1. Link by hand (tune-up A): a job Matt linked to the task on the Match page is found by its stored asana_gid,
+  // even though the task's name has no address that matches; it is filled in and no longer listed as unlinked
+  dF6.T.properties.push({ id: 'p-hand', slug: '52-e4-10fl', version: 1, kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Matt', asana_gid: '9000000000905',
+    core: { address: '52 E4', unit: '10FL' }, folder_state: 'unlinked' });
+  dF6.T.asana_tasks.find(c => c.gid === '9000000000905').property_id = 'p-hand';
+  const jobsA1 = dF6.T.properties.length;
+  const oA1 = await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  const pA1 = dF6.T.properties.find(p => p.id === 'p-hand');
+  check('A1 hand link: the stored asana_gid is used first', [pA1.asana && pA1.asana.gid, pA1.asana && pA1.asana.name, dF6.T.properties.length], ['9000000000905', 'Sample Penthouse', jobsA1]);
+  check('A1 hand link: no longer unlinked, the cache row stays on the job', [oA1.unlinked.some(u => u.gid === '9000000000905'),
+    (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).some(u => u.gid === '9000000000905'), dF6.T.asana_tasks.find(c => c.gid === '9000000000905').property_id], [false, false, 'p-hand']);
+  // Ignore on the Match page: a task set aside stays set aside and off the list
+  dF6.T.asana_tasks.find(c => c.gid === '9000000000906').ignored = true;
+  await applyRun({ client: dF6, run: await read(wF6, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('A1 ignore: a task set aside stays ignored and is not listed', [dF6.T.asana_tasks.find(c => c.gid === '9000000000906').ignored,
+    (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).some(u => u.gid === '9000000000906')], [true, false]);
+
+  // A3. a job (by asana_gid) and an open pitch both hold the task's gid, and the task is at Prep or later:
+  // the pitch is won, pointing at that job (logged), instead of staying open
+  const dA3 = await planned();
+  const jA3 = PF(dA3, '9000000000023');
+  dA3.T.pitches.push({ id: 'q-a3', slug: '23-pitch', version: 1, outcome: 'open', asana_gid: '9000000000023', market: 'NYC' });
+  const wA3 = world();
+  status(find(wA3, '9000000000023'), 'Active');
+  await applyRun({ client: dA3, run: await read(wA3, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  const qA3 = dA3.T.pitches.find(p => p.id === 'q-a3');
+  check('A3 job and open pitch on one gid: the pitch is won, pointing at the job', [qA3.outcome, qA3.won_property_id], ['won', jA3.id]);
+  check('A3 the job is still updated from the task', PF(dA3, '9000000000023').stage, 'Live');
+  check('A3 logged on the pitch, source Asana', dA3.T.changes.filter(c => c.pitch_id === 'q-a3' && c.field === 'outcome').map(c => [c.old_value, c.new_value, c.source]), [['open', 'won', 'Asana']]);
+  await applyRun({ client: dA3, run: await read(wA3, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('A3 the next run leaves the won pitch alone', dA3.T.changes.filter(c => c.pitch_id === 'q-a3' && c.field === 'outcome').length, 1);
+
+  // B8. a run that isn't good (partial read) never stores totals.unlinked
+  const dB8 = await planned();
+  await applyRun({ client: dB8, run: await read(world(), { asana: asanaOf(world(), { fail: { [NJ]: 500 } }) }), now: NOW });
+  const srB8 = dB8.T.sync_runs.slice(-1)[0];
+  check('B8 a failed run stores no unlinked list', [srB8.ok, 'unlinked' in (srB8.totals || {})], [false, false]);
 
   // F10. applyRun says what sync_runs.ok says
   check('F10 ok on a good run', oF6.ok, true);

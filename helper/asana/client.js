@@ -6,15 +6,18 @@
    write verb ever appears here. The token (asanaToken in the helper's
    config) goes in one header and is never logged or put in an error.
 
-     const asana = createAsana(cfg, { fetch })    // cfg from loadConfig()
+     const asana = createAsana(cfg, { fetch, sleep? })    // cfg from loadConfig()
      asana.ready()                       → true once a token is configured
      await asana.get('/projects/1/tasks', { opt_fields: '...' })
                                          → every row, all pages, 100 at a time
      await asana.whoami()                → { name }
 
-   Errors carry .status and a plain .message. A page sequence that repeats a
-   row throws "Asana sent a task twice". A 429 waits the time Asana asks for
-   and tries again (up to three times).
+   Errors carry .status (when Asana answered) and a plain .message. A page
+   sequence that repeats a row throws "Asana sent a task twice". A 429 waits
+   the time Asana asks for (5 s when it doesn't say) and tries again (up to
+   three times). No answer in 30 s is "Asana didn't answer in time", no
+   connection "Asana couldn't be reached", an answer that isn't JSON "Asana
+   sent an answer the helper can't read".
    ============================================================ */
 'use strict';
 
@@ -23,22 +26,32 @@ const NO_TOKEN = 'No Asana token yet: add asanaToken to the helper\'s config.';
 
 function createAsana(cfg, opts) {
   const doFetch = (opts && opts.fetch) || globalThis.fetch;
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = (opts && opts.sleep) || (ms => new Promise(r => setTimeout(r, ms)));
+  const plain = (message, status) => { const e = new Error(message); if (status !== undefined) e.status = status; return e; };
 
   function ready() { return !!(cfg && cfg.asanaToken); }
 
   async function page(url) {
     for (let tries = 0; ; tries++) {
-      const r = await doFetch(url, {
-        headers: { authorization: 'Bearer ' + cfg.asanaToken, accept: 'application/json' },
-        signal: AbortSignal.timeout(30000)
-      });
+      let r;
+      try {
+        r = await doFetch(url, {
+          headers: { authorization: 'Bearer ' + cfg.asanaToken, accept: 'application/json' },
+          signal: AbortSignal.timeout(30000)
+        });
+      } catch (err) {
+        throw plain(err && (err.name === 'TimeoutError' || err.name === 'AbortError') ? 'Asana didn\'t answer in time' : 'Asana couldn\'t be reached');
+      }
       if (r.status === 429 && tries < 3) {
-        const wait = Number(r.headers && r.headers.get && r.headers.get('retry-after'));
-        await sleep(Math.min(Number.isFinite(wait) ? wait : 5, 60) * 1000);
+        const said = String((r.headers && r.headers.get && r.headers.get('retry-after')) || '').trim();
+        const wait = said === '' ? NaN : Number(said);
+        await sleep(Math.min(Number.isFinite(wait) && wait >= 0 ? wait : 5, 60) * 1000);
         continue;
       }
-      if (r.ok) return r.json();
+      if (r.ok) {
+        try { return await r.json(); }
+        catch (err) { throw plain(err && (err.name === 'TimeoutError' || err.name === 'AbortError') ? 'Asana didn\'t answer in time' : 'Asana sent an answer the helper can\'t read', r.status); }
+      }
       const e = new Error(r.status === 401 || r.status === 403 ? 'Asana refused the token'
         : r.status === 429 ? 'Asana is busy; try again in a few minutes'
         : 'Asana answered ' + r.status + ' for ' + url.slice(BASE.length).split('?')[0]);

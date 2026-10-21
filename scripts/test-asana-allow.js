@@ -69,6 +69,9 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   ['Client', 'GCI', 'Contract', 'Source of Business', 'secret', 'Pat Madeup', '41250', '2175000'].forEach(w =>
     check('keepTask drops forbidden fields: ' + w, dump.indexOf(w) === -1, true));
   check('keepTask keeps Listing Status', t.fields['Listing Status'], 'Active');
+  // Asana's real field is spelled with two spaces after the icon ("ℹ️  Acreage", seen 2026-10-21)
+  check('keepTask ignores extra spaces in field names',
+    allow.keepTask({ gid: '1', name: 'x', custom_fields: [{ name: 'ℹ️  Acreage', number_value: 0.35 }] }).fields['ℹ️ Acreage'], 0.35);
   check('keepTask keeps Current Price', t.fields['💵 Current Price'], 2250000);
   check('keepTask keeps a date', t.fields['🗓️ Listing Date'], '2026-09-01');
   check('keepTask keeps a multi-select as a list', t.fields['ℹ️ Property Type'], ['Condo', 'Co-op']);

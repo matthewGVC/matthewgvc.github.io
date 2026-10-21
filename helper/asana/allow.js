@@ -61,10 +61,14 @@ function valueOf(cf) {
   return null;
 }
 
+/* Asana field names sometimes carry a double space after the icon ("ℹ️  Acreage"),
+   so names are compared with runs of spaces collapsed. */
+const spaced = s => String(s || '').replace(/\s+/g, ' ').trim();
+
 function keptFields(raw) {
   const out = {};
   (raw.custom_fields || []).forEach(cf => {
-    const name = ALIASES[cf.name] || cf.name;
+    const name = ALIASES[spaced(cf.name)] || spaced(cf.name);
     if (KEPT_FIELDS.indexOf(name) !== -1) out[name] = valueOf(cf);
   });
   return out;
@@ -128,7 +132,7 @@ function keepStory(raw) {
    email, licence, birthday, address and the free-text "Agent Title" are never read. */
 function keepPerson(raw) {
   const by = {};
-  (raw.custom_fields || []).forEach(cf => { by[cf.name] = valueOf(cf); });
+  (raw.custom_fields || []).forEach(cf => { by[spaced(cf.name)] = valueOf(cf); });
   const section = nm(((raw.memberships || [])[0] || {}).section);
   const team = by['GVC Internal Team'];
   return {

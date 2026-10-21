@@ -140,6 +140,25 @@ check('stats', W.overviewStats(jobs), { live: 2, contract: 1, toLink: 2, total: 
 check('recent', W.recentChanges(changes, jobs, 2).map(r => [r.job, r.title, r.when]), [
   ['100 Example St 4A', 'Price $4,750,000 → $4,500,000', '2026-10-13'], ['100 Example St 4A', 'Stage moved to In contract', '2026-10-12']]);
 
+/* ---------- change-log words (Slice 3, S19) ---------- */
+const nm = id => ({ 'katie-cook': 'Katie Cook', 'john-gasdaska': 'John Gasdaska' })[id] || null;
+check('changeTitle: words for each kind of change', [
+  W.changeTitle({ field: 'agentIds', old_value: [], new_value: ['john-gasdaska', 'katie-cook'] }, nm),
+  W.changeTitle({ field: 'agentIds', new_value: ['gone-id'] }, nm),
+  W.changeTitle({ field: 'agentIds', new_value: [] }, nm),
+  W.changeTitle({ field: 'photo_hero', new_value: 'Photos/Edited/03.jpg' }),
+  W.changeTitle({ field: 'beds', old_value: 3, new_value: 4 }),
+  W.changeTitle({ field: 'taxesMonthly', old_value: null, new_value: 1250 }),
+  W.changeTitle({ field: 'price', old_value: 2250000, new_value: null }),
+  W.changeTitle({ field: 'interiorFeatures', new_value: ['Washer'] }),
+  W.changeTitle({ field: 'milestones', note: 'Permits / zoning ticked by hand: 3 Oct.' }),
+  W.changeTitle({ field: 'floorplan', new_value: { version: 3, note: 'bigger kitchen' } }),
+  W.changeTitle({ field: null, note: 'Katie says the price drops Friday' }),
+  W.changeTitle({ field: 'price', old_value: 4750000, new_value: 4500000 })
+], ['Agents: John Gasdaska, Katie Cook', 'Agents: Unknown agent (gone-id)', 'Agents cleared', 'Photo picks saved', 'Beds 3 → 4',
+  'Taxes per month set to $1,250', 'Price cleared', 'Interior features changed', 'Permits / zoning ticked by hand: 3 Oct.', 'Floorplan v3 recorded',
+  'Katie says the price drops Friday', 'Price $4,750,000 → $4,500,000']);
+
 /* ---------- DE sync status (spec §2.9) ---------- */
 const now = new Date('2026-10-20T10:00:00Z');
 check('never synced', W.syncHealth(null, now).state, 'never');

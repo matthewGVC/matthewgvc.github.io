@@ -41,6 +41,10 @@ check('folder itself',R.allowedInJob('Photos'), true);
 check('empty', R.allowedInJob(''), false);
 check('paperwork names', ['Docs', 'Offers', 'Contracts', 'Contract', 'Deal Sheet', 'Deals', 'Commission', 'Exclusives', 'Closing'].every(R.isPaperworkFolder), true);
 check('not paperwork', R.isPaperworkFolder('Photos'), false);
+check('paper word: mid-name', ['Signed Contract Floorplan.pdf', 'Showsheet - Offer from Buyer.pdf', 'Lease agreement.pdf', 'exclusive.pdf', 'Deals.pdf'].every(R.hasPaperworkWord), true);
+check('paper word: whole words only', ['Dealer.pdf', 'Floorplan v2.pdf', 'Listing details doc.docx', 'Offering plan.pdf', 'Photos'].some(R.hasPaperworkWord), false);
+check('paper word: empty', [R.hasPaperworkWord(''), R.hasPaperworkWord(null)], [false, false]);
+check('older top-level marketing folders readable', ['Show Sheet', 'Open House', 'Postcard', 'Postcards', 'Signage', 'Signs'].every(n => R.allowedInJob(n) && R.allowedInJob(n + '/a.pdf')), true);
 check('rel', R.rel('\\Photos\\Edited\\'), 'Photos/Edited');
 check('rel dotdot', R.rel('Photos/../Docs'), null);
 

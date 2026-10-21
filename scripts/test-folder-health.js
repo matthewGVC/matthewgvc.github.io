@@ -96,9 +96,16 @@ const dump = JSON.stringify(r);
 check('no Jane Client', /Jane Client|John Buyer|Offers|Docs|Exclusive/.test(dump), false);
 check('paperwork leaves no notes', codes(r), []);
 tree = d('x', [f('Exclusive - Jane Client.pdf'), f('Showsheet Exclusive.pdf')]);
-check('paperwork-named top file is never a piece', H.health(tree, NYC).pieces.showsheet.length === 1, true);
+check('paperwork-named top file is never a piece', [H.health(tree, NYC).pieces.showsheet.length, H.health(tree, NYC).counts.looseTop], [0, 2]);
 check('exclusive-first file is just loose', H.health(d('x', [f('Exclusive - Showsheet.pdf')]), NYC).counts.looseTop, 1);
 check('unknown top folder ignored', H.health(d('x', [d('Random Stuff', [f('a.pdf')])]), NYC).counts.looseTop, 0);
+
+/* a paperwork word mid-name keeps a loose file unnamed */
+tree = d('x', [f('Signed Contract Floorplan.pdf'), f('Showsheet - Offer from Buyer.pdf'), f('Floorplan v2.pdf')]);
+r = H.health(tree, NYC);
+check('mid-name paperwork: counted loose', r.counts.looseTop, 2);
+check('mid-name paperwork: never named', /Contract|Offer|Signed/.test(JSON.stringify(r)), false);
+check('plain floorplan file still found at top', r.pieces.floorplan.map((p) => p.name), ['Floorplan v2.pdf']);
 
 /* broken link */
 check('null tree is broken', codes(H.health(null, NYC)), ['broken']);

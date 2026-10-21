@@ -9,6 +9,7 @@
      GVC_DRIVE_RULES.allowedInJob('Photos/Edited/a.jpg')  → true
      GVC_DRIVE_RULES.allowedInJob('Exclusive signed.pdf') → false
      GVC_DRIVE_RULES.isPaperworkFolder('Offers')          → true  (skipped by the folder scan)
+     GVC_DRIVE_RULES.hasPaperworkWord('Signed Contract.pdf') → true (whole word, anywhere)
      GVC_DRIVE_RULES.rel('\\Photos\\Edited\\')            → 'Photos/Edited' ('..' → null)
 
    Paths are relative to the job folder; "\" or "/" both work.
@@ -25,7 +26,8 @@
   /* First folder inside a job that may be read: the standard names plus the
      names today's folders already use for the same things. Lower case. */
   var READABLE = ['floorplan', 'floorplans', 'floor plans', 'photos', 'marketing',
-    'showsheet', 'showsheets', 'brochure', 'copy', 'video'];
+    'showsheet', 'showsheets', 'show sheet', 'brochure', 'copy', 'video',
+    'open house', 'postcard', 'postcards', 'signage', 'signs'];
 
   var PAPERWORK = /^(doc|offer|contract|deal|commission|exclusive|closing)/i;
 
@@ -41,6 +43,11 @@
   /* "Offer details.docx" is paperwork whatever else its name says */
   var PAPER_WORDS = /\b(offer|contract|exclusive|commission|closing|deal|lease|agreement)s?\b/i;
 
+  /* a paperwork word anywhere in a name, as a whole word: "Signed Contract Floorplan.pdf"
+     is paperwork; "Dealer.pdf" and "Floorplan v2.pdf" are not */
+  var PAPER_ANYWHERE = /\b(offers?|contracts?|exclusives?|commissions?|closings?|deals?|leases?|agreements?|signed)\b/i;
+  function hasPaperworkWord(name) { return PAPER_ANYWHERE.test(String(name == null ? '' : name)); }
+
   function allowedInJob(path) {
     var r = rel(path);
     if (!r) return false;
@@ -55,5 +62,5 @@
 
   function isPaperworkFolder(name) { return PAPERWORK.test(String(name || '').trim()); }
 
-  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder };
+  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord };
 });

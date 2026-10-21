@@ -81,6 +81,9 @@ check('pick: newest of two details docs, paperwork and notes ignored',
   D.pick([older, f('notes.docx', '2026-10-20T10:00:00Z'), f('Exclusive details signed.pdf', '2026-10-21T10:00:00Z'), newer]), newer);
 check('pick: order does not matter', D.pick([newer, older]), newer);
 check('pick: a Word lock file is not a doc', D.pick([f('~$Showsheet details.docx', '2026-10-30T10:00:00Z')]), null);
+check('pick: a paperwork word anywhere keeps a doc out', D.pick([f('Signed contract details.docx', '2026-10-30T10:00:00Z')]), null);
+const dd = f('Listing details doc.docx', '2026-10-30T10:00:00Z');
+check('pick: "doc" in a details name is fine', D.pick([dd]), dd);
 check('pick: none', D.pick([f('notes.docx', '2026-10-20T10:00:00Z')]), null);
 check('pick: empty', D.pick([]), null);
 

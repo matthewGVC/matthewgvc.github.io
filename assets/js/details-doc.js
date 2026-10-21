@@ -25,10 +25,11 @@
   'use strict';
   var listing = typeof module === 'object' && module.exports
     ? require('../../tools/showsheet/listing.js') : global.GVC_LISTING;
-  var api = factory(listing);
+  var rules = typeof module === 'object' && module.exports ? require('./drive-rules.js') : global.GVC_DRIVE_RULES;
+  var api = factory(listing, rules);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else global.GVC_DOC = api;
-})(typeof window !== 'undefined' ? window : globalThis, function (L) {
+})(typeof window !== 'undefined' ? window : globalThis, function (L, rules) {
   'use strict';
 
   var TYPES = { 'co-op': 'Co-op', condo: 'Condo' };
@@ -91,6 +92,7 @@
     (files || []).forEach(function (f) {
       if (!f || typeof f.name !== 'string') return;
       if (!/\.docx$/i.test(f.name) || !/details/i.test(f.name) || /^~\$/.test(f.name)) return;
+      if (rules && rules.hasPaperworkWord(f.name)) return;
       if (!best || new Date(f.modified) > new Date(best.modified)) best = f;
     });
     return best;

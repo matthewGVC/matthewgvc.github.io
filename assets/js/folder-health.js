@@ -71,7 +71,7 @@
     return null;
   }
   function topPieceKey(name) {
-    if (RULES.isPaperworkFolder(name)) return null;
+    if (RULES.isPaperworkFolder(name) || RULES.hasPaperworkWord(name)) return null;
     for (var k in TOP_NAME) if (TOP_NAME[k].test(String(name || '').trim())) return k;
     return null;
   }

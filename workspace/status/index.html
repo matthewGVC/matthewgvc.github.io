@@ -91,7 +91,7 @@
     });
   }
 
-  function when(x) { return x ? esc(x.label) + ' <small>' + esc(W.fmtDay(x.on)) + '</small>' : '<span class="soft">—</span>'; }
+  function when(x) { return x ? esc(x.label) + ' <small>' + esc(W.fmtDay(x.on)) + '</small>' : '<span class="soft">Not set</span>'; }
 
   function render() {
     var groups = W.statusRows(W.buildJobs(data, today)).filter(function (g) { return !market || g.market === market; });
@@ -105,7 +105,7 @@
           return '<tr data-href="' + esc(r.href) + '"><td class="nm"><a href="../' + esc(r.href) + '">' + esc(r.name) + '</a></td>' +
             '<td class="stg" data-l="Stage"><span class="chip ' + esc(r.chip) + '">' + esc(r.stage) + '</span></td>' +
             '<td class="dt" data-l="Last milestone">' + when(r.lastMilestone) + '</td><td class="dt" data-l="Next date">' + when(r.nextDate) + '</td>' +
-            '<td data-l="Agents">' + (r.agents.length ? esc(r.agents.join(', ')) : '<span class="soft">—</span>') + '</td>' +
+            '<td data-l="Agents">' + (r.agents.length ? esc(r.agents.join(', ')) : '<span class="soft">Not set</span>') + '</td>' +
             '<td class="n' + (r.mismatches ? ' warn' : '') + '" data-l="Mismatches">' + r.mismatches + '</td></tr>';
         }).join('') + '</tbody></table></section>';
     }).join('');

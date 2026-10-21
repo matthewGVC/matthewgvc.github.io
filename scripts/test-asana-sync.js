@@ -301,6 +301,10 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('land row: the dev\'s next milestone stored', 'next_milestone' in db3.T.dev_projects[0], true);
   check('land row: the dev Match result stored', Array.isArray((db3.T.dev_projects[0].match || {}).list), true);
   check('land row: the hint is logged on the development', db3.T.changes.some(c => c.dev_project_id === 'dev1' && c.source === 'Asana'), true);
+  // a hint Matt turned down on the job page (asana_map.dismissed) stays down
+  let db3b = fakeDb({ dev_projects: [Object.assign({}, DEVROW, { asana_project_gid: DEV, asana_map: { dismissed: { landClosed: ['9000000000211'] } } })], asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }] });
+  await applyRun({ client: db3b, run: await read(world()), now: NOW });
+  check('land row: a dismissed hint is not suggested again', (db3b.T.dev_projects[0].milestone_hints || []).some(h => h.key === 'landClosed'), false);
 
   /* loose tasks: only those naming a linked development are kept (D65) */
   const wl = world();

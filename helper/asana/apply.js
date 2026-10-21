@@ -31,7 +31,7 @@
      listing made (from_pitch_id); Off market while a pitch → not won.
    - developments (D65): hints from the 🚧 project, the house row, the Buy-Side
      land row and the loose tasks naming it → milestone_hints (confirmed keys
-     left out), next_milestone (+ family, slips, construction, early ticks).
+     and hints Matt turned down, asana_map.dismissed, left out), next_milestone (+ family, slips, construction, early ticks).
    - a full read that no longer has a linked task: the job stays and
      `asana.gone` is set (Match turns it into M2 "Asana task gone").
    - match: after the run, GVC_MATCH.check on every staged listing (and each
@@ -188,7 +188,9 @@ async function writeRun(o, sr, out, now) {
     loose.forEach(l => { devOfLoose[l.gid] = dev.id; });
     const res = MAP.devHints({ name: d.project.name || dev.label, family: dev.family }, tasks, { houses, lands, loose }, now);
     const confirmed = dev.milestones || {};
-    const hints = res.hints.filter(h => !(confirmed[h.key] && confirmed[h.key].done));
+    // a hint Matt turned down on the job page stays down (asana_map.dismissed: { key: [gid] })
+    const turned = ((dev.asana_map || {}).dismissed) || {};
+    const hints = res.hints.filter(h => !(confirmed[h.key] && confirmed[h.key].done) && (turned[h.key] || []).indexOf(h.asanaGid) === -1);
     const next = Object.assign({ key: null, name: null, dueOn: null }, res.next || {},
       { family: res.family, slips: res.slips, construction: res.construction, early: res.early });
     const patch = {}, changes = [];

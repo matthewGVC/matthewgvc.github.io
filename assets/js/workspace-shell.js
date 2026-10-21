@@ -2,10 +2,16 @@
    WORKSPACE SHELL — the top bar, banner and footer of every /workspace/ page
    (from the locked mockup's shell.js, now wired to real state).
 
-     <body data-nav="overview|jobs|job" data-root="./ or ../">
-     const shell = GVC_SHELL.mount({ onSearch })   after the page's markup
+     <body data-nav="overview|jobs|job|match|status" data-root="./ or ../">
+     const shell = GVC_SHELL.mount({ onSynced, onDrive, noDrive })   after the page's markup
+                                noDrive: the page never needs Drive (Match, Status):
+                                no Drive pill, no read-only banner
      shell.setSync(health)      health from GVC_WS.syncHealth(); updates the
                                 sync button's title and the footer
+     shell.setAsana(health)     the same for GVC_WS.asanaHealth() (footer)
+     GVC_SHELL.syncWords(r)     POST /sync's { ok, asana, de } in one plain line,
+                                each part read on its own (ok is false whenever
+                                Asana has no token, even when DE synced)
      shell.driveState()         → Promise<'connected'|'needs-click'|…> (GVC_DRIVE)
      GVC_SHELL.helper(method, path, body) → the desktop helper's JSON, or
                                 throws "The helper isn't running on this PC."
@@ -64,9 +70,9 @@
     top.className = 'top';
     top.innerHTML = '<a class="brand" href="' + root + '"><img src="' + root + '../assets/logos/monogram.svg" alt="">GVC Workspace</a>' +
       '<nav class="nav" aria-label="Main"><a href="' + root + '"' + cur('overview') + '>Overview</a><a href="' + root + 'jobs/"' + cur('jobs') + '>Jobs</a>' +
-      '<a href="' + root + '../#tools">Team</a><a href="' + root + '../listing-rules/">Reference</a><a href="' + root + '#tasks">Tasks</a></nav>' +
+      '<a href="' + root + 'match/"' + cur('match') + '>Match</a><a href="' + root + 'status/"' + cur('status') + '>Status</a></nav>' +
       '<div class="top-r"><button class="pill-ok off" type="button" id="wsDrive">Drive…</button>' +
-      '<button class="ibtn" type="button" id="wsSync" title="Sync now from DE">' + icon('sync') + '<span class="sr">Sync now from DE</span></button>' +
+      '<button class="ibtn" type="button" id="wsSync" title="Sync now: Asana, then DE">' + icon('sync') + '<span class="sr">Sync now: Asana, then DE</span></button>' +
       '<button class="ibtn" type="button" id="wsSearchBtn" title="Search jobs">' + icon('search') + '<span class="sr">Search jobs</span></button>' +
       '<button class="avatar" type="button" id="wsMe" title="Signed in" aria-haspopup="true">·</button></div>';
     body.insertBefore(top, body.firstChild);
@@ -77,7 +83,7 @@
 
     var foot = doc.createElement('footer');
     foot.className = 'foot';
-    foot.innerHTML = '<span class="ok" id="wsFootSync">DE sync status loading</span><span id="wsFootDrive"></span><span>The GVC Team · Douglas Elliman</span>';
+    foot.innerHTML = '<span class="ok" id="wsFootSync">DE sync status loading</span><span class="ok" id="wsFootAsana">Asana sync status loading</span><span id="wsFootDrive"></span><span>The GVC Team · Douglas Elliman</span>';
     body.appendChild(foot);
 
     var shell = { readOnly: true };
@@ -85,6 +91,7 @@
     /* ---------- Drive ---------- */
     var pill = doc.getElementById('wsDrive');
     function paintDrive(s) {
+      if (opts.noDrive) { shell.readOnly = s !== 'connected'; if (opts.onDrive) opts.onDrive(s); return; }
       var l = DRIVE_LABEL[s] || DRIVE_LABEL.error;
       pill.textContent = l[0]; pill.className = 'pill-ok' + (l[1] ? ' ' + l[1] : '');
       shell.readOnly = s !== 'connected';
@@ -113,6 +120,8 @@
       }).catch(function () { /* picker closed */ }).then(refreshDrive);
     }
     pill.addEventListener('click', driveClick);
+    // pages that never need Drive (Match, Status): no pill, no read-only banner
+    if (opts.noDrive) { pill.style.display = 'none'; banner.style.display = 'none'; doc.getElementById('wsFootDrive').style.display = 'none'; }
     shell.driveState = refreshDrive;
     refreshDrive();
 
@@ -128,16 +137,21 @@
     });
     syncBtn.addEventListener('click', function () {
       syncBtn.disabled = true;
-      syncBtn.title = 'Syncing from DE…';
-      helper('POST', '/de/sync').then(function (r) {
-        syncBtn.title = r.ok ? 'Synced: ' + r.changes + ' change(s), ' + r.created + ' new job(s).' : (r.aborted || r.error || 'Sync failed.');
+      syncBtn.title = 'Syncing Asana, then DE…';
+      helper('POST', '/sync').then(function (r) {
+        syncBtn.title = shell.lastSync = syncWords(r);
         if (opts.onSynced) opts.onSynced(r);
       }, function (e) { syncBtn.title = e.message; }).then(function () { syncBtn.disabled = false; });
     });
     shell.setSync = function (h) {
       syncText = h.text;
-      if (!syncBtn.disabled) syncBtn.title = 'Sync now from DE · ' + h.text;
+      if (!syncBtn.disabled && !shell.lastSync) syncBtn.title = 'Sync now: Asana, then DE. ' + h.text;   // a sync's result stays readable
       var f = doc.getElementById('wsFootSync');
+      f.textContent = h.text;
+      f.className = h.state === 'ok' ? 'ok' : '';
+    };
+    shell.setAsana = function (h) {
+      var f = doc.getElementById('wsFootAsana');
       f.textContent = h.text;
       f.className = h.state === 'ok' ? 'ok' : '';
     };
@@ -185,11 +199,27 @@
       P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1')
         .then(function (rows) { shell.setSync(global.GVC_WS.syncHealth((rows || [])[0] || null, new Date())); },
           function () { shell.setSync({ state: 'never', text: 'DE sync status unknown' }); });
-    } else shell.setSync({ state: 'never', text: 'Sign in to see the DE sync' });
+      P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1')
+        .then(function (rows) { shell.setAsana(global.GVC_WS.asanaHealth((rows || [])[0] || null, new Date())); },
+          function () { shell.setAsana({ state: 'never', text: 'Asana sync status unknown' }); });
+    } else { shell.setSync({ state: 'never', text: 'Sign in to see the DE sync' }); shell.setAsana({ state: 'never', text: '' }); }
     return shell;
   }
 
-  global.GVC_SHELL = { mount: mount, helper: helper };
+  /* POST /sync → one plain line; each part is read on its own */
+  function part(name, x) {
+    if (!x) return name + ' didn\'t answer.';
+    if (!x.ok) return name + ' didn\'t sync: ' + String(x.aborted || x.error || 'no reason given').replace(/\.$/, '') + '.';
+    var n = +x.changes || 0, made = name === 'Asana' && +x.created ? ', ' + x.created + ' new job' + (+x.created === 1 ? '' : 's') : '';
+    return name + ': ' + n + ' change' + (n === 1 ? '' : 's') + made + '.';
+  }
+  function syncWords(r) {
+    r = r || {};
+    if (!r.asana && !r.de) return r.error || 'Sync failed.';
+    return part('Asana', r.asana) + ' ' + part('DE', r.de);
+  }
+
+  global.GVC_SHELL = { mount: mount, helper: helper, syncWords: syncWords };
   global.GVC_ICON = icon;
   global.GVC_ESC = esc;
 })(window);

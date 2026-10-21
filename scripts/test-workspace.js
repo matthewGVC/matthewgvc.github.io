@@ -25,22 +25,37 @@ function rowsFor(over) {
       { id: 'p1', slug: '100-example-st-residence-4a', label: 'x', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE', version: 3,
         core: { address: '100 EXAMPLE ST', unit: '4A', neighborhood: 'Testville' }, de: { status: 'ActiveUnderContract', price: 4500000, beds: 4, baths: 4 },
         de_listing_id: '9001', drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
-        scan: { weeks: { [iso(NOW - 20 * 864e5).slice(0, 10)]: 12 }, found: { floorplan: iso(NOW - 30 * 864e5).slice(0, 10) } } },
+        scan: { weeks: { [iso(NOW - 20 * 864e5).slice(0, 10)]: 12 }, found: { floorplan: iso(NOW - 30 * 864e5).slice(0, 10) } },
+        asana_gid: '1201', asana: { gid: '1201', permalink: 'https://app.asana.com/0/1/1201', status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract',
+          checklist: [{ block: 'prep', steps: [{ name: 'Create Show Sheet', done: true, doneOn: iso(NOW - 30 * 864e5).slice(0, 10) }, { name: 'Brand floor plan', done: false }] },
+            { block: 'contract', steps: [{ name: 'Deal sheet', done: false }] }] },
+        milestones: { listedOn: { on: iso(NOW - 40 * 864e5).slice(0, 10), planned: false }, closedOn: { on: iso(NOW + 30 * 864e5).slice(0, 10), planned: true } },
+        match: { list: [
+          { code: 'M3', key: 'M3', text: 'Asana says $4,750,000; DE says $4,500,000.', values: { asana: 4750000, de: 4500000 }, fixAt: 'Asana', who: ['Elyse Gutman'], since: '2026-10-13' },
+          { code: 'M7', key: 'M7:drive', text: 'Asana\'s Drive Link is empty; paste https://drive.google.com/drive/folders/abc', values: { field: 'Drive Link', paste: 'https://drive.google.com/drive/folders/abc' }, fixAt: 'Asana', who: [], since: '2026-10-14' },
+          { code: 'M5', key: 'M5:closedOn', text: 'Asana and DE differ on the closing date.', values: { asana: 'a', de: 'b' }, fixAt: 'DE', who: ['Elyse Gutman'], since: '2026-10-15' }], dismissed: {} } },
       { id: 'p2', slug: '20-sample-ave-7b', label: 'y', kind: 'rental', market: 'NYC', stage: 'Live', stage_source: 'DE', version: 1,
         core: { address: '20 Sample Ave', unit: '7B', price: 5000 }, de_listing_id: '9002', folder_state: 'unlinked' },
       { id: 'p3', slug: '12-sample-lane', label: 'z', kind: 'sale', market: 'NJ', stage: 'Live', stage_source: 'seed', version: 1,
         core: { address: '12 Sample Lane' }, folder_state: 'broken', drive_folder: 'GVC - New Jersey/x' },
-      { id: 'p4', slug: 'evil', label: 'e', kind: 'sale', market: 'FL', stage: 'Won', stage_source: 'seed', version: 1,
+      { id: 'p4', slug: 'evil', label: 'e', kind: 'sale', market: 'FL', stage: 'Prep', stage_source: 'seed', version: 1,
         core: { address: '<img src=x onerror="window.__xss=1">' }, folder_state: 'linked', drive_folder: 'q' }
     ],
     pitches: [{ id: 'q1', slug: '90-pitch-st-11b-2026-08-04', label: '90 Pitch St 11B', market: 'NYC', pitched_on: '2026-08-04', outcome: 'open', folder_state: 'linked', drive_folder: 'z' }],
-    dev_projects: [{ id: 'd1', slug: '619-example-ave', label: '619 Example Ave', market: 'NJ', milestones: {}, folder_state: 'linked', drive_folder: 'v' }],
+    dev_projects: [{ id: 'd1', slug: '619-example-ave', label: '619 Example Ave', market: 'NJ', milestones: { agreement: { done: true, on: '2026-01-10' } }, folder_state: 'linked', drive_folder: 'v', version: 2,
+      asana_project_gid: '1300', asana_map: {},
+      milestone_hints: [{ key: 'renders', date: '2026-05-21', approx: false, rule: 'tick', source: 'Asana: Renders delivered', asanaGid: '777' },
+        { key: 'finishes', date: '2026-06-02', approx: true, rule: 'late', source: 'Asana: Finishes selected', asanaGid: '778' }],
+      next_milestone: { key: 'permits', name: 'Permits filed', dueOn: iso(NOW + 12 * 864e5).slice(0, 10), slips: { g1: { count: 2, days: 9 } }, construction: { done: 3, total: 12 }, early: [] },
+      match: { list: [{ code: 'M12', key: 'M12:g7', text: 'Permits is 20 days past due in Asana.', values: { due: '2026-09-30' }, fixAt: 'Asana', who: ['Pat Builder'], since: '2026-10-14' }], dismissed: {} } }],
     changes: [
       { id: 'c1', property_id: 'p1', at: iso(NOW - 40 * 864e5), field: 'stage', new_value: 'Live', source: 'DE' },
       { id: 'c2', property_id: 'p1', at: iso(NOW - 5 * 864e5), field: 'stage', old_value: 'Live', new_value: 'In contract', source: 'DE' },
       { id: 'c3', property_id: 'p1', at: iso(NOW - 2 * 864e5), field: 'price', old_value: 4750000, new_value: 4500000, source: 'DE' }
     ],
-    sync_runs: [{ kind: 'de', started_at: iso(NOW - 3 * 3600e3), ok: true }],
+    sync_runs: [{ kind: 'de', started_at: iso(NOW - 3 * 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 3600e3), ok: true }],
+    asana_people: [{ gid: 'a1', name: 'Eve Newcomer', section: 'Partners', title: 'Licensed Salesperson', past: false, seen_at: iso(NOW - 3600e3) },
+      { gid: 'a0', name: 'Old Person', section: 'Partners', title: 'Licensed Salesperson', past: false, seen_at: iso(NOW - 9 * 864e5) }],
     todos: [{ id: 't1', section: 'Up next', body: 'Florida office signage', done: false, position: 1 },
       { id: 't2', section: 'Waiting on others', body: 'Real headshot for an agent\nOnly a small temporary photo', done: false, position: 2 }]
   };
@@ -50,7 +65,7 @@ function rowsFor(over) {
 async function open(browser, opts) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  const errors = [], writes = [];
+  const errors = [], writes = [], reads = [];
   page.on('pageerror', e => errors.push(e.message));
   if (opts.signedIn !== false) {
     await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
@@ -59,6 +74,7 @@ async function open(browser, opts) {
   const T = opts.rows || rowsFor();
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
+    reads.push(m + ' ' + table);
     if (table === 'members') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]) });
     const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
     const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
@@ -75,11 +91,16 @@ async function open(browser, opts) {
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T[table] || []) });
   });
   await page.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'u1', email: 'matt@example.com' }) }));
-  await page.route('http://localhost:47610/**', r => opts.helper === false ? r.abort() :
-    r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ ok: true, version: '0.1.0', paired: true }) }));
+  const helperCalls = [];
+  await page.route('http://localhost:47610/**', r => {
+    helperCalls.push(r.request().method() + ' ' + new URL(r.request().url()).pathname);
+    if (opts.helper === false) return r.abort();
+    const body = new URL(r.request().url()).pathname === '/sync' && opts.syncResult ? opts.syncResult : { ok: true, version: '0.1.0', paired: true };
+    return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+  });
   await page.goto(BASE + (opts.path || '/workspace/'), { waitUntil: 'networkidle' });
   await page.waitForTimeout(300);
-  return { page, errors, writes, ctx };
+  return { page, errors, writes, reads, helperCalls, ctx };
 }
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const visible = (page, sel) => page.isVisible(sel).catch(() => false);
@@ -111,6 +132,14 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('sync card ok', [await p.$eval('#deCard', e => e.className), (await text(p, '#deTitle'))], ['card health', 'DE sync ran']);
   check('read-only banner without Drive', [(await text(p, '.banner')).includes('Read-only here'), await text(p, '#wsDrive')], [true, 'Read-only here']);
   check('avatar initials', await text(p, '#wsMe'), 'MB');
+  check('nav: Overview, Jobs, Match, Status', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Jobs', 'Match', 'Status']);
+  check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
+  check('footer: Asana beside DE', (await text(p, '#wsFootAsana')).startsWith('Asana last synced'), true);
+  check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
+  check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 mismatches'), true);
+  check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 mismatches', 'match/']);
+  check('development row: next, slips, construction, hints', [(await text(p, 'a.pj[href*="619"]')).includes('Next: Permits / zoning'), (await text(p, 'a.pj[href*="619"]')).includes('re-dated 2 times'),
+    await p.$$eval('a.pj[href*="619"] .cons', els => els.length), (await text(p, 'a.pj[href*="619"]')).includes('2 milestones suggested from Asana')], [true, true, 1, true]);
 
   /* filters */
   await p.click('#mkt button[data-v="NJ"]');
@@ -143,6 +172,20 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.ctx.close();
   t = await open(browser, { rows: rowsFor({ sync_runs: [] }) });
   check('never synced', await text(t.page, '#deTitle'), 'DE hasn\'t synced yet');
+  await t.ctx.close();
+
+  t = await open(browser, { rows: rowsFor({ sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - (6 * 3600e3 + 60e3)), ok: true }] }) });
+  check('Asana 6 h 1 min: amber', [await t.page.$eval('#asCard', e => e.className), (await text(t.page, '#asText')).startsWith('Asana last synced')], ['card health amber', true]);
+  await t.ctx.close();
+  t = await open(browser, { rows: rowsFor({ sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 3600e3), ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }] }) });
+  check('Asana refused: red with the reason', [await t.page.$eval('#asCard', e => e.className), await text(t.page, '#asWhy')], ['card health red', 'Asana refused the token']);
+  await t.ctx.close();
+  t = await open(browser, { drive: true, syncResult: { ok: false, asana: { ok: false, error: 'No Asana token yet. Add asanaToken to the helper config.' }, de: { ok: true, changes: 2, created: 0, skipped: 0, aborted: null } } });
+  await t.page.click('#wsSync');
+  await t.page.waitForTimeout(400);
+  const st = await t.page.$eval('#wsSync', b => b.title);
+  check('Sync now runs both through /sync', [t.helperCalls.includes('POST /sync'), t.helperCalls.includes('POST /de/sync')], [true, false]);
+  check('Sync now reads each part', [st.includes('Asana didn\'t sync: No Asana token yet'), st.includes('DE: 2 changes'), /new job/.test(st)], [true, true, false]);
   await t.ctx.close();
 
   /* helper off: Sync greyed with the reason */
@@ -194,6 +237,74 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('jobs: no page errors', t.errors, []);
   await t.ctx.close();
 
+  /* ---------- the Match page ---------- */
+  t = await open(browser, { path: '/workspace/match/' });
+  let mp = t.page;
+  check('match: no page errors', t.errors, []);
+  check('match: groups by where to fix it, roster drift last', await mp.$$eval('.mg > .card-h h2', els => els.map(e => e.textContent.trim())), ['Asana', 'DE', 'Roster']);
+  check('match: then by person', await mp.$$eval('.mg:first-of-type .who h3', els => els.map(e => e.textContent.trim())), ['Elyse Gutman', 'Pat Builder', 'No one named']);
+  check('match: Open in Asana on each line', await mp.$eval('.mg:first-of-type .mline a.asana', a => [a.getAttribute('href'), a.target]), ['https://app.asana.com/0/1/1201', '_blank']);
+  check('match: M7 shows the link to paste', await mp.$$eval('.mline .paste', els => els.map(e => e.textContent.trim())), ['https://drive.google.com/drive/folders/abc']);
+  check('match: roster drift uses the latest People read only', [(await text(mp, '.mg:last-of-type')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg:last-of-type')).includes('Old Person')], [true, false]);
+  check('match: total in the header', (await text(mp, '#lead')).startsWith('4 mismatches'), true);
+  check('match: no Drive pill or read-only banner', [await visible(mp, '#wsDrive'), await visible(mp, '.banner')], [false, false]);
+  await mp.click('.mline[data-key="M3"] [data-dismiss]');
+  check('dismiss: asks for a reason', await visible(mp, '.mline[data-key="M3"] input.reason'), true);
+  await mp.click('.mline[data-key="M3"] [data-confirm]');
+  check('dismiss: refused without a reason', [(await text(mp, '.mline[data-key="M3"] .msg')).includes('reason'), t.writes.length], [true, 0]);
+  await mp.fill('.mline[data-key="M3"] input.reason', 'Agent says Asana is right; DE updates Monday');
+  await mp.click('.mline[data-key="M3"] [data-confirm]');
+  await mp.waitForTimeout(400);
+  const mpatch = t.writes.find(w => /^PATCH properties/.test(w)) || '';
+  const mbody = JSON.parse(mpatch.slice(mpatch.indexOf('{')) || '{}');
+  const dm = ((mbody.match || {}).dismissed || {}).M3 || {};
+  check('dismiss: version-checked update', [/id=eq\.p1/.test(mpatch), /version=eq\.3/.test(mpatch)], [true, true]);
+  check('dismiss: match.dismissed by key, with the values, reason and who', [dm.values, dm.reason, dm.by, !!dm.at, (mbody.match.list || []).length], [{ asana: 4750000, de: 4500000 }, 'Agent says Asana is right; DE updates Monday', 'Matt Bloomfield', true, 3]);
+  check('dismiss: a changes row, source match', t.writes.some(w => /^POST changes .*"property_id":"p1".*"field":"match".*"source":"match"/.test(w) && /Agent says Asana is right/.test(w)), true);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/match/', conflict: true });
+  await t.page.click('.mline[data-key="M3"] [data-dismiss]');
+  await t.page.fill('.mline[data-key="M3"] input.reason', 'x');
+  await t.page.click('.mline[data-key="M3"] [data-confirm]');
+  await t.page.waitForTimeout(400);
+  check('dismiss: conflict refused, nothing logged', [(await text(t.page, '.mline[data-key="M3"] .msg')).includes('Someone changed'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
+  check('match: nothing to fix', (await text(t.page, '#groups')).includes('Nothing to fix'), true);
+  await t.ctx.close();
+
+  /* ---------- the team Status page ---------- */
+  t = await open(browser, { path: '/workspace/status/' });
+  let sp = t.page;
+  check('status: no page errors', t.errors, []);
+  check('status: every staged job, by market', [await sp.$$eval('.mkt h2', els => els.map(e => e.textContent.trim())), await sp.$$eval('.mkt tbody tr', els => els.length)], [['NYC', 'NJ', 'FL'], 5]);
+  check('status: stage order inside a market', await sp.$$eval('.mkt:first-of-type tbody tr .stg', els => els.map(e => e.textContent.trim())), ['Pitch', 'Live', 'In contract']);
+  const row1 = await sp.$eval('.mkt tr[data-href*="100-example"]', tr => [...tr.querySelectorAll('td')].map(td => td.textContent.replace(/\s+/g, ' ').trim()));
+  check('status: a row', [row1[0].startsWith('100 Example St 4A'), row1[2].startsWith('Listed'), row1[3].startsWith('Closing'), row1[5]], [true, true, true, '3']);
+  check('status: no Drive pill needed', [await visible(sp, '#wsDrive'), await visible(sp, '.banner')], [false, false]);
+  check('status: read-only, nothing written', t.writes, []);
+  await t.ctx.close();
+  const sphone = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  const spp = await sphone.newPage();
+  await spp.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
+  const T1 = rowsFor();
+  await spp.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T1[new URL(r.request().url()).pathname.split('/').pop()] || []) }));
+  await spp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
+  await spp.goto(BASE + '/workspace/status/', { waitUntil: 'networkidle' });
+  check('status: phone, rows shown', await spp.$$eval('.mkt tbody tr', els => els.length), 5);
+  check('status: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
+  await spp.goto(BASE + '/workspace/match/', { waitUntil: 'networkidle' });
+  check('match: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
+  await sphone.close();
+
+  /* signed out: the sign-in box only, nothing asked of the database */
+  for (const path of ['/workspace/match/', '/workspace/status/']) {
+    t = await open(browser, { signedIn: false, path });
+    check('signed out ' + path + ': sign-in box only', [await visible(t.page, '#gate'), await visible(t.page, '#board'), (await text(t.page, '#gate')).includes('Sign in')], [true, false, true]);
+    check('signed out ' + path + ': no REST calls', t.reads, []);
+    await t.ctx.close();
+  }
+
   /* ---------- one job ---------- */
   const R = rowsFor();
   R.properties[0].core.listingUrl = 'https://www.elliman.com/listing/x/9001';
@@ -204,11 +315,18 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('job: its own name', (await text(jp, 'h1')).startsWith('100 Example St 4A'), true);
   check('job: facts from DE', (await text(jp, '.facts')).includes('$4,500,000'), true);
   check('job: agent from the roster', (await text(jp, '.facts')).includes('Elyse Gutman'), true);
-  check('job: current stage', await text(jp, '.step.cur'), '8In contract' + (await jp.$eval('.step.cur .d', e => e.textContent)));
+  check('job: current stage', await text(jp, '.step.cur'), '5In contract' + (await jp.$eval('.step.cur .d', e => e.textContent)));
   check('job: DE status in words', (await text(jp, '.facts')).includes('Contract signed'), true);
-  check('job: skipped stages dashed', await jp.$$eval('.step.skip', els => els.map(e => e.childNodes[1].textContent.trim())), ['Pitch', 'Won', 'Showsheet', 'Photos', 'Brochure']);
+  check('job: skipped stages dashed', await jp.$$eval('.step.skip', els => els.map(e => e.childNodes[1].textContent.trim())), ['Pitch', 'Prep', 'Accepted offer']);
   check('job: footer shows the sync', (await text(jp, '#wsFootSync')).startsWith('DE synced'), true);
-  check('job: change log', await jp.$$eval('.log li', els => els.length), 3);
+  check('job: change log', await jp.$$eval('#changeLog li', els => els.length), 3);
+  /* the Asana card (read-only) */
+  check('job: Asana card stage', (await text(jp, '#asanaCard')).includes('In contract'), true);
+  check('job: Asana card opens the task', await jp.$eval('#asanaCard a[href="https://app.asana.com/0/1/1201"]', a => [a.textContent.trim(), a.target]).catch(() => null), ['Open in Asana', '_blank']);
+  check('job: checklist by block', await jp.$$eval('#asanaCard .ck-block h3', els => els.map(e => e.textContent.trim())), ['Prep', 'Contract']);
+  check('job: checklist ticks', await jp.$$eval('#asanaCard .ck-block li.done', els => els.map(e => e.textContent.trim().split(' ')[0])), ['Create']);
+  check('job: deal dates, planned hollow', [await jp.$$eval('#asanaCard .dmk', els => els.length), await jp.$$eval('#asanaCard .dmk.planned', els => els.length)], [2, 1]);
+  check('job: its mismatches', await jp.$$eval('#asanaCard .mm li', els => els.length), 3);
   check('job: DE listing link', await jp.$eval('a.b[href^="https://www.elliman.com"]', a => a.target), '_blank');
   check('job: folder path shown', (await text(jp, '.path')).includes('G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A'), true);
   await jp.route('http://localhost:47610/open-folder', r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' }));
@@ -230,7 +348,30 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('pitch page', [(await text(t.page, 'h1')).startsWith('90 Pitch St 11B'), (await text(t.page, '.facts')).includes('Open')], [true, true]);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
-  check('development page', await t.page.$$eval('.log li', els => els.length), 10);
+  check('development page: D66\'s 18 milestones', await t.page.$$eval('#msList li', els => els.length), 18);
+  check('development page: hints listed with ✓ and ✗', [await t.page.$$eval('#hints li', els => els.length), await t.page.$$eval('#hints [data-ok]', els => els.length), await t.page.$$eval('#hints [data-no]', els => els.length)], [2, 2, 2]);
+  check('development page: next milestone and slips', [(await text(t.page, '#devNext')).includes('Permits / zoning'), (await text(t.page, '#devNext')).includes('re-dated 2 times')], [true, true]);
+  await t.page.click('#hints [data-ok="0"]');
+  await t.page.waitForTimeout(400);
+  let dp = t.writes.find(w => /^PATCH dev_projects/.test(w)) || '';
+  let dbody = JSON.parse(dp.slice(dp.indexOf('{')) || '{}');
+  check('hint ✓: version-checked update', [/id=eq\.d1/.test(dp), /version=eq\.2/.test(dp)], [true, true]);
+  check('hint ✓: moved into milestones', [dbody.milestones && dbody.milestones.renders && dbody.milestones.renders.done, dbody.milestones && dbody.milestones.renders.on, dbody.milestones && dbody.milestones.renders.asanaGid,
+    !!(dbody.milestones && dbody.milestones.renders.confirmedBy), dbody.milestones && dbody.milestones.agreement && dbody.milestones.agreement.done], [true, '2026-05-21', '777', true, true]);
+  check('hint ✓: off the hint list, into asana_map', [(dbody.milestone_hints || []).map(h => h.key), dbody.asana_map && dbody.asana_map.renders], [['finishes'], ['777']]);
+  check('hint ✓: logged', t.writes.some(w => /^POST changes .*"dev_project_id":"d1".*"field":"milestones"/.test(w)), true);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
+  await t.page.click('#hints [data-no="1"]');
+  await t.page.waitForTimeout(400);
+  dp = t.writes.find(w => /^PATCH dev_projects/.test(w)) || '';
+  dbody = JSON.parse(dp.slice(dp.indexOf('{')) || '{}');
+  check('hint ✗: turned down, remembered, not a milestone', [(dbody.milestone_hints || []).map(h => h.key), dbody.asana_map && dbody.asana_map.dismissed && dbody.asana_map.dismissed.finishes, 'milestones' in dbody], [['renders'], ['778'], false]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', conflict: true });
+  await t.page.click('#hints [data-ok="0"]');
+  await t.page.waitForTimeout(400);
+  check('hint: conflict refused, not overwritten', [(await text(t.page, '#hintMsg')).includes('Someone changed'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
   await t.ctx.close();
 
   /* ---------- linking a folder ---------- */

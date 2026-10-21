@@ -1,8 +1,10 @@
 /* ============================================================
    SCHEDULE — when the helper runs its jobs (plan §4, spec §2.5).
 
-     due(now, last) → ['de', 'scan', 'backup'] that should run now
-       last = { de: Date, scan: Date, backup: Date } (latest start of each)
+     due(now, last, opts) → the job names that should run now
+       last = { de, scan, backup, asana, asanaFull, people: Date } (latest start of each)
+       opts.asana = true adds the three Asana jobs; without a token the runner
+       leaves it off, so they are never due.
 
    Each job has a daily time (local clock). A job is due when its last run
    started before the most recent occurrence of that time, so a PC that was
@@ -12,6 +14,8 @@
 'use strict';
 
 const TIMES = { de: [7, 0], scan: [2, 0], backup: [2, 30] };
+const ASANA_TIMES = { asanaFull: [3, 0], people: [3, 15] };   // nightly full read, then People
+const ASANA_EVERY_MS = 30 * 60 * 1000;                        // the plain read, all day
 
 function lastSlot(now, h, m) {
   const t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
@@ -19,11 +23,15 @@ function lastSlot(now, h, m) {
   return t;
 }
 
-function due(now, last) {
-  return Object.keys(TIMES).filter(k => {
-    const slot = lastSlot(now, TIMES[k][0], TIMES[k][1]);
+function due(now, last, opts) {
+  const withAsana = !!(opts && opts.asana);
+  const slots = Object.assign({}, TIMES, withAsana ? ASANA_TIMES : {});
+  const out = Object.keys(slots).filter(k => {
+    const slot = lastSlot(now, slots[k][0], slots[k][1]);
     return !(last && last[k]) || new Date(last[k]) < slot;
   });
+  if (withAsana && (!(last && last.asana) || now - new Date(last.asana) >= ASANA_EVERY_MS)) out.push('asana');
+  return out;
 }
 
-module.exports = { due, TIMES };
+module.exports = { due, TIMES, ASANA_TIMES, ASANA_EVERY_MS };

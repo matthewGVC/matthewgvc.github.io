@@ -122,7 +122,7 @@
           <div id="tlist"></div>
           <form class="addt" id="addTask"><input class="inp" id="newTask" placeholder="Add a task" aria-label="New task"><button class="b ghost" type="submit" id="addBtn"></button></form>
         </section>
-        <section class="card" aria-labelledby="wait-h">
+        <section class="card" id="waitCard" aria-labelledby="wait-h">
           <div class="card-h"><div><h2 id="wait-h">Waiting on others</h2><p>Needed before a piece can be finished</p></div></div>
           <div id="wait"></div>
         </section>
@@ -184,16 +184,19 @@
     });
   }
   function read() {
+    // personal to-dos are only read for the owner's own sign-in, never for the team's shared one
+    var personal = false;
+    var mine = P.whoAmI().then(function (w) { personal = !!(w && w.role === 'owner'); return personal; }, function () { return false; });
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'),
       rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
       rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1'),
-      rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc'),
+      mine.then(function (yes) { return yes ? rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc') : []; }),
       rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1')
     ]).then(function (r) {
-      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null };
+      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null, personal: personal };
       try { render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
       $('gate').hidden = true; $('board').hidden = false;
     }, function (e) {
@@ -312,12 +315,17 @@
     var flags = W.taskFlags(W.buildJobs(data, today)).map(function (t) {
       return '<div class="todo-i"><span class="dm"></span><div><a href="' + esc(t.href) + '">' + esc(t.job) + '</a>: ' + esc(t.text) + '<div class="meta"><span class="chip">' + esc(t.market) + '</span>Flagged by the workspace</div></div></div>';
     });
-    var mine = data.todos.filter(function (t) { return t.section !== 'Waiting on others'; }).map(function (t) {
+    // personal to-dos are Matt's: only his own sign-in shows them (the team sign-in sees the workspace's flags only)
+    var personal = !!data.personal;
+    $('addTask').style.display = personal ? '' : 'none'; $('waitCard').hidden = !personal;
+    $('tasks').querySelector('.card-h p').textContent = personal ? 'Flagged by the workspace, then yours' : 'Flagged by the workspace';
+    var todos = personal ? data.todos : [];
+    var mine = todos.filter(function (t) { return t.section !== 'Waiting on others'; }).map(function (t) {
       return '<div class="todo-i"><button class="bx" type="button" data-done="' + esc(t.id) + '" aria-label="Done: ' + esc(t.body) + '"></button><div>' + esc(t.body) + '<div class="meta"><span class="chip">' + esc(t.section) + '</span></div></div></div>';
     });
     $('tlist').innerHTML = flags.concat(mine).join('') || '<p class="soft" style="font-size:13.5px">Nothing to do.</p>';
     $('tcount').textContent = (flags.length + mine.length) + ' open';
-    var wait = data.todos.filter(function (t) { return t.section === 'Waiting on others'; });
+    var wait = todos.filter(function (t) { return t.section === 'Waiting on others'; });
     $('wait').innerHTML = wait.length ? wait.map(function (t) {
       var lines = String(t.body).split('\n');
       return '<div class="dep">' + I('people') + '<div>' + esc(lines[0]) + (lines[1] ? '<small>' + esc(lines.slice(1).join(' ')) + '</small>' : '') + '</div></div>';

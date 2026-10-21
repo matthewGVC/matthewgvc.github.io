@@ -25,6 +25,8 @@
      sale of the same unit must not close today's listing): de_stage, plus
      closePrice and closeDate in core. Transactions that aren't a job are
      remembered and otherwise ignored (D31).
+   - match: after the run, every staged job's Match check is stored in `match`
+     where it changed (helper/match-store.js; found / cleared logged as 'match').
    - an aborted run writes nothing but its `sync_runs` row.
    - a row someone else changed meanwhile (version check) is skipped and
      logged, never overwritten.
@@ -35,6 +37,7 @@
 const P = require('../../assets/js/property-library.js');
 const A = require('../../assets/js/address-aliases.js');
 const F = require('../../assets/js/job-facts.js');
+const { storeMatches } = require('../match-store.js');
 
 const DE_FACTS = ['price', 'beds', 'baths', 'halfBaths', 'sqft'];
 const FILL_FACTS = ['city', 'state', 'zip', 'neighborhood'];
@@ -72,7 +75,7 @@ async function writeRows(o, run, out, now) {
   const props = await client.select('properties');
   const known = new Map((await client.select('de_listings')).map(d => [d.de_listing_id, d]));
   const byDe = new Map(props.filter(p => p.de_listing_id).map(p => [p.de_listing_id, p]));
-  const cache = [];
+  const cache = [], conflicted = new Set();
 
   const log = (pid, field, oldV, newV, note) => ({ property_id: pid, at: now, field, old_value: oldV === undefined ? null : oldV,
     new_value: newV === undefined ? null : newV, note: note || null, source: 'DE', run_id: run.id });
@@ -80,12 +83,14 @@ async function writeRows(o, run, out, now) {
   async function write(p, patch, changes) {
     if (!changes.length && !Object.keys(patch).length) return;
     try {
-      await client.update('properties', { id: p.id }, patch, { version: p.version });
+      const r = await client.update('properties', { id: p.id }, patch, { version: p.version });
+      Object.assign(p, JSON.parse(JSON.stringify(patch)), (r && r[0]) || {});   // the Match pass reads the row as it now is
       if (changes.length) await client.insert('changes', changes);
       out.changes += changes.length;
     } catch (e) {
       if (e.name !== 'ConflictError') throw e;
       out.errors.push({ what: 'conflict', detail: e.message, property: p.slug });
+      conflicted.add(p.id);
     }
   }
 
@@ -152,6 +157,10 @@ async function writeRows(o, run, out, now) {
     }
     cache.push(entry);
   }
+
+  // Match, from the rows as they now stand (spec §5)
+  const ms = await storeMatches({ client, rows: props, now, runId: run.id, roster: o.roster, initials: o.initials, skip: conflicted });
+  out.errors.push(...ms.errors);
 
   // PostgREST writes one column list per batch and fills the gaps with null, so
   // entries are sent in groups with the same fields: a cached GVC check is never blanked

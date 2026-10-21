@@ -32,8 +32,11 @@
    - developments (D65): hints from the 🚧 project, the house row, the Buy-Side
      land row and the loose tasks naming it → milestone_hints (confirmed keys
      left out), next_milestone (+ family, slips, construction, early ticks).
-   - a full read that no longer has a linked task: the job stays; `asana.gone`
-     is set and `match.list` gets { code: 'M2', text: 'Asana task gone' }.
+   - a full read that no longer has a linked task: the job stays and
+     `asana.gone` is set (Match turns it into M2 "Asana task gone").
+   - match: after the run, GVC_MATCH.check on every staged listing (and each
+     linked development, from its 🚧 tasks) is stored in `match` where it
+     changed (helper/match-store.js), found / cleared logged as source 'match'.
    - People (run.kind 'people'): asana_people rows upserted, seen_at = now.
    Never: a job deleted, a folder touched, anything written to Asana.
    A row someone changed meanwhile (version check) is skipped and logged,
@@ -47,6 +50,8 @@ const P = require('../../assets/js/property-library.js');
 const MAP = require('../../assets/js/asana-map.js');
 const F = require('../../assets/js/job-facts.js');
 const L = require('./link.js');
+const GM = require('../../assets/js/match-check.js');
+const { matchUpdate, storeMatches } = require('../match-store.js');
 const { looseNeedles, namesOne } = require('./read.js');
 
 const ACTIVE = L.ACTIVE;
@@ -90,10 +95,12 @@ async function writePeople(client, people, now) {
   for (let i = 0; i < rows.length; i += 500) await client.upsert('asana_people', rows.slice(i, i + 500), 'gid');
 }
 
-/* the allowlisted snapshot kept on the job; both stages kept for M14 (D69) */
+/* the allowlisted snapshot kept on the job; both stages kept for M14 (D69),
+   statusSince (the day Asana's stage last changed to this one) for M1's grace (S8) */
 function snapshotOf(t, prev) {
   const f = t.fields || {}, status = f['Listing Status'] || null;
   const st = s => { const r = MAP.stageOf(s); return r.stage || null; };
+  const stage = st(t);
   return {
     gid: t.gid, name: t.name, permalink: t.permalink || null, market: t.market || null, projectGid: t.projectGid || null,
     section: t.section || null, status,
@@ -101,20 +108,9 @@ function snapshotOf(t, prev) {
     stageFromSection: t.section ? st({ fields: { 'Sale/Rent': f['Sale/Rent'] }, section: t.section }) : null,
     dealSide: f['Deal Side'] || null, pointPerson: f['🧑‍💼 Point Person'] || null, assignee: t.assignee || null,
     completed: !!t.completed, fields: f,
+    statusSince: stage ? GM.statusSince(t.history, stage, f['Sale/Rent']) : null,
     checklist: t.subtasks ? MAP.checklistOf(t.subtasks) : ((prev && prev.checklist) || [])
   };
-}
-
-function withMatch(match, item) {
-  const m = Object.assign({ list: [], dismissed: {} }, clone(match) || {});
-  m.list = (m.list || []).filter(x => !(x.code === item.code && x.text === item.text)).concat([item]);
-  return m;
-}
-function withoutGone(match) {
-  if (!match || !(match.list || []).some(x => x.code === 'M2' && x.text === 'Asana task gone')) return match;
-  const m = clone(match);
-  m.list = m.list.filter(x => !(x.code === 'M2' && x.text === 'Asana task gone'));
-  return m;
 }
 
 async function writeRun(o, sr, out, now) {
@@ -132,6 +128,7 @@ async function writeRun(o, sr, out, now) {
   const slugs = { properties: new Set(props.map(p => p.slug)), pitches: new Set(pitches.map(p => p.slug)) };
   const entries = [];
   const fresh = new Map(run.listings.map(t => [t.gid, t]));
+  const conflicted = new Set();
 
   const log = (owner, field, oldV, newV, note) => Object.assign({ at: now, field: field || null, old_value: oldV === undefined ? null : oldV,
     new_value: newV === undefined ? null : newV, note: note || null, source: 'Asana', run_id: sr.id }, owner);
@@ -147,6 +144,7 @@ async function writeRun(o, sr, out, now) {
     } catch (e) {
       if (e.name !== 'ConflictError') throw e;
       out.errors.push({ what: 'conflict', detail: e.message, row: row.slug || row.id });
+      conflicted.add(row.id);
       return false;
     }
   }
@@ -200,6 +198,8 @@ async function writeRun(o, sr, out, now) {
         hints.length + ' milestone' + (hints.length === 1 ? '' : 's') + ' suggested from Asana'));
     }
     if (!eq(next, dev.next_milestone)) patch.next_milestone = next;
+    const mu = matchUpdate(dev, GM.check(dev, { asana: { tasks, early: res.early }, now }), now, { dev_project_id: dev.id }, sr.id);
+    if (mu) { patch.match = mu.match; changes.push(...mu.changes); }
     await save('dev_projects', dev, patch, changes);
   }
   (run.loose || []).forEach(l => entries.push(cacheEntry(Object.assign({}, l, { fields: {} }), 'loose', { dev_project_id: devOfLoose[l.gid] || null })));
@@ -290,8 +290,6 @@ async function writeRun(o, sr, out, now) {
         if (a1 !== b1) changes.push(log(own, k, a1 || null, b1 || null));
       });
     }
-    const m = withoutGone(p.match);
-    if (m !== p.match) patch.match = m;
     if (devOfListing[t.gid] && p.dev_project_id !== devOfListing[t.gid]) {
       patch.dev_project_id = devOfListing[t.gid];
       changes.push(log(own, 'dev_project_id', p.dev_project_id || null, devOfListing[t.gid]));
@@ -391,12 +389,14 @@ async function writeRun(o, sr, out, now) {
       if (c.kind !== 'listing' || !c.property_id || fresh.has(c.gid) || (run.readProjects || []).indexOf(c.project_gid) === -1) continue;
       const p = props.find(x => x.id === c.property_id);
       if (!p || (p.asana && p.asana.gone)) continue;
-      await save('properties', p, {
-        asana: Object.assign({}, p.asana || {}, { gone: now }),
-        match: withMatch(p.match, { code: 'M2', text: 'Asana task gone', values: { asanaGid: c.gid }, fixAt: 'Asana', who: null, since: now })
-      }, [log({ property_id: p.id }, null, null, null, 'Asana task gone')]);
+      await save('properties', p, { asana: Object.assign({}, p.asana || {}, { gone: now }) },
+        [log({ property_id: p.id }, null, null, null, 'Asana task gone')]);
     }
   }
+
+  /* ---------- Match, from the rows as they now stand (spec §5) ---------- */
+  const ms = await storeMatches({ client, rows: props, now, runId: sr.id, roster, initials, skip: conflicted });
+  out.errors.push(...ms.errors);
 
   /* ---------- the cache: one row per task (a listing row wins over the same task in a 🚧 project),
      in batches with one column list each (PostgREST can't touch a row twice in one batch) ---------- */

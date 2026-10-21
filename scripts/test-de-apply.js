@@ -77,7 +77,7 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   check('agents untouched', p1.core.agentIds, ['x']);
   check('stage left alone, DE stage recorded', [p1.stage, p1.stage_source, p1.de_stage], ['Live', undefined, 'In contract']);
   check('de snapshot', [p1.de.status, p1.de_status, p1.de.listingUrl], ['ActiveUnderContract', 'ActiveUnderContract', 'https://example.com/l/900001']);
-  const fields = db.T.changes.map(c => c.field).sort();
+  const fields = db.T.changes.filter(c => c.source !== 'match').map(c => c.field).sort();
   check('changes logged', fields, ['de_stage', 'price', 'sqft']);
   const pc = db.T.changes.find(c => c.field === 'price');
   check('price change row', [pc.old_value, pc.new_value, pc.source, pc.run_id, pc.property_id, /9\.1%/.test(pc.note)], [1100000, 1000000, 'DE', db.T.sync_runs[0].id, 'p1', true]);
@@ -137,6 +137,22 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   let asked = 0;
   await applyRun({ client: db, report: report([{ id: '900003', folder: null }]), now: NOW, courtesy: async () => { asked++; return { gvcListed: true }; }, rows: [row('900003')] });
   check('not GVC: never asked again', [asked, db.T.properties.length], [0, 0]);
+
+  /* ---------- Match is stored after a DE run (spec §5) ---------- */
+  db = fakeDb({ properties: [{ id: 'mm1', slug: 'mm1', stage: 'Live', stage_source: 'Asana', de_listing_id: '900001', kind: 'sale',
+    drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
+    asana: { gid: '1', name: '100 Example St - 4A', status: 'Active', section: 'Active', stageFromStatus: 'Live', stageFromSection: 'Live',
+      fields: { 'Listing Status': 'Active', '🗓️ Listing Date': '2026-09-01', '🛜 Elliman Link': 'x', '🛜 Google Drive Link': 'y' } },
+    core: { address: '100 Example St', unit: '4A' } }] });
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, roster: [], initials: {},
+    rows: [row('900001', { status: 'ActiveUnderContract', stage: 'In contract' })] });
+  const mm = db.T.properties[0].match;
+  check('match after DE: DE ahead of Asana is M1', ((mm || {}).list || []).map(m => [m.code, m.text, m.fixAt]), [['M1', 'DE says In contract; Asana still says Live.', 'Asana']]);
+  check('match after DE: found logged as match', db.T.changes.filter(c => c.source === 'match').map(c => c.new_value), ['M1']);
+  const before2 = db.T.changes.length;
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, roster: [], initials: {},
+    rows: [row('900001', { status: 'ActiveUnderContract', stage: 'In contract' })] });
+  check('match after DE: the same run again stores nothing new', db.T.changes.length, before2);
 
   /* ---------- sold: only by the listing's own DE id ---------- */
   db = fakeDb({ properties: [{ id: 'p1', slug: 's', stage: 'In contract', de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 1000000 } }] });

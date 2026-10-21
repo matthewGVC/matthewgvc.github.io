@@ -278,9 +278,19 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const gone = db.T.properties.find(p => p.id === goneId);
   check('absence: the job is kept, stage and all', [!!gone, gone.stage], [true, 'In contract']);
   check('absence: Match says the task is gone', ((gone.match || {}).list || []).filter(m => m.code === 'M2').map(m => m.text), ['Asana task gone']);
+  check('match: found is logged (S14)', db.T.changes.filter(c => c.property_id === goneId && c.source === 'match').map(c => c.note).filter(n => /gone/.test(n)), ['Mismatch found: Asana task gone']);
+  check('match: every staged job has a stored result', db.T.properties.filter(p => p.stage).every(p => p.match && Array.isArray(p.match.list) && typeof p.match.dismissed === 'object'), true);
+  check('match: the snapshot keeps the status date for M1', 'statusSince' in gone.asana, true);
+  gone.match.dismissed = { M3: { values: { asana: 1, de: 2 }, reason: 'test', at: '2026-10-20' } };
   /* and it comes back */
   out = await applyRun({ client: db, run: await read(world()), now: NOW });
-  check('absence: back again, the mismatch clears', ((db.T.properties.find(p => p.id === goneId).match || {}).list || []).filter(m => m.code === 'M2').length, 0);
+  const back = db.T.properties.find(p => p.id === goneId);
+  check('absence: back again, the mismatch clears', ((back.match || {}).list || []).filter(m => m.code === 'M2').length, 0);
+  check('match: cleared is logged', db.T.changes.filter(c => c.property_id === goneId && c.source === 'match').map(c => c.note).filter(n => /gone/.test(n)).pop(), 'Mismatch cleared: Asana task gone');
+  check('match: dismissals are kept by the writer', back.match.dismissed.M3 && back.match.dismissed.M3.reason, 'test');
+  const nChanges = db.T.changes.length;
+  await applyRun({ client: db, run: await read(world()), now: NOW });
+  check('match: an unchanged run logs nothing', db.T.changes.length, nChanges);
 
   /* ================= development hints from the land row (D65) ================= */
   let db3 = fakeDb({ dev_projects: [Object.assign({}, DEVROW, { asana_project_gid: DEV })], asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }] });
@@ -289,6 +299,7 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('land row: Land closed suggested with its Closing date', hints.filter(h => h.key === 'landClosed').map(h => [h.date, h.rule, h.asanaGid]), [['2026-06-30', 'land', '9000000000211']]);
   check('land row: never a job', db3.T.properties.some(p => /30 Lot/.test(p.core.address)), false);
   check('land row: the dev\'s next milestone stored', 'next_milestone' in db3.T.dev_projects[0], true);
+  check('land row: the dev Match result stored', Array.isArray((db3.T.dev_projects[0].match || {}).list), true);
   check('land row: the hint is logged on the development', db3.T.changes.some(c => c.dev_project_id === 'dev1' && c.source === 'Asana'), true);
 
   /* loose tasks: only those naming a linked development are kept (D65) */

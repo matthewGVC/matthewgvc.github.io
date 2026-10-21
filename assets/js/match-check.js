@@ -655,6 +655,37 @@
     return out;
   }
 
+  /* ---------- the key: what each code means, in Matt's words (the Match page shows it) ---------- */
+  var KEY = {
+    M1: 'Asana and DE disagree on the stage. When Asana is ahead, it waits 14 days first.',
+    M2: 'The listing is in one place but not the other: Live in Asana but not on DE, on DE but not in Asana, or the Asana task is gone.',
+    M3: 'The price on DE differs from Asana\'s Current Price.',
+    M4: 'Beds, baths or square feet differ between DE and Asana.',
+    M5: 'The closing date in Asana and on DE are more than 3 days apart.',
+    M6: 'A Drive folder problem: none linked once the job is in Prep or later, the linked folder is gone, or Asana\'s Drive Link points elsewhere.',
+    M7: 'An Asana link is empty but the workspace knows it (Drive Link or Elliman Link). The line has the link to paste.',
+    M8: 'A marketing step and Drive disagree: ticked in Asana with no file, or the file has been there a week and the step is still open.',
+    M9: 'The exclusive has expired while the listing is still Live.',
+    M10: 'Asana is missing basics once Live: Listing Status, address or Listing Date.',
+    M11: 'Asana\'s Point Person doesn\'t match the agents confirmed for the listing.',
+    M12: 'A development milestone is still open 14 days after its date, or was ticked before its date.',
+    M13: 'The listing task is ticked done in Asana while checklist steps are still open.',
+    M14: 'The Asana section the task sits in contradicts its Listing Status.',
+    M15: 'The estimated listing date has passed while the job is still in Prep.',
+    M16: 'The Point Person has left the team.',
+    M17: 'A value you typed differs from DE\'s or Asana\'s.',
+    M18: 'A folder for this job\'s address is already on Drive. Link it on the job page; nothing on Drive moves.',
+    M19: 'DE has a listing at this building with no job; it is probably this one under another unit or as a rental. Fix the unit in Asana or link it.',
+    M20: 'An old starter or library row is the same home as this job. Archive it.',
+    M21: 'The deal has been in contract a long time, or its closing date has passed. Check where it stands.',
+    M22: 'Asana\'s original price doesn\'t match DE\'s price history.',
+    M23: 'The job is at this stage but Asana has no date for it.',
+    M24: 'The deal fell through but the accepted offer or contract date is still in Asana. Clear it.',
+    M25: 'Asana has an accepted offer or contract, but the listing isn\'t on DE.',
+    M26: 'Asana\'s zip code disagrees with DE\'s.',
+    M27: 'The exclusive ends within two weeks. Extend it in Asana if the listing carries on.'
+  };
+
   return { check: check, checkDeListing: checkDeListing, statusSince: statusSince, sectionDisagrees: sectionDisagrees,
-    applyDismissed: applyDismissed, merge: merge, rosterDrift: rosterDrift };
+    applyDismissed: applyDismissed, merge: merge, rosterDrift: rosterDrift, KEY: KEY };
 });

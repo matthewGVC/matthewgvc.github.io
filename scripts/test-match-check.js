@@ -452,6 +452,12 @@ check('M27: not Live: nothing', has(M.check(Object.assign(excl('2026-11-03'), { 
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));
 check('no em dashes in any text', all.filter(m => /—/.test(m.text)).length, 0);
 
+/* ---------- the key the Match page shows ---------- */
+const keyCodes = Object.keys(M.KEY || {});
+const want = []; for (let n = 1; n <= 27; n++) want.push('M' + n);
+check('key: one plain line for every code M1 to M27', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 27]);
+check('key: plain sentences, no em or en dashes', keyCodes.some(c => /[–—]/.test(M.KEY[c])), false);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

@@ -1,7 +1,7 @@
 -- ============================================================
 -- 0006 — ASANA, THE NEW STAGE LIST (workspace v2, Slice 2)
 --
---   properties    gains the Asana link and snapshot, the checklist (milestones), the
+--   properties    gains the Asana link and snapshot, the deal dates (milestones), the
 --                 Match result, the development link and DE's own stage. The stage
 --                 list becomes: Prep, Live, Accepted offer, In contract, Sold, Rented,
 --                 Off market, Archived. Jobs still on an old stage (Won, Floorplan,
@@ -36,7 +36,7 @@ exception when duplicate_object or duplicate_table then null; end $$;
 
 comment on column public.properties.asana_gid is 'The Asana task for this job. One task, one job.';
 comment on column public.properties.asana is 'Last Asana snapshot of the allowlisted fields (read-only; nothing is ever written back to Asana).';
-comment on column public.properties.milestones is 'The job''s checklist: {"<key>": {"done": true, "on": "2026-05-21"}, …}.';
+comment on column public.properties.milestones is 'The job''s deal dates from Asana: {"<key>": {"on": "2026-05-21", "planned": false}, …}; planned is true for a date still ahead.';
 comment on column public.properties.match is 'Result of the Match check: the differences between Asana, DE, the folder scan and Matt''s own values.';
 comment on column public.properties.de_stage is 'The stage DE alone implies, kept beside the shown stage so the two can be compared.';
 

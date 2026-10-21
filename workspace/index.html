@@ -207,8 +207,8 @@
     var card = function (t, ic, v, small, w, c) {
       return '<div class="card stat"><div class="top-l">' + t + I(ic) + '</div><div class="v">' + v + '<small>' + esc(small) + '</small></div><div class="bar"><i class="' + (c || '') + '" style="width:' + w + '%"></i></div></div>';
     };
-    $('stats').innerHTML = card('Live', 'arrow', s.live, 'on DE now', s.live / n * 100) +
-      card('In contract', 'file', s.contract, 'contract signed on DE', s.contract / n * 100, 'c') +
+    $('stats').innerHTML = card('Live', 'arrow', s.live, 'listed and on the market', s.live / n * 100) +
+      card('In contract', 'file', s.contract, 'contract signed', s.contract / n * 100, 'c') +
       card('To link', 'link', s.toLink, 'folder or DE match missing', s.toLink / n * 100);
     $('lead').innerHTML = esc(s.total + ' job' + (s.total === 1 ? '' : 's') + ' across ' + (f.market || 'NYC, NJ and FL') + '. Stages and dates from Asana, statuses from DE, files from Drive.') +
       (s.mismatches ? ' <a class="link" id="mmTotal" href="match/">' + s.mismatches + ' mismatch' + (s.mismatches === 1 ? '' : 'es') + '</a>' : '');

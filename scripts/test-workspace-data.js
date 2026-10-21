@@ -195,6 +195,24 @@ check('asana: never', W.asanaHealth(null, now).text, 'Asana hasn\'t synced yet')
 check('asana: fresh', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).state, 'ok');
 check('asana: 6 h 1 min is late', W.asanaHealth({ started_at: '2026-10-20T03:59:00Z', ok: true }, now).state, 'amber');
 check('asana: says when', /^Asana last synced/.test(W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).text), true);
+/* construction counts stored as text are numbers before they're drawn */
+const consJobs = W.buildJobs({ properties: [], pitches: [], devProjects: [{ id: 'dx', slug: 'x', label: 'X', market: 'NJ', milestones: {},
+  next_milestone: { key: null, construction: { done: '3', total: '12' } } }], changes: [] }, TODAY, {});
+check('development: construction counts coerced to numbers', consJobs[0].construction, { done: 3, total: 12 });
+
+/* lines with no job: DE-only listings (M2) and Asana tasks the last sync couldn't link */
+const MC = require('../assets/js/match-check.js');
+const loose = W.looseMatch({
+  deListings: [{ de_listing_id: '9101', gvc_listed: true, property_id: null, courtesy: 'Douglas Elliman: Test Agent', raw: { listingUrl: 'https://www.elliman.com/x/9101' }, checked_at: '2026-10-19T07:00:00Z' },
+    { de_listing_id: '9102', gvc_listed: true, property_id: 'p1' }, { de_listing_id: '9103', gvc_listed: true, property_id: null, ignored: true }, { de_listing_id: '9104', gvc_listed: false }],
+  asanaRun: { started_at: '2026-10-20T06:00:00Z', totals: { unlinked: [{ gid: '1500', name: '7 Lone Pl', why: 'same address' }, { gid: '1501', name: '8 Ignored Pl', why: 'same address' }] } },
+  ignoredGids: ['1501'] }, MC);
+check('loose: one DE-only line and one unlinked task', loose.map(l => [l.fixAt, l.item.code, l.item.job]), [['Asana', 'M2', 'DE listing 9101'], ['Asana', 'Link', '7 Lone Pl']]);
+check('loose: plain words and links', [loose[0].item.text, loose[0].item.deUrl, loose[1].item.text, loose[1].item.asanaUrl],
+  ['On DE, not in Asana. DE shows: Douglas Elliman: Test Agent.', 'https://www.elliman.com/x/9101', 'Asana task not linked: another task is linked to the job at this address.', 'https://app.asana.com/0/0/1500']);
+const mgL = W.matchGroups([], [], loose);
+check('loose: in the Asana group, no one named', [mgL.map(g => g.fixAt), mgL[0].people.map(p => p.who), mgL[0].people[0].items.length], [['Asana'], [''], 2]);
+
 check('asana: refused token in plain words', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }, now).why, 'Asana refused the token');
 
 if (failures.length) {

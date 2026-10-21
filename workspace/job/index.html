@@ -142,7 +142,7 @@
     var core = r.core || {}, de = r.de || {};
     var src = function (k) { return de[k] != null ? 'from DE' : core[k] != null ? 'on the job' : ''; };
     var agents = (core.agentIds || []).map(function (id) { var a = window.GVC_AGENT && GVC_AGENT(id); return a ? a.name : null; }).filter(Boolean);
-    return '<div class="card"><div class="card-h"><div><h2>Facts</h2><p>DE wins where it has a value (D6). Editing facts arrives in Slice 3.</p></div></div><div class="facts">' +
+    return '<div class="card"><div class="card-h"><div><h2>Facts</h2><p>DE wins where it has a value, unless you typed a newer one; then a warning shows until DE changes. Editing facts arrives in Slice 3.</p></div></div><div class="facts">' +
       fact(r.kind === 'rental' ? 'Rent' : 'Price', j.price, src('price')) +
       fact('Beds · baths', j.rooms, (de.halfBaths ? de.halfBaths + ' half' : '') ) +
       fact('Sq ft', (de.sqft || core.sqft) ? Number(de.sqft || core.sqft).toLocaleString('en-US') + ' approx.' : '', src('sqft')) +

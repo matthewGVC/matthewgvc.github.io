@@ -26,9 +26,15 @@
      statusRows(jobs)   → [{ market, rows: [{ name, href, stage, chip, lastMilestone,
                            nextDate, agents, mismatches }] }]   the team Status page (S9):
                            listings and open pitches, by market, then stage order
-     matchGroups(jobs, drift) → [{ fixAt, people: [{ who, items: [{ job, href, id, table,
-                           code, key, text, since, asanaUrl, paste }] }] }]   the Match
-                           page (S10): Asana, DE, Drive, Matt, then 'Roster' (drift)
+     matchGroups(jobs, drift, loose?) → [{ fixAt, people: [{ who, items: [{ job, href, id, table,
+                           code, key, text, since, asanaUrl, paste, deUrl }] }] }]   the Match
+                           page (S10): Asana, DE, Drive, Matt, then 'Roster' (drift);
+                           loose = looseMatch(...) lines, which belong to no job
+     looseMatch({ deListings, asanaRun, ignoredGids }, GVC_MATCH) → [{ fixAt, who, item }]
+                           de_listings rows GVC-listed on DE with no job (M2 "On DE, not
+                           in Asana", through GVC_MATCH.checkDeListing; ignored rows left
+                           out) and the tasks the last Asana sync couldn't link
+                           (asanaRun.totals.unlinked, minus ignoredGids)
      fmtDay('2026-10-12') → '12 Oct'; money(4500000) → '$4,500,000'
 
    Pure: no fetch, no DOM. Loads in the browser (window.GVC_WS) and in Node.
@@ -235,7 +241,9 @@
       if (next) next.overdue = !!(next.on && next.on < today);
       var slips = 0;
       Object.keys((nm && nm.slips) || {}).forEach(function (g) { slips += +(nm.slips[g] && nm.slips[g].count) || 0; });
-      var cons = nm && nm.construction && nm.construction.total ? { done: nm.construction.done || 0, total: nm.construction.total } : null;
+      // stored JSON may hold the counts as text: numbers before anything is drawn or divided
+      var cTotal = nm && nm.construction ? Number(nm.construction.total) : 0;
+      var cons = cTotal > 0 ? { done: Number(nm.construction.done) || 0, total: cTotal } : null;
       var match = activeMatch(d.match);
       jobs.push({
         id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: idx >= 0 ? DEV[idx] : 'No milestones yet',
@@ -338,8 +346,39 @@
   }
 
   /* ---------- the Match page (S10) ---------- */
-  function matchGroups(jobs, drift) {
+  var UNLINKED_WHY = {
+    'same address': 'another task is linked to the job at this address',
+    'more than one job at this address': 'more than one job is at this address',
+    'more than one pitch at this address': 'more than one pitch is at this address',
+    'no street number': 'its name has no street number, so it is never guessed'
+  };
+  function looseMatch(o, M) {
+    var out = [], ign = {};
+    (o.ignoredGids || []).forEach(function (g) { ign[g] = true; });
+    (o.deListings || []).forEach(function (r) {
+      var m = r && !r.ignored && M && M.checkDeListing ? M.checkDeListing(r) : null;
+      if (!m) return;
+      out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: 'DE listing ' + r.de_listing_id, href: null, id: null, table: null, code: m.code, key: m.key,
+        text: m.text + (r.courtesy ? ' DE shows: ' + r.courtesy + '.' : ''), since: m.since || null, asanaUrl: null, paste: null,
+        deUrl: web(m.values && m.values.listingUrl) } });
+    });
+    var run = o.asanaRun, list = run && run.totals && Array.isArray(run.totals.unlinked) ? run.totals.unlinked : [];
+    list.forEach(function (u) {
+      if (!u || !u.gid || ign[u.gid]) return;
+      out.push({ fixAt: 'Asana', who: [], item: { job: u.name || 'Asana task ' + u.gid, href: null, id: null, table: null, code: 'Link', key: 'link:' + u.gid,
+        text: 'Asana task not linked: ' + (UNLINKED_WHY[u.why] || u.why || 'no reason recorded') + '.', since: run.started_at ? day(run.started_at) : null,
+        asanaUrl: /^\d+$/.test(String(u.gid)) ? 'https://app.asana.com/0/0/' + u.gid : null, paste: null } });
+    });
+    return out;
+  }
+
+  function matchGroups(jobs, drift, loose) {
     var g = {};
+    (loose || []).forEach(function (l) {
+      var fix = FIX.indexOf(l.fixAt) === -1 ? 'Matt' : l.fixAt;
+      g[fix] = g[fix] || {};
+      (l.who && l.who.length ? l.who : ['']).forEach(function (w) { (g[fix][w] = g[fix][w] || []).push(l.item); });
+    });
     jobs.forEach(function (j) {
       (j.match || []).forEach(function (m) {
         var fix = FIX.indexOf(m.fixAt) === -1 ? 'Matt' : m.fixAt;
@@ -370,6 +409,6 @@
 
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
-    recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups,
+    recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
     fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
 });

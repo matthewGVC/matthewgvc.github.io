@@ -133,6 +133,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('read-only banner without Drive', [(await text(p, '.banner')).includes('Read-only here'), await text(p, '#wsDrive')], [true, 'Read-only here']);
   check('avatar initials', await text(p, '#wsMe'), 'MB');
   check('nav: Overview, Jobs, Match, Status', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Jobs', 'Match', 'Status']);
+  check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
+    [['Team tools', './../#tools'], ['Listing rules', './../listing-rules/'], ['Tasks', './#tasks']]);
   check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
   check('footer: Asana beside DE', (await text(p, '#wsFootAsana')).startsWith('Asana last synced'), true);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
@@ -247,6 +249,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: M7 shows the link to paste', await mp.$$eval('.mline .paste', els => els.map(e => e.textContent.trim())), ['https://drive.google.com/drive/folders/abc']);
   check('match: roster drift uses the latest People read only', [(await text(mp, '.mg:last-of-type')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg:last-of-type')).includes('Old Person')], [true, false]);
   check('match: total in the header', (await text(mp, '#lead')).startsWith('4 mismatches'), true);
+  check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
+    ['/#tools', '/listing-rules/', '/workspace/#tasks']);
   check('match: no Drive pill or read-only banner', [await visible(mp, '#wsDrive'), await visible(mp, '.banner')], [false, false]);
   await mp.click('.mline[data-key="M3"] [data-dismiss]');
   check('dismiss: asks for a reason', await visible(mp, '.mline[data-key="M3"] input.reason'), true);
@@ -268,6 +272,21 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.page.click('.mline[data-key="M3"] [data-confirm]');
   await t.page.waitForTimeout(400);
   check('dismiss: conflict refused, nothing logged', [(await text(t.page, '.mline[data-key="M3"] .msg')).includes('Someone changed'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
+  await t.ctx.close();
+  /* lines with no job: GVC-listed on DE with no job, and tasks the last Asana sync couldn't link */
+  t = await open(browser, { path: '/workspace/match/', rows: rowsFor({
+    de_listings: [{ de_listing_id: '9101', gvc_listed: true, property_id: null, ignored: false, courtesy: 'Douglas Elliman: Test Agent', raw: { listingUrl: 'https://www.elliman.com/x/9101' }, checked_at: iso(NOW - 864e5) },
+      { de_listing_id: '9103', gvc_listed: true, property_id: null, ignored: true }],
+    sync_runs: [{ kind: 'asana', started_at: iso(NOW - 7200e3), ok: true, totals: { unlinked: [{ gid: '1499', name: '6 Old Pl', why: 'same address' }] } },
+      { kind: 'asana', started_at: iso(NOW - 3600e3), ok: true, totals: { unlinked: [{ gid: '1500', name: '7 Lone Pl', why: 'no street number' }, { gid: '1501', name: '8 Ignored Pl', why: 'same address' }] } }],
+    asana_tasks: [{ gid: '1501', ignored: true }] }) });
+  mp = t.page;
+  const asanaGroup = (await text(mp, '.mg:first-of-type')) || '';
+  check('match: DE-only listing shows in the Asana group', [asanaGroup.includes('DE listing 9101'), asanaGroup.includes('On DE, not in Asana.'), asanaGroup.includes('9103')], [true, true, false]);
+  check('match: Open on DE link', await mp.$eval('.mline[data-key="M2:de:9101"] a.de', a => a.getAttribute('href')).catch(() => null), 'https://www.elliman.com/x/9101');
+  check('match: unlinked tasks from the latest run, ignored left out', [asanaGroup.includes('7 Lone Pl'), asanaGroup.includes('Asana task not linked'), asanaGroup.includes('8 Ignored Pl'), asanaGroup.includes('6 Old Pl')], [true, true, false, false]);
+  check('match: they count in the header', (await text(mp, '#lead')).startsWith('6 mismatches'), true);
+  check('match: no page errors with loose lines', t.errors, []);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
   check('match: nothing to fix', (await text(t.page, '#groups')).includes('Nothing to fix'), true);

@@ -1,6 +1,8 @@
 /* ============================================================
    WORKSPACE SHELL — the top bar, banner and footer of every /workspace/ page
    (from the locked mockup's shell.js, now wired to real state).
+   Main nav: Overview · Jobs · Match · Status. The footer keeps the links to
+   the rest of the site: Team tools (../#tools), Listing rules and Tasks.
 
      <body data-nav="overview|jobs|job|match|status" data-root="./ or ../">
      const shell = GVC_SHELL.mount({ onSynced, onDrive, noDrive })   after the page's markup
@@ -83,7 +85,9 @@
 
     var foot = doc.createElement('footer');
     foot.className = 'foot';
-    foot.innerHTML = '<span class="ok" id="wsFootSync">DE sync status loading</span><span class="ok" id="wsFootAsana">Asana sync status loading</span><span id="wsFootDrive"></span><span>The GVC Team · Douglas Elliman</span>';
+    foot.innerHTML = '<span class="ok" id="wsFootSync">DE sync status loading</span><span class="ok" id="wsFootAsana">Asana sync status loading</span><span id="wsFootDrive"></span>' +
+      '<nav class="foot-links" aria-label="More"><a href="' + root + '../#tools">Team tools</a><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a></nav>' +
+      '<span>The GVC Team · Douglas Elliman</span>';
     body.appendChild(foot);
 
     var shell = { readOnly: true };

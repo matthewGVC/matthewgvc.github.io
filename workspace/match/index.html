@@ -77,10 +77,19 @@
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/dev_projects?select=*'),
-      rest('/asana_people?select=name,section,title,past,de_bio_url,de_profile_url,seen_at')
+      rest('/asana_people?select=name,section,title,past,de_bio_url,de_profile_url,seen_at'),
+      // lines that belong to no job: GVC-listed on DE with no job, and Asana tasks the last sync couldn't link
+      // (either failing to read leaves those lines out, never the page)
+      rest('/de_listings?select=de_listing_id,gvc_listed,property_id,ignored,courtesy,raw,checked_at&gvc_listed=is.true&property_id=is.null&ignored=is.false').catch(function () { return []; }),
+      rest('/sync_runs?select=kind,started_at,totals&kind=eq.asana&order=started_at.desc&limit=20').catch(function () { return []; }),
+      rest('/asana_tasks?select=gid&ignored=eq.true').catch(function () { return []; })
     ]).then(function (r) {
       var people = r[2] || [], latest = people.reduce(function (m, p) { return p.seen_at && p.seen_at > m ? p.seen_at : m; }, '');
-      data = { properties: r[0] || [], devProjects: r[1] || [], people: people.filter(function (p) { return (p.seen_at || '') === latest; }) };
+      // the newest Asana run that listed its unlinked tasks (an aborted run lists none)
+      var run = (r[4] || []).filter(function (x) { return x.totals && Array.isArray(x.totals.unlinked); })
+        .sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; })[0] || null;
+      data = { properties: r[0] || [], devProjects: r[1] || [], people: people.filter(function (p) { return (p.seen_at || '') === latest; }),
+        loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }) }, M) };
       render();
       $('gate').hidden = true; $('board').hidden = false;
     }, function (e) {
@@ -94,10 +103,11 @@
     var meta = [];
     if (it.since) meta.push('<span class="when">Since ' + esc(W.fmtDay(it.since)) + '</span>');
     if (it.asanaUrl && fix !== 'Roster') meta.push('<a class="link asana" href="' + esc(it.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>');
+    if (it.deUrl) meta.push('<a class="link de" href="' + esc(it.deUrl) + '" target="_blank" rel="noopener">Open on DE</a>');
     if (it.paste) meta.push('<span>Paste: <span class="paste">' + esc(it.paste) + '</span></span><button class="lnk" type="button" data-copy="' + esc(it.paste) + '">Copy</button>');
     if (it.id) meta.push('<button class="lnk" type="button" data-dismiss>Dismiss</button>');
     return '<li class="mline" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code">' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
-      (it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : '') + esc(it.text) +
+      (it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
       (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
       (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +
       '<button class="b sm primary" type="button" data-confirm>Dismiss</button><button class="b sm" type="button" data-cancel>Cancel</button></div>' : '') + '<p class="msg" role="alert"></p></div></li>';
@@ -106,7 +116,8 @@
   function render() {
     var jobs = W.buildJobs({ properties: data.properties, pitches: [], devProjects: data.devProjects, changes: [] }, today, { archived: true });
     var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
-    var groups = W.matchGroups(jobs, drift), n = W.overviewStats(jobs).mismatches;
+    var loose = data.loose || [];
+    var groups = W.matchGroups(jobs, drift, loose), n = W.overviewStats(jobs).mismatches + loose.length;
     $('lead').textContent = (n ? n + ' mismatch' + (n === 1 ? '' : 'es') + ', grouped by where to fix them, then by person, so each person can get their own list.' : 'No mismatches between Asana, DE and Drive.') +
       (drift.length ? ' ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') + ' at the end.' : '');
     if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b>Asana, DE and Drive agree on every job.</div>'; return; }

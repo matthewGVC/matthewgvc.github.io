@@ -1,0 +1,203 @@
+/* ============================================================
+   ASANA READ — one run's worth of Asana, read-only, through the allowlist.
+
+     await readRun({ asana, cfg, full, since, lastOpen?, looseNames?, only? })
+       asana       createAsana(...) (GET only)
+       cfg         the helper config (cfg.asana: listings, devs, devPortfolios, loose, people)
+       full        true: every listing task (catches deletions and moves);
+                   false: only tasks modified since `since` (Asana's modified_since)
+       since       the start of the last good run (ISO), or null on the first run
+       lastOpen    { NYC: 40, … } open tasks per listing project at the last good
+                   full run; a full read under half of that aborts (plan §8a)
+       looseNames  lower-case names / streets of the linked developments; loose
+                   tasks (Creative Requests etc.) naming none of them are dropped
+                   before anything is kept (D65). Empty → loose projects not read.
+       only        'people' → read just 👋 People (the 3:15 job)
+     → { ok, aborted?, full, since, listings, devs, loose, people, warnings,
+         missing, readProjects, totals, rowsRead }
+
+   listings  allowlisted tasks (allow.keepTask) + market; tasks changed since
+             `since` (all of them on a full read: ticking a subtask doesn't move
+             its parent's modified_at) also carry subtasks (allow.keepSubtask)
+             and history (allow.keepStory, kept kinds only). A task whose
+             subtasks or history fail to read keeps neither (the writer keeps
+             what it had) and the run gets a warning.
+   devs      [{ project: { gid, name }, tasks }] for every 🚧 project: all its tasks
+             (batch days need every tick), history for the changed ones (every
+             one on a full read)
+   loose     allow.keepLoose rows that name a linked development
+   people    allow.keepPerson rows, or null when not asked
+   missing   kept field names no listing task has (a renamed field), judged on a
+             clean full read only; null when a listing project failed to read
+             (a partial set gives no verdict)
+   readProjects  listing project gids read in full without error (the writer
+             only treats a task as gone when its project was read whole)
+
+   partial   true when a listing project failed to read (the rest was read):
+             the writer stores the warnings and doesn't count the run as good
+
+   Stops: a refused token ("Asana refused the token": a 401 anywhere, or a 403
+   on a listing project), every listing project failing ("Asana couldn't be
+   reached"), a page sequence that repeats a gid, or a full read under half the
+   last good open count. Any other failure is a warning and the rest is read.
+   A task in two listing projects is kept once (the first project read).
+   Writes nothing, anywhere.
+   ============================================================ */
+'use strict';
+
+const allow = require('./allow.js');
+
+const SUBTASK_FIELDS = 'name,completed,completed_at,due_on,assignee.name,parent.gid';
+const LOOSE_FIELDS = 'name,completed_at,due_on,assignee.name,memberships.project.gid';
+const PEOPLE_FIELDS = 'name,memberships.section.name,custom_fields.name,custom_fields.display_value,custom_fields.enum_value.name,custom_fields.multi_enum_values.name';
+
+class StopRun extends Error {}
+
+function stopFor(e) {
+  if (e instanceof StopRun) return e.message;
+  if (e && e.status === 401) return 'Asana refused the token';
+  if (e && e.message === 'Asana sent a task twice') return 'Asana sent a task twice, so its pages can\'t be trusted. Nothing was changed.';
+  return null;
+}
+
+/* the lower-case names a loose task must contain to be about a development */
+function looseNeedles(devs) {
+  const out = [];
+  (devs || []).forEach(d => {
+    [d.label, d.name].filter(Boolean).forEach(n => {
+      const s = String(n).replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (!s) return;
+      out.push(s);
+      const w = s.split(' ');
+      if (/^\d/.test(s) && w.length > 2) out.push(w.slice(0, 2).join(' '));   // "619 bradley ave" → "619 bradley"
+      else if (!/^\d/.test(s) && w.length > 1 && w[0].length >= 4) out.push(w[0]);   // "casa avenida" → "casa"
+    });
+  });
+  return Array.from(new Set(out));
+}
+
+function namesOne(name, needles) {
+  const n = ' ' + String(name || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim().toLowerCase() + ' ';
+  return (needles || []).some(x => n.indexOf(' ' + x + ' ') !== -1);
+}
+
+async function readRun(o) {
+  const { asana } = o;
+  const a = (o.cfg && o.cfg.asana) || {};
+  const since = o.since || null;
+  const full = !!(o.full || !since);
+  const out = { ok: true, full, since, listings: [], devs: [], loose: [], people: null, warnings: [], missing: null,
+    readProjects: [], totals: { full, open: {} }, rowsRead: {} };
+  // a full read refreshes every task's checklist and history (a subtask tick doesn't touch the parent's modified_at)
+  const changed = t => full || !since || (t.modifiedAt && t.modifiedAt > since);
+
+  /* one task's subtasks and history; a failure there is that task's warning, not the run's end
+     (a refused token still stops everything) */
+  async function detail(t, withSubtasks) {
+    try {
+      const subtasks = withSubtasks ? (await asana.get('/tasks/' + t.gid + '/subtasks', { opt_fields: SUBTASK_FIELDS })).map(allow.keepSubtask) : undefined;
+      const history = (await asana.get('/tasks/' + t.gid + '/stories', { opt_fields: allow.STORY_FIELDS })).map(allow.keepStory).filter(Boolean);
+      if (withSubtasks) t.subtasks = subtasks;
+      t.history = history;
+    } catch (e) {
+      if (stopFor(e)) throw e;
+      out.warnings.push("a task's checklist or history could not be read (" + t.gid + '): ' + e.message + '; what was known before is kept');
+    }
+  }
+
+  try {
+    if (o.only === 'people') {
+      out.kind = 'people';
+      const raw = await asana.get('/projects/' + a.people + '/tasks', { opt_fields: PEOPLE_FIELDS });
+      out.people = raw.map(allow.keepPerson);
+      out.rowsRead.people = out.people.length;
+      return out;
+    }
+
+    /* listings */
+    let listingError = false, firstError = null;
+    const markets = Object.keys(a.listings || {}), seen = new Set();
+    for (const market of markets) {
+      const gid = a.listings[market];
+      let kept;
+      try {
+        const q = { project: gid, opt_fields: allow.TASK_FIELDS };
+        if (!full) q.modified_since = since;
+        kept = (await asana.get('/tasks', q)).map(r => Object.assign(allow.keepTask(r, gid), { market }));
+      } catch (e) {
+        if (stopFor(e)) throw e;
+        if (e.status === 403) throw new StopRun('Asana refused the token');
+        listingError = true;
+        firstError = firstError || e.message;
+        out.warnings.push(market + ' listings could not be read: ' + e.message);
+        continue;
+      }
+      for (const t of kept) if (changed(t)) await detail(t, true);
+      const open = kept.filter(t => !t.completed).length;
+      if (full) {
+        out.totals.open[market] = open;
+        out.readProjects.push(gid);
+        const before = o.lastOpen && o.lastOpen[market];
+        if (before && open < before / 2) {
+          throw new StopRun('Asana sent fewer than half the open ' + market + ' tasks of the last good run (' + open + ' of ' + before + '), so nothing was changed.');
+        }
+      }
+      out.rowsRead[market] = kept.length;
+      kept.forEach(t => { if (!seen.has(t.gid)) { seen.add(t.gid); out.listings.push(t); } });
+    }
+    if (markets.length && markets.every(m => out.rowsRead[m] === undefined)) {   // not one listing project answered
+      throw new StopRun('Asana couldn\'t be reached (' + firstError + '), so nothing was changed.');
+    }
+    out.partial = listingError;
+    out.missing = full && !listingError ? allow.missingKept(out.listings) : null;
+    if (out.missing && out.missing.length) out.warnings.push('kept field missing from every task: ' + out.missing.join(', '));
+
+    /* 🚧 development projects (the config list, plus any the portfolios add) */
+    const devGids = (a.devs || []).slice();
+    for (const pf of a.devPortfolios || []) {
+      try {
+        (await asana.get('/portfolios/' + pf + '/items', { opt_fields: 'name,resource_type' }))
+          .filter(i => i.resource_type === 'project' && devGids.indexOf(i.gid) === -1).forEach(i => devGids.push(i.gid));
+      } catch (e) {
+        if (stopFor(e)) throw e;
+        out.warnings.push('a development portfolio could not be listed; the config list is used alone');
+      }
+    }
+    for (const gid of devGids) {
+      try {
+        let name = null;
+        try { name = ((await asana.get('/projects/' + gid, { opt_fields: 'name', limit: null }))[0] || {}).name || null; }
+        catch (e) { if (stopFor(e)) throw e; }
+        const tasks = (await asana.get('/projects/' + gid + '/tasks', { opt_fields: allow.TASK_FIELDS })).map(r => allow.keepTask(r, gid));
+        for (const t of tasks) if (changed(t)) await detail(t, false);
+        out.devs.push({ project: { gid, name }, tasks });
+      } catch (e) {
+        if (stopFor(e)) throw e;
+        out.warnings.push('a development project (' + gid + ') could not be read: ' + e.message);
+      }
+    }
+
+    /* loose tasks: dropped in code unless they name a linked development */
+    if (o.looseNames && o.looseNames.length) {
+      for (const gid of a.loose || []) {
+        try {
+          const raw = await asana.get('/projects/' + gid + '/tasks', { opt_fields: LOOSE_FIELDS });
+          raw.filter(r => namesOne(r.name, o.looseNames)).forEach(r => out.loose.push(allow.keepLoose(r, gid)));
+        } catch (e) {
+          if (stopFor(e)) throw e;
+          out.warnings.push('a loose-task project (' + gid + ') could not be read: ' + e.message);
+        }
+      }
+    }
+    out.rowsRead.devs = out.devs.length;
+    out.rowsRead.loose = out.loose.length;
+    return out;
+  } catch (e) {
+    const why = stopFor(e);
+    if (!why) throw e;
+    return { ok: false, aborted: why, full, since, listings: [], devs: [], loose: [], people: null, warnings: out.warnings, missing: null,
+      readProjects: [], totals: out.totals, rowsRead: out.rowsRead };
+  }
+}
+
+module.exports = { readRun, looseNeedles, namesOne };

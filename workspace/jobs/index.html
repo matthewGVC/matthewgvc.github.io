@@ -121,8 +121,8 @@
       return '<tr><td class="nm"><a href="../' + esc(j.href) + '">' + esc(j.name) + '</a><small>' + esc(j.place || (j.folder ? j.folder.split('/').slice(-2).join(' / ') : 'no folder linked')) + '</small></td>' +
         '<td>' + esc({ listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' }[j.type]) + '</td><td>' + esc(j.market) + '</td>' +
         '<td class="stg"><span class="chip ' + j.chip + '">' + esc(j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
-        '<td class="r price">' + esc(j.price || '—') + '</td><td>' + (ag.length ? esc(ag.join(', ')) : '<span class="soft">—</span>') + '</td>' +
-        '<td class="r"><span class="chip">' + esc(W.deLabel(j.deStatus) || (j.type === 'pitch' || j.type === 'development' ? '—' : 'not on DE')) + '</span></td></tr>';
+        '<td class="r price">' + (j.price ? esc(j.price) : '<span class="soft">Not set</span>') + '</td><td>' + (ag.length ? esc(ag.join(', ')) : '<span class="soft">Not set</span>') + '</td>' +
+        '<td class="r">' + (W.deLabel(j.deStatus) || (j.type !== 'pitch' && j.type !== 'development') ? '<span class="chip">' + esc(W.deLabel(j.deStatus) || 'not on DE') + '</span>' : '') + '</td></tr>';
     }).join('') : '<tr><td colspan="7" class="empty">' + (all.length ? 'Nothing matches these filters.' : 'No jobs yet. They arrive from the seed and the first DE sync.') + '</td></tr>';
     $('count').textContent = js.length + ' of ' + all.length + ' jobs';
     var tl = W.taskFlags(all).filter(function (t) { return t.kind !== 'archive'; });

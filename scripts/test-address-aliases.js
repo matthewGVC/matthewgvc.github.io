@@ -49,6 +49,39 @@ check('rental-named folder', A.matchFolder('1050 PARK AVE', '11B', units).path, 
 check('no unit (house)', A.matchFolder('6 Johnny Dr', '', [{ name: '6 Johnny Dr', path: 'Resale/6 Johnny Dr' }]).path, 'Resale/6 Johnny Dr');
 check('no match', A.matchFolder('1 Main St', '2A', units), null);
 
+/* Slice 2: Asana's short task names (D62) */
+check('W59 short form', A.same('555 W59', '555 West 59th Street'), true);
+check('WEA short form', A.same('565 WEA', '565 West End Avenue'), true);
+check('CPS short form', A.same('106 CPS', '106 Central Park South'), true);
+check('E86 short form', A.same('170 E86', '170 East 86th Street'), true);
+check('Park S short form', A.same('404 Park S', '404 Park Avenue South'), true);
+check('SPS short form', A.same('2 SPS', '2 Sutton Place South'), true);
+check('NJ town and "- 1st" suffix', A.same('619 Bradley Ave, Brielle - 1st', '619 Bradley Ave'), true);
+check('NJ "Ln, Wall"', A.same('1006 Pheasant Ln, Wall', '1006 Pheasant Lane'), true);
+check('a unit on one side is another address', A.same('555 W59 - PHC', '555 W 59TH ST'), false);
+check('sameStreet ignores the unit', A.sameStreet('555 W59 - PHC', '555 W 59TH ST'), true);
+check('long form with Apt: sameStreet', A.sameStreet('250 East 99th Street, Apt. 504', '250 E99'), true);
+check('long form with Apt: same unit', A.same('250 East 99th Street, Apt. 504', '250 E99 - 504'), true);
+check('other unit refused', A.same('100 Main St - 3C', '100 MAIN ST'), false);
+check('different units refused', A.same('100 Main St - 3C', '100 Main St - 2B'), false);
+check('unit-less listing never gets a unit folder', A.matchFolder('555 W59', '', [{ name: '555 W59 - PHC' }]), null);
+check('two different towns', A.same('12 Ocean Ave, Sea Bright', '12 Ocean Ave, Monmouth Beach'), false);
+check('two different " - " towns', A.same('207 Example Ct - Brick', '207 Example Ct - Wall'), false);
+check('same town, state suffix', A.same('14 Ridge Rd, Rumson NJ', '14 Ridge Rd, Rumson'), true);
+check('sameStreet ignores towns', A.sameStreet('12 Ocean Ave, Sea Bright', '12 Ocean Ave, Monmouth Beach'), true);
+check('sameStreet keeps houses apart', A.sameStreet('405 Old Bridge Rd (House 1)', '405 Old Bridge Rd (House 2)'), false);
+check('House 1 is not House 2', A.same('405 Old Bridge Rd (House 1)', '405 Old Bridge Rd (House 2)'), false);
+check('House 1 is House 1', A.same('405 Old Bridge Rd (House 1)', '405 Old Bridge Road (house 1)'), true);
+check('combined units stable', A.unitKey('10BCD'), '10BCD');
+check('combined units with slash', A.unitKey('18/19E'), '1819E');
+check('split NYC name', A.splitName('555 W59 - PHC'), { street: '555 W59', unit: 'PHC', town: '', house: '' });
+check('split NJ name', A.splitName('619 Bradley Ave, Brielle - 1st'), { street: '619 Bradley Ave', unit: '', town: 'Brielle', house: '' });
+check('split NJ " - town" name', A.splitName('207 Example Ct - Brick'), { street: '207 Example Ct', unit: '', town: 'Brick', house: '' });
+check('split long form', A.splitName('250 East 99th Street, Apt. 504'), { street: '250 East 99th Street', unit: '504', town: '', house: '' });
+check('split house', A.splitName('405 Old Bridge Rd (House 2)'), { street: '405 Old Bridge Rd', unit: '', town: '', house: '2' });
+check('split combined unit', A.splitName('401 E89 - 18/19E'), { street: '401 E89', unit: '18/19E', town: '', house: '' });
+check('split trims whitespace', A.splitName('  12 Dup Street - 4A\n'), { street: '12 Dup Street', unit: '4A', town: '', house: '' });
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

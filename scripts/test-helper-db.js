@@ -10,7 +10,7 @@
 const fs = require('fs'), os = require('os'), path = require('path');
 process.env.GVC_HELPER_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-db-'));
 const { createClient, ConflictError } = require('../helper/supabase.js');
-const { backup } = require('../helper/backup.js');
+const { backup, TABLES } = require('../helper/backup.js');
 
 let pass = 0;
 const failures = [];
@@ -91,6 +91,9 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   check('select', (await c.select('properties')).map(r => r.slug), ['a', 'b']);
   check('signs in once', fake.log.filter(l => /token/.test(l)).length, 1);
   check('paged reads are ordered (no skipped rows)', fake.log.filter(l => /^GET \/rest\/v1\/properties/.test(l)).every(l => /[?&]order=/.test(l)), true);
+  T.asana_tasks = [{ gid: 'g1' }]; T.asana_people = [{ gid: 'u1' }];
+  await c.select('asana_tasks'); await c.select('asana_people');
+  check('Asana tables are read in gid order (they have no id)', fake.log.filter(l => /^GET \/rest\/v1\/asana_/.test(l)).every(l => /[?&]order=gid/.test(l)), true);
   check('filtered select',(await c.select('properties', { slug: 'b' })).map(r => r.id), ['p2']);
   check('count', await c.count('properties'), 2);
   await c.insert('todos', { id: 't2', body: 'x' });
@@ -105,6 +108,7 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   check('wrong password explained', /helper account/.test(msg || ''), true);
 
   /* ---------- backup ---------- */
+  check('backup covers every workspace table, the Asana cache and People too', ['properties', 'pitches', 'dev_projects', 'changes', 'sync_runs', 'de_listings', 'asana_tasks', 'asana_people'].every(t => TABLES.indexOf(t) !== -1), true);
   const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-bk-')), 'supabase-backup-2026-10-19');
   fake = fakeSupabase(T, F);
   c = createClient(CFG, { fetch: fake.fetch });

@@ -1,0 +1,101 @@
+{
+  "data": [
+    {
+      "gid": "9000000000366",
+      "name": "Render batch A",
+      "completed": true,
+      "completed_at": "2026-09-02T18:00:00.000Z",
+      "due_on": "2026-09-01",
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000367",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1211384244337827"
+          },
+          "section": {
+            "name": "Creative"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000359",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000360",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000361",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000362",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000363",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000364",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000365",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1211384244337827/9000000000366",
+      "notes": "SECRET NOTES for Render batch A: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    }
+  ],
+  "next_page": null
+}

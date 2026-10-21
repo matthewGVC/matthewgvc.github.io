@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match · GVC Workspace</title>
+<meta name="description" content="Every place Asana, DE and Drive disagree about a GVC job, grouped by where to fix it and by person.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/workspace.css">
+<style>
+#groups > * + *{margin-top:20px}
+.who + .who{margin-top:18px;padding-top:16px;border-top:1px solid var(--rule)}
+.who h3{font-size:19px;margin-bottom:4px}
+.mline > div{min-width:0;overflow-wrap:anywhere}
+.mline .job{font-weight:600;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+.mline .meta{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12.5px;color:var(--ink-soft)}
+.mline .meta .when{font-family:var(--mono);font-size:11px}
+.mline .paste{font-family:var(--mono);font-size:11.5px;background:var(--paper-2);border-radius:4px;padding:2px 6px;overflow-wrap:anywhere;color:var(--ink)}
+.mline .dz{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.mline .dz[hidden]{display:none}
+.mline .dz .inp{flex:1;min-width:0}
+.mline .msg{font-size:13px;color:var(--danger);margin-top:4px}
+.mline .msg:empty{display:none}
+.bulk{display:flex;gap:12px;align-items:flex-start}
+.bulk > div{min-width:0;flex:1}
+.bulk > .code{font-family:var(--mono);font-size:10.5px;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:1px 7px;margin-top:2px}
+.bulk > div > b{font-size:14px;font-weight:600}
+.bulk .bulk-list{margin-top:10px}
+.bulk .bulk-list[hidden]{display:none}
+.mline .lnk,.bulk .lnk{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+</style>
+</head>
+<body data-nav="match" data-root="../">
+<main class="wrap">
+  <div class="page-h">
+    <div>
+      <div class="eyebrow">Asana, DE and Drive</div>
+      <h1>Match</h1>
+      <p id="lead">Loading the mismatches…</p>
+    </div>
+  </div>
+  <div id="gate" hidden></div>
+  <div id="board" hidden><div id="groups"></div></div>
+</main>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/asana-map.js"></script>
+<script src="../../assets/js/job-facts.js"></script>
+<script src="../../assets/js/match-check.js"></script>
+<script src="../../assets/js/drive-rules.js"></script>
+<script src="../../assets/js/drive.js"></script>
+<script src="../../assets/js/workspace-data.js"></script>
+<script src="../../assets/js/workspace-shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = window.GVC_PROPS, W = window.GVC_WS, M = window.GVC_MATCH, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
+  var today = W.today(), data = null;
+  var shell = GVC_SHELL.mount({ noDrive: true, onSynced: function () { load(); } });
+  var WHERE = {
+    Asana: 'Fix these in Asana.', DE: 'Fix these on DE, or ask the agent to.', Drive: 'Fix these on Drive.',
+    Matt: 'Values you typed that disagree with DE or Asana. Yours hold until DE\'s own value changes.',
+    Roster: 'Asana\'s People and the workspace roster disagree. The roster is updated by hand.'
+  };
+  var OWNER = { properties: 'property_id', dev_projects: 'dev_project_id', pitches: 'pitch_id' };
+
+  function rest(path) { return P.call('/rest/v1' + path); }
+  function gate(title, text, button) {
+    $('board').hidden = true; $('gate').hidden = false;
+    $('gate').innerHTML = '<div class="card empty"><b>' + esc(title) + '</b>' + esc(text) + (button ? '<div style="margin-top:14px"><button class="b primary" type="button" id="gateBtn">' + esc(button) + '</button></div>' : '') + '</div>';
+    $('lead').textContent = '';
+  }
+
+  function load() {
+    return Promise.all([
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,asana_gid,asana,milestones,match,version&stage=not.is.null'),
+      rest('/dev_projects?select=*'),
+      rest('/asana_people?select=name,section,title,past,de_bio_url,de_profile_url,seen_at'),
+      // lines that belong to no job: GVC-listed on DE with no job, and Asana tasks the last sync couldn't link
+      // (either failing to read leaves those lines out, never the page)
+      rest('/de_listings?select=de_listing_id,gvc_listed,property_id,ignored,courtesy,raw,checked_at&gvc_listed=is.true&property_id=is.null&ignored=is.false').catch(function () { return []; }),
+      rest('/sync_runs?select=kind,started_at,totals&kind=eq.asana&order=started_at.desc&limit=20').catch(function () { return []; }),
+      rest('/asana_tasks?select=gid&ignored=eq.true').catch(function () { return []; })
+    ]).then(function (r) {
+      var people = r[2] || [], latest = people.reduce(function (m, p) { return p.seen_at && p.seen_at > m ? p.seen_at : m; }, '');
+      // the newest Asana run that listed its unlinked tasks (an aborted run lists none)
+      var run = (r[4] || []).filter(function (x) { return x.totals && Array.isArray(x.totals.unlinked); })
+        .sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; })[0] || null;
+      data = { properties: r[0] || [], devProjects: r[1] || [], people: people.filter(function (p) { return (p.seen_at || '') === latest; }),
+        loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }) }, M) };
+      render();
+      $('gate').hidden = true; $('board').hidden = false;
+    }, function (e) {
+      if (e.status === 404 || e.status === 400 || /does not exist|schema cache/i.test(e.message)) {
+        gate('The Asana tables aren\'t set up yet', 'Migration 0006 hasn\'t been applied to the database. Nothing is lost; this page fills in once it is.');
+      } else gate('The Match page couldn\'t load', e.message);
+    });
+  }
+
+  function line(it, fix) {
+    var meta = [];
+    if (it.since) meta.push('<span class="when">Since ' + esc(W.fmtDay(it.since)) + '</span>');
+    if (it.asanaUrl && fix !== 'Roster') meta.push('<a class="link asana" href="' + esc(it.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>');
+    if (it.deUrl) meta.push('<a class="link de" href="' + esc(it.deUrl) + '" target="_blank" rel="noopener">Open on DE</a>');
+    if (it.paste) meta.push('<span>Paste: <span class="paste">' + esc(it.paste) + '</span></span><button class="lnk" type="button" data-copy="' + esc(it.paste) + '">Copy</button>');
+    if (it.id) meta.push('<button class="lnk" type="button" data-dismiss>Dismiss</button>');
+    return '<li class="mline" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code">' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
+      (it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
+      (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
+      (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +
+      '<button class="b sm primary" type="button" data-confirm>Dismiss</button><button class="b sm" type="button" data-cancel>Cancel</button></div>' : '') + '<p class="msg" role="alert"></p></div></li>';
+  }
+
+  function render() {
+    var jobs = W.buildJobs({ properties: data.properties, pitches: [], devProjects: data.devProjects, changes: [] }, today, { archived: true });
+    var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
+    var loose = data.loose || [];
+    var groups = W.matchGroups(jobs, drift, loose), n = W.overviewStats(jobs).mismatches + loose.length;
+    $('lead').textContent = (n ? n + ' mismatch' + (n === 1 ? '' : 'es') + ', grouped by where to fix them, then by person, so each person can get their own list.' : 'No mismatches between Asana, DE and Drive.') +
+      (drift.length ? ' ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') + ' at the end.' : '');
+    if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b>Asana, DE and Drive agree on every job.</div>'; return; }
+    $('groups').innerHTML = groups.map(function (g) {
+      var bulk = g.bulk || [];
+      var count = g.people.reduce(function (a, p) { return a + p.items.length; }, 0) + bulk.reduce(function (a, b) { return a + b.items.length; }, 0);
+      return '<section class="card mg"><div class="card-h"><div><h2>' + esc(g.fixAt) + '</h2><p>' + esc(WHERE[g.fixAt] || '') + '</p></div><span class="chip made">' + count + '</span></div>' +
+        bulk.map(function (b, i) {
+          var id = 'bulk-' + esc(g.fixAt) + '-' + i;
+          return '<div class="who bulk" data-key="' + esc(b.key) + '"><span class="code">' + esc(b.code) + '</span><div><b>' + esc(b.text) + '</b> ' +
+            '<button class="lnk" type="button" data-bulk aria-expanded="false" aria-controls="' + id + '">Show the jobs</button>' +
+            '<ul class="mm bulk-list" id="' + id + '" hidden>' + b.items.map(function (it) { return line(it, g.fixAt); }).join('') + '</ul></div></div>';
+        }).join('') +
+        g.people.map(function (p) {
+          return '<div class="who">' + (g.fixAt === 'Roster' ? '' : '<h3>' + esc(p.who || 'No one named') + '</h3>') + '<ul class="mm">' + p.items.map(function (it) { return line(it, g.fixAt); }).join('') + '</ul></div>';
+        }).join('') + '</section>';
+    }).join('');
+  }
+
+  /* dismiss: a one-line reason, stored on the job's match.dismissed[key] with the values it was dismissed at */
+  var busy = false;
+  function dismiss(li) {
+    var reason = li.querySelector('input.reason').value.trim(), msg = li.querySelector('.msg');
+    if (!reason) { msg.textContent = 'Write a one-line reason first.'; li.querySelector('input.reason').focus(); return; }
+    if (busy) return;
+    var table = li.dataset.table, id = li.dataset.id, key = li.dataset.key;
+    var row = (table === 'dev_projects' ? data.devProjects : data.properties).filter(function (x) { return x.id === id; })[0];
+    var item = row && ((row.match || {}).list || []).filter(function (m) { return (m.key || m.code) === key; })[0];
+    if (!item) { msg.textContent = 'This mismatch has changed since the page loaded. Reload the page.'; return; }
+    busy = true; msg.textContent = 'Saving…';
+    li.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    P.whoAmI().catch(function () { return { name: 'Matt' }; }).then(function (me) {
+      var match = JSON.parse(JSON.stringify(row.match || {}));
+      match.list = match.list || [];
+      match.dismissed = match.dismissed || {};
+      match.dismissed[key] = { values: item.values === undefined ? null : item.values, reason: reason, by: me.name, at: new Date().toISOString() };
+      return P.call('/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id) + '&version=eq.' + encodeURIComponent(row.version), {
+        method: 'PATCH', prefer: 'return=representation', body: JSON.stringify({ match: match })
+      }).then(function (rows) {
+        if (!rows || !rows.length) throw new Error('Someone changed this job meanwhile. Reload the page and dismiss it again.');
+        var c = {};
+        c[OWNER[table]] = id;
+        Object.assign(c, { field: 'match', old_value: key, new_value: null, note: 'Mismatch dismissed: ' + item.text + ' Reason: ' + reason, source: 'match' });
+        return P.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify(c) }).then(function () { busy = false; return load(); }, function (e) {
+          busy = false;
+          return load().then(function () { $('lead').textContent = 'Dismissed, but the change log didn\'t save (' + e.message + '). There\'s nothing to redo.'; });
+        });
+      });
+    }).catch(function (e) {
+      busy = false; msg.textContent = e.message;
+      li.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+    });
+  }
+
+  $('groups').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-bulk')) {
+      var list = document.getElementById(b.getAttribute('aria-controls')), open = list.hidden;
+      list.hidden = !open; b.setAttribute('aria-expanded', String(open)); b.textContent = open ? 'Hide the jobs' : 'Show the jobs';
+      return;
+    }
+    var li = b.closest('.mline');
+    if (b.hasAttribute('data-copy')) {
+      var v = b.dataset.copy;
+      (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { b.textContent = 'Copied'; }, function () { b.textContent = 'Select the link to copy it'; });
+    } else if (b.hasAttribute('data-dismiss')) {
+      li.querySelector('.dz').hidden = false; b.hidden = true; li.querySelector('input.reason').focus();
+    } else if (b.hasAttribute('data-cancel')) {
+      li.querySelector('.dz').hidden = true; li.querySelector('[data-dismiss]').hidden = false; li.querySelector('.msg').textContent = '';
+    } else if (b.hasAttribute('data-confirm')) dismiss(li);
+  });
+  $('groups').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList.contains('reason')) { e.preventDefault(); dismiss(e.target.closest('.mline')); }
+  });
+
+  if (P.signedIn()) load();
+  else {
+    gate('Sign in', 'The Match page is for the GVC team. Sign in with your own email and password.', 'Sign in');
+    $('gateBtn').addEventListener('click', function () { P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) { shell.paintMe(); load(); } }); });
+  }
+})();
+</script>
+</body>
+</html>

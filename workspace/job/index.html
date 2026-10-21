@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Job · GVC Workspace</title>
-<meta name="description" content="One GVC job: its stage, DE facts, Drive folder and change log.">
+<meta name="description" content="One GVC job: its stage, Asana card, DE facts, Drive folder and change log.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
@@ -36,8 +36,24 @@
 .later{border-style:dashed;color:var(--ink-soft);font-size:13.5px}
 .steps-wrap{overflow-x:auto}
 .steps{min-width:640px}
+.ck-block{margin-top:14px}
+.ck-block h3{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+.ck-block ul{list-style:none;margin:0;padding:0}
+.ck-block li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:13.5px;color:var(--ink-soft)}
+.ck-block li .bx{width:14px;height:14px;border:1.5px solid var(--rule);border-radius:3px;flex-shrink:0;margin-top:2px;display:inline-flex;align-items:center;justify-content:center}
+.ck-block li.done{color:var(--ink)}
+.ck-block li.done .bx{background:var(--ink);border-color:var(--ink);color:var(--bone)}
+.ck-block li .bx svg.i{width:11px;height:11px;stroke-width:2.4}
+.ck-block li .w{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.as-st{font-size:13.5px;color:var(--ink-soft);margin-top:4px}
+.as-mm{margin-top:14px}
+.as-mm h3{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+.hint-b{display:flex;gap:6px}
+.hint-b .b{min-width:38px;justify-content:center}
 @media (max-width:1100px){ .two{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:720px){ .hd h1{font-size:30px} }
+/* phone: the stages wrap into rows of three so every one stays in view (no hidden scroll) */
+@media (max-width:640px){ .steps{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));row-gap:18px} .step::before{display:none} }
 </style>
 </head>
 <body data-nav="job" data-root="../">
@@ -101,14 +117,24 @@
     });
   }
 
-  function fact(k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">—</span>') + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; }
+  function fact(k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">Not set</span>') + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; }
 
   function facts() {
     var r = state.row, j = state.job;
     if (kind === 'dev') {
-      var ms = r.milestones || {};
-      return '<div class="card"><div class="card-h"><div><h2>Milestones</h2><p>Ticked by Matt (from Slice 2). Developments are on the overview only for now.</p></div></div><ul class="log">' +
-        W.DEV.map(function (m) { var x = ms[m] || {}; return '<li><span class="dt' + (x.done ? ' m' : '') + '"></span><div>' + esc(m) + '</div><span class="w">' + (x.on ? esc(W.fmtDay(x.on)) : x.done ? 'done' : '') + '</span></li>'; }).join('') + '</ul></div>';
+      var ms = r.milestones || {}, nx = [];
+      if (j.next) nx.push('<span class="dmk planned' + (j.next.overdue ? ' over' : '') + '">' + esc('Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) : '') + (j.next.overdue ? ' (overdue)' : '')) + '</span>');
+      if (j.slips) nx.push('<span>' + esc('Milestones re-dated ' + j.slips + ' time' + (j.slips === 1 ? '' : 's')) + '</span>');
+      if (j.construction) nx.push('<span>' + esc('Construction ' + j.construction.done + ' of ' + j.construction.total) + '</span>');
+      return '<div class="card"><div class="card-h"><div><h2>Milestones</h2><p>Confirmed by Matt. What Asana suggests waits below until it is confirmed.</p></div>' +
+        (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div>' +
+        '<div class="dates" id="devNext" style="margin:0 0 10px">' + (nx.join('') || '<span>No next milestone yet.</span>') + '</div>' +
+        (j.construction ? '<div class="cons" style="margin-bottom:12px"><i style="width:' + (j.construction.done / j.construction.total * 100) + '%"></i></div>' : '') +
+        '<ul class="log" id="msList">' + W.DEV_KEYS.map(function (k) {
+          var x = ms[k] || {};
+          var w = x.on ? W.fmtDay(x.on) + (x.done ? '' : ' (planned)') : x.done ? 'done' : '';
+          return '<li><span class="dt' + (x.done ? ' m' : '') + '"></span><div>' + esc(W.DEV_LABEL[k]) + (x.asanaGid ? '<small>Confirmed from Asana' + (x.confirmedBy ? ' by ' + esc(x.confirmedBy) : '') + '</small>' : '') + '</div><span class="w">' + esc(w) + '</span></li>';
+        }).join('') + '</ul></div>' + hintsCard();
     }
     if (kind === 'pitch') {
       return '<div class="card"><div class="facts">' + fact('Pitched', r.pitched_on ? W.fmtDay(r.pitched_on) + ' ' + r.pitched_on.slice(0, 4) : '') +
@@ -118,14 +144,93 @@
     var core = r.core || {}, de = r.de || {};
     var src = function (k) { return de[k] != null ? 'from DE' : core[k] != null ? 'on the job' : ''; };
     var agents = (core.agentIds || []).map(function (id) { var a = window.GVC_AGENT && GVC_AGENT(id); return a ? a.name : null; }).filter(Boolean);
-    return '<div class="card"><div class="card-h"><div><h2>Facts</h2><p>DE wins where it has a value (D6). Editing facts arrives in Slice 2.</p></div></div><div class="facts">' +
+    return '<div class="card"><div class="card-h"><div><h2>Facts</h2><p>DE wins where it has a value, unless you typed a newer one; then a warning shows until DE changes. Editing facts arrives in Slice 3.</p></div></div><div class="facts">' +
       fact(r.kind === 'rental' ? 'Rent' : 'Price', j.price, src('price')) +
       fact('Beds · baths', j.rooms, (de.halfBaths ? de.halfBaths + ' half' : '') ) +
       fact('Sq ft', (de.sqft || core.sqft) ? Number(de.sqft || core.sqft).toLocaleString('en-US') + ' approx.' : '', src('sqft')) +
       fact('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
       fact('Neighbourhood', core.neighborhood || core.city || '') +
-      fact('Agents', agents.join(', '), agents.length ? '' : 'picked in Slice 2') +
+      fact('Agents', agents.join(', '), agents.length ? '' : 'picked in Slice 3') +
       '</div></div>';
+  }
+
+  /* S13: Asana's suggestions for a development, each confirmed or turned down by hand */
+  function hintsCard() {
+    var hs = state.row.milestone_hints || [];
+    if (!hs.length) return '';
+    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Suggested from Asana</h2><p>' + hs.length + ' milestone' + (hs.length === 1 ? '' : 's') + ' to review. ✓ makes it a milestone with this date; ✗ turns it down and Asana won\'t suggest it again.</p></div></div>' +
+      '<p id="hintMsg" role="alert" style="color:var(--danger);font-size:13px;min-height:1.2em;margin:0 0 6px"></p><ul class="log" id="hints">' + hs.map(function (h, i) {
+        return '<li style="grid-template-columns:14px 1fr auto"><span class="dt"></span><div>' + esc(W.DEV_LABEL[h.key] || h.key) + ', ' + (h.approx ? 'about ' : '') + esc(W.fmtDay(h.date) + ' ' + String(h.date || '').slice(0, 4)) +
+          '<small>' + esc(h.source || 'Asana') + '</small></div><span class="hint-b"><button class="b sm" type="button" data-ok="' + i + '" aria-label="Confirm ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✓</button>' +
+          '<button class="b sm" type="button" data-no="' + i + '" aria-label="Turn down ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✗</button></span></li>';
+      }).join('') + '</ul></div>';
+  }
+  var hintBusy = false;
+  function saveHint(i, ok) {
+    var r = state.row, hs = r.milestone_hints || [], h = hs[i];
+    if (!h || hintBusy) return;
+    hintBusy = true;
+    document.querySelectorAll('#hints button').forEach(function (b) { b.disabled = true; });
+    var msg = $('hintMsg'); msg.textContent = 'Saving…';
+    var label = W.DEV_LABEL[h.key] || h.key;
+    var clone = function (x) { return JSON.parse(JSON.stringify(x || {})); };
+    P.whoAmI().catch(function () { return { name: 'Matt' }; }).then(function (me) {
+      var map = clone(r.asana_map), patch = { milestone_hints: hs.filter(function (x, k) { return k !== i; }) };
+      var gid = h.asanaGid || null, add = function (list) { list = list || []; return gid && list.indexOf(gid) === -1 ? list.concat([gid]) : list; };
+      if (ok) {
+        var ms = clone(r.milestones);
+        ms[h.key] = { done: true, on: h.date, approx: !!h.approx, asanaGid: gid, source: h.source || null, confirmedBy: me.name, confirmedAt: new Date().toISOString() };
+        patch.milestones = ms;
+        map[h.key] = add(map[h.key]);
+      } else {
+        map.dismissed = map.dismissed || {};
+        map.dismissed[h.key] = add(map.dismissed[h.key]);
+      }
+      patch.asana_map = map;
+      return P.call('/rest/v1/dev_projects?id=eq.' + encodeURIComponent(r.id) + '&version=eq.' + encodeURIComponent(r.version), {
+        method: 'PATCH', prefer: 'return=representation', body: JSON.stringify(patch)
+      }).then(function (rows) {
+        if (!rows || !rows.length) throw new Error('Someone changed this development meanwhile. Reload the page and try again.');
+        var c = ok ? { dev_project_id: r.id, field: 'milestones', old_value: (r.milestones || {})[h.key] || null, new_value: patch.milestones[h.key], note: label + ' confirmed from Asana: ' + W.fmtDay(h.date) + '.' }
+          : { dev_project_id: r.id, field: 'milestone_hints', old_value: h, new_value: null, note: 'Asana\'s suggestion for ' + label + ' turned down.' };
+        c.source = 'Matt';
+        return P.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify(c) }).then(function () { hintBusy = false; return load(); }, function (e) {
+          hintBusy = false; load().then(function () { if ($('hintMsg')) $('hintMsg').textContent = 'Saved, but the change log didn\'t save (' + e.message + ').'; });
+        });
+      });
+    }).catch(function (e) {
+      hintBusy = false; msg.textContent = e.message;
+      document.querySelectorAll('#hints button').forEach(function (b) { b.disabled = false; });
+    });
+  }
+
+  /* the read-only Asana card on a listing (spec §7) */
+  var BLOCK = { prep: 'Prep', 'price change': 'Price change', contract: 'Contract', 'post-closing': 'Post-closing' };
+  function asanaCard() {
+    var r = state.row, j = state.job, a = r.asana;
+    var head = '<div class="card-h"><div><h2>Asana</h2><p>Read-only. Change it in Asana; the workspace picks it up within 30 minutes.</p></div>' +
+      (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>' : '') + '</div>';
+    if (!a && !r.asana_gid) return '<div class="card" id="asanaCard">' + head + '<p class="soft">Not linked to an Asana task yet.</p></div>';
+    a = a || {};
+    var stage = a.stageFromStatus || a.stageFromSection || r.stage;
+    var st = [];
+    if (a.status) st.push('Listing Status: ' + a.status);
+    if (a.section) st.push('Section: ' + a.section);
+    var dates = (j.dates || []).length ? '<div class="dates">' + j.dates.map(function (d) {
+      return '<span class="dmk' + (d.planned ? ' planned' : '') + '" title="' + (d.planned ? 'Planned' : 'Done') + '">' + esc(d.label + ' ' + W.fmtDay(d.on)) + '</span>';
+    }).join('') + '</div>' : '<p class="soft" style="font-size:13px;margin-top:8px">No deal dates in Asana yet.</p>';
+    var ck = (a.checklist || []).map(function (b) {
+      return '<div class="ck-block"><h3>' + esc(BLOCK[b.block] || b.block) + '</h3><ul>' + (b.steps || []).map(function (x) {
+        return '<li class="' + (x.done ? 'done' : '') + '"><span class="bx">' + (x.done ? I('check') : '') + '</span>' + esc(x.name) + (x.doneOn ? '<span class="w">' + esc(W.fmtDay(x.doneOn)) + '</span>' : '') + '</li>';
+      }).join('') + '</ul></div>';
+    }).join('');
+    var mm = j.match.length ? '<div class="as-mm"><h3>Mismatches</h3><ul class="mm">' + j.match.map(function (m) {
+      return '<li><span class="code">' + esc(m.code) + '</span><span>' + esc(m.text) + '</span></li>';
+    }).join('') + '</ul><p style="margin-top:8px"><a class="link" href="../match/">See every mismatch</a></p></div>' : '';
+    return '<div class="card" id="asanaCard">' + head +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip ' + esc(j.chip) + '">' + esc(stage) + '</span>' + (a.gone ? '<span class="chip stale">Asana task gone</span>' : '') + '</div>' +
+      (st.length ? '<div class="as-st">' + esc(st.join(' · ')) + '</div>' : '') + dates + mm +
+      (ck || '<p class="soft" style="font-size:13px;margin-top:12px">No checklist read yet.</p>') + '</div>';
   }
 
   function steps() {
@@ -147,8 +252,8 @@
       var cls = c.source === 'DE' ? 'de' : c.source === 'Matt' ? 'm' : '';
       return '<li><span class="dt ' + cls + '"></span><div>' + esc(t) + (c.note && c.field ? '<small>' + esc(c.note) + '</small>' : '') + '</div><span class="w">' + esc(W.fmtDay(c.at) + ' · ' + c.source) + '</span></li>';
     });
-    return '<div class="card"><div class="card-h"><div><h2>Change log</h2><p>Newest first. Logging a change by hand arrives in Slice 2.</p></div></div>' +
-      (items.length ? '<ul class="log">' + items.join('') + '</ul>' : '<p class="soft">Nothing logged yet.</p>') + '</div>';
+    return '<div class="card"><div class="card-h"><div><h2>Change log</h2><p>Newest first. Logging a change by hand arrives in Slice 3.</p></div></div>' +
+      (items.length ? '<ul class="log" id="changeLog">' + items.join('') + '</ul>' : '<p class="soft">Nothing logged yet.</p>') + '</div>';
   }
 
   function render() {
@@ -168,7 +273,12 @@
       '<div class="path" style="margin-top:8px">' + (r.drive_folder ? 'G:\\Shared drives\\' + esc(r.drive_folder.split('/').join('\\')) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       facts() + steps() +
-      '<div class="two"><div>' + log() + '</div><div class="card later"><b style="font-family:var(--serif);font-weight:400;font-size:20px;color:var(--ink)">Kit, floorplans, photos</b><p style="margin-top:6px">The pieces made for this job, floorplan versions and photo picks arrive in Slices 2 and 3.</p></div></div>');
+      '<div class="two"><div>' + log() + '</div><div class="stack">' + (kind === 'listing' ? asanaCard() : '') +
+      '<div class="card later"><b style="font-family:var(--serif);font-weight:400;font-size:20px;color:var(--ink)">Kit, floorplans, photos</b><p style="margin-top:6px">The pieces made for this job, floorplan versions and photo picks arrive in Slice 3.</p></div></div></div>');
+    if ($('hints')) $('hints').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.ok != null) saveHint(+b.dataset.ok, true); else if (b.dataset.no != null) saveHint(+b.dataset.no, false);
+    });
 
     $('open').addEventListener('click', function () {
       GVC_SHELL.helper('POST', '/open-folder', { folder: r.drive_folder }).then(function (x) { $('actMsg').textContent = x.ok ? 'Opened in File Explorer.' : (x.error || 'Couldn\'t open it.'); },

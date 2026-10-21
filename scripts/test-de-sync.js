@@ -35,7 +35,7 @@ function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-de-')); }
 /* a copy of the synthetic fixtures with one page edited */
 function copyWith(file, edit) {
   const dir = tmp();
-  fs.readdirSync(SYN).forEach(f => fs.copyFileSync(path.join(SYN, f), path.join(dir, f)));
+  fs.readdirSync(SYN).filter(f => f.endsWith('.json')).forEach(f => fs.copyFileSync(path.join(SYN, f), path.join(dir, f)));
   const p = path.join(dir, file), json = JSON.parse(fs.readFileSync(p, 'utf8'));
   edit(json);
   fs.writeFileSync(p, JSON.stringify(json));
@@ -112,6 +112,7 @@ function copyWith(file, edit) {
   check('no type swap', addressFolderMatch('1 MAIN ST', '', ['1 Main Avenue']), null);
   check('unit in folder name', addressFolderMatch('1006 Pheasant Ln', '204', ['1006 Pheasant Ln #204']), '1006 Pheasant Ln #204');
   check('other unit refused', addressFolderMatch('100 MAIN ST', '2B', ['100 Main St #3C']), null);
+  check('other unit after " - " refused', addressFolderMatch('100 MAIN ST', '2B', ['100 Main St - 3C']), null);
   check('building folder for a unit', addressFolderMatch('1006 Pheasant Ln', '204', ['1006 Pheasant Ln']), '1006 Pheasant Ln');
 
   r = await dryRun({ fixturesDir: copyWith('featured-sale-p2.json', j => {
@@ -161,7 +162,7 @@ function copyWith(file, edit) {
 
   /* ---------- the real recording, when this PC has one ---------- */
   const recRoot = path.join(__dirname, '..', 'helper', 'fixtures', 'recorded');
-  const recs = fs.existsSync(recRoot) ? fs.readdirSync(recRoot).sort() : [];
+  const recs = fs.existsSync(recRoot) ? fs.readdirSync(recRoot).filter(n => /^\d{4}-\d{2}-\d{2}$/.test(n)).sort() : [];  // DE recordings only; Asana's are asana-<date>/
   if (recs.length) {
     r = await dryRun({ fixturesDir: path.join(recRoot, recs[recs.length - 1]), outDir: tmp(), lnks: [], drive: false });
     check('recording replays (' + recs[recs.length - 1] + ')', [r.ok, r.aborted || null], [true, null]);

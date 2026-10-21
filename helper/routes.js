@@ -2,6 +2,8 @@
    HELPER ROUTES — what the workspace can ask the helper to do.
 
      POST /de/dry-run   {}                        → the dry-run report (writes nothing)
+     POST /asana/sync   {}                        → one Asana read (joins one already running)
+     POST /sync         {}                        → Asana, then DE: {asana:{...}, de:{...}}
      POST /pdf          {tool, inputs, paper, outDir}
                                                   → {ok, path, pages}
      GET  /lab/samples                            → paths of the Showsheet sample files
@@ -34,14 +36,43 @@ route('POST', '/de/dry-run', () => require('./de-sync.js').dryRun({}));
 
 /* "Sync now" on the overview. Refused (with the reason) until the helper has its account. */
 let syncing = null;
-route('POST', '/de/sync', () => {
+function deSync() {
   if (!syncing) {
     syncing = require('./de-sync.js').syncNow({})
       .then(r => ({ ok: !!r.report.ok, changes: r.changes, created: r.created, skipped: r.errors.length, aborted: r.report.aborted || null }))
       .finally(() => { syncing = null; });
   }
   return syncing;
-});
+}
+route('POST', '/de/sync', deSync);
+
+/* Asana: one sync at a time (a second call joins the one running). Refused with
+   the reason until the token is in the config. ok is the stored run's ok
+   (sync_runs.ok): a partial read or a run before the link plan is not OK, and
+   aborted then says why. */
+function shapeRun(r) {
+  const ok = r.ok === undefined ? !!r.report.ok : !!r.ok;
+  const errs = r.errors || [];
+  const why = r.report.aborted || (ok ? null
+    : ((errs.find(e => e.what === 'no plan') || errs.find(e => e.what === 'failed') || {}).detail || (r.report.warnings || [])[0] || 'the run was not complete'));
+  return { ok, changes: r.changes, created: r.created, skipped: errs.length, aborted: why || null };
+}
+function asanaSyncRoute(syncNow) {
+  // the same in-flight run the scheduled jobs use (inflight.js)
+  return () => require('./inflight.js').runAsana('plain', syncNow).then(shapeRun);
+}
+/* Sync now: Asana first, then DE. A problem in one never stops the other. */
+function syncRoute(o) {
+  const soft = fn => Promise.resolve().then(fn).catch(e => ({ ok: false, error: e.message || String(e) }));
+  return async () => {
+    const asana = await soft(o.asana);
+    const de = await soft(o.de);
+    return { ok: !!(asana.ok && de.ok), asana, de };
+  };
+}
+const asanaOne = asanaSyncRoute(() => require('./asana-sync.js').syncNow({}));
+route('POST', '/asana/sync', asanaOne);
+route('POST', '/sync', syncRoute({ asana: asanaOne, de: () => deSync() }));
 
 route('POST', '/pdf', async (body, cfg) => {
   if (!PIECE[body.tool]) throw fail(400, 'The helper can\'t make a ' + body.tool + ' yet.');
@@ -77,4 +108,4 @@ function openFolderRoute(o) {
 }
 route('POST', '/open-folder', openFolderRoute({ driveRoot: 'G:\\Shared drives' }));
 
-module.exports = { openFolderRoute };
+module.exports = { openFolderRoute, asanaSyncRoute, syncRoute };

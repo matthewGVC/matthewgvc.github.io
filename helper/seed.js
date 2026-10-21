@@ -10,7 +10,7 @@
    - every GVC-listed Live / In contract listing on DE (ticked), merged into
      an existing library row when the address matches, with its folder;
    - shortcuts in ACTIVE LISTINGS & DEALS that aren't on DE (unticked, stage
-     Won); shortcuts to a whole building or to a missing folder: review only;
+     Prep); shortcuts to a whole building or to a missing folder: review only;
      shortcuts DE shows as sold: left out (D31);
    - NYC unit folders made in the last 120 days that nothing else claimed
      (unticked);
@@ -112,7 +112,7 @@ function buildPlan(o) {
     }
     used.add(l.target);
     listings.push({ source: 'lnk', include: false, street: building, unit: unitSeg.split(' - ')[0].trim(), kind: 'sale', market: 'NYC',
-      stage: 'Won', folder: l.target, opened: createdOf.get(l.target) || null, existingId: null, note: 'In ACTIVE LISTINGS & DEALS, not on DE' });
+      stage: 'Prep', folder: l.target, opened: createdOf.get(l.target) || null, existingId: null, note: 'In ACTIVE LISTINGS & DEALS, not on DE' });
   });
 
   // Recent unit folders. A building folder whose subfolders aren't units
@@ -126,7 +126,7 @@ function buildPlan(o) {
       const newest = units.map(u => u.created).sort().pop();
       const folder = NYC_UNITS + '/' + building;
       if (newest >= cutoff && !isClaimed(folder)) {
-        listings.push({ source: 'recent folder', include: false, street: building, unit: '', kind: 'sale', market: 'NYC', stage: 'Won',
+        listings.push({ source: 'recent folder', include: false, street: building, unit: '', kind: 'sale', market: 'NYC', stage: 'Prep',
           folder, opened: units.map(u => u.created).sort()[0], existingId: null, note: 'Folder with ' + units.map(u => u.name).join(', ') });
       }
       return;
@@ -135,7 +135,7 @@ function buildPlan(o) {
       const folder = NYC_UNITS + '/' + building + '/' + u.name;
       if (u.created < cutoff || isClaimed(folder)) return;
       listings.push({ source: 'recent folder', include: false, street: building, unit: u.name.split(' - ')[0].replace(/\s*rental$/i, '').replace(/^#\s*/, '').trim(),
-        kind: /rental/i.test(u.name) ? 'rental' : 'sale', market: 'NYC', stage: 'Won', folder, opened: u.created, existingId: null,
+        kind: /rental/i.test(u.name) ? 'rental' : 'sale', market: 'NYC', stage: 'Prep', folder, opened: u.created, existingId: null,
         note: 'Unit folder made ' + u.created });
     });
   });
@@ -191,8 +191,8 @@ async function applyPlan(o) {
     }
     ids.set(key(l.street, l.unit), row.id);
     const changes = [];
-    if (l.opened) changes.push(hist('property_id', row.id, l.opened + 'T12:00:00Z', 'stage', 'Won', 'Folder opened'));
-    if (!(l.opened && l.stage === 'Won')) changes.push(hist('property_id', row.id, now, 'stage', l.stage, l.source === 'DE' ? 'On DE when the workspace started' : 'Added at the start'));
+    if (l.opened) changes.push(hist('property_id', row.id, l.opened + 'T12:00:00Z', 'stage', 'Prep', 'Folder opened'));
+    if (!(l.opened && l.stage === 'Prep')) changes.push(hist('property_id', row.id, now, 'stage', l.stage, l.source === 'DE' ? 'On DE when the workspace started' : 'Added at the start'));
     await client.insert('changes', changes);
     out.listings++;
   }

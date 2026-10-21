@@ -4,6 +4,8 @@
      const r = createRunner({ jobs: { de, scan, backup }, last })
      await r.tick(now)     runs every due job, one at a time
      r.lastRuns()          → { de: { at, ok, error? }, … }  (for /health)
+   Asana jobs (asana every 30 min, asanaFull 03:00, people 03:15) exist only
+   when the config holds a token; the full read also counts as the plain one.
      r.start()             ticks every minute
 
    A job that fails is still recorded as run for its slot, so a broken job
@@ -26,9 +28,14 @@ function createRunner(o) {
     if (busy) return;
     busy = true;
     try {
-      for (const k of due(now || new Date(), last)) {
+      const at = now || new Date();
+      const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people);
+      for (const k of due(at, last, { asana: withAsana })) {
         if (!o.jobs[k]) continue;
-        last[k] = now || new Date();
+        // the nightly full read already covers the plain read that is due beside it
+        if (k === 'asana' && last.asana && last.asana >= at) continue;
+        last[k] = at;
+        if (k === 'asanaFull') last.asana = at;
         try {
           const r = await o.jobs[k]();
           // a job can finish without throwing yet report an abort (a DE run its checks stopped)
@@ -50,20 +57,38 @@ function createRunner(o) {
 
 const NIGHTLY_KEEP = 14;
 
+/* the Asana jobs, only when the config holds a token; all share one in-flight run */
+function asanaJobs(cfg, client, syncNow) {
+  if (!cfg.asanaToken) return {};
+  const sync = syncNow || (o => require('./asana-sync.js').syncNow(o));
+  const go = (kind, extra) => () => require('./inflight.js').runAsana(kind, () => sync(Object.assign({ cfg, client }, extra)));
+  return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }) };
+}
+
+/* last-run map from sync_runs rows; the last full read is the asana row with totals.full */
+function lastFromRuns(runs) {
+  const last = {};
+  runs.forEach(r => {
+    if (!last[r.kind] || r.started_at > last[r.kind]) last[r.kind] = r.started_at;
+    if (r.kind === 'asana' && r.totals && r.totals.full && (!last.asanaFull || r.started_at > last.asanaFull)) last.asanaFull = r.started_at;
+  });
+  Object.keys(last).forEach(k => { last[k] = new Date(last[k]); });
+  return last;
+}
+
 async function startRunner(cfg) {
   const client = require('./supabase.js').createClient(cfg);
   if (!client.ready()) return null;
-  const last = {};
+  let last = {};
   try {
-    const runs = await client.select('sync_runs', {}, 'kind,started_at');
-    runs.forEach(r => { if (!last[r.kind] || r.started_at > last[r.kind]) last[r.kind] = r.started_at; });
-    Object.keys(last).forEach(k => { last[k] = new Date(last[k]); });
+    last = lastFromRuns(await client.select('sync_runs', {}, 'kind,started_at,totals'));
   } catch (e) { /* table not there yet: everything is due */ }
   const exportsDir = path.join(__dirname, '..', 'exports');
   const runner = createRunner({
     last,
     jobs: {
       de: () => require('./de-sync.js').syncNow({ cfg, client }),
+      ...asanaJobs(cfg, client),
       scan: () => require('./scan.js').scanAll({ client, driveRoot: 'G:\\Shared drives' }),
       backup: async () => {
         const date = new Date().toISOString().slice(0, 10);
@@ -77,4 +102,4 @@ async function startRunner(cfg) {
   return runner;
 }
 
-module.exports = { createRunner, startRunner };
+module.exports = { createRunner, startRunner, asanaJobs, lastFromRuns };

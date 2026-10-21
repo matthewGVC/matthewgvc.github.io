@@ -269,8 +269,9 @@ async function syncOnce(opts) {
     await new Promise(res => setTimeout(res, 3000));
     return r;
   });
+  if ('deAddsNew' in cfg) console.log('deAddsNew is retired (D54): DE never adds jobs now, so the setting is ignored.');
   try {
-    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy, addNew: cfg.deAddsNew !== false,
+    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy,
       helperVersion: require('./package.json').version }), { report });
   } finally {
     if (browser) await browser.close();
@@ -286,7 +287,7 @@ if (require.main === module) {
     courtesyFor(arg('--courtesy').split(','), { fixturesDir }).then(r => { console.log(JSON.stringify(r, null, 2)); });
   } else if (a.includes('--write')) {
     syncNow({ fixturesDir }).then(r => {
-      console.log(r.report.ok ? 'Sync done: ' + r.changes + ' change(s), ' + r.created + ' new job(s), ' + r.errors.length + ' skipped.'
+      console.log(r.report.ok ? 'Sync done: ' + r.changes + ' change(s), ' + r.errors.length + ' skipped.'
         : 'Sync ABORTED (nothing changed): ' + r.report.aborted);
       process.exit(r.report.ok ? 0 : 1);
     }, e => { console.log('Sync failed: ' + e.message); process.exit(1); });

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Overview · GVC Workspace</title>
-<meta name="description" content="Every GVC listing, pitch and development, with its stage, DE status and folder activity.">
+<meta name="description" content="Every GVC listing, pitch and development, with its Asana stage and dates, DE status and folder activity.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="../assets/logos/monogram.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/logos/monogram-32.png">
@@ -55,6 +55,10 @@
 .bar.contract{background:var(--cyan)}
 .bar.sold{background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)}
 .tk{position:absolute;top:30px;width:2px;height:6px;background:var(--ink)}
+.tl-d{position:absolute;top:16px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--ink);border:1.5px solid var(--ink);box-sizing:border-box;z-index:3}
+.tl-d.planned{background:var(--paper)}
+.pj .r.warn a{color:inherit}
+#mmTotal{margin-left:4px}
 .heat{position:absolute;left:0;right:0;bottom:2px;height:3px;display:flex;gap:1px}
 .heat i{flex:1}
 .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
@@ -122,6 +126,10 @@
           <div class="card-h"><div><h2 id="wait-h">Waiting on others</h2><p>Needed before a piece can be finished</p></div></div>
           <div id="wait"></div>
         </section>
+        <section class="card health" id="asCard">
+          <span class="ic" id="asIc"></span>
+          <div style="flex:1"><div style="font-weight:600" id="asTitle">Asana sync</div><div class="mono soft" style="font-size:11px" id="asText"></div><div class="why" id="asWhy" hidden></div></div>
+        </section>
         <section class="card health" id="deCard">
           <span class="ic" id="deIc"></span>
           <div style="flex:1"><div style="font-weight:600" id="deTitle">DE sync</div><div class="mono soft" style="font-size:11px" id="deText"></div><div class="why" id="deWhy" hidden></div></div>
@@ -158,7 +166,8 @@
   $('si').innerHTML = I('search');
   $('addBtn').innerHTML = I('plus') + ' Add';
   $('deIc').innerHTML = I('sync');
-  $('range').textContent = R0.getDate() + ' ' + MON[R0.getMonth()] + ' – ' + TODAY.getDate() + ' ' + MON[TODAY.getMonth()];
+  $('asIc').innerHTML = I('sync');
+  $('range').textContent = R0.getDate() + ' ' + MON[R0.getMonth()] + ' to ' + TODAY.getDate() + ' ' + MON[TODAY.getMonth()];
 
   function gate(title, text, button) {
     $('board').hidden = true; $('gate').hidden = false;
@@ -169,14 +178,15 @@
   function rest(path) { return P.call('/rest/v1' + path); }
   function load() {
     return Promise.all([
-      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,scan,version&stage=not.is.null'),
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'),
       rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
       rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1'),
-      rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc')
+      rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc'),
+      rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1')
     ]).then(function (r) {
-      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [] };
+      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null };
       try { render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
       $('gate').hidden = true; $('board').hidden = false;
     }, function (e) {
@@ -197,10 +207,11 @@
     var card = function (t, ic, v, small, w, c) {
       return '<div class="card stat"><div class="top-l">' + t + I(ic) + '</div><div class="v">' + v + '<small>' + esc(small) + '</small></div><div class="bar"><i class="' + (c || '') + '" style="width:' + w + '%"></i></div></div>';
     };
-    $('stats').innerHTML = card('Live', 'arrow', s.live, 'on DE now', s.live / n * 100) +
-      card('In contract', 'file', s.contract, 'contract signed on DE', s.contract / n * 100, 'c') +
+    $('stats').innerHTML = card('Live', 'arrow', s.live, 'listed and on the market', s.live / n * 100) +
+      card('In contract', 'file', s.contract, 'contract signed', s.contract / n * 100, 'c') +
       card('To link', 'link', s.toLink, 'folder or DE match missing', s.toLink / n * 100);
-    $('lead').textContent = s.total + ' job' + (s.total === 1 ? '' : 's') + ' across ' + (f.market || 'NYC, NJ and FL') + '. Statuses from DE, files from Drive.';
+    $('lead').innerHTML = esc(s.total + ' job' + (s.total === 1 ? '' : 's') + ' across ' + (f.market || 'NYC, NJ and FL') + '. Stages and dates from Asana, statuses from DE, files from Drive.') +
+      (s.mismatches ? ' <a class="link" id="mmTotal" href="match/">' + s.mismatches + ' mismatch' + (s.mismatches === 1 ? '' : 'es') + '</a>' : '');
   }
 
   function recent(js) {
@@ -218,7 +229,12 @@
     if (j.flags.some(function (x) { return x.k === 'link'; })) return 'No Drive folder linked yet.';
     if (j.flags.some(function (x) { return x.k === 'de'; })) return 'Not matched to a DE listing yet.';
     if (j.type === 'pitch') return 'Pitched ' + W.fmtDay(j.pitchedOn) + '.';
-    if (j.type === 'development') return j.stageIdx < 0 ? 'No milestones ticked yet.' : 'Latest milestone: ' + j.stage + '.';
+    if (j.type === 'development') {
+      var t = j.next ? 'Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) + (j.next.overdue ? ' (overdue)' : '') : '') + '.'
+        : j.stageIdx < 0 ? 'No milestones confirmed yet.' : 'Latest milestone: ' + j.stage + '.';
+      if (j.slips) t += ' Milestones re-dated ' + j.slips + ' time' + (j.slips === 1 ? '' : 's') + '.';
+      return t;
+    }
     return j.last ? 'Last activity ' + W.fmtDay(j.last) + '.' : 'No activity recorded yet.';
   }
 
@@ -226,7 +242,9 @@
     if (!js.length) return '<div class="empty"><b>No jobs here</b>' + (data.properties.length + data.pitches.length + data.devProjects.length
       ? 'Nothing matches these filters.' : 'The database is ready but empty. Jobs arrive from the seed and the first DE sync.') + '</div>';
     return '<div class="pipe">' + js.map(function (j) {
-      var right = j.flags.length ? '<span class="r warn">' + I('alert') + esc(j.flags.map(function (x) { return x.t; }).join(' · ')) + '</span>'
+      var warn = j.flags.map(function (x) { return x.t; });
+      if (j.mismatches) warn.push(j.mismatches + ' mismatch' + (j.mismatches === 1 ? '' : 'es'));
+      var right = warn.length ? '<span class="r warn">' + I('alert') + esc(warn.join(' · ')) + '</span>'
         : '<span class="r">' + I('clock') + (j.last ? 'Last ' + esc(W.fmtDay(j.last)) : 'No dates') + '</span>';
       var meta = [j.market];
       if (j.type === 'rental') meta.push('Rental'); if (j.type === 'pitch') meta.push('Pitch'); if (j.type === 'development') meta.push('Development');
@@ -235,8 +253,16 @@
         var done = j.type === 'development' ? i <= j.stageIdx : (j.done[s] || i < j.stageIdx);
         return '<i class="' + (i === j.stageIdx ? 'c' : done ? 'd' : '') + '" title="' + esc(s) + (j.done[s] ? ' · ' + esc(W.fmtDay(j.done[s])) : '') + '"></i>';
       }).join('');
+      var dates = (j.dates || []).length ? '<div class="dates">' + j.dates.map(function (d) {
+        return '<span class="dmk' + (d.planned ? ' planned' : '') + '" title="' + (d.planned ? 'Planned' : 'Done') + '">' + esc(d.label + ' ' + W.fmtDay(d.on)) + '</span>';
+      }).join('') + '</div>' : '';
+      var dev = '';
+      if (j.type === 'development') {
+        if (j.construction) dev += '<div class="prog" style="margin-top:10px"><span>Construction</span><span>' + j.construction.done + ' of ' + j.construction.total + '</span></div><div class="cons"><i style="width:' + (j.construction.done / j.construction.total * 100) + '%"></i></div>';
+        if (j.hints) dev += '<div class="dates"><span>' + j.hints + ' milestone' + (j.hints === 1 ? '' : 's') + ' suggested from Asana. Review them on the job page.</span></div>';
+      }
       return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div></div>' + right + '</div>' +
-        '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div></a>';
+        '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div>' + dates + dev + '</a>';
     }).join('') + '</div>';
   }
 
@@ -249,10 +275,14 @@
       var b = '';
       j.bars.forEach(function (s) { var l = pct(s.from), r = s.to ? pct(s.to) : pct(today); b += '<div class="bar ' + s.s + '" style="left:' + l + '%;width:' + Math.max(0.4, r - l) + '%" title="' + esc(s.s) + ' from ' + esc(W.fmtDay(s.from)) + '"></div>'; });
       j.ticks.forEach(function (t) { b += '<div class="tk" style="left:' + pct(t.d) + '%" title="' + esc(t.label + ', ' + W.fmtDay(t.d)) + '"></div>'; });
+      (j.dates || []).forEach(function (x) {
+        if (D(x.on) < R0 || D(x.on) > R1) return;
+        b += '<div class="tl-d' + (x.planned ? ' planned' : '') + '" style="left:' + pct(x.on) + '%" title="' + esc(x.label + ', ' + W.fmtDay(x.on) + (x.planned ? ' (planned)' : '')) + '"></div>';
+      });
       b += '<div class="heat">' + weeks.map(function (w) { var n = wcount(j, w); return '<i style="background:' + (n ? 'color-mix(in srgb,var(--ink) ' + Math.round(Math.min(100, 20 + Math.log10(n + 1) * 32)) + '%,var(--paper))' : 'transparent') + '"></i>'; }).join('') + '</div>';
       h += '<div class="tl-row"><a class="n" href="' + esc(j.href) + '">' + esc(j.name) + '</a><div class="tl-t">' + grid + b + '</div></div>';
     });
-    h += '</div></div><div class="legend"><span><b style="border:1px dashed var(--ink-soft)"></b>Pitch</span><span><b style="background:var(--bone)"></b>Won / milestone</span><span><b style="background:var(--ink)"></b>Live</span><span><b style="background:var(--cyan)"></b>In contract</span><span><b style="background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)"></b>Sold</span><span>| piece found in the folder</span><span>bottom line: files touched per week</span></div>';
+    h += '</div></div><div class="legend"><span><b style="border:1px dashed var(--ink-soft)"></b>Pitch</span><span><b style="background:var(--bone)"></b>Prep</span><span><b style="background:var(--ink)"></b>Live</span><span><b style="background:var(--cyan)"></b>Accepted offer or in contract</span><span><b style="background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)"></b>Sold</span><span>| piece found in the folder</span><span class="dmk">deal date</span><span class="dmk planned">planned date</span><span>bottom line: files touched per week</span></div>';
     return h;
   }
 
@@ -288,6 +318,13 @@
   }
 
   function health() {
+    var a = W.asanaHealth(data.lastAsana, new Date());
+    shell.setAsana(a);
+    var cls = a.state === 'amber' ? ' amber' : a.state === 'red' ? ' red' : '';
+    $('asCard').className = 'card health' + cls; $('asIc').className = 'ic' + cls;
+    $('asTitle').textContent = a.state === 'red' ? 'Asana sync failed' : a.state === 'amber' ? 'Asana sync is late' : a.state === 'never' ? 'Asana hasn\'t synced yet' : 'Asana sync ran';
+    $('asText').textContent = a.text;
+    $('asWhy').hidden = !a.why; $('asWhy').textContent = a.why || '';
     var h = W.syncHealth(data.lastDe, new Date());
     shell.setSync(h);
     $('deCard').className = 'card health' + (h.state === 'amber' ? ' amber' : h.state === 'red' ? ' red' : '');

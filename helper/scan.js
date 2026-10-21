@@ -8,8 +8,8 @@
        missing the folder isn't there any more
      await scanAll({ client, driveRoot, now })
        scans every linked listing and pitch (never developments, D30),
-       stores `scan`, marks a vanished folder 'broken', and moves an early
-       stage forward from what the folder shows — never over DE or Matt.
+       stores `scan` and marks a vanished folder 'broken'. It never moves the
+       stage: that is Asana's (D50, S8); the pieces found feed Match's M8.
 
    Reads names and dates only, never opens a file, and keeps no names:
    only weekly counts and dates. Paperwork folders and loose paperwork files
@@ -27,8 +27,6 @@ const PIECES = [
   ['photos', /^(edited|edits|matt-edits)$/i],
   ['brochure', /^brochures?$/i]
 ];
-const STAGE_OF = { floorplan: 'Floorplan', showsheet: 'Showsheet', photos: 'Photos', brochure: 'Brochure' };
-const EARLY = ['Won', 'Floorplan', 'Showsheet', 'Photos', 'Brochure'];
 
 function mondayOf(d) {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -66,19 +64,12 @@ function scanFolder(abs, opts) {
   return { weeks: sorted, found, missing: false };
 }
 
-/* the latest stage the folder shows: Floorplan < Showsheet < Photos < Brochure */
-function folderStage(found) {
-  let best = null;
-  PIECES.forEach(([k]) => { if (found && found[k]) best = STAGE_OF[k]; });
-  return best;
-}
-
 async function scanAll(o) {
   const { client } = o;
   const now = o.now || new Date();
   const since = new Date(now.getTime() - 400 * 864e5).toISOString().slice(0, 10);   // the overview shows six months
   const run = (await client.insert('sync_runs', { kind: 'scan', started_at: now.toISOString() }))[0];
-  const out = { scanned: 0, broken: 0, moved: 0 };
+  const out = { scanned: 0, broken: 0 };
   // G: not mounted (Drive for Desktop not running): every folder would look gone
   if (!fs.existsSync(o.driveRoot)) {
     out.aborted = 'Google Drive isn\'t mounted (no ' + o.driveRoot + '), so nothing was scanned or marked.';
@@ -100,12 +91,6 @@ async function scanAll(o) {
       } else {
         patch.scan = { weeks: s.weeks, found: s.found, scannedAt: now.toISOString() };
         if (r.folder_state === 'broken') { patch.folder_state = 'linked'; changes.push(log(owner, r.id, 'folder_state', 'broken', 'linked')); }
-        const fs2 = folderStage(s.found);
-        if (table === 'properties' && fs2 && r.stage_source !== 'Matt' && r.stage_source !== 'DE' &&
-            (!r.stage || EARLY.indexOf(r.stage) !== -1) && EARLY.indexOf(fs2) > EARLY.indexOf(r.stage || '')) {
-          patch.stage = fs2; patch.stage_source = 'folder';
-          changes.push(log(owner, r.id, 'stage', r.stage || null, fs2)); out.moved++;
-        }
       }
       try {
         await client.update(table, { id: r.id }, patch, { version: r.version });
@@ -113,17 +98,17 @@ async function scanAll(o) {
       } catch (e) { if (e.name !== 'ConflictError') throw e; }
     }
   }
-  await client.update('sync_runs', { id: run.id }, { finished_at: new Date().toISOString(), ok: true, changes: out.broken + out.moved,
+  await client.update('sync_runs', { id: run.id }, { finished_at: new Date().toISOString(), ok: true, changes: out.broken,
     rows_read: { jobs: out.scanned } });
   return out;
 }
 
-module.exports = { scanFolder, scanAll, mondayOf, folderStage };
+module.exports = { scanFolder, scanAll, mondayOf };
 
 if (require.main === module) {
   const { loadConfig } = require('./config.js');
   const cfg = loadConfig(), client = require('./supabase.js').createClient(cfg);
   if (!client.ready()) { console.log('No helper account yet.'); process.exit(1); }
-  scanAll({ client, driveRoot: 'G:\\Shared drives' }).then(o => console.log('Scanned ' + o.scanned + ', ' + o.broken + ' broken, ' + o.moved + ' stages moved.'),
+  scanAll({ client, driveRoot: 'G:\\Shared drives' }).then(o => console.log('Scanned ' + o.scanned + ', ' + o.broken + ' broken.'),
     e => { console.log('Scan failed: ' + e.message); process.exit(1); });
 }

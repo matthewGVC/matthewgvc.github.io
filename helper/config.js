@@ -6,7 +6,8 @@
    repo is public: never copy this file, its pairing code or (from Slice 1)
    the helper account's password into it.
 
-     const cfg = loadConfig();   // { home, pairCode, siteBase, teamUrl, outputRoots, port }
+     const cfg = loadConfig();   // { home, pairCode, siteBase, teamUrl, outputRoots, port, asana }
+     DEFAULTS                    the shipped defaults (asana gids aren't secret)
    ============================================================ */
 'use strict';
 
@@ -16,7 +17,18 @@ const DEFAULTS = {
   siteBase: 'https://matthewgvc.github.io',
   teamUrl: 'https://www.elliman.com/team/gvc-real-estate-team/226645',
   outputRoots: ['G:\\My Drive\\GVC Workspace Lab'],
-  port: 47610
+  port: 47610,
+  /* Asana: the gids aren't secret. The token (asanaToken) is the only private
+     value and lives in the helper's own config.json. devPortfolios is filled
+     in if the token can read them. */
+  asana: {
+    workspace: '1209165478401017',
+    listings: { NYC: '1209188026968555', NJ: '1209188026968552', FL: '1209188026968549' },
+    devs: ['1210736852899934', '1213810602302634', '1215033298674200', '1217076234712017'],
+    devPortfolios: [],
+    loose: ['1211384244337827', '1211306429530596', '1209322192180451'],
+    people: '1209434796793215'
+  }
 };
 
 /* Not under AppData: Windows gives packaged apps (the Claude desktop app) a
@@ -52,7 +64,15 @@ function loadConfig() {
     saved.pairCode = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     fs.writeFileSync(file, JSON.stringify(Object.assign({}, DEFAULTS, saved), null, 2));
   }
-  return Object.assign({}, DEFAULTS, siteSupabase(), saved, { home: dir });
+  return Object.assign({}, DEFAULTS, siteSupabase(), saved, { asana: mergeAsana(saved.asana) }, { home: dir });
 }
 
-module.exports = { loadConfig, home };
+/* A user config naming only part of "asana" (say, its own loose list) keeps
+   the default gids for the rest: one level deep, and "listings" one more. */
+function mergeAsana(own) {
+  const o = own || {};
+  return Object.assign({}, DEFAULTS.asana, o,
+    { listings: Object.assign({}, DEFAULTS.asana.listings, o.listings || {}) });
+}
+
+module.exports = { loadConfig, home, DEFAULTS };

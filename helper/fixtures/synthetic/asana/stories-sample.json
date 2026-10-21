@@ -1,0 +1,71 @@
+{
+  "data": [
+    {
+      "gid": "9000000000413",
+      "resource_subtype": "section_changed",
+      "created_at": "2026-03-01T15:00:00.000Z",
+      "old_section": {
+        "name": "Leads"
+      },
+      "new_section": {
+        "name": "Active"
+      }
+    },
+    {
+      "gid": "9000000000414",
+      "resource_subtype": "enum_custom_field_changed",
+      "created_at": "2026-03-01T15:00:01.000Z",
+      "custom_field": {
+        "name": "Listing Status"
+      },
+      "old_enum_value": {
+        "name": "Lead"
+      },
+      "new_enum_value": {
+        "name": "Active"
+      }
+    },
+    {
+      "gid": "9000000000415",
+      "resource_subtype": "enum_custom_field_changed",
+      "created_at": "2026-03-02T15:00:00.000Z",
+      "custom_field": {
+        "name": "💵 Contract Price"
+      },
+      "old_enum_value": null,
+      "new_enum_value": {
+        "name": "x"
+      }
+    },
+    {
+      "gid": "9000000000416",
+      "resource_subtype": "due_date_changed",
+      "created_at": "2026-03-03T15:00:00.000Z",
+      "old_dates": {
+        "due_on": "2026-04-01"
+      },
+      "new_dates": {
+        "due_on": "2026-04-15"
+      }
+    },
+    {
+      "gid": "9000000000417",
+      "resource_subtype": "marked_complete",
+      "created_at": "2026-03-04T15:00:00.000Z"
+    },
+    {
+      "gid": "9000000000418",
+      "resource_subtype": "comment_added",
+      "created_at": "2026-03-05T15:00:00.000Z",
+      "text": "Client said the price is flexible",
+      "html_text": "<body>Client said</body>"
+    },
+    {
+      "gid": "9000000000419",
+      "resource_subtype": "assigned",
+      "created_at": "2026-03-06T15:00:00.000Z",
+      "text": "Agent A assigned to you"
+    }
+  ],
+  "next_page": null
+}

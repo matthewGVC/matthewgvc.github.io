@@ -41,7 +41,9 @@ const PAGES = [
   ['Postcards',       '/tools/postcard/'],
   ['Workspace',       '/workspace/'],
   ['Workspace jobs',  '/workspace/jobs/'],
-  ['Workspace job',   '/workspace/job/?listing=none']
+  ['Workspace job',   '/workspace/job/?listing=none'],
+  ['Workspace match', '/workspace/match/'],
+  ['Workspace status','/workspace/status/']
 ];
 
 /* Some browsers ask for these on their own whether or not a page links an

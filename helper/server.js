@@ -26,6 +26,14 @@ const MAX_BODY = 1024 * 1024;
 const routes = {};
 let runner = null;   // the daily jobs (runner.js), started only with the helper's account
 
+/* the newest Asana run (plain or full) for /health; the token itself is never shown */
+function healthAsana(cfg, r) {
+  if (!cfg.asanaToken) return 'no token yet';
+  const lr = r ? r.lastRuns() : {};
+  const a = [lr.asana, lr.asanaFull].filter(Boolean).sort((x, y) => (x.at < y.at ? 1 : -1))[0];
+  return a ? Object.assign({ at: a.at, ok: a.ok }, a.error ? { error: a.error } : {}) : { at: null, ok: null };
+}
+
 function route(method, path, handler) { routes[method + ' ' + path] = handler; }
 
 function send(res, status, body, origin) {
@@ -74,7 +82,7 @@ function handle(cfg) {
       // unpaired: liveness only; the account and run details only for a paired browser
       const paired = req.headers['x-gvc-pair'] === cfg.pairCode;
       const body = { ok: true, version: VERSION, paired };
-      if (paired) { body.account = !!(cfg.helperEmail && cfg.helperPassword); body.lastRuns = runner ? runner.lastRuns() : {}; }
+      if (paired) { body.account = !!(cfg.helperEmail && cfg.helperPassword); body.lastRuns = runner ? runner.lastRuns() : {}; body.asana = healthAsana(cfg, runner); }
       return send(res, 200, body, origin);
     }
 
@@ -101,14 +109,14 @@ function startServer(cfg) {
   });
 }
 
-module.exports = { startServer, route, VERSION };
+module.exports = { startServer, route, healthAsana, VERSION };
 
 if (require.main === module) {
   require('./routes.js');
   const cfg = loadConfig();
   require('./runner.js').startRunner(cfg).then(r => {
     runner = r;
-    console.log(r ? 'Daily jobs on: DE 7:00, scan 2:00, backup 2:30.' : 'No helper account yet: daily jobs off.');
+    console.log(r ? 'Daily jobs on: DE 7:00, scan 2:00, backup 2:30' + (cfg.asanaToken ? ', Asana every 30 minutes (full 3:00, People 3:15).' : '; Asana off until its token is in the config.') : 'No helper account yet: daily jobs off.');
   }, e => console.log('Daily jobs failed to start: ' + e.message));
   startServer(cfg).then(() => console.log('GVC helper listening on http://127.0.0.1:' + cfg.port));
 }

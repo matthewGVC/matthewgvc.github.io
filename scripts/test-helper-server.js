@@ -107,6 +107,121 @@ function req(method, p, headers, body) {
   check('backslash paths too', [o.ok, opened[1] === path.join(fakeRoot, 'GVC - New York', 'A')], [true, true]);
   check('the real route points at the Drive root', /driveRoot: 'G:\\\\Shared drives'/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'routes.js'), 'utf8')), true);
 
+  /* ---------- Asana in the schedule, the runner, the routes and /health ---------- */
+  const { due } = require('../helper/schedule.js');
+  const { createRunner } = require('../helper/runner.js');
+  const at = s => new Date(s);
+  const quiet = { de: at('2026-10-20T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
+    asanaFull: at('2026-10-20T03:00:05'), people: at('2026-10-20T03:15:05') };
+  const dueA = (now, last) => due(at(now), last, { asana: true });
+  check('asana: 29 minutes since the last read is not due', dueA('2026-10-20T10:29:00', Object.assign({ asana: at('2026-10-20T10:00:00') }, quiet)), []);
+  check('asana: 30 minutes is due', dueA('2026-10-20T10:30:00', Object.assign({ asana: at('2026-10-20T10:00:00') }, quiet)), ['asana']);
+  const off = dueA('2026-10-20T08:00:00', { de: at('2026-10-19T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
+    asana: at('2026-10-20T07:50:00'), asanaFull: at('2026-10-19T03:00:05'), people: at('2026-10-19T03:15:05') }).sort();
+  check('PC off overnight: full read and People catch up, plus DE', off, ['asanaFull', 'de', 'people']);
+  check('3:00 not reached: last night counts', dueA('2026-10-20T02:59:00', Object.assign({}, quiet, { asana: at('2026-10-20T02:45:00'),
+    asanaFull: at('2026-10-19T03:00:05'), people: at('2026-10-19T03:15:05'), de: at('2026-10-19T07:00:05'), scan: at('2026-10-19T02:00:05'),
+    backup: at('2026-10-19T02:30:05') })).sort(), ['backup', 'scan']);
+  check('without the asana option the Asana jobs are never due', due(at('2026-10-20T08:00:00'), {}).sort(), ['backup', 'de', 'scan']);
+
+  const ranA = [];
+  const mk = (jobs, last) => createRunner({ jobs, last });
+  const run1 = mk({ asana: async () => { ranA.push('asana'); }, asanaFull: async () => { ranA.push('asanaFull'); }, people: async () => { ranA.push('people'); },
+    de: async () => { ranA.push('de'); } },
+  { de: at('2026-10-19T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
+    asana: at('2026-10-20T07:00:00'), asanaFull: at('2026-10-19T03:00:05'), people: at('2026-10-19T03:15:05') });
+  await run1.tick(at('2026-10-20T08:00:00'));
+  check('start at 8:00: full read, People, DE once each; the plain read is folded into the full one', ranA.slice().sort(), ['asanaFull', 'de', 'people']);
+  await run1.tick(at('2026-10-20T08:01:00'));
+  check('nothing twice', ranA.length, 3);
+  await run1.tick(at('2026-10-20T08:31:00'));
+  check('30 minutes later the plain read runs', ranA[ranA.length - 1], 'asana');
+
+  const ranB = [];
+  const noTok = mk({ de: async () => { ranB.push('de'); } }, {});
+  await noTok.tick(at('2026-10-20T08:00:00'));
+  check('no token: the runner never calls an Asana job', ranB, ['de']);
+  check('no token: nothing Asana in the last runs', Object.keys(noTok.lastRuns()).filter(k => /asana|people/.test(k)), []);
+
+  /* /health */
+  const { healthAsana } = require('../helper/server.js');
+  check('health: no token', healthAsana({}, null), 'no token yet');
+  check('health: token, nothing run yet', healthAsana({ asanaToken: 'x' }, { lastRuns: () => ({}) }), { at: null, ok: null });
+  check('health: latest of the plain and full reads', healthAsana({ asanaToken: 'x' }, { lastRuns: () => ({
+    asana: { at: '2026-10-20T10:00:00.000Z', ok: true }, asanaFull: { at: '2026-10-20T10:30:00.000Z', ok: false, error: 'Asana refused the token' } }) }),
+  { at: '2026-10-20T10:30:00.000Z', ok: false, error: 'Asana refused the token' });
+
+  /* routes */
+  const { asanaSyncRoute, syncRoute } = require('../helper/routes.js');
+  let calls = 0, release;
+  const gate = new Promise(res => { release = res; });
+  const slow = asanaSyncRoute(async () => { calls++; await gate; return { report: { ok: true, aborted: null }, changes: 3, created: 1, errors: [] }; });
+  const p1 = slow(), p2 = slow();
+  release();
+  const [a1, a2] = await Promise.all([p1, p2]);
+  check('two /asana/sync at once share one run', [calls, JSON.stringify(a1) === JSON.stringify(a2), a1.ok, a1.changes], [1, true, true, 3]);
+  const partialRun = await asanaSyncRoute(async () => ({ ok: false, report: { ok: true, aborted: null, warnings: ['NJ listings could not be read: x'] }, changes: 1, created: 0, errors: [] }))();
+  check('/asana/sync: a partial run is not OK, and says why', [partialRun.ok, partialRun.aborted], [false, 'NJ listings could not be read: x']);
+  const noPlanRun = await asanaSyncRoute(async () => ({ ok: false, report: { ok: true, aborted: null, warnings: [] }, changes: 0, created: 0, errors: [{ what: 'no plan', detail: 'No link plan applied yet' }] }))();
+  check('/asana/sync: no plan yet is not OK, and says why', [noPlanRun.ok, noPlanRun.aborted], [false, 'No link plan applied yet']);
+  const both = await syncRoute({
+    asana: async () => ({ ok: true, changes: 2, created: 0, skipped: 0, aborted: null }),
+    de: async () => ({ ok: true, changes: 5, created: 1, skipped: 0, aborted: null }) })();
+  check('/sync returns Asana and DE', [both.asana.changes, both.de.changes], [2, 5]);
+  const half = await syncRoute({ asana: async () => { throw new Error('No Asana token yet'); }, de: async () => ({ ok: true, changes: 1 }) })();
+  check('/sync: no Asana token still runs DE', [half.asana.ok, half.asana.error, half.de.ok], [false, 'No Asana token yet', true]);
+  r = await req('POST', '/sync', { origin: 'http://localhost:8080' }, {});
+  check('/sync from an unpaired origin is refused', r.status, 403);
+  r = await req('POST', '/asana/sync', { origin: 'http://localhost:8080' }, {});
+  check('/asana/sync from an unpaired origin is refused', r.status, 403);
+
+  /* startRunner's pieces: token gate, last-run map, one shared Asana run */
+  const { asanaJobs, lastFromRuns } = require('../helper/runner.js');
+  check('no token: no Asana jobs', Object.keys(asanaJobs({}, {})), []);
+  check('token: asana, asanaFull, people jobs', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaFull', 'people']);
+  const seen = [];
+  const jobs = asanaJobs({ asanaToken: 'x' }, { c: 1 }, async o => { seen.push([!!o.full, o.kind || null, o.client.c]); return { report: { ok: true } }; });
+  await jobs.asana(); await jobs.asanaFull(); await jobs.people();
+  check('jobs pass full and people options', seen, [[false, null, 1], [true, null, 1], [false, 'people', 1]]);
+  const lf = lastFromRuns([
+    { kind: 'asana', started_at: '2026-10-19T03:00:00Z', totals: { full: true } },
+    { kind: 'asana', started_at: '2026-10-20T09:30:00Z', totals: { full: false } },
+    { kind: 'asana', started_at: '2026-10-20T10:00:00Z', totals: null },
+    { kind: 'people', started_at: '2026-10-20T03:15:00Z', totals: null },
+    { kind: 'de', started_at: '2026-10-20T07:00:00Z' }]);
+  check('last map: plain, full, people, de', [lf.asana.toISOString(), lf.asanaFull.toISOString(), lf.people.toISOString(), lf.de.toISOString()],
+    ['2026-10-20T10:00:00.000Z', '2026-10-19T03:00:00.000Z', '2026-10-20T03:15:00.000Z', '2026-10-20T07:00:00.000Z']);
+  let n = 0, rel2;
+  const g2 = new Promise(res => { rel2 = res; });
+  const slowSync = async () => { n++; await g2; return { report: { ok: true }, changes: 1, created: 0, errors: [] }; };
+  const sched = asanaJobs({ asanaToken: 'x' }, {}, slowSync).asanaFull();
+  const click = asanaSyncRoute(slowSync)();
+  rel2();
+  await Promise.all([sched, click]);
+  check('a scheduled run and a Sync now click share one run', n, 1);
+
+  /* a different kind of run is never swallowed by the one in flight */
+  const callsB = []; let relB;
+  const gB = new Promise(res => { relB = res; });
+  const syncB = async o => { callsB.push(o.full ? 'full' : o.kind === 'people' ? 'people' : 'plain'); if (callsB.length === 1) await gB; return { report: { ok: true }, changes: 0, created: 0, errors: [] }; };
+  const jb = asanaJobs({ asanaToken: 'x' }, {}, syncB);
+  const plainRun = jb.asana();
+  const fullRun = jb.asanaFull();
+  const peopleRun = jb.people();
+  await new Promise(res => setImmediate(res));
+  check('full and People wait while a plain run is in flight', callsB, ['plain']);
+  relB();
+  await Promise.all([plainRun, fullRun, peopleRun]);
+  check('then each runs its own, one at a time', callsB, ['plain', 'full', 'people']);
+  const callsC = []; let relC;
+  const gC = new Promise(res => { relC = res; });
+  const syncC = async o => { callsC.push(o.full ? 'full' : 'plain'); await gC; return { report: { ok: true }, changes: 0, created: 0, errors: [] }; };
+  const fullC = asanaJobs({ asanaToken: 'x' }, {}, syncC).asanaFull();
+  const clickC = asanaSyncRoute(syncC)();
+  relC();
+  await Promise.all([fullC, clickC]);
+  check('a plain click during a full read shares it', callsC, ['full']);
+
   check('bound to loopback', server.address().address, '127.0.0.1');
   server.close();
 

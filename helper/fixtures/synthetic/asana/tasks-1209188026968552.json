@@ -1,0 +1,853 @@
+{
+  "data": [
+    {
+      "gid": "9000000000163",
+      "name": "20 Test Ln, Exampleton",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000164",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "Leads"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000154",
+          "name": "Listing Status",
+          "display_value": "Lead",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Lead"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000155",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000156",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000157",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000158",
+          "name": "📍 County",
+          "display_value": "Monmouth",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000159",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000160",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000161",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000162",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000163",
+      "notes": "SECRET NOTES for 20 Test Ln, Exampleton: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000178",
+      "name": "21 Test Ln, Exampleton",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000179",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "Active"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000165",
+          "name": "Listing Status",
+          "display_value": "Active",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Active"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000166",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000167",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000168",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000169",
+          "name": "📍 MLS",
+          "display_value": "MoreMLS",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000170",
+          "name": "📍 Zip Code",
+          "display_value": "07700",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000171",
+          "name": "🗓️ Listing Date",
+          "display_value": "2026-09-15",
+          "number_value": null,
+          "date_value": {
+            "date": "2026-09-15"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000172",
+          "name": "💵 Original Price",
+          "display_value": "1200000",
+          "number_value": 1200000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000173",
+          "name": "💵 Current Price",
+          "display_value": "1150000",
+          "number_value": 1150000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000174",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000175",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000176",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000177",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000178",
+      "notes": "SECRET NOTES for 21 Test Ln, Exampleton: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000189",
+      "name": "22 Test Ln, Exampleton",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000190",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "Fully Executed/Board Package"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000180",
+          "name": "Listing Status",
+          "display_value": "In Contract",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "In Contract"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000181",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000182",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000183",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000184",
+          "name": "🗓️ CS Date",
+          "display_value": "2026-10-01",
+          "number_value": null,
+          "date_value": {
+            "date": "2026-10-01"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000185",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000186",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000187",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000188",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000189",
+      "notes": "SECRET NOTES for 22 Test Ln, Exampleton: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000200",
+      "name": "23 Test Ln, Exampleton",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000201",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "Complete"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000191",
+          "name": "Listing Status",
+          "display_value": "Complete",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Complete"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000192",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000193",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000194",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000195",
+          "name": "🗓️ Closing Date",
+          "display_value": "2026-07-20",
+          "number_value": null,
+          "date_value": {
+            "date": "2026-07-20"
+          },
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000196",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000197",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000198",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000199",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000200",
+      "notes": "SECRET NOTES for 23 Test Ln, Exampleton: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000211",
+      "name": "30 Lot Rd, Exampleton",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000212",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "TJ New Dev"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000202",
+          "name": "Listing Status",
+          "display_value": "Active",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Active"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000203",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000204",
+          "name": "Deal Side",
+          "display_value": "Buy Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Buy Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000205",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000206",
+          "name": "ℹ️ Acreage",
+          "display_value": "0.5",
+          "number_value": 0.5,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000207",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000208",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000209",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000210",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000211",
+      "notes": "SECRET NOTES for 30 Lot Rd, Exampleton: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000221",
+      "name": "30 Lot Rd, Exampleton",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000222",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "TJ New Dev"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000213",
+          "name": "Listing Status",
+          "display_value": "Lead",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Lead"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000214",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000215",
+          "name": "Deal Side",
+          "display_value": "List Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "List Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000216",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000217",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000218",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000219",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000220",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000221",
+      "notes": "SECRET NOTES for 30 Lot Rd, Exampleton: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    },
+    {
+      "gid": "9000000000231",
+      "name": "Buyer for $2.5M - New Build - Example Beach",
+      "completed": false,
+      "completed_at": null,
+      "due_on": null,
+      "modified_at": "2026-10-15T14:00:00.000Z",
+      "created_at": "2026-01-10T15:00:00.000Z",
+      "assignee": {
+        "gid": "9000000000232",
+        "name": "Agent A"
+      },
+      "memberships": [
+        {
+          "project": {
+            "gid": "1209188026968552"
+          },
+          "section": {
+            "name": "TJ New Dev"
+          }
+        }
+      ],
+      "parent": null,
+      "custom_fields": [
+        {
+          "gid": "9000000000223",
+          "name": "Listing Status",
+          "display_value": null,
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000224",
+          "name": "Sale/Rent",
+          "display_value": "Sale",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Sale"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000225",
+          "name": "Deal Side",
+          "display_value": "Buy Side",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "Buy Side"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000226",
+          "name": "📍 State",
+          "display_value": "NJ",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": {
+            "name": "NJ"
+          },
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000227",
+          "name": "👤 Client 1",
+          "display_value": "Pat Madeup",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000228",
+          "name": "💵 GCI $",
+          "display_value": "41250",
+          "number_value": 41250,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000229",
+          "name": "💵 Contract Price",
+          "display_value": "2175000",
+          "number_value": 2175000,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        },
+        {
+          "gid": "9000000000230",
+          "name": "🧑‍💼 Source of Business",
+          "display_value": "Past client",
+          "number_value": null,
+          "date_value": null,
+          "enum_value": null,
+          "multi_enum_values": null
+        }
+      ],
+      "permalink_url": "https://app.asana.com/0/1209188026968552/9000000000231",
+      "notes": "SECRET NOTES for Buyer for $2.5M - New Build - Example Beach: buyer wire details",
+      "html_notes": "<body>SECRET NOTES</body>"
+    }
+  ],
+  "next_page": null
+}

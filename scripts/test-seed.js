@@ -71,7 +71,7 @@ check('existing row merged, not duplicated', [by('20 SAMPLE AVE').existingId, L.
 check('market from state', by('12 Sample Lane').market, 'NJ');
 check('sold on DE: left out (D31)', L.some(x => /30 Test/i.test(x.street)), false);
 const lnkOnly = L.find(x => x.source === 'lnk') || {};
-check('shortcut not on DE: listed, unticked, Won', [lnkOnly.folder, lnkOnly.include, lnkOnly.stage], ['GVC - New York/Building Information/40 Demo St/2C', false, 'Won']);
+check('shortcut not on DE: listed, unticked, Prep', [lnkOnly.folder, lnkOnly.include, lnkOnly.stage], ['GVC - New York/Building Information/40 Demo St/2C', false, 'Prep']);
 check('building shortcut: review only', plan.review.some(r => /50 Mock - Building/.test(r.name) && /building/i.test(r.why)), true);
 check('broken shortcut: review only', plan.review.some(r => /60 Gone/.test(r.name)), true);
 const recent = L.filter(x => x.source === 'recent folder');
@@ -137,7 +137,7 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
   check('new listing', [fresh.stage, fresh.stage_source, fresh.folder_state, fresh.market], ['Live', 'seed', 'linked', 'NYC']);
   const won = T.pitches.find(p => p.pitched_on === '2026-06-08');
   check('won pitch linked both ways', [won.outcome, won.won_property_id === fresh.id, fresh.from_pitch_id === won.id], ['won', true, true]);
-  check('history back-dated from the folder', T.changes.some(c => c.source === 'seed' && c.field === 'stage' && c.new_value === 'Won' && /^2026-09-25/.test(c.at)), true);
+  check('history back-dated from the folder', T.changes.some(c => c.source === 'seed' && c.field === 'stage' && c.new_value === 'Prep' && /^2026-09-25/.test(c.at)), true);
   check('pitch date in the history', T.changes.some(c => c.pitch_id === won.id && /^2026-06-08/.test(c.at)), true);
   check('seed run logged', [T.sync_runs[0].kind, T.sync_runs[0].ok], ['seed', true]);
   // a second run (Matt ticks more later) adds only what isn't there yet
@@ -155,13 +155,13 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
     insert: async (t, rows2) => [].concat(rows2).map(r => { const x = Object.assign({ id: t + (++n), version: 1 }, r); T2[t].push(x); return x; }),
     update: async (t, m, patch) => { const r = T2[t].find(x => x.id === m.id); Object.assign(r, patch); return [r]; },
     select: async (t, m) => T2[t].filter(r => Object.keys(m || {}).every(k => String(r[k]) === String(m[k]))) });
-  await applyPlan({ client: db2, now: new Date('2026-10-20T12:00:00Z'), plan: { listings: [{ include: false, street: '9 A St', unit: '1', stage: 'Won' }],
+  await applyPlan({ client: db2, now: new Date('2026-10-20T12:00:00Z'), plan: { listings: [{ include: false, street: '9 A St', unit: '1', stage: 'Prep' }],
     pitches: [{ include: true, date: '2026-08-04', street: '9 A St', unit: '1', outcome: 'won', wonStreet: '9 A St', wonUnit: '1', market: 'NYC', folder: 'f' },
       { include: true, date: '2025-08-04', street: '8 B St', unit: '2', outcome: 'won', wonStreet: '8 B St', wonUnit: '2', market: 'NYC', folder: 'g' }], devs: [] } });
   check('unticked listing: 2026 pitch kept as open, older one dropped', T2.pitches.map(p => [p.pitched_on, p.outcome]), [['2026-08-04', 'open']]);
 
   // later Matt ticks the listing that won it: the open pitch becomes won, linked both ways
-  await applyPlan({ client: db2, now: new Date('2026-10-22T12:00:00Z'), plan: { listings: [{ include: true, street: '9 A St', unit: '1', stage: 'Won', kind: 'sale', market: 'NYC' }],
+  await applyPlan({ client: db2, now: new Date('2026-10-22T12:00:00Z'), plan: { listings: [{ include: true, street: '9 A St', unit: '1', stage: 'Prep', kind: 'sale', market: 'NYC' }],
     pitches: [{ include: true, date: '2026-08-04', street: '9 A St', unit: '1', outcome: 'won', wonStreet: '9 A St', wonUnit: '1', market: 'NYC', folder: 'f' }], devs: [] } });
   const wp = T2.pitches[0], wl = T2.properties[0] || {};
   check('re-run: open pitch now won, linked both ways', [T2.pitches.length, wp.outcome, wp.won_property_id === wl.id, wl.from_pitch_id === wp.id], [1, 'won', true, true]);

@@ -75,12 +75,21 @@ const USERS = {
   // a rule someone once added by hand in the dashboard: it must not survive
   await db.exec(`create policy "anyone reads properties" on public.properties for select to authenticated using (true)`);
 
-  for (let round = 0; round < 2; round++) {
-    for (const f of fresh) {
+  const early = fresh.filter(f => f.slice(0, 4) <= '0005'), late = fresh.filter(f => f.slice(0, 4) > '0005');
+  async function applyAll(list, round) {
+    for (const f of list) {
       try { await db.exec(fs.readFileSync(path.join(DIR, f), 'utf8')); }
-      catch (e) { failures.push('apply ' + f + ' (round ' + (round + 1) + '): ' + e.message); }
+      catch (e) { failures.push('apply ' + f + ' (round ' + round + '): ' + e.message); }
     }
   }
+  await applyAll(early, 1);
+  // v1.1 data that 0006 must carry over: an old stage, a current stage, a development with old milestone keys
+  const fpId = (await db.query(`insert into public.properties (slug, label, core, stage) values ('200-example-st', '200 Example St', '{}', 'Floorplan') returning id`)).rows[0].id;
+  const liveId = (await db.query(`insert into public.properties (slug, label, core, stage) values ('300-example-st', '300 Example St', '{}', 'Live') returning id`)).rows[0].id;
+  await db.query(`insert into public.dev_projects (slug, label, milestones) values ('example-tower', 'Example Tower',
+    '{"Renders":{"done":true,"on":"2026-05-21"},"Launch event":{"done":false},"Contracts & sales":{"done":true},"Agreement":{"done":true}}')`);
+  await applyAll(late, 1);
+  await applyAll(fresh, 2);
 
   async function as(who, sql, params) {
     await db.exec('reset role');
@@ -95,10 +104,11 @@ const USERS = {
 
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
-  check('tables', tables, ['changes', 'de_listings', 'dev_projects', 'developments', 'documents', 'floorplans', 'members', 'photos', 'pitches', 'properties', 'sync_runs', 'todos']);
+  check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings', 'dev_projects', 'developments', 'documents', 'floorplans', 'members', 'photos', 'pitches', 'properties', 'sync_runs', 'todos']);
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
-    'drive_folder', 'folder_state', 'scan', 'photo_hero', 'photo_order', 'version', 'updated_by', 'from_pitch_id'].filter(c => cols.indexOf(c) === -1), []);
+    'drive_folder', 'folder_state', 'scan', 'photo_hero', 'photo_order', 'version', 'updated_by', 'from_pitch_id',
+    'asana_gid', 'asana', 'milestones', 'match', 'dev_project_id', 'de_stage'].filter(c => cols.indexOf(c) === -1), []);
   const members = (await db.query('select role from public.members order by role')).rows.map(r => r.role);
   check('members from existing accounts only', members, ['helper', 'owner', 'shared']);
 
@@ -108,8 +118,8 @@ const USERS = {
   check('old document kept', (await db.query('select count(*)::int n from public.documents')).rows[0].n, 1);
 
   /* ---------- rules ---------- */
-  check('matt reads', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 1);
-  check('helper reads', (await as('helper', 'select count(*)::int n from public.properties')).rows[0].n, 1);
+  check('matt reads', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 3);
+  check('helper reads', (await as('helper', 'select count(*)::int n from public.properties')).rows[0].n, 3);
   check('shared account still works', (await as('team', 'select count(*)::int n from public.todos')).rows[0].n, 1);
   check('stranger reads nothing', (await as('stranger', 'select count(*)::int n from public.properties')).rows[0].n, 0);
   check('stranger reads no todos', (await as('stranger', 'select count(*)::int n from public.todos')).rows[0].n, 0);
@@ -161,10 +171,47 @@ const USERS = {
   check('removing an account that wrote works', await db.query('delete from auth.users where id = $1', [tmp]).then(() => true, () => false), true);
   check('its rows stay, unstamped', (await db.query(`select updated_by from public.pitches where slug = 'temp-pitch'`)).rows[0].updated_by, null);
 
+  /* ---------- 0006: Asana columns, cache, people, new stage list ---------- */
+  if (UPTO >= '0006') {
+    const st = async x => (await db.query('select stage from public.properties where id = $1', [x])).rows[0].stage;
+    check('old stage moved to Prep', await st(fpId), 'Prep');
+    check('current stage kept', await st(liveId), 'Live');
+    const mv = (await db.query(`select source, field, old_value, new_value, note from public.changes where property_id = $1`, [fpId])).rows;
+    check('one change row for the move, even after two runs', mv, [{ source: 'seed', field: 'stage', old_value: 'Floorplan', new_value: 'Prep', note: 'stage list v1.2' }]);
+    check('no change row for a stage that stayed', (await db.query(`select count(*)::int n from public.changes where property_id = $1`, [liveId])).rows[0].n, 0);
+    check('old stage name refused now', await fails('matt', `update public.properties set stage = 'Won' where id = $1`, [liveId]), true);
+    for (const ok of ['Accepted offer', 'Off market', 'Prep']) {
+      check('new stage ' + ok + ' accepted', await fails('matt', `update public.properties set stage = '${ok}' where id = $1`, [liveId]), false);
+    }
+    await db.query(`update public.properties set stage = 'Live' where id = $1`, [liveId]);
+    check('stage source Asana accepted', await fails('matt', `update public.properties set stage_source = 'Asana' where id = $1`, [liveId]), false);
+    await db.query(`update public.properties set asana_gid = '1200000000000001' where id = $1`, [fpId]);
+    check('one Asana task, one job', await fails('matt', `update public.properties set asana_gid = '1200000000000001' where id = $1`, [liveId]), true);
+    await db.query(`insert into public.pitches (slug, label, asana_gid) values ('p-a', 'A', 'g9')`);
+    check('pitch asana_gid is unique', await fails('matt', `insert into public.pitches (slug, label, asana_gid) values ('p-b', 'B', 'g9')`), true);
+    for (const src of ['Asana', 'match', 'legacy'])
+      check('change source ' + src, await fails('matt', `insert into public.changes (property_id, source) values ($1, '${src}')`, [liveId]), false);
+    check('bad change source still refused', await fails('matt', `insert into public.changes (property_id, source) values ($1, 'email')`, [liveId]), true);
+    for (const k of ['asana', 'people'])
+      check('run kind ' + k, await fails('helper', `insert into public.sync_runs (kind) values ('${k}')`), false);
+    const dp = (await db.query(`select milestones from public.dev_projects where slug = 'example-tower'`)).rows[0].milestones;
+    check('milestone keys renamed', Object.keys(dp).sort(), ['agreement', 'contractsSales', 'launchEvent', 'renders']);
+    check('milestone values kept', [dp.renders.done, dp.renders.on], [true, '2026-05-21']);
+    await db.query(`insert into public.asana_tasks (gid, project_gid, kind, name) values ('t1', 'pr1', 'listing', 'Task')`);
+    await db.query(`insert into public.asana_people (gid, name) values ('u1', 'Someone')`);
+    for (const t of ['asana_tasks', 'asana_people']) {
+      check(t + ': anon sees nothing', (await as('anon', 'select count(*)::int n from public.' + t)).rows[0].n, 0);
+      check(t + ': stranger sees nothing', (await as('stranger', 'select count(*)::int n from public.' + t)).rows[0].n, 0);
+      check(t + ': member sees all', (await as('matt', 'select count(*)::int n from public.' + t)).rows[0].n, 1);
+    }
+    check('helper can write the cache', await fails('helper', `update public.asana_tasks set name = 'Task 2' where gid = 't1'`), false);
+    check('bad task kind refused', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind) values ('t2', 'pr1', 'odd')`), true);
+  }
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);
-  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 1);
+  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 3);
 
   /* ---------- run before the accounts exist: refuse rather than lock everyone out ---------- */
   if (fresh.length) {

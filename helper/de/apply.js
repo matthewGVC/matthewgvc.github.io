@@ -1,24 +1,32 @@
 /* ============================================================
-   DE APPLY — writes one DE run into the database (plan §8, D6, D7, D31).
+   DE APPLY — writes one DE run into the database (plan §8, D6, D7, D31, D50, D54).
 
      await applyRun({ client, report, rows, now, courtesy })
        client    helper/supabase.js (or a fake with the same shape)
        report    the dry-run report (de-sync.js): ok/aborted, totals, live[]
-                 with each live listing's matched folder
-       rows      every normalised DE row of the run, each with .stage
+       rows      every normalised DE row of the run, each with .stage (DE's own)
        courtesy  async row → { gvcListed, line }: the GVC-listed check (D35),
                  asked once per DE listing, then remembered in de_listings
-     → { runId, changes, created, errors }
+     → { runId, changes, created (always 0), errors }
 
    What it does:
-   - a listing already linked to a DE id: DE's price, beds, baths, half baths
-     and square feet win (D6); city/state/zip/neighbourhood fill only when
-     empty; the stage moves forward (In contract → Live is the one way back);
-     every changed value is one `changes` row, source DE.
-   - a new GVC-listed live listing: becomes a job, with its matched folder.
+   - a listing linked to a DE id (or an open job at the same address + unit,
+     which then gets the DE id): DE's price, beds, baths, half baths and square
+     feet go through GVC_FACTS at DE's rank (D79): DE wins, except that a value
+     Matt typed holds while DE's own value hasn't changed since (D78); the
+     moment DE's value changes, DE takes over (logged). City/state/zip/
+     neighbourhood fill only when empty. DE's status goes in `de_stage`; the
+     stage itself belongs to Asana and is never moved here (D50, S8). Every
+     changed value is one `changes` row, source DE.
+   - jobs are never made here (D54): a GVC-looking DE listing with no job is
+     kept in de_listings with its courtesy line, the evidence for Match's M2
+     ("On DE, not in Asana"). `addNew` / the config's deAddsNew are retired.
    - sold / rented: only by the listing's own DE id, never by address (an old
-     sale of the same unit must not close today's listing). Transactions that
-     aren't a job are remembered and otherwise ignored (D31).
+     sale of the same unit must not close today's listing): de_stage, plus
+     closePrice and closeDate in core. Transactions that aren't a job are
+     remembered and otherwise ignored (D31).
+   - match: after the run, every staged job's Match check is stored in `match`
+     where it changed (helper/match-store.js; found / cleared logged as 'match').
    - an aborted run writes nothing but its `sync_runs` row.
    - a row someone else changed meanwhile (version check) is skipped and
      logged, never overwritten.
@@ -28,20 +36,12 @@
 
 const P = require('../../assets/js/property-library.js');
 const A = require('../../assets/js/address-aliases.js');
+const F = require('../../assets/js/job-facts.js');
+const { storeMatches } = require('../match-store.js');
 
-const ORDER = ['Won', 'Floorplan', 'Showsheet', 'Photos', 'Brochure', 'Live', 'In contract', 'Sold', 'Rented', 'Archived'];
-const RANK = s => (s === 'Rented' ? ORDER.indexOf('Sold') : ORDER.indexOf(s));
 const DE_FACTS = ['price', 'beds', 'baths', 'halfBaths', 'sqft'];
 const FILL_FACTS = ['city', 'state', 'zip', 'neighborhood'];
-const MARKET = { NY: 'NYC', NJ: 'NJ', FL: 'FL' };
 const CLOSED = ['Sold', 'Rented', 'Archived'];
-
-function canMove(from, to) {
-  if (!to || from === to || from === 'Archived') return false;
-  if (!from) return true;
-  if (from === 'In contract' && to === 'Live') return true;
-  return RANK(to) > RANK(from);
-}
 
 function snapshot(r) {
   return { status: r.status, price: r.price, closePrice: r.closePrice, beds: r.beds, baths: r.baths, halfBaths: r.halfBaths,
@@ -75,8 +75,7 @@ async function writeRows(o, run, out, now) {
   const props = await client.select('properties');
   const known = new Map((await client.select('de_listings')).map(d => [d.de_listing_id, d]));
   const byDe = new Map(props.filter(p => p.de_listing_id).map(p => [p.de_listing_id, p]));
-  const folders = new Map((report.live || []).map(x => [x.id, x]));
-  const cache = [];
+  const cache = [], conflicted = new Set();
 
   const log = (pid, field, oldV, newV, note) => ({ property_id: pid, at: now, field, old_value: oldV === undefined ? null : oldV,
     new_value: newV === undefined ? null : newV, note: note || null, source: 'DE', run_id: run.id });
@@ -84,12 +83,14 @@ async function writeRows(o, run, out, now) {
   async function write(p, patch, changes) {
     if (!changes.length && !Object.keys(patch).length) return;
     try {
-      await client.update('properties', { id: p.id }, patch, { version: p.version });
+      const r = await client.update('properties', { id: p.id }, patch, { version: p.version });
+      Object.assign(p, JSON.parse(JSON.stringify(patch)), (r && r[0]) || {});   // the Match pass reads the row as it now is
       if (changes.length) await client.insert('changes', changes);
       out.changes += changes.length;
     } catch (e) {
       if (e.name !== 'ConflictError') throw e;
       out.errors.push({ what: 'conflict', detail: e.message, property: p.slug });
+      conflicted.add(p.id);
     }
   }
 
@@ -108,47 +109,46 @@ async function writeRows(o, run, out, now) {
 
     if (p) {
       const core = Object.assign({}, p.core), changes = [], patch = {};
+      let facts = core.facts || {};
       DE_FACTS.forEach(k => {
-        if (r[k] == null || sameValue(k, core[k], r[k])) return;
-        const note = k === 'price' && r.priceChangePercent < 0 ? 'Price reduced ' + Math.abs(r.priceChangePercent).toFixed(1) + '% on DE' : null;
-        changes.push(log(p.id, k, core[k], r[k], note));
-        core[k] = r[k];
+        if (r[k] == null) return;
+        facts = F.adoptEdit(facts, k, core[k]);   // a builder's edit to core is Matt's (D78)
+        const wasMatt = facts[k] && facts[k].source === 'Matt';
+        facts = F.applyFact(facts, k, 'DE', r[k]).facts;
+        const shown = facts[k].value;
+        if (sameValue(k, core[k], shown)) return;
+        const note = k === 'price' && r.priceChangePercent < 0 ? 'Price reduced ' + Math.abs(r.priceChangePercent).toFixed(1) + '% on DE'
+          : wasMatt && facts[k].source === 'DE' ? 'DE\'s own value changed, so it replaces the one Matt typed' : null;
+        changes.push(log(p.id, k, core[k], shown, note));
+        core[k] = shown;
       });
+      if (Object.keys(facts).length) core.facts = facts;
       FILL_FACTS.forEach(k => { if (!core[k] && r[k]) core[k] = r[k]; });
       if (r.listingUrl && core.listingUrl !== r.listingUrl) core.listingUrl = r.listingUrl;
       if (r.feed === 'transactions' && r.closePrice != null && core.closePrice !== r.closePrice) {
         changes.push(log(p.id, 'closePrice', core.closePrice, r.closePrice));
         core.closePrice = r.closePrice;
       }
+      if (r.feed === 'transactions' && r.closeDate && core.closeDate !== r.closeDate) {
+        changes.push(log(p.id, 'closeDate', core.closeDate, r.closeDate));
+        core.closeDate = r.closeDate;
+      }
       if (JSON.stringify(core) !== JSON.stringify(p.core)) patch.core = core;
       const snap = snapshot(r);
       if (JSON.stringify(snap) !== JSON.stringify(p.de)) { patch.de = snap; patch.de_status = r.status; }
       if (p.de_listing_id !== r.id) patch.de_listing_id = r.id;
-      // starter mode: a library row that isn't on the overview yet gets DE's facts but no stage
-      if (canMove(p.stage, r.stage) && (p.stage || o.addNew !== false)) {
-        changes.push(log(p.id, 'stage', p.stage || null, r.stage));
-        patch.stage = r.stage; patch.stage_source = 'DE';
+      // DE's own stage, kept beside Asana's (D50, S8): DE never moves `stage`
+      if (r.stage && p.de_stage !== r.stage) {
+        changes.push(log(p.id, 'de_stage', p.de_stage || null, r.stage));
+        patch.de_stage = r.stage;
       }
       await write(p, patch, changes);
       entry.property_id = p.id;
-    } else if (r.feed === 'featured' && o.addNew !== false) {   // starter mode (deAddsNew: false) only updates known jobs
-      let gvc = cached.gvc_listed;
-      if (gvc === undefined || gvc === null) {
+    } else if (r.feed === 'featured') {
+      // no job: never made here (D54); the GVC check is kept as Match's evidence (M2)
+      if (cached.gvc_listed === undefined || cached.gvc_listed === null) {
         const c = await o.courtesy(r);
-        gvc = !!c.gvcListed; entry.gvc_listed = gvc; entry.courtesy = c.line || null; entry.checked_at = now;
-      }
-      if (gvc) {
-        const f = folders.get(r.id) || {};
-        const core = { address: r.street, unit: r.unit, city: r.city, state: r.state, zip: r.zip, neighborhood: r.neighborhood,
-          price: r.price, beds: r.beds, baths: r.baths, halfBaths: r.halfBaths, sqft: r.sqft, listingUrl: r.listingUrl };
-        const made = (await client.insert('properties', {
-          slug: P.slugOfCore(core), label: P.labelOf(core), core, kind: r.kind, market: MARKET[r.state] || null,
-          stage: r.stage, stage_source: 'DE', units: r.unit ? [r.unit] : [], de_listing_id: r.id, de_status: r.status, de: snapshot(r),
-          drive_folder: f.folder || null, folder_state: f.folder ? 'linked' : 'unlinked'
-        }))[0];
-        await client.insert('changes', log(made.id, null, null, null, 'Found on DE'));
-        out.created++; out.changes++;
-        entry.property_id = made.id;
+        entry.gvc_listed = !!c.gvcListed; entry.courtesy = c.line || null; entry.checked_at = now;
       }
     }
     } catch (e) {
@@ -157,6 +157,10 @@ async function writeRows(o, run, out, now) {
     }
     cache.push(entry);
   }
+
+  // Match, from the rows as they now stand (spec §5)
+  const ms = await storeMatches({ client, rows: props, now, runId: run.id, roster: o.roster, initials: o.initials, skip: conflicted });
+  out.errors.push(...ms.errors);
 
   // PostgREST writes one column list per batch and fills the gaps with null, so
   // entries are sent in groups with the same fields: a cached GVC check is never blanked
@@ -167,4 +171,4 @@ async function writeRows(o, run, out, now) {
   }
 }
 
-module.exports = { applyRun, canMove };
+module.exports = { applyRun };

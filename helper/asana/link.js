@@ -11,6 +11,10 @@
          Order (D62): the stored asana_gid → Asana's Drive Link (core.driveLink)
          → address + unit. `taken`: the address belongs to a job already linked
          to another Asana task (never two jobs, never a guessed link).
+         Sale vs rental (plan §5): a job only matches when its kind agrees with
+         the task's Sale/Rent. A sale and a rental of one unit are two listings.
+         "For Sale or Rent", a blank Sale/Rent or a job with no kind match either.
+     saleRentOf(task)          → 'sale' | 'rental' | null (both or unknown)
      makePlan(run, existing)   → { rows: [{ gid, name, kind, stage, market, tick,
                                    match, why }] }                     S5, D54
          existing = { properties, pitches, devs }
@@ -54,6 +58,16 @@ function sameAddress(name, core) {
   return !ta || !tb || ta === tb;
 }
 
+function saleRentOf(task) {
+  const k = String((task && task.fields && task.fields['Sale/Rent']) || '').toLowerCase();
+  const sale = /sale/.test(k), rent = /rent/.test(k);
+  return sale && !rent ? 'sale' : rent && !sale ? 'rental' : null;
+}
+function kindAgrees(task, row) {
+  const k = saleRentOf(task);
+  return !k || !row || !row.kind || row.kind === k;
+}
+
 function matchTask(task, existing, kind) {
   const props = (existing && existing.properties) || [], pitches = (existing && existing.pitches) || [];
   const own = props.find(p => p.asana_gid === task.gid);
@@ -62,10 +76,10 @@ function matchTask(task, existing, kind) {
   if (ownPitch && kind === 'pitch') return { pitchId: ownPitch.id };
   const drive = task.fields && task.fields['🛜 Google Drive Link'];
   if (drive) {
-    const byDrive = props.filter(p => !p.asana_gid && p.core && p.core.driveLink === drive);
+    const byDrive = props.filter(p => !p.asana_gid && p.core && p.core.driveLink === drive && kindAgrees(task, p));
     if (byDrive.length === 1) return { propertyId: byDrive[0].id };
   }
-  const at = props.filter(p => p.stage !== 'Archived' && sameAddress(task.name, p.core));
+  const at = props.filter(p => p.stage !== 'Archived' && kindAgrees(task, p) && sameAddress(task.name, p.core));
   const free = at.filter(p => !p.asana_gid);
   if (kind === 'pitch') {
     const pf = pitches.filter(p => !p.asana_gid && p.outcome === 'open' && sameAddress(task.name, p.core));
@@ -97,10 +111,11 @@ function devFor(project, devs) {
 
 function makePlan(run, existing) {
   const ex = existing || {};
-  const rows = [];
+  const rows = [], saleRent = {};
   (run.listings || []).forEach(t => {
     if (!MAP.isGvcListing(t)) return;
     const base = { gid: t.gid, name: t.name, market: t.market || null };
+    saleRent[t.gid] = saleRentOf(t);
     const st = MAP.stageOf(t);
     if (st.unknown) { rows.push(Object.assign(base, { kind: 'listing', stage: null, tick: false, match: null, why: 'Listing Status not known yet: ' + st.unknown })); return; }
     let kind = 'listing', tick, why;
@@ -129,7 +144,8 @@ function makePlan(run, existing) {
   // two ticked rows at one address: the first (the more active) keeps the tick
   const order = s => (ACTIVE.indexOf(s) === -1 ? 9 : ACTIVE.indexOf(s));
   rows.filter(r => r.kind === 'listing' && r.tick).sort((x, y) => order(x.stage) - order(y.stage)).forEach((r, i, all) => {
-    const first = all.slice(0, i).find(o => o.tick && sameAddress(r.name, addrCore(o.name)));
+    const first = all.slice(0, i).find(o => o.tick && sameAddress(r.name, addrCore(o.name)) &&
+      (!saleRent[o.gid] || !saleRent[r.gid] || saleRent[o.gid] === saleRent[r.gid]));
     if (first) { r.tick = false; r.why = 'same address as ' + first.gid + ': one job per address'; }
   });
   (run.devs || []).forEach(d => {
@@ -177,4 +193,4 @@ function readPlanFile(file) {
   return plan;
 }
 
-module.exports = { addrOf, hasNumber, sameAddress, matchTask, makePlan, writePlanFiles, readPlanFile, devAddresses, devFor, ACTIVE };
+module.exports = { addrOf, hasNumber, sameAddress, saleRentOf, matchTask, makePlan, writePlanFiles, readPlanFile, devAddresses, devFor, ACTIVE };

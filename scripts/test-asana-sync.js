@@ -13,7 +13,7 @@ process.env.GVC_HELPER_HOME = require('fs').mkdtempSync(require('path').join(req
 const fs = require('fs'), path = require('path'), os = require('os');
 const { createAsana } = require('../helper/asana/client.js');
 const { readRun } = require('../helper/asana/read.js');
-const { makePlan, writePlanFiles, readPlanFile } = require('../helper/asana/link.js');
+const { makePlan, writePlanFiles, readPlanFile, matchTask } = require('../helper/asana/link.js');
 const { applyRun } = require('../helper/asana/apply.js');
 const { replayFetch } = require('../helper/asana/replay.js');
 const { syncNow, dryRun } = require('../helper/asana-sync.js');
@@ -545,6 +545,25 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const dryF12b = await dryRun({ cfg, fetch: replayFetch(FIX, wF12), record: true, recordDir: recF12, client: fakeDb(), outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-dry-')), date: '2026-10-21' });
   const recFileB = path.join(recF12, '2026-10-21', 'asana-loose-' + looseIdx + '.json');
   check('F12 no linked development known: no loose task recorded', [dryF12b.ok, fs.existsSync(recFileB) ? JSON.parse(fs.readFileSync(recFileB, 'utf8')).length : 0], [true, 0]);
+
+  // K1. sale vs rental (plan §5): a For Rent task never links to a sale job at the same unit
+  const kProps = [{ id: 'p-sale', kind: 'sale', stage: 'Live', core: { address: '404 Park Ave S', unit: '6A', city: 'New York' } }];
+  const kTask = (sr, extra) => ({ gid: 'g-k1', name: '404 Park Ave S - 6A', fields: Object.assign({ 'Sale/Rent': sr }, extra || {}) });
+  const kMatch = sr => matchTask(kTask(sr), { properties: kProps, pitches: [] }, 'listing');
+  check('K1 For Rent task: no match to the sale job (a new listing)', kMatch('For Rent'), {});
+  check('K1 For Sale task: matches the sale job', kMatch('For Sale'), { propertyId: 'p-sale' });
+  check('K1 For Sale or Rent: matches either', kMatch('For Sale or Rent'), { propertyId: 'p-sale' });
+  check('K1 blank Sale/Rent: matches either', kMatch(null), { propertyId: 'p-sale' });
+  check('K1 For Rent matches a rental job', matchTask(kTask('For Rent'), { properties: [Object.assign({}, kProps[0], { kind: 'rental' })], pitches: [] }, 'listing'), { propertyId: 'p-sale' });
+  check('K1 Drive Link match also respects the kind', matchTask(kTask('For Rent', { '🛜 Google Drive Link': 'https://drive/x' }),
+    { properties: [Object.assign({}, kProps[0], { core: Object.assign({ driveLink: 'https://drive/x' }, kProps[0].core) })], pitches: [] }, 'listing'), {});
+  check('K1 a linked sale job does not make a rental task "taken"', matchTask(kTask('For Rent'), { properties: [Object.assign({ asana_gid: 'other' }, kProps[0])], pitches: [] }, 'listing'), {});
+  const kRun = { listings: [
+    { gid: 'g-ks', name: '404 Park Ave S - 6A', fields: { 'Deal Side': 'List Side', 'Listing Status': 'Active', 'Sale/Rent': 'For Sale' } },
+    { gid: 'g-kr', name: '404 Park Ave S - 6A', fields: { 'Deal Side': 'List Side', 'Listing Status': 'Active', 'Sale/Rent': 'For Rent' } }] };
+  const kPlan = makePlan(kRun, { properties: kProps, pitches: [], devs: [] }).rows;
+  check('K1 plan: the sale links to the sale job, the rental is a new listing, both ticked',
+    kPlan.map(r => [r.gid, r.tick, r.match && r.match.propertyId || null]), [['g-ks', true, 'p-sale'], ['g-kr', true, null]]);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

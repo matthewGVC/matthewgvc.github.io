@@ -373,7 +373,7 @@
       var m = r && !r.ignored && !held[r.de_listing_id] && M && M.checkDeListing ? M.checkDeListing(r) : null;
       if (!m) return;
       var raw = r.raw || {}, street = raw.street ? String(raw.street).trim() : null, unit = street && raw.unit ? String(raw.unit).trim() : null;
-      out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: 'DE listing ' + r.de_listing_id + (street ? ', ' + readable(street) + (unit ? ' ' + unit : '') : ''), href: null, id: null, table: null, code: m.code, key: m.key,
+      out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: (street ? readable(street) + (unit ? ' ' + unit : '') + ' · ' : '') + 'DE listing ' + r.de_listing_id, href: null, id: null, table: null, code: m.code, key: m.key,
         text: m.text + (r.courtesy ? ' DE shows: ' + r.courtesy + '.' : ''), since: m.since || null, asanaUrl: null, paste: null,
         deUrl: web(m.values && m.values.listingUrl),
         link: { type: 'de', id: r.de_listing_id, kind: r.kind || null, market: STATE_MARKET[String(raw.state || '').toUpperCase()] || null, street: street, unit: unit } } });

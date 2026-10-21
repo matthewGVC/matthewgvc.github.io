@@ -232,7 +232,7 @@ const looseA = W.looseMatch({
   linkedGids: ['1601'] }, MC);
 check('loose: a DE line with its address: street, market from the state, kind', looseA.slice(0, 2).map(l => l.item.link),
   [{ type: 'de', id: '9201', kind: 'sale', market: 'NJ', street: '1006 PHEASANT LN', unit: '204' }, { type: 'de', id: '9202', kind: 'rental', market: 'NYC', street: '52 E 4TH ST', unit: '10' }]);
-check('loose: the DE address shows beside its id', looseA[0].item.job, 'DE listing 9201, 1006 Pheasant Ln 204');
+check('loose: the DE address shows beside its id', looseA[0].item.job, '1006 Pheasant Ln 204 · DE listing 9201');
 check('loose: an Asana line carries its market; a task linked by hand since the run is left out', looseA.slice(2).map(l => [(l.item.link || {}).gid, (l.item.link || {}).market]), [['1600', 'NJ']]);
 
 // tune-up A1: a DE listing whose id a job already holds is left out (a hand link half saved: the job has it, the cache row doesn't)

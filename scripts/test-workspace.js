@@ -307,7 +307,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('hand link: DE line offers Link to a job and Not ours', await mp.$$eval('.mline[data-key="M2:de:9201"] button[data-link], .mline[data-key="M2:de:9201"] button[data-aside]', els => els.map(e => e.textContent.trim())), ['Link to a job', 'Not ours']);
   check('hand link: Asana line offers Link to a job and Ignore', await mp.$$eval('.mline[data-key="link:1600"] button[data-link], .mline[data-key="link:1600"] button[data-aside]', els => els.map(e => e.textContent.trim())), ['Link to a job', 'Ignore']);
   check('hand link: a job\'s own mismatch has neither', await mp.$$eval('.mline[data-key="M3"] button[data-link], .mline[data-key="M3"] button[data-aside]', els => els.length), 0);
-  check('hand link: the DE line shows its address', ((await text(mp, '.mline[data-key="M2:de:9201"]')) || '').includes('DE listing 9201, 1006 Pheasant Ln 204'), true);
+  check('hand link: the DE line shows its address', ((await text(mp, '.mline[data-key="M2:de:9201"]')) || '').includes('1006 Pheasant Ln 204 · DE listing 9201'), true);
   await mp.click('.mline[data-key="M2:de:9201"] button[data-link]').catch(() => {});
   check('picker: opens', await visible(mp, 'dialog.gvc-mlink'), true);
   check('picker: same street first, then the market\'s other jobs; no other market', await pickerList(mp).catch(() => null),

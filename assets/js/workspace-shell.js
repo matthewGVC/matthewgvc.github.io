@@ -17,6 +17,12 @@
      shell.driveState()         → Promise<'connected'|'needs-click'|…> (GVC_DRIVE)
      GVC_SHELL.helper(method, path, body) → the desktop helper's JSON, or
                                 throws "The helper isn't running on this PC."
+     GVC_SHELL.onTeam()         → Promise<boolean>: false when the signed-in
+                                account has no role on the team list
+                                (whoAmI().role empty), so a page says so
+                                instead of an empty "all clear" (tune-up B5);
+                                true when it can't tell
+     GVC_SHELL.NOT_ON_TEAM      what those pages say then
      GVC_ICON(name)             the mockup's line icons
      GVC_ESC(text)              HTML-escapes anything from the database
 
@@ -223,7 +229,13 @@
     return part('Asana', r.asana) + ' ' + part('DE', r.de);
   }
 
-  global.GVC_SHELL = { mount: mount, helper: helper, syncWords: syncWords };
+  /* a signed-in account with no role on the team list reads nothing (row security): say so (tune-up B5) */
+  var NOT_ON_TEAM = 'Your account isn\'t on the GVC team list yet. Ask Matt to add you.';
+  function onTeam() {
+    return global.GVC_PROPS.whoAmI().then(function (w) { return !!(w && w.role); }, function () { return true; });
+  }
+
+  global.GVC_SHELL = { mount: mount, helper: helper, syncWords: syncWords, onTeam: onTeam, NOT_ON_TEAM: NOT_ON_TEAM };
   global.GVC_ICON = icon;
   global.GVC_ESC = esc;
 })(window);

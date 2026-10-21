@@ -228,7 +228,7 @@
       return '<li><span class="code">' + esc(m.code) + '</span><span>' + esc(m.text) + '</span></li>';
     }).join('') + '</ul><p style="margin-top:8px"><a class="link" href="../match/">See every mismatch</a></p></div>' : '';
     return '<div class="card" id="asanaCard">' + head +
-      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip ' + esc(j.chip) + '">' + esc(stage) + '</span>' + (a.gone ? '<span class="chip stale">Asana task gone</span>' : '') + '</div>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip ' + esc(W.chipOf(stage)) + '">' + esc(stage) + '</span>' + (a.gone ? '<span class="chip stale">Asana task gone</span>' : '') + '</div>' +
       (st.length ? '<div class="as-st">' + esc(st.join(' · ')) + '</div>' : '') + dates + mm +
       (ck || '<p class="soft" style="font-size:13px;margin-top:12px">No checklist read yet.</p>') + '</div>';
   }

@@ -82,6 +82,12 @@
   }
 
   function load() {
+    return GVC_SHELL.onTeam().then(function (ok) {
+      if (ok) return read();
+      gate('Not on the team list', GVC_SHELL.NOT_ON_TEAM);
+    });
+  }
+  function read() {
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/dev_projects?select=*'),
@@ -89,18 +95,19 @@
       // lines that belong to no job: GVC-listed on DE with no job, and Asana tasks the last sync couldn't link
       // (either failing to read leaves those lines out, never the page)
       rest('/de_listings?select=de_listing_id,kind,gvc_listed,property_id,ignored,courtesy,raw,checked_at&gvc_listed=is.true&property_id=is.null&ignored=is.false').catch(function () { return []; }),
-      rest('/sync_runs?select=kind,started_at,totals&kind=eq.asana&order=started_at.desc&limit=20').catch(function () { return []; }),
+      rest('/sync_runs?select=kind,started_at,ok,totals&kind=eq.asana&order=started_at.desc&limit=20').catch(function () { return []; }),
       rest('/asana_tasks?select=gid&ignored=eq.true').catch(function () { return []; })
     ]).then(function (r) {
       var people = r[2] || [], latest = people.reduce(function (m, p) { return p.seen_at && p.seen_at > m ? p.seen_at : m; }, '');
-      // the newest Asana run that listed its unlinked tasks (an aborted run lists none)
-      var run = (r[4] || []).filter(function (x) { return x.totals && Array.isArray(x.totals.unlinked); })
+      // the newest good Asana run's unlinked tasks: a failed run's list is never trusted (tune-up B8)
+      var run = (r[4] || []).filter(function (x) { return x.ok === true; })
         .sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; })[0] || null;
       var props = r[0] || [];
       data = { properties: props, devProjects: r[1] || [], people: people.filter(function (p) { return (p.seen_at || '') === latest; }),
-        // a task linked to a job by hand since the run is no longer "not linked"
+        // a task or DE listing linked to a job by hand since is no longer "not linked", even when only the job's half saved
         loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }),
-          linkedGids: props.map(function (p) { return p.asana_gid; }).filter(Boolean) }, M) };
+          linkedGids: props.map(function (p) { return p.asana_gid; }).filter(Boolean),
+          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean) }, M) };
       data.links = {};
       data.loose.forEach(function (l) { if (l.item.link) data.links[l.item.key] = l.item; });
       render();
@@ -129,7 +136,8 @@
   }
 
   function render() {
-    var jobs = W.buildJobs({ properties: data.properties, pitches: [], devProjects: data.devProjects, changes: [] }, today, { archived: true });
+    // Archived jobs are left out, as from the overview's total (tune-up B7)
+    var jobs = W.buildJobs({ properties: data.properties, pitches: [], devProjects: data.devProjects, changes: [] }, today);
     data.names = {};
     jobs.forEach(function (j) { data.names[j.id] = j.name; });
     var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
@@ -202,8 +210,10 @@
     busy = true; msg.textContent = 'Saving…';
     li.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     L.setAside(P, it.link).then(function () { busy = false; return load(); }, function (e) {
-      busy = false; msg.textContent = e.message;
-      if (e.linked) return;   // set aside already; only the log failed
+      busy = false;
+      // set aside already; only the log failed: reload, then say so (as Dismiss does)
+      if (e.linked) return load().then(function () { $('lead').textContent = e.message; });
+      msg.textContent = e.message;
       li.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
     });
   }

@@ -235,6 +235,14 @@ check('loose: a DE line with its address: street, market from the state, kind', 
 check('loose: the DE address shows beside its id', looseA[0].item.job, 'DE listing 9201, 1006 Pheasant Ln 204');
 check('loose: an Asana line carries its market; a task linked by hand since the run is left out', looseA.slice(2).map(l => [(l.item.link || {}).gid, (l.item.link || {}).market]), [['1600', 'NJ']]);
 
+// tune-up A1: a DE listing whose id a job already holds is left out (a hand link half saved: the job has it, the cache row doesn't)
+const looseD = W.looseMatch({ deListings: [{ de_listing_id: '9301', kind: 'sale', gvc_listed: true, property_id: null }, { de_listing_id: '9302', kind: 'sale', gvc_listed: true, property_id: null }],
+  linkedDeIds: ['9301'] }, MC);
+check('loose: a DE listing a job already holds is left out', looseD.map(l => l.item.link.id), ['9302']);
+// tune-up B6: the chip colour of a stage
+check('chipOf: each stage\'s chip', ['Live', 'In contract', 'Accepted offer', 'Sold', 'Rented', 'Prep', 'Pitch', undefined].map(W.chipOf),
+  ['live', 'contract', 'contract', 'sold', 'sold', 'pre', 'pre', 'pre']);
+
 check('asana: refused token in plain words', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }, now).why, 'Asana refused the token');
 
 if (failures.length) {

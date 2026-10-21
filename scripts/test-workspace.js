@@ -75,7 +75,7 @@ async function open(browser, opts) {
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
     reads.push(m + ' ' + table);
-    if (table === 'members') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]) });
+    if (table === 'members') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(opts.members || [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]) });
     const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
     const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
     if (m === 'PATCH') {
@@ -217,7 +217,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const phone = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const pp = await phone.newPage();
   await pp.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
-  const T0 = rowsFor();
+  const T0 = rowsFor({ members: [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] });
   await pp.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T0[new URL(r.request().url()).pathname.split('/').pop()] || []) }));
   await pp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
   await pp.goto(BASE + '/workspace/', { waitUntil: 'networkidle' });
@@ -409,7 +409,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const sphone = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const spp = await sphone.newPage();
   await spp.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
-  const T1 = rowsFor();
+  const T1 = rowsFor({ members: [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] });
   await spp.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T1[new URL(r.request().url()).pathname.split('/').pop()] || []) }));
   await spp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
   await spp.goto(BASE + '/workspace/status/', { waitUntil: 'networkidle' });
@@ -574,6 +574,48 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.page.click('#lkCancel');
   await t.page.waitForTimeout(300);
   check('link: Close after a half save reloads the job', [await visible(t.page, 'dialog.gvc-link'), t.errors], [false, []]);
+  await t.ctx.close();
+
+  /* ---------- tune-up B ---------- */
+  // B5: signed in, but not on the team list: say so, never an empty "all clear"
+  for (const [name, path] of [['overview', '/workspace/'], ['match', '/workspace/match/'], ['status', '/workspace/status/']]) {
+    t = await open(browser, { path, members: [] });
+    check('B5 ' + name + ': not on the team list says so', [await visible(t.page, '#gate'), await visible(t.page, '#board'),
+      ((await text(t.page, '#gate')) || '').includes('Your account isn\'t on the GVC team list yet. Ask Matt to add you.'), t.errors], [true, false, true, []]);
+    await t.ctx.close();
+  }
+  // B6: the Asana card's chip follows the stage it shows (Asana's), not the job's
+  const R6b = rowsFor();
+  Object.assign(R6b.properties[0].asana, { stageFromStatus: 'Live', status: 'Active' });
+  t = await open(browser, { rows: R6b, path: '/workspace/job/?listing=100-example-st-residence-4a' });
+  check('B6 Asana card: chip colour follows the stage it shows', await t.page.$eval('#asanaCard .chip', c => [c.textContent.trim(), c.className]).catch(() => null), ['Live', 'chip live']);
+  await t.ctx.close();
+  // B7: an Archived job's stored mismatches stay off the Match page (as off the overview's total)
+  const R7 = rowsFor();
+  R7.properties.push({ id: 'pa', slug: '9-gone-st', label: 'a', kind: 'sale', market: 'NYC', stage: 'Archived', stage_source: 'Asana', version: 1, core: { address: '9 Gone St' },
+    folder_state: 'linked', drive_folder: 'g', match: { list: [{ code: 'M3', key: 'M3', text: 'Asana says $1; DE says $2.', values: {}, fixAt: 'Asana', who: ['Elyse Gutman'], since: '2026-10-01' }], dismissed: {} } });
+  t = await open(browser, { path: '/workspace/match/', rows: R7 });
+  check('B7 match: Archived jobs left out', [((await text(t.page, '#groups')) || '').includes('9 Gone St'), (await text(t.page, '#lead')).startsWith('4 mismatches')], [false, true]);
+  await t.ctx.close();
+  // B8: the "not linked" list comes from the newest ok Asana run only
+  t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ sync_runs: [
+    { kind: 'asana', started_at: iso(NOW - 7200e3), ok: true, totals: { unlinked: [{ gid: '1700', name: '70 Good Run Pl', why: 'same address' }] } },
+    { kind: 'asana', started_at: iso(NOW - 3600e3), ok: false, totals: { unlinked: [{ gid: '1701', name: '71 Failed Run Pl', why: 'same address' }] } }] }) });
+  const g8 = (await text(t.page, '#groups')) || '';
+  check('B8 match: unlinked from the newest ok run, never a failed one', [g8.includes('70 Good Run Pl'), g8.includes('71 Failed Run Pl')], [true, false]);
+  await t.ctx.close();
+  // A1: a DE listing whose id a job already holds is left out (a half-saved hand link)
+  const rA1 = handRows();
+  rA1.properties.find(p => p.id === 'pw').de_listing_id = '9201';
+  t = await open(browser, { path: '/workspace/match/', rows: rA1 });
+  check('A1 match: a DE line a job already holds is gone', [await t.page.$$eval('.mline[data-key="M2:de:9201"]', els => els.length), await t.page.$$eval('.mline[data-key="M2:de:9202"]', els => els.length)], [0, 1]);
+  await t.ctx.close();
+  // A2: Ignore where only the log fails: the page reloads, then says so
+  t = await open(browser, { path: '/workspace/match/', rows: handRows({ asana_tasks: [{ gid: '1600', ignored: false, property_id: null, pitch_id: 'q1' }] }), changeFails: true });
+  const readsA2 = t.reads.length;
+  await t.page.click('.mline[data-key="link:1600"] button[data-aside]').catch(() => {});
+  await t.page.waitForTimeout(500);
+  check('A2 ignore, log failed: reloaded, then the message', [t.reads.length > readsA2, ((await text(t.page, '#lead')) || '').startsWith('Set aside, but the change log didn\'t save'), t.errors], [true, true, []]);
   await t.ctx.close();
 
   await browser.close();

@@ -77,6 +77,12 @@
 
   /* read-only: nothing on this page writes */
   function load() {
+    return GVC_SHELL.onTeam().then(function (ok) {
+      if (ok) return read();
+      gate('Not on the team list', GVC_SHELL.NOT_ON_TEAM);
+    });
+  }
+  function read() {
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,folder_state,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=id,slug,label,market,pitched_on,outcome,won_property_id,folder_state,asana_gid')

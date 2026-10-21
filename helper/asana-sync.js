@@ -225,9 +225,12 @@ if (require.main === module) {
     asana.whoami().then(me => { console.log(me.name); }, e => { console.log(e.message); process.exit(1); });
   } else if (a.includes('--dry-run')) {
     dryRun({ record: a.includes('--record') }).then(r => {
-      console.log(r.ok ? 'Dry run OK: ' + r.projects.length + ' project(s) read. Report: ' + r.reportFile
-        : 'Dry run stopped: ' + r.aborted);
-      process.exit(r.ok ? 0 : 1);
+      // a project Asana refused is listed in the report, not counted as read
+      const read = r.ok ? r.projects.filter(p => !p.error).length : 0;
+      console.log(!r.ok ? 'Dry run stopped: ' + r.aborted
+        : read ? 'Dry run OK: ' + read + ' of ' + r.projects.length + ' project(s) read. Report: ' + r.reportFile
+        : 'Dry run: Asana answered but no project could be read. Report: ' + r.reportFile);
+      process.exit(r.ok && read ? 0 : 1);
     }, e => { console.log('Dry run failed: ' + e.message); process.exit(1); });
   } else {
     console.log('Usage: node helper/asana-sync.js --whoami | --dry-run [--record] | --plan | --apply-plan <file> | --write [--full] | --people  [--fixtures <dir>]');

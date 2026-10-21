@@ -9,6 +9,9 @@
 
      const db = createClient(cfg)            // cfg from loadConfig()
      await db.select('properties', { stage: 'Live' })
+     await db.select('sync_runs', { kind: 'de' }, 'kind,started_at', { order: 'started_at.desc', limit: 1 })
+         → just the newest rows, one request (order alone still reads every page);
+           a match key like 'totals->>full' filters on a JSON field
      await db.insert('changes', [{ … }])
      await db.update('properties', { id }, { stage: 'Sold' }, { version: 4 })
          → throws ConflictError when someone else changed the row first
@@ -75,10 +78,16 @@ function createClient(cfg, opts) {
   /* pages are read in key order: without an order, Postgres may hand rows back
      in a different order per page and a long read could skip or repeat rows */
   const KEY = { members: 'user_id', de_listings: 'de_listing_id', documents: 'property_id,tool', asana_tasks: 'gid', asana_people: 'gid' };
-  async function select(table, match, cols) {
+  async function select(table, match, cols, opts) {
+    const o = opts || {}, key = KEY[table] || 'id';
+    const order = 'order=' + (o.order ? o.order + ',' + key : key);
+    if (o.limit) {
+      const r = await request('GET', '/rest/v1/' + table + '?' + query(match, ['select=' + (cols || '*'), order, 'limit=' + o.limit]));
+      return r.json();
+    }
     const rows = [];
     for (let offset = 0; ; offset += 1000) {
-      const r = await request('GET', '/rest/v1/' + table + '?' + query(match, ['select=' + (cols || '*'), 'order=' + (KEY[table] || 'id'),
+      const r = await request('GET', '/rest/v1/' + table + '?' + query(match, ['select=' + (cols || '*'), order,
         'limit=1000', 'offset=' + offset]));
       const page = await r.json();
       rows.push.apply(rows, page);

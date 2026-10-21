@@ -35,12 +35,24 @@ function fakeDb(seed) {
   TABLES.forEach(t => { T[t] = []; });
   Object.keys(seed || {}).forEach(k => { T[k] = seed[k].map(r => Object.assign(k === 'asana_tasks' || k === 'asana_people' ? {} : { version: 1 }, r)); });
   let n = 0;
-  const matches = (row, m) => Object.keys(m || {}).every(k => String(row[k]) === String(m[k]));
+  // 'totals->>full' reads a JSON field, as PostgREST does
+  const field = (row, k) => { const j = /^(\w+)->>(\w+)$/.exec(k); return j ? (row[j[1]] || {})[j[2]] : row[k]; };
+  const matches = (row, m) => Object.keys(m || {}).every(k => String(field(row, k)) === String(m[k]));
   const copy = x => JSON.parse(JSON.stringify(x));
   const db = {
     T, conflictOn: null,
     ready: () => true,
-    select: async (t, m) => T[t].filter(r => matches(r, m)).map(copy),
+    calls: [],
+    select: async (t, m, cols, o) => {
+      db.calls.push({ t, m, cols, o });
+      let rows = T[t].filter(r => matches(r, m));
+      if (o && o.order) {
+        const [f, dir] = o.order.split('.');
+        rows = rows.slice().sort((a, b) => (a[f] < b[f] ? -1 : a[f] > b[f] ? 1 : 0) * (dir === 'desc' ? -1 : 1));
+      }
+      if (o && o.limit) rows = rows.slice(0, o.limit);
+      return rows.map(copy);
+    },
     insert: async (t, rows) => [].concat(rows).map(r => {
       const x = Object.assign({ id: t + '-' + (++n) }, TABLES.indexOf(t) < 3 ? { version: 1 } : {}, copy(r)); T[t].push(x); return copy(x);
     }),
@@ -381,6 +393,10 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
     { id: 'r2', kind: 'asana', ok: true, started_at: '2026-10-19T03:00:00.000Z', finished_at: 'x', totals: { full: true, open: { NJ: 8 } } }] });
   await syncNow({ cfg, client: db10, fetch: replayFetch(FIX, world()), full: true, now: NOW });
   check('a market missing from the last full run keeps its earlier open count', /fewer than half the open NYC/.test(JSON.stringify(db10.T.sync_runs[2].errors)), true);
+  // C1: the sync reads only the newest runs it needs, newest first, a small limit
+  const runReads = db10.calls.filter(c => c.t === 'sync_runs');
+  check('C1 sync_runs reads are newest first with a small limit', runReads.length > 0 && runReads.every(c => c.o && c.o.order === 'started_at.desc' && c.o.limit > 0 && c.o.limit <= 20), true);
+  check('C1 sync_runs reads ask for good Asana runs only', runReads.every(c => c.m && c.m.kind === 'asana' && c.m.ok === true), true);
 
   // 2. a task first seen as a Lead becomes a pitch once it has a pitch date
   w = world();

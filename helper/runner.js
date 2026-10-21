@@ -57,29 +57,38 @@ function createRunner(o) {
 
 const NIGHTLY_KEEP = 14;
 
+/* the Asana jobs, only when the config holds a token; all share one in-flight run */
+function asanaJobs(cfg, client, syncNow) {
+  if (!cfg.asanaToken) return {};
+  const sync = syncNow || (o => require('./asana-sync.js').syncNow(o));
+  const go = extra => () => require('./inflight.js').runAsana(() => sync(Object.assign({ cfg, client }, extra)));
+  return { asana: go({}), asanaFull: go({ full: true }), people: go({ kind: 'people' }) };
+}
+
+/* last-run map from sync_runs rows; the last full read is the asana row with totals.full */
+function lastFromRuns(runs) {
+  const last = {};
+  runs.forEach(r => {
+    if (!last[r.kind] || r.started_at > last[r.kind]) last[r.kind] = r.started_at;
+    if (r.kind === 'asana' && r.totals && r.totals.full && (!last.asanaFull || r.started_at > last.asanaFull)) last.asanaFull = r.started_at;
+  });
+  Object.keys(last).forEach(k => { last[k] = new Date(last[k]); });
+  return last;
+}
+
 async function startRunner(cfg) {
   const client = require('./supabase.js').createClient(cfg);
   if (!client.ready()) return null;
-  const last = {};
+  let last = {};
   try {
-    const runs = await client.select('sync_runs', {}, 'kind,started_at,totals');
-    runs.forEach(r => {
-      if (!last[r.kind] || r.started_at > last[r.kind]) last[r.kind] = r.started_at;
-      // the last full read is the asana run that stored totals.full
-      if (r.kind === 'asana' && r.totals && r.totals.full && (!last.asanaFull || r.started_at > last.asanaFull)) last.asanaFull = r.started_at;
-    });
-    Object.keys(last).forEach(k => { last[k] = new Date(last[k]); });
+    last = lastFromRuns(await client.select('sync_runs', {}, 'kind,started_at,totals'));
   } catch (e) { /* table not there yet: everything is due */ }
   const exportsDir = path.join(__dirname, '..', 'exports');
   const runner = createRunner({
     last,
     jobs: {
       de: () => require('./de-sync.js').syncNow({ cfg, client }),
-      ...(cfg.asanaToken ? {
-        asana: () => require('./asana-sync.js').syncNow({ cfg, client }),
-        asanaFull: () => require('./asana-sync.js').syncNow({ cfg, client, full: true }),
-        people: () => require('./asana-sync.js').syncNow({ cfg, client, kind: 'people' })
-      } : {}),
+      ...asanaJobs(cfg, client),
       scan: () => require('./scan.js').scanAll({ client, driveRoot: 'G:\\Shared drives' }),
       backup: async () => {
         const date = new Date().toISOString().slice(0, 10);
@@ -93,4 +102,4 @@ async function startRunner(cfg) {
   return runner;
 }
 
-module.exports = { createRunner, startRunner };
+module.exports = { createRunner, startRunner, asanaJobs, lastFromRuns };

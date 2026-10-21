@@ -52,11 +52,8 @@ function shapeRun(r) {
   return { ok: !!r.report.ok, changes: r.changes, created: r.created, skipped: (r.errors || []).length, aborted: r.report.aborted || null };
 }
 function asanaSyncRoute(syncNow) {
-  let running = null;
-  return () => {
-    if (!running) running = Promise.resolve().then(() => syncNow()).then(shapeRun).finally(() => { running = null; });
-    return running;
-  };
+  // the same in-flight run the scheduled jobs use (inflight.js)
+  return () => require('./inflight.js').runAsana(syncNow).then(shapeRun);
 }
 /* Sync now: Asana first, then DE. A problem in one never stops the other. */
 function syncRoute(o) {

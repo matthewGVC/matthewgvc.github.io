@@ -159,7 +159,7 @@ function req(method, p, headers, body) {
   const p1 = slow(), p2 = slow();
   release();
   const [a1, a2] = await Promise.all([p1, p2]);
-  check('two /asana/sync at once share one run', [calls, a1 === a2, a1.ok, a1.changes], [1, true, true, 3]);
+  check('two /asana/sync at once share one run', [calls, JSON.stringify(a1) === JSON.stringify(a2), a1.ok, a1.changes], [1, true, true, 3]);
   const both = await syncRoute({
     asana: async () => ({ ok: true, changes: 2, created: 0, skipped: 0, aborted: null }),
     de: async () => ({ ok: true, changes: 5, created: 1, skipped: 0, aborted: null }) })();
@@ -170,6 +170,31 @@ function req(method, p, headers, body) {
   check('/sync from an unpaired origin is refused', r.status, 403);
   r = await req('POST', '/asana/sync', { origin: 'http://localhost:8080' }, {});
   check('/asana/sync from an unpaired origin is refused', r.status, 403);
+
+  /* startRunner's pieces: token gate, last-run map, one shared Asana run */
+  const { asanaJobs, lastFromRuns } = require('../helper/runner.js');
+  check('no token: no Asana jobs', Object.keys(asanaJobs({}, {})), []);
+  check('token: asana, asanaFull, people jobs', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaFull', 'people']);
+  const seen = [];
+  const jobs = asanaJobs({ asanaToken: 'x' }, { c: 1 }, async o => { seen.push([!!o.full, o.kind || null, o.client.c]); return { report: { ok: true } }; });
+  await jobs.asana(); await jobs.asanaFull(); await jobs.people();
+  check('jobs pass full and people options', seen, [[false, null, 1], [true, null, 1], [false, 'people', 1]]);
+  const lf = lastFromRuns([
+    { kind: 'asana', started_at: '2026-10-19T03:00:00Z', totals: { full: true } },
+    { kind: 'asana', started_at: '2026-10-20T09:30:00Z', totals: { full: false } },
+    { kind: 'asana', started_at: '2026-10-20T10:00:00Z', totals: null },
+    { kind: 'people', started_at: '2026-10-20T03:15:00Z', totals: null },
+    { kind: 'de', started_at: '2026-10-20T07:00:00Z' }]);
+  check('last map: plain, full, people, de', [lf.asana.toISOString(), lf.asanaFull.toISOString(), lf.people.toISOString(), lf.de.toISOString()],
+    ['2026-10-20T10:00:00.000Z', '2026-10-19T03:00:00.000Z', '2026-10-20T03:15:00.000Z', '2026-10-20T07:00:00.000Z']);
+  let n = 0, rel2;
+  const g2 = new Promise(res => { rel2 = res; });
+  const slowSync = async () => { n++; await g2; return { report: { ok: true }, changes: 1, created: 0, errors: [] }; };
+  const sched = asanaJobs({ asanaToken: 'x' }, {}, slowSync).asanaFull();
+  const click = asanaSyncRoute(slowSync)();
+  rel2();
+  await Promise.all([sched, click]);
+  check('a scheduled run and a Sync now click share one run', n, 1);
 
   check('bound to loopback', server.address().address, '127.0.0.1');
   server.close();

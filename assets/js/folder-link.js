@@ -13,6 +13,11 @@
    change-log row (source Matt). Nothing on Drive is created, moved or
    renamed (D7, D10). Needs Drive connected; says so otherwise.
    Needs: property-library.js, drive.js, address-aliases.js, workspace-shell.js.
+
+   suggest(D, A, table, row) also runs in Node (require), with D a lister
+   over G: (helper/scan.js): the nightly scan uses the same matching to find
+   an unlinked job's folder (Match's M18). A house of a development (a
+   listing with dev_project_id) is also looked for under New Development.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -51,6 +56,7 @@
       }).then(function () { return out.slice(0, 5); });
     }
     var places = table === 'pitches' ? PLACES.pitch : table === 'dev_projects' ? PLACES['dev' + row.market] || [] : PLACES[row.market] || [];
+    if (table === 'properties' && row.dev_project_id) places = places.concat(PLACES['dev' + row.market] || []);
     return Promise.all(places.map(function (p) {
       return dirs(p).then(function (names) {
         if (p === NJ) {   // NJ resale is filed by town
@@ -135,4 +141,5 @@
   }
 
   global.GVC_LINK = { open: open, suggest: suggest, save: save };
-})(window);
+  if (typeof module === 'object' && module.exports) module.exports = global.GVC_LINK;
+})(typeof window !== 'undefined' ? window : globalThis);

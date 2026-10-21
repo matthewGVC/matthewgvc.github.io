@@ -88,6 +88,47 @@ function file(root, rel, date) {
   check('unmounted Drive: nothing broken', [T.properties.filter(p => p.folder_state === 'broken').length, T.changes.length - before], [0, 0]);
   check('unmounted Drive: run fails with the reason', [gone.aborted ? true : false, T.sync_runs[T.sync_runs.length - 1].ok], [true, false]);
 
+  /* ---------- deepen M18: a job with no linked folder gets the folder the Link suggestions would offer ---------- */
+  const root2 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-drive2-'));
+  const NYB = 'GVC - New York/Building Information';
+  file(root2, NYB + '/100 Example St/4A/Photos/a.jpg', '2026-10-01');
+  fs.mkdirSync(path.join(root2, ...(NYB + '/100 Example St/5B').split('/')), { recursive: true });
+  fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/1. Residential Sales/1. Resale/Wall Township/40 Chapel Lane'.split('/')), { recursive: true });
+  fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/New Development/610 Agnes Ave'.split('/')), { recursive: true });
+  const tree = dir => { const out = []; (function walk(d) { fs.readdirSync(d, { withFileTypes: true }).forEach(e => { const p = path.join(d, e.name);
+    out.push(p + (e.isDirectory() ? '/' : ':' + fs.statSync(p).mtimeMs)); if (e.isDirectory()) walk(p); }); })(dir); return out.sort(); };
+  const before2 = tree(root2);
+  const T2 = {
+    properties: [
+      { id: 'n1', slug: 'n1', version: 1, stage: 'Live', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'n2', slug: 'n2', version: 1, stage: 'Live', market: 'NYC', core: { address: '100 Example St', unit: '9Z' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'j1', slug: 'j1', version: 1, stage: 'In contract', market: 'NJ', core: { address: '40 Chapel Ln', city: 'Wall' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'd1', slug: 'd1', version: 1, stage: 'Prep', market: 'NJ', dev_project_id: 'dev1', core: { address: '610 Agnes Ave' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'x1', slug: 'x1', version: 1, stage: null, market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'o1', slug: 'o1', version: 1, stage: 'Off market', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' }
+    ],
+    pitches: [], changes: [], sync_runs: []
+  };
+  let writes2 = 0;
+  const db2 = {
+    ready: () => true,
+    select: async t => JSON.parse(JSON.stringify(T2[t])),
+    insert: async (t, rows) => [].concat(rows).map((r, i) => { const x = Object.assign({ id: t + T2[t].length + i }, r); T2[t].push(x); return x; }),
+    update: async (t, m, patch) => { if (t === 'properties') writes2++; const r = T2[t].find(x => x.id === m.id); Object.assign(r, patch); return [r]; }
+  };
+  const out2 = await scanAll({ client: db2, driveRoot: root2, now: new Date('2026-10-21T02:00:00Z') });
+  const cand = id => ((T2.properties.find(p => p.id === id) || {}).scan || {}).candidate || null;
+  check('M18 scan: the NYC unit folder', cand('n1'), NYB + '/100 Example St/4A');
+  check('M18 scan: only the building folder (no unit folder): no candidate', cand('n2'), null);
+  check('M18 scan: NJ resale by town', cand('j1'), 'GVC - New Jersey/1. Residential Sales/1. Resale/Wall Township/40 Chapel Lane');
+  check('M18 scan: a development house in New Development', cand('d1'), 'GVC - New Jersey/New Development/610 Agnes Ave');
+  check('M18 scan: never for a row with no stage or an Off market job', [T2.properties.find(p => p.id === 'x1').scan, T2.properties.find(p => p.id === 'o1').scan], [undefined, undefined]);
+  check('M18 scan: nothing linked by itself', T2.properties.map(p => [p.drive_folder, p.folder_state]).filter(x => x[0] || x[1] !== 'unlinked'), []);
+  check('M18 scan: counted, and Drive left exactly as it was', [out2.candidates, JSON.stringify(tree(root2)) === JSON.stringify(before2)], [3, true]);
+  const w2 = writes2;
+  await scanAll({ client: db2, driveRoot: root2, now: new Date('2026-10-22T02:00:00Z') });
+  check('M18 scan: the same candidate again is not written again', writes2 - w2, 0);
+
   /* ---------- the schedule ---------- */
   const at = s2 => new Date(s2);   // local time strings
   check('nothing ran yet: all due', due(at('2026-10-20T08:00:00'), {}).sort(), ['backup', 'de', 'scan']);

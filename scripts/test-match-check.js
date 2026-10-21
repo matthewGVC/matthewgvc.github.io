@@ -265,6 +265,46 @@ check('drift: past member still on the roster; no DE link', M.rosterDrift(ROSTER
 ['Ben Sample has left the team but is still on the roster.', 'Cal Testing has no DE profile link in Asana\'s People.']);
 check('drift: People never read → nothing', M.rosterDrift(ROSTER, []), []);
 
+/* ---------- tune-up B1: no status date → grace from the day it was first found ---------- */
+const aoBare = { stage: 'Accepted offer', milestones: {}, asana: { status: 'Accepted Offer/Attorney Review', section: 'Accepted Offer/Attorney Review',
+  stageFromStatus: 'Accepted offer', stageFromSection: 'Accepted offer', statusSince: null } };
+let b1 = M.check(job(aoBare), ctx());
+check('B1 M1: no status date, first seen → not yet', has(b1, 'M1').length, 0);
+let b1m = M.merge(null, b1, NOW);
+check('B1 M1: the first-found day is stored as waiting', [b1m.match.waiting, b1m.changed], [{ M1: '2026-10-20' }, true]);
+check('B1 M1: stored again a day later → kept, nothing changed', (() => { const j = job(Object.assign({}, aoBare, { match: b1m.match }));
+  const r = M.merge(j.match, M.check(j, ctx({ now: '2026-10-21T16:00:00Z' })), '2026-10-21T16:00:00Z'); return [r.match.waiting, r.changed, r.found]; })(), [{ M1: '2026-10-20' }, false, []]);
+check('B1 M1: 14 days after first found → still waiting', has(M.check(job(Object.assign({}, aoBare, { match: { list: [], waiting: { M1: '2026-10-06' } } })), ctx()), 'M1').length, 0);
+b1 = has(M.check(job(Object.assign({}, aoBare, { match: { list: [], waiting: { M1: '2026-10-05' } } })), ctx()), 'M1');
+check('B1 M1: 15 days after first found → fires, since that day', b1.map(m => [m.text, m.since, m.fixAt]), [['Asana says Accepted offer; DE still says Live.', '2026-10-05', 'DE']]);
+b1m = M.merge({ list: [], waiting: { M1: '2026-10-05' } }, M.check(job(Object.assign({}, aoBare, { match: { list: [], waiting: { M1: '2026-10-05' } } })), ctx()), NOW);
+check('B1 M1: once it fires it leaves waiting and keeps its since', [b1m.match.waiting || {}, b1m.match.list.map(m => m.since), b1m.found], [{}, ['2026-10-05'], ['M1']]);
+b1m = M.merge({ list: [], waiting: { M1: '2026-10-05' } }, M.check(job({ match: { list: [], waiting: { M1: '2026-10-05' } } }), ctx()), NOW);
+check('B1 M1: stages agree again → waiting cleared', [b1m.match.waiting || {}, b1m.changed], [{}, true]);
+const liveBare = { de_listing_id: null, de: null, de_stage: null, milestones: {}, asana: { statusSince: null } };
+check('B1 M2: Live, no date, first seen → not yet', has(M.check(job(liveBare), ctx()), 'M2').length, 0);
+check('B1 M2: waiting stored under M2:live', M.merge(null, M.check(job(liveBare), ctx()), NOW).match.waiting, { 'M2:live': '2026-10-20' });
+b1 = has(M.check(job(Object.assign({}, liveBare, { match: { list: [], waiting: { 'M2:live': '2026-10-01' } } })), ctx()), 'M2');
+check('B1 M2: 19 days after first found → fires', b1.map(m => [m.key, m.text, m.since]), [['M2:live', 'Asana says Live; the listing isn\'t on DE.', '2026-10-01']]);
+check('B1: a job with a status date stores no waiting', M.merge(null, M.check(job(), ctx()), NOW).match.waiting || {}, {});
+
+/* ---------- tune-up B2: DE publishes no listing date: closing dates only ---------- */
+check('B2 M5: listed dates are never compared', has(M.check(job({ de: { listedOn: '2026-09-20', listDate: '2026-09-20' } }), ctx()), 'M5').length, 0);
+const soldDe = (asanaOn, deOn) => job({ stage: 'Sold', de_stage: 'Sold', asana: { status: 'Complete', section: 'Complete', stageFromStatus: 'Sold', stageFromSection: 'Sold' },
+  milestones: { closedOn: { on: asanaOn, planned: false } }, de: { closeDate: deOn } });
+check('B2 M5: Asana Closing vs DE closeDate in the DE snapshot', has(M.check(soldDe('2026-10-10', '2026-10-15'), ctx()), 'M5').map(m => [m.key, m.text]),
+  [['M5:closedOn', 'Asana says closing on 10 Oct; DE says 15 Oct.']]);
+check('B2 M5: 3 days apart → nothing', has(M.check(soldDe('2026-10-10', '2026-10-13'), ctx()), 'M5').length, 0);
+
+/* ---------- tune-up B3: M12 for a task ticked ahead of its date ---------- */
+const earlyDev = Object.assign({}, dev, { next_milestone: { early: [{ gid: 't5', key: 'permits', name: 'Permits Filed', dueOn: '2026-10-01', tickedOn: '2026-09-02' }] } });
+const b3 = has(M.check(earlyDev, ctx({ asana: { tasks: [{ gid: 't5', name: 'Permits Filed', completed: true, dueOn: '2026-10-01', assignee: 'Ben Sample' }] } })), 'M12');
+check('B3 M12: ticked before its date says so', b3.map(m => m.text), ['Asana shows Permits Filed ticked before its date (1 Oct); check it really happened.']);
+check('B3 M12: an open task keeps its wording', has(M.check(dev, ctx({ asana: { tasks: [devTask('2026-10-05')] } })), 'M12').map(m => m.text), ['Foundation Complete is open in Asana and was due on 5 Oct.']);
+
+/* ---------- tune-up B4: M16's key uses upper-cased initials ---------- */
+check('B4 M16: initials typed lower-case → key upper-cased', has(M.check(job({ asana: { pointPerson: 'ae' } }), ctx({ people: [{ name: 'Ann Example', past: true }] })), 'M16').map(m => m.key), ['M16:AE']);
+
 /* ---------- text: plain sentences, no em dashes ---------- */
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));
 check('no em dashes in any text', all.filter(m => /—/.test(m.text)).length, 0);

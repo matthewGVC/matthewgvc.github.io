@@ -8,7 +8,7 @@
        job   a properties row (stage, asana snapshot, milestones, de, de_stage,
              de_listing_id, core, drive_folder, folder_state, scan), or a
              dev_projects row (asana_project_gid, next_milestone.early)
-       ctx   { asana, de, scan, drive, roster, initials, people, now }
+       ctx   { asana, de, scan, drive, roster, initials, people, now, prev }
              asana    the Asana snapshot (default job.asana); for a development
                       { tasks: [allowlisted 🚧 tasks] } (M12, M13)
              de       DE's snapshot (default job.de)
@@ -18,6 +18,8 @@
              roster   GVC_ROSTER; initials GVC_ROSTER_INITIALS (browser default:
                       the window's); people asana_people rows, latest only
              now      Date or ISO (default: now); days are New York days
+             prev     the stored match ({ list, dismissed, waiting }, default
+                      job.match): where the day a mismatch was first found comes from
        code    'M1' … 'M17'
        key     what a dismissal is stored under: the code, or code:part where
                one job can have several (M5:closedOn, M7:drive, M8:showsheet,
@@ -28,6 +30,9 @@
        who     names: the Point Person's agents, else the Asana assignee
        since   'YYYY-MM-DD' when known (M1's status change, M8's file), else null
                (merge() fills in the day it was first found)
+     A listing's list also carries .waiting = { key: 'YYYY-MM-DD' }: the M1 /
+     M2:live mismatches still inside their grace that have no status date, by
+     the day they were first found (tune-up B1); merge() stores it.
 
      checkDeListing(row) → M2 item | null    a de_listings row: GVC-listed on DE,
                                              no job (spec §4)
@@ -36,8 +41,9 @@
      sectionDisagrees(status, section, stageFromStatus, stageFromSection) → bool (M14)
      applyDismissed(list, dismissed) → list without the items dismissed at
          their current values (dismissed = { [key]: { values, reason, at } })
-     merge(prevMatch, list, now) → { match: { list, dismissed }, found, cleared, changed }
-         the stored shape; since carried over; found / cleared keys for the log
+     merge(prevMatch, list, now) → { match: { list, dismissed, waiting? }, found, cleared, changed }
+         the stored shape; since carried over; found / cleared keys for the log;
+         waiting (list.waiting) kept only while there is some
      rosterDrift(roster, people) → [{ name, text }]   D71, not per job
 
    M3 compares DE with Asana's Current Price only (never the Original Price
@@ -47,6 +53,11 @@
 
    Grace periods (globals): Asana ahead of DE 14 days (M1, M2's Live-not-on-DE),
    milestone overdue 14 days (M12), file on Drive 7 days (M8), dates 3 days (M5).
+   M1 and M2:live count their grace from Asana's status date; with none (the
+   first runs after go-live), from the day the mismatch was first found.
+   M5 compares closing dates only: DE publishes no listing date (its feeds have
+   closeDate and nothing else, checked 2026-10-21), so there is no listed half.
+   M12 on a task ticked ahead of its date says so, rather than "open".
    M8 never checks "Send Just Listed Email" (D74).
 
    Needs asana-map.js and job-facts.js (loaded first in the browser).
@@ -160,7 +171,15 @@
     var de = ctx.de || job.de || null, scan = ctx.scan || job.scan || null, drive = ctx.drive || null;
     var core = job.core || {}, ms = job.milestones || {}, stage = job.stage;
     var now = today(ctx.now), out = [];
+    out.waiting = {};
     if (!stage || stage === 'Archived') return out;
+    // the day a mismatch was first found: the stored waiting day, else the stored line's since, else today
+    var prev = ctx.prev || job.match || {};
+    var firstFound = function (key) {
+      if (prev.waiting && prev.waiting[key]) return prev.waiting[key];
+      var old = (prev.list || []).filter(function (m) { return (m.key || m.code) === key; })[0];
+      return (old && old.since) || now;
+    };
     var who = a ? peopleOf(a, ctx) : { names: [], agents: { ids: [], ask: [], others: [] }, byId: {} };
     var add = function (code, key, text, values, fixAt, since) {
       out.push({ code: code, key: key || code, text: text, values: values, fixAt: fixAt, who: who.names.slice(), since: since || null });
@@ -183,15 +202,23 @@
         var asanaAhead = stage === 'Off market' ? !deAhead : ar > dr;
         var vals = { asana: stage, de: deStage };
         if (deAhead) add('M1', 'M1', 'DE says ' + deStage + '; Asana still says ' + stage + '.', vals, 'Asana');
-        else if (asanaAhead && (!since || days(since, now) > GRACE_AHEAD)) {
-          add('M1', 'M1', 'Asana says ' + stage + (since ? ' since ' + fmtDay(since, now) : '') + '; DE still says ' + deStage + '.', vals, 'DE', since);
+        else if (asanaAhead && since) {
+          if (days(since, now) > GRACE_AHEAD) add('M1', 'M1', 'Asana says ' + stage + ' since ' + fmtDay(since, now) + '; DE still says ' + deStage + '.', vals, 'DE', since);
+        } else if (asanaAhead) {
+          var f1 = firstFound('M1');
+          if (days(f1, now) > GRACE_AHEAD) add('M1', 'M1', 'Asana says ' + stage + '; DE still says ' + deStage + '.', vals, 'DE', f1);
+          else out.waiting.M1 = f1;
         }
       }
       /* M2: Live in Asana, not on DE (Asana ahead, same grace) */
       if (stage === 'Live' && !onDe && !de) {
         var live = a.statusSince || msOn('listedOn');
-        if (!live || days(live, now) > GRACE_AHEAD) {
-          add('M2', 'M2:live', 'Asana says Live' + (live ? ' since ' + fmtDay(live, now) : '') + '; the listing isn\'t on DE.', { stage: 'Live' }, 'DE', live);
+        if (live) {
+          if (days(live, now) > GRACE_AHEAD) add('M2', 'M2:live', 'Asana says Live since ' + fmtDay(live, now) + '; the listing isn\'t on DE.', { stage: 'Live' }, 'DE', live);
+        } else {
+          var f2 = firstFound('M2:live');
+          if (days(f2, now) > GRACE_AHEAD) add('M2', 'M2:live', 'Asana says Live; the listing isn\'t on DE.', { stage: 'Live' }, 'DE', f2);
+          else out.waiting['M2:live'] = f2;
         }
       }
     }
@@ -218,12 +245,12 @@
       if (aw.length) add('M4', 'M4', 'Asana says ' + aw.join(', ') + '; DE says ' + dw.join(', ') + '.', diff, 'Asana');
     }
 
-    /* M5: listed / closing date, more than 3 days apart; planned dates skipped (S7) */
-    [['listedOn', 'listed on', de && (de.listedOn || de.listDate)], ['closedOn', 'closing on', (de && de.closeDate) || core.closeDate]].forEach(function (d) {
-      var x = msOn(d[0]), y = day(d[2]);
-      if (!x || !y || Math.abs(days(x, y)) <= DATE_SLACK) return;
-      add('M5', 'M5:' + d[0], 'Asana says ' + d[1] + ' ' + fmtDay(x, now) + '; DE says ' + fmtDay(y, now) + '.', { date: d[0], asana: x, de: y }, 'Asana');
-    });
+    /* M5: Asana's Closing vs DE's closeDate (the DE snapshot, else core's from a sold row), more
+       than 3 days apart; planned dates skipped (S7). DE has no listing date, so nothing else */
+    var cx = msOn('closedOn'), cy = day((de && de.closeDate) || core.closeDate);
+    if (cx && cy && Math.abs(days(cx, cy)) > DATE_SLACK) {
+      add('M5', 'M5:closedOn', 'Asana says closing on ' + fmtDay(cx, now) + '; DE says ' + fmtDay(cy, now) + '.', { date: 'closedOn', asana: cx, de: cy }, 'Asana');
+    }
 
     /* M6: no folder while Prep or later; Asana's Drive Link points elsewhere */
     if (PREP_ON.indexOf(stage) !== -1) {
@@ -320,14 +347,14 @@
       (ctx.people || []).forEach(function (p) { if (p && p.past) past[personKey(p.name)] = true; });
       var pp = String(a.pointPerson || '').split(/[\/,&+\s]+/).filter(Boolean);
       ag.others.filter(function (o) { return o.past; }).forEach(function (o) {
-        add('M16', 'M16:' + o.initials, 'Asana\'s Point Person ' + o.initials + ' is ' + o.name + ', who has left the team.', { initials: o.initials, name: o.name }, 'Asana');
+        add('M16', 'M16:' + String(o.initials).toUpperCase(), 'Asana\'s Point Person ' + o.initials + ' is ' + o.name + ', who has left the team.', { initials: o.initials, name: o.name }, 'Asana');
       });
       var initials = ctx.initials || (global && global.GVC_ROSTER_INITIALS) || {};
       pp.forEach(function (ini) {
         var id = initials[ini] !== undefined ? initials[ini] : initials[ini.toUpperCase()];
         var p = typeof id === 'string' && who.byId[id];
         if (p && past[personKey(p.name)]) {
-          add('M16', 'M16:' + ini, 'Asana\'s Point Person ' + ini + ' is ' + p.name + ', who has left the team.', { initials: ini, name: p.name }, 'Asana');
+          add('M16', 'M16:' + ini.toUpperCase(), 'Asana\'s Point Person ' + ini + ' is ' + p.name + ', who has left the team.', { initials: ini, name: p.name }, 'Asana');
         }
       });
     }
@@ -355,6 +382,10 @@
     tasks.forEach(function (t) {
       var due = day(t.dueOn);
       if ((t.completed && !earlyGid[t.gid]) || !due || days(due, now) <= GRACE_OVERDUE) return;
+      if (t.completed) {   // ticked ahead of its date (a batch day): not open, but worth a look
+        add('M12', 'M12:' + t.gid, 'Asana shows ' + t.name + ' ticked before its date (' + fmtDay(due, now) + '); check it really happened.', { task: t.name, dueOn: due, ticked: true }, t.assignee);
+        return;
+      }
       add('M12', 'M12:' + t.gid, t.name + ' is open in Asana and was due on ' + fmtDay(due, now) + '.', { task: t.name, dueOn: due }, t.assignee);
     });
     tasks.forEach(function (t) {
@@ -403,7 +434,10 @@
     var found = next.filter(function (m) { return !before[m.key]; }).map(function (m) { return m.key; });
     var cleared = Object.keys(before).filter(function (k) { return !after[k]; });
     var match = { list: next, dismissed: Object.assign({}, p.dismissed || {}) };
-    return { match: match, found: found, cleared: cleared, changed: !eq(match.list, p.list || []) || !prev };
+    var waiting = (list && list.waiting) || {};
+    if (Object.keys(waiting).length) match.waiting = Object.assign({}, waiting);
+    return { match: match, found: found, cleared: cleared,
+      changed: !eq(match.list, p.list || []) || !eq(match.waiting || {}, p.waiting || {}) || !prev };
   }
 
   /* ---------- roster drift (D71) ---------- */

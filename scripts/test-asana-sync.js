@@ -539,11 +539,11 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const recF12 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-rec-'));
   const dryF12 = await dryRun({ cfg, fetch: replayFetch(FIX, wF12), record: true, recordDir: recF12, looseNames: ['30 lot rd'], outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-dry-')), date: '2026-10-20' });
   const looseIdx = cfg.asana.loose.indexOf('1211384244337827') + 1;
-  const recFile = path.join(recF12, '2026-10-20', 'asana-loose-' + looseIdx + '.json');
+  const recFile = path.join(recF12, 'asana-2026-10-20', 'loose-' + looseIdx + '.json');
   check('F12 dry run ok', dryF12.ok, true);
   check('F12 recorded loose tasks: only those naming a linked development', fs.existsSync(recFile) ? JSON.parse(fs.readFileSync(recFile, 'utf8')).map(t => t.gid) : 'no file', ['9000000000960']);
   const dryF12b = await dryRun({ cfg, fetch: replayFetch(FIX, wF12), record: true, recordDir: recF12, client: fakeDb(), outDir: fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-dry-')), date: '2026-10-21' });
-  const recFileB = path.join(recF12, '2026-10-21', 'asana-loose-' + looseIdx + '.json');
+  const recFileB = path.join(recF12, 'asana-2026-10-21', 'loose-' + looseIdx + '.json');
   check('F12 no linked development known: no loose task recorded', [dryF12b.ok, fs.existsSync(recFileB) ? JSON.parse(fs.readFileSync(recFileB, 'utf8')).length : 0], [true, 0]);
 
   // K1. sale vs rental (plan §5): a For Rent task never links to a sale job at the same unit

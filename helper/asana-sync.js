@@ -13,7 +13,7 @@
    --dry-run     reads the projects through the allowlist and writes
                  exports/asana-dry-run-<date>.md (counts and field names only)
    --record      also saves the KEPT data (never the raw answer) to
-                 helper/fixtures/recorded/<date>/ (gitignored); loose-project
+                 helper/fixtures/recorded/asana-<date>/ (gitignored); loose-project
                  tasks only when they name a linked development (D65, as the
                  sync keeps them; none when no development is linked or the
                  database can't be read)

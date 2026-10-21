@@ -162,7 +162,7 @@ function copyWith(file, edit) {
 
   /* ---------- the real recording, when this PC has one ---------- */
   const recRoot = path.join(__dirname, '..', 'helper', 'fixtures', 'recorded');
-  const recs = fs.existsSync(recRoot) ? fs.readdirSync(recRoot).sort() : [];
+  const recs = fs.existsSync(recRoot) ? fs.readdirSync(recRoot).filter(n => /^\d{4}-\d{2}-\d{2}$/.test(n)).sort() : [];  // DE recordings only; Asana's are asana-<date>/
   if (recs.length) {
     r = await dryRun({ fixturesDir: path.join(recRoot, recs[recs.length - 1]), outDir: tmp(), lnks: [], drive: false });
     check('recording replays (' + recs[recs.length - 1] + ')', [r.ok, r.aborted || null], [true, null]);

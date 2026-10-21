@@ -190,7 +190,7 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   const rec = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-rec-'));
   const file = recordKept('listings-nyc', [t], { dir: rec, date: '2026-10-20' });
   const saved = fs.readFileSync(file, 'utf8');
-  check('record lands in the dated folder', path.relative(rec, file).replace(/\\/g, '/'), '2026-10-20/asana-listings-nyc.json');
+  check('record lands in the dated folder', path.relative(rec, file).replace(/\\/g, '/'), 'asana-2026-10-20/listings-nyc.json');
   check('record holds no forbidden text', ['secret', 'Pat Madeup', 'GCI'].some(w => saved.indexOf(w) !== -1), false);
 
   /* ---------- the dry run, against the made-up Asana ---------- */
@@ -208,8 +208,8 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   check('report carries no addresses, people or secrets', ['Sample Ave', 'Pat Madeup', 'SECRET', 'Agent A', 'tok-dry-secret'].some(w => md.includes(w)), false);
   check('dry run only ever asked with GET', log.every(l => !l.init.method || l.init.method === 'GET'), true);
   check('dry run never asked for notes', log.every(l => !/notes|html_text|attachments/.test(decodeURIComponent(l.url))), true);
-  check('dry run recorded the kept tasks', fs.existsSync(path.join(rec, '2026-10-20', 'asana-listings-NYC.json')), true);
-  const recText = fs.readFileSync(path.join(rec, '2026-10-20', 'asana-listings-NYC.json'), 'utf8');
+  check('dry run recorded the kept tasks', fs.existsSync(path.join(rec, 'asana-2026-10-20', 'listings-NYC.json')), true);
+  const recText = fs.readFileSync(path.join(rec, 'asana-2026-10-20', 'listings-NYC.json'), 'utf8');
   check('the recording holds no forbidden text', ['SECRET', 'Pat Madeup', 'GCI', 'Contract Price', '2175000'].some(w => recText.indexOf(w) !== -1), false);
 
   const noTokenRun = await dryRun({ cfg: {}, fetch: fixtureFetch(), outDir: out });

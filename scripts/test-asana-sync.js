@@ -172,6 +172,7 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const P = gid => db.T.properties.find(p => p.asana_gid === gid);
   check('apply: run logged ok, kind asana', [db.T.sync_runs.length, db.T.sync_runs[0].kind, db.T.sync_runs[0].ok], [1, 'asana', true]);
   check('apply: ticked listings become jobs (starter linked, not duplicated)', [db.T.properties.length, out.created], [8, 8]);
+  check('apply: a linked job saved without a market gets the Asana market', P('9000000000041').market, 'NYC');
   check('apply: the starter job gained its Asana link', [P('9000000000041') && P('9000000000041').id, P('9000000000041').stage, P('9000000000041').stage_source], ['starter1', 'Live', 'Asana']);
   const ao = P('9000000000054') || { core: {} };
   check('apply: a new job from Asana', [ao.stage, ao.stage_source, ao.kind, ao.market, ao.core.address, ao.core.unit], ['Accepted offer', 'Asana', 'sale', 'NYC', '4 Sample Ave', '5D']);

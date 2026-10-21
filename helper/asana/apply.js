@@ -271,6 +271,8 @@ async function writeRun(o, sr, out, now) {
     const own = { property_id: p.id };
     const core = clone(p.core) || {}, patch = {}, changes = [];
     if (link) { patch.asana_gid = t.gid; changes.push(log(own, 'asana_gid', null, t.gid, fromPitch ? 'Pitch won in Asana' : 'Linked to Asana')); }
+    // old library rows were saved without a market; Asana's project says which one it is
+    if (!p.market && t.market) { patch.market = t.market; changes.push(log(own, 'market', null, t.market)); }
     if (fromPitch && p.from_pitch_id !== fromPitch.id) { patch.from_pitch_id = fromPitch.id; changes.push(log(own, 'from_pitch_id', p.from_pitch_id || null, fromPitch.id)); }
     if (stage && stage !== 'Pitch' && p.stage !== 'Archived' && p.stage !== stage) {
       patch.stage = stage; patch.stage_source = 'Asana';

@@ -101,6 +101,17 @@ check('M2: DE listing not GVC → nothing', M.checkDeListing({ de_listing_id: '9
 let m3 = has(M.check(job({ asana: { fields: Object.assign({}, job().asana.fields, { '💵 Current Price': 2100000 }) } }), ctx()), 'M3');
 check('M3: Asana price ≠ DE price', m3.map(m => [m.text, m.values, m.fixAt]), [['Asana says $2.1M; DE says $2.25M.', { asana: 2100000, de: 2250000 }, 'Asana']]);
 check('M3: same price → nothing', has(M.check(job(), ctx()), 'M3').length, 0);
+const m3f = o => Object.assign({}, job().asana.fields, o);
+check('M3: Current Price blank, Original differs → nothing (435 E57)',
+  has(M.check(job({ asana: { fields: m3f({ '💵 Current Price': null, '💵 Original Price': 2650000 }) } }), ctx()), 'M3').length, 0);
+check('M3: Current Price 0 → nothing', has(M.check(job({ asana: { fields: m3f({ '💵 Current Price': 0, '💵 Original Price': 2650000 }) } }), ctx()), 'M3').length, 0);
+check('M3: For Rent in Asana on a sale job → nothing (a linking problem, 404 Park)',
+  has(M.check(job({ kind: 'sale', asana: { fields: m3f({ 'Sale/Rent': 'For Rent', '💵 Current Price': 12200 }) } }), ctx()), 'M3').length, 0);
+check('M3: rental job, For Rent, prices differ → fires (84 Diane)',
+  has(M.check(job({ kind: 'rental', de: { price: 2400 }, asana: { fields: m3f({ 'Sale/Rent': 'For Rent', '💵 Current Price': 2600 }) } }), ctx()), 'M3').map(m => m.text),
+  ['Asana says $2,600; DE says $2,400.']);
+check('M3: For Sale or Rent on a rental job still compares',
+  has(M.check(job({ kind: 'rental', de: { price: 17000 }, asana: { fields: m3f({ 'Sale/Rent': 'For Sale or Rent', '💵 Current Price': 16000 }) } }), ctx()), 'M3').length, 1);
 
 /* ---------- M4: beds / baths / sq ft ---------- */
 const m4 = has(M.check(job({ de: { beds: 3, sqft: 1250 } }), ctx()), 'M4');
@@ -151,7 +162,7 @@ check('M8: no scan → nothing', has(M.check(job({ scan: null }), ctx()), 'M8').
 
 /* ---------- M9: exclusive expired while Live ---------- */
 check('M9: expired', has(M.check(job({ milestones: { listedOn: { on: '2026-09-01', planned: false }, exclusiveExpiresOn: { on: '2026-10-01', planned: false } } }), ctx()), 'M9')
-  .map(m => m.text), ['Asana says the exclusive expired on 1 Oct; the job is still Live.']);
+  .map(m => m.text), ['Asana\'s exclusive expired on 1 Oct while the listing is Live. Extend it in Asana or confirm it ended.']);
 check('M9: not yet expired', has(M.check(job({ milestones: { exclusiveExpiresOn: { on: '2026-12-01', planned: true } } }), ctx()), 'M9').length, 0);
 
 /* ---------- M10: no status / address / Listing Date once Live ---------- */
@@ -163,6 +174,10 @@ check('M10: no street number', has(M.check(job({ asana: { name: 'Millerton House
 /* ---------- M11: Point Person vs confirmed agents ---------- */
 check('M11: differs', has(M.check(job({ core: { agentIds: ['agent-two'] } }), ctx()), 'M11').map(m => [m.text, m.fixAt]),
   [['Asana\'s Point Person is AE (Ann Example); the confirmed agents are Ben Sample.', 'Matt']]);
+check('M11: Point Person a subset of the confirmed agents → nothing (69 W9)',
+  has(M.check(job({ core: { agentIds: ['agent-one', 'agent-two'] } }), ctx()), 'M11').length, 0);
+check('M11: Point Person names one confirmed and one other → fires',
+  has(M.check(job({ core: { agentIds: ['agent-one'] }, asana: { pointPerson: 'AE/BS', fields: Object.assign({}, job().asana.fields, { '🧑‍💼 Point Person': 'AE/BS' }) } }), ctx()), 'M11').length, 1);
 check('M11: no confirmed agents yet → nothing', has(M.check(job({ core: { agentIds: null } }), ctx()), 'M11').length, 0);
 check('M11: ambiguous initials → nothing', has(M.check(job({ asana: { pointPerson: 'QQ' } }), ctx()), 'M11').length, 0);
 

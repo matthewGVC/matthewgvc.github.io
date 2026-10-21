@@ -40,6 +40,11 @@
          the stored shape; since carried over; found / cleared keys for the log
      rosterDrift(roster, people) → [{ name, text }]   D71, not per job
 
+   M3 compares DE with Asana's Current Price only (never the Original Price
+   fallback), and is skipped when the job's kind and Asana's Sale/Rent
+   disagree (a linking problem, not a price one). M11 fires only when Asana
+   names an agent who is not among the confirmed ones (a subset is fine).
+
    Grace periods (globals): Asana ahead of DE 14 days (M1, M2's Live-not-on-DE),
    milestone overdue 14 days (M12), file on Drive 7 days (M8), dates 3 days (M5).
    M8 never checks "Send Just Listed Email" (D74).
@@ -192,9 +197,14 @@
     }
 
     if (a && de) {
-      /* M3: price */
-      if (!empty(aFacts.price) && !empty(de.price) && Number(aFacts.price) !== Number(de.price)) {
-        add('M3', 'M3', 'Asana says ' + money(aFacts.price) + '; DE says ' + money(de.price) + '.', { asana: aFacts.price, de: de.price }, 'Asana');
+      /* M3: price, Asana's Current Price only (0 or blank = not filled in); not when sale vs rental disagree */
+      var aCur = f['💵 Current Price'];
+      if (Number(aCur) === 0) aCur = null;
+      var srText = String(f['Sale/Rent'] || '').toLowerCase();
+      var aKind = /sale/.test(srText) && !/rent/.test(srText) ? 'sale' : /rent/.test(srText) && !/sale/.test(srText) ? 'rental' : null;
+      var kindClash = !!(aKind && job.kind && job.kind !== aKind);
+      if (!kindClash && !empty(aCur) && !empty(de.price) && Number(aCur) !== Number(de.price)) {
+        add('M3', 'M3', 'Asana says ' + money(aCur) + '; DE says ' + money(de.price) + '.', { asana: aCur, de: de.price }, 'Asana');
       }
       /* M4: beds / baths / sq ft */
       var diff = {}, aw = [], dw = [];
@@ -260,7 +270,7 @@
     /* M9: exclusive expired while Live */
     var exp = msOn('exclusiveExpiresOn');
     if (stage === 'Live' && exp && exp < now) {
-      add('M9', 'M9', 'Asana says the exclusive expired on ' + fmtDay(exp, now) + '; the job is still Live.', { exclusiveExpiresOn: exp }, 'Asana');
+      add('M9', 'M9', 'Asana\'s exclusive expired on ' + fmtDay(exp, now) + ' while the listing is Live. Extend it in Asana or confirm it ended.', { exclusiveExpiresOn: exp }, 'Asana');
     }
 
     if (a) {
@@ -280,7 +290,7 @@
       var ag = who.agents;
       if (Array.isArray(conf) && conf.length && ag.ids.length && !ag.ask.length && !ag.others.length) {
         var A1 = ag.ids.slice().sort(), B1 = conf.slice().sort();
-        if (!eq(A1, B1)) {
+        if (A1.some(function (id) { return B1.indexOf(id) === -1; })) {   // a subset of the confirmed agents is fine
           var nm = function (id) { return who.byId[id] ? who.byId[id].name : id; };
           add('M11', 'M11', 'Asana\'s Point Person is ' + a.pointPerson + ' (' + ag.ids.map(nm).join(', ') + '); the confirmed agents are ' + conf.map(nm).join(', ') + '.',
             { pointPerson: a.pointPerson, asana: A1, confirmed: B1 }, 'Matt');

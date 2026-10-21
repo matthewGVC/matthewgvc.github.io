@@ -181,7 +181,7 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   /* ---------- tune-up B1: the stored match is read back, and its waiting day kept ---------- */
   const b1Job = extra => Object.assign({ id: 'w1', slug: 'w1', stage: 'In contract', stage_source: 'Asana', de_listing_id: '900001', kind: 'sale', de_stage: 'Live',
     milestones: {}, core: { address: '100 Example St', unit: '4A' },
-    asana: { gid: '1', name: '100 Example St - 4A', status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract', stageFromSection: 'In contract', statusSince: null, fields: {} } }, extra);
+    asana: { gid: '1', name: '100 Example St - 4A', status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract', stageFromSection: 'In contract', statusSince: null, fields: { '🗓️ CS Date': '2026-09-01' } } }, extra);   // its CS Date is there (M23 is not under test)
   db = fakeDb({ properties: [b1Job()] });
   await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, roster: [], initials: {}, rows: [row('900001')] });
   const w1 = db.T.properties[0];

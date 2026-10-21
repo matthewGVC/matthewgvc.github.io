@@ -69,7 +69,7 @@
   var shell = GVC_SHELL.mount({ noDrive: true, onSynced: function () { load(); } });
   var WHERE = {
     Asana: 'Fix these in Asana.', DE: 'Fix these on DE, or ask the agent to.', Drive: 'Fix these on Drive.',
-    Matt: 'Values you typed that disagree with DE or Asana. Yours hold until DE\'s own value changes.',
+    Matt: 'Yours to settle in the workspace: folders and DE listings to link, rows to tidy, and values you typed that disagree with DE or Asana.',
     Roster: 'Asana\'s People and the workspace roster disagree. The roster is updated by hand.'
   };
   var OWNER = { properties: 'property_id', dev_projects: 'dev_project_id', pitches: 'pitch_id' };
@@ -104,11 +104,16 @@
       var run = (r[4] || []).filter(function (x) { return x.ok === true; })
         .sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; })[0] || null;
       var props = r[0] || [];
+      // a DE listing a job's M19 ("probably the same listing") names: its line says which job
+      var claims = {};
+      W.buildJobs({ properties: props, pitches: [], devProjects: [], changes: [] }, today).forEach(function (j) {
+        (j.match || []).forEach(function (m) { if (m.code === 'M19' && m.values && m.values.deListingId) claims[m.values.deListingId] = j.name; });
+      });
       data = { properties: props, devProjects: r[1] || [], people: people.filter(function (p) { return (p.seen_at || '') === latest; }),
         // a task or DE listing linked to a job by hand since is no longer "not linked", even when only the job's half saved
         loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }),
           linkedGids: props.map(function (p) { return p.asana_gid; }).filter(Boolean),
-          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean) }, M) };
+          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean), claims: claims }, M) };
       data.links = {};
       data.loose.forEach(function (l) { if (l.item.link) data.links[l.item.key] = l.item; });
       render();

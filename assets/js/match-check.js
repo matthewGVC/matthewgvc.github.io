@@ -8,7 +8,8 @@
        job   a properties row (stage, asana snapshot, milestones, de, de_stage,
              de_listing_id, core, drive_folder, folder_state, scan), or a
              dev_projects row (asana_project_gid, next_milestone.early)
-       ctx   { asana, de, scan, drive, roster, initials, people, now, prev }
+       ctx   { asana, de, scan, drive, roster, initials, people, now, prev,
+               deListings, library }
              asana    the Asana snapshot (default job.asana); for a development
                       { tasks: [allowlisted 🚧 tasks] } (M12, M13)
              de       DE's snapshot (default job.de)
@@ -20,10 +21,13 @@
              now      Date or ISO (default: now); days are New York days
              prev     the stored match ({ list, dismissed, waiting }, default
                       job.match): where the day a mismatch was first found comes from
-       code    'M1' … 'M17'
+             deListings  de_listings rows (M19; the helper passes them, the page
+                      doesn't, so the page never makes M19 itself)
+             library  the workspace rows with no stage (M20; the helper's)
+       code    'M1' … 'M27'
        key     what a dismissal is stored under: the code, or code:part where
                one job can have several (M5:closedOn, M7:drive, M8:showsheet,
-               M12:<task gid>, M13:<task gid>, M17:price)
+               M12:<task gid>, M13:<task gid>, M17:price, M19:<DE id>, M20:<row id>)
        text    one plain sentence
        values  the sources' values: a dismissal holds while these stay the same
        fixAt   'Asana' | 'DE' | 'Drive' | 'Matt'
@@ -31,8 +35,8 @@
        since   'YYYY-MM-DD' when known (M1's status change, M8's file), else null
                (merge() fills in the day it was first found)
      A listing's list also carries .waiting = { key: 'YYYY-MM-DD' }: the M1 /
-     M2:live mismatches still inside their grace that have no status date, by
-     the day they were first found (tune-up B1); merge() stores it.
+     M2:live / M23 / M25 mismatches still inside their grace that have no status
+     date, by the day they were first found (tune-up B1); merge() stores it.
 
      checkDeListing(row) → M2 item | null    a de_listings row: GVC-listed on DE,
                                              no job (spec §4)
@@ -59,6 +63,37 @@
    closeDate and nothing else, checked 2026-10-21), so there is no listed half.
    M12 on a task ticked ahead of its date says so, rather than "open".
    M8 never checks "Send Just Listed Email" (D74).
+   M4 counts DE's 0 sq ft and 0 baths as blank (DE sends 0 for most co-ops);
+   DE's 0 beds is a studio and is compared.
+
+   Deeper checks (Matt, 2026-10-21; the discrepancy hunt of that day):
+     M18  No folder is linked, but the nightly scan found one on Drive that looks
+          like this job's (scan.candidate, helper/scan.js, the same matching as
+          the Link folder suggestions). Takes M6's place; fix in the workspace.
+     M19  Probably the same listing: a DE listing at the job's building with no
+          job (GVC-listed on DE, or any one when the job has no unit), while the
+          job isn't on DE; or, for a job on DE, the same unit as the other kind
+          (sale vs rental). One line naming both; it takes the place of the job's
+          M2 "isn't on DE" and M25 halves until it is dismissed. Key M19:<DE id>.
+     M20  A workspace row with no stage and no Asana link (a starter or library
+          row) at a job's address and unit (no unit on one side matches too).
+          Key M20:<row id>.
+     M21  Deal stuck: In contract with Asana's Closing Date more than 7 days
+          gone; or, with no Closing Date, In contract more than 120 days (from
+          the CS Date, else the status date) or at Accepted offer more than 60.
+     M22  Original price: DE's implied original (price / (1 + change % / 100))
+          is more than 1% off Asana's Original Price; with Asana's Current Price
+          blank and no change on DE, DE's price itself. Never for rentals, or
+          with no change % on DE and a Current Price (NJ sends none).
+     M23  No date for the stage: Accepted offer with no AO Date, In contract with
+          no CS Date, after 7 days from the status change (else from the day
+          first found).
+     M24  An AO or CS Date dated on or before the day the listing went back to
+          Live, 7 days on: the deal fell through and the date was left.
+     M25  Accepted offer or In contract in Asana, not on DE, after M2's 14 days.
+     M26  Asana's Zip vs DE's (the DE snapshot's zip, else the one in DE's
+          listing link).
+     M27  Live and the exclusive ends within the next 14 days (M9 once passed).
 
    Needs asana-map.js and job-facts.js (loaded first in the browser).
    Loads in the browser (window.GVC_MATCH) and in Node (require).
@@ -67,12 +102,18 @@
 (function (global, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), global);
-  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global);
-})(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, global) {
+    module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), global,
+      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js') }; });
+  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS }; });
+})(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, global, libs) {
   'use strict';
 
   var GRACE_AHEAD = 14, GRACE_OVERDUE = 14, GRACE_FILE = 7, DATE_SLACK = 3;
+  var GRACE_CLOSING = 7, STUCK = { 'In contract': 120, 'Accepted offer': 60 }, GRACE_STAGE_DATE = 7, GRACE_FELL_BACK = 7, EXCL_SOON = 14, PRICE_SLACK = 0.01;
+  var CLOSED = ['Sold', 'Rented', 'Off market', 'Archived'];
+  var DEAL = ['Accepted offer', 'In contract'];
+  var STAGE_FIELD = { 'Accepted offer': ['🗓️ AO Date', 'AO Date'], 'In contract': ['🗓️ CS Date', 'CS Date'] };
+  var DE_WORDS = { Active: 'Active', ActiveUnderContract: 'Contract signed', Pending: 'Pending' };
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var RANK = { 'Prep': 0, 'Live': 1, 'Accepted offer': 2, 'In contract': 3, 'Sold': 4, 'Rented': 4, 'Off market': 5 };
   var PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented'];
@@ -124,6 +165,22 @@
     return w.length ? w[0] + ' ' + w[w.length - 1] : '';
   }
   function plainName(s) { return String(s || '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().toLowerCase(); }
+  /* "400 E 59TH ST" → "400 E 59th St" */
+  function titleStreet(s) {
+    return String(s || '').trim().split(/\s+/).map(function (w) {
+      if (/^\d+(ST|ND|RD|TH)$/i.test(w)) return w.toLowerCase();
+      if (/^[NSEW]$/i.test(w) || /\d/.test(w)) return w.toUpperCase();
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+  }
+  /* a zip as five digits ("7701" from a number field is "07701") */
+  function zip5(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var s = String(v).trim();
+    if (/^\d{1,5}$/.test(s)) return ('00000' + s).slice(-5);
+    var m = /^(\d{5})/.exec(s);
+    return m ? m[1] : null;
+  }
   function folderIdOf(url) {
     var m = /\/folders\/([\w-]+)/.exec(url || '') || /[?&]id=([\w-]+)/.exec(url || '');
     return m ? m[1] : null;
@@ -165,6 +222,46 @@
     return { agents: r, names: names, byId: byId };
   }
 
+  /* ---------- M19: a DE listing with no job at the job's building (probably the same listing) ---------- */
+  function sameListing(job, rows, stage) {
+    var L = libs ? libs() : {}, A = L.A, P = L.P;
+    if (!Array.isArray(rows) || !rows.length || !A || !P || CLOSED.indexOf(stage) !== -1) return [];
+    var u = P.unitOf(job.core || {});
+    if (!u.address) return [];
+    var onDe = !!(job.de_listing_id || job.de), mine = A.unitKey(u.unit), kind = job.kind || null;
+    return rows.filter(function (r) {
+      var raw = (r && r.raw) || {};
+      if (!r || r.property_id || r.ignored || (r.feed && r.feed !== 'featured') || /^(Sold|Rented)$/.test(raw.status || '')) return false;
+      if (r.de_listing_id === job.de_listing_id || !raw.street || !A.sameStreet(raw.street, u.address)) return false;
+      if (onDe) return !!r.gvc_listed && A.unitKey(raw.unit) === mine && !!r.kind && !!kind && r.kind !== kind;   // a sale and a rental of one unit
+      return !!r.gvc_listed || !mine;   // a job with no unit: the DE row at its address even when DE's page check missed it
+    }).map(function (r) {
+      var raw = r.raw || {}, other = !!(r.kind && kind && r.kind !== kind);
+      var mineSays = u.unit ? 'is ' + u.unit + (other ? ', a ' + kind : '') : 'has no unit' + (other ? ' and is a ' + kind : '');
+      return { key: 'M19:' + r.de_listing_id,
+        text: 'DE has ' + titleStreet(raw.street) + (raw.unit ? ' ' + raw.unit : '') + ' (' + (r.kind || 'listing') + ', ' + (DE_WORDS[raw.status] || raw.status || 'on DE') + ') with no job; this job ' +
+          mineSays + '. Probably the same listing: check the unit in Asana, or link the DE listing to this job.',
+        values: { deListingId: r.de_listing_id, deUnit: raw.unit || null, deKind: r.kind || null, unit: u.unit || null, kind: kind } };
+    });
+  }
+
+  function P0(r) { var L = libs ? libs() : {}; return L.P ? L.P.unitOf(r.core || {}) : {}; }
+
+  /* ---------- M20: a row with no stage at the job's address ---------- */
+  function libraryTwins(job, rows) {
+    var L = libs ? libs() : {}, A = L.A, P = L.P;
+    if (!Array.isArray(rows) || !rows.length || !A || !P) return [];
+    var mine = P.unitOf(job.core || {});
+    if (!mine.address) return [];
+    return rows.filter(function (r) {
+      if (!r || r.id === job.id || r.stage || r.asana_gid) return false;
+      var o = P.unitOf(r.core || {});
+      if (!o.address || !A.sameStreet(o.address, mine.address)) return false;
+      var ua = A.unitKey(mine.unit), ub = A.unitKey(o.unit);
+      return !ua || !ub || ua === ub;
+    });
+  }
+
   /* ---------- a listing ---------- */
   function checkListing(job, ctx) {
     var a = ctx.asana || job.asana || null;
@@ -189,6 +286,17 @@
     var msOn = function (k) { return ms[k] && !ms[k].planned ? ms[k].on : null; };
     var deStage = job.de_stage || null;
     var onDe = !!(job.de_listing_id || deStage);
+    /* M19 first: while it stands (not dismissed), it is the job's "not on DE" line */
+    var same = sameListing(job, ctx.deListings, stage), dismissed = prev.dismissed || {};
+    var claimed = same.some(function (m) { var x = dismissed[m.key]; return !(x && eq(x.values, m.values)); });
+    same.forEach(function (m) { add('M19', m.key, m.text, m.values, 'Matt'); });
+    /* a grace from a date, else from the day first found (tune-up B1) */
+    var graced = function (code, key, sinceDay, grace, textSince, textNoDate, values, fixAt) {
+      if (sinceDay) { if (days(sinceDay, now) > grace) add(code, key, textSince, values, fixAt, sinceDay); return; }
+      var ff = firstFound(key);
+      if (days(ff, now) > grace) add(code, key, textNoDate, values, fixAt, ff);
+      else out.waiting[key] = ff;
+    };
 
     if (a) {
       /* M2: the task is gone from Asana (Task 4 sets asana.gone on a full read) */
@@ -211,7 +319,7 @@
         }
       }
       /* M2: Live in Asana, not on DE (Asana ahead, same grace) */
-      if (stage === 'Live' && !onDe && !de) {
+      if (stage === 'Live' && !onDe && !de && !claimed) {
         var live = a.statusSince || msOn('listedOn');
         if (live) {
           if (days(live, now) > GRACE_AHEAD) add('M2', 'M2:live', 'Asana says Live since ' + fmtDay(live, now) + '; the listing isn\'t on DE.', { stage: 'Live' }, 'DE', live);
@@ -219,6 +327,45 @@
           var f2 = firstFound('M2:live');
           if (days(f2, now) > GRACE_AHEAD) add('M2', 'M2:live', 'Asana says Live; the listing isn\'t on DE.', { stage: 'Live' }, 'DE', f2);
           else out.waiting['M2:live'] = f2;
+        }
+      }
+      /* M25: at Accepted offer or in contract, not on DE (M2's rule and grace, carried on) */
+      if (DEAL.indexOf(stage) !== -1 && !onDe && !de && !claimed) {
+        var s25 = a.statusSince || msOn(STAGE_DATE[stage]);
+        graced('M25', 'M25', s25, GRACE_AHEAD, 'Asana says ' + stage + ' since ' + (s25 ? fmtDay(s25, now) : '') + '; the listing isn\'t on DE.',
+          'Asana says ' + stage + '; the listing isn\'t on DE.', { stage: stage }, 'DE');
+      }
+      /* M23: no date for the stage the job is at, 7 days from the status change */
+      if (STAGE_FIELD[stage] && empty(f[STAGE_FIELD[stage][0]])) {
+        var t23 = 'Asana says ' + stage + ' but has no ' + STAGE_FIELD[stage][1] + '.';
+        graced('M23', 'M23', a.statusSince || null, GRACE_STAGE_DATE, t23, t23, { stage: stage, missing: STAGE_FIELD[stage][1] }, 'Asana');
+      }
+      /* M21: the deal looks stuck (Closing Date gone by, or a long time with none) */
+      if (DEAL.indexOf(stage) !== -1) {
+        var closeOn = ms.closedOn && ms.closedOn.on ? day(ms.closedOn.on) : null;
+        if (closeOn) {
+          if (stage === 'In contract' && closeOn < now && days(closeOn, now) > GRACE_CLOSING) {
+            add('M21', 'M21', 'Asana\'s closing date was ' + fmtDay(closeOn, now) + ' and the deal is still in contract. Check it closed, or update the date in Asana.',
+              { stage: stage, closedOn: closeOn, since: null }, 'Asana');
+          }
+        } else {
+          var s21 = msOn(stage === 'In contract' ? 'contractOn' : 'acceptedOfferOn') || a.statusSince || null;
+          if (s21 && days(s21, now) > STUCK[stage]) {
+            add('M21', 'M21', (stage === 'In contract' ? 'In contract' : 'At Accepted offer') + ' since ' + fmtDay(s21, now) + ' with no closing date in Asana, more than ' + STUCK[stage] + ' days. Check where the deal stands.',
+              { stage: stage, closedOn: null, since: s21 }, 'Asana');
+          }
+        }
+      }
+      /* M24: an AO / CS Date left behind after the listing went back to Live */
+      if (stage === 'Live' && a.statusSince) {
+        var ls = a.statusSince, aoD = day(f['🗓️ AO Date']), csD = day(f['🗓️ CS Date']);
+        var leftAo = aoD && aoD <= ls ? aoD : null, leftCs = csD && csD <= ls ? csD : null;
+        if ((leftAo || leftCs) && days(ls, now) > GRACE_FELL_BACK) {
+          var kept = [];
+          if (leftAo) kept.push('an AO Date of ' + fmtDay(leftAo, now));
+          if (leftCs) kept.push('a CS Date of ' + fmtDay(leftCs, now));
+          add('M24', 'M24', 'Asana still has ' + kept.join(' and ') + ', but the listing went back to Live on ' + fmtDay(ls, now) + '. Clear ' + (kept.length > 1 ? 'them' : 'it') + ' if the deal fell through.',
+            { aoDate: leftAo, csDate: leftCs, liveSince: ls }, 'Asana', ls);
         }
       }
     }
@@ -238,11 +385,28 @@
       [['beds', 'bed', 'beds'], ['baths', 'bath', 'baths'], ['sqft', 'sq ft', 'sq ft']].forEach(function (k) {
         var x = aFacts[k[0]], y = de[k[0]];
         if (empty(x) || empty(y) || Number(x) === Number(y)) return;
+        if (k[0] !== 'beds' && Number(y) === 0) return;   // DE's 0 sq ft / 0 baths is blank (co-ops); 0 beds is a studio
         diff[k[0]] = { asana: x, de: y };
         aw.push(num(x) + ' ' + (Number(x) === 1 ? k[1] : k[2]));
         dw.push(num(y) + ' ' + (Number(y) === 1 ? k[1] : k[2]));
       });
       if (aw.length) add('M4', 'M4', 'Asana says ' + aw.join(', ') + '; DE says ' + dw.join(', ') + '.', diff, 'Asana');
+
+      /* M22: Asana's Original Price vs DE's (the implied original, or DE's price while Current is blank) */
+      var orig = Number(f['💵 Original Price']) || null, dp = Number(de.price) || null, pcp = de.priceChangePercent;
+      if (orig && dp && !kindClash && job.kind !== 'rental' && aKind !== 'rental') {
+        var hasPcp = typeof pcp === 'number' && isFinite(pcp);
+        var implied = hasPcp ? dp / (1 + pcp / 100) : empty(aCur) ? dp : null;
+        if (implied && Math.abs(implied - orig) / orig > PRICE_SLACK) {
+          implied = Math.round(implied);
+          add('M22', 'M22', empty(aCur) && !pcp ? 'Asana\'s Current Price is blank and its Original Price is ' + money(orig) + '; DE says ' + money(implied) + '.'
+            : 'Asana\'s Original Price is ' + money(orig) + '; DE\'s price history starts at ' + money(implied) + '.', { asana: orig, de: implied }, 'Asana');
+        }
+      }
+
+      /* M26: zip */
+      var az = zip5(f['📍 Zip']), dz = zip5(de.zip) || zip5((/-(\d{5})\/[^\/]+\/?$/.exec(de.listingUrl || '') || [])[1]);
+      if (az && dz && az !== dz) add('M26', 'M26', 'Asana\'s Zip is ' + az + '; DE says ' + dz + '.', { asana: az, de: dz }, 'Asana');
     }
 
     /* M5: Asana's Closing vs DE's closeDate (the DE snapshot, else core's from a sold row), more
@@ -254,7 +418,10 @@
 
     /* M6: no folder while Prep or later; Asana's Drive Link points elsewhere */
     if (PREP_ON.indexOf(stage) !== -1) {
-      if (!job.drive_folder || job.folder_state === 'unlinked') {
+      var cand = scan && typeof scan.candidate === 'string' && scan.candidate ? scan.candidate : null;
+      if ((!job.drive_folder || job.folder_state === 'unlinked') && cand) {
+        add('M18', 'M18', 'A folder for this job is on Drive at ' + cand + '; link it.', { candidate: cand, stage: stage }, 'Matt');
+      } else if (!job.drive_folder || job.folder_state === 'unlinked') {
         add('M6', 'M6', 'No Drive folder is linked, and the job is ' + stagePhrase(stage) + '.', { folder: null, stage: stage }, 'Drive');
       } else if (job.folder_state === 'broken') {
         add('M6', 'M6', 'The linked Drive folder can\'t be found any more.', { folder: job.drive_folder, broken: true }, 'Drive');
@@ -299,6 +466,17 @@
     if (stage === 'Live' && exp && exp < now) {
       add('M9', 'M9', 'Asana\'s exclusive expired on ' + fmtDay(exp, now) + ' while the listing is Live. Extend it in Asana or confirm it ended.', { exclusiveExpiresOn: exp }, 'Asana');
     }
+    /* M27: the exclusive ends within 14 days while Live (a heads-up before M9) */
+    var expOn = ms.exclusiveExpiresOn && ms.exclusiveExpiresOn.on ? day(ms.exclusiveExpiresOn.on) : null;
+    if (stage === 'Live' && expOn && expOn >= now && days(now, expOn) <= EXCL_SOON) {
+      add('M27', 'M27', 'Asana\'s exclusive ends on ' + fmtDay(expOn, now) + ' while the listing is Live. Extend it in Asana if the listing carries on.', { exclusiveExpiresOn: expOn }, 'Asana');
+    }
+
+    /* M20: a workspace row with no stage at this job's address */
+    libraryTwins(job, ctx.library).forEach(function (r) {
+      var label = r.label || [P0(r).address, P0(r).unit].filter(Boolean).join(', ');
+      add('M20', 'M20:' + r.id, 'Another workspace row, ' + label + ', is at this address with no stage and no Asana link. Archive it if it is the same home.', { other: r.id, label: label }, 'Matt');
+    });
 
     if (a) {
       /* M10: no Listing Status, no address, no Listing Date once Live */

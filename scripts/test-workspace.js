@@ -396,6 +396,25 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: nothing to fix', (await text(t.page, '#groups')).includes('Nothing to fix'), true);
   await t.ctx.close();
 
+  /* deepen: M18 (folder found on Drive) and M19 (probably the same listing) are the workspace's to fix;
+     the DE line M19 names says which job, and keeps Link to a job / Not ours */
+  const RD = rowsFor({ de_listings: [{ de_listing_id: '9301', kind: 'rental', gvc_listed: true, property_id: null, ignored: false, raw: { street: '20 SAMPLE AVE', unit: '7C', state: 'NY' }, checked_at: iso(NOW - 864e5) }] });
+  RD.properties[1].match = { list: [
+    { code: 'M18', key: 'M18', text: 'A folder for this job is on Drive at GVC - New York/Building Information/20 Sample Ave/7B; link it.', values: { candidate: 'GVC - New York/Building Information/20 Sample Ave/7B', stage: 'Live' }, fixAt: 'Matt', who: ['Elyse Gutman'], since: '2026-10-20' },
+    { code: 'M19', key: 'M19:9301', text: 'DE has 20 Sample Ave 7C (rental, Active) with no job; this job is 7B. Probably the same listing: check the unit in Asana, or link the DE listing to this job.',
+      values: { deListingId: '9301', deUnit: '7C', deKind: 'rental', unit: '7B', kind: 'rental' }, fixAt: 'Matt', who: ['Elyse Gutman'], since: '2026-10-20' }], dismissed: {} };
+  t = await open(browser, { path: '/workspace/match/', rows: RD });
+  mp = t.page;
+  check('deepen: no page errors', t.errors, []);
+  const mattGroup = await mp.$$eval('.mg', gs => gs.filter(g => g.querySelector('h2').textContent.trim() === 'Matt').map(g => [g.querySelector('.card-h p').textContent.trim(), g.querySelectorAll('.mline').length]));
+  check('deepen: M18 and M19 sit in the workspace (Matt) group, which says what it holds', mattGroup,
+    [['Yours to settle in the workspace: folders and DE listings to link, rows to tidy, and values you typed that disagree with DE or Asana.', 2]]);
+  check('deepen: M18 is its own line, not folded into the Drive group', await mp.$$eval('.bulk', els => els.length), 0);
+  const deLine = (await text(mp, '.mline[data-key="M2:de:9301"]')) || '';
+  check('deepen: the DE line names the job M19 points at, and keeps its buttons', [deLine.includes('Probably the same listing as 20 Sample Ave 7B'),
+    await mp.$$eval('.mline[data-key="M2:de:9301"] button[data-link], .mline[data-key="M2:de:9301"] button[data-aside]', els => els.length)], [true, 2]);
+  await t.ctx.close();
+
   /* ---------- the team Status page ---------- */
   t = await open(browser, { path: '/workspace/status/' });
   let sp = t.page;

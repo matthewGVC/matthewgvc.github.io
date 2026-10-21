@@ -1,5 +1,5 @@
 /* ============================================================
-   Tests for assets/js/match-check.js — the Match check, M1 to M17
+   Tests for assets/js/match-check.js — the Match check, M1 to M27
    (spec §5, plan §8b), the dismiss rule and roster drift (D71).
    Made-up jobs only.
 
@@ -267,7 +267,8 @@ check('drift: People never read → nothing', M.rosterDrift(ROSTER, []), []);
 
 /* ---------- tune-up B1: no status date → grace from the day it was first found ---------- */
 const aoBare = { stage: 'Accepted offer', milestones: {}, asana: { status: 'Accepted Offer/Attorney Review', section: 'Accepted Offer/Attorney Review',
-  stageFromStatus: 'Accepted offer', stageFromSection: 'Accepted offer', statusSince: null } };
+  stageFromStatus: 'Accepted offer', stageFromSection: 'Accepted offer', statusSince: null,
+  fields: Object.assign({}, job().asana.fields, { '🗓️ AO Date': '2026-10-01' }) } };   // its AO Date is there (M23 is not under test here)
 let b1 = M.check(job(aoBare), ctx());
 check('B1 M1: no status date, first seen → not yet', has(b1, 'M1').length, 0);
 let b1m = M.merge(null, b1, NOW);
@@ -304,6 +305,144 @@ check('B3 M12: an open task keeps its wording', has(M.check(dev, ctx({ asana: { 
 
 /* ---------- tune-up B4: M16's key uses upper-cased initials ---------- */
 check('B4 M16: initials typed lower-case → key upper-cased', has(M.check(job({ asana: { pointPerson: 'ae' } }), ctx({ people: [{ name: 'Ann Example', past: true }] })), 'M16').map(m => m.key), ['M16:AE']);
+
+/* ---------- deepen (2026-10-21): M4's DE zero ---------- */
+check('M4: DE 0 sq ft counts as blank (co-ops), never a value', has(M.check(job({ de: { sqft: 0 } }), ctx()), 'M4').length, 0);
+check('M4: DE 0 baths counts as blank', has(M.check(job({ de: { baths: 0 } }), ctx()), 'M4').length, 0);
+check('M4: DE 0 beds is a studio and is still compared', has(M.check(job({ de: { beds: 0 } }), ctx()), 'M4').map(m => m.values), [{ beds: { asana: 2, de: 0 } }]);
+
+/* ---------- M18: a folder for the job is on Drive, not linked ---------- */
+const CAND = 'GVC - New York/Building Information/100 Example St/4A';
+const noFolder = { drive_folder: null, folder_state: 'unlinked' };
+let m18 = M.check(job(Object.assign({}, noFolder, { scan: { candidate: CAND, candidateAt: '2026-10-20T06:00:00Z' } })), ctx());
+check('M18: a folder found by the scan replaces M6, fix in the workspace', [has(m18, 'M6').length, has(m18, 'M18').map(m => [m.key, m.text, m.fixAt, m.values])],
+  [0, [['M18', 'A folder for this job is on Drive at ' + CAND + '; link it.', 'Matt', { candidate: CAND, stage: 'Live' }]]]);
+check('M18: no candidate keeps M6', [has(M.check(job(noFolder), ctx()), 'M6').length, has(M.check(job(noFolder), ctx()), 'M18').length], [1, 0]);
+check('M18: a linked folder: nothing', has(M.check(job({ scan: { candidate: CAND } }), ctx()), 'M18').length, 0);
+check('M18: Off market: nothing', has(M.check(job(Object.assign({}, noFolder, { stage: 'Off market', de_stage: null, de_listing_id: null, de: null, scan: { candidate: CAND },
+  asana: { status: 'Listing Removed', section: 'Listing Removed', stageFromStatus: 'Off market', stageFromSection: 'Off market' } })), ctx()), 'M18').length, 0);
+
+/* ---------- M19: probably the same listing (a GVC DE row at the building, no job) ---------- */
+const deRow = o => Object.assign({ de_listing_id: '900050', feed: 'featured', kind: 'sale', gvc_listed: true, property_id: null, ignored: false,
+  courtesy: 'Douglas Elliman: Ann Example', raw: { street: '100 EXAMPLE ST', unit: '3A', status: 'Active', listingUrl: 'https://www.elliman.com/listing/x/900050' } }, o || {});
+const offDe = { de_listing_id: null, de: null, de_stage: null, kind: 'sale' };
+let m19 = M.check(job(offDe), ctx({ deListings: [deRow()] }));
+check('M19: same building, other unit, the job not on DE: one line naming both', has(m19, 'M19').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M19:900050', 'DE has 100 Example St 3A (sale, Active) with no job; this job is 4A. Probably the same listing: check the unit in Asana, or link the DE listing to this job.', 'Matt',
+    { deListingId: '900050', deUnit: '3A', deKind: 'sale', unit: '4A', kind: 'sale' }]]);
+check('M19: it takes the place of the job\'s M2 "isn\'t on DE" half', has(m19, 'M2').length, 0);
+m19 = has(M.check(job(Object.assign({}, offDe, { core: { address: '52 E4', unit: '10FL' } })), ctx({ deListings: [deRow({ kind: 'rental', raw: { street: '52 E 4TH ST', unit: '10', status: 'ActiveUnderContract' } })] })), 'M19');
+check('M19: same unit as a rental while the job is a sale', m19.map(m => m.text),
+  ['DE has 52 E 4th St 10 (rental, Contract signed) with no job; this job is 10FL, a sale. Probably the same listing: check the unit in Asana, or link the DE listing to this job.']);
+check('M19: a job on DE and another GVC unit in the building: nothing (two real listings)', has(M.check(job({ kind: 'sale' }), ctx({ deListings: [deRow()] })), 'M19').length, 0);
+check('M19: a job on DE and the same unit on DE as the other kind: the line', has(M.check(job({ kind: 'sale' }), ctx({ deListings: [deRow({ kind: 'rental', raw: { street: '100 EXAMPLE ST', unit: '4A', status: 'Active' } })] })), 'M19').map(m => m.key), ['M19:900050']);
+check('M19: another street: nothing', has(M.check(job(offDe), ctx({ deListings: [deRow({ raw: { street: '102 EXAMPLE ST', unit: '3A', status: 'Active' } })] })), 'M19').length, 0);
+check('M19: a DE row already linked, set aside, or sold: nothing', [{ property_id: 'p9' }, { ignored: true }, { feed: 'transactions' }]
+  .map(o => has(M.check(job(offDe), ctx({ deListings: [deRow(o)] })), 'M19').length), [0, 0, 0]);
+check('M19: a row DE\'s page check did not call GVC: nothing for a job with a unit', has(M.check(job(offDe), ctx({ deListings: [deRow({ gvc_listed: false })] })), 'M19').length, 0);
+const house = Object.assign({}, offDe, { core: { address: '1 Carriage Ln', unit: '' } });
+check('M19: a job with no unit takes the DE row at its address even when the page check missed it', has(M.check(job(house),
+  ctx({ deListings: [deRow({ gvc_listed: false, courtesy: null, raw: { street: '1 CARRIAGE LN', unit: '1118', status: 'Active' } })] })), 'M19').map(m => m.text),
+  ['DE has 1 Carriage Ln 1118 (sale, Active) with no job; this job has no unit. Probably the same listing: check the unit in Asana, or link the DE listing to this job.']);
+check('M19: a Sold job: nothing', has(M.check(job(Object.assign({}, offDe, { stage: 'Sold', asana: { status: 'Complete', section: 'Complete', stageFromStatus: 'Sold', stageFromSection: 'Sold' } })),
+  ctx({ deListings: [deRow()] })), 'M19').length, 0);
+check('M19: no DE rows given (the page): nothing', has(M.check(job(offDe), ctx()), 'M19').length, 0);
+const m19vals = has(M.check(job(offDe), ctx({ deListings: [deRow()] })), 'M19').concat([{}])[0].values;
+const m19gone = M.check(job(Object.assign({}, offDe, { match: { list: [], dismissed: { 'M19:900050': { values: m19vals, reason: 'Two units' } } } })), ctx({ deListings: [deRow()] }));
+check('M19 dismissed ("not the same"): the M2 half comes back', has(m19gone, 'M2').map(m => m.key), ['M2:live']);
+
+/* ---------- M20: a workspace row with no stage at a job's address ---------- */
+const lib = o => Object.assign({ id: 'lib1', slug: '100-example-st-4a-old', label: '100 Example St, Residence 4A', stage: null, core: { address: '100 Example St, Residence 4A' } }, o || {});
+check('M20: same address and unit, no stage', has(M.check(job(), ctx({ library: [lib()] })), 'M20').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M20:lib1', 'Another workspace row, 100 Example St, Residence 4A, is at this address with no stage and no Asana link. Archive it if it is the same home.', 'Matt',
+    { other: 'lib1', label: '100 Example St, Residence 4A' }]]);
+check('M20: "6th Floor" and "Residence 6" are one unit', has(M.check(job({ core: { address: '347 West Broadway', unit: 'Residence 6' } }),
+  ctx({ library: [lib({ label: '347 West Broadway, 6th Floor', core: { address: '347 West Broadway', unit: '6th Floor' } })] })), 'M20').length, 1);
+check('M20: a job with no unit and a row with one (one house)', has(M.check(job({ core: { address: '1006 Pheasant Ln, Wall', unit: '' } }),
+  ctx({ library: [lib({ label: '1006 Pheasant Lane #204', core: { address: '1006 Pheasant Lane', unit: '204' } })] })), 'M20').length, 1);
+check('M20: another unit: nothing', has(M.check(job(), ctx({ library: [lib({ core: { address: '100 Example St', unit: '5B' } })] })), 'M20').length, 0);
+check('M20: a row with a stage, an Asana link, or the job itself: nothing', [lib({ stage: 'Live' }), lib({ asana_gid: '123' }), lib({ id: 'p1' })]
+  .map(r => has(M.check(job(), ctx({ library: [r] })), 'M20').length), [0, 0, 0]);
+
+/* ---------- M21: deal stuck in contract / at accepted offer ---------- */
+const ic = o => job(Object.assign({ stage: 'In contract', de_stage: 'In contract', asana: { status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract',
+  stageFromSection: 'In contract', statusSince: '2026-05-01', fields: Object.assign({}, job().asana.fields, { '🗓️ CS Date': '2026-05-01' }) } }, o || {}));
+const icMs = closed => ({ listedOn: { on: '2026-03-01', planned: false }, contractOn: { on: '2026-05-01', planned: false }, closedOn: closed });
+check('M21: closing date passed 8 days ago, still in contract', has(M.check(ic({ milestones: icMs({ on: '2026-10-12', planned: false }) }), ctx()), 'M21').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M21', 'Asana\'s closing date was 12 Oct and the deal is still in contract. Check it closed, or update the date in Asana.', 'Asana', { stage: 'In contract', closedOn: '2026-10-12', since: null }]]);
+check('M21: closing 7 days ago: grace', has(M.check(ic({ milestones: icMs({ on: '2026-10-13', planned: false }) }), ctx()), 'M21').length, 0);
+check('M21: closing ahead: nothing', has(M.check(ic({ milestones: icMs({ on: '2026-11-20', planned: true }) }), ctx()), 'M21').length, 0);
+check('M21: in contract 172 days, no closing date', has(M.check(ic({ milestones: icMs(undefined) }), ctx()), 'M21').map(m => [m.text, m.values]),
+  [['In contract since 1 May with no closing date in Asana, more than 120 days. Check where the deal stands.', { stage: 'In contract', closedOn: null, since: '2026-05-01' }]]);
+check('M21: in contract 111 days, no closing date: nothing', has(M.check(ic({ milestones: { contractOn: { on: '2026-07-01', planned: false } } }), ctx()), 'M21').length, 0);
+const aoLong = since => job({ stage: 'Accepted offer', de_stage: 'In contract', milestones: { acceptedOfferOn: { on: since, planned: false } },
+  asana: { status: 'Accepted Offer/Attorney Review', section: 'Accepted Offer/Attorney Review', stageFromStatus: 'Accepted offer', stageFromSection: 'Accepted offer', statusSince: since,
+    fields: Object.assign({}, job().asana.fields, { '🗓️ AO Date': since }) } });
+check('M21: at accepted offer 80 days, no closing date', has(M.check(aoLong('2026-08-01'), ctx()), 'M21').map(m => m.text),
+  ['At Accepted offer since 1 Aug with no closing date in Asana, more than 60 days. Check where the deal stands.']);
+check('M21: at accepted offer 50 days: nothing', has(M.check(aoLong('2026-08-31'), ctx()), 'M21').length, 0);
+
+/* ---------- M22: original price vs DE ---------- */
+const priced = (a, d) => job({ asana: { fields: Object.assign({}, job().asana.fields, a) }, de: d });
+check('M22: Current Price blank: Asana\'s Original vs DE\'s price', has(M.check(priced({ '💵 Current Price': null, '💵 Original Price': 2650000 }, { price: 2695000, priceChangePercent: null }), ctx()), 'M22')
+  .map(m => [m.key, m.text, m.fixAt, m.values]), [['M22', 'Asana\'s Current Price is blank and its Original Price is $2.65M; DE says $2.695M.', 'Asana', { asana: 2650000, de: 2695000 }]]);
+check('M22: DE\'s price history implies another original', has(M.check(priced({ '💵 Current Price': 3995000, '💵 Original Price': 4295000 }, { price: 3995000, priceChangePercent: 0 }), ctx()), 'M22')
+  .map(m => [m.text, m.values]), [['Asana\'s Original Price is $4.295M; DE\'s price history starts at $3.995M.', { asana: 4295000, de: 3995000 }]]);
+check('M22: DE\'s implied original matches (within 1%): nothing', has(M.check(priced({ '💵 Current Price': 900000, '💵 Original Price': 1000000 }, { price: 900000, priceChangePercent: -10 }), ctx()), 'M22').length, 0);
+check('M22: 0.5% apart: nothing', has(M.check(priced({ '💵 Current Price': 1000000, '💵 Original Price': 1005000 }, { price: 1000000, priceChangePercent: 0 }), ctx()), 'M22').length, 0);
+check('M22: no change percent on DE and a Current Price (NJ): nothing', has(M.check(priced({ '💵 Original Price': 1300000 }, { price: 2250000, priceChangePercent: null }), ctx()), 'M22').length, 0);
+check('M22: a rental: nothing', has(M.check(Object.assign(priced({ '💵 Current Price': null, '💵 Original Price': 12000 }, { price: 12500, priceChangePercent: null }), { kind: 'rental' }), ctx()), 'M22').length, 0);
+check('M22: no Original Price: nothing (M3 covers the current one)', has(M.check(priced({}, { price: 2250000, priceChangePercent: -5 }), ctx()), 'M22').length, 0);
+
+/* ---------- M23: no date for the current stage ---------- */
+const aoNoDate = since => job({ stage: 'Accepted offer', de_stage: 'In contract', asana: { status: 'Accepted Offer/Attorney Review', section: 'Accepted Offer/Attorney Review',
+  stageFromStatus: 'Accepted offer', stageFromSection: 'Accepted offer', statusSince: since } });
+check('M23: Accepted offer 19 days, no AO Date', has(M.check(aoNoDate('2026-10-01'), ctx()), 'M23').map(m => [m.key, m.text, m.fixAt, m.values, m.since]),
+  [['M23', 'Asana says Accepted offer but has no AO Date.', 'Asana', { stage: 'Accepted offer', missing: 'AO Date' }, '2026-10-01']]);
+check('M23: 5 days: grace', has(M.check(aoNoDate('2026-10-15'), ctx()), 'M23').length, 0);
+check('M23: no status date: waits from the day first found', [has(M.check(aoNoDate(null), ctx()), 'M23').length, M.check(aoNoDate(null), ctx()).waiting.M23], [0, '2026-10-20']);
+const icNoCs = job({ stage: 'In contract', de_stage: 'In contract', asana: { status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract', stageFromSection: 'In contract', statusSince: '2026-09-01' } });
+check('M23: In contract with no CS Date', has(M.check(icNoCs, ctx()), 'M23').map(m => m.text), ['Asana says In contract but has no CS Date.']);
+check('M23: In contract with its CS Date: nothing', has(M.check(ic(), ctx()), 'M23').length, 0);
+
+/* ---------- M24: AO / CS date left behind after the deal fell back to Live ---------- */
+const fellBack = (f, since) => job({ asana: { statusSince: since || '2026-09-16', fields: Object.assign({}, job().asana.fields, f) } });
+check('M24: AO Date kept after going back to Live', has(M.check(fellBack({ '🗓️ AO Date': '2026-08-19' }), ctx()), 'M24').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M24', 'Asana still has an AO Date of 19 Aug, but the listing went back to Live on 16 Sep. Clear it if the deal fell through.', 'Asana',
+    { aoDate: '2026-08-19', csDate: null, liveSince: '2026-09-16' }]]);
+check('M24: both dates kept', has(M.check(fellBack({ '🗓️ AO Date': '2026-08-19', '🗓️ CS Date': '2026-09-01' }), ctx()), 'M24').map(m => m.text),
+  ['Asana still has an AO Date of 19 Aug and a CS Date of 1 Sep, but the listing went back to Live on 16 Sep. Clear them if the deal fell through.']);
+check('M24: back to Live 5 days ago: grace', has(M.check(fellBack({ '🗓️ AO Date': '2026-08-19' }, '2026-10-15'), ctx()), 'M24').length, 0);
+check('M24: an AO Date after the move to Live: not this check', has(M.check(fellBack({ '🗓️ AO Date': '2026-10-01' }), ctx()), 'M24').length, 0);
+check('M24: no status date: nothing', has(M.check(job({ asana: { statusSince: null, fields: Object.assign({}, job().asana.fields, { '🗓️ AO Date': '2026-08-19' }) } }), ctx()), 'M24').length, 0);
+
+/* ---------- M25: at accepted offer or in contract in Asana, never on DE ---------- */
+const dealOff = since => job(Object.assign({}, offDe, { stage: 'In contract', asana: { status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract', stageFromSection: 'In contract',
+  statusSince: since, fields: Object.assign({}, job().asana.fields, { '🗓️ CS Date': '2026-09-01' }) } }));
+check('M25: in contract 49 days, not on DE', has(M.check(dealOff('2026-09-01'), ctx()), 'M25').map(m => [m.key, m.text, m.fixAt, m.since]),
+  [['M25', 'Asana says In contract since 1 Sep; the listing isn\'t on DE.', 'DE', '2026-09-01']]);
+check('M25: 10 days: grace', has(M.check(dealOff('2026-10-10'), ctx()), 'M25').length, 0);
+check('M25: no status date: waits from the day first found', [has(M.check(dealOff(null), ctx()), 'M25').length, M.check(dealOff(null), ctx()).waiting.M25], [0, '2026-10-20']);
+check('M25: on DE: nothing', has(M.check(ic(), ctx()), 'M25').length, 0);
+check('M25: claimed by a M19 line: nothing', has(M.check(dealOff('2026-09-01'), ctx({ deListings: [deRow()] })), 'M25').length, 0);
+
+/* ---------- M26: zip vs DE ---------- */
+const zipped = (z, d) => job({ asana: { fields: Object.assign({}, job().asana.fields, { '📍 Zip': z }) }, de: d });
+check('M26: Asana\'s zip vs DE\'s', has(M.check(zipped('10011', { zip: '10021' }), ctx()), 'M26').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M26', 'Asana\'s Zip is 10011; DE says 10021.', 'Asana', { asana: '10011', de: '10021' }]]);
+check('M26: DE\'s zip from its listing link when the snapshot has none', has(M.check(zipped('10011', { zip: null, listingUrl: 'https://www.elliman.com/listing/241-e-76th-st-10bcd-new-york-ny-10021/900001' }), ctx()), 'M26')
+  .map(m => m.values), [{ asana: '10011', de: '10021' }]);
+check('M26: same zip (a number in Asana, 07701): nothing', has(M.check(zipped(7701, { zip: '07701' }), ctx()), 'M26').length, 0);
+check('M26: blank in Asana: nothing', has(M.check(zipped(null, { zip: '10021' }), ctx()), 'M26').length, 0);
+
+/* ---------- M27: the exclusive ends within 14 days while Live ---------- */
+const excl = on => job({ milestones: { listedOn: { on: '2026-09-01', planned: false }, exclusiveExpiresOn: { on: on, planned: on > '2026-10-20' } } });
+check('M27: ends in 14 days', has(M.check(excl('2026-11-03'), ctx()), 'M27').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M27', 'Asana\'s exclusive ends on 3 Nov while the listing is Live. Extend it in Asana if the listing carries on.', 'Asana', { exclusiveExpiresOn: '2026-11-03' }]]);
+check('M27: ends today: still a heads-up, not M9', [has(M.check(excl('2026-10-20'), ctx()), 'M27').length, has(M.check(excl('2026-10-20'), ctx()), 'M9').length], [1, 0]);
+check('M27: 15 days away: nothing', has(M.check(excl('2026-11-04'), ctx()), 'M27').length, 0);
+check('M27: already passed: M9, not M27', [has(M.check(excl('2026-10-19'), ctx()), 'M27').length, has(M.check(excl('2026-10-19'), ctx()), 'M9').length], [0, 1]);
+check('M27: not Live: nothing', has(M.check(Object.assign(excl('2026-11-03'), { stage: 'Prep', de_stage: null }), ctx()), 'M27').length, 0);
 
 /* ---------- text: plain sentences, no em dashes ---------- */
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));

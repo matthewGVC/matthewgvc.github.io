@@ -544,6 +544,27 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('A1 ignore: a task set aside stays ignored and is not listed', [dF6.T.asana_tasks.find(c => c.gid === '9000000000906').ignored,
     (dF6.T.sync_runs.slice(-1)[0].totals.unlinked || []).some(u => u.gid === '9000000000906')], [true, false]);
 
+  // A3. a job (by asana_gid) and an open pitch both hold the task's gid, and the task is at Prep or later:
+  // the pitch is won, pointing at that job (logged), instead of staying open
+  const dA3 = await planned();
+  const jA3 = PF(dA3, '9000000000023');
+  dA3.T.pitches.push({ id: 'q-a3', slug: '23-pitch', version: 1, outcome: 'open', asana_gid: '9000000000023', market: 'NYC' });
+  const wA3 = world();
+  status(find(wA3, '9000000000023'), 'Active');
+  await applyRun({ client: dA3, run: await read(wA3, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  const qA3 = dA3.T.pitches.find(p => p.id === 'q-a3');
+  check('A3 job and open pitch on one gid: the pitch is won, pointing at the job', [qA3.outcome, qA3.won_property_id], ['won', jA3.id]);
+  check('A3 the job is still updated from the task', PF(dA3, '9000000000023').stage, 'Live');
+  check('A3 logged on the pitch, source Asana', dA3.T.changes.filter(c => c.pitch_id === 'q-a3' && c.field === 'outcome').map(c => [c.old_value, c.new_value, c.source]), [['open', 'won', 'Asana']]);
+  await applyRun({ client: dA3, run: await read(wA3, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('A3 the next run leaves the won pitch alone', dA3.T.changes.filter(c => c.pitch_id === 'q-a3' && c.field === 'outcome').length, 1);
+
+  // B8. a run that isn't good (partial read) never stores totals.unlinked
+  const dB8 = await planned();
+  await applyRun({ client: dB8, run: await read(world(), { asana: asanaOf(world(), { fail: { [NJ]: 500 } }) }), now: NOW });
+  const srB8 = dB8.T.sync_runs.slice(-1)[0];
+  check('B8 a failed run stores no unlinked list', [srB8.ok, 'unlinked' in (srB8.totals || {})], [false, false]);
+
   // F10. applyRun says what sync_runs.ok says
   check('F10 ok on a good run', oF6.ok, true);
   check('F10 not ok before a plan', (await applyRun({ client: fakeDb(), run: await read(world()), now: NOW })).ok, false);

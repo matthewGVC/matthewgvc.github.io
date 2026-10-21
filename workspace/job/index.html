@@ -52,6 +52,8 @@
 .hint-b .b{min-width:38px;justify-content:center}
 @media (max-width:1100px){ .two{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:720px){ .hd h1{font-size:30px} }
+/* phone: the stages wrap into rows of three so every one stays in view (no hidden scroll) */
+@media (max-width:640px){ .steps{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));row-gap:18px} .step::before{display:none} }
 </style>
 </head>
 <body data-nav="job" data-root="../">
@@ -115,7 +117,7 @@
     });
   }
 
-  function fact(k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">—</span>') + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; }
+  function fact(k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">Not set</span>') + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; }
 
   function facts() {
     var r = state.row, j = state.job;

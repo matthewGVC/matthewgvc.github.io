@@ -288,6 +288,26 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: they count in the header', (await text(mp, '#lead')).startsWith('6 mismatches'), true);
   check('match: no page errors with loose lines', t.errors, []);
   await t.ctx.close();
+  /* M6 "no Drive folder linked" collapses to one line per fix group, with a show/hide list */
+  const R6 = rowsFor();
+  const m6 = (stage, who) => ({ list: [{ code: 'M6', key: 'M6', text: 'No Drive folder is linked, and the job is ' + stage + '.', values: { folder: null, stage }, fixAt: 'Drive', who, since: '2026-10-14' }], dismissed: {} });
+  R6.properties[1].match = m6('Live', ['Elyse Gutman']);
+  R6.properties[2].match = m6('Live', ['Pat Builder', 'Elyse Gutman']);
+  t = await open(browser, { path: '/workspace/match/', rows: R6 });
+  mp = t.page;
+  check('match M6: no page errors', t.errors, []);
+  check('match M6: one collapsed line in the Drive group', await mp.$$eval('.mg', gs => gs.filter(g => g.querySelector('h2').textContent.trim() === 'Drive').map(g =>
+    [g.querySelectorAll('.bulk').length, g.querySelector('.bulk b').textContent.trim(), g.querySelectorAll('.who h3').length, g.querySelector('.chip').textContent.trim()])),
+    [[1, '2 jobs have no Drive folder linked yet.', 0, '2']]);
+  check('match M6: the list starts hidden', [await visible(mp, '.bulk .bulk-list'), await mp.$eval('.bulk [data-bulk]', b => b.getAttribute('aria-expanded'))], [false, 'false']);
+  await mp.click('.bulk [data-bulk]');
+  check('match M6: show lists each job once', [await visible(mp, '.bulk .bulk-list'), await mp.$$eval('.bulk .bulk-list .mline', els => els.length),
+    await mp.$eval('.bulk [data-bulk]', b => [b.getAttribute('aria-expanded'), b.textContent.trim()])], [true, 2, ['true', 'Hide the jobs']]);
+  await mp.click('.bulk [data-bulk]');
+  check('match M6: hide again', await visible(mp, '.bulk .bulk-list'), false);
+  check('match M6: the header total still counts them', (await text(mp, '#lead')).startsWith('6 mismatches'), true);
+  check('match M6: other groups unchanged', await mp.$$eval('.mg > .card-h h2', els => els.map(e => e.textContent.trim())), ['Asana', 'DE', 'Drive', 'Roster']);
+  await t.ctx.close();
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
   check('match: nothing to fix', (await text(t.page, '#groups')).includes('Nothing to fix'), true);
   await t.ctx.close();
@@ -314,7 +334,26 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('status: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
   await spp.goto(BASE + '/workspace/match/', { waitUntil: 'networkidle' });
   check('match: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
+  /* the job page at 375 px: every stage in view, the M7 paste link wraps inside its card */
+  T1.properties[0].asana.status = 'In Contract';
+  T1.properties[0].match.list[1].text = 'Asana\'s Drive Link is empty; paste https://drive.google.com/drive/folders/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG';
+  await spp.goto(BASE + '/workspace/job/?listing=100-example-st-residence-4a', { waitUntil: 'networkidle' });
+  await spp.waitForTimeout(300);
+  check('job: phone, no element wider than the viewport', await spp.evaluate(() => {
+    const W = document.documentElement.clientWidth, out = [];
+    document.querySelectorAll('body *').forEach(e => { const r = e.getBoundingClientRect(); if (r.width && (r.right > W + 0.5 || r.left < -0.5)) out.push(e.tagName + '.' + e.className); });
+    return out;
+  }), []);
+  check('job: phone, all six stages in view', await spp.$$eval('.step', els => els.map(e => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })), [true, true, true, true, true, true]);
+  check('job: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
   await sphone.close();
+
+  /* no em or en dashes in visible text on any /workspace/ page */
+  for (const path of ['/workspace/', '/workspace/jobs/', '/workspace/match/', '/workspace/status/', '/workspace/job/?listing=20-sample-ave-7b', '/workspace/job/?listing=100-example-st-residence-4a', '/workspace/job/?pitch=90-pitch-st-11b-2026-08-04']) {
+    t = await open(browser, { path });
+    check('no em or en dash shown: ' + path, (await t.page.evaluate(() => document.body.innerText)).match(/[\u2013\u2014]/g), null);
+    await t.ctx.close();
+  }
 
   /* signed out: the sign-in box only, nothing asked of the database */
   for (const path of ['/workspace/match/', '/workspace/status/']) {

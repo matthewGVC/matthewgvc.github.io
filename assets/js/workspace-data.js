@@ -29,7 +29,11 @@
      matchGroups(jobs, drift, loose?) → [{ fixAt, people: [{ who, items: [{ job, href, id, table,
                            code, key, text, since, asanaUrl, paste, deUrl }] }] }]   the Match
                            page (S10): Asana, DE, Drive, Matt, then 'Roster' (drift);
-                           loose = looseMatch(...) lines, which belong to no job
+                           loose = looseMatch(...) lines, which belong to no job.
+                           M6 "no Drive folder linked" lines (on most jobs early on)
+                           leave the people lists and become one collapsed line:
+                           the group gains bulk: [{ code, key, text, items }]
+                           ("38 jobs have no Drive folder linked yet"), one item per job
      looseMatch({ deListings, asanaRun, ignoredGids }, GVC_MATCH) → [{ fixAt, who, item }]
                            de_listings rows GVC-listed on DE with no job (M2 "On DE, not
                            in Asana", through GVC_MATCH.checkDeListing; ignored rows left
@@ -373,7 +377,7 @@
   }
 
   function matchGroups(jobs, drift, loose) {
-    var g = {};
+    var g = {}, bulk = {};
     (loose || []).forEach(function (l) {
       var fix = FIX.indexOf(l.fixAt) === -1 ? 'Matt' : l.fixAt;
       g[fix] = g[fix] || {};
@@ -385,15 +389,25 @@
         var item = { job: j.name, href: j.href, id: j.id, table: j.type === 'development' ? 'dev_projects' : j.type === 'pitch' ? 'pitches' : 'properties',
           code: m.code, key: m.key || m.code, text: m.text, since: m.since || null, asanaUrl: j.asanaUrl || null,
           paste: m.values && typeof m.values.paste === 'string' ? m.values.paste : null };
+        if (m.code === 'M6' && (m.key || m.code) === 'M6' && m.values && m.values.folder === null) {   // no folder linked: one collapsed line
+          bulk[fix] = bulk[fix] || [];
+          if (!bulk[fix].some(function (x) { return x.id === item.id && x.table === item.table; })) bulk[fix].push(item);
+          return;
+        }
         var who = m.who && m.who.length ? m.who : [''];
         g[fix] = g[fix] || {};
         who.forEach(function (w) { (g[fix][w] = g[fix][w] || []).push(item); });
       });
     });
-    var out = FIX.filter(function (f) { return g[f]; }).map(function (f) {
-      return { fixAt: f, people: Object.keys(g[f]).sort(function (a, b) {
+    var out = FIX.filter(function (f) { return g[f] || bulk[f]; }).map(function (f) {
+      var grp = { fixAt: f, people: Object.keys(g[f] || {}).sort(function (a, b) {
         if (!a) return 1; if (!b) return -1; return a.toLowerCase() < b.toLowerCase() ? -1 : 1;
       }).map(function (w) { return { who: w, items: g[f][w] }; }) };
+      if (bulk[f]) {
+        var n = bulk[f].length;
+        grp.bulk = [{ code: 'M6', key: 'M6', text: n + (n === 1 ? ' job has' : ' jobs have') + ' no Drive folder linked yet.', items: bulk[f] }];
+      }
+      return grp;
     });
     if (drift && drift.length) {
       out.push({ fixAt: 'Roster', people: [{ who: '', items: drift.map(function (d) {

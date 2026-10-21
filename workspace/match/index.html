@@ -28,7 +28,13 @@
 .mline .dz .inp{flex:1;min-width:0}
 .mline .msg{font-size:13px;color:var(--danger);margin-top:4px}
 .mline .msg:empty{display:none}
-.mline .lnk{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+.bulk{display:flex;gap:12px;align-items:flex-start}
+.bulk > div{min-width:0;flex:1}
+.bulk > .code{font-family:var(--mono);font-size:10.5px;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:1px 7px;margin-top:2px}
+.bulk > div > b{font-size:14px;font-weight:600}
+.bulk .bulk-list{margin-top:10px}
+.bulk .bulk-list[hidden]{display:none}
+.mline .lnk,.bulk .lnk{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
 </style>
 </head>
 <body data-nav="match" data-root="../">
@@ -122,8 +128,15 @@
       (drift.length ? ' ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') + ' at the end.' : '');
     if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b>Asana, DE and Drive agree on every job.</div>'; return; }
     $('groups').innerHTML = groups.map(function (g) {
-      var count = g.people.reduce(function (a, p) { return a + p.items.length; }, 0);
+      var bulk = g.bulk || [];
+      var count = g.people.reduce(function (a, p) { return a + p.items.length; }, 0) + bulk.reduce(function (a, b) { return a + b.items.length; }, 0);
       return '<section class="card mg"><div class="card-h"><div><h2>' + esc(g.fixAt) + '</h2><p>' + esc(WHERE[g.fixAt] || '') + '</p></div><span class="chip made">' + count + '</span></div>' +
+        bulk.map(function (b, i) {
+          var id = 'bulk-' + esc(g.fixAt) + '-' + i;
+          return '<div class="who bulk" data-key="' + esc(b.key) + '"><span class="code">' + esc(b.code) + '</span><div><b>' + esc(b.text) + '</b> ' +
+            '<button class="lnk" type="button" data-bulk aria-expanded="false" aria-controls="' + id + '">Show the jobs</button>' +
+            '<ul class="mm bulk-list" id="' + id + '" hidden>' + b.items.map(function (it) { return line(it, g.fixAt); }).join('') + '</ul></div></div>';
+        }).join('') +
         g.people.map(function (p) {
           return '<div class="who">' + (g.fixAt === 'Roster' ? '' : '<h3>' + esc(p.who || 'No one named') + '</h3>') + '<ul class="mm">' + p.items.map(function (it) { return line(it, g.fixAt); }).join('') + '</ul></div>';
         }).join('') + '</section>';
@@ -167,6 +180,11 @@
 
   $('groups').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-bulk')) {
+      var list = document.getElementById(b.getAttribute('aria-controls')), open = list.hidden;
+      list.hidden = !open; b.setAttribute('aria-expanded', String(open)); b.textContent = open ? 'Hide the jobs' : 'Show the jobs';
+      return;
+    }
     var li = b.closest('.mline');
     if (b.hasAttribute('data-copy')) {
       var v = b.dataset.copy;

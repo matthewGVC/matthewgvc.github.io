@@ -190,6 +190,16 @@ check('match: M7 carries the link to paste', mg[0].people[2].items[0].paste, 'ht
 check('match: development lines point at dev_projects', mg[0].people[1].items[0].table, 'dev_projects');
 check('match: roster drift', mg[2].people[0].items.map(i => i.text), ['Alexandra Lynch is in Asana People but not on the roster.']);
 
+/* M6 "no Drive folder linked" collapses to one line per fix group (each job once) */
+const m6job = (id, who, values) => ({ id, name: 'Job ' + id, href: 'job/?listing=' + id, type: 'listing', asanaUrl: null,
+  match: [{ code: 'M6', key: 'M6', text: 'No Drive folder is linked, and the job is Live.', values, fixAt: 'Drive', who }] });
+const mg6 = W.matchGroups([m6job('a', ['Ann'], { folder: null, stage: 'Live' }), m6job('b', ['Ann', 'Ben'], { folder: null, stage: 'Live' }),
+  m6job('c', ['Ben'], { folder: 'x', broken: true })], []);
+check('match M6: one bulk line, each job once', mg6.map(g => [g.fixAt, (g.bulk || []).map(b => [b.code, b.text, b.items.map(i => i.id)])]),
+  [['Drive', [['M6', '2 jobs have no Drive folder linked yet.', ['a', 'b']]]]]);
+check('match M6: a broken folder stays a normal line', mg6[0].people.map(p => [p.who, p.items.map(i => i.id)]), [['Ben', ['c']]]);
+check('match M6: one job reads "1 job has"', W.matchGroups([m6job('a', [], { folder: null, stage: 'Prep' })], [])[0].bulk[0].text, '1 job has no Drive folder linked yet.');
+
 /* ---------- Asana sync status (6 h) ---------- */
 check('asana: never', W.asanaHealth(null, now).text, 'Asana hasn\'t synced yet');
 check('asana: fresh', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).state, 'ok');

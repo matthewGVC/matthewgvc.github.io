@@ -52,6 +52,16 @@ f = F.applyFact({}, 'price', 'Matt', 2250000).facts;
 r = F.applyFact(f, 'price', 'DE', 2300000);
 check('DE first value replaces Matt', [r.facts.price.value, r.facts.price.source], [2300000, 'DE']);
 
+/* adoptEdit: a value changed outside the helper (a tool save) becomes Matt's (D78, D79) */
+f = F.applyFact({}, 'price', 'Asana', 880000).facts;
+r = F.adoptEdit(f, 'price', 875000);
+check('edit over a record is Matt\'s', [r.price.value, r.price.source, r.price.bySource], [875000, 'Matt', { Asana: 880000, Matt: 875000 }]);
+check('then Asana\'s unchanged value does not take it', F.applyFact(r, 'price', 'Asana', 880000).facts.price.value, 875000);
+check('no record: legacy by default', F.adoptEdit({}, 'sqft', 900).sqft, { value: 900, source: 'legacy', bySource: { legacy: 900 } });
+check('no record: the given source', F.adoptEdit({}, 'sqft', 900, 'DE').sqft.source, 'DE');
+check('same value: unchanged', F.adoptEdit(f, 'price', 880000), f);
+check('empty value: unchanged', F.adoptEdit(f, 'price', null), f);
+
 /* ranks below */
 f = F.applyFact({}, 'beds', 'doc', 3).facts;
 r = F.applyFact(f, 'beds', 'legacy', 4);

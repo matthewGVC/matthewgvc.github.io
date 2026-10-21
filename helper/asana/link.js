@@ -59,7 +59,7 @@ function matchTask(task, existing, kind) {
   const own = props.find(p => p.asana_gid === task.gid);
   if (own) return { propertyId: own.id };
   const ownPitch = pitches.find(p => p.asana_gid === task.gid);
-  if (ownPitch) return { pitchId: ownPitch.id };
+  if (ownPitch && kind === 'pitch') return { pitchId: ownPitch.id };
   const drive = task.fields && task.fields['🛜 Google Drive Link'];
   if (drive) {
     const byDrive = props.filter(p => !p.asana_gid && p.core && p.core.driveLink === drive);

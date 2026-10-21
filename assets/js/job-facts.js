@@ -24,6 +24,14 @@
          warn     { source, value } while the shown value is Matt's and DE's
                   (else Asana's) current value differs from it (D78, M17)
 
+     GVC_FACTS.adoptEdit(facts, field, shown, noRecordSource?)
+       → facts (a new object; the same object when nothing changes)
+         For a value changed outside the helper (a builder saving core):
+         shown differs from the record → it becomes Matt's (a signed-in edit
+         is Matt's, D78); no record yet → noRecordSource (default 'legacy',
+         D79). Callers run it before applyFact so a source repeating its old
+         value never overwrites the edit.
+
    The rules:
      - An empty value (null, undefined, '') is ignored: a source going quiet
        never clears a fact.
@@ -90,5 +98,20 @@
     return res;
   }
 
-  return { RANK: RANK, rankOf: rankOf, applyFact: applyFact, warnOf: warnOf };
+  function adoptEdit(facts, field, shown, noRecordSource) {
+    if (empty(shown)) return facts;
+    var cur = facts && facts[field];
+    if (cur && eq(cur.value, shown)) return facts;
+    var out = Object.assign({}, facts || {});
+    if (!cur) {
+      var src = noRecordSource || 'legacy', by = {};
+      by[src] = shown;
+      out[field] = { value: shown, source: src, bySource: by };
+    } else {
+      out[field] = { value: shown, source: 'Matt', bySource: Object.assign({}, cur.bySource || {}, { Matt: shown }) };
+    }
+    return out;
+  }
+
+  return { RANK: RANK, rankOf: rankOf, applyFact: applyFact, warnOf: warnOf, adoptEdit: adoptEdit };
 });

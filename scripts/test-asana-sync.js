@@ -44,7 +44,13 @@ function fakeDb(seed) {
     insert: async (t, rows) => [].concat(rows).map(r => {
       const x = Object.assign({ id: t + '-' + (++n) }, TABLES.indexOf(t) < 3 ? { version: 1 } : {}, copy(r)); T[t].push(x); return copy(x);
     }),
-    upsert: async (t, rows, key) => [].concat(rows).map(r => {
+    upsert: async (t, rows, key) => {
+      // like PostgREST: one batch may not name the same row twice
+      const keys = [].concat(rows).map(r => r[key]);
+      if (new Set(keys).size !== keys.length) throw new Error('ON CONFLICT DO UPDATE command cannot affect row a second time');
+      return db.upsertOne(t, rows, key);
+    },
+    upsertOne: async (t, rows, key) => [].concat(rows).map(r => {
       const hit = T[t].find(x => x[key] === r[key]);
       if (hit) return copy(Object.assign(hit, copy(r)));
       const x = copy(r); T[t].push(x); return copy(x);
@@ -339,6 +345,75 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   /* ================= nothing outside the allowlist reaches the database ================= */
   const dump = JSON.stringify(db.T) + JSON.stringify(db2.T) + JSON.stringify(db3.T);
   forbidden.forEach(s => check('allowlist: the database never holds ' + s, dump.includes(s), false));
+
+  /* ================= review fixes (round 1) ================= */
+  // 1. Asana unreachable: every listing project failing aborts; one failing is not a good run
+  let db9 = fakeDb({ asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }] });
+  await syncNow({ cfg, client: db9, fetch: replayFetch(FIX, world()), now: NOW });
+  const goodStart = db9.T.sync_runs[0].started_at;
+  await syncNow({ cfg, client: db9, fetch: async () => { throw new Error('fetch failed'); }, now: new Date('2026-10-20T12:30:00Z') });
+  const unreachable = db9.T.sync_runs[1];
+  check('unreachable: aborted with a plain reason', [unreachable.ok, /Asana couldn't be reached/.test(JSON.stringify(unreachable.errors))], [false, true]);
+  await syncNow({ cfg, client: db9, fetch: replayFetch(FIX, Object.assign(world(), { fail: { [NJ]: 500 } })), full: true, now: new Date('2026-10-20T13:00:00Z') });
+  const partial = db9.T.sync_runs[2];
+  check('one project failing: the run is not good, the reason is stored', [partial.ok, /NJ listings could not be read/.test(JSON.stringify(partial.errors))], [false, true]);
+  const seen9 = [];
+  await syncNow({ cfg, client: db9, fetch: async (u, i) => { seen9.push(String(u)); return replayFetch(FIX, world())(u, i); }, now: new Date('2026-10-20T13:30:00Z') });
+  check('after a bad run, since stays at the last good run', seen9.filter(u => /\/1\.0\/tasks\?/.test(u)).every(u => u.includes('modified_since=' + encodeURIComponent(goodStart))), true);
+  const db10 = fakeDb({ asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }], sync_runs: [
+    { id: 'r1', kind: 'asana', ok: true, started_at: '2026-10-18T03:00:00.000Z', finished_at: 'x', totals: { full: true, open: { NYC: 40, NJ: 8 } } },
+    { id: 'r2', kind: 'asana', ok: true, started_at: '2026-10-19T03:00:00.000Z', finished_at: 'x', totals: { full: true, open: { NJ: 8 } } }] });
+  await syncNow({ cfg, client: db10, fetch: replayFetch(FIX, world()), full: true, now: NOW });
+  check('a market missing from the last full run keeps its earlier open count', /fewer than half the open NYC/.test(JSON.stringify(db10.T.sync_runs[2].errors)), true);
+
+  // 2. a task first seen as a Lead becomes a pitch once it has a pitch date
+  w = world();
+  const lead = find(w, '9000000000163');
+  setField(lead, '🗓️ Pitch', { date_value: { date: '2026-10-15' } });
+  lead.modified_at = LATER;
+  await applyRun({ client: db, run: await read(w, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  check('a cached Lead later given a pitch date becomes a pitch', db.T.pitches.some(p => p.asana_gid === '9000000000163'), true);
+  check('a task first seen closed is remembered as decided', cache('9000000000904').ignored, true);
+
+  // 3. an edit made in a tool (core changed, the facts record not) is Matt's and Asana leaves it
+  const tooled = P('9000000000054');
+  tooled.core.price = 875000;          // a showsheet save
+  await applyRun({ client: db, run: await read(world()), now: NOW });
+  check('a tool edit holds over Asana\'s unchanged value', [P('9000000000054').core.price, P('9000000000054').core.facts.price.source, P('9000000000054').core.facts.price.bySource.Asana],
+    [875000, 'Matt', 880000]);
+
+  // 4. a won pitch links the free job already at its address instead of making a second one
+  const db11 = fakeDb({ dev_projects: [DEVROW] });
+  const w11 = world();
+  await applyRun({ client: db11, run: await read(w11), now: NOW, plan: makePlan(await read(w11), await existingOf(db11)) });
+  db11.T.properties.push({ id: 'free40', slug: '40-pitch-rd', version: 1, stage: null, kind: 'sale', core: { address: '40 Pitch Rd', city: 'Exampleton' } });
+  status(find(w11, '9000000000901'), 'In Prep to List');
+  await applyRun({ client: db11, run: await read(w11, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
+  const free40 = db11.T.properties.find(p => p.id === 'free40');
+  check('won pitch: links the job at its address', [free40.asana_gid, free40.from_pitch_id, free40.stage, db11.T.properties.filter(p => /^40 Pitch/.test(p.core.address)).length, db11.T.pitches[0].won_property_id],
+    ['9000000000901', db11.T.pitches[0].id, 'Prep', 1, 'free40']);
+
+  // 5. one task in two projects: one cache row, one upsert batch without repeats
+  const w12 = world();
+  w12.tasks[NJ].push(JSON.parse(JSON.stringify(find(w12, '9000000000041'))));
+  const r12 = await read(w12);
+  check('a task in two projects is read once', r12.listings.filter(t => t.gid === '9000000000041').length, 1);
+  const db12 = fakeDb({ asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }] });
+  let threw = null;
+  try { await applyRun({ client: db12, run: Object.assign({}, r12, { devs: [{ project: { gid: DEV, name: '🚧 x' }, tasks: [r12.listings.find(t => t.gid === '9000000000041')] }] }), now: NOW }); }
+  catch (e) { threw = e.message; }
+  check('cache rows are unique per batch, the listing row wins', [threw, db12.T.asana_tasks.filter(t => t.gid === '9000000000041').map(t => t.kind)], [null, ['listing']]);
+
+  // 7. a 403 only stops the run on a listing project (or whoami); elsewhere it is a warning
+  const r13 = await read(world(), { asana: asanaOf(world(), { fail: { [DEV]: 403 } }) });
+  check('403 on a development project: a warning', [r13.ok, r13.warnings.some(x => /development project/.test(x))], [true, true]);
+  const r14 = await read(world(), { asana: asanaOf(world(), { fail: { [NYC]: 403 } }) });
+  check('403 on a listing project: refused', [r14.ok, r14.aborted], [false, 'Asana refused the token']);
+
+  // 8. a task with no memberships still knows the project it was read from
+  const w15 = world();
+  delete find(w15, '9000000000023').memberships;
+  check('no memberships: project gid from the read', (await read(w15)).listings.find(t => t.gid === '9000000000023').projectGid, NYC);
 
   /* ================= carried fixes from Task 1 ================= */
   // (a) a listing project that fails to read gives no "missing kept fields" verdict

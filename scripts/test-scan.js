@@ -8,7 +8,7 @@
 'use strict';
 
 const fs = require('fs'), os = require('os'), path = require('path');
-const { scanFolder, mondayOf, folderStage, scanAll } = require('../helper/scan.js');
+const { scanFolder, mondayOf, scanAll } = require('../helper/scan.js');
 const { due } = require('../helper/schedule.js');
 
 let pass = 0;
@@ -49,20 +49,17 @@ function file(root, rel, date) {
   check('no file names kept', JSON.stringify(s).includes('.jpg') || JSON.stringify(s).includes('offer'), false);
   check('missing folder', scanFolder(path.join(job, 'nope'), {}).missing, true);
 
-  check('folder stage: latest piece', folderStage({ floorplan: '2026-09-15', showsheet: '2026-09-14' }), 'Showsheet');
-  check('folder stage: brochure', folderStage({ brochure: '2026-01-01', photos: '2026-01-01' }), 'Brochure');
-  check('folder stage: nothing', folderStage({}), null);
 
-  /* ---------- scanAll writes the scan, breaks missing links, moves early stages ---------- */
+  /* ---------- scanAll writes the scan and breaks missing links; the stage is Asana's (D50, S8) ---------- */
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-drive-'));
   fs.mkdirSync(path.join(root, 'NY', 'A'), { recursive: true });
   file(root, 'NY/A/Floorplan/v1.pdf', '2026-10-01');
   file(root, 'NY/B/ShowSheet/s.pdf', '2026-10-02');
   const T = {
     properties: [
-      { id: 'a', slug: 'a', version: 1, stage: 'Won', stage_source: 'seed', drive_folder: 'NY/A', folder_state: 'linked' },
+      { id: 'a', slug: 'a', version: 1, stage: 'Prep', stage_source: 'Asana', drive_folder: 'NY/A', folder_state: 'linked' },
       { id: 'b', slug: 'b', version: 1, stage: 'Live', stage_source: 'DE', drive_folder: 'NY/B', folder_state: 'linked' },
-      { id: 'c', slug: 'c', version: 1, stage: 'Won', stage_source: 'Matt', drive_folder: 'NY/GONE', folder_state: 'linked' },
+      { id: 'c', slug: 'c', version: 1, stage: 'Prep', stage_source: 'Matt', drive_folder: 'NY/GONE', folder_state: 'linked' },
       { id: 'd', slug: 'd', version: 1, stage: null, drive_folder: null, folder_state: 'unlinked' }
     ],
     pitches: [], changes: [], sync_runs: []
@@ -76,11 +73,12 @@ function file(root, rel, date) {
   const out = await scanAll({ client: db, driveRoot: root, now: new Date('2026-10-20T02:00:00Z') });
   check('scanned the linked ones', out.scanned, 3);
   check('scan stored', Object.keys(T.properties[0].scan.weeks), ['2026-09-28']);
-  check('early stage moved by the folder', [T.properties[0].stage, T.properties[0].stage_source], ['Floorplan', 'folder']);
+  check('the folder never moves the stage', [T.properties[0].stage, T.properties[0].stage_source, 'folderStage' in require('../helper/scan.js')], ['Prep', 'Asana', false]);
+  check('pieces found are kept in the scan', T.properties[0].scan.found, { floorplan: '2026-10-01' });
   check('DE stage untouched', T.properties[1].stage, 'Live');
   check('gone folder marked broken', T.properties[2].folder_state, 'broken');
   check('broken link logged', T.changes.some(c => c.property_id === 'c' && c.field === 'folder_state' && c.source === 'folder'), true);
-  check('stage move logged', T.changes.some(c => c.property_id === 'a' && c.field === 'stage' && c.new_value === 'Floorplan'), true);
+  check('no stage change logged', T.changes.some(c => c.field === 'stage'), false);
   check('run logged', [T.sync_runs[0].kind, T.sync_runs[0].ok], ['scan', true]);
 
   /* Drive not mounted at 2:00: nothing is marked broken, the run says why */

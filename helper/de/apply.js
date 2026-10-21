@@ -107,6 +107,7 @@ async function writeRows(o, run, out, now) {
       let facts = core.facts || {};
       DE_FACTS.forEach(k => {
         if (r[k] == null) return;
+        facts = F.adoptEdit(facts, k, core[k]);   // a builder's edit to core is Matt's (D78)
         const wasMatt = facts[k] && facts[k].source === 'Matt';
         facts = F.applyFact(facts, k, 'DE', r[k]).facts;
         const shown = facts[k].value;

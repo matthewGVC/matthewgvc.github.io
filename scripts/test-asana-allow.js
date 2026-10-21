@@ -98,6 +98,9 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   check('the sample history keeps only the five kept kinds', kept.map(s => s.type), ['section', 'status', 'due', 'complete']);
   check('kept stories carry no text', JSON.stringify(kept).indexOf('flexible'), -1);
 
+  check('keepTask without memberships uses the project being read', allow.keepTask({ gid: '7', custom_fields: [] }, '555').projectGid, '555');
+  check('keepLoose without memberships uses the project being read', allow.keepLoose({ gid: '8', name: 'x' }, '777').projectGid, '777');
+
   /* ---------- keepPerson / keepLoose ---------- */
   const person = {
     gid: 'p1', name: 'Agent A', completed: false, notes: 'private', memberships: [{ section: { name: 'Sales Agents' } }],

@@ -15,7 +15,8 @@
      keepStory(raw)              → { type, at, from, to } | null  (comments etc. → null)
      keepPerson(raw)             → { gid, name, section, title, state, team,
                                      deBioUrl, deProfileUrl, past }
-     keepLoose(raw)              → { gid, name, projectGid, dueOn, completedAt, assignee }
+     keepLoose(raw, projectGid?) → { gid, name, projectGid, dueOn, completedAt, assignee }
+     (projectGid: the project being read, used when Asana sent no memberships)
      missingKept(tasks)          → kept field names no task has at all (a renamed field)
      KEPT_FIELDS, TASK_FIELDS    the names kept; the opt_fields string asked for
 
@@ -89,7 +90,7 @@ function keepTask(raw, projectGid) {
     createdAt: raw.created_at || null,
     assignee: nm(raw.assignee),
     section: nm(m.section),
-    projectGid: gidOf(m.project),
+    projectGid: gidOf(m.project) || projectGid || null,
     parentGid: gidOf(raw.parent),
     permalink: raw.permalink_url || null,
     fields: keptFields(raw)
@@ -143,12 +144,12 @@ function keepPerson(raw) {
   };
 }
 
-function keepLoose(raw) {
+function keepLoose(raw, projectGid) {
   const m = (raw.memberships || [])[0] || {};
   return {
     gid: raw.gid,
     name: raw.name,
-    projectGid: gidOf(m.project),
+    projectGid: gidOf(m.project) || projectGid || null,
     dueOn: raw.due_on || null,
     completedAt: raw.completed_at || null,
     assignee: nm(raw.assignee)

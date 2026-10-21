@@ -124,6 +124,10 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   check('DE\'s own change takes over, logged', [db.T.properties[0].core.price, db.T.properties[0].core.facts.price.source, tookOver && tookOver.old_value, tookOver && tookOver.new_value],
     [2300000, 'DE', 2250000, 2300000]);
   check('DE facts keep their sources', db.T.properties[0].core.facts.beds, { value: 2, source: 'DE', bySource: { DE: 2 } });
+  /* a builder's save changes core.price, not the facts record: it is Matt's, and DE's unchanged price leaves it */
+  db.T.properties[0].core.price = 2275000;
+  await applyRun({ client: db, report: report([]), now: NOW, courtesy: gvc, rows: [row('900001', { price: 2300000 })] });
+  check('a tool edit holds over DE\'s unchanged value', [db.T.properties[0].core.price, db.T.properties[0].core.facts.price.source], [2275000, 'Matt']);
 
   /* a new listing that isn't GVC's is remembered, not created */
   db = fakeDb();

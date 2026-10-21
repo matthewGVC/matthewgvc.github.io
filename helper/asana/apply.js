@@ -6,6 +6,8 @@
        run      readRun()'s result (helper/asana/read.js)
        plan     the ticked link plan (link.js readPlanFile) on the first link run
      → { runId, changes, created, errors, unlinked: [{ gid, name, why, propertyId? }] }
+       sync_runs.ok is false when the read was partial (run.partial); the
+       read's warnings are stored in sync_runs.errors as { what: 'warning' }.
 
    What it writes:
    - asana_tasks: every task read (listing, dev, loose), allowlisted fields and
@@ -17,9 +19,14 @@
      theirs), core.suggestedAgentIds, dev_project_id for a TJ New Dev house.
      Every changed value is one `changes` row, source 'Asana'.
    - which tasks become rows: on the plan run, the ticked rows (unticked ones
-     are cached as ignored and never come back by themselves); after that, a
-     task never seen before that is List Side at Pitch (with a pitch date) →
-     In contract. One first seen Sold or Off market never does (D54).
+     are cached as ignored and never come back by themselves); after that, an
+     unlinked List-Side task at Pitch (with a pitch date) → In contract, checked
+     again every run (a Lead gains its pitch date later). A task first met as a
+     candidate already Sold / Rented / Off market is cached as ignored: that
+     decision is kept and it never becomes a job (D54).
+   - facts: a value changed in core outside the helper (a builder's save) is
+     adopted first as Matt's (GVC_FACTS.adoptEdit), so Asana repeating its old
+     value never undoes it.
    - pitches (D55): a pitch whose task reaches Prep or later is won and its
      listing made (from_pitch_id); Off market while a pitch → not won.
    - developments (D65): hints from the 🚧 project, the house row, the Buy-Side
@@ -44,6 +51,7 @@ const { looseNeedles, namesOne } = require('./read.js');
 
 const ACTIVE = L.ACTIVE;
 const WON = ACTIVE.concat(['Sold', 'Rented']);
+const CLOSED = ['Sold', 'Rented', 'Off market'];
 const DE_KEYS = ['price', 'beds', 'baths', 'halfBaths', 'sqft'];
 const NO_PLAN = 'No link plan applied yet: run node helper/asana-sync.js --plan, tick it, then --apply-plan <file>.';
 
@@ -57,8 +65,10 @@ async function applyRun(o) {
   const sr = (await client.insert('sync_runs', { kind, started_at: now, rows_read: run.rowsRead || null, totals: run.totals || null,
     helper_version: o.helperVersion || null }))[0];
   const out = { runId: sr.id, changes: 0, created: 0, errors: [], unlinked: [] };
+  // a project that failed to read (or a renamed field) is kept with the run, so the overview can say why
+  const warned = (run.warnings || []).map(w => ({ what: 'warning', detail: w }));
   const finish = (ok, errs) => client.update('sync_runs', { id: sr.id }, {
-    finished_at: new Date().toISOString(), ok, changes: out.changes, errors: errs && errs.length ? errs : null,
+    finished_at: new Date().toISOString(), ok, changes: out.changes, errors: errs.concat(warned).length ? errs.concat(warned) : null,
     totals: Object.assign({}, run.totals || {}, out.unlinked.length ? { unlinked: out.unlinked.map(u => ({ gid: u.gid, why: u.why })) } : {}) });
 
   if (!run.ok) { await finish(false, [{ what: 'aborted', detail: run.aborted }]); return out; }
@@ -69,7 +79,8 @@ async function applyRun(o) {
     await finish(false, out.errors.concat([{ what: 'failed', detail: e.message }]));
     throw e;
   }
-  await finish(!out.stopped, out.errors);
+  // a run that missed a listing project isn't a good run: the next one asks from the last good one
+  await finish(!out.stopped && !run.partial, out.errors);
   return out;
 }
 
@@ -237,10 +248,11 @@ async function writeRun(o, sr, out, now) {
     out.created++; out.changes++;
   }
 
-  async function updateListing(p, t, stage, link) {
+  async function updateListing(p, t, stage, link, fromPitch) {
     const own = { property_id: p.id };
     const core = clone(p.core) || {}, patch = {}, changes = [];
-    if (link) { patch.asana_gid = t.gid; changes.push(log(own, 'asana_gid', null, t.gid, 'Linked to Asana')); }
+    if (link) { patch.asana_gid = t.gid; changes.push(log(own, 'asana_gid', null, t.gid, fromPitch ? 'Pitch won in Asana' : 'Linked to Asana')); }
+    if (fromPitch && p.from_pitch_id !== fromPitch.id) { patch.from_pitch_id = fromPitch.id; changes.push(log(own, 'from_pitch_id', p.from_pitch_id || null, fromPitch.id)); }
     if (stage !== 'Pitch' && p.stage !== 'Archived' && p.stage !== stage) {
       patch.stage = stage; patch.stage_source = 'Asana';
       changes.push(log(own, 'stage', p.stage || null, stage));
@@ -250,10 +262,9 @@ async function writeRun(o, sr, out, now) {
     let facts = core.facts || {};
     const f0 = factsOf(t);
     Object.keys(f0).forEach(k => {
-      if (!facts[k] && core[k] !== undefined && core[k] !== null && core[k] !== '') {
-        const src = p.de_listing_id && DE_KEYS.indexOf(k) !== -1 ? 'DE' : 'legacy';
-        facts = Object.assign({}, facts, { [k]: { value: core[k], source: src, bySource: { [src]: core[k] } } });
-      }
+      // a value edited in a tool since the last run is Matt's; one with no record yet is legacy
+      // (or DE's, for DE's own facts on a DE-linked job) and only fills gaps (D78, D79)
+      facts = F.adoptEdit(facts, k, core[k], p.de_listing_id && DE_KEYS.indexOf(k) !== -1 ? 'DE' : 'legacy');
       facts = F.applyFact(facts, k, 'Asana', f0[k]).facts;
       const shown = facts[k].value;
       if (!eq(core[k], shown)) { changes.push(log(own, k, core[k], shown)); core[k] = shown; }
@@ -323,7 +334,15 @@ async function writeRun(o, sr, out, now) {
     if (prop) return updateListing(prop, t, st.stage, false);
     if (pitch) {
       if (WON.indexOf(st.stage) !== -1 && pitch.outcome !== 'won') {
-        const made = await createListing(t, st.stage, pitch, entry);
+        // the job may already be there (a starter row at the address): link it, never a second one
+        const live = L.matchTask(t, { properties: props, pitches }, 'listing');
+        if (live.taken || live.tie) {
+          out.unlinked.push({ gid: t.gid, name: t.name, why: live.taken ? 'same address' : 'more than one job at this address', propertyId: live.taken });
+          return;
+        }
+        let made = live.propertyId && props.find(x => x.id === live.propertyId && !x.asana_gid);
+        if (made) { entry.property_id = made.id; await updateListing(made, t, st.stage, true, pitch); }
+        else made = await createListing(t, st.stage, pitch, entry);
         await save('pitches', pitch, { outcome: 'won', won_property_id: made.id },
           [log({ pitch_id: pitch.id }, 'outcome', pitch.outcome, 'won', 'Asana: ' + (t.fields['Listing Status'] || t.section))]);
       } else if (st.stage === 'Off market' && pitch.outcome === 'open') {
@@ -334,15 +353,18 @@ async function writeRun(o, sr, out, now) {
     }
     if (planBy) {
       const pr = planBy.get(t.gid);
-      if (!pr) return;                                  // not on the plan: cached only
+      if (!pr) {                                        // not on the plan: cached; closed ones decided for good
+        if (MAP.isGvcListing(t) && CLOSED.indexOf(st.stage) !== -1) entry.ignored = true;
+        return;
+      }
       if (!pr.tick) { entry.ignored = true; return; }   // Matt left it out
       // the task may have moved since the plan was made: its stage now decides pitch or listing
       if (st.stage === 'Pitch') return t.fields['🗓️ Pitch'] ? linkOrCreate(t, 'Pitch', 'pitch', pr.kind === 'pitch' ? pr.match : null, entry) : undefined;
       return linkOrCreate(t, st.stage, 'listing', pr.kind === 'listing' ? pr.match : null, entry);
     }
-    if (c || !MAP.isGvcListing(t)) return;             // seen before (decided), or not GVC-listed
+    if ((c && c.ignored) || !MAP.isGvcListing(t)) return;   // decided (by Matt or as closed), or not GVC-listed
     if (st.stage === 'Pitch') { if (t.fields['🗓️ Pitch']) await linkOrCreate(t, 'Pitch', 'pitch', null, entry); return; }
-    if (ACTIVE.indexOf(st.stage) === -1) return;       // first seen Sold / Off market: never a job
+    if (ACTIVE.indexOf(st.stage) === -1) { entry.ignored = true; return; }   // first met closed: never a job, remembered
     return linkOrCreate(t, st.stage, 'listing', null, entry);
   }
 
@@ -356,7 +378,7 @@ async function writeRun(o, sr, out, now) {
   }
 
   /* tasks left unlinked at the address of a job linked to another task */
-  entries.filter(e => e.kind === 'listing' && !e.property_id && !e.pitch_id && !e.ignored).forEach(e => {
+  entries.filter(e => e.kind === 'listing' && !e.property_id && !e.pitch_id).forEach(e => {
     const t = fresh.get(e.gid);
     if (!t || !MAP.isGvcListing(t) || out.unlinked.some(u => u.gid === e.gid)) return;
     const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && L.sameAddress(t.name, p.core));
@@ -376,8 +398,12 @@ async function writeRun(o, sr, out, now) {
     }
   }
 
-  /* ---------- the cache, in batches with one column list each ---------- */
-  for (let i = 0; i < entries.length; i += 500) await client.upsert('asana_tasks', entries.slice(i, i + 500), 'gid');
+  /* ---------- the cache: one row per task (a listing row wins over the same task in a 🚧 project),
+     in batches with one column list each (PostgREST can't touch a row twice in one batch) ---------- */
+  const byGid = new Map();
+  entries.forEach(e => { if (!byGid.has(e.gid) || e.kind === 'listing') byGid.set(e.gid, e); });
+  const rows = Array.from(byGid.values());
+  for (let i = 0; i < rows.length; i += 500) await client.upsert('asana_tasks', rows.slice(i, i + 500), 'gid');
 }
 
 module.exports = { applyRun, snapshotOf, NO_PLAN };

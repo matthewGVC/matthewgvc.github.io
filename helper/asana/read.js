@@ -29,9 +29,14 @@
    readProjects  listing project gids read in full without error (the writer
              only treats a task as gone when its project was read whole)
 
-   Stops: a refused token ("Asana refused the token"), a page sequence that
-   repeats a gid, or a full read under half the last good open count. Any other
-   failure of one project is a warning and the rest is read.
+   partial   true when a listing project failed to read (the rest was read):
+             the writer stores the warnings and doesn't count the run as good
+
+   Stops: a refused token ("Asana refused the token": a 401 anywhere, or a 403
+   on a listing project), every listing project failing ("Asana couldn't be
+   reached"), a page sequence that repeats a gid, or a full read under half the
+   last good open count. Any other failure is a warning and the rest is read.
+   A task in two listing projects is kept once (the first project read).
    Writes nothing, anywhere.
    ============================================================ */
 'use strict';
@@ -46,7 +51,7 @@ class StopRun extends Error {}
 
 function stopFor(e) {
   if (e instanceof StopRun) return e.message;
-  if (e && (e.status === 401 || e.status === 403)) return 'Asana refused the token';
+  if (e && e.status === 401) return 'Asana refused the token';
   if (e && e.message === 'Asana sent a task twice') return 'Asana sent a task twice, so its pages can\'t be trusted. Nothing was changed.';
   return null;
 }
@@ -96,8 +101,9 @@ async function readRun(o) {
     }
 
     /* listings */
-    let listingError = false;
-    for (const market of Object.keys(a.listings || {})) {
+    let listingError = false, firstError = null;
+    const markets = Object.keys(a.listings || {}), seen = new Set();
+    for (const market of markets) {
       const gid = a.listings[market];
       let kept;
       try {
@@ -106,7 +112,9 @@ async function readRun(o) {
         kept = (await asana.get('/tasks', q)).map(r => Object.assign(allow.keepTask(r, gid), { market }));
       } catch (e) {
         if (stopFor(e)) throw e;
+        if (e.status === 403) throw new StopRun('Asana refused the token');
         listingError = true;
+        firstError = firstError || e.message;
         out.warnings.push(market + ' listings could not be read: ' + e.message);
         continue;
       }
@@ -121,8 +129,12 @@ async function readRun(o) {
         }
       }
       out.rowsRead[market] = kept.length;
-      out.listings.push.apply(out.listings, kept);
+      kept.forEach(t => { if (!seen.has(t.gid)) { seen.add(t.gid); out.listings.push(t); } });
     }
+    if (markets.length && markets.every(m => out.rowsRead[m] === undefined)) {   // not one listing project answered
+      throw new StopRun('Asana couldn\'t be reached (' + firstError + '), so nothing was changed.');
+    }
+    out.partial = listingError;
     out.missing = full && !listingError ? allow.missingKept(out.listings) : null;
     if (out.missing && out.missing.length) out.warnings.push('kept field missing from every task: ' + out.missing.join(', '));
 
@@ -156,7 +168,7 @@ async function readRun(o) {
       for (const gid of a.loose || []) {
         try {
           const raw = await asana.get('/projects/' + gid + '/tasks', { opt_fields: LOOSE_FIELDS });
-          raw.filter(r => namesOne(r.name, o.looseNames)).forEach(r => out.loose.push(allow.keepLoose(r)));
+          raw.filter(r => namesOne(r.name, o.looseNames)).forEach(r => out.loose.push(allow.keepLoose(r, gid)));
         } catch (e) {
           if (stopFor(e)) throw e;
           out.warnings.push('a loose-task project (' + gid + ') could not be read: ' + e.message);

@@ -147,10 +147,11 @@ async function syncOnce(o) {
   else {
     const runs = (await client.select('sync_runs', { kind: 'asana' })).filter(r => r.ok && r.finished_at)
       .sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
-    const last = runs[0], lastFull = runs.find(r => r.totals && r.totals.full);
+    const last = runs[0], lastOpen = {};
+    runs.filter(r => r.totals && r.totals.full).reverse().forEach(r => Object.assign(lastOpen, r.totals.open || {}));
     const linked = (await client.select('dev_projects')).filter(d => d.asana_project_gid);
     run = await readRun({ asana, cfg, full: !!(o.full || o.plan || !last), since: o.plan || !last ? null : last.started_at,
-      lastOpen: lastFull ? lastFull.totals.open : null, looseNames: looseNeedles(linked) });
+      lastOpen, looseNames: looseNeedles(linked) });
   }
   const res = await applyRun({ client, run, now, plan: o.plan, helperVersion: require('./package.json').version });
   return Object.assign(res, { report: summary(run) });

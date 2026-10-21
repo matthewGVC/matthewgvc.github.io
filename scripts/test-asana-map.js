@@ -87,6 +87,10 @@ check('full facts (absent keys omitted)', full, {
   listingUrl: 'https://example.com/l/3-sample'
 });
 check('price falls back to Original', M.factsOf(task({ fields: { '💵 Original Price': 900000, '💵 Current Price': null } })), { price: 900000, originalPrice: 900000 });
+check('0 sq ft, price and lot size count as not filled in (150 E61, 200 E57)',
+  M.factsOf(task({ fields: { 'ℹ️ INT SF': 0, '💵 Current Price': 0, '💵 Original Price': 0, 'ℹ️ Acreage': 0 } })), {});
+check('0 Current Price falls back to Original', M.factsOf(task({ fields: { '💵 Current Price': 0, '💵 Original Price': 750000 } })), { price: 750000, originalPrice: 750000 });
+check('Studio (beds 0) stays', M.factsOf(task({ fields: { 'ℹ️ Property Stats': ['Studio', '1 Bath'] } })).beds, 0);
 check('kind rental', M.factsOf(task({ fields: { 'Sale/Rent': 'For Rent' } })).kind, 'rental');
 check('kind For Sale or Rent → sale', M.factsOf(task({ fields: { 'Sale/Rent': 'For Sale or Rent' } })).kind, 'sale');
 check('NJ facts', M.factsOf(task({ fields: { '📍 County': 'Monmouth', '📍 Zip': '07700', '📍 MLS': 'MoreMLS', 'ℹ️ Acreage': 0.5,

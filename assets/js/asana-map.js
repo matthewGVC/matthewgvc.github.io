@@ -17,7 +17,8 @@
          names that count as NYC neighbourhoods for City/Hood (default: the list
          below plus window.GVC_NYC_AREAS when the page loaded nyc-areas.js;
          nyc-areas.js is browser-only, so Node callers pass a list if they need more).
-         "For Sale or Rent" counts as a sale.
+         "For Sale or Rent" counts as a sale. A 0 price, original price, sq ft
+         or lot size counts as not filled in (beds 0 is a studio and stays).
      datesOf(task, history, today, opts?) → { listedOn: { on, planned }, … } (§6.2, S7)
          planned = the date is after today. listedOn falls back to the first
          move to Active in the history; offMarketOn is the last move to TOTM /
@@ -171,7 +172,8 @@
   function factsOf(t, opts) {
     var out = {};
     var put = function (k, v) { if (!empty(v)) out[k] = v; };
-    var cur = field(t, '💵 Current Price'), orig = field(t, '💵 Original Price');
+    var amount = function (v) { return empty(v) || Number(v) === 0 ? null : v; };   // 0 = not filled in
+    var cur = amount(field(t, '💵 Current Price')), orig = amount(field(t, '💵 Original Price'));
     put('price', cur !== null ? cur : orig);
     put('originalPrice', orig);
     var sr = field(t, 'Sale/Rent');
@@ -181,8 +183,8 @@
       var p = parseStats(st);
       ['beds', 'baths', 'halfBaths', 'rooms', 'levels'].forEach(function (k) { if (k in p) out[k] = p[k]; });
     }
-    put('sqft', field(t, 'ℹ️ INT SF'));
-    put('lotSize', field(t, 'ℹ️ Acreage'));
+    put('sqft', amount(field(t, 'ℹ️ INT SF')));
+    put('lotSize', amount(field(t, 'ℹ️ Acreage')));
     var pt = field(t, 'ℹ️ Property Type');
     put('propertyType', Array.isArray(pt) ? pt.join(', ') : pt);
     var ch = field(t, '📍 City/Hood');

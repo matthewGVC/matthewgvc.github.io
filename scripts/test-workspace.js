@@ -130,6 +130,16 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('tasks: flags and own items', [(await text(p, '#tlist')).includes('20 Sample Ave 7B: Link the Drive folder'), (await text(p, '#tlist')).includes('Florida office signage')], [true, true]);
   check('no won-or-lost task', /won or lost/i.test(await text(p, '#tlist')), false);
   {
+    // the To-do page is Matt's own: the team sign-in sees a note, and the list is never read
+    const tt = await open(browser, { path: '/tools/todo/', members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+    check('to-do page, team sign-in: no list, a plain note, nothing read', [((await text(tt.page, '#sections')) || '').includes('Florida office signage'),
+      ((await text(tt.page, '#status')) || '').includes('only for Matt'), tt.reads.includes('GET todos')], [false, true, false]);
+    await tt.ctx.close();
+    const to = await open(browser, { path: '/tools/todo/' });
+    check('to-do page, owner: the list shows', ((await text(to.page, '#sections')) || '').includes('Florida office signage'), true);
+    await to.ctx.close();
+  }
+  {
     const tt = await open(browser, { members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
     const tl = (await text(tt.page, '#tlist')) || '';
     check('team sign-in: workspace flags only, no personal tasks', [tl.includes('20 Sample Ave 7B: Link the Drive folder'), tl.includes('Florida office signage'),

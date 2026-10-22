@@ -9,6 +9,8 @@
      GVC_DRIVE_RULES.allowedInJob('Photos/Edited/a.jpg')  → true
      GVC_DRIVE_RULES.allowedInJob('Exclusive signed.pdf') → false
      GVC_DRIVE_RULES.isPaperworkFolder('Offers')          → true  (skipped by the folder scan)
+     GVC_DRIVE_RULES.isPaperwork('Marketing Docs')        → false; isPaperwork('Docs') → true: a folder the walkers
+                                                            never open, at any depth
      GVC_DRIVE_RULES.hasPaperworkWord('Signed Contract.pdf') → true (whole word, anywhere)
      GVC_DRIVE_RULES.rel('\\Photos\\Edited\\')            → 'Photos/Edited' ('..' → null)
      GVC_DRIVE_RULES.allowedInJob('Marketing/Offer 2.pdf') → false (paperwork in ANY segment)
@@ -31,7 +33,9 @@
     'showsheet', 'showsheets', 'show sheet', 'brochure', 'copy', 'video',
     'open house', 'postcard', 'postcards', 'signage', 'signs'];
 
-  var PAPERWORK = /^(doc|offer|contract|deal|commission|exclusive|closing)/i;
+  /* a paperwork folder: its name starts with one of these whole words ("Docs", "Offers 2024",
+     "Deal Sheet"); "Dock photos" and "Offering plan" are not paperwork */
+  var PAPERWORK = /^(docs?|documents?|offers?|contracts?|deals?|commissions?|exclusives?|closings?)\b/i;
 
   /* Windows drops trailing dots and spaces from a name, so ".. " or "..."
      could still mean "up a folder": any segment made only of dots and
@@ -115,5 +119,6 @@
     return out;
   }
 
-  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord, jobTree: jobTree };
+  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
+    isPaperwork: isPaperwork, jobTree: jobTree };
 });

@@ -108,7 +108,8 @@ function scanFolder(abs, opts) {
 /* The job folder as GVC_HEALTH's tree, like assets/js/drive.js treeOf (depth 4): every name passes
    drive-rules BEFORE it is statted or opened. Paperwork folders come out as one skipped line, paperwork
    and other loose top files are only counted, and a loose top file named like a piece (a showsheet at the
-   top) is passed by name so the health check can flag it. Stats only; no file is ever opened. */
+   top) is passed by name so the health check can flag it. A paperwork folder deeper down ("Marketing/Docs")
+   is dropped before it is read. Stats only; no file is ever opened. */
 const NO_STAT = ['raw', 'raws', 'staged', 'print', 'web'];   // photo sets: counted by name
 function treeOf(abs, depth) {
   const top = { name: path.basename(abs), kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
@@ -138,6 +139,7 @@ function treeOf(abs, depth) {
         }
       } else if (!RULES.allowedInJob(at.join('/'))) return;
       if (!e.isDirectory()) { node.children.push(fileNode(p, e.name, segs)); return; }
+      if (RULES.isPaperwork(e.name)) return;                     // "Marketing/Docs": never listed, never opened
       const d = { name: e.name, kind: 'directory', children: [] };
       node.children.push(d);
       if (left <= 1) d.more = true; else walk(p, at, left - 1, d);

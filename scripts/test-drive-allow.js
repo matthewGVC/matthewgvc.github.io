@@ -52,6 +52,9 @@ check('prefix rule only for folders: file names like Offering, Dock, Document ar
   ['Marketing/Offering plan.pdf', 'Photos/Edited/Dock view.jpg', 'Marketing/Brochure/Document.pdf', 'Marketing/Dealer.pdf'].map(R.allowedInJob), [true, true, true, true]);
 check('paperwork folders and words still refused', ['Offers/x.pdf', 'Docs/x.pdf', 'Marketing/Offer from Buyer.pdf', 'Marketing/Documents/a.pdf'].map(R.allowedInJob), [false, false, false, false]);
 check('R13: whole paperwork words hide a file even in Marketing', ['Marketing/Postcard/Exclusive Listing postcard.pdf', 'Photos/Edited/Closing time.jpg'].map(R.allowedInJob), [false, false]);
+check('final review 1: folder prefix rule takes whole leading words, so Dock photos is a folder like any other',
+  [R.isPaperworkFolder('Dock photos'), R.allowedInJob('Photos/Dock photos/a.jpg'), R.isPaperworkFolder('Documents'), R.isPaperworkFolder('Docs 2024'), R.isPaperworkFolder('Offers')],
+  [false, true, true, true, true]);
 check('nested marketing still fine', ['Marketing/Showsheet/Showsheet - 1 Example St - 2026-10-01.pdf', 'Floorplan/v2/Floorplan unbranded.pdf', 'Photos/Edited/01.jpg'].every(R.allowedInJob), true);
 
 /* jobTree: what the page and the tree builder may show */

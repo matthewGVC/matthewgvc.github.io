@@ -150,6 +150,18 @@ function file(root, rel, date) {
   check('tree: nothing from paperwork anywhere', JSON.stringify(tr).includes('Jane Client'), false);
   const raw = tr.children.find(c => c.name === 'Photos').children.find(c => c.name === 'Raw').children[0];
   check('tree: raw photos are counted by name, not statted', raw, { name: 'r1.cr2', kind: 'file' });
+  /* final review 1: a paperwork folder below the top is never listed nor opened */
+  file(root3, JF + '/Marketing/Docs/Seller ID.pdf', '2026-10-03');
+  file(root3, JF + '/Photos/Dock photos/d1.jpg', '2026-10-03');
+  const opened = [], realReaddir = fs.readdirSync;
+  fs.readdirSync = function (p) { opened.push(String(p)); return realReaddir.apply(fs, arguments); };
+  let tr2;
+  try { tr2 = treeOf(path.join(root3, ...JF.split('/')), 4); } finally { fs.readdirSync = realReaddir; }
+  const mk = tr2.children.find(c => c.name === 'Marketing');
+  check('tree: Marketing/Docs is not listed', mk.children.map(c => c.name), ['Brochure']);
+  check('tree: Marketing/Docs is never opened', opened.some(p => /[\\/]Docs$/.test(p)), false);
+  check('tree: Seller ID never named', JSON.stringify(tr2).includes('Seller ID'), false);
+  check('tree: Dock photos is a folder like any other', tr2.children.find(c => c.name === 'Photos').children.map(c => c.name), ['Dock photos', 'Edited', 'Raw']);
   const T3 = { properties: [
     { id: 'p', slug: 'p', version: 1, stage: 'Live', market: 'NYC', drive_folder: JF, folder_state: 'linked',
       scan: { candidate: 'GVC - New York/Somewhere', candidateAt: '2026-10-01T02:00:00Z', weeks: { old: 1 } } }

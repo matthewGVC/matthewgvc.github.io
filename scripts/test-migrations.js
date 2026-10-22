@@ -120,7 +120,9 @@ const USERS = {
   /* ---------- rules ---------- */
   check('matt reads', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 3);
   check('helper reads', (await as('helper', 'select count(*)::int n from public.properties')).rows[0].n, 3);
-  check('shared account still works', (await as('team', 'select count(*)::int n from public.todos')).rows[0].n, 1);
+  // before 0008 the shared team account reads the to-dos; from 0008 they are Matt's own
+  check('shared account and to-dos', (await as('team', 'select count(*)::int n from public.todos')).rows[0].n, UPTO >= '0008' ? 0 : 1);
+  check('shared account still reads properties', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 3);
   check('stranger reads nothing', (await as('stranger', 'select count(*)::int n from public.properties')).rows[0].n, 0);
   check('stranger reads no todos', (await as('stranger', 'select count(*)::int n from public.todos')).rows[0].n, 0);
   check('anon reads nothing', (await as('anon', 'select count(*)::int n from public.properties')).rows[0].n, 0);
@@ -206,6 +208,25 @@ const USERS = {
     }
     check('helper can write the cache', await fails('helper', `update public.asana_tasks set name = 'Task 2' where gid = 't1'`), false);
     check('bad task kind refused', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind) values ('t2', 'pr1', 'odd')`), true);
+  }
+
+  /* ---------- 0008: to-dos are Matt's own (the helper may read them for the backup) ---------- */
+  if (UPTO >= '0008') {
+    const tr8 = (await db.query(`insert into auth.users (email) values ('todoteam@gvcrealestateteam.com') returning id`)).rows[0].id;
+    await db.query(`insert into public.members (user_id, name, initials, role) values ($1, 'Todo Team', 'TT', 'team')`, [tr8]);
+    id.todoteam = tr8;
+    const n = async who => (await as(who, 'select count(*)::int n from public.todos')).rows[0].n;
+    const tries = async (who, sql) => { try { const r = await as(who, sql); return r.affectedRows || 0; } catch (e) { return 'refused'; } };
+    check('0008: Matt reads his to-dos', await n('matt'), 1);
+    check('0008: Matt adds and ticks a to-do', [await tries('matt', `insert into public.todos (body) values ('Matt adds')`), await tries('matt', `update public.todos set done = true where body = 'Matt adds'`)], [1, 1]);
+    check('0008: the helper reads them (nightly backup)', await n('helper'), 2);
+    check('0008: the helper can\'t change them', [await tries('helper', `insert into public.todos (body) values ('helper adds')`), await tries('helper', `update public.todos set done = true`), await tries('helper', `delete from public.todos`)],
+      ['refused', 0, 0]);
+    check('0008: the shared team account sees and changes none', [await n('team'), await tries('team', `insert into public.todos (body) values ('team adds')`), await tries('team', `delete from public.todos`)], [0, 'refused', 0]);
+    check('0008: a plain team member sees and changes none', [await n('todoteam'), await tries('todoteam', `update public.todos set done = true`)], [0, 0]);
+    check('0008: strangers and anon see none', [await n('stranger'), await n('anon')], [0, 0]);
+    check('0008: an inactive owner sees none', await (async () => { await db.query(`update public.members set active = false where role = 'owner'`); const x = await n('matt'); await db.query(`update public.members set active = true where role = 'owner'`); return x; })(), 0);
+    await db.query(`delete from public.todos where body = 'Matt adds'`);
   }
 
   /* ---------- 0007: details_doc, no_rebuild, save_job ---------- */

@@ -126,9 +126,10 @@ function file(root, rel, date) {
   check('M18 scan: only the building folder (no unit folder): no candidate', cand('n2'), null);
   check('M18 scan: NJ resale by town', cand('j1'), 'GVC - New Jersey/1. Residential Sales/1. Resale/Wall Township/40 Chapel Lane');
   check('M18 scan: a development house in New Development', cand('d1'), 'GVC - New Jersey/New Development/610 Agnes Ave');
-  check('M18 scan: never for a row with no stage or an Off market job', [T2.properties.find(p => p.id === 'x1').scan, T2.properties.find(p => p.id === 'o1').scan], [undefined, undefined]);
+  check('M18 scan: never for a row with no stage', T2.properties.find(p => p.id === 'x1').scan, undefined);
+  check('M18 scan: an Off market job is looked for too (D88: prep happens while off market)', cand('o1'), NYB + '/100 Example St/4A');
   check('M18 scan: nothing linked by itself', T2.properties.map(p => [p.drive_folder, p.folder_state]).filter(x => x[0] || x[1] !== 'unlinked'), []);
-  check('M18 scan: counted, and Drive left exactly as it was', [out2.candidates, JSON.stringify(tree(root2)) === JSON.stringify(before2)], [3, true]);
+  check('M18 scan: counted, and Drive left exactly as it was', [out2.candidates, JSON.stringify(tree(root2)) === JSON.stringify(before2)], [4, true]);
   const w2 = writes2;
   await scanAll({ client: db2, driveRoot: root2, now: new Date('2026-10-22T02:00:00Z') });
   check('M18 scan: the same candidate again is not written again', writes2 - w2, 0);

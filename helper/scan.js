@@ -35,7 +35,7 @@ const LINK = require('../assets/js/folder-link.js');
 const ADDR = require('../assets/js/address-aliases.js');
 const HEALTH = require('../assets/js/folder-health.js');
 const { driveLink } = require('./drive-link.js');
-const PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented'];
+const PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market'];   // match-check.js's, M18 (D88)
 const NYC_ROOT = 'GVC - New York/Building Information';
 
 /* folder names under the Drive root, as GVC_DRIVE.list gives them; read once per run */

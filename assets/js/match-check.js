@@ -63,6 +63,10 @@
    closeDate and nothing else, checked 2026-10-21), so there is no listed half.
    M12 on a task ticked ahead of its date says so, rather than "open".
    M8 never checks "Send Just Listed Email" (D74).
+   Off market (D88): prep often happens while a listing is off market, so the
+   folder checks (M6, M18) and the kit check (M8) apply as from Prep; M13 (the
+   task ticked while checklist steps are open) doesn't, since a listing taken
+   off the market is often closed with its steps left open.
    M4 counts DE's 0 sq ft and 0 baths as blank (DE sends 0 for most co-ops);
    DE's 0 beds is a studio and is compared.
 
@@ -116,7 +120,7 @@
   var DE_WORDS = { Active: 'Active', ActiveUnderContract: 'Contract signed', Pending: 'Pending' };
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var RANK = { 'Prep': 0, 'Live': 1, 'Accepted offer': 2, 'In contract': 3, 'Sold': 4, 'Rented': 4, 'Off market': 5 };
-  var PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented'];
+  var PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market'];   // M6 / M18 (D88)
   var ONCE_LIVE = ['Live', 'Accepted offer', 'In contract', 'Sold', 'Rented'];
   var STAGE_DATE = { 'Live': 'listedOn', 'Accepted offer': 'acceptedOfferOn', 'In contract': 'contractOn',
     'Sold': 'closedOn', 'Rented': 'closedOn', 'Off market': 'offMarketOn' };
@@ -161,7 +165,7 @@
     return Array.isArray(v) ? v.join(', ') : String(v);
   }
   function stagePhrase(s) {
-    return { 'Prep': 'in Prep', 'Accepted offer': 'at Accepted offer', 'In contract': 'in contract' }[s] || s;
+    return { 'Prep': 'in Prep', 'Accepted offer': 'at Accepted offer', 'In contract': 'in contract', 'Off market': 'off market' }[s] || s;
   }
   function personKey(name) {
     var w = String(name || '').toLowerCase().replace(/[^a-z\s'-]/g, ' ').split(/\s+/).filter(Boolean);
@@ -526,7 +530,7 @@
       }
 
       /* M13: the listing task ticked while checklist steps are open */
-      if (a.completed) {
+      if (a.completed && stage !== 'Off market') {
         var open = 0;
         (a.checklist || []).forEach(function (b) { (b.steps || []).forEach(function (s) { if (!s.done) open++; }); });
         if (open) add('M13', 'M13', 'The Asana task is ticked done while ' + open + ' checklist step' + (open === 1 ? ' is' : 's are') + ' open.', { open: open }, 'Asana');
@@ -678,7 +682,7 @@
     M3: 'The price on DE differs from Asana\'s Current Price.',
     M4: 'Beds, baths or square feet differ between DE and Asana.',
     M5: 'The closing date in Asana and on DE are more than 3 days apart.',
-    M6: 'A Drive folder problem: none linked once the job is in Prep or later, the linked folder is gone, or Asana\'s Drive Link points elsewhere.',
+    M6: 'A Drive folder problem: none linked once the job is in Prep or later (off market too), the linked folder is gone, or Asana\'s Drive Link points elsewhere.',
     M7: 'An Asana link is empty but the workspace knows it (Drive Link or Elliman Link). The line has the link to paste.',
     M8: 'A marketing step and Drive disagree: ticked in Asana with no file, or the file has been there a week and the step is still open.',
     M9: 'The exclusive has expired while the listing is still Live.',

@@ -132,8 +132,10 @@ check('M5: a planned date is skipped', has(M.check(sold('2026-11-30', true, '202
 /* ---------- M6: no folder while Prep or later / Drive Link elsewhere ---------- */
 check('M6: no folder linked while Live', has(M.check(job({ drive_folder: null, folder_state: 'unlinked' }), ctx()), 'M6').map(m => [m.text, m.fixAt]),
   [['No Drive folder is linked, and the job is Live.', 'Drive']]);
-check('M6: Off market without a folder → nothing', has(M.check(job({ stage: 'Off market', drive_folder: null, folder_state: 'unlinked', de_stage: null, de_listing_id: null, de: null,
-  asana: { status: 'Listing Removed', section: 'Listing Removed', stageFromStatus: 'Off market', stageFromSection: 'Off market' } }), ctx()), 'M6').length, 0);
+// D88: prep often happens while a listing is off market, so the folder checks still apply
+check('M6: Off market without a folder: flagged, in plain words', has(M.check(job({ stage: 'Off market', drive_folder: null, folder_state: 'unlinked', de_stage: null, de_listing_id: null, de: null,
+  asana: { status: 'Listing Removed', section: 'Listing Removed', stageFromStatus: 'Off market', stageFromSection: 'Off market' } }), ctx()), 'M6').map(m => [m.text, m.fixAt]),
+  [['No Drive folder is linked, and the job is off market.', 'Drive']]);
 check('M6: Asana Drive Link points to another folder', has(M.check(job(), ctx({ drive: { folderId: 'zzz999' } })), 'M6').map(m => [m.text, m.fixAt]),
   [['Asana\'s Drive Link points to a different folder than the one linked here.', 'Asana']]);
 check('M6: same folder → nothing', has(M.check(job(), ctx({ drive: { folderId: 'abc123' } })), 'M6').length, 0);
@@ -343,8 +345,24 @@ check('M18: a folder found by the scan replaces M6, fix in the workspace', [has(
   [0, [['M18', 'A folder for this job is on Drive at ' + CAND + '; link it.', 'Matt', { candidate: CAND, stage: 'Live' }]]]);
 check('M18: no candidate keeps M6', [has(M.check(job(noFolder), ctx()), 'M6').length, has(M.check(job(noFolder), ctx()), 'M18').length], [1, 0]);
 check('M18: a linked folder: nothing', has(M.check(job({ scan: { candidate: CAND } }), ctx()), 'M18').length, 0);
-check('M18: Off market: nothing', has(M.check(job(Object.assign({}, noFolder, { stage: 'Off market', de_stage: null, de_listing_id: null, de: null, scan: { candidate: CAND },
-  asana: { status: 'Listing Removed', section: 'Listing Removed', stageFromStatus: 'Off market', stageFromSection: 'Off market' } })), ctx()), 'M18').length, 0);
+check('M18: Off market: the folder found is offered too (D88)', has(M.check(job(Object.assign({}, noFolder, { stage: 'Off market', de_stage: null, de_listing_id: null, de: null, scan: { candidate: CAND },
+  asana: { status: 'Listing Removed', section: 'Listing Removed', stageFromStatus: 'Off market', stageFromSection: 'Off market' } })), ctx()), 'M18').map(m => m.values), [{ candidate: CAND, stage: 'Off market' }]);
+
+/* ---------- D88: an Off market job raises no noise the stage explains ---------- */
+const offJob = extra => job(Object.assign({ stage: 'Off market', de_stage: null, de_listing_id: null, de: null,
+  asana: { status: 'Graveyard', section: '🪦 Graveyard', stageFromStatus: 'Off market', stageFromSection: 'Off market', statusSince: '2026-10-12', completed: true,
+    fields: { 'Listing Status': 'Graveyard', '🧑‍💼 Point Person': 'AE', '🛜 Google Drive Link': 'https://drive.google.com/drive/folders/abc123' },
+    checklist: [{ block: 'prep', steps: [{ name: 'Create Show Sheet', done: false, doneOn: null, who: null }, { name: 'Order Photos', done: false, doneOn: null, who: null }] }] },
+  milestones: { estListingOn: { on: '2026-09-01', planned: false }, offMarketOn: { on: '2026-10-12', planned: false } }, scan: null }, extra || {}));
+const offList = M.check(offJob(), ctx());
+check('D88 Off market: no Listing Date asked for (M10), no Est. Listing Date nag (M15), no open-checklist tick (M13), no DE lines',
+  ['M10', 'M15', 'M13', 'M1', 'M2', 'M25', 'M9', 'M27', 'M21', 'M23'].filter(c => has(offList, c).length), []);
+check('D88 Off market: a clean job (folder linked, Drive Link set) has nothing at all', offList.map(m => m.code), []);
+check('D88 Off market: M8 still checks the kit (ticked, no file)', has(M.check(offJob({ scan: { found: {} },
+  asana: { checklist: [{ block: 'prep', steps: [{ name: 'Create Show Sheet', done: true, doneOn: '2026-10-01', who: null }] }] } }), ctx()), 'M8').map(m => m.key), ['M8:showsheet']);
+check('D88 Off market: M1 when DE still shows it Active past the grace', has(M.check(offJob({ de_stage: 'Live', de_listing_id: '900001', de: { status: 'Active' },
+  asana: { statusSince: '2026-09-01' } }), ctx()), 'M1').map(m => [m.text, m.fixAt]), [['Asana says Off market since 1 Sep; DE still says Live.', 'DE']]);
+check('key: M6 says off market counts too', /off market/i.test(M.KEY.M6), true);
 
 /* ---------- M19: probably the same listing (a GVC DE row at the building, no job) ---------- */
 const deRow = o => Object.assign({ de_listing_id: '900050', feed: 'featured', kind: 'sale', gvc_listed: true, property_id: null, ignored: false,

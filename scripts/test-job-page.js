@@ -457,6 +457,13 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const mk = URL.createObjectURL.bind(URL);
     URL.createObjectURL = b => { window.__blobs.push(b.type); return mk(b); };
     window.open = (u, n, f) => { window.__opened.push([String(u).slice(0, 5), n, f]); return null; };
+    window.__urls = []; window.__revoked = []; window.__later = [];
+    const mk2 = URL.createObjectURL;
+    URL.createObjectURL = b => { const u = mk2(b); window.__urls.push(u); return u; };
+    const rv = URL.revokeObjectURL.bind(URL);
+    URL.revokeObjectURL = u => { window.__revoked.push(u); rv(u); };
+    const st = window.setTimeout;
+    window.setTimeout = function (fn, ms) { if (ms === 60000) { window.__later.push(fn); return 0; } return st.apply(window, arguments); };
   });
   await p.waitForSelector('#kitCard [data-kit="openHouse"] [data-open]');
   await p.click('#kitCard [data-kit="openHouse"] [data-open]');
@@ -466,6 +473,11 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await p.click('#kitCard [data-kit="showsheet"] [data-open]');
   await settle(p);
   check('Open: a PDF opens as a blob, with noopener', [await p.evaluate(() => window.__blobs.length), await p.evaluate(() => window.__opened)], [1, [['blob:', '_blank', 'noopener']]]);
+  check('Open: the blob URL is let go after 60 s', await p.evaluate(() => {
+    const before = window.__revoked.length;
+    window.__later.forEach(fn => fn());
+    return [before, window.__later.length, window.__revoked.length === 1 && window.__revoked[0] === window.__urls[0]];
+  }), [0, 1, true]);
   await t.ctx.close();
 
   /* the doc changed since the last read: read on open, once */

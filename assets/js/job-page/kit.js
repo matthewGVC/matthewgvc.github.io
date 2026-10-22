@@ -111,6 +111,7 @@
             var typed = f.type ? f : new global.Blob([f], { type: TYPE_OF[(/\.([a-z0-9]+)$/i.exec(cur.name) || [])[1].toLowerCase()] });
             var u = global.URL.createObjectURL(typed);
             global.open(u, '_blank', 'noopener');
+            global.setTimeout(function () { global.URL.revokeObjectURL(u); }, 60000);   // the new tab has it by then
             say('');
           }, function (e) { say(e.timeout ? JP.drive.FAIL : e.message); });
         });

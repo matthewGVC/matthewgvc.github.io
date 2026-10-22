@@ -11,7 +11,9 @@
 --                           not the owner and is changing a fact ('not allowed'), and for
 --                           any table or key it does not know ('bad table', 'bad key <k>').
 --                           Any active member may add a note (an empty change set and rows
---                           with no field). Change rows are always source 'Matt'.
+--                           that are objects with a non-empty note and no field, old_value,
+--                           new_value or no_rebuild). A stale version is a 'conflict' before
+--                           any other rule is checked. Change rows are always source 'Matt'.
 --
 -- Needs 0004, 0005 and 0006. Safe to run more than once; nothing is dropped or renamed.
 -- Before running it on the real project: back up (helper/backup.js).
@@ -60,10 +62,14 @@ begin
   if v_role is null then raise exception 'not allowed'; end if;
 
   if v_role <> 'owner' then
-    -- anyone else: a note only (no fact, no field)
+    -- anyone else: a note only (no fact, no field, no values)
     if v_set <> '{}'::jsonb then raise exception 'not allowed'; end if;
     for v_chg in select * from jsonb_array_elements(v_changes) loop
-      if coalesce(v_chg ->> 'field', '') <> '' then raise exception 'not allowed'; end if;
+      if jsonb_typeof(v_chg) <> 'object'
+         or coalesce(btrim(v_chg ->> 'note'), '') = ''
+         or v_chg ?| array['field', 'old_value', 'new_value', 'no_rebuild'] then
+        raise exception 'not allowed';
+      end if;
     end loop;
   end if;
 
@@ -72,6 +78,13 @@ begin
   end loop;
 
   if v_set <> '{}'::jsonb then
+    -- the row as the page loaded it, before any other rule: a stale save is a conflict
+    execute format('select to_jsonb(t) from public.%I t where id = $1 and version = $2', p_table)
+      into v_row using p_id, p_version;
+    if v_row is null then
+      raise exception 'conflict' using errcode = 'P0001';
+    end if;
+
     for v_key, v_val in select * from jsonb_each(v_set) loop
       if p_table = 'properties' and v_key = 'stage' then
         select * into v_cur from public.properties where id = p_id;

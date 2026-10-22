@@ -272,6 +272,9 @@ const USERS = {
     v += 1;
     st = (await db.query('select stage, stage_source from public.properties where id = $1', [pid])).rows[0];
     check('unarchived to the Asana stage', [st.stage, st.stage_source], ['Live', 'Asana']);
+    // final review 6: a stale stage save is a conflict (the page reloads), not a bad stage
+    check('stale stage save raises conflict', [await sjErr('matt', 'properties', pid, v - 1, { stage: 'Live' }, []), await sjErr('matt', 'properties', pid, v - 1, { stage: 'Sold' }, [])], ['conflict', 'conflict']);
+    check('a current-version bad stage is still a bad stage', await sjErr('matt', 'properties', pid, v, { stage: 'Sold' }, []), 'bad stage Sold');
     const pid2 = (await db.query(`insert into public.properties (slug, label, core, stage) values ('500-example-st', '500 Example St', '{}', 'Archived') returning id`)).rows[0].id;
     check('no snapshot: back goes to Prep only', [(await sjErr('matt', 'properties', pid2, 1, { stage: 'Live' }, [])) !== null,
       (await sj('matt', 'properties', pid2, 1, { stage: 'Prep' }, [])).rows[0].r.stage], [true, 'Prep']);
@@ -296,6 +299,11 @@ const USERS = {
       check(who + ': stage refused', await sjErr(who, 'properties', pid, v, { stage: 'Archived' }, []), 'not allowed');
       check(who + ': empty set with a field refused', await sjErr(who, 'properties', pid, v, {}, [{ field: 'price' }]), 'not allowed');
       check(who + ': a field row hidden behind a note refused as a whole', await sjErr(who, 'properties', pid, v, {}, [{ note: 'x' }, { field: 'price' }]), 'not allowed');
+      // final review 5: a teammate's row is a note and nothing else
+      for (const [what, rows] of [['no note', [{ asked_by: 'x' }]], ['empty note', [{ note: '' }]], ['not an object', ['a note']], ['a number', [5]],
+        ['a null field', [{ note: 'x', field: null }]], ['old_value', [{ note: 'x', old_value: 1 }]], ['new_value', [{ note: 'x', new_value: 2 }]],
+        ['no_rebuild', [{ note: 'x', no_rebuild: true }]]])
+        check(who + ': note rows only, refused: ' + what, await sjErr(who, 'properties', pid, v, {}, rows), 'not allowed');
       check(who + ': refusals wrote nothing', [await count('property_id = $1', pid), await ver('properties', pid)], [n0, v]);
       check(who + ': note with a stale version ok', await sjErr(who, 'properties', pid, 1, {}, [{ note: 'x' }]), null);
       check(who + ': note row written in their name', (await db.query(`select source, user_id from public.changes where property_id = $1 and note = 'x' and user_id = $2`, [pid, id[who]])).rows, [{ source: 'Matt', user_id: id[who] }]);

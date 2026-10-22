@@ -309,6 +309,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await p.click('#noteAdd');
   await settle(p);
   check('team: a note saves', t.saves.map(x => [JSON.stringify(x.p_set), x.p_changes[0].field, x.p_changes[0].note]), [['{}', null, 'Seller asked about Friday']]);
+  check('team: the note row is a note and nothing else (save_job refuses more)', t.saves.map(x => Object.keys(x.p_changes[0]).sort()), [['asked_by', 'note']]);
   await t.ctx.close();
   t = await open(browser, { path: LISTING, members: [] });
   check('not on the team: no note box, no edits', await t.page.$$eval('#noteText, [data-edit], #agConfirm', e => e.length), 0);

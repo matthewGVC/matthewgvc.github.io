@@ -50,7 +50,7 @@
       var t = text.value.trim();
       if (!t) { msg.textContent = 'Write what changed first.'; return; }
       keep(); add.disabled = true; msg.textContent = 'Saving…';
-      JP.save(ctx.table, ctx.row, {}, [{ field: null, note: t, asked_by: who.value || null }]).then(function () {
+      JP.save(ctx.table, ctx.row, {}, [{ note: t, asked_by: who.value || null }]).then(function () {   // a note row carries no field (save_job)
         draft = null; return JP.reload();
       }, function (e) {
         var m = global.document.getElementById('noteMsg');

@@ -283,7 +283,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var warn = money.warn ? money.warn.source + ' says ' + W.money(money.warn.value) : '';
     return '<div class="card"><div class="facts">' +
       tile(r.kind === 'rental' ? 'Rent' : 'Price', money.v != null ? W.money(money.v) + (r.kind === 'rental' ? '/mo' : '') : '', warn, money.badge) +
-      tile('Beds · baths', beds.v != null && baths.v != null ? beds.v + ' bd · ' + baths.v + ' ba' : '', half.v ? half.v + ' half' : '', beds.badge) +
+      tile('Beds · baths', [beds.v != null ? beds.v + ' bd' : '', baths.v != null ? baths.v + ' ba' : ''].filter(Boolean).join(' · '), half.v ? half.v + ' half' : '', beds.badge || baths.badge) +
       tile('Sq ft', sqft.v != null ? Number(sqft.v).toLocaleString('en-US') + ' approx.' : '', '', sqft.badge) +
       tile('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
       ((r.core || {}).neighborhood || !(r.core || {}).city ? tile('Neighborhood', (r.core || {}).neighborhood || '') : tile('City', r.core.city)) +

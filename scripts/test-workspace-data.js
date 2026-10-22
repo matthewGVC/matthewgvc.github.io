@@ -316,6 +316,14 @@ check('chipOf: each stage\'s chip', ['Live', 'In contract', 'Accepted offer', 'S
 
 check('asana: refused token in plain words', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }, now).why, 'Asana refused the token');
 
+/* ---------- beds and baths: show what is known ---------- */
+const roomsOf = core => (W.buildJobs({ properties: [{ id: 'r1', slug: 'r', stage: 'Live', market: 'NYC', core: Object.assign({ address: '1 Room St' }, core) }], pitches: [], devProjects: [], changes: [] }, TODAY)[0] || {}).rooms;
+check('rooms: beds and baths', roomsOf({ beds: 2, baths: 1 }), '2 bd · 1 ba');
+check('rooms: baths unknown still shows the beds', roomsOf({ beds: 1 }), '1 bd');
+check('rooms: beds unknown still shows the baths', roomsOf({ baths: 2 }), '2 ba');
+check('rooms: a studio is 0 bd', roomsOf({ beds: 0, baths: 1 }), '0 bd · 1 ba');
+check('rooms: nothing known', roomsOf({}), '');
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

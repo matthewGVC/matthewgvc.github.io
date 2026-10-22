@@ -157,6 +157,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 #docNow{font-size:13px;margin-top:6px;overflow-wrap:anywhere}
 @media (max-width:640px){ .fpm{grid-template-columns:64px repeat(3,minmax(0,1fr))} .kr{grid-template-columns:minmax(0,1fr)} .kr .ic{display:none} .kr .a{justify-content:flex-start} }
 @media (max-width:1100px){ .two{grid-template-columns:minmax(0,1fr)} }
+/* Slice 4: the showsheet's record on the Kit row; making and rebuilding need the desktop (S20) */
+#rebuildHost{display:contents}
+.kr button.link{background:none;border:0;padding:0;cursor:pointer}
+@media (max-width:600px){ #rebuildStale, [data-sheet]{display:none} }
 @media (max-width:720px){ .hd h1{font-size:30px} }
 /* phone: the stages wrap into rows of three so every one stays in view (no hidden scroll) */
 @media (max-width:640px){ .steps{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));row-gap:18px} .step::before{display:none} }
@@ -186,6 +190,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
      The details doc is read with the Showsheet's own reader (same pinned mammoth as tools/showsheet). -->
 <script async id="mammothJs" src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" integrity="sha384-/cXAMbzovUIKbBERjPmR3SnPTh8siWr5lsvFYj1Uq4XP0yaJUZJmsh0YXyGv5P0y" crossorigin="anonymous" onerror="this.dataset.failed='1'"></script>
 <script src="../../tools/showsheet/listing.js"></script>
+<script src="../../assets/js/sheet-job.js"></script>
+<script src="../../assets/js/piece-stale.js"></script>
 <script src="../../assets/js/details-doc.js"></script>
 <script src="../../assets/js/folder-health.js"></script>
 <script src="../../assets/js/kit-track.js"></script>
@@ -204,7 +210,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
   var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
   var today = W.today();
-  var state = { row: null, job: null, changes: [], won: null, me: null, drive: null };
+  var state = { row: null, job: null, changes: [], won: null, me: null, drive: null, doc: null };
   var shell = GVC_SHELL.mount({ onDrive: function (s) { var was = state.drive; state.drive = s; if (state.row && s !== was) render(); } });
 
   function rest(path) { return P.call('/rest/v1' + path); }
@@ -227,11 +233,15 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         rest('/changes?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=at.desc&limit=500'),
         kind === 'listing' ? rest('/pitches?won_property_id=eq.' + encodeURIComponent(row.id) + '&select=*') : Promise.resolve([]),
         kind === 'pitch' && row.won_property_id ? rest('/properties?id=eq.' + encodeURIComponent(row.won_property_id) + '&select=slug,label,core') : Promise.resolve([]),
-        who()
+        who(),
+        // the showsheet's record (Slice 4); unreadable (0009 not run yet) means none, never a broken page
+        kind === 'listing' ? rest('/documents?property_id=eq.' + encodeURIComponent(row.id) + '&tool=eq.showsheet&select=property_id,tool,version,built_from,built_at,output')
+          .catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
         state.me = r[3];
+        state.doc = (r[4] || [])[0] || null;
         JP.canEdit = state.me.role === 'owner';
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
         if (kind === 'listing') { data.properties = [row]; data.pitches = r[1] || []; }
@@ -252,7 +262,16 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   JP.redraw = function () { if (state.row) render(); };
 
   function ctx() {
-    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc };
+    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc,
+      doc: state.doc, onSheet: paintRebuild };
+  }
+
+  /* S21: Rebuild n stale in the header (owner only; Slice 4 has one piece), from the scan at first, then live */
+  function paintRebuild(s) {
+    var host = $('rebuildHost');
+    if (!host) return;
+    var n = s && s.state === 'stale' ? 1 : 0;
+    host.innerHTML = n && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="../../tools/showsheet/?listing=' + esc(encodeURIComponent(state.row.slug)) + '&amp;rebuild=1">Rebuild ' + n + ' stale</a>' : '';
   }
 
   function tile(k, v, s, badge) {
@@ -345,7 +364,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     if (j.pitchedOn && kind !== 'pitch') sub.push('Pitched ' + esc(W.fmtDay(j.pitchedOn)));
     var link = r.folder_state === 'linked' ? 'Change folder' : r.folder_state === 'broken' ? 'Relink folder' : 'Link folder';
     var archived = r.stage === 'Archived';
-    var acts = '<div class="acts">' +
+    var acts = '<div class="acts"><span id="rebuildHost"></span>' +
       '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
       '<button class="b" type="button" id="copyLink"' + (r.drive_folder ? '' : ' disabled') + '>' + I('link') + 'Copy Drive link</button>' +
       '<button class="b" type="button" id="copy"' + (r.drive_folder ? '' : ' disabled') + '>' + I('copy') + 'Copy folder path</button>' +
@@ -366,6 +385,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
+    if (kind === 'listing') paintRebuild(JP.kit.judge(c, (r.scan && r.scan.pieces) || {}, false));
     if (kind === 'dev') JP.dev.wire($('topHost'), c);
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);

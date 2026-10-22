@@ -50,7 +50,7 @@
   function stale(doc, row, opts) {
     opts = opts || {};
     var bf = doc && doc.built_from;
-    if (!bf) return { state: opts.fileFound ? 'untracked' : 'none', changes: [] };
+    if (!bf || typeof bf !== 'object' || Array.isArray(bf)) return { state: opts.fileFound ? 'untracked' : 'none', changes: [] };
     var changes = [], add = function (field, label, was, now) { changes.push({ field: field, label: label, was: was, now: now }); };
 
     var printed = S.FIELDS(row, bf.ownership || undefined);

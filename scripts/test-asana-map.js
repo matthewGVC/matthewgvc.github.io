@@ -111,6 +111,29 @@ const tjHist = [{ type: 'status', at: '2026-06-04T15:00:00.000Z', from: 'TJ New 
 const tjDates = M.datesOf(task({ fields: { '🗓️ Listing Date': null } }), tjHist, TODAY);
 check('listedOn from history', tjDates.listedOn.on, '2026-06-04');
 check('offMarketOn from history', tjDates.offMarketOn, { on: '2026-10-12', planned: false });
+/* offMarketMove (off-market rule, 2026-10-22): the start of the task's latest off-market stretch, Graveyard
+   included, and the stage it left; status moves win over section moves */
+const hist = (...m) => m.map(x => ({ type: x[0] || 'status', at: x[1], from: x[2], to: x[3] }));
+check('offMarketMove: Active, TOTM, then Graveyard the same day: the TOTM move, from Live',
+  M.offMarketMove(hist(['status', '2026-06-04T15:00:00.000Z', 'TJ New Dev', 'Active'], ['status', '2026-10-12T15:00:00.000Z', 'Active', 'TOTM'],
+    ['section', '2026-10-12T15:00:01.000Z', '🟢  Active', '🪦 Graveyard'], ['status', '2026-10-12T15:00:02.000Z', 'TOTM', 'Graveyard'])), { on: '2026-10-12', before: 'Live' });
+check('offMarketMove: straight to Graveyard counts',
+  M.offMarketMove(hist(['status', '2026-07-15T15:00:00.000Z', null, 'Active'], ['status', '2026-09-22T15:00:00.000Z', 'Active', 'Graveyard'])), { on: '2026-09-22', before: 'Live' });
+check('offMarketMove: a lost Lead says it left Pitch',
+  M.offMarketMove(hist(['status', '2026-01-07T15:00:00.000Z', null, 'Lead'], ['status', '2026-08-10T15:00:00.000Z', 'Lead', 'Graveyard'])), { on: '2026-08-10', before: 'Pitch' });
+check('offMarketMove: a bulk move from TOTM to Graveyard keeps the TOTM day',
+  M.offMarketMove(hist(['status', '2025-02-12T15:00:00.000Z', null, 'Active'], ['status', '2025-05-20T15:00:00.000Z', 'Active', 'TOTM'],
+    ['status', '2026-05-25T15:00:00.000Z', 'TOTM', 'Graveyard'])), { on: '2025-05-20', before: 'Live' });
+check('offMarketMove: back on the market ends the stretch; the next one counts',
+  M.offMarketMove(hist(['status', '2026-01-01T15:00:00.000Z', null, 'Active'], ['status', '2026-02-01T15:00:00.000Z', 'Active', 'TOTM'],
+    ['status', '2026-03-01T15:00:00.000Z', 'TOTM', 'In Prep to List'], ['status', '2026-09-01T15:00:00.000Z', 'In Prep to List', 'Listing Removed'])), { on: '2026-09-01', before: 'Prep' });
+check('offMarketMove: section moves only when there is no status history',
+  M.offMarketMove(hist(['section', '2026-04-01T15:00:00.000Z', '🟡  In Prep to List', '🪦 Graveyard'])), { on: '2026-04-01', before: 'Prep' });
+check('offMarketMove: created off market, nothing before it', M.offMarketMove(hist(['status', '2025-02-11T15:00:00.000Z', null, 'Listing Removed'])), { on: '2025-02-11', before: null });
+check('offMarketMove: no off-market move', M.offMarketMove(hist(['status', '2026-02-01T15:00:00.000Z', null, 'Active'])), null);
+check('offMarketMove: no history', M.offMarketMove([]), null);
+check('offMarketOn: a move straight to Graveyard is the off-market date',
+  M.datesOf(task({}), hist(['status', '2026-07-15T15:00:00.000Z', null, 'Active'], ['status', '2026-09-22T15:00:00.000Z', 'Active', 'Graveyard']), TODAY).offMarketOn, { on: '2026-09-22', planned: false });
 check('history local day (late UTC evening is still the NY day)',
   M.datesOf(task({}), [{ type: 'status', at: '2026-06-05T02:30:00.000Z', from: 'TJ New Dev', to: 'Active' }], TODAY).listedOn.on, '2026-06-04');
 check('every date key', Object.keys(M.datesOf(nyc.find(t => t.gid === '9000000000068'), [], TODAY)),

@@ -24,9 +24,15 @@
          or lot size counts as not filled in (beds 0 is a studio and stays).
      datesOf(task, history, today, opts?) → { listedOn: { on, planned }, … } (§6.2, S7)
          planned = the date is after today. listedOn falls back to the first
-         move to Active in the history; offMarketOn is the last move to TOTM /
-         Listing Removed. opts.tz (default America/New_York) decides which day
-         a history timestamp falls on.
+         move to Active in the history; offMarketOn is offMarketMove's day.
+         opts.tz (default America/New_York) decides which day a history
+         timestamp falls on.
+     offMarketMove(history, tz?) → { on: 'YYYY-MM-DD', before: stage | null } | null
+         the start of the task's latest off-market stretch (TOTM, Listing
+         Removed or Graveyard; a later move between them, like a bulk move from
+         TOTM to Graveyard, keeps the first day) and the stage it left (from
+         the history; null when the task began off market). Status moves are
+         read when there are any, else section moves. null: never off market.
      agentsOf(task, initials, roster) → { ids, ask, others }        D53, D71
          Point Person initials (split on / , & + and spaces) through the
          initials table (roster.js GVC_ROSTER_INITIALS). null or a missing entry
@@ -238,11 +244,30 @@
       var act = moves(hist, function (s) { return s === 'active'; });
       if (act.length) found.listedOn = localDay(act[0].at, tz);
     }
-    var off = moves(hist, function (s) { return s === 'totm' || s === 'listing removed'; });
-    if (off.length) found.offMarketOn = localDay(off[off.length - 1].at, tz);
+    var off = offMarketMove(hist, tz);
+    if (off) found.offMarketOn = off.on;
     var out = {};
     DATE_FIELDS.forEach(function (d) { if (found[d[0]]) out[d[0]] = { on: found[d[0]], planned: found[d[0]] > now }; });
     return out;
+  }
+
+  /* the latest off-market stretch: its first day and the stage before it */
+  function offMarketMove(history, tz) {
+    var all = (history || []).filter(function (h) { return (h.type === 'status' || h.type === 'section') && h.at; });
+    var useStatus = all.some(function (h) { return h.type === 'status'; });
+    var list = all.filter(function (h) { return h.type === (useStatus ? 'status' : 'section'); })
+      .sort(function (a, b) { return a.at < b.at ? -1 : a.at > b.at ? 1 : 0; });
+    var cur = null, start = null, before = null;
+    list.forEach(function (h) {
+      var to = STAGES[norm(h.to)];
+      if (!to) return;
+      if (to === 'Off market') {
+        if (cur !== 'Off market') { start = h; before = cur || STAGES[norm(h.from)] || null; }
+      } else start = null;
+      cur = to;
+    });
+    if (before === 'Off market') before = null;
+    return start ? { on: localDay(start.at, tz || TZ), before: before } : null;
   }
 
   /* ---------- agents (D53, D71) ---------- */
@@ -489,5 +514,5 @@
 
   return { stageOf: stageOf, isGvcListing: isGvcListing, factsOf: factsOf, datesOf: datesOf, agentsOf: agentsOf,
     checklistOf: checklistOf, devHints: devHints, batchDays: batchDays, milestoneOf: milestoneOf, familyOf: familyOf,
-    localDay: localDay, MILESTONES: MILESTONES, FAMILY_RULES: FAMILY_RULES };
+    localDay: localDay, offMarketMove: offMarketMove, MILESTONES: MILESTONES, FAMILY_RULES: FAMILY_RULES };
 });

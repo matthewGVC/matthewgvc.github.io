@@ -343,10 +343,77 @@ const USERS = {
     await db.query(`update public.members set active = true where role = 'team'`);
   }
 
+  /* ---------- 0009: documents record a build, save_piece, the typo rule ---------- */
+  if (UPTO >= '0009') {
+    const sp = (who, pid, tool, ver, st, bf, out, arch) => as(who, 'select public.save_piece($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb) r',
+      [pid, tool, ver, JSON.stringify(st), bf == null ? null : JSON.stringify(bf), out == null ? null : JSON.stringify(out), arch == null ? null : JSON.stringify(arch)]);
+    const spErr = async (...a) => { try { await sp(...a); return null; } catch (e) { return e.message; } };
+    const doc = async (pid, tool) => (await db.query('select * from public.documents where property_id = $1 and tool = $2', [pid, tool || 'showsheet'])).rows[0];
+    // jsonb keeps its own key order: compare objects with their keys sorted
+    const canon = x => JSON.parse(JSON.stringify(x, (k, v) => v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.keys(v).sort().reduce((o, kk) => { o[kk] = v[kk]; return o; }, {}) : v));
+    const pieceRows = async pid => (await db.query(`select field, new_value, note, source from public.changes where property_id = $1 and field like 'piece:%' order by at`, [pid])).rows;
+
+    const dcols = (await db.query(`select column_name, data_type from information_schema.columns where table_name = 'documents' order by 1`)).rows;
+    const has = n => (dcols.find(c => c.column_name === n) || {}).data_type || null;
+    check('documents gain the record columns', ['built_from', 'output', 'outputs', 'built_at', 'built_by'].map(has),
+      ['jsonb', 'jsonb', 'jsonb', 'timestamp with time zone', 'uuid']);
+    check('anon cannot run save_piece', await fails('anon', `select public.save_piece($1, 'showsheet', null, '{}', null, null, null)`, [prop]), true);
+
+    // the old library's showsheet row is there: inserting again is a conflict, saving over its version works
+    const d0 = await doc(prop);
+    check('old row has no outputs yet', [d0.outputs, d0.built_from], [[], null]);
+    check('insert over an existing row is a conflict', await spErr('matt', prop, 'showsheet', null, { a: 1 }, null, null, null), 'conflict');
+    check('stale version is a conflict', await spErr('matt', prop, 'showsheet', d0.version + 5, { a: 1 }, null, null, null), 'conflict');
+    const draft = (await sp('matt', prop, 'showsheet', d0.version, { a: 1 }, null, null, null)).rows[0].r;
+    check('draft save replaces state, bumps version', [draft.state, draft.version, draft.built_from, draft.outputs], [{ a: 1 }, d0.version + 1, null, []]);
+    check('draft adds no change row', await pieceRows(prop), []);
+
+    const BF = { v: 1, market: 'NYC', facts: { price: 2250000, beds: 3 }, agents: ['a'] };
+    const OUT1 = { path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf', size: 1000, via: 'helper' };
+    check('built_from without output refused', await spErr('matt', prop, 'showsheet', draft.version, { a: 2 }, BF, null, null), 'bad build');
+    check('output without built_from refused', await spErr('matt', prop, 'showsheet', draft.version, { a: 2 }, null, OUT1, null), 'bad build');
+    const b1 = (await sp('matt', prop, 'showsheet', draft.version, { a: 2 }, BF, OUT1, null)).rows[0].r;
+    check('build records built_from, output, who and when', canon([b1.built_from, b1.output, b1.built_by, !!b1.built_at, b1.outputs.length]), canon([BF, OUT1, id.matt, true, 1]));
+    check('build adds one change row', await pieceRows(prop), [{ field: 'piece:showsheet', new_value: OUT1.name, note: 'Showsheet made', source: 'Matt' }]);
+    const OUT2 = Object.assign({}, OUT1, { path: OUT1.path.replace('.pdf', ' (2).pdf'), name: OUT1.name.replace('.pdf', ' (2).pdf') });
+    const b2 = (await sp('matt', prop, 'showsheet', b1.version, { a: 3 }, BF, OUT2, { from: OUT1.path, to: 'Marketing/Showsheet/Archive/' + OUT1.name })).rows[0].r;
+    check('second build: newest first, the move kept on the older one', canon([b2.outputs.length, b2.outputs[0].name, b2.outputs[1].name, b2.outputs[1].archived, b2.outputs[0].archived]),
+      canon([2, OUT2.name, OUT1.name, { from: OUT1.path, to: 'Marketing/Showsheet/Archive/' + OUT1.name }, null]));
+    check('two builds, two change rows', (await pieceRows(prop)).length, 2);
+
+    // a property with no showsheet yet: null version inserts
+    const np = (await db.query(`insert into public.properties (slug, label, core) values ('900-example-st', '900 Example St', '{}') returning id`)).rows[0].id;
+    const ins = (await sp('matt', np, 'showsheet', null, { b: 1 }, null, null, null)).rows[0].r;
+    check('null version inserts', [ins.state, ins.version], [{ b: 1 }, 1]);
+    check('a new piece name is allowed', (await sp('matt', np, 'postcard', null, {}, null, null, null)).rows[0].r.tool, 'postcard');
+    check('junk piece names refused', await fails('matt', `insert into public.documents (property_id, tool) values ($1, 'Bad Tool!')`, [np]), true);
+    check('one-letter piece name refused', await fails('matt', `insert into public.documents (property_id, tool) values ($1, 'x')`, [np]), true);
+
+    // only the owner (D87)
+    const before = await doc(np);
+    for (const who of ['teamrole', 'team', 'helper', 'stranger']) {
+      check(who + ': save_piece not allowed', await spErr(who, np, 'showsheet', before.version, { c: 1 }, null, null, null), 'not allowed');
+    }
+    check('refused saves changed nothing', (await doc(np)).state, { b: 1 });
+
+    // the typo rule: save_job with no_rebuild writes the new value into built_from
+    const sj = (who, rid, ver, set, chg) => as(who, 'select public.save_job($1, $2, $3, $4::jsonb, $5::jsonb) r',
+      ['properties', rid, ver, JSON.stringify(set), JSON.stringify(chg)]);
+    const pv = async x => (await db.query('select version from public.properties where id = $1', [x])).rows[0].version;
+    await sj('matt', prop, await pv(prop), { core: { price: 2100000 } }, [{ field: 'price', old_value: 2250000, new_value: 2100000, no_rebuild: true }]);
+    check('typo tick updates that fact in built_from only', canon((await doc(prop)).built_from.facts), canon({ price: 2100000, beds: 3 }));
+    await sj('matt', prop, await pv(prop), { core: { beds: 4 } }, [{ field: 'beds', old_value: 3, new_value: 4 }]);
+    check('a real change leaves built_from alone', (await doc(prop)).built_from.facts.beds, 3);
+    await sj('matt', prop, await pv(prop), { core: { sqft: 900 } }, [{ field: 'sqft', new_value: 900, no_rebuild: true }]);
+    check('a fact the sheet did not print adds nothing', Object.keys((await doc(prop)).built_from.facts).sort(), ['beds', 'price']);
+    check('a draft with no built_from is untouched by the typo rule', (await doc(np)).built_from, null);
+  }
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);
-  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0007' ? 5 : 3);
+  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0009' ? 6 : UPTO >= '0007' ? 5 : 3);
 
   /* ---------- run before the accounts exist: refuse rather than lock everyone out ---------- */
   if (fresh.length) {

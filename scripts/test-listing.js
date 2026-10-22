@@ -123,6 +123,22 @@ const coop = L.read([p('1 A St'), row('Taxes', '$1,000'), p('Building Features')
 check('co-op named', coop.ownership, 'co-op');
 check('a co-op\'s taxes are in its maintenance, not their own line', 'taxesMonthly' in coop, false);
 
+/* The two halves of read() a job's own lists go through (Slice 4): the same
+   rules, so a feature list typed on the job lands where a Word doc's would. */
+const cl = xs => xs.map(x => x.text);
+const bLines = cl(doc.slice(doc.findIndex(b => b.text === 'Building Features') + 1));
+const iLines = cl(doc.slice(doc.findIndex(b => b.text === 'Interior Features') + 1, doc.findIndex(b => b.text === 'Building Features')));
+check('buildingFrom = read().building', L.buildingFrom(bLines).building, f.building);
+check('buildingFrom found', L.buildingFrom(bLines).found, ['built', 'stories/residences', 'service', 'policies', 'amenities']);
+check('residenceFrom = read().residence', L.residenceFrom(iLines).residence, f.residence);
+check('residenceFrom found', L.residenceFrom(iLines).found, ['features']);
+check('residenceFrom: prewar first line kept', L.residenceFrom(['Prewar classic 7 with river views', 'Wood-burning fireplace']).residence, prewar.residence);
+check("buildingFrom: a job's list", L.buildingFrom(['Pre-war', 'Full-time doorman', 'Pets allowed']).building,
+  { service: 'Full-time doorman', policy: 'Pets allowed', amenities: ['Pre-war'] });
+check('buildingFrom: nothing', L.buildingFrom([]), { building: {}, found: [] });
+check('residenceFrom: nothing', L.residenceFrom([]), { residence: {}, found: [] });
+check("lines are cleaned like a doc's", L.buildingFrom(['  • Built 1929 ']).building.builtYear, '1929');
+
 /* titles */
 check('no dash: the whole title is the address', L.titleOf([p('10 Main Street')]).address, '10 Main Street');
 check('a dash inside the address survives', L.titleOf([p('10 - 12 Main Street - 4B')]).address, '10 - 12 Main Street');

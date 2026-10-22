@@ -28,7 +28,8 @@
      `asana` snapshot (status, section, the stage each implies, kept fields,
      checklist names and ticks), `milestones` (deal dates, planned flagged),
      facts at Asana's rank through GVC_FACTS (a fact DE or Matt holds stays
-     theirs), core.suggestedAgentIds, dev_project_id for a TJ New Dev house.
+     theirs; every key asana-map.js factsOf gives, State as its two-letter
+     code included, so an existing job gains it on the next sync), core.suggestedAgentIds, dev_project_id for a TJ New Dev house.
      Every changed value is one `changes` row, source 'Asana'.
    - which tasks become rows: on the plan run, the ticked rows (unticked ones
      are cached as ignored and never come back by themselves); after that, an

@@ -195,6 +195,8 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('apply: deal dates as milestones (planned flagged)', P('9000000000068').milestones.closedOn, { on: '2026-11-30', planned: true });
   check('apply: a rental is a rental', P('9000000000121').kind, 'rental');
   check('apply: an NJ town lands in the city', [P('9000000000178').core.address, P('9000000000178').core.city], ['21 Test Ln', 'Exampleton']);
+  check('apply: Asana\'s State is the State fact at Asana\'s rank', [P('9000000000178').core.state, P('9000000000178').core.facts.state],
+    ['NJ', { value: 'NJ', source: 'Asana', bySource: { Asana: 'NJ' } }]);
   const snap = P('9000000000023').asana || {};
   check('apply: the snapshot keeps both the status and the section stage (M14)', [P('9000000000023').stage, snap.status, snap.section, snap.stageFromStatus, snap.stageFromSection], ['Prep', 'In Prep to List', 'Active', 'Prep', 'Live']);
   check('apply: the checklist is in the snapshot, names and ticks only', P('9000000000041').asana.checklist,
@@ -397,6 +399,19 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const runReads = db10.calls.filter(c => c.t === 'sync_runs');
   check('C1 sync_runs reads are newest first with a small limit', runReads.length > 0 && runReads.every(c => c.o && c.o.order === 'started_at.desc' && c.o.limit > 0 && c.o.limit <= 20), true);
   check('C1 sync_runs reads ask for good Asana runs only', runReads.every(c => c.m && c.m.kind === 'asana' && c.m.ok === true), true);
+
+  // 1b. an existing job without a State gets Asana's "New Jersey" as NJ on the next sync (tune-up 4)
+  {
+    const ex = P('9000000000189');
+    delete ex.core.state; if (ex.core.facts) delete ex.core.facts.state;
+    const had = db.T.changes.length;
+    const w4 = world();
+    setField(find(w4, '9000000000189'), '📍 State', { enum_value: { name: 'New Jersey' }, display_value: 'New Jersey' });
+    await applyRun({ client: db, run: await read(w4), now: NOW });
+    const st = db.T.changes.slice(had).filter(c => c.property_id === ex.id && c.field === 'state');
+    check('existing job: Asana\'s New Jersey becomes NJ, logged once', [P('9000000000189').core.state, P('9000000000189').core.facts.state.source, st.map(c => [c.old_value, c.new_value, c.source])],
+      ['NJ', 'Asana', [[null, 'NJ', 'Asana']]]);
+  }
 
   // 2. a task first seen as a Lead becomes a pitch once it has a pitch date
   w = world();

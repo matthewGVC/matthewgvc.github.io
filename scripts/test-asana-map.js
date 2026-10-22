@@ -80,10 +80,14 @@ check('City/Hood Upper East Side → neighborhood',
 check('City/Hood Lincoln Square → neighborhood',
   M.factsOf(task({ fields: { '📍 City/Hood': 'Lincoln Square' } })).neighborhood, 'Lincoln Square');
 check('City/Hood Wall → city', M.factsOf(task({ fields: { '📍 City/Hood': 'Wall' } })), { city: 'Wall' });
+/* 📍 State → the two-letter State fact (slice3 tune-up 4: 315 Foreman showed State Not set) */
+check('State: names become the two-letter code', ['New Jersey', 'New York', 'Florida', 'new jersey ', 'NJ', 'ny', 'Fl'].map(v => M.factsOf(task({ fields: { '📍 State': v } })).state),
+  ['NJ', 'NY', 'FL', 'NJ', 'NJ', 'NY', 'FL']);
+check('State: an unknown name is left out, not guessed', [M.factsOf(task({ fields: { '📍 State': 'Narnia' } })).state, M.factsOf(task({ fields: { '📍 State': '' } })).state], [undefined, undefined]);
 check('City/Hood with a caller list', M.factsOf(task({ fields: { '📍 City/Hood': 'Testville' } }), { areas: ['Testville'] }), { neighborhood: 'Testville' });
 const full = M.factsOf(nyc.find(t => t.gid === '9000000000041'));
 check('full facts (absent keys omitted)', full, {
-  price: 2250000, originalPrice: 2300000, kind: 'sale', beds: 2, baths: 2, sqft: 1200, propertyType: 'Condo',
+  price: 2250000, originalPrice: 2300000, kind: 'sale', beds: 2, baths: 2, sqft: 1200, propertyType: 'Condo', state: 'NY',
   listingUrl: 'https://example.com/l/3-sample'
 });
 check('price falls back to Original', M.factsOf(task({ fields: { '💵 Original Price': 900000, '💵 Current Price': null } })), { price: 900000, originalPrice: 900000 });

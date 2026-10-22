@@ -17,6 +17,9 @@
          names that count as NYC neighbourhoods for City/Hood (default: the list
          below plus window.GVC_NYC_AREAS when the page loaded nyc-areas.js;
          nyc-areas.js is browser-only, so Node callers pass a list if they need more).
+         📍 State ("New Jersey", "New York", "Florida") is the State fact as its
+         two-letter code (NJ / NY / FL); a two-letter value passes through, any
+         other name is left out rather than guessed.
          "For Sale or Rent" counts as a sale. A 0 price, original price, sq ft
          or lot size counts as not filled in (beds 0 is a studio and stays).
      datesOf(task, history, today, opts?) → { listedOn: { on, planned }, … } (§6.2, S7)
@@ -169,6 +172,14 @@
     return out;
   }
 
+  /* 📍 State in Asana is the state's name; the job's State fact is its code */
+  var STATE_CODE = { 'new jersey': 'NJ', 'new york': 'NY', 'florida': 'FL' };
+  function stateCode(v) {
+    var s = String(v == null ? '' : v).trim();
+    if (/^[a-z]{2}$/i.test(s)) return s.toUpperCase();
+    return STATE_CODE[s.toLowerCase().replace(/\s+/g, ' ')] || null;
+  }
+
   function factsOf(t, opts) {
     var out = {};
     var put = function (k, v) { if (!empty(v)) out[k] = v; };
@@ -192,6 +203,7 @@
       var name = String(ch).trim();
       if (areaSet(opts)[norm(name)]) out.neighborhood = name; else out.city = name;
     }
+    put('state', stateCode(field(t, '📍 State')));
     put('zip', field(t, '📍 Zip'));
     put('county', field(t, '📍 County'));
     put('mlsBoard', field(t, '📍 MLS'));

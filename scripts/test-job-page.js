@@ -84,7 +84,8 @@ const FAKE_DRIVE = `(function () {
     d('Marketing', [f('Offer from Jane Client.pdf', '06'), d('Showsheet', [f('Showsheet - 100 Example St 4A - 2026-10-12.pdf', '12'),
       d('Archive', [f('Showsheet - 100 Example St 4A - 2026-09-14.pdf', '01')])])]),
     d('Floorplan', [d('v1', [f('Floorplan - 100 Example St 4A.pdf', '04')]), d('v2', [f('Floorplan - 100 Example St 4A v2.pdf', '09'), f('Floorplan unbranded v2.pdf', '09')])]),
-    d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08')])),
+    d('Video', [f('GVC Video Clips.m4v', '05'), f('GVC Video Clips.m4v.xmpses.xmp', '11'), f('desktop.ini', '11')]),
+    d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08'), f('Thumbs.db', '12'), f('._01.jpg', '12'), f('03.jpg.xmp', '12')])),
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
   if (cfg.html) tree.children.push(d('Open House', [f('Open House - 100 Example St 4A.html', '11')]));
@@ -386,6 +387,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
   check('kit: brochure says there is no Asana step', (await kit('brochure')).includes('No Asana step for this piece'), true);
   check('kit: signage not used in NYC, video tracked', [(await kit('signage')).includes('Not used here'), (await kit('video')).includes('Tracked only')], [true, true]);
+  check('kit: the video piece is the film, never its sidecar (tune-up 3)', [(await kit('video')).includes('GVC Video Clips.m4v ·'), /xmp|desktop\.ini/i.test(await kit('video'))], [true, false]);
   check('kit: checklist only', await p.$$eval('#kitCard .ck-block li', els => els.map(e => e.textContent.replace(/\d+ \w+$/, '').trim())), ['Advertising Spots', 'Send Just Listed Email']);
   check('kit: count', await text(p, '#kitCount'), '3 of 6 done');
   const links = [];
@@ -535,14 +537,17 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const root = dir('4A', [file('Exclusive - Jane Client.pdf', '02'), file('Brochure draft.pdf', '03'), file('4A details.docx', '10'),
       dir('Offers', [file('Offer from Jane Client.pdf', '05')]), dir('Old', [file('x.pdf', '01')]),
       dir('Marketing', [file('Offer from Jane Client.pdf', '06'), dir('Showsheet', [file('Showsheet 1.pdf', '12')]), dir('Docs', [file('Seller ID.pdf', '03')])]),
-      dir('Photos', [dir('Edited', [file('e1.jpg', '08')]), dir('Raw', [file('IMG_1.CR3', '07'), file('IMG_2.CR3', '07')]), dir('Raws', [file('IMG_3.CR3', '07')]),
-        dir('Dock photos', [file('d1.jpg', '08')])])]);
+      dir('Photos', [dir('Edited', [file('e1.jpg', '08'), file('Thumbs.db', '09'), file('._e1.jpg', '09'), file('e1.jpg.xmp', '09'), file('~$notes.docx', '09')]),
+        dir('Raw', [file('IMG_1.CR3', '07'), file('IMG_2.CR3', '07'), file('.DS_Store', '07')]), dir('Raws', [file('IMG_3.CR3', '07')]),
+        dir('Dock photos', [file('d1.jpg', '08')])]), file('desktop.ini', '01')]);
     const tree = await GVC_DRIVE._treeOf(root, { depth: 4 });
     const list = await GVC_DRIVE._listOf(root, 'Marketing', {});
+    const edited = await GVC_DRIVE._listOf(root, 'Photos/Edited', {});
     const docs = await GVC_DRIVE._listOf(root, 'Marketing/Docs', {}).then(() => 'listed', e => 'refused');
-    return { tree, list, opened, listed, docs };
+    return { tree, list, opened, listed, docs, edited: edited.map(x => x.name) };
   });
-  check('walker: only allowed files opened', walked.opened.sort(), ['4A details.docx', 'Showsheet 1.pdf', 'd1.jpg', 'e1.jpg']);
+  check('walker: only allowed files opened', walked.opened.sort(), ['4A details.docx', 'Showsheet 1.pdf', 'd1.jpg', 'e1.jpg', 'e1.jpg']);
+  check('walker: sidecar and system files never listed or counted (tune-up 3)', [/Thumbs|\._e1|\.xmp|~\$|DS_Store|desktop\.ini/i.test(JSON.stringify(walked.tree)), walked.edited], [false, ['e1.jpg']]);
   check('walker: a paperwork folder below the top is never opened', walked.listed.filter(n => n === 'Docs'), []);
   check('walker: Marketing/Docs not in the tree', walked.tree.children.find(c => c.name === 'Marketing').children.map(c => c.name), ['Showsheet']);
   check('walker: Marketing/Docs refused by listJob', walked.docs, 'refused');
@@ -557,6 +562,39 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('walker: listJob leaves paperwork out', walked.list.map(x => x.name), ['Showsheet']);
   check('walker: no paperwork name', /Jane Client|Offer/.test(JSON.stringify(walked)), false);
   await t.ctx.close();
+
+  /* ---------- slice3 tune-up: the log in words, DE's 0 sq ft, sidecars, City vs Neighborhood ---------- */
+  {
+    const RT = rowsFor(), j = RT.properties[0];
+    delete j.core.neighborhood;
+    j.core.city = 'Point Pleasant Beach';
+    j.core.sqft = 0;
+    j.core.facts.sqft = { value: 0, source: 'DE', bySource: { DE: 0 } };
+    j.de = Object.assign({}, j.de, { sqft: 0, baths: 0 });
+    j.scan.pieces.video = [{ name: 'GVC Video Clips.m4v.xmpses.xmp', modified: '2026-10-14T10:00:00.000Z', archived: false },
+      { name: 'GVC Video Clips.m4v', modified: '2026-10-05T10:00:00.000Z', archived: false }];
+    RT.changes = [
+      { id: 'k1', property_id: 'p1', at: iso(NOW - 6 * 864e5), field: 'asana_gid', old_value: null, new_value: '1201', note: 'Linked to Asana', source: 'Asana' },
+      { id: 'k2', property_id: 'p1', at: iso(NOW - 5 * 864e5), field: 'kind', old_value: null, new_value: 'sale', source: 'Asana' },
+      { id: 'k3', property_id: 'p1', at: iso(NOW - 4 * 864e5), field: 'exclusiveOn', old_value: null, new_value: '2026-05-27', source: 'Asana' },
+      { id: 'k4', property_id: 'p1', at: iso(NOW - 3 * 864e5), field: 'de_stage', old_value: 'Live', new_value: 'In contract', source: 'DE' },
+      { id: 'k5', property_id: 'p1', at: iso(NOW - 2 * 864e5), field: 'mlsId', old_value: null, new_value: '123456', source: 'DE' },
+      { id: 'k6', property_id: 'p1', at: iso(NOW - 864e5), field: 'sqft', old_value: null, new_value: 0, source: 'DE' }
+    ];
+    t = await open(browser, { rows: RT, path: LISTING, drive: { state: 'not-connected' } });
+    p = t.page;
+    check('tune-up: every log line in plain words with its value', await p.$$eval('#changeLog li > div', els => els.map(e => e.childNodes[0].textContent)),
+      ['Sq ft is blank on DE', 'MLS number set to 123456', 'DE stage moved to In contract', 'Exclusive date set to 27 May', 'Sale or rental set to Sale', 'Linked to Asana']);
+    check('tune-up: DE\'s 0 sq ft is Not set in the tile and the facts list', [await text(p, '.facts > div:nth-child(3)'), await text(p, 'tr[data-fact="sqft"] td')], ['Sq ftNot set', 'Not set']);
+    check('tune-up: no neighborhood shows the city under City', await text(p, '.facts > div:nth-child(5)'), 'CityPoint Pleasant Beach');
+    check('tune-up: kit video from the scan is the film, not its sidecar', [(await text(p, '#kitCard [data-kit="video"]')).includes('GVC Video Clips.m4v ·'), /xmp/.test(await text(p, '#kitCard [data-kit="video"]'))], [true, false]);
+    check('tune-up: US spelling only', /neighbour/i.test(await p.evaluate(() => document.body.innerText)), false);
+    check('tune-up: no page errors', t.errors, []);
+    await t.ctx.close();
+    t = await open(browser, { path: LISTING });
+    check('tune-up: a neighborhood shows under Neighborhood', await text(t.page, '.facts > div:nth-child(5)'), 'NeighborhoodTestville');
+    await t.ctx.close();
+  }
 
   /* ---------- phone, hostile text, dashes ---------- */
   t = await open(browser, { path: LISTING, phone: true });

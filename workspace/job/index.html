@@ -276,7 +276,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var pick = function (name) {
       var f = by[name];
       if (f && f.value !== null && f.value !== undefined && f.value !== '') return { v: f.value, badge: f.badge, warn: f.warn };
-      return de[name] != null ? { v: de[name], badge: 'DE' } : { v: null };
+      return de[name] != null && !F.deBlank(name, de[name]) ? { v: de[name], badge: 'DE' } : { v: null };   // DE's 0 sq ft / baths: not known (M4)
     };
     var money = r.kind === 'rental' ? pick('rent').v != null ? pick('rent') : pick('price') : pick('price');
     var beds = pick('beds'), baths = pick('baths'), half = pick('halfBaths'), sqft = pick('sqft');
@@ -286,7 +286,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       tile('Beds · baths', beds.v != null && baths.v != null ? beds.v + ' bd · ' + baths.v + ' ba' : '', half.v ? half.v + ' half' : '', beds.badge) +
       tile('Sq ft', sqft.v != null ? Number(sqft.v).toLocaleString('en-US') + ' approx.' : '', '', sqft.badge) +
       tile('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
-      tile('Neighbourhood', (r.core || {}).neighborhood || (r.core || {}).city || '') +
+      ((r.core || {}).neighborhood || !(r.core || {}).city ? tile('Neighborhood', (r.core || {}).neighborhood || '') : tile('City', r.core.city)) +
       '</div></div>';
   }
 

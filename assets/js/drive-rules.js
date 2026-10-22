@@ -15,6 +15,11 @@
      GVC_DRIVE_RULES.rel('\\Photos\\Edited\\')            → 'Photos/Edited' ('..' → null)
      GVC_DRIVE_RULES.allowedInJob('Marketing/Offer 2.pdf') → false (paperwork in ANY segment)
      GVC_DRIVE_RULES.jobTree(rawTree)                   → the tree cut down to what may be shown
+     GVC_DRIVE_RULES.isJunk('a.m4v.xmpses.xmp')         → true: a sidecar or system file (*.xmp,
+                                                            *.xmpses, desktop.ini, Thumbs.db, .DS_Store,
+                                                            ~$ Office temp files, ._ AppleDouble, any
+                                                            dot file). Never a piece, a photo or a count:
+                                                            jobTree drops them, the walkers skip them.
 
    Paths are relative to the job folder; "\" or "/" both work.
    Loads in the browser (window.GVC_DRIVE_RULES) and in Node (require).
@@ -73,6 +78,12 @@
     return READABLE.indexOf(parts[0].toLowerCase()) !== -1;
   }
 
+  /* sidecars and system files: Lightroom / Premiere .xmp and .xmpses (also after another
+     extension, "clip.m4v.xmpses.xmp"), Windows desktop.ini and Thumbs.db, Office's "~$" lock
+     files, macOS ._ AppleDouble files, .DS_Store and any other dot file */
+  var JUNK = /(\.xmp|\.xmpses)$|^(desktop\.ini|thumbs\.db)$|^~\$|^\./i;
+  function isJunk(name) { return JUNK.test(String(name == null ? '' : name).trim()); }
+
   function isPaperworkFolder(name) { return PAPERWORK.test(String(name || '').trim()); }
   function isPaperwork(name) { return isPaperworkFolder(name) || hasPaperworkWord(name); }
 
@@ -98,7 +109,7 @@
       var d = { name: node.name, kind: 'directory', children: [] };
       if (node.more) d.more = true;
       (node.children || []).forEach(function (c) {
-        if (!c || c.skipped) return;
+        if (!c || c.skipped || (c.kind !== 'directory' && isJunk(c.name))) return;
         var path = segs.concat(String(c.name));
         if (!allowedInJob(path.join('/'))) return;
         d.children.push(c.kind === 'directory' ? inside(c, path) : file(c));
@@ -108,6 +119,7 @@
     (raw.children || []).forEach(function (c) {
       if (!c) return;
       var name = String(c.name == null ? '' : c.name);
+      if (c.kind !== 'directory' && isJunk(name)) return;     // never named, never counted
       var paper = c.skipped || isPaperwork(name);
       if (c.kind === 'directory') {
         if (paper) out.children.push({ name: /^docs?$/i.test(name.trim()) ? 'Docs' : 'Paperwork', kind: 'directory', skipped: true });
@@ -120,5 +132,5 @@
   }
 
   return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
-    isPaperwork: isPaperwork, jobTree: jobTree };
+    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree };
 });

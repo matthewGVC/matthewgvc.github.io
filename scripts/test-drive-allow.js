@@ -83,6 +83,18 @@ check('jobTree: input untouched', raw.children.length, 9);
 check('jobTree: a broken link passes through', R.jobTree({ name: 'x', kind: 'directory', broken: true }), { name: 'x', kind: 'directory', broken: true });
 
 check('rel', R.rel('\\Photos\\Edited\\'), 'Photos/Edited');
+
+/* sidecar and system files are never a piece, a photo or a count (slice3 tune-up 3) */
+check('isJunk: sidecars and system files',
+  ['GVC Video Clips.m4v.xmpses.xmp', 'a.xmp', 'IMG_1.CR3.xmp', 'clip.xmpses', 'desktop.ini', 'Desktop.ini', 'Thumbs.db', 'thumbs.db', '.DS_Store',
+   '~$Details 2A.docx', '._01.jpg', '.hidden'].map(R.isJunk), Array(12).fill(true));
+check('isJunk: real files are kept', ['GVC Video Clips.m4v', '01.jpg', 'Details 2A.docx', 'xmp notes.pdf', 'Floorplan v2.pdf', 'Thumbs up.jpg'].map(R.isJunk),
+  [false, false, false, false, false, false]);
+const junky = { name: '2A', kind: 'directory', children: [
+  { name: 'desktop.ini', kind: 'file' }, { name: 'Details 2A.docx', kind: 'file' }, { name: '~$Details 2A.docx', kind: 'file' },
+  { name: 'Video', kind: 'directory', children: [{ name: 'Clip.m4v', kind: 'file' }, { name: 'Clip.m4v.xmpses.xmp', kind: 'file' }, { name: 'Thumbs.db', kind: 'file' }] }] };
+const jt = R.jobTree(junky);
+check('jobTree: junk dropped at the top and below, never counted', [jt.children.map(c => c.name), jt.children[1].children.map(c => c.name), jt.looseCount], [['Details 2A.docx', 'Video'], ['Clip.m4v'], 0]);
 check('rel dotdot', R.rel('Photos/../Docs'), null);
 
 if (failures.length) {

@@ -31,7 +31,7 @@
 
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
   function newest(list) {
-    return (list || []).filter(function (f) { return !f.archived; }).sort(function (a, b) { return ms(b.modified) - ms(a.modified); })[0] || null;
+    return global.GVC_KIT.realFiles(list).filter(function (f) { return !f.archived; }).sort(function (a, b) { return ms(b.modified) - ms(a.modified); })[0] || null;
   }
 
   function rowsHtml(pieces, ctx, live) {

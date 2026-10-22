@@ -16,6 +16,10 @@
    Advertising Spots and Send Just Listed Email (NYC) are checklist only:
    a tick, never a file (D74).
 
+   A sidecar or system file (GVC_DRIVE_RULES.isJunk: "clip.m4v.xmpses.xmp",
+   Thumbs.db) is never a piece's file, even in a scan stored before the
+   walkers skipped them.
+
    GVC_KIT.STEPS holds the step name patterns (copied from match-check.js
    PIECE_STEPS; Task 9 makes the Match check use these).
    Loads in the browser (window.GVC_KIT) and in Node (require).
@@ -45,6 +49,15 @@
   };
 
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
+  /* drive-rules.js may load after this file (the Match page): looked up when used */
+  function rules() {
+    if (typeof window !== 'undefined' && window.GVC_DRIVE_RULES) return window.GVC_DRIVE_RULES;
+    try { return typeof require === 'function' ? require('./drive-rules.js') : null; } catch (e) { return null; }
+  }
+  function realFiles(list) {
+    var R = rules();
+    return (list || []).filter(function (f) { return f && !(R && R.isJunk(f.name)); });
+  }
 
   function flat(checklist) {
     var steps = [];
@@ -68,7 +81,7 @@
     var steps = flat(input.checklist);
     var matchList = (input.match && input.match.list) || [];
     var rows = KEYS.map(function (key) {
-      var files = (input.pieces && input.pieces[key] || []).slice().sort(function (a, b) { return ms(b.modified) - ms(a.modified); });
+      var files = realFiles(input.pieces && input.pieces[key]).sort(function (a, b) { return ms(b.modified) - ms(a.modified); });
       var current = files.filter(function (f) { return !f.archived; })[0] || null;
       var step = stepFor(key, steps);
       var m = matchList.filter(function (x) { return x.key === 'M8:' + key; })[0] || null;
@@ -101,5 +114,5 @@
     return { rows: rows, checklistOnly: only };
   }
 
-  return { track: track, STEPS: STEPS, KEYS: KEYS, LABELS: LABELS };
+  return { track: track, realFiles: realFiles, STEPS: STEPS, KEYS: KEYS, LABELS: LABELS };
 });

@@ -40,6 +40,10 @@ function file(root, rel, date) {
   file(job, 'Exclusive signed.pdf', '2026-09-20');          // loose paperwork: never counted
   file(job, 'showsheet details.docx', '2026-09-07');
   file(job, 'Old asset.png', '2020-01-01');                 // before the job: ignored
+  file(job, 'Photos/edits/a.jpg.xmp', '2026-09-12');        // sidecars and system files: never counted (tune-up 3)
+  file(job, 'Photos/edits/Thumbs.db', '2026-09-12');
+  file(job, 'ShowSheet/~$draft.docx', '2026-09-14');
+  file(job, 'Photos/edits/._a.jpg', '2026-09-12');
 
   check('monday of', mondayOf(new Date('2026-09-10T12:00:00Z')), '2026-09-07');
   const s = scanFolder(job, { since: '2026-08-01' });
@@ -144,6 +148,11 @@ function file(root, rel, date) {
   file(root3, JF + '/Docs/Offer from Jane Client.pdf', '2026-10-03');
   file(root3, JF + '/Marketing/Offer - Jane Client.pdf', '2026-10-03');
   file(root3, JF + '/Marketing/Brochure/Brochure.pdf', '2026-10-04');
+  file(root3, JF + '/Video/GVC Video Clips.m4v', '2026-10-05');                 // a film and its sidecars (tune-up 3)
+  file(root3, JF + '/Video/GVC Video Clips.m4v.xmpses.xmp', '2026-10-09');
+  file(root3, JF + '/Photos/Edited/a.jpg.xmp', '2026-10-09');
+  file(root3, JF + '/Photos/Edited/Thumbs.db', '2026-10-09');
+  file(root3, JF + '/Thumbs.db', '2026-10-09');
   const tr = treeOf(path.join(root3, ...JF.split('/')), 4);
   check('tree: Docs is one skipped line, loose files counted', [tr.children.filter(c => c.skipped).map(c => c.name), tr.looseCount, tr.otherCount], [['Docs'], 2, 0]);
   check('tree: a piece loose at the top is named; paperwork and notes are not', tr.children.filter(c => c.kind === 'file').map(c => c.name).sort(), ['Details 2A.docx', 'Showsheet 2A.pdf']);
@@ -183,6 +192,8 @@ function file(root, rel, date) {
   check('scan: archived flag', sc.pieces.floorplan.filter(f => f.archived).length, 0);
   check('scan: the loose showsheet is a piece and the health says so', [sc.pieces.showsheet.map(f => f.name), sc.health.notes.some(n => n.code === 'pieceAtTop')], [['Showsheet 2A.pdf'], true]);
   check('scan: brochure under Marketing is found', (sc.pieces.brochure || []).map(f => f.name), ['Brochure.pdf']);
+  check('scan: the video piece is the film, never its sidecar', (sc.pieces.video || []).map(f => f.name), ['GVC Video Clips.m4v']);
+  check('scan: sidecars and system files never counted', [sc.health.counts.photos.edited, JSON.stringify(sc).includes('xmp') || JSON.stringify(sc).includes('Thumbs')], [1, false]);
   check('scan: details doc and counts', [sc.detailsDoc && sc.detailsDoc.name, sc.health.counts.looseTop, sc.health.counts.photos.raw], ['Details 2A.docx', 2, 1]);
   check('scan: no paperwork name anywhere in what is stored', JSON.stringify(T3.properties[0].scan).includes('Jane Client'), false);
   check('scan: Drive left exactly as it was', JSON.stringify(tree(root3)) === JSON.stringify(before3), true);

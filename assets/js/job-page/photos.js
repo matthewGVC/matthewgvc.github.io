@@ -48,7 +48,7 @@
     var key = ctx.row.drive_folder + '|' + dir;
     if (!lists[key]) {
       lists[key] = JP.drive.timed(global.GVC_DRIVE.listJob(ctx.row.drive_folder, dir, { timeoutMs: JP.drive.ms() })).then(function (xs) {
-        return (xs || []).filter(function (e) { return global.GVC_DRIVE_RULES.allowedInJob(dir + '/' + e.name); });
+        return (xs || []).filter(function (e) { return global.GVC_DRIVE_RULES.allowedInJob(dir + '/' + e.name) && !(e.kind !== 'directory' && global.GVC_DRIVE_RULES.isJunk(e.name)); });
       });
       lists[key].catch(function () {});
     }

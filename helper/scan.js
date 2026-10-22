@@ -11,6 +11,8 @@
        stores `scan` and marks a vanished folder 'broken'. It never moves the
        stage: that is Asana's (D50, S8); the pieces found feed Match's M8.
 
+   Sidecar and system files (.xmp, .xmpses, desktop.ini, Thumbs.db, ~$ and
+   ._ files: drive-rules.js isJunk) are skipped everywhere, never counted.
    Reads names and dates only, never opens a file. It keeps weekly counts and
    dates, plus (S15) the folder's Drive link, the newest 5 finished files of
    each kit piece with their links, and the folder-health notes. Never a name
@@ -83,7 +85,8 @@ function scanFolder(abs, opts) {
     let entries;
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
     for (const e of entries) {
-      if (e.name.startsWith('.') || /^desktop\.ini$/i.test(e.name)) continue;
+      if (!e.isDirectory() && RULES.isJunk(e.name)) continue;   // sidecars, Thumbs.db, ~$ temp files (drive-rules.js)
+      if (e.name.startsWith('.')) continue;
       if (RULES.isPaperworkFolder(e.name)) continue;          // folders and loose files alike
       const p = path.join(dir, e.name);
       if (e.isDirectory()) { walk(p, trail.concat(e.name)); continue; }
@@ -114,7 +117,7 @@ const NO_STAT = ['raw', 'raws', 'staged', 'print', 'web'];   // photo sets: coun
 function treeOf(abs, depth) {
   const top = { name: path.basename(abs), kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
   const read = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; } };
-  const skip = n => n.startsWith('.') || /^desktop\.ini$/i.test(n);
+  const skip = (n, e) => n.startsWith('.') || (!e.isDirectory() && RULES.isJunk(n));   // sidecars and system files (drive-rules.js)
   function fileNode(p, name, segs) {
     const f = { name, kind: 'file' };
     if (segs.some(g => NO_STAT.indexOf(g.toLowerCase()) !== -1)) return f;
@@ -123,7 +126,7 @@ function treeOf(abs, depth) {
   }
   function walk(dir, segs, left, node) {
     read(dir).forEach(e => {
-      if (skip(e.name) || !(e.isDirectory() || e.isFile())) return;
+      if (skip(e.name, e) || !(e.isDirectory() || e.isFile())) return;
       const p = path.join(dir, e.name), at = segs.concat(e.name);
       if (!segs.length) {
         const paper = RULES.isPaperworkFolder(e.name) || RULES.hasPaperworkWord(e.name);

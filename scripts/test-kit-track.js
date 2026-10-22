@@ -95,6 +95,12 @@ check('other rows no mismatch', res.rows.filter((r) => r.key !== 'photos').every
 res = K.track({ kind: 'sale', market: 'NJ', pieces: { showsheet: [{ path: 'a', name: 'a.pdf', modified: '2026-09-01T00:00:00Z', archived: false, url: 'https://drive.google.com/file/d/x/view' }] }, checklist: [] });
 check('url kept', row(res, 'showsheet').file.url, 'https://drive.google.com/file/d/x/view');
 
+/* a sidecar or system file is never the piece's newest file (slice3 tune-up 3) */
+res = K.track({ kind: 'sale', market: 'NJ', pieces: { video: [file('GVC Video Clips.m4v.xmpses.xmp', '2026-10-14T00:00:00Z'), file('GVC Video Clips.m4v', '2026-10-05T00:00:00Z'),
+  file('desktop.ini', '2026-10-15T00:00:00Z')], floorplan: [file('Thumbs.db', '2026-10-15T00:00:00Z')] }, checklist: [] });
+check('sidecar never the newest file, nor counted as older', [row(res, 'video').file.name, row(res, 'video').older], ['GVC Video Clips.m4v', 0]);
+check('only junk is no file', [row(res, 'floorplan').file, row(res, 'floorplan').state], [null, 'notStarted']);
+
 /* STEPS match match-check's patterns */
 check('STEPS pieces', K.STEPS.pieces.map((p) => p[0]), ['showsheet', 'floorplan', 'photos', 'postcard']);
 check('never-file pattern', K.STEPS.neverFile.test('send just listed email'), true);

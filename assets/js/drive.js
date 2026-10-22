@@ -189,6 +189,7 @@
       return entries(dir, ms).then(function (hs) {
         return Promise.all(hs.map(function (h) {
           var path = segs.concat(h.name);
+          if (h.kind !== 'directory' && RULES.isJunk(h.name)) return null;   // sidecars, Thumbs.db: never opened
           if (!segs.length) {
             var paper = RULES.isPaperworkFolder(h.name) || RULES.hasPaperworkWord(h.name);
             if (h.kind === 'directory') {
@@ -233,6 +234,7 @@
     if (!r || !RULES.allowedInJob(r) || r.split('/').some(RULES.isPaperwork)) return Promise.reject(new Error('Not allowed: the workspace only reads Floorplan, Photos and Marketing folders and the details doc.'));
     return walk(root, r.split('/')).then(function (d) { return entries(d, ms); }).then(function (hs) {
       return Promise.all(hs.map(function (h) {
+        if (h.kind !== 'directory' && RULES.isJunk(h.name)) return null;
         if (!RULES.allowedInJob(r + '/' + h.name)) return null;
         if (h.kind === 'directory' && RULES.isPaperwork(h.name)) return null;
         return h.kind === 'directory' ? { name: h.name, kind: 'directory' } : fileNode(h, ms);

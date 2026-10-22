@@ -15,8 +15,10 @@
 --                          pitch's pieces.
 --
 -- Needs 0004 to 0009. Safe to run more than once; nothing is dropped except the old primary
--- key, which the two unique keys replace. Before running it on the real project: back up
--- (helper/backup.js).
+-- key, which the two unique keys replace (documents has no primary key from here on: a
+-- restore upserts on one of the two keys, helper/backup.js says how). Before running it on
+-- the real project: back up (helper/backup.js). Run it before the Slice 5 code is published:
+-- the helper reads documents in (property_id, pitch_id, tool) order.
 -- ============================================================
 
 alter table public.documents
@@ -49,6 +51,8 @@ create or replace function public.piece_label(p_tool text) returns text language
     when 'postcard-sold' then 'Just Sold postcard'
     else initcap(replace(p_tool, '-', ' ')) end
 $$;
+revoke execute on function public.piece_label(text) from public, anon;
+grant  execute on function public.piece_label(text) to authenticated;
 
 create or replace function public.save_piece_of(p_table text, p_id uuid, p_tool text, p_version integer,
                                                 p_state jsonb, p_built_from jsonb, p_output jsonb,

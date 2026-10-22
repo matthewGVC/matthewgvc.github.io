@@ -71,6 +71,7 @@
     'body.job-mode:not(.job-plan-drop) #fpDrop{display:none!important}' +
     '#jobBar{padding:14px 20px;border-bottom:1px solid var(--ui-rule);font-size:13.5px;line-height:1.45;color:var(--navy)}' +
     '#jobBar .jb-t{font-weight:700}#jobBar a{color:inherit}#jobBar .jb-s{color:var(--ui-ink-soft);margin-top:2px}' +
+    '#jobBar .linkbtn{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}' +
     '#jobBar .jb-b{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}#jobBar .jb-n{margin-top:8px;color:var(--ui-ink-soft)}' +
     '#jobBanner{margin-top:10px;padding:8px 10px;border:1px solid var(--ui-rule);background:#fff}#jobBanner ul{margin:4px 0 0;padding-left:18px}' +
     '#jobMsg{margin:8px 0 0;min-height:1.2em}' +
@@ -120,11 +121,19 @@
     if (M.files) { opts.files = M.files; opts.editedPaths = M.editedPaths; opts.floorplan = M.floorplan; }
     return ST.stale(M.doc, M.row, opts);
   }
+  /* Open · Copy Drive link, for a file the helper wrote (a Drive link only: never a local path) */
+  function fileLinks() {
+    var out = M.doc && M.doc.output;
+    if (!out || out.via !== 'helper' || !/^https:\/\/drive\.google\.com\//.test(String(out.url || ''))) return '';
+    return ' · <a data-open href="' + esc(out.url) + '" target="_blank" rel="noopener">Open</a>' +
+      ' · <button type="button" class="linkbtn" data-copy>Copy Drive link</button>';
+  }
   function stateWords(s) {
     var out = M.doc && M.doc.output;
     if (s.state === 'none') return 'Not made yet';
     if (s.state === 'untracked') return 'Made before the workspace kept track';
-    var made = 'Made ' + day((out && out.madeAt) || M.doc.built_at) + (out && out.paper ? ' · ' + String(out.paper).toUpperCase() : '') +
+    var when = (out && out.madeAt) || M.doc.built_at;
+    var made = (new Date(when).toDateString() === new Date().toDateString() ? 'Made today' : 'Made ' + day(when)) + (out && out.paper ? ' · ' + String(out.paper).toUpperCase() : '') +
       (out && out.via === 'print' ? ' · printed by hand, file not tracked' : '');
     return s.state === 'stale' ? 'Stale: ' + ST.words(s.changes) + ' · ' + made : made;
   }
@@ -149,7 +158,7 @@
     var back = '../../workspace/job/?listing=' + encodeURIComponent(slug);
     var html = '<div class="jb-t">Showsheet for ' + esc(c.address || r.label || slug) + (c.unit ? ' · ' + esc(c.unit) : '') +
       ' · <a data-back href="' + esc(back) + '">← Job page</a></div>' +
-      '<div class="jb-s">' + esc(MARKET[r.market] || 'New York') + ' · <span id="jobState">' + esc(stateWords(s)) + '</span></div>';
+      '<div class="jb-s">' + esc(MARKET[r.market] || 'New York') + ' · <span id="jobState">' + esc(stateWords(s)) + '</span>' + fileLinks() + '</div>';
     if (!ag.confirmed) html += '<div class="jb-n">Agents not confirmed on the job: Asana\'s suggestion prints for now. <a href="' + esc(back) + '">Confirm them on the job page</a>.</div>';
     if (M.canEdit) html += '<div class="jb-b"><button type="button" class="btn sm" id="btnSaveSheet">Save sheet</button>' +
       '<button type="button" class="btn sm" id="btnSavePdf">Save PDF to Drive</button></div>';
@@ -162,6 +171,11 @@
     var b1 = $('#btnSaveSheet'), b2 = $('#btnSavePdf');
     if (b1) b1.onclick = function () { M.saveSheet(); };
     if (b2) b2.onclick = function () { if (M.savePdf) M.savePdf(); };
+    var cp = $('#jobBar [data-copy]');
+    if (cp) cp.onclick = function () {
+      var url = M.doc && M.doc.output && M.doc.output.url;
+      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject(new Error('no clipboard'))).then(function () { say('Drive link copied.'); }, function () { say(url); });
+    };
     busy(M.busy);
   }
   function busy(on) {
@@ -445,6 +459,90 @@
   };
   /* used by Save PDF to Drive (below the fold of this file's job: Task 8) */
   M._ = { saveFacts: saveFacts, savePiece: savePiece, storable: storable, planFrom: planFrom, photoFrom: photoFrom, drawAll: drawAll, say: say, busy: busy, reloadRow: reloadRow, esc: esc };
+
+  /* ---------- Save PDF to Drive (spec §2.3; the order matters) ---------- */
+  var NOT_RECORDED = 'Saved to Drive, but the job didn\'t record it. Press Save PDF to Drive again or reload.';
+  function retryMs() { return window.__sheetRetryMs || 1000; }
+  function pause(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  /* what the sheet prints must all be here: a photo or plan Drive hasn't brought in refuses the save */
+  function notReady() {
+    var s = SH.state, r = M.row;
+    if (r.drive_folder && M.drive !== 'connected') return 'Connect Drive on this desktop first, so the sheet has its photos and floorplan.';
+    if (M.reading) return 'Drive hasn\'t downloaded the photos yet; wait or reload.';
+    var printed = [s.heroIndex, s.secondaryIndex].map(function (i) { return i == null ? null : s.photos[i]; }).filter(Boolean)
+      .map(function (p) { return p.path; });
+    var ph = SJ.photosOf(r, M.editedPaths) || {};
+    [ph.front, ph.back].forEach(function (want) { if (want && printed.indexOf(want) === -1) printed.push(want); });
+    if (M.floorplan && s.floorplan === M.fpSrc) printed.push(M.floorplan.path);
+    var miss = (M.failed || []).filter(function (f) { return printed.indexOf(f) !== -1; })[0] ||
+      (ph.front && !s.photos.some(function (p) { return p.path === ph.front; }) ? ph.front : null);
+    return miss ? 'Drive hasn\'t downloaded ' + miss.split('/').pop() + ' yet; wait or reload.' : null;
+  }
+  /* the sheet as it prints: the two photos and the plans inline, nothing else in the tray */
+  function printable() {
+    var s = JSON.parse(JSON.stringify(SH.state)), list = [];
+    [s.heroIndex, s.secondaryIndex].forEach(function (i) {
+      var p = i == null ? null : s.photos[i];
+      if (p && p.src) list.push({ src: p.src, fx: p.fx, fy: p.fy, name: p.name });
+    });
+    s.photos = list;
+    s.heroIndex = list.length ? 0 : null;
+    s.secondaryIndex = list.length > 1 ? 1 : null;
+    return s;
+  }
+  function record(bf, output, archived) {
+    var tries = 0;
+    function attempt() {
+      tries++;
+      return savePiece(bf, output, archived).catch(function (e) {
+        if (tries >= 3) throw new Error(NOT_RECORDED);
+        return pause(retryMs()).then(attempt);
+      });
+    }
+    return attempt();
+  }
+  function byHand(bf) {
+    var c = M.row.core || {}, s = SH.state;
+    var name = 'Showsheet - ' + [c.address, c.unit].filter(Boolean).join(' ').replace(/[\\/:*?"<>|]+/g, '-') + ' - ' + today();
+    var title = document.title;
+    document.title = name;
+    try { window.print(); } finally { document.title = title; }
+    bf.via = 'print';
+    return record(bf, { name: name + '.pdf', paper: s.paper || 'a5', madeAt: new Date().toISOString(), via: 'print' }, null).then(function () {
+      return 'Printed by hand, file not tracked. Save it into the job\'s showsheet folder yourself.';
+    });
+  }
+  M.savePdf = function () {
+    if (!M.canEdit || M.busy) return Promise.resolve(false);
+    var why = notReady();
+    if (why) { say(why); return Promise.resolve(false); }
+    busy(true); say('Saving the facts…');
+    return saveFacts().then(function () { return reloadRow(); }).then(function () {
+      var s = SH.state;
+      var bf = SJ.builtFrom(s, M.row, { photos: { front: photoFrom(s.heroIndex), back: photoFrom(s.secondaryIndex) }, floorplan: planFrom(), via: 'helper' });
+      say('Making the PDF…');
+      var shell = window.GVC_SHELL;
+      var ask = shell && shell.helper ? shell.helper('POST', '/piece', { propertyId: M.row.id, tool: 'showsheet', state: printable(), paper: s.paper || 'a5' })
+        : Promise.reject(new Error('no helper'));
+      return ask.then(function (reply) {
+        if (!reply || !reply.ok) throw Object.assign(new Error((reply && reply.error) || 'The helper couldn\'t make the PDF.'), { refused: true });
+        var output = { path: reply.path, name: reply.name, size: reply.size, modified: reply.modified, url: reply.url || null,
+          paper: s.paper || 'a5', madeAt: new Date().toISOString(), via: 'helper' };
+        return record(bf, output, reply.archived || null).then(function () {
+          var a = reply.archived;
+          return 'Saved to Drive: ' + reply.name + '.' + (a && a.to ? ' The older one is in Archive.' : a && a.why ? ' The ' + a.why + '.' : '');
+        });
+      }, function (e) {
+        if (e && e.refused) throw e;
+        return byHand(bf);   // the helper isn't here (S19)
+      });
+    }).then(function (msg) { drawAll(); say(msg); return true; }, function (e) { drawAll(); say(e.message); return false; })
+      .then(function (ok) { busy(false); return ok; });
+  };
 
   /* ---------- start ---------- */
   (P.signedIn() ? Promise.resolve(true) : P.askSignIn('Sign in to open this job\'s showsheet.')).then(function (ok) {

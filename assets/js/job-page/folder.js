@@ -173,7 +173,7 @@
   function html(ctx) {
     var r = ctx.row, m = mode(ctx), esc = ctx.esc;
     var body;
-    if (m === 'none') body = '<p class="soft">' + (r.drive_folder ? 'The folder link is broken. Relink it from the top of the page.' : 'No Drive folder linked yet.') + '</p>';
+    if (m === 'none') body = '<p class="soft">' + (r.drive_folder ? 'The folder link is broken.' + (ctx.canEdit ? ' Relink it from the top of the page.' : '') : 'No Drive folder linked yet.') + '</p>';
     else if (m === 'scan') body = scanBody(ctx);
     else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     return '<div class="card" id="folderCard"><div class="card-h"><div><h2>Folder</h2><p>Only the Floorplan, Photos and Marketing folders and the details doc are read. Nothing is moved.</p></div>' +

@@ -176,8 +176,12 @@
     }, function () { return { name: h.name, kind: 'file' }; });
   }
 
+  /* raw photo sets are counted by name, never read (like the helper's scan) */
+  var NO_READ = ['raw', 'raws'];
+
   /* the walk under a job folder's handle; every name passes the rules before
-     its handle is opened (exposed as _treeOf for tests) */
+     its handle is opened, and a paperwork folder at any depth is never listed
+     (exposed as _treeOf for tests) */
   function treeOf(root, opts) {
     var depth = (opts && opts.depth) || 3, ms = (opts && opts.timeoutMs) || 20000;
     var top = { name: root.name, kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
@@ -195,7 +199,11 @@
               if (!RULES.allowedInJob(h.name)) return { name: h.name, kind: 'file' };   // loose: named, never opened
             }
           } else if (!RULES.allowedInJob(path.join('/'))) return null;
-          if (h.kind !== 'directory') return fileNode(h, ms);
+          if (h.kind !== 'directory') {
+            if (segs.some(function (g) { return NO_READ.indexOf(g.toLowerCase()) !== -1; })) return { name: h.name, kind: 'file' };
+            return fileNode(h, ms);
+          }
+          if (RULES.isPaperwork(h.name)) return null;            // "Marketing/Docs": never listed, never opened
           var d = { name: h.name, kind: 'directory', children: [] };
           if (left <= 1) { d.more = true; return d; }
           return walkDir(h, path, left - 1, d);
@@ -222,10 +230,11 @@
   /* one readable folder's entries (exposed as _listOf for tests) */
   function listOf(root, sub, opts) {
     var ms = (opts && opts.timeoutMs) || 20000, r = RULES.rel(sub);
-    if (!r || !RULES.allowedInJob(r)) return Promise.reject(new Error('Not allowed: the workspace only reads Floorplan, Photos and Marketing folders and the details doc.'));
+    if (!r || !RULES.allowedInJob(r) || r.split('/').some(RULES.isPaperwork)) return Promise.reject(new Error('Not allowed: the workspace only reads Floorplan, Photos and Marketing folders and the details doc.'));
     return walk(root, r.split('/')).then(function (d) { return entries(d, ms); }).then(function (hs) {
       return Promise.all(hs.map(function (h) {
         if (!RULES.allowedInJob(r + '/' + h.name)) return null;
+        if (h.kind === 'directory' && RULES.isPaperwork(h.name)) return null;
         return h.kind === 'directory' ? { name: h.name, kind: 'directory' } : fileNode(h, ms);
       }));
     }).then(function (xs) { return xs.filter(Boolean).sort(byName); });

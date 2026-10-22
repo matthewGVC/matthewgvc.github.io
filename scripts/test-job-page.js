@@ -349,6 +349,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('dev: no ticks for a teammate', await t.page.$$eval('[data-tick], [data-untick]', e => e.length), 0);
   await t.ctx.close();
+  /* final review 3: Asana's suggestions and the folder link are the owner's */
+  const RH = rowsFor();
+  RH.dev_projects[0].milestone_hints = [{ key: 'permits', date: '2026-10-01', source: 'Asana', asanaGid: 'g9' }];
+  t = await open(browser, { rows: RH, path: '/workspace/job/?dev=619-example-ave' });
+  check('owner: suggestion buttons and folder link', await t.page.$$eval('#hints [data-ok], #hints [data-no], #link', e => e.length), 3);
+  await t.ctx.close();
+  for (const path of ['/workspace/job/?dev=619-example-ave', LISTING]) {
+    t = await open(browser, { rows: RH, path, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
+    check('team: no suggestion buttons, no Link / Change / Relink folder: ' + path, await t.page.$$eval('[data-ok], [data-no], #link', e => e.length), 0);
+    check('team: no page errors: ' + path, t.errors, []);
+    await t.ctx.close();
+  }
 
   /* ---------- Drive cards (Task 8), Drive connected, the owner ---------- */
   const FOLDER = 'GVC - New York/Building Information/100 Example St/4A';
@@ -503,20 +515,31 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { path: LISTING });
   check('Drive reads wait 20 s by default', await t.page.evaluate(() => GVC_JP.drive.ms()), 20000);
   const walked = await t.page.evaluate(async () => {
-    const opened = [];
+    const opened = [], listed = [];
     const file = (name, day) => ({ kind: 'file', name, getFile: async () => { opened.push(name); return { size: 10, lastModified: Date.parse('2026-10-' + day + 'T10:00:00Z') }; } });
-    const dir = (name, kids) => ({ kind: 'directory', name, values: () => (async function* () { yield* kids; })(),
+    const dir = (name, kids) => ({ kind: 'directory', name, values: () => { listed.push(name); return (async function* () { yield* kids; })(); },
       getDirectoryHandle: async n => { const k = kids.find(x => x.name === n && x.kind === 'directory'); if (!k) { const e = new Error('nf'); e.name = 'NotFoundError'; throw e; } return k; } });
     const root = dir('4A', [file('Exclusive - Jane Client.pdf', '02'), file('Brochure draft.pdf', '03'), file('4A details.docx', '10'),
       dir('Offers', [file('Offer from Jane Client.pdf', '05')]), dir('Old', [file('x.pdf', '01')]),
-      dir('Marketing', [file('Offer from Jane Client.pdf', '06'), dir('Showsheet', [file('Showsheet 1.pdf', '12')])])]);
+      dir('Marketing', [file('Offer from Jane Client.pdf', '06'), dir('Showsheet', [file('Showsheet 1.pdf', '12')]), dir('Docs', [file('Seller ID.pdf', '03')])]),
+      dir('Photos', [dir('Edited', [file('e1.jpg', '08')]), dir('Raw', [file('IMG_1.CR3', '07'), file('IMG_2.CR3', '07')]), dir('Raws', [file('IMG_3.CR3', '07')]),
+        dir('Dock photos', [file('d1.jpg', '08')])])]);
     const tree = await GVC_DRIVE._treeOf(root, { depth: 4 });
     const list = await GVC_DRIVE._listOf(root, 'Marketing', {});
-    return { tree, list, opened };
+    const docs = await GVC_DRIVE._listOf(root, 'Marketing/Docs', {}).then(() => 'listed', e => 'refused');
+    return { tree, list, opened, listed, docs };
   });
-  check('walker: only allowed files opened', walked.opened.sort(), ['4A details.docx', 'Showsheet 1.pdf']);
+  check('walker: only allowed files opened', walked.opened.sort(), ['4A details.docx', 'Showsheet 1.pdf', 'd1.jpg', 'e1.jpg']);
+  check('walker: a paperwork folder below the top is never opened', walked.listed.filter(n => n === 'Docs'), []);
+  check('walker: Marketing/Docs not in the tree', walked.tree.children.find(c => c.name === 'Marketing').children.map(c => c.name), ['Showsheet']);
+  check('walker: Marketing/Docs refused by listJob', walked.docs, 'refused');
+  check('walker: Seller ID never named', JSON.stringify(walked).includes('Seller ID'), false);
+  const ph = walked.tree.children.find(c => c.name === 'Photos');
+  check('walker: Dock photos kept', ph.children.map(c => c.name), ['Dock photos', 'Edited', 'Raw', 'Raws']);
+  check('walker: raw photos counted by name, never read', [ph.children.find(c => c.name === 'Raw').children, ph.children.find(c => c.name === 'Raws').children],
+    [[{ name: 'IMG_1.CR3', kind: 'file' }, { name: 'IMG_2.CR3', kind: 'file' }], [{ name: 'IMG_3.CR3', kind: 'file' }]]);
   check('walker: tree shape', [walked.tree.looseCount, walked.tree.otherCount, walked.tree.children.map(c => c.name + (c.skipped ? ' (skipped)' : ''))],
-    [1, 1, ['4A details.docx', 'Brochure draft.pdf', 'Marketing', 'Paperwork (skipped)']]);
+    [1, 1, ['4A details.docx', 'Brochure draft.pdf', 'Marketing', 'Paperwork (skipped)', 'Photos']]);
   check('walker: nested paperwork dropped, dates kept', walked.tree.children.find(c => c.name === 'Marketing').children[0].children, [{ name: 'Showsheet 1.pdf', kind: 'file', size: 10, modified: '2026-10-12T10:00:00.000Z' }]);
   check('walker: listJob leaves paperwork out', walked.list.map(x => x.name), ['Showsheet']);
   check('walker: no paperwork name', /Jane Client|Offer/.test(JSON.stringify(walked)), false);

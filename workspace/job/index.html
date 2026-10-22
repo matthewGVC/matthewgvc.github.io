@@ -352,7 +352,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
       (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
       (kind === 'listing' && JP.canEdit ? '<button class="b" type="button" id="archive">' + esc(archived ? 'Unarchive (back to ' + unarchiveTo() + ')' : 'Archive') + '</button>' : '') +
-      '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button></div>';
+      (JP.canEdit ? '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button>' : '') + '</div>';
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c) + '</div>', '<div id="fpHost">' + JP.floorplans.html(c) + '</div>',
       '<div id="photosHost">' + JP.photos.html(c) + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
@@ -381,7 +381,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     });
     $('copy').addEventListener('click', function () { JP.drive.copy(gPath(), 'Copied: paste it into File Explorer\'s address bar.', $('actMsg')); });
     $('copyLink').addEventListener('click', function () { JP.drive.copyLink(r, null, null, $('actMsg')); });
-    $('link').addEventListener('click', function () {
+    if ($('link')) $('link').addEventListener('click', function () {
       GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
     });
     if ($('archive')) $('archive').addEventListener('click', function () {

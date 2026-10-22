@@ -217,7 +217,7 @@
     }).join('');
     host.innerHTML = '<h3>Facts from the job</h3>' + rows + lists +
       '<p class="note">Change a fact in the sections below and it saves to the job when you save. Lists come from the job page.</p>' +
-      '<h3 style="margin-top:12px">Photos and floorplan</h3><p class="note">From the job\'s Drive folder. <a href="../../workspace/job/?listing=' +
+      '<p class="note" style="margin-top:12px">Photos and the floorplan come from the job\'s Drive folder. <a href="../../workspace/job/?listing=' +
       encodeURIComponent(slug) + '">Change picks on the job page</a>.</p><div id="jobPhotoMsg" role="status"></div><div id="jobPlanMsg" role="status"></div>';
     host.hidden = false;
     $$('#jobFacts [data-typo]').forEach(function (b) {

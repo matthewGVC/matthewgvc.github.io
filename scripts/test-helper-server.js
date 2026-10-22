@@ -377,6 +377,28 @@ function req(method, p, headers, body) {
   check('guard: a folder outside the job refused', insideJobPiece(path.join(pRoot, 'a.pdf'), jA, pRoot), false);
   check('guard: relative paths refused', insideJobPiece('a.pdf', jA, sheetDir), false);
 
+  /* review fixes: the name is the job's, a stuck draw is capped, nothing after the write is an error */
+  const { safeLabel } = require('../helper/piece.js');
+  check('label: paperwork words and control characters out', safeLabel('12 Contract Ave\u0007 Signed'), '12 Ave');
+  check('label: at most 80 characters', safeLabel('x'.repeat(200)).length, 80);
+  ROWS.p6 = { id: 'p6', drive_folder: 'GVC - Test/6 Example St', label: '6 Example St', market: 'NJ', core: { address: '6 Example St', unit: '2' } };
+  fs.mkdirSync(job('6 Example St'));
+  out = await piece({ propertyId: 'p6', tool: 'showsheet', state: S('../../Exclusive - Jane Client') }, cfgP);
+  check('label: from the job row, never the posted state', out.name, 'Showsheet - 6 Example St 2 - 2026-10-22.pdf');
+  const stuck = pieceRoute({ db: pdb, driveRoot: pRoot, today: () => '2026-10-22', sleep: async () => {}, renderMs: 50,
+    render: () => new Promise(() => {}), driveLink: () => null });
+  before = countFiles(job('6 Example St'));
+  check('a draw that never ends is refused', await stuck({ propertyId: 'p6', tool: 'showsheet', state: S('6 Example St') }, cfgP).then(() => null, e => e.status), 504);
+  check('a stuck draw writes nothing', countFiles(job('6 Example St')), before);
+  const linkThrows = pieceRoute({ db: pdb, driveRoot: pRoot, today: () => '2026-10-22', sleep: async () => {},
+    render: async () => ({ pdf: Buffer.alloc(10), pages: 2 }), driveLink: () => { throw new Error('stream busy'); } });
+  out = await linkThrows({ propertyId: 'p6', tool: 'showsheet', state: S('6 Example St') }, cfgP);
+  check('a Drive link error still answers ok', [out.ok, out.url], [true, null]);
+  DOCS.p6 = { output: { path: 'Marketing/Showsheet/x.pdf:evil', size: 10, modified: 0, via: 'helper' }, outputs: [{ path: 'Marketing/Showsheet/x.pdf:evil' }] };
+  check('archive: a stream name in the record is left', !!(await piece({ propertyId: 'p6', tool: 'showsheet', state: S('6 Example St') }, cfgP)).archived.left, true);
+  DOCS.p6 = { output: { path: 'Marketing/Showsheet/notes.txt', size: 10, modified: 0, via: 'helper' }, outputs: [{ path: 'Marketing/Showsheet/notes.txt' }] };
+  check('archive: only a PDF is ever moved', !!(await piece({ propertyId: 'p6', tool: 'showsheet', state: S('6 Example St') }, cfgP)).archived.left, true);
+
   /* body sizes: /piece takes up to 40 MB, every other route 1 MB */
   const big = mb => ({ propertyId: 'nobody', tool: 'showsheet', state: { pad: 'x'.repeat(mb * 1024 * 1024) } });
   const pairH = { origin: 'http://localhost:8080', 'x-gvc-pair': cfg.pairCode };

@@ -22,6 +22,19 @@ const { insideJobPiece } = require('./pdf/guard.js');
 const { savePdf } = require('./pdf/name.js');
 
 const PIECE = { showsheet: 'Showsheet' };
+const RENDER_MS = 3 * 60 * 1000;
+
+/* the address part of the file name: the job's own, no control characters, no paperwork
+   words (a file the workspace makes must never look like deal paperwork), at most 80 characters */
+function safeLabel(s) {
+  return String(s || '').replace(/[\x00-\x1f\x7f]+/g, ' ')
+    .replace(/\b(offers?|contracts?|exclusives?|commissions?|closings?|deals?|leases?|agreements?|signed)\b/gi, ' ')
+    .replace(/\s+/g, ' ').trim().slice(0, 80).trim();
+}
+function capped(p, ms, msg) {
+  let t;
+  return Promise.race([p, new Promise((res, rej) => { t = setTimeout(() => rej(fail(504, msg)), ms); })]).finally(() => clearTimeout(t));
+}
 
 function fail(status, msg) { return Object.assign(new Error(msg), { status }); }
 function localDay(d) {
@@ -32,6 +45,7 @@ function pieceRoute(o) {
   const root = path.resolve(o.driveRoot);
   const today = o.today || (() => localDay(new Date()));
   const sleep = o.sleep || (ms => new Promise(r => setTimeout(r, ms)));
+  const renderMs = o.renderMs || RENDER_MS;
   const db = typeof o.db === 'function' ? o.db : () => o.db;
 
   return async (body, cfg) => {
@@ -54,21 +68,29 @@ function pieceRoute(o) {
 
     const doc = (await client.select('documents', { property_id: row.id, tool: body.tool }, 'output,outputs'))[0] || {};
     const paper = body.paper === 'letter' ? 'letter' : 'a5';
-    const r = await o.render({ tool: body.tool, state: body.state, paper, siteBase: cfg.siteBase });
+    const r = await capped(o.render({ tool: body.tool, state: body.state, paper, siteBase: cfg.siteBase }), renderMs,
+      'The sheet took too long to draw. Nothing was saved; try again.');
 
     const { dir, made } = showsheetDir(jobAbs);
+    // a junction or link inside the job folder must not carry the write somewhere else
+    if (fs.realpathSync(dir).toLowerCase().indexOf(fs.realpathSync(jobAbs).toLowerCase() + path.sep) !== 0) {
+      throw fail(403, 'The job\'s showsheet folder points outside the job folder.');
+    }
     const rel = abs => path.relative(jobAbs, abs).split(path.sep).join('/');
     if (rel(dir).split('/').some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
     const core = row.core || {};
-    const label = r.label || [core.address, core.unit].filter(Boolean).join(' ') || row.label;
+    const label = safeLabel([core.address, core.unit].filter(Boolean).join(' ')) || safeLabel(row.label) || safeLabel(r.label) || 'Job';
     const file = await savePdf(r.pdf, dir, PIECE[body.tool], label, today());
     if (!insideJobPiece(file, jobAbs, dir)) throw fail(500, 'The helper wrote somewhere it shouldn\'t have: ' + file);
 
-    const archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs });
+    // the PDF is on Drive now: nothing after this may turn the answer into an error
+    let archived;
+    try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs }); }
+    catch (e) { archived = { left: doc.output && doc.output.path, why: 'older showsheet left in place: it couldn\'t be moved (' + (e.code || e.message) + ')' }; }
     const st = fs.statSync(file);
     let url = null;
     for (let i = 0; i < 10 && !url; i++) {
-      url = o.driveLink(file, false);
+      try { url = o.driveLink(file, false); } catch (e) { url = null; }
       if (!url && i < 9) await sleep(1000);
     }
     return { ok: true, path: rel(file), name: path.basename(file), size: st.size, modified: st.mtime.toISOString(),
@@ -76,4 +98,4 @@ function pieceRoute(o) {
   };
 }
 
-module.exports = { pieceRoute };
+module.exports = { pieceRoute, safeLabel };

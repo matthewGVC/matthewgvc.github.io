@@ -36,7 +36,9 @@ function archivePrevious(o) {
   const prev = o.prev;
   if (!prev || prev.via !== 'helper' || !prev.path) return null;
   const segs = String(prev.path).split(/[\\/]+/).filter(Boolean);
-  if (!segs.length || segs.some(s => /^[.\s]+$/.test(s))) return { left: prev.path, why: GONE };
+  if (!segs.length || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?\x00-\x1f]/.test(s)) || !/\.pdf$/i.test(segs[segs.length - 1])) {
+    return { left: prev.path, why: GONE };
+  }
   const abs = path.resolve(o.jobAbs, ...segs);
   if (!insideJobPiece(abs, o.jobAbs, o.dir) || !same(path.dirname(abs), o.dir)) return { left: prev.path, why: GONE };
   if (!(o.outputs || []).some(x => x && same(String(x.path || '').split(/[\\/]+/).join('/'), segs.join('/')))) return { left: prev.path, why: UNKNOWN };

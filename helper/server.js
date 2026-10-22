@@ -103,6 +103,11 @@ function handle(cfg) {
     const r = routes[req.method + ' ' + path];
     if (!r) return send(res, 404, { ok: false, error: 'The helper has no ' + path + '.' }, origin);
 
+    if (+req.headers['content-length'] > r.maxBody) {
+      res.setHeader('connection', 'close');
+      send(res, 413, { ok: false, error: 'That request is too large.' }, origin);
+      return req.destroy();
+    }
     readBody(req, r.maxBody)
       .then(body => r.fn(body, cfg))
       .then(out => send(res, out && out.status || 200, out, origin))

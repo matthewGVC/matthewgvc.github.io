@@ -21,8 +21,8 @@
 .recent .when span{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--sky)}
 .recent .when.contract{background:var(--cyan);color:var(--ink)}
 .recent .when.contract span{color:var(--ink)}
-.recent .when.pre,.recent .when.sold{background:var(--paper-2);color:var(--ink)}
-.recent .when.pre span,.recent .when.sold span{color:var(--ink-soft)}
+.recent .when.pre,.recent .when.sold,.recent .when.off{background:var(--paper-2);color:var(--ink)}
+.recent .when.pre span,.recent .when.sold span,.recent .when.off span{color:var(--ink-soft)}
 .recent h3{font-size:19px;margin:3px 0}
 .recent:hover{border-color:var(--ink)}
 .pipe{display:flex;flex-direction:column;gap:12px}
@@ -54,6 +54,7 @@
 .bar.live{background:var(--ink)}
 .bar.contract{background:var(--cyan)}
 .bar.sold{background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)}
+.bar.off{background:var(--paper-2);border:1px dashed var(--ink-soft)}
 .tk{position:absolute;top:30px;width:2px;height:6px;background:var(--ink)}
 .tl-d{position:absolute;top:16px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--ink);border:1.5px solid var(--ink);box-sizing:border-box;z-index:3}
 .tl-d.planned{background:var(--paper)}
@@ -241,6 +242,10 @@
     if (j.flags.some(function (x) { return x.k === 'link'; })) return 'No Drive folder linked yet.';
     if (j.flags.some(function (x) { return x.k === 'de'; })) return 'Not matched to a DE listing yet.';
     if (j.type === 'pitch') return 'Pitched ' + W.fmtDay(j.pitchedOn) + '.';
+    if (j.stage === 'Off market') {
+      var om = (j.dates || []).filter(function (d) { return d.key === 'offMarketOn'; })[0];
+      return (om ? 'Off market since ' + W.fmtDay(om.on) + '.' : 'Off market.') + ' Prep can carry on.';
+    }
     if (j.type === 'development') {
       var t = j.next ? 'Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) + (j.next.overdue ? ' (overdue)' : '') : '') + '.'
         : j.stageIdx < 0 ? 'No milestones confirmed yet.' : 'Latest milestone: ' + j.stage + '.';
@@ -294,7 +299,7 @@
       b += '<div class="heat">' + weeks.map(function (w) { var n = wcount(j, w); return '<i style="background:' + (n ? 'color-mix(in srgb,var(--ink) ' + Math.round(Math.min(100, 20 + Math.log10(n + 1) * 32)) + '%,var(--paper))' : 'transparent') + '"></i>'; }).join('') + '</div>';
       h += '<div class="tl-row"><a class="n" href="' + esc(j.href) + '">' + esc(j.name) + '</a><div class="tl-t">' + grid + b + '</div></div>';
     });
-    h += '</div></div><div class="legend"><span><b style="border:1px dashed var(--ink-soft)"></b>Pitch</span><span><b style="background:var(--bone)"></b>Prep</span><span><b style="background:var(--ink)"></b>Live</span><span><b style="background:var(--cyan)"></b>Accepted offer or in contract</span><span><b style="background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)"></b>Sold</span><span>| piece found in the folder</span><span class="dmk">deal date</span><span class="dmk planned">planned date</span><span>bottom line: files touched per week</span></div>';
+    h += '</div></div><div class="legend"><span><b style="border:1px dashed var(--ink-soft)"></b>Pitch</span><span><b style="background:var(--bone)"></b>Prep</span><span><b style="background:var(--ink)"></b>Live</span><span><b style="background:var(--cyan)"></b>Accepted offer or in contract</span><span><b style="background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)"></b>Sold</span><span><b style="background:var(--paper-2);border:1px dashed var(--ink-soft)"></b>Off market</span><span>| piece found in the folder</span><span class="dmk">deal date</span><span class="dmk planned">planned date</span><span>bottom line: files touched per week</span></div>';
     return h;
   }
 

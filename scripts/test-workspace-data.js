@@ -328,6 +328,30 @@ check('rooms: nothing known', roomsOf({}), '');
 check('place: a listing shows its neighborhood', J('p1').place, 'Carnegie Hill');
 check('place: else its city', (W.buildJobs({ properties: [{ id: 'pl', slug: 'pl', stage: 'Prep', market: 'NJ', core: { address: '3 Crosby Ln', city: 'Port Monmouth' } }], pitches: [], devProjects: [], changes: [] }, TODAY)[0] || {}).place, 'Port Monmouth');
 
+/* ---------- D88: off-market listings are jobs on the overview and the Jobs list ---------- */
+const offProps = props.concat([
+  { id: 'om1', slug: '619-sample-ave', label: '619 Sample Ave', kind: 'sale', market: 'NJ', stage: 'Off market', stage_source: 'Asana', folder_state: 'unlinked',
+    core: { address: '619 Sample Ave', city: 'Brielle', price: 1250000 }, asana_gid: '1301', asana: { gid: '1301', projectGid: '77', status: 'Graveyard' },
+    milestones: { listedOn: { on: '2026-06-04', planned: false }, offMarketOn: { on: '2026-10-12', planned: false } } },
+  { id: 'om2', slug: '8-plan-ln', label: '8 Plan Ln', kind: 'sale', market: 'NJ', stage: 'Off market', stage_source: 'Asana', folder_state: 'linked', drive_folder: 'GVC - New Jersey/8 Plan Ln',
+    core: { address: '8 Plan Ln', city: 'Rumson' }, milestones: { offMarketOn: { on: '2026-09-01', planned: false } } }]);
+const offChanges = changes.concat([{ id: 'oc1', property_id: 'om1', at: '2026-10-22T16:00:00Z', field: 'stage', old_value: null, new_value: 'Off market', source: 'Asana' }]);
+const offJobs = W.buildJobs({ properties: offProps, pitches, devProjects: devs, changes: offChanges }, '2026-10-22');
+const OJ = id => offJobs.find(j => j.id === id) || {};
+check('D88 an Off market listing is a job, with its own chip', [OJ('om1').type, OJ('om1').stage, OJ('om1').chip, W.chipOf('Off market')], ['listing', 'Off market', 'off', 'off']);
+check('D88 its steps: the stages it reached, then Off market (never Sold it didn\'t reach)', [OJ('om1').steps, OJ('om1').stageIdx], [['Pitch', 'Prep', 'Live', 'Off market'], 3]);
+check('D88 never listed: Pitch, Prep, Off market', OJ('om2').steps, ['Pitch', 'Prep', 'Off market']);
+check('D88 its off-market date shows with the deal dates', OJ('om1').dates.map(d => [d.label, d.on]), [['Listed', '2026-06-04'], ['Off market', '2026-10-12']]);
+check('D88 timeline: the Off market bar is its own kind, not Sold', OJ('om1').bars, [{ s: 'off', from: '2026-10-22', to: null }]);
+check('D88 flags: no folder asks for one; no "Match DE" for an off-market job', [OJ('om1').flags.map(f => f.k), OJ('om2').flags.map(f => f.k)], [['link'], []]);
+const offStats = W.overviewStats(offJobs), baseStats = W.overviewStats(W.buildJobs({ properties: props, pitches, devProjects: devs, changes }, '2026-10-22'));
+check('D88 overview counts: not live, not in contract; counted in the total and To link',
+  [offStats.live - baseStats.live, offStats.contract - baseStats.contract, offStats.total - baseStats.total, offStats.toLink - baseStats.toLink], [0, 0, 2, 1]);
+check('D88 no "Archive the job?" task for an off-market job (Matt archives it when he chooses)', W.taskFlags(offJobs).filter(t => /619 Sample|8 Plan/.test(t.job) && t.kind === 'archive').length, 0);
+check('D88 the team Status page lists it after the live stages', W.statusRows(offJobs).find(g => g.market === 'NJ').rows.map(r => r.stage).filter((s, i, a) => a.indexOf(s) === i).slice(-2), ['Sold', 'Off market']);
+check('D88 a stage change to Off market reads plainly', W.changeTitle({ field: 'stage', new_value: 'Off market' }), 'Stage moved to Off market');
+check('D88 recent changes colour it as off market', W.recentChanges(offChanges, offJobs, 1)[0].kind, 'off');
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

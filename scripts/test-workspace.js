@@ -685,6 +685,36 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('A2 ignore, log failed: reloaded, then the message', [t.reads.length > readsA2, ((await text(t.page, '#lead')) || '').startsWith('Set aside, but the change log didn\'t save'), t.errors], [true, true, []]);
   await t.ctx.close();
 
+  // D88: an off-market listing on the overview, the Jobs list and its job page
+  const ROM = rowsFor();
+  ROM.properties.push({ id: 'pom', slug: '619-sample-ave-brielle', label: 'om', kind: 'sale', market: 'NJ', stage: 'Off market', stage_source: 'Asana', version: 1,
+    core: { address: '619 Sample Ave', city: 'Brielle', price: 1250000 }, folder_state: 'linked', drive_folder: 'GVC - New Jersey/619 Sample Ave',
+    asana_gid: '1301', asana: { gid: '1301', permalink: 'https://app.asana.com/0/1/1301', status: 'Graveyard', section: 'Graveyard', stageFromStatus: 'Off market', stageFromSection: 'Off market', checklist: [] },
+    milestones: { listedOn: { on: iso(NOW - 120 * 864e5).slice(0, 10), planned: false }, offMarketOn: { on: iso(NOW - 10 * 864e5).slice(0, 10), planned: false } }, match: { list: [], dismissed: {} } });
+  t = await open(browser, { rows: ROM });
+  const omCard = await t.page.$$eval('#jobs .pj', els => { const e = els.find(x => x.textContent.includes('619 Sample Ave')); return e ? [e.querySelector('.chip').className, e.querySelector('.sub').textContent, e.querySelector('.prog span').textContent, e.querySelectorAll('.track i').length] : null; });
+  check('D88 overview: the off-market job is listed with its own chip, its town, and when it went off market',
+    omCard && [omCard[0], omCard[1].includes('Brielle'), /^Off market since \d+ \w{3}\. Prep can carry on\.$/.test(omCard[2]), omCard[3]], ['chip off', true, true, 4]);
+  check('D88 overview: Live still counts only Live jobs', await t.page.$eval('#stats .stat .v', v => parseInt(v.textContent, 10)), 2);
+  await t.page.click('#view [data-v="time"]').catch(() => {});
+  check('D88 overview timeline: the legend names Off market', ((await text(t.page, '#jobs')) || '').includes('Off market'), true);
+  check('D88 overview: no page errors', t.errors, []);
+  await t.ctx.close();
+  t = await open(browser, { rows: ROM, path: '/workspace/jobs/' });
+  const omRow = await t.page.$$eval('#rows tr', trs => { const r = trs.find(x => x.textContent.includes('619 Sample Ave')); return r ? r.querySelector('.stg .chip').className + ' ' + r.querySelector('.stg .chip').textContent : null; });
+  await t.page.click('#typ [data-v="listing"]').catch(() => {});
+  check('D88 jobs list: the row has the Off market chip, and the Listings filter keeps it',
+    [omRow, ((await text(t.page, '#rows')) || '').includes('619 Sample Ave'), t.errors], ['chip off Off market', true, []]);
+  await t.ctx.close();
+  t = await open(browser, { rows: ROM, path: '/workspace/job/?listing=619-sample-ave-brielle' });
+  await t.page.waitForSelector('.steps .step', { timeout: 5000 }).catch(() => {});
+  check('D88 job page: the stage track is the stages it reached, then Off market (current)',
+    await t.page.$$eval('.steps .step', els => els.map(e => e.textContent.replace(/[\d\s]+\w{3}$/, '').replace(/^\d+/, '').trim() + (e.classList.contains('cur') ? '*' : ''))).catch(() => null),
+    ['Pitch', 'Prep', 'Live', 'Off market*']);
+  check('D88 job page: the Asana card shows Off market', await t.page.$eval('#asanaCard .chip', c => [c.textContent.trim(), c.className]).catch(() => null), ['Off market', 'chip off']);
+  check('D88 job page: no page errors', t.errors, []);
+  await t.ctx.close();
+
   await browser.close();
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

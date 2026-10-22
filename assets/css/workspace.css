@@ -69,6 +69,7 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .chip.contract{background:var(--cyan);border-color:var(--cyan);color:var(--ink)}
 .chip.sold{background:var(--bone);border-color:var(--bone);color:var(--ink)}
 .chip.pre{background:var(--paper-2);border-color:var(--rule);color:var(--ink)}
+.chip.off{background:var(--paper);border:1px dashed var(--ink-soft);color:var(--ink)}
 .chip.stale{border-color:var(--danger);color:var(--danger)}
 .chip.made{border-color:var(--ink);color:var(--ink)}
 .chip.de{background:var(--paper-2);border:0;color:var(--ink);font-size:10px;padding:1px 6px}

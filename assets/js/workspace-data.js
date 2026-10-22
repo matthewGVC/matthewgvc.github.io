@@ -56,7 +56,11 @@
                                and market (from DE's state) once the DE sync keeps the
                                address, else null
                              { type: 'asana', gid, name, market }
-     chipOf(stage)        → the chip class for a stage ('live', 'contract', 'sold', else 'pre')
+     chipOf(stage)        → the chip class for a stage ('live', 'contract', 'sold', 'off', else 'pre')
+     Off market (D88): a listing taken off the market is a job like any other;
+     its steps are the stages it reached (from its deal dates and stage moves)
+     then Off market, its chip and timeline bar are 'off', it is neither live nor
+     in contract on the overview, and it is never asked to match DE.
      fmtDay('2026-10-12') → '12 Oct'; money(4500000) → '$4,500,000'
 
    Pure: no fetch, no DOM. Loads in the browser (window.GVC_WS) and in Node.
@@ -137,15 +141,23 @@
     return { address: a, unit: u };
   }
 
-  var BAR = { Prep: 'won', Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'sold' };
-  var CHIP = { Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold' };
+  var BAR = { Prep: 'won', Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'off' };
+  var CHIP = { Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'off' };
   function chipOf(stage) { return CHIP[stage] || 'pre'; }
 
   /* a listing's steps: the pitch, Prep → In contract, then Sold or Rented;
-     Off market / Archived only when the job is there */
-  function stepsOf(kind, stage) {
+     Archived only when the job is there. Off market: the pitch, Prep, the
+     stages it reached (a done deal date or a stage move says so), then Off
+     market, so a listing taken off in Prep never reads as sold (D88). */
+  var REACHED = [['Live', 'listedOn'], ['Accepted offer', 'acceptedOfferOn'], ['In contract', 'contractOn']];
+  function stepsOf(kind, stage, ms, done) {
+    if (stage === 'Off market') {
+      var last = -1;
+      REACHED.forEach(function (r, i) { if ((done && done[r[0]]) || (ms && ms[r[1]] && ms[r[1]].on && !ms[r[1]].planned)) last = i; });
+      return ['Pitch', 'Prep'].concat(REACHED.slice(0, last + 1).map(function (r) { return r[0]; }), ['Off market']);
+    }
     var s = ['Pitch', 'Prep', 'Live', 'Accepted offer', 'In contract', kind === 'rental' || stage === 'Rented' ? 'Rented' : 'Sold'];
-    if (stage === 'Off market' || stage === 'Archived') s.push(stage);
+    if (stage === 'Archived') s.push(stage);
     return s;
   }
 
@@ -214,7 +226,7 @@
       if (p.folder_state === 'broken') flags.push({ t: 'Relink folder', k: 'relink' });
       if (!p.de_listing_id && ['Live', 'In contract', 'Sold', 'Rented'].indexOf(p.stage) !== -1) flags.push({ t: 'Match DE', k: 'de' });
       var price = de.price != null ? de.price : core.price, beds = de.beds != null ? de.beds : core.beds, baths = de.baths != null ? de.baths : core.baths;
-      var steps = stepsOf(p.kind, p.stage), match = activeMatch(p.match);
+      var steps = stepsOf(p.kind, p.stage, p.milestones, done), match = activeMatch(p.match);
 
       jobs.push({
         id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '',

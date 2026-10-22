@@ -278,6 +278,118 @@ function req(method, p, headers, body) {
   await Promise.all([fullC, clickC]);
   check('a plain click during a full read shares it', callsC, ['full']);
 
+  /* ---------- Slice 4: POST /piece writes the showsheet into the job folder ---------- */
+  const { pieceRoute } = require('../helper/piece.js');
+  const { insideJobPiece } = require('../helper/pdf/guard.js');
+  const { archivePrevious } = require('../helper/pdf/archive.js');
+  const pRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-piece-'));
+  const job = n => path.join(pRoot, 'GVC - Test', n);
+  ['1 Example St', '2 Example St', '3 Example St', '5 Example St', '1 Example St/Contracts'].forEach(n => fs.mkdirSync(job(n), { recursive: true }));
+  fs.mkdirSync(path.join(job('2 Example St'), 'Show Sheet'));
+  fs.mkdirSync(path.join(job('3 Example St'), 'Show Sheet'));
+  fs.mkdirSync(path.join(job('3 Example St'), 'marketing', 'SHOWSHEETS'), { recursive: true });
+  fs.writeFileSync(path.join(job('1 Example St'), 'Exclusive - Jane Client.pdf'), 'paper');
+  const ROWS = {
+    p1: { id: 'p1', drive_folder: 'GVC - Test/1 Example St', label: '1 Example St 4A', market: 'NYC', core: { address: '1 Example St', unit: '4A' } },
+    p2: { id: 'p2', drive_folder: 'GVC - Test/2 Example St', label: '2 Example St', market: 'NJ', core: { address: '2 Example St' } },
+    p3: { id: 'p3', drive_folder: 'GVC - Test/3 Example St', label: '3 Example St', market: 'NJ', core: { address: '3 Example St' } },
+    p5: { id: 'p5', drive_folder: 'GVC - Test/5 Example St', label: '5 Example St', market: 'FL', core: { address: '5 Example St' } },
+    none: { id: 'none', drive_folder: null, label: 'x', core: {} },
+    gone: { id: 'gone', drive_folder: 'GVC - Test/Missing St', label: 'x', core: {} },
+    paper: { id: 'paper', drive_folder: 'GVC - Test/1 Example St/Contracts', label: 'x', core: {} },
+    climb: { id: 'climb', drive_folder: 'GVC - Test/../../x', label: 'x', core: {} }
+  };
+  const DOCS = {};
+  let renders = 0, linkTries = 0;
+  const pdb = { select: async (t, m) => t === 'properties' ? (ROWS[m.id] ? [ROWS[m.id]] : []) : (DOCS[m.property_id] ? [DOCS[m.property_id]] : []) };
+  const piece = pieceRoute({ db: pdb, driveRoot: pRoot, today: () => '2026-10-22', sleep: async () => {},
+    render: async o => { renders++; return { pdf: Buffer.alloc(1024, 'x'), label: o.state.address + (o.state.unit ? ' ' + o.state.unit : ''), pages: 2 }; },
+    driveLink: () => (++linkTries >= 3 ? 'https://drive.google.com/file/d/FILEID1234567/view' : null) });
+  const cfgP = { siteBase: 'http://localhost:8080' };
+  const S = (address, unit) => ({ address, unit: unit || '' });
+  const pErr = b => piece(b, cfgP).then(() => null, e => [e.status, e.message]);
+  const countFiles = d => { let n = 0; (function walk(x) { fs.readdirSync(x, { withFileTypes: true }).forEach(e => { if (e.isDirectory()) walk(path.join(x, e.name)); else n++; }); })(d); return n; };
+
+  check('piece: another tool is 400', (await pErr({ propertyId: 'p1', tool: 'postcard', state: {} }))[0], 400);
+  check('piece: no job named is 400', (await pErr({ tool: 'showsheet', state: {} }))[0], 400);
+  check('piece: unknown job is 404', (await pErr({ propertyId: 'zz', tool: 'showsheet', state: {} }))[0], 404);
+  check('piece: no folder', await pErr({ propertyId: 'none', tool: 'showsheet', state: {} }), [409, 'This job has no Drive folder linked.']);
+  check('piece: gone folder', await pErr({ propertyId: 'gone', tool: 'showsheet', state: {} }), [404, 'The job\'s Drive folder isn\'t on this computer.']);
+  check('piece: paperwork path', (await pErr({ propertyId: 'paper', tool: 'showsheet', state: {} }))[0], 403);
+  check('piece: a climbing folder is refused', (await pErr({ propertyId: 'climb', tool: 'showsheet', state: {} }))[0], 400);
+  check('piece: refused before drawing, nothing written', [renders, countFiles(job('1 Example St'))], [0, 1]);
+
+  let out = await piece({ propertyId: 'p2', tool: 'showsheet', state: S('2 Example St'), paper: 'a5' }, cfgP);
+  check('piece: an existing Show Sheet at the top is used', [out.path, out.folderMade, out.pages, out.size], ['Show Sheet/Showsheet - 2 Example St - 2026-10-22.pdf', false, 2, 1024]);
+  check('piece: Drive link retried until it appears', [out.url, linkTries], ['https://drive.google.com/file/d/FILEID1234567/view', 3]);
+  out = await piece({ propertyId: 'p3', tool: 'showsheet', state: S('3 Example St') }, cfgP);
+  check('piece: Marketing first, any case', out.path, 'marketing/SHOWSHEETS/Showsheet - 3 Example St - 2026-10-22.pdf');
+  out = await piece({ propertyId: 'p5', tool: 'showsheet', state: S('5 Example St') }, cfgP);
+  check('piece: none → Marketing\Showsheet made', [out.path, out.folderMade, out.archived], ['Marketing/Showsheet/Showsheet - 5 Example St - 2026-10-22.pdf', true, null]);
+
+  const first = await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP);
+  check('piece: first build', [first.path, first.archived], ['Marketing/Showsheet/Showsheet - 1 Example St 4A - 2026-10-22.pdf', null]);
+  const rec = x => ({ path: x.path, name: x.name, size: x.size, modified: x.modified, via: 'helper' });
+  DOCS.p1 = { output: rec(first), outputs: [rec(first)] };
+  let before = countFiles(job('1 Example St'));
+  const second = await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP);
+  check('piece: second build same day gets (2)', second.name, 'Showsheet - 1 Example St 4A - 2026-10-22 (2).pdf');
+  check('archive moved', second.archived, { from: first.path, to: 'Marketing/Showsheet/Archive/Showsheet - 1 Example St 4A - 2026-10-22.pdf' });
+  check('archive: the old file is in Archive, nothing deleted', [fs.existsSync(path.join(job('1 Example St'), ...second.archived.to.split('/'))), countFiles(job('1 Example St'))], [true, before + 1]);
+
+  DOCS.p1 = { output: rec(second), outputs: [rec(second), rec(first)] };
+  fs.appendFileSync(path.join(job('1 Example St'), ...second.path.split('/')), 'edited by hand');
+  before = countFiles(job('1 Example St'));
+  const third = await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP);
+  check('archive left when size moved', third.archived, { left: second.path, why: 'older showsheet left in place: it changed after the workspace made it' });
+  check('archive left: the new PDF is still written', [fs.existsSync(path.join(job('1 Example St'), ...third.path.split('/'))), countFiles(job('1 Example St'))], [true, before + 1]);
+
+  DOCS.p1 = { output: Object.assign(rec(third), { path: 'Marketing/Showsheet/Gone.pdf' }), outputs: [Object.assign(rec(third), { path: 'Marketing/Showsheet/Gone.pdf' })] };
+  check('archive left when gone', (await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP)).archived,
+    { left: 'Marketing/Showsheet/Gone.pdf', why: 'older showsheet left in place: it isn\'t where the workspace left it' });
+  DOCS.p1 = { output: rec(third), outputs: [] };
+  check('archive: a file not in outputs is left', (await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP)).archived.why,
+    'older showsheet left in place: the workspace has no record of making it');
+  DOCS.p1 = { output: Object.assign(rec(third), { via: 'print' }), outputs: [rec(third)] };
+  check('archive: a printed sheet is never moved', (await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP)).archived, null);
+  DOCS.p1 = { output: Object.assign(rec(third), { path: '../../Exclusive - Jane Client.pdf' }), outputs: [Object.assign(rec(third), { path: '../../Exclusive - Jane Client.pdf' })] };
+  check('archive: a recorded path outside the folder is left', !!(await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP)).archived.left, true);
+  check('archive: paperwork untouched', fs.existsSync(path.join(job('1 Example St'), 'Exclusive - Jane Client.pdf')), true);
+
+  /* Archive clash → (2), never overwritten */
+  const sheetDir = path.join(job('1 Example St'), 'Marketing', 'Showsheet');
+  fs.writeFileSync(path.join(sheetDir, 'Old.pdf'), 'old one');
+  const oldSt = fs.statSync(path.join(sheetDir, 'Old.pdf'));
+  const oldRec = { path: 'Marketing/Showsheet/Old.pdf', size: oldSt.size, modified: oldSt.mtime.toISOString(), via: 'helper' };
+  fs.writeFileSync(path.join(sheetDir, 'Archive', 'Old.pdf'), 'already archived');
+  check('archive clash gets (2)', archivePrevious({ jobAbs: job('1 Example St'), dir: sheetDir, prev: oldRec, outputs: [oldRec] }),
+    { from: 'Marketing/Showsheet/Old.pdf', to: 'Marketing/Showsheet/Archive/Old (2).pdf' });
+  check('archive clash: the first one is untouched', fs.readFileSync(path.join(sheetDir, 'Archive', 'Old.pdf'), 'utf8'), 'already archived');
+
+  /* the write guard */
+  const jA = job('1 Example St');
+  check('guard: in the showsheet folder', insideJobPiece(path.join(sheetDir, 'a.pdf'), jA, sheetDir), true);
+  check('guard: in its Archive', insideJobPiece(path.join(sheetDir, 'Archive', 'a.pdf'), jA, sheetDir), true);
+  check('guard: case does not matter', insideJobPiece(path.join(sheetDir.toUpperCase(), 'a.pdf'), jA, sheetDir), true);
+  check('guard: ..\\..\\x.pdf refused', insideJobPiece(path.join(sheetDir, '..', '..', 'x.pdf'), jA, sheetDir), false);
+  check('guard: look-alike Showsheet2 refused', insideJobPiece(path.join(jA, 'Marketing', 'Showsheet2', 'a.pdf'), jA, sheetDir), false);
+  check('guard: deeper than Archive refused', insideJobPiece(path.join(sheetDir, 'Archive', 'x', 'a.pdf'), jA, sheetDir), false);
+  check('guard: a folder outside the job refused', insideJobPiece(path.join(pRoot, 'a.pdf'), jA, pRoot), false);
+  check('guard: relative paths refused', insideJobPiece('a.pdf', jA, sheetDir), false);
+
+  /* body sizes: /piece takes up to 40 MB, every other route 1 MB */
+  const big = mb => ({ propertyId: 'nobody', tool: 'showsheet', state: { pad: 'x'.repeat(mb * 1024 * 1024) } });
+  const pairH = { origin: 'http://localhost:8080', 'x-gvc-pair': cfg.pairCode };
+  r = await req('POST', '/piece', { origin: 'http://localhost:8080' }, { propertyId: 'p1', tool: 'showsheet', state: {} });
+  check('/piece unpaired is refused', r.status, 403);
+  r = await req('POST', '/piece', pairH, big(2));
+  check('/piece: a 2 MB body gets past the size check', [r.status !== 413, r.json && r.json.error !== 'That request is too large.'], [true, true]);
+  r = await req('POST', '/drive-link', pairH, big(2));
+  check('/drive-link: a 2 MB body is refused', [r.status, r.json && r.json.error], [413, 'That request is too large.']);
+  r = await req('POST', '/piece', pairH, big(41));
+  check('/piece: 41 MB is refused', [r.status, r.json && r.json.error], [413, 'That request is too large.']);
+  check('the real /piece route points at the Drive root', /driveRoot: 'G:\\\\Shared drives',\r?\n  driveLink/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'routes.js'), 'utf8')), true);
+
   check('bound to loopback', server.address().address, '127.0.0.1');
   server.close();
 

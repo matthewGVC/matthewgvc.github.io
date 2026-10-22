@@ -311,6 +311,9 @@
       }, function (e) {
         setPhotoHtml(esc(e.timeout ? 'Drive didn\'t answer in time. Reload to try again.' : e.message));
       });
+    }).catch(function (e) {
+      // the job and sheet are loaded: a Drive problem is said on the panel, the bar stays
+      setPhotoHtml(esc((e && e.message) || 'Drive could not be read.'));
     });
   }
   function planNote(plans) {
@@ -387,8 +390,18 @@
   /* ---------- saving ---------- */
   function storable() {
     var d = SH.LIBRARY.getDoc();
-    d.photos = (SH.state.photos || []).filter(function (p) { return p && p.path; })
-      .map(function (p) { return { path: p.path, fx: p.fx, fy: p.fy, name: p.name }; });
+    // photos by path only; a crop saved earlier for a photo Drive didn't bring in this time is kept
+    var all = SH.state.photos || [], keep = [], at = {};
+    all.forEach(function (p, i) { if (p && p.path) { at[i] = keep.length; keep.push({ path: p.path, fx: p.fx, fy: p.fy, name: p.name }); } });
+    var have = {};
+    keep.forEach(function (p) { have[p.path] = true; });
+    Object.keys(M.crops || {}).forEach(function (path) {
+      if (!have[path]) keep.push({ path: path, fx: M.crops[path].fx, fy: M.crops[path].fy, name: path.split('/').pop() });
+    });
+    d.photos = keep;
+    var ix = function (i) { return i == null || at[i] == null ? null : at[i]; };
+    d.heroIndex = ix(SH.state.heroIndex);
+    d.secondaryIndex = ix(SH.state.secondaryIndex);
     delete d.secondaryPhoto;
     d.floorplan = null; d.floorplan2 = null;
     d.floorplanFrom = planFrom();

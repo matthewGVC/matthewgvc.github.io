@@ -63,7 +63,7 @@ const FAKE_DRIVE = `(function () {
   var log = window.__driveLog = { tree: 0, read: [] };
   window.GVC_DRIVE = {
     supported: function () { return true; },
-    state: function () { return Promise.resolve(cfg.state || 'connected'); },
+    state: function () { return cfg.stateThrows ? Promise.reject(new Error('Drive went away.')) : Promise.resolve(cfg.state || 'connected'); },
     connect: function () { return Promise.resolve([]); },
     reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
@@ -94,7 +94,7 @@ async function open(browser, opts) {
     if (table === 'save_job') {
       const body = JSON.parse(r.request().postData() || '{}');
       saves.push(body);
-      if (opts.conflict) return json(400, { code: 'P0001', message: 'conflict' });
+      if (opts.conflict) { T.properties.find(x => x.id === body.p_id).version += 1; return json(400, { code: 'P0001', message: 'conflict' }); }
       const row = T.properties.find(x => x.id === body.p_id);
       Object.assign(row, body.p_set, { version: row.version + 1 });
       return json(200, row);
@@ -175,6 +175,7 @@ const typeIn = async (page, field, value) => {
   check('Save sheet: then one draft save_piece', [t.pieces.length, (t.pieces[0] || {}).p_built_from, (t.pieces[0] || {}).p_output, (t.pieces[0] || {}).p_version], [1, null, null, null]);
   check('Save sheet: no image data stored, paths kept', [JSON.stringify((t.pieces[0] || {}).p_state).includes('data:'), ((t.pieces[0] || {}).p_state.photos || []).map(x => x.path)],
     [false, ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg']]);
+  check('Save sheet: the plan record kept', ((t.pieces[0] || {}).p_state || {}).floorplanFrom, { version: 2, render: 'branded', path: 'Floorplan/v2/Plan v2.jpg', modified: '2026-10-09T10:00:00.000Z' });
   check('Save sheet: said so', (await text(p, '#jobMsg')).includes('Saved'), true);
   await typeIn(p, 'beds', '4');
   await p.check('[data-typo="beds"]');
@@ -200,6 +201,7 @@ const typeIn = async (page, field, value) => {
   await t.page.waitForTimeout(600);
   check('conflict: sentence, nothing else saved, typing kept', [await text(t.page, '#jobMsg'), t.pieces.length, (await st(t.page)).price],
     ['This job changed a moment ago. Reloaded; try again.', 0, '4100000']);
+  check('conflict: the job was reloaded', await t.page.evaluate(() => window.GVC_SHEETMODE.row.version), 8);
   await t.ctx.close();
 
   // a photo Drive hasn't downloaded
@@ -222,6 +224,44 @@ const typeIn = async (page, field, value) => {
   t = await open(browser, { drive: { pdfOnly: true } });
   check('PDF-only floorplan: says what to do', (await text(t.page, '#jobPlanMsg')), 'No floorplan image in Floorplan\\v2\\ (only PDF). Export a JPG there, or drop one here for this sheet.');
   check('PDF-only floorplan: drop zone shown', await t.page.$eval('#fpDrop', e => getComputedStyle(e).display !== 'none' && !e.closest('[hidden]')), true);
+  await t.ctx.close();
+
+  // a plan dropped by hand is recorded as dropped
+  t = await open(browser, { drive: { pdfOnly: true } });
+  await t.page.evaluate(async () => {
+    const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));
+    await window.__sheet.setFloorplanFile(new File([png], 'mine.png', { type: 'image/png' }));
+  });
+  await t.page.waitForTimeout(300);
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(600);
+  check('dropped plan: recorded as dropped', ((t.pieces[0] || {}).p_state || {}).floorplanFrom, { dropped: true });
+  await t.ctx.close();
+
+  // Save sheet with Drive not connected keeps the crops saved earlier (review I1)
+  const CROPS = { property_id: 'p1', tool: 'showsheet', version: 3, state: { photos: [{ path: 'Photos/Edited/01.jpg', fx: 20, fy: 70, name: '01.jpg' }, { path: 'Photos/Edited/02.jpg', fx: 40, fy: 10, name: '02.jpg' }], heroIndex: 0, secondaryIndex: 1 } };
+  t = await open(browser, { documents: [CROPS], drive: { state: 'needs-click' } });
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(600);
+  check('no Drive: Save sheet keeps the saved crops', (((t.pieces[0] || {}).p_state || {}).photos || []).map(x => [x.path, x.fx, x.fy]),
+    [['Photos/Edited/01.jpg', 20, 70], ['Photos/Edited/02.jpg', 40, 10]]);
+  await t.ctx.close();
+  t = await open(browser, { documents: [CROPS], drive: { slow: 'Photos/Edited/02.jpg' } });
+  await t.page.waitForTimeout(500);
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(600);
+  check('a photo not downloaded: its crop kept too', (((t.pieces[0] || {}).p_state || {}).photos || []).filter(x => x.path === 'Photos/Edited/02.jpg').map(x => [x.fx, x.fy]), [[40, 10]]);
+  await t.ctx.close();
+
+  // Drive failing after the job loaded leaves the bar alone (review I2)
+  t = await open(browser, { drive: { stateThrows: true } });
+  check('Drive throws: bar and Save stay', [(await text(t.page, '#jobBar')).includes('Showsheet for 100 Example St'), !!(await t.page.$('#btnSaveSheet'))], [true, true]);
+  check('Drive throws: said on the panel', (await text(t.page, '#jobPhotoMsg')).includes('Drive went away.'), true);
+  await t.ctx.close();
+
+  // the standalone Showsheet never loads job mode
+  t = await open(browser, { path: '/tools/showsheet/' });
+  check('standalone: no job mode', [await t.page.evaluate(() => typeof window.GVC_SHEETMODE), await t.page.$eval('#jobBar', e => e.hidden)], ['undefined', true]);
   await t.ctx.close();
 
   // team role: read-only

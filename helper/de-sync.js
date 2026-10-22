@@ -260,18 +260,27 @@ async function syncOnce(opts) {
   const report = await dryRun(opts);
   let browser = null, page = null;
   const names = opts.courtesy ? null : require('./roster.js').rosterNames();
-  const courtesy = opts.courtesy || (async row => {
+  const lazyPage = async () => {
     if (!page) {
       const { chromium } = require('playwright');
       browser = await chromium.launch(); page = await browser.newPage();
     }
+  };
+  const pageFacts = opts.pageFacts || (opts.courtesy ? async () => null : async (row, propertyType) => {
+    if (!row.listingUrl) return null;
+    await lazyPage();
+    try { return await require('./de/page-facts.js').readPageFacts(page, row, propertyType); }
+    finally { await new Promise(res => setTimeout(res, 3000)); }
+  });
+  const courtesy = opts.courtesy || (async row => {
+    await lazyPage();
     const r = await require('./de/courtesy.js').checkCourtesy(page, row, new Map(), names);
     await new Promise(res => setTimeout(res, 3000));
     return r;
   });
   if ('deAddsNew' in cfg) console.log('deAddsNew is retired (D54): DE never adds jobs now, so the setting is ignored.');
   try {
-    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy,
+    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy, pageFacts,
       helperVersion: require('./package.json').version }), { report });
   } finally {
     if (browser) await browser.close();

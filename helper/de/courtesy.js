@@ -20,10 +20,15 @@
    - Another brokerage's listing: "Listing Courtesy of <BROKERAGE>., <AGENT> - <phone>".
    - After "CONNECT NOW" / "SIMILAR LISTINGS" come other listings, with their own
      courtesy lines: everything from there on is ignored. */
-function parseCourtesy(text, names) {
+/* The subject listing's part of a page: whitespace collapsed, cut at "CONNECT NOW" / "SIMILAR LISTINGS". */
+function subjectOf(text) {
   const t = String(text || '').replace(/\s+/g, ' ');
   const ends = ['CONNECT NOW', 'SIMILAR LISTINGS'].map(m => t.indexOf(m)).filter(i => i !== -1);
-  const subject = ends.length ? t.slice(0, Math.min.apply(null, ends)) : t;
+  return ends.length ? t.slice(0, Math.min.apply(null, ends)) : t;
+}
+
+function parseCourtesy(text, names) {
+  const subject = subjectOf(text);
   const mls = /MLS(?:\/Listing)? ID:?\s*([A-Z0-9-]+)/i.exec(subject);
   const out = { gvcListed: false, line: null, agent: null, mlsId: mls ? mls[1] : null };
 
@@ -55,4 +60,4 @@ async function checkCourtesy(page, row, cache, names) {
   return out;
 }
 
-module.exports = { parseCourtesy, checkCourtesy };
+module.exports = { parseCourtesy, checkCourtesy, subjectOf };

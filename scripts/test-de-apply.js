@@ -10,6 +10,7 @@
 process.env.GVC_HELPER_HOME = require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'gvc-apply-'));
 const deApply = require('../helper/de/apply.js');
 const { applyRun } = deApply;
+const F = require('../assets/js/job-facts.js');
 const { ConflictError } = require('../helper/supabase.js');
 
 let pass = 0;
@@ -295,6 +296,92 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   check('hand link: the job snapshot carries no address', 'street' in pw.de, false);
   check('hand link: the cache row stays on the job', db.T.de_listings.find(d => d.de_listing_id === '930001').property_id, 'pw');
   check('not ours: a listing set aside stays set aside after a run', db.T.de_listings.find(d => d.de_listing_id === '930002').ignored, true);
+
+  /* ---------- DE page facts (D47, S20) ---------- */
+  {
+    const PF = require('../helper/de/page-facts.js'), fsx = require('fs'), pathx = require('path');
+    const fx = n => fsx.readFileSync(pathx.join(__dirname, '..', 'helper', 'fixtures', 'synthetic', n), 'utf8');
+    check('page facts: condo page, co-op type', PF.parsePageFacts(fx('de-page-condo.txt'), 'Co-op'),
+      { taxesMonthly: 1234, maintenance: 2345, yearBuilt: 1987, mlsId: '12345678' });
+    check('page facts: condo type reads common charges; text after SIMILAR LISTINGS ignored', PF.parsePageFacts(fx('de-page-condo.txt'), 'Condo'),
+      { taxesMonthly: 1234, commonCharges: 2345, yearBuilt: 1987, mlsId: '12345678' });
+    check('page facts: house page has a lot size in DE\'s words', PF.parsePageFacts(fx('de-page-house.txt'), ['Single family']),
+      { taxesMonthly: 1234, commonCharges: 150, lotSize: '0.35 Acres', yearBuilt: 1962, mlsId: 'R7770001' });
+    check('page facts: labels in any case', PF.parsePageFacts('$99 monthly tax LOT SIZE 2 acres', 'Condo'), { taxesMonthly: 99, lotSize: '2 acres' });
+    /* final review 2: money is read value-then-label only; a label followed by the next value is not its value */
+    check('page facts: label-first money is never read', 'commonCharges' in PF.parsePageFacts('Monthly Maintenance/CC $1,234 Monthly Tax', 'Condo'), false);
+    /* final review 10: no property type, no maintenance or common charges */
+    check('page facts: unknown property type keeps maintenance and common charges out', [null, undefined, '', []].map(t => {
+      const o = PF.parsePageFacts(fx('de-page-condo.txt'), t); return ['maintenance' in o, 'commonCharges' in o, o.taxesMonthly];
+    }), [[false, false, 1234], [false, false, 1234], [false, false, 1234], [false, false, 1234]]);
+    /* final review 9: only DE's own https pages are opened */
+    {
+      const went = [], fakePage = { goto: async u => { went.push(u); }, evaluate: async () => 'DETAILS $5 Monthly Tax' };
+      const tries = ['http://www.elliman.com/x', 'https://elliman.com.evil.example/x', 'https://evil.example/elliman.com', 'javascript:alert(1)', 'https://www.elliman.com/new-york-city/1-x'];
+      const res = [];
+      for (const u of tries) res.push(await PF.readPageFacts(fakePage, { listingUrl: u }, 'Condo').then(x => x.taxesMonthly, e => /https page on elliman\.com/.test(e.message) ? 'refused' : e.message));
+      check('page facts: only https elliman.com pages opened', [res, went], [['refused', 'refused', 'refused', 'refused', 5], ['https://www.elliman.com/new-york-city/1-x']]);
+    }
+    check('page facts: no lot on the page, home Sq Ft never a lot, alphanumeric id', PF.parsePageFacts(fx('de-page-nolot.txt'), 'Single family'), { commonCharges: 700, yearBuilt: 2025, mlsId: 'R1115' });
+    check('page facts: Sq Ft lot', PF.parsePageFacts('DETAILS 2,000 Sq Ft Single Family 7,500 Sq Ft Lot Built in 2001', 'Single family'), { lotSize: '7,500 Sq Ft', yearBuilt: 2001 });
+    check('page facts: label-first lot size still read', PF.parsePageFacts('Lot Size: 0.5 acres.', 'Condo'), { lotSize: '0.5 acres' });
+    check('page facts: nothing to read', PF.parsePageFacts('hello', 'Condo'), {});
+    const T0 = new Date('2026-10-20T07:00:00Z'), job = (de) => ({ de });
+    check('needsPage: never read', PF.needsPage(job({}), { price: 5 }, T0), true);
+    check('needsPage: read today at the same price', PF.needsPage(job({ pageFactsAt: '2026-10-19T07:00:00Z', pageFactsPrice: 5 }), { price: 5 }, T0), false);
+    check('needsPage: price changed since', PF.needsPage(job({ pageFactsAt: '2026-10-19T07:00:00Z', pageFactsPrice: 5 }), { price: 4 }, T0), true);
+    check('needsPage: a week old', PF.needsPage(job({ pageFactsAt: '2026-10-13T07:00:00Z', pageFactsPrice: 5 }), { price: 5 }, T0), true);
+    check('needsPage: six days old', PF.needsPage(job({ pageFactsAt: '2026-10-14T07:00:00Z', pageFactsPrice: 5 }), { price: 5 }, T0), false);
+
+    const mk = (core, de) => fakeDb({ properties: [{ id: 'pf', slug: 'pf', stage: 'Live', kind: 'sale', de_listing_id: '900001', de: de || null,
+      core: Object.assign({ address: '100 Example St', unit: '4A', propertyType: 'Co-op', price: 1000000, beds: 2, baths: 2, sqft: 1200, halfBaths: 0 }, core) }] });
+    let asked = 0;
+    const page = async (r, type) => { asked++; return PF.parsePageFacts(fx('de-page-condo.txt'), type); };
+    const run = (d, pf, when) => applyRun({ client: d, report: report([{ id: '900001' }]), now: when || NOW, courtesy: gvc, rows: [row('900001')], pageFacts: pf });
+
+    // DE's page value replaces the doc's, at DE's rank; each change logged
+    let d = mk({ maintenance: 1800, facts: { maintenance: { value: 1800, source: 'doc', bySource: { doc: 1800 } } } });
+    await run(d, page);
+    let c = d.T.properties[0].core;
+    check('apply: DE page replaces the doc value', [c.maintenance, c.facts.maintenance.source, c.taxesMonthly, c.yearBuilt, c.mlsId, c.commonCharges], [2345, 'DE', 1234, 1987, '12345678', undefined]);
+    check('apply: each page change logged as DE', d.T.changes.filter(x => x.source === 'DE' && ['maintenance', 'taxesMonthly', 'yearBuilt', 'mlsId'].includes(x.field)).length, 4);
+    check('apply: stamp kept in the snapshot', [d.T.properties[0].de.pageFactsAt, d.T.properties[0].de.pageFactsPrice], [NOW.toISOString(), 1000000]);
+
+    // the next day: not asked again, stamp survives the snapshot rewrite
+    asked = 0;
+    await run(d, page, new Date('2026-10-21T07:00:00Z'));
+    check('apply: not asked again within a week at the same price', [asked, d.T.properties[0].de.pageFactsAt], [0, NOW.toISOString()]);
+    await run(d, page, new Date('2026-10-28T07:00:00Z'));
+    check('apply: asked again after a week', asked, 1);
+
+    // Matt's typed value holds while DE repeats, and warns (D78)
+    d = mk({ maintenance: 2000, facts: { maintenance: { value: 2000, source: 'Matt', bySource: { Matt: 2000, DE: 2345 } } } });
+    await run(d, page);
+    c = d.T.properties[0].core;
+    check('apply: Matt\'s value holds while DE repeats', [c.maintenance, c.facts.maintenance.source, F.warnOf(c.facts.maintenance)], [2000, 'Matt', { source: 'DE', value: 2345 }]);
+    check('apply: no maintenance change logged', d.T.changes.some(x => x.field === 'maintenance'), false);
+    // DE's page value changes: DE takes over, with the note
+    d = mk({ maintenance: 2000, facts: { maintenance: { value: 2000, source: 'Matt', bySource: { Matt: 2000, DE: 2100 } } } });
+    await run(d, page);
+    check('apply: DE\'s new page value replaces Matt\'s with a note', [d.T.properties[0].core.maintenance, d.T.changes.find(x => x.field === 'maintenance').note], [2345, 'DE\'s own value changed, so it replaces the one Matt typed']);
+    // a value already in core with no record is an earlier tool's, which DE outranks
+    d = mk({ taxesMonthly: 999 });
+    await run(d, page);
+    check('apply: an earlier-tool value in core is replaced by DE page', [d.T.properties[0].core.taxesMonthly, d.T.properties[0].core.facts.taxesMonthly.source, d.T.properties[0].core.facts.taxesMonthly.bySource.legacy], [1234, 'DE', 999]);
+
+    // a page that fails to load is logged and skipped, never fatal; the other facts still sync and it is retried next run
+    d = mk({ price: 900000 });
+    out = await run(d, async () => { throw new Error('timeout'); });
+    check('apply: a failed page is logged, the run goes on', [out.errors.map(e => e.what), d.T.properties[0].core.price, d.T.sync_runs[0].ok, d.T.properties[0].de.pageFactsAt], [['page'], 1000000, true, undefined]);
+    // no pageFacts function: nothing asked
+    d = mk({});
+    await run(d, undefined);
+    check('apply: without a page reader nothing changes', [d.T.properties[0].core.taxesMonthly, d.T.properties[0].de.pageFactsAt], [undefined, undefined]);
+    // sold feed rows never ask
+    asked = 0; d = mk({});
+    await applyRun({ client: d, report: report([]), now: NOW, courtesy: gvc, rows: [row('900001', { feed: 'transactions', status: 'Sold', stage: 'Sold', closePrice: 1 })], pageFacts: page });
+    check('apply: sold rows never open a page', asked, 0);
+  }
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

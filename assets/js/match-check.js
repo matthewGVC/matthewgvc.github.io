@@ -102,10 +102,10 @@
 (function (global, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), global,
+    module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), require('./kit-track.js'), global,
       function () { return { A: require('./address-aliases.js'), P: require('./property-library.js') }; });
-  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS }; });
-})(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, global, libs) {
+  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS }; });
+})(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, KIT, global, libs) {
   'use strict';
 
   var GRACE_AHEAD = 14, GRACE_OVERDUE = 14, GRACE_FILE = 7, DATE_SLACK = 3;
@@ -120,18 +120,21 @@
   var ONCE_LIVE = ['Live', 'Accepted offer', 'In contract', 'Sold', 'Rented'];
   var STAGE_DATE = { 'Live': 'listedOn', 'Accepted offer': 'acceptedOfferOn', 'In contract': 'contractOn',
     'Sold': 'closedOn', 'Rented': 'closedOn', 'Off market': 'offMarketOn' };
-  var PIECE_STEPS = [
-    ['showsheet', /create show ?sheet/],
-    ['floorplan', /brand floor ?plan|revise\s*\/\s*brand/],
-    ['photos', /pics\s*\/\s*video\s*\/\s*fp/],
-    ['postcard', /just listed postcard/]
-  ];
-  var NEVER_FILE = /just listed email/;                 // built in DE StudioPro, no file (D74)
-  var SCANNED = ['floorplan', 'showsheet', 'photos', 'brochure'];   // helper/scan.js PIECES
-  var PIECE_LABEL = { showsheet: 'showsheet', floorplan: 'floorplan', photos: 'edited photos', postcard: 'postcard', brochure: 'brochure' };
+  var PIECE_STEPS = KIT.STEPS.pieces;                    // step name patterns live in kit-track.js
+  var NEVER_FILE = KIT.STEPS.neverFile;                 // built in DE StudioPro, no file (D74)
+  /* M8 checks a piece only when it has its own Asana step (PIECE_STEPS). A scan that stores pieces
+     keyed by piece (the nightly scan since Slice 3, or the page's live Drive read) covers every kit
+     piece (KIT.KEYS); an older stored scan without them covered only these four. */
+  var SCANNED = ['floorplan', 'showsheet', 'photos', 'brochure'];
+  var PIECE_LABEL = { showsheet: 'showsheet', floorplan: 'floorplan', photos: 'edited photos', postcard: 'postcard', brochure: 'brochure' };   // M8's words for a piece
   var FACT_LABEL = { price: 'the price', originalPrice: 'the original price', beds: 'beds', baths: 'baths', halfBaths: 'half baths', sqft: 'sq ft' };
 
   /* ---------- small helpers ---------- */
+  function firstSeen(list) {   // earliest modified date among a piece's current files, else null
+    var out = null;
+    (list || []).forEach(function (f) { if (f && !f.archived && f.modified && (!out || String(f.modified) < out)) out = String(f.modified).slice(0, 10); });
+    return out;
+  }
   function empty(v) { return v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length); }
   function eq(a, b) { return JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b); }
   function day(v) { return v ? String(v).slice(0, 10) : null; }
@@ -451,14 +454,16 @@
     /* M8: a marketing step vs the file on Drive (D60); never the Just Listed email (D74) */
     var found = (drive && drive.found) || (scan && scan.found) || null;
     if (a && found) {
-      var pieces = (drive && drive.pieces) || (scan && scan.pieces) || SCANNED;
+      var rawPieces = (drive && drive.pieces) || (scan && scan.pieces) || null;
+      var byKey = rawPieces && !Array.isArray(rawPieces) && typeof rawPieces === 'object' ? rawPieces : null;   // the nightly scan lists only pieces with files
+      var pieces = byKey ? KIT.KEYS : (rawPieces || SCANNED);
       var steps = [];
       (a.checklist || []).forEach(function (b) { (b.steps || []).forEach(function (s) { steps.push(s); }); });
       PIECE_STEPS.forEach(function (ps) {
         if (pieces.indexOf(ps[0]) === -1) return;
         var mine = steps.filter(function (s) { var n = String(s.name || '').toLowerCase(); return !NEVER_FILE.test(n) && ps[1].test(n); });
         if (!mine.length) return;
-        var ticked = mine.some(function (s) { return s.done; }), file = found[ps[0]] || null, label = PIECE_LABEL[ps[0]];
+        var ticked = mine.some(function (s) { return s.done; }), file = found[ps[0]] || firstSeen(byKey && byKey[ps[0]]), label = PIECE_LABEL[ps[0]];
         if (ticked && !file) {
           add('M8', 'M8:' + ps[0], mine[0].name + ' is ticked in Asana; no ' + label + ' in the folder.', { piece: ps[0], step: mine[0].name, ticked: true, file: null }, 'Drive');
         } else if (!ticked && file && days(file, now) > GRACE_FILE) {
@@ -497,15 +502,26 @@
         add('M10', 'M10', 'Asana task has ' + said + '.', { missing: missing }, 'Asana');
       }
 
-      /* M11: Point Person vs the confirmed agents (core.agentIds until Slice 3) */
-      var conf = core.agentIds;
-      var ag = who.agents;
-      if (Array.isArray(conf) && conf.length && ag.ids.length && !ag.ask.length && !ag.others.length) {
-        var A1 = ag.ids.slice().sort(), B1 = conf.slice().sort();
-        if (A1.some(function (id) { return B1.indexOf(id) === -1; })) {   // a subset of the confirmed agents is fine
-          var nm = function (id) { return who.byId[id] ? who.byId[id].name : id; };
-          add('M11', 'M11', 'Asana\'s Point Person is ' + a.pointPerson + ' (' + ag.ids.map(nm).join(', ') + '); the confirmed agents are ' + conf.map(nm).join(', ') + '.',
-            { pointPerson: a.pointPerson, asana: A1, confirmed: B1 }, 'Matt');
+      /* M11: once Matt confirmed the agents, only a change in Asana's suggestion; before that, Point Person vs core.agentIds */
+      var ag = who.agents, nm = function (id) { return who.byId[id] ? who.byId[id].name : id; };
+      var cfm = core.agentsConfirmed && Array.isArray(core.agentsConfirmed.from) ? core.agentsConfirmed : null;
+      if (cfm) {
+        if (ag.ids.length && !ag.ask.length && !ag.others.length) {
+          var from = cfm.from.slice().sort(), now1 = ag.ids.slice().sort();
+          if (from.length !== now1.length || from.some(function (id, k) { return id !== now1[k]; })) {
+            var said1 = (core.agentIds || cfm.from).map(nm).join(', ');
+            add('M11', 'M11', "Asana's Point Person is now " + a.pointPerson + ' (' + ag.ids.map(nm).join(', ') + '); the confirmed agents are ' + said1 + ". Check the listing's agents.",
+              { pointPerson: a.pointPerson, asana: now1, confirmedFrom: from }, 'Asana');
+          }
+        }
+      } else {
+        var conf = core.agentIds;
+        if (Array.isArray(conf) && conf.length && ag.ids.length && !ag.ask.length && !ag.others.length) {
+          var A1 = ag.ids.slice().sort(), B1 = conf.slice().sort();
+          if (A1.some(function (id) { return B1.indexOf(id) === -1; })) {   // a subset of the confirmed agents is fine
+            add('M11', 'M11', "Asana's Point Person is " + a.pointPerson + ' (' + ag.ids.map(nm).join(', ') + '); the confirmed agents are ' + conf.map(nm).join(', ') + '.',
+              { pointPerson: a.pointPerson, asana: A1, confirmed: B1 }, 'Matt');
+          }
         }
       }
 

@@ -16,6 +16,15 @@
                                   → File, once its first byte arrives. Refused by GVC_DRIVE_RULES before any
                                     handle inside the job is opened.
      await GVC_DRIVE.relPathOf(handle)  → 'GVC - New York/…' or null
+     await GVC_DRIVE.tree(jobFolder, { depth: 3, timeoutMs })
+                                  → the job folder as GVC_HEALTH's tree: readable folders to `depth` levels
+                                    (files with size and modified), the details doc and other loose top
+                                    files by name only (never opened), paperwork folders as one skipped
+                                    line, paperwork files and unreadable folders only counted
+                                    (GVC_DRIVE_RULES.jobTree). A folder that is gone → { broken: true }.
+     await GVC_DRIVE.listJob(jobFolder, 'Photos/Edited', { timeoutMs })
+                                  → [{ name, kind, size, modified }] of one readable folder, by name;
+                                    anything GVC_DRIVE_RULES.allowedInJob refuses is left out.
 
    Paths are relative to G:\Shared drives\, with "/" or "\".
    Needs assets/js/drive-rules.js loaded first.
@@ -145,6 +154,98 @@
     return withTimeout(read, ms, 'Drive hasn\'t downloaded this file yet. Open it once in Google Drive, then try again.');
   }
 
+  var SLOW = "Drive hasn't downloaded this yet.";
+  function byName(a, b) { return a.name.localeCompare(b.name); }
+
+  /* every handle in a folder; each step may wait at most ms */
+  function entries(dir, ms) {
+    var out = [], it = dir.values();
+    function next() {
+      return withTimeout(it.next(), ms, SLOW).then(function (r) {
+        if (r.done) return out;
+        out.push(r.value);
+        return next();
+      });
+    }
+    return next();
+  }
+  /* size and date of an allowed file; a file Drive won't serve in time just has none */
+  function fileNode(h, ms) {
+    return withTimeout(h.getFile(), ms, SLOW).then(function (f) {
+      return { name: h.name, kind: 'file', size: f.size, modified: new Date(f.lastModified).toISOString() };
+    }, function () { return { name: h.name, kind: 'file' }; });
+  }
+
+  /* raw photo sets are counted by name, never read (like the helper's scan) */
+  var NO_READ = ['raw', 'raws'];
+
+  /* the walk under a job folder's handle; every name passes the rules before
+     its handle is opened, and a paperwork folder at any depth is never listed
+     (exposed as _treeOf for tests) */
+  function treeOf(root, opts) {
+    var depth = (opts && opts.depth) || 3, ms = (opts && opts.timeoutMs) || 20000;
+    var top = { name: root.name, kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
+    function walkDir(dir, segs, left, node) {
+      return entries(dir, ms).then(function (hs) {
+        return Promise.all(hs.map(function (h) {
+          var path = segs.concat(h.name);
+          if (!segs.length) {
+            var paper = RULES.isPaperworkFolder(h.name) || RULES.hasPaperworkWord(h.name);
+            if (h.kind === 'directory') {
+              if (paper) return { name: h.name, kind: 'directory', skipped: true };
+              if (!RULES.allowedInJob(h.name)) { top.otherCount++; return null; }
+            } else {
+              if (paper) { top.looseCount++; return null; }
+              if (!RULES.allowedInJob(h.name)) return { name: h.name, kind: 'file' };   // loose: named, never opened
+            }
+          } else if (!RULES.allowedInJob(path.join('/'))) return null;
+          if (h.kind !== 'directory') {
+            if (segs.some(function (g) { return NO_READ.indexOf(g.toLowerCase()) !== -1; })) return { name: h.name, kind: 'file' };
+            return fileNode(h, ms);
+          }
+          if (RULES.isPaperwork(h.name)) return null;            // "Marketing/Docs": never listed, never opened
+          var d = { name: h.name, kind: 'directory', children: [] };
+          if (left <= 1) { d.more = true; return d; }
+          return walkDir(h, path, left - 1, d);
+        })).then(function (kids) {
+          node.children = kids.filter(Boolean).sort(byName);
+          return node;
+        });
+      });
+    }
+    return walkDir(root, [], depth, top).then(RULES.jobTree);
+  }
+
+  function tree(jobFolder, opts) {
+    if (RULES.rel(jobFolder) === null) return Promise.reject(new Error("That path isn't allowed."));
+    var parts = RULES.rel(jobFolder).split('/');
+    return locate(jobFolder).then(function (x) { return walk(x[0], x[1]); }).then(function (d) {
+      return treeOf(d, opts);
+    }, function (e) {
+      if (e && (e.name === 'NotFoundError' || e.name === 'TypeMismatchError')) return { name: parts[parts.length - 1], kind: 'directory', broken: true };
+      throw e;
+    });
+  }
+
+  /* one readable folder's entries (exposed as _listOf for tests) */
+  function listOf(root, sub, opts) {
+    var ms = (opts && opts.timeoutMs) || 20000, r = RULES.rel(sub);
+    if (!r || !RULES.allowedInJob(r) || r.split('/').some(RULES.isPaperwork)) return Promise.reject(new Error('Not allowed: the workspace only reads Floorplan, Photos and Marketing folders and the details doc.'));
+    return walk(root, r.split('/')).then(function (d) { return entries(d, ms); }).then(function (hs) {
+      return Promise.all(hs.map(function (h) {
+        if (!RULES.allowedInJob(r + '/' + h.name)) return null;
+        if (h.kind === 'directory' && RULES.isPaperwork(h.name)) return null;
+        return h.kind === 'directory' ? { name: h.name, kind: 'directory' } : fileNode(h, ms);
+      }));
+    }).then(function (xs) { return xs.filter(Boolean).sort(byName); });
+  }
+
+  function listJob(jobFolder, sub, opts) {
+    if (RULES.rel(jobFolder) === null) return Promise.reject(new Error("That path isn't allowed."));
+    if (!RULES.allowedInJob(sub)) return Promise.reject(new Error('Not allowed: the workspace only reads Floorplan, Photos and Marketing folders and the details doc.'));
+    return locate(jobFolder).then(function (x) { return walk(x[0], x[1]); }).then(function (d) { return listOf(d, sub, opts); });
+  }
+
   function relPathOf(handle) {
     return roots().then(function (all) {
       var names = Object.keys(all);
@@ -162,7 +263,7 @@
 
   global.GVC_DRIVE = {
     supported: supported, state: state, connect: connect, reconnect: reconnect,
-    list: list, readJobFile: readJobFile, relPathOf: relPathOf,
-    _withTimeout: withTimeout   // for tests
+    list: list, readJobFile: readJobFile, relPathOf: relPathOf, tree: tree, listJob: listJob,
+    _withTimeout: withTimeout, _treeOf: treeOf, _listOf: listOf   // for tests
   };
 })(window);

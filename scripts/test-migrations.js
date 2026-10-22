@@ -120,7 +120,9 @@ const USERS = {
   /* ---------- rules ---------- */
   check('matt reads', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 3);
   check('helper reads', (await as('helper', 'select count(*)::int n from public.properties')).rows[0].n, 3);
-  check('shared account still works', (await as('team', 'select count(*)::int n from public.todos')).rows[0].n, 1);
+  // before 0008 the shared team account reads the to-dos; from 0008 they are Matt's own
+  check('shared account and to-dos', (await as('team', 'select count(*)::int n from public.todos')).rows[0].n, UPTO >= '0008' ? 0 : 1);
+  check('shared account still reads properties', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 3);
   check('stranger reads nothing', (await as('stranger', 'select count(*)::int n from public.properties')).rows[0].n, 0);
   check('stranger reads no todos', (await as('stranger', 'select count(*)::int n from public.todos')).rows[0].n, 0);
   check('anon reads nothing', (await as('anon', 'select count(*)::int n from public.properties')).rows[0].n, 0);
@@ -208,10 +210,143 @@ const USERS = {
     check('bad task kind refused', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind) values ('t2', 'pr1', 'odd')`), true);
   }
 
+  /* ---------- 0008: to-dos are Matt's own (the helper may read them for the backup) ---------- */
+  if (UPTO >= '0008') {
+    const tr8 = (await db.query(`insert into auth.users (email) values ('todoteam@gvcrealestateteam.com') returning id`)).rows[0].id;
+    await db.query(`insert into public.members (user_id, name, initials, role) values ($1, 'Todo Team', 'TT', 'team')`, [tr8]);
+    id.todoteam = tr8;
+    const n = async who => (await as(who, 'select count(*)::int n from public.todos')).rows[0].n;
+    const tries = async (who, sql) => { try { const r = await as(who, sql); return r.affectedRows || 0; } catch (e) { return 'refused'; } };
+    check('0008: Matt reads his to-dos', await n('matt'), 1);
+    check('0008: Matt adds and ticks a to-do', [await tries('matt', `insert into public.todos (body) values ('Matt adds')`), await tries('matt', `update public.todos set done = true where body = 'Matt adds'`)], [1, 1]);
+    check('0008: the helper reads them (nightly backup)', await n('helper'), 2);
+    check('0008: the helper can\'t change them', [await tries('helper', `insert into public.todos (body) values ('helper adds')`), await tries('helper', `update public.todos set done = true`), await tries('helper', `delete from public.todos`)],
+      ['refused', 0, 0]);
+    check('0008: the shared team account sees and changes none', [await n('team'), await tries('team', `insert into public.todos (body) values ('team adds')`), await tries('team', `delete from public.todos`)], [0, 'refused', 0]);
+    check('0008: a plain team member sees and changes none', [await n('todoteam'), await tries('todoteam', `update public.todos set done = true`)], [0, 0]);
+    check('0008: strangers and anon see none', [await n('stranger'), await n('anon')], [0, 0]);
+    check('0008: an inactive owner sees none', await (async () => { await db.query(`update public.members set active = false where role = 'owner'`); const x = await n('matt'); await db.query(`update public.members set active = true where role = 'owner'`); return x; })(), 0);
+    await db.query(`delete from public.todos where body = 'Matt adds'`);
+  }
+
+  /* ---------- 0007: details_doc, no_rebuild, save_job ---------- */
+  if (UPTO >= '0007') {
+    const sj = (who, table, rid, ver, set, chg) => as(who, 'select public.save_job($1, $2, $3, $4::jsonb, $5::jsonb) r',
+      [table, rid, ver, JSON.stringify(set), JSON.stringify(chg)]);
+    const sjErr = async (who, ...a) => { try { await sj(who, ...a); return null; } catch (e) { return e.message; } };
+    const count = async (where, ...params) => (await db.query('select count(*)::int n from public.changes where ' + where, params)).rows[0].n;
+    const ver = async (t, x) => (await db.query('select version from public.' + t + ' where id = $1', [x])).rows[0].version;
+
+    check('details_doc column', (await db.query(`select data_type from information_schema.columns where table_name = 'properties' and column_name = 'details_doc'`)).rows[0].data_type, 'jsonb');
+    check('no_rebuild defaults false', (await db.query(`insert into public.changes (property_id, source) values ($1, 'Matt') returning no_rebuild`, [liveId])).rows[0].no_rebuild, false);
+    check('anon cannot run save_job', await fails('anon', `select public.save_job('properties', $1, 1, '{}', '[]')`, [liveId]), true);
+
+    // a member whose role is plain 'team' (the test accounts hold owner, helper and shared)
+    const tr = (await db.query(`insert into auth.users (email) values ('teamrole@gvcrealestateteam.com') returning id`)).rows[0].id;
+    await db.query(`insert into public.members (user_id, name, initials, role) values ($1, 'Team Member', 'TM', 'team')`, [tr]);
+    id.teamrole = tr;
+
+    const pid = (await db.query(`insert into public.properties (slug, label, core, asana) values ('400-example-st', '400 Example St', '{"price":1}',
+      '{"stageFromStatus":"Live","stageFromSection":"Prep"}') returning id`)).rows[0].id;
+    let v = await ver('properties', pid);
+    const base = await count('property_id = $1', pid);
+
+    const saved = (await sj('matt', 'properties', pid, v, { core: { price: 2 } }, [{ field: 'price', old_value: 1, new_value: 2, asked_by: 'Matt' }])).rows[0].r;
+    check('save returns the new row', [saved.version, saved.core], [v + 1, { price: 2 }]);
+    const row = (await db.query(`select source, property_id, field, old_value, new_value, asked_by, no_rebuild, user_id from public.changes where property_id = $1 and field = 'price'`, [pid])).rows;
+    check('one change row, source Matt', row, [{ source: 'Matt', property_id: pid, field: 'price', old_value: 1, new_value: 2, asked_by: 'Matt', no_rebuild: false, user_id: id.matt }]);
+
+    check('stale version raises conflict', await sjErr('matt', 'properties', pid, v, { core: { price: 3 } }, [{ field: 'price', new_value: 3 }]), 'conflict');
+    check('conflict wrote no change row', await count('property_id = $1', pid), base + 1);
+    check('conflict changed no data', (await db.query('select core from public.properties where id = $1', [pid])).rows[0].core, { price: 2 });
+    let cfCode = '';
+    try { await as('matt', `select public.save_job('properties', $1, 1, '{"core":{}}', '[]')`, [pid]); } catch (e) { cfCode = e.code || ''; }
+    check('conflict errcode P0001', cfCode, 'P0001');
+    v += 1;
+
+    await sj('matt', 'properties', pid, v, { extras: { a: 1 } }, [{ field: 'x', source: 'DE', new_value: 1 }]);
+    check('a sent source is ignored: source stays Matt', (await db.query(`select source from public.changes where property_id = $1 and field = 'x'`, [pid])).rows[0].source, 'Matt');
+    v += 1;
+    await sj('matt', 'properties', pid, v, { photo_hero: 'a.jpg', photo_order: ['a.jpg', 'b.jpg'] }, [{ field: 'typo', no_rebuild: true }]);
+    v += 1;
+    const ph = (await db.query('select photo_hero, photo_order from public.properties where id = $1', [pid])).rows[0];
+    check('photo_hero and order saved', [ph.photo_hero, ph.photo_order], ['a.jpg', ['a.jpg', 'b.jpg']]);
+    check('no_rebuild saved true', (await db.query(`select no_rebuild from public.changes where property_id = $1 and field = 'typo'`, [pid])).rows[0].no_rebuild, true);
+    await sj('matt', 'properties', pid, v, { details_doc: { file: 'Details.docx', found: ['price'] } }, []);
+    v += 1;
+    check('details_doc saved', (await db.query('select details_doc from public.properties where id = $1', [pid])).rows[0].details_doc, { file: 'Details.docx', found: ['price'] });
+
+    check('bad key slug', await sjErr('matt', 'properties', pid, v, { slug: 'x' }, []), 'bad key slug');
+    check('bad key on a pitch', await sjErr('matt', 'pitches', pitchId, 1, { outcome: 'won' }, []), 'bad key outcome');
+    check('bad table', await sjErr('matt', 'members', pid, v, { role: 'owner' }, []), 'bad table');
+    check('bad key left the row alone', await ver('properties', pid), v);
+
+    // stage: only Archived, and back to Asana's own stage
+    check('Live from Prep refused', (await sjErr('matt', 'properties', pid, v, { stage: 'Live' }, [])) !== null, true);
+    check('refused stage left the version', await ver('properties', pid), v);
+    await sj('matt', 'properties', pid, v, { stage: 'Archived' }, [{ field: 'stage', old_value: 'Prep', new_value: 'Archived' }]);
+    v += 1;
+    let st = (await db.query('select stage, stage_source from public.properties where id = $1', [pid])).rows[0];
+    check('archived by Matt', [st.stage, st.stage_source], ['Archived', 'Matt']);
+    check('only the snapshot stage on the way back', (await sjErr('matt', 'properties', pid, v, { stage: 'Sold' }, [])) !== null, true);
+    await sj('matt', 'properties', pid, v, { stage: 'Live' }, []);
+    v += 1;
+    st = (await db.query('select stage, stage_source from public.properties where id = $1', [pid])).rows[0];
+    check('unarchived to the Asana stage', [st.stage, st.stage_source], ['Live', 'Asana']);
+    // final review 6: a stale stage save is a conflict (the page reloads), not a bad stage
+    check('stale stage save raises conflict', [await sjErr('matt', 'properties', pid, v - 1, { stage: 'Live' }, []), await sjErr('matt', 'properties', pid, v - 1, { stage: 'Sold' }, [])], ['conflict', 'conflict']);
+    check('a current-version bad stage is still a bad stage', await sjErr('matt', 'properties', pid, v, { stage: 'Sold' }, []), 'bad stage Sold');
+    const pid2 = (await db.query(`insert into public.properties (slug, label, core, stage) values ('500-example-st', '500 Example St', '{}', 'Archived') returning id`)).rows[0].id;
+    check('no snapshot: back goes to Prep only', [(await sjErr('matt', 'properties', pid2, 1, { stage: 'Live' }, [])) !== null,
+      (await sj('matt', 'properties', pid2, 1, { stage: 'Prep' }, [])).rows[0].r.stage], [true, 'Prep']);
+
+    // pitches and development projects
+    check('pitch core saved', (await sj('matt', 'pitches', pitchId, 1, { core: { agentIds: ['a'] } }, [{ field: 'agents' }])).rows[0].r.core, { agentIds: ['a'] });
+    check('pitch change row has its owner', await count('pitch_id = $1 and field = $2', pitchId, 'agents'), 1);
+    const devId = (await db.query(`select id from public.dev_projects where slug = 'example-tower'`)).rows[0].id;
+    const dv = await ver('dev_projects', devId);
+    check('dev milestones saved', (await sj('matt', 'dev_projects', devId, dv, { milestones: { renders: { done: true } } }, [{ field: 'renders', new_value: true }])).rows[0].r.milestones, { renders: { done: true } });
+    check('dev change row has its owner', await count('dev_project_id = $1 and field = $2', devId, 'renders'), 1);
+
+    // an empty set: only change rows, no version check, row returned as it is
+    const e1 = (await sj('matt', 'properties', pid, 1, {}, [{ field: 'floorplan', new_value: 'v2' }, { note: 'called the agent' }])).rows[0].r;
+    check('empty set ignores a stale version and changes nothing', [e1.version, await ver('properties', pid)], [v, v]);
+    check('empty set still logs both rows', await count('property_id = $1 and (field = $2 or note = $3)', pid, 'floorplan', 'called the agent'), 2);
+
+    // roles: team (role 'team' and the old 'shared' account) may only add notes
+    for (const who of ['teamrole', 'team']) {
+      const n0 = await count('property_id = $1', pid);
+      check(who + ': fact change refused', await sjErr(who, 'properties', pid, v, { core: { price: 9 } }, [{ field: 'price', new_value: 9 }]), 'not allowed');
+      check(who + ': stage refused', await sjErr(who, 'properties', pid, v, { stage: 'Archived' }, []), 'not allowed');
+      check(who + ': empty set with a field refused', await sjErr(who, 'properties', pid, v, {}, [{ field: 'price' }]), 'not allowed');
+      check(who + ': a field row hidden behind a note refused as a whole', await sjErr(who, 'properties', pid, v, {}, [{ note: 'x' }, { field: 'price' }]), 'not allowed');
+      // final review 5: a teammate's row is a note and nothing else
+      for (const [what, rows] of [['no note', [{ asked_by: 'x' }]], ['empty note', [{ note: '' }]], ['not an object', ['a note']], ['a number', [5]],
+        ['a null field', [{ note: 'x', field: null }]], ['old_value', [{ note: 'x', old_value: 1 }]], ['new_value', [{ note: 'x', new_value: 2 }]],
+        ['no_rebuild', [{ note: 'x', no_rebuild: true }]]])
+        check(who + ': note rows only, refused: ' + what, await sjErr(who, 'properties', pid, v, {}, rows), 'not allowed');
+      check(who + ': refusals wrote nothing', [await count('property_id = $1', pid), await ver('properties', pid)], [n0, v]);
+      check(who + ': note with a stale version ok', await sjErr(who, 'properties', pid, 1, {}, [{ note: 'x' }]), null);
+      check(who + ': note row written in their name', (await db.query(`select source, user_id from public.changes where property_id = $1 and note = 'x' and user_id = $2`, [pid, id[who]])).rows, [{ source: 'Matt', user_id: id[who] }]);
+    }
+    check('helper may not save facts', await sjErr('helper', 'properties', pid, v, { core: { price: 9 } }, []), 'not allowed');
+
+    // strangers and anon get nothing
+    const n1 = await count('property_id = $1', pid);
+    check('stranger refused', await sjErr('stranger', 'properties', pid, v, {}, [{ note: 'x' }]), 'not allowed');
+    check('stranger fact refused', await sjErr('stranger', 'properties', pid, v, { core: { price: 9 } }, []), 'not allowed');
+    check('stranger changed nothing', [await count('property_id = $1', pid), await ver('properties', pid)], [n1, v]);
+    check('anon changed nothing', [await fails('anon', `select public.save_job('properties', $1, $2, '{}', '[{"note":"x"}]')`, [pid, v]), await count('property_id = $1', pid)], [true, n1]);
+    // a switched-off member is a stranger
+    await db.query(`update public.members set active = false where role = 'team'`);
+    check('inactive member refused', await sjErr('teamrole', 'properties', pid, v, {}, [{ note: 'y' }]), 'not allowed');
+    await db.query(`update public.members set active = true where role = 'team'`);
+  }
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);
-  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, 3);
+  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0007' ? 5 : 3);
 
   /* ---------- run before the accounts exist: refuse rather than lock everyone out ---------- */
   if (fresh.length) {

@@ -21,6 +21,8 @@
      overviewStats(jobs)             → { live, contract, toLink, total, mismatches }
      taskFlags(jobs)                 → [{ job, href, text, market }]  (no "won or lost?", D32)
      recentChanges(changes, jobs, n) → [{ job, href, title, when, kind }]
+     changeTitle(change, nameOf?) → the change in words (stage, price, agents, photo picks,
+                           facts by label, milestones, floorplan versions, notes)
      syncHealth(lastDeRun, now)      → { state: 'ok'|'amber'|'red'|'never', text, why }   36 h
      asanaHealth(lastAsanaRun, now)  → the same for Asana, amber after 6 h
      statusRows(jobs)   → [{ market, rows: [{ name, href, stage, chip, lastMilestone,
@@ -294,13 +296,40 @@
     return out;
   }
 
-  function changeTitle(c) {
+  /* one change-log line in words, for the overview and the job page (S19).
+     nameOf(id) → an agent's name (default: roster.js's GVC_AGENT when loaded);
+     fact fields are named by their label in job-facts.js (GVC_FACTS.FIELDS). */
+  function factsApi() {
+    if (global && global.GVC_FACTS) return global.GVC_FACTS;
+    try { return typeof require === 'function' ? require('./job-facts.js') : null; } catch (e) { return null; }
+  }
+  function factWords(kind, v) {
+    if (v === null || v === undefined || v === '') return '';
+    if (kind === 'money') return money(v);
+    if (Array.isArray(v)) return v.join(', ');
+    return String(v);
+  }
+  function changeTitle(c, nameOf) {
+    nameOf = nameOf || function (id) { var a = global && global.GVC_AGENT && global.GVC_AGENT(id); return a ? a.name : null; };
+    var names = function (ids) { return (Array.isArray(ids) ? ids : []).map(function (id) { return nameOf(id) || 'Unknown agent (' + id + ')'; }).join(', '); };
     if (c.field === 'stage') return 'Stage moved to ' + c.new_value;
-    if (c.field === 'price') return 'Price ' + money(c.old_value) + ' → ' + money(c.new_value);
+    if (c.field === 'price' && c.old_value != null && c.new_value != null) return 'Price ' + money(c.old_value) + ' → ' + money(c.new_value);
     if (c.field === 'closePrice') return 'Closed at ' + money(c.new_value);
     if (c.field === 'folder_state' && c.new_value === 'broken') return 'Folder moved or renamed';
     if (c.field === 'drive_folder') return 'Folder linked';
     if (c.field === 'match' || c.field === 'milestones' || c.field === 'milestone_hints') return c.note || 'Changed';
+    if (c.field === 'agentIds') return (c.new_value && c.new_value.length) ? 'Agents: ' + names(c.new_value) : 'Agents cleared';
+    if (c.field === 'suggestedAgentIds') return (c.new_value && c.new_value.length) ? 'Asana suggests ' + names(c.new_value) : 'Asana suggests no agents';
+    if (c.field === 'photo_hero' || c.field === 'photo_order' || c.field === 'photos') return 'Photo picks saved';
+    if (c.field === 'floorplan') return 'Floorplan ' + (c.new_value && c.new_value.version ? 'v' + c.new_value.version + ' ' : 'version ') + 'recorded';
+    var F = c.field && factsApi(), f = F && F.FIELDS.filter(function (x) { return x.name === c.field; })[0];
+    if (f) {
+      var a = factWords(f.kind, c.old_value), b = factWords(f.kind, c.new_value);
+      if (f.kind === 'long' || f.kind === 'list') return b ? f.label + ' changed' : f.label + ' cleared';
+      if (!b) return f.label + ' cleared';
+      if (!a) return f.label + ' set to ' + b;
+      return f.label + ' ' + a + ' → ' + b;
+    }
     if (c.field) return c.field + ' changed';
     return c.note || 'Changed';
   }
@@ -441,5 +470,6 @@
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
-    chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable };
+    chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable,
+    changeTitle: changeTitle };
 });

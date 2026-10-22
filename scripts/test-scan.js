@@ -8,7 +8,7 @@
 'use strict';
 
 const fs = require('fs'), os = require('os'), path = require('path');
-const { scanFolder, mondayOf, scanAll } = require('../helper/scan.js');
+const { scanFolder, mondayOf, scanAll, treeOf } = require('../helper/scan.js');
 const { due } = require('../helper/schedule.js');
 
 let pass = 0;
@@ -128,6 +128,75 @@ function file(root, rel, date) {
   const w2 = writes2;
   await scanAll({ client: db2, driveRoot: root2, now: new Date('2026-10-22T02:00:00Z') });
   check('M18 scan: the same candidate again is not written again', writes2 - w2, 0);
+
+  /* ---------- S15: the folder link, pieces with links, health notes; paperwork never kept ---------- */
+  const root3 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-drive3-'));
+  const JF = 'GVC - New York/Building Information/9 Sample Pl/2A';
+  file(root3, JF + '/Floorplan/v1/plan.pdf', '2026-10-01');
+  for (let i = 1; i <= 7; i++) file(root3, JF + '/Floorplan/v2/plan ' + i + '.pdf', '2026-10-0' + i);
+  file(root3, JF + '/Floorplan/Archive/old plan.pdf', '2026-09-01');
+  file(root3, JF + '/Photos/Edited/a.jpg', '2026-10-05');
+  file(root3, JF + '/Photos/Raw/r1.cr2', '2026-10-05');
+  file(root3, JF + '/Showsheet 2A.pdf', '2026-10-06');                // a piece loose at the top
+  file(root3, JF + '/Details 2A.docx', '2026-10-02');
+  file(root3, JF + '/Exclusive - Jane Client.pdf', '2026-10-03');     // loose paperwork
+  file(root3, JF + '/Notes.txt', '2026-10-03');                       // loose, not a piece
+  file(root3, JF + '/Docs/Offer from Jane Client.pdf', '2026-10-03');
+  file(root3, JF + '/Marketing/Offer - Jane Client.pdf', '2026-10-03');
+  file(root3, JF + '/Marketing/Brochure/Brochure.pdf', '2026-10-04');
+  const tr = treeOf(path.join(root3, ...JF.split('/')), 4);
+  check('tree: Docs is one skipped line, loose files counted', [tr.children.filter(c => c.skipped).map(c => c.name), tr.looseCount, tr.otherCount], [['Docs'], 2, 0]);
+  check('tree: a piece loose at the top is named; paperwork and notes are not', tr.children.filter(c => c.kind === 'file').map(c => c.name).sort(), ['Details 2A.docx', 'Showsheet 2A.pdf']);
+  check('tree: nothing from paperwork anywhere', JSON.stringify(tr).includes('Jane Client'), false);
+  const raw = tr.children.find(c => c.name === 'Photos').children.find(c => c.name === 'Raw').children[0];
+  check('tree: raw photos are counted by name, not statted', raw, { name: 'r1.cr2', kind: 'file' });
+  /* final review 1: a paperwork folder below the top is never listed nor opened */
+  file(root3, JF + '/Marketing/Docs/Seller ID.pdf', '2026-10-03');
+  file(root3, JF + '/Photos/Dock photos/d1.jpg', '2026-10-03');
+  const opened = [], realReaddir = fs.readdirSync;
+  fs.readdirSync = function (p) { opened.push(String(p)); return realReaddir.apply(fs, arguments); };
+  let tr2;
+  try { tr2 = treeOf(path.join(root3, ...JF.split('/')), 4); } finally { fs.readdirSync = realReaddir; }
+  const mk = tr2.children.find(c => c.name === 'Marketing');
+  check('tree: Marketing/Docs is not listed', mk.children.map(c => c.name), ['Brochure']);
+  check('tree: Marketing/Docs is never opened', opened.some(p => /[\\/]Docs$/.test(p)), false);
+  check('tree: Seller ID never named', JSON.stringify(tr2).includes('Seller ID'), false);
+  check('tree: Dock photos is a folder like any other', tr2.children.find(c => c.name === 'Photos').children.map(c => c.name), ['Dock photos', 'Edited', 'Raw']);
+  const T3 = { properties: [
+    { id: 'p', slug: 'p', version: 1, stage: 'Live', market: 'NYC', drive_folder: JF, folder_state: 'linked',
+      scan: { candidate: 'GVC - New York/Somewhere', candidateAt: '2026-10-01T02:00:00Z', weeks: { old: 1 } } }
+  ], pitches: [], changes: [], sync_runs: [] };
+  const db3 = {
+    ready: () => true,
+    select: async t => JSON.parse(JSON.stringify(T3[t])),
+    insert: async (t, rows) => [].concat(rows).map((r, i) => { const x = Object.assign({ id: t + T3[t].length + i }, r); T3[t].push(x); return x; }),
+    update: async (t, m, patch) => { const r = T3[t].find(x => x.id === m.id); Object.assign(r, patch); return [r]; }
+  };
+  const before3 = tree(root3);
+  await scanAll({ client: db3, driveRoot: root3, now: new Date('2026-10-20T02:00:00Z') });
+  const sc = T3.properties[0].scan;
+  check('scan: found has the same pieces and dates the old scan found', [sc.found.floorplan, sc.found.photos, sc.found.showsheet || null, sc.found.brochure || null], ['2026-09-01', '2026-10-05', null, '2026-10-04']);
+  check('scan: candidate kept', [sc.candidate, sc.candidateAt], ['GVC - New York/Somewhere', '2026-10-01T02:00:00Z']);
+  check('scan: weeks and scannedAt', [typeof sc.weeks, sc.scannedAt], ['object', '2026-10-20T02:00:00.000Z']);
+  check('scan: no stream means no links, not an error', [sc.folderUrl, sc.pieces.floorplan.every(f => f.url === null)], [null, true]);
+  check('scan: newest 5 per piece, newest first', [sc.pieces.floorplan.length, sc.pieces.floorplan[0].name], [5, 'plan 7.pdf']);
+  check('scan: archived flag', sc.pieces.floorplan.filter(f => f.archived).length, 0);
+  check('scan: the loose showsheet is a piece and the health says so', [sc.pieces.showsheet.map(f => f.name), sc.health.notes.some(n => n.code === 'pieceAtTop')], [['Showsheet 2A.pdf'], true]);
+  check('scan: brochure under Marketing is found', (sc.pieces.brochure || []).map(f => f.name), ['Brochure.pdf']);
+  check('scan: details doc and counts', [sc.detailsDoc && sc.detailsDoc.name, sc.health.counts.looseTop, sc.health.counts.photos.raw], ['Details 2A.docx', 2, 1]);
+  check('scan: no paperwork name anywhere in what is stored', JSON.stringify(T3.properties[0].scan).includes('Jane Client'), false);
+  check('scan: Drive left exactly as it was', JSON.stringify(tree(root3)) === JSON.stringify(before3), true);
+  if (process.platform === 'win32') {
+    const ds = (p, id) => fs.writeFileSync(p + ':user.drive.id', id);
+    const jabs = path.join(root3, ...JF.split('/'));
+    ds(jabs, 'FOLDERID1234567');
+    ds(path.join(jabs, 'Floorplan', 'v2', 'plan 7.pdf'), 'FILEID1234567');
+    ds(path.join(jabs, 'Floorplan', 'v2', 'plan 6.pdf'), 'bad id');
+    await scanAll({ client: db3, driveRoot: root3, now: new Date('2026-10-21T02:00:00Z') });
+    const s2 = T3.properties[0].scan;
+    check('scan: folder and file links from the Drive ids', [s2.folderUrl, (s2.pieces.floorplan.find(f => f.name === 'plan 7.pdf') || {}).url, (s2.pieces.floorplan.find(f => f.name === 'plan 6.pdf') || {}).url],
+      ['https://drive.google.com/drive/folders/FOLDERID1234567', 'https://drive.google.com/file/d/FILEID1234567/view', null]);
+  }
 
   /* ---------- the schedule ---------- */
   const at = s2 => new Date(s2);   // local time strings

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Job · GVC Workspace</title>
-<meta name="description" content="One GVC job: its stage, Asana card, DE facts, Drive folder and change log.">
+<meta name="description" content="One GVC job: its facts, agents, stage, Asana card, Drive folder and change log.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
@@ -16,24 +16,30 @@
 <link rel="stylesheet" href="../../assets/css/workspace.css">
 <style>
 .hd{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin:10px 0 24px}
+.hd > div{min-width:0}
 .hd h1{font-size:40px;line-height:1.1;display:flex;gap:14px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere}
 .hd .sub{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:14px;color:var(--ink-soft)}
 .acts{display:flex;gap:10px;flex-wrap:wrap}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px}
 .facts .k{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
-.facts .v{font-family:var(--mono);font-size:20px;margin-top:6px;overflow-wrap:anywhere}
+.facts .v{font-family:var(--mono);font-size:20px;margin-top:6px;overflow-wrap:anywhere;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .facts .s{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
 .two{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start;margin-top:24px}
+.two > div{min-width:0}
+.one{margin-top:24px}
 .log{list-style:none;margin:0;padding:0}
-.log li{display:grid;grid-template-columns:14px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.log li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.log li > div{min-width:0;overflow-wrap:anywhere}
 .log li:last-child{border-bottom:0}
 .log .dt{width:8px;height:8px;border-radius:50%;background:var(--rule);margin-top:6px}
 .log .dt.de{background:var(--cyan)}
 .log .dt.m{background:var(--ink)}
 .log small{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
 .log .w{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.logf{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.logf #noteText{flex:1 1 200px}
+.logf select{flex:0 1 auto;max-width:100%}
 .path{font-family:var(--mono);font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere}
-.later{border-style:dashed;color:var(--ink-soft);font-size:13.5px}
 .steps-wrap{overflow-x:auto}
 .steps{min-width:640px}
 .ck-block{margin-top:14px}
@@ -50,6 +56,106 @@
 .as-mm h3{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
 .hint-b{display:flex;gap:6px}
 .hint-b .b{min-width:38px;justify-content:center}
+/* facts table (mockup .ft) */
+.ft{width:100%;border-collapse:collapse;table-layout:fixed}
+.ft th{text-align:left;vertical-align:top;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft);padding:11px 8px 9px 0;border-bottom:1px solid var(--rule);width:36%}
+.ft td{padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px;overflow-wrap:anywhere;min-width:0}
+.ft .fe{font:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:4px;overflow-wrap:anywhere;max-width:100%}
+.ft .fe:hover{text-decoration-color:var(--sky)}
+.ft .fe:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.fo{font-size:12.5px;color:var(--ink-soft);margin-top:3px}
+.fw{font-size:12.5px;color:var(--danger);margin-top:3px;display:flex;gap:6px;align-items:center}
+.fw svg,.aw-n svg{width:14px;height:14px;flex-shrink:0}
+.fed{margin-top:8px}
+.fed .inp{width:100%;display:block}
+.ftypo{display:flex;gap:6px;align-items:center;font-size:13px;margin-top:8px}
+.fbtn{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fmsg{font-size:13px;color:var(--danger);margin-top:6px;min-height:1.2em}
+.fmsg:empty{min-height:0;margin:0}
+details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 0 4px}
+/* agents */
+.agents{list-style:none;margin:0;padding:0}
+.agent{display:flex;align-items:center;gap:12px;padding:8px 0}
+.agent .ph{width:40px;height:40px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);object-fit:cover;flex-shrink:0}
+.agent .aw{flex:1;min-width:0;overflow-wrap:anywhere}
+.agent .an{font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.agent .at{font-size:13px;color:var(--ink-soft)}
+.agent .ab{display:flex;gap:4px}
+.asug{font-size:14.5px}
+.as{font-size:12.5px;margin-top:4px}
+.aw-n{font-size:13px;color:var(--danger);margin-top:8px;display:flex;gap:6px;align-items:flex-start}
+.awhy{list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;color:var(--ink-soft)}
+.apick{margin-top:12px}
+.apick .inp{width:100%}
+.aopts{list-style:none;margin:8px 0 0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+.apick button.link{background:none;border:0;padding:0;margin-top:8px;cursor:pointer}
+/* development ticks */
+.mr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.mtick{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mtick .inp{width:auto}
+/* Drive cards (mockup .kr, .fpm, .phg, .hl) */
+.scanl{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+.kit{display:flex;flex-direction:column;gap:10px}
+.kr{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px}
+.kr > div{min-width:0;overflow-wrap:anywhere}
+.kr .ic{width:44px;height:44px;border-radius:6px;background:var(--paper-2);display:flex;align-items:center;justify-content:center}
+.kr .ic svg{width:20px;height:20px}
+.kr.stale{border-color:var(--danger)}
+.kr.none{background:transparent;border-style:dashed}
+.kr .t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600;font-size:15px}
+.kr .d{font-size:13px;color:var(--ink-soft);margin-top:3px}
+.kr .kmm{color:var(--danger)}
+.kr .a{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.code{font-family:var(--mono);font-size:11px}
+.fpm{display:grid;grid-template-columns:110px repeat(3,minmax(0,1fr));gap:10px;align-items:center}
+.fpm .h{font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+.fpm .ver{font-family:var(--serif);font-size:17px;overflow-wrap:anywhere;min-width:0}
+.fpm .ver small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.fpm .old{opacity:.6}
+.th{aspect-ratio:11.25/8.75;border-radius:6px;background:var(--paper-2);position:relative;overflow:hidden;color:var(--ink);min-width:0}
+.th .tg{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10px;background:var(--paper);border-radius:3px;padding:1px 5px}
+.th .tn{position:absolute;left:6px;right:6px;top:6px;font-size:11px;overflow-wrap:anywhere;max-height:60%;overflow:hidden}
+.th.empty{background:transparent;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--ink-soft)}
+.fpalt{font-size:13px;margin-top:10px;overflow-wrap:anywhere}
+.fpform{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.fpform #fpNote{flex:1 1 220px}
+.fpform select{max-width:100%}
+.fpform .fbtn,.fpform .fmsg{flex-basis:100%}
+.phs{margin-bottom:12px}
+.phraw{font-size:13.5px;padding:6px 13px;color:var(--ink-soft)}
+.phg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.phg .pair{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0}
+.pt{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pt .pi{aspect-ratio:3/2;border-radius:5px;background:var(--paper-2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-soft);padding:4px;text-align:center}
+.pt .pi img{width:100%;height:100%;object-fit:cover}
+.pt .pi.pfail{color:var(--danger)}
+.pt.hero .pi{outline:2px solid var(--ink);outline-offset:1px}
+.pt .pn{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);overflow-wrap:anywhere}
+.pt .pb{display:flex;gap:4px;flex-wrap:wrap}
+#phPicks{margin-top:14px}
+.phh{font-size:14px;margin-bottom:6px}
+.picks{margin:0 0 6px;padding-left:22px;font-size:13.5px}
+.picks li{padding:4px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.picks .pn{overflow-wrap:anywhere;min-width:0}
+.picks .pa{display:flex;gap:4px;margin-left:auto}
+.hl{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper-2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:14px}
+.hl .x{display:flex;align-items:center;gap:10px;min-width:0;overflow-wrap:anywhere}
+.hl .x svg{width:16px;height:16px;flex-shrink:0}
+.hl .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.hl.warn .x svg{color:var(--danger)}
+.tree{margin-top:10px}
+.trd summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;padding:6px 0;font-size:14px;border-bottom:1px solid var(--rule)}
+.trd summary .x{overflow-wrap:anywhere;min-width:0}
+.trd summary .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.tri{padding-left:14px}
+.trf{list-style:none;margin:0;padding:2px 0 6px}
+.trf li{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0}
+.trf li span:first-child{overflow-wrap:anywhere;min-width:0}
+.trf .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.troff{font-size:13px;color:var(--ink-soft);opacity:.7;margin-top:8px}
+.docl{font-size:14px;overflow-wrap:anywhere}
+#docNow{font-size:13px;margin-top:6px;overflow-wrap:anywhere}
+@media (max-width:640px){ .fpm{grid-template-columns:64px repeat(3,minmax(0,1fr))} .kr{grid-template-columns:minmax(0,1fr)} .kr .ic{display:none} .kr .a{justify-content:flex-start} }
 @media (max-width:1100px){ .two{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:720px){ .hd h1{font-size:30px} }
 /* phone: the stages wrap into rows of three so every one stays in view (no hidden scroll) */
@@ -67,21 +173,39 @@
 <script src="../../assets/js/address-aliases.js"></script>
 <script src="../../assets/js/drive-rules.js"></script>
 <script src="../../assets/js/drive.js"></script>
+<script src="../../assets/js/job-facts.js"></script>
 <script src="../../assets/js/workspace-data.js"></script>
 <script src="../../assets/js/workspace-shell.js"></script>
 <script src="../../assets/js/folder-link.js"></script>
+<script src="../../assets/js/job-page/save.js"></script>
+<script src="../../assets/js/job-page/facts.js"></script>
+<script src="../../assets/js/job-page/agents.js"></script>
+<script src="../../assets/js/job-page/log.js"></script>
+<script src="../../assets/js/job-page/dev.js"></script>
+<!-- Drive cards: the folder tree and health, the marketing track, floorplans, photos, the details doc.
+     The details doc is read with the Showsheet's own reader (same pinned mammoth as tools/showsheet). -->
+<script async id="mammothJs" src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" integrity="sha384-/cXAMbzovUIKbBERjPmR3SnPTh8siWr5lsvFYj1Uq4XP0yaJUZJmsh0YXyGv5P0y" crossorigin="anonymous" onerror="this.dataset.failed='1'"></script>
+<script src="../../tools/showsheet/listing.js"></script>
+<script src="../../assets/js/details-doc.js"></script>
+<script src="../../assets/js/folder-health.js"></script>
+<script src="../../assets/js/kit-track.js"></script>
+<script src="../../assets/js/job-page/folder.js"></script>
+<script src="../../assets/js/job-page/kit.js"></script>
+<script src="../../assets/js/job-page/floorplans.js"></script>
+<script src="../../assets/js/job-page/photos.js"></script>
+<script src="../../assets/js/job-page/doc.js"></script>
 <script>
 (function () {
   'use strict';
-  var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
+  var P = window.GVC_PROPS, W = window.GVC_WS, F = window.GVC_FACTS, JP = window.GVC_JP, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   var q = new URLSearchParams(location.search);
   var kind = q.has('listing') ? 'listing' : q.has('pitch') ? 'pitch' : q.has('dev') ? 'dev' : null;
   var slug = kind ? q.get(kind) : '';
   var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
   var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
   var today = W.today();
-  var shell = GVC_SHELL.mount({ onDrive: function () { if (state.row) render(); } });
-  var state = { row: null, job: null, changes: [], won: null, helper: false };
+  var state = { row: null, job: null, changes: [], won: null, me: null, drive: null };
+  var shell = GVC_SHELL.mount({ onDrive: function (s) { var was = state.drive; state.drive = s; if (state.row && s !== was) render(); } });
 
   function rest(path) { return P.call('/rest/v1' + path); }
   function page(html) { $('page').innerHTML = html; }
@@ -89,18 +213,26 @@
     page('<div class="card empty" style="margin-top:20px"><b>No job called "' + esc(slug || '(none)') + '"</b>It may have been renamed or never existed. <a class="link" href="../">Back to the overview</a></div>');
   }
 
+  /* who may edit (D87): the owner account; anyone else on the team may add a note */
+  function who() {
+    return P.whoAmI().then(function (me) { return me || { role: null }; }, function () { return { role: null }; });
+  }
+
   function load() {
     if (!TABLE || !slug) return Promise.resolve(missing());
     return rest('/' + TABLE + '?slug=eq.' + encodeURIComponent(slug) + '&select=*').then(function (rows) {
       var row = rows && rows[0];
       if (!row) return missing();
-      state.row = row;
       return Promise.all([
         rest('/changes?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=at.desc&limit=500'),
         kind === 'listing' ? rest('/pitches?won_property_id=eq.' + encodeURIComponent(row.id) + '&select=*') : Promise.resolve([]),
-        kind === 'pitch' && row.won_property_id ? rest('/properties?id=eq.' + encodeURIComponent(row.won_property_id) + '&select=slug,label,core') : Promise.resolve([])
+        kind === 'pitch' && row.won_property_id ? rest('/properties?id=eq.' + encodeURIComponent(row.won_property_id) + '&select=slug,label,core') : Promise.resolve([]),
+        who()
       ]).then(function (r) {
-        state.changes = r[0] || [];
+        state.row = row;
+        state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
+        state.me = r[3];
+        JP.canEdit = state.me.role === 'owner';
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
         if (kind === 'listing') { data.properties = [row]; data.pitches = r[1] || []; }
         if (kind === 'pitch') data.pitches = [Object.assign({}, row, { won_property_id: null })];   // show the pitch itself even when won
@@ -116,95 +248,49 @@
       page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
     });
   }
+  JP.reload = load;
+  JP.redraw = function () { if (state.row) render(); };
 
-  function fact(k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">Not set</span>') + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; }
+  function ctx() {
+    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc };
+  }
 
-  function facts() {
+  function tile(k, v, s, badge) {
+    return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">Not set</span>') + (badge ? ' <span class="chip de">' + esc(badge) + '</span>' : '') + '</div>' +
+      (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
+  }
+
+  /* the tiles across the top: what the job shows (facts card below), else DE's own */
+  function tiles() {
     var r = state.row, j = state.job;
-    if (kind === 'dev') {
-      var ms = r.milestones || {}, nx = [];
-      if (j.next) nx.push('<span class="dmk planned' + (j.next.overdue ? ' over' : '') + '">' + esc('Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) : '') + (j.next.overdue ? ' (overdue)' : '')) + '</span>');
-      if (j.slips) nx.push('<span>' + esc('Milestones re-dated ' + j.slips + ' time' + (j.slips === 1 ? '' : 's')) + '</span>');
-      if (j.construction) nx.push('<span>' + esc('Construction ' + j.construction.done + ' of ' + j.construction.total) + '</span>');
-      return '<div class="card"><div class="card-h"><div><h2>Milestones</h2><p>Confirmed by Matt. What Asana suggests waits below until it is confirmed.</p></div>' +
-        (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div>' +
-        '<div class="dates" id="devNext" style="margin:0 0 10px">' + (nx.join('') || '<span>No next milestone yet.</span>') + '</div>' +
-        (j.construction ? '<div class="cons" style="margin-bottom:12px"><i style="width:' + (j.construction.done / j.construction.total * 100) + '%"></i></div>' : '') +
-        '<ul class="log" id="msList">' + W.DEV_KEYS.map(function (k) {
-          var x = ms[k] || {};
-          var w = x.on ? W.fmtDay(x.on) + (x.done ? '' : ' (planned)') : x.done ? 'done' : '';
-          return '<li><span class="dt' + (x.done ? ' m' : '') + '"></span><div>' + esc(W.DEV_LABEL[k]) + (x.asanaGid ? '<small>Confirmed from Asana' + (x.confirmedBy ? ' by ' + esc(x.confirmedBy) : '') + '</small>' : '') + '</div><span class="w">' + esc(w) + '</span></li>';
-        }).join('') + '</ul></div>' + hintsCard();
-    }
+    if (kind === 'dev') return JP.dev.html(ctx());
     if (kind === 'pitch') {
-      return '<div class="card"><div class="facts">' + fact('Pitched', r.pitched_on ? W.fmtDay(r.pitched_on) + ' ' + r.pitched_on.slice(0, 4) : '') +
-        fact('Outcome', r.outcome === 'won' ? 'Won' : r.outcome === 'not won' ? 'Not won' : 'Open') + fact('Market', r.market) + '</div>' +
+      return '<div class="card"><div class="card-h"><div><h2>Pitch</h2><p>The pitch date and outcome come from Asana. Change them there.</p></div>' +
+        (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div><div class="facts">' +
+        tile('Pitched', r.pitched_on ? W.fmtDay(r.pitched_on) + ' ' + r.pitched_on.slice(0, 4) : '') +
+        tile('Outcome', r.outcome === 'won' ? 'Won' : r.outcome === 'not won' ? 'Not won' : 'Open') + tile('Market', r.market) + '</div>' +
         (state.won ? '<p style="margin-top:16px">Became the listing <a class="link" href="?listing=' + encodeURIComponent(state.won.slug) + '">' + esc(state.won.label) + '</a>.</p>' : '') + '</div>';
     }
-    var core = r.core || {}, de = r.de || {};
-    var src = function (k) { return de[k] != null ? 'from DE' : core[k] != null ? 'on the job' : ''; };
-    var agents = (core.agentIds || []).map(function (id) { var a = window.GVC_AGENT && GVC_AGENT(id); return a ? a.name : null; }).filter(Boolean);
-    return '<div class="card"><div class="card-h"><div><h2>Facts</h2><p>DE wins where it has a value, unless you typed a newer one; then a warning shows until DE changes. Editing facts arrives in Slice 3.</p></div></div><div class="facts">' +
-      fact(r.kind === 'rental' ? 'Rent' : 'Price', j.price, src('price')) +
-      fact('Beds · baths', j.rooms, (de.halfBaths ? de.halfBaths + ' half' : '') ) +
-      fact('Sq ft', (de.sqft || core.sqft) ? Number(de.sqft || core.sqft).toLocaleString('en-US') + ' approx.' : '', src('sqft')) +
-      fact('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
-      fact('Neighbourhood', core.neighborhood || core.city || '') +
-      fact('Agents', agents.join(', '), agents.length ? '' : 'picked in Slice 3') +
+    var de = r.de || {}, by = {};
+    F.shown(r.core || {}, r).forEach(function (f) { by[f.name] = f; });
+    var pick = function (name) {
+      var f = by[name];
+      if (f && f.value !== null && f.value !== undefined && f.value !== '') return { v: f.value, badge: f.badge, warn: f.warn };
+      return de[name] != null ? { v: de[name], badge: 'DE' } : { v: null };
+    };
+    var money = r.kind === 'rental' ? pick('rent').v != null ? pick('rent') : pick('price') : pick('price');
+    var beds = pick('beds'), baths = pick('baths'), half = pick('halfBaths'), sqft = pick('sqft');
+    var warn = money.warn ? money.warn.source + ' says ' + W.money(money.warn.value) : '';
+    return '<div class="card"><div class="facts">' +
+      tile(r.kind === 'rental' ? 'Rent' : 'Price', money.v != null ? W.money(money.v) + (r.kind === 'rental' ? '/mo' : '') : '', warn, money.badge) +
+      tile('Beds · baths', beds.v != null && baths.v != null ? beds.v + ' bd · ' + baths.v + ' ba' : '', half.v ? half.v + ' half' : '', beds.badge) +
+      tile('Sq ft', sqft.v != null ? Number(sqft.v).toLocaleString('en-US') + ' approx.' : '', '', sqft.badge) +
+      tile('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
+      tile('Neighbourhood', (r.core || {}).neighborhood || (r.core || {}).city || '') +
       '</div></div>';
   }
 
-  /* S13: Asana's suggestions for a development, each confirmed or turned down by hand */
-  function hintsCard() {
-    var hs = state.row.milestone_hints || [];
-    if (!hs.length) return '';
-    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Suggested from Asana</h2><p>' + hs.length + ' milestone' + (hs.length === 1 ? '' : 's') + ' to review. ✓ makes it a milestone with this date; ✗ turns it down and Asana won\'t suggest it again.</p></div></div>' +
-      '<p id="hintMsg" role="alert" style="color:var(--danger);font-size:13px;min-height:1.2em;margin:0 0 6px"></p><ul class="log" id="hints">' + hs.map(function (h, i) {
-        return '<li style="grid-template-columns:14px 1fr auto"><span class="dt"></span><div>' + esc(W.DEV_LABEL[h.key] || h.key) + ', ' + (h.approx ? 'about ' : '') + esc(W.fmtDay(h.date) + ' ' + String(h.date || '').slice(0, 4)) +
-          '<small>' + esc(h.source || 'Asana') + '</small></div><span class="hint-b"><button class="b sm" type="button" data-ok="' + i + '" aria-label="Confirm ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✓</button>' +
-          '<button class="b sm" type="button" data-no="' + i + '" aria-label="Turn down ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✗</button></span></li>';
-      }).join('') + '</ul></div>';
-  }
-  var hintBusy = false;
-  function saveHint(i, ok) {
-    var r = state.row, hs = r.milestone_hints || [], h = hs[i];
-    if (!h || hintBusy) return;
-    hintBusy = true;
-    document.querySelectorAll('#hints button').forEach(function (b) { b.disabled = true; });
-    var msg = $('hintMsg'); msg.textContent = 'Saving…';
-    var label = W.DEV_LABEL[h.key] || h.key;
-    var clone = function (x) { return JSON.parse(JSON.stringify(x || {})); };
-    P.whoAmI().catch(function () { return { name: 'Matt' }; }).then(function (me) {
-      var map = clone(r.asana_map), patch = { milestone_hints: hs.filter(function (x, k) { return k !== i; }) };
-      var gid = h.asanaGid || null, add = function (list) { list = list || []; return gid && list.indexOf(gid) === -1 ? list.concat([gid]) : list; };
-      if (ok) {
-        var ms = clone(r.milestones);
-        ms[h.key] = { done: true, on: h.date, approx: !!h.approx, asanaGid: gid, source: h.source || null, confirmedBy: me.name, confirmedAt: new Date().toISOString() };
-        patch.milestones = ms;
-        map[h.key] = add(map[h.key]);
-      } else {
-        map.dismissed = map.dismissed || {};
-        map.dismissed[h.key] = add(map.dismissed[h.key]);
-      }
-      patch.asana_map = map;
-      return P.call('/rest/v1/dev_projects?id=eq.' + encodeURIComponent(r.id) + '&version=eq.' + encodeURIComponent(r.version), {
-        method: 'PATCH', prefer: 'return=representation', body: JSON.stringify(patch)
-      }).then(function (rows) {
-        if (!rows || !rows.length) throw new Error('Someone changed this development meanwhile. Reload the page and try again.');
-        var c = ok ? { dev_project_id: r.id, field: 'milestones', old_value: (r.milestones || {})[h.key] || null, new_value: patch.milestones[h.key], note: label + ' confirmed from Asana: ' + W.fmtDay(h.date) + '.' }
-          : { dev_project_id: r.id, field: 'milestone_hints', old_value: h, new_value: null, note: 'Asana\'s suggestion for ' + label + ' turned down.' };
-        c.source = 'Matt';
-        return P.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify(c) }).then(function () { hintBusy = false; return load(); }, function (e) {
-          hintBusy = false; load().then(function () { if ($('hintMsg')) $('hintMsg').textContent = 'Saved, but the change log didn\'t save (' + e.message + ').'; });
-        });
-      });
-    }).catch(function (e) {
-      hintBusy = false; msg.textContent = e.message;
-      document.querySelectorAll('#hints button').forEach(function (b) { b.disabled = false; });
-    });
-  }
-
-  /* the read-only Asana card on a listing (spec §7) */
+  /* the read-only Asana card on a listing (Slice 2, spec §7) */
   var BLOCK = { prep: 'Prep', 'price change': 'Price change', contract: 'Contract', 'post-closing': 'Post-closing' };
   function asanaCard() {
     var r = state.row, j = state.job, a = r.asana;
@@ -236,7 +322,7 @@
   function steps() {
     var j = state.job;
     if (kind === 'dev') return '';
-    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2><p>Any stage can be skipped</p></div></div><div class="steps-wrap"><div class="steps">' +
+    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2><p>Asana\'s stage. Any stage can be skipped</p></div></div><div class="steps-wrap"><div class="steps">' +
       j.steps.map(function (s, i) {
         var cls = i === j.stageIdx ? 'cur' : (j.done[s] || (s === 'Pitch' && j.pitchedOn)) ? 'done' : i < j.stageIdx ? 'skip' : '';
         var d = s === 'Pitch' ? (j.pitchedOn || j.done.Pitch) : j.done[s];
@@ -244,53 +330,69 @@
       }).join('') + '</div></div></div>';
   }
 
-  function log() {
-    var items = state.changes.map(function (c) {
-      var t = c.field === 'stage' ? 'Stage moved to ' + c.new_value : c.field === 'price' ? 'Price ' + W.money(c.old_value) + ' → ' + W.money(c.new_value)
-        : c.field === 'drive_folder' ? 'Folder linked' : c.field === 'folder_state' ? (c.new_value === 'broken' ? 'Folder moved or renamed' : 'Folder found again')
-        : c.field ? c.field + ': ' + JSON.stringify(c.old_value) + ' → ' + JSON.stringify(c.new_value) : (c.note || 'Changed');
-      var cls = c.source === 'DE' ? 'de' : c.source === 'Matt' ? 'm' : '';
-      return '<li><span class="dt ' + cls + '"></span><div>' + esc(t) + (c.note && c.field ? '<small>' + esc(c.note) + '</small>' : '') + '</div><span class="w">' + esc(W.fmtDay(c.at) + ' · ' + c.source) + '</span></li>';
-    });
-    return '<div class="card"><div class="card-h"><div><h2>Change log</h2><p>Newest first. Logging a change by hand arrives in Slice 3.</p></div></div>' +
-      (items.length ? '<ul class="log" id="changeLog">' + items.join('') + '</ul>' : '<p class="soft">Nothing logged yet.</p>') + '</div>';
-  }
+  /* S8: the only stage button. Unarchive goes back to the stage Asana shows now. */
+  function unarchiveTo() { var a = state.row.asana || {}; return a.stageFromStatus || a.stageFromSection || 'Prep'; }
+
+  /* S13: the folder's Drive link, from the helper, else last night's scan, else the G: path (GVC_JP.drive) */
+  function gPath() { return JP.drive.gPath(state.row); }
 
   function render() {
-    var r = state.row, j = state.job;
+    var r = state.row, j = state.job, c = ctx();
     document.title = j.name + ' · GVC Workspace';
     $('crumb').innerHTML = '<a href="../jobs/">Jobs</a><span>/</span><span>' + esc({ listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
     var sub = ['<span class="chip">' + esc(j.market || '?') + '</span>'];
     if (j.place) sub.push(esc(j.place));
     if (j.pitchedOn && kind !== 'pitch') sub.push('Pitched ' + esc(W.fmtDay(j.pitchedOn)));
     var link = r.folder_state === 'linked' ? 'Change folder' : r.folder_state === 'broken' ? 'Relink folder' : 'Link folder';
+    var archived = r.stage === 'Archived';
     var acts = '<div class="acts">' +
       '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
+      '<button class="b" type="button" id="copyLink"' + (r.drive_folder ? '' : ' disabled') + '>' + I('link') + 'Copy Drive link</button>' +
       '<button class="b" type="button" id="copy"' + (r.drive_folder ? '' : ' disabled') + '>' + I('copy') + 'Copy folder path</button>' +
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
-      '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button></div>';
+      (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
+      (kind === 'listing' && JP.canEdit ? '<button class="b" type="button" id="archive">' + esc(archived ? 'Unarchive (back to ' + unarchiveTo() + ')' : 'Archive') + '</button>' : '') +
+      (JP.canEdit ? '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button>' : '') + '</div>';
+    var right = [], left = [];
+    if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c) + '</div>', '<div id="fpHost">' + JP.floorplans.html(c) + '</div>',
+      '<div id="photosHost">' + JP.photos.html(c) + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
+    left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
+    if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
+    if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
+    if (kind !== 'dev') right.push('<div id="folderHost">' + JP.folder.html(c) + '</div>');
+    if (kind === 'listing') right.push(asanaCard());
     page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' +
-      '<div class="path" style="margin-top:8px">' + (r.drive_folder ? 'G:\\Shared drives\\' + esc(r.drive_folder.split('/').join('\\')) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
+      '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
-      facts() + steps() +
-      '<div class="two"><div>' + log() + '</div><div class="stack">' + (kind === 'listing' ? asanaCard() : '') +
-      '<div class="card later"><b style="font-family:var(--serif);font-weight:400;font-size:20px;color:var(--ink)">Kit, floorplans, photos</b><p style="margin-top:6px">The pieces made for this job, floorplan versions and photo picks arrive in Slice 3.</p></div></div></div>');
-    if ($('hints')) $('hints').addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      if (b.dataset.ok != null) saveHint(+b.dataset.ok, true); else if (b.dataset.no != null) saveHint(+b.dataset.no, false);
+      '<div id="topHost">' + tiles() + '</div>' + steps() +
+      '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
+    if (kind === 'dev') JP.dev.wire($('topHost'), c);
+    if ($('factsHost')) JP.facts.wire($('factsHost'), c);
+    if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);
+    JP.log.wire($('logHost'), c);
+    // the Drive cards: each reads on its own and fails on its own, never blocking the rest
+    [['kitHost', 'kit'], ['fpHost', 'floorplans'], ['photosHost', 'photos'], ['docHost', 'doc'], ['folderHost', 'folder']].forEach(function (x) {
+      if ($(x[0])) JP[x[1]].wire($(x[0]), c);
     });
 
     $('open').addEventListener('click', function () {
       GVC_SHELL.helper('POST', '/open-folder', { folder: r.drive_folder }).then(function (x) { $('actMsg').textContent = x.ok ? 'Opened in File Explorer.' : (x.error || 'Couldn\'t open it.'); },
         function (e) { $('actMsg').textContent = e.message + ' Use Copy folder path instead.'; });
     });
-    $('copy').addEventListener('click', function () {
-      var p = 'G:\\Shared drives\\' + r.drive_folder.split('/').join('\\');
-      (navigator.clipboard ? navigator.clipboard.writeText(p) : Promise.reject()).then(function () { $('actMsg').textContent = 'Copied: paste it into File Explorer\'s address bar.'; },
-        function () { $('actMsg').textContent = p; });
-    });
-    $('link').addEventListener('click', function () {
+    $('copy').addEventListener('click', function () { JP.drive.copy(gPath(), 'Copied: paste it into File Explorer\'s address bar.', $('actMsg')); });
+    $('copyLink').addEventListener('click', function () { JP.drive.copyLink(r, null, null, $('actMsg')); });
+    if ($('link')) $('link').addEventListener('click', function () {
       GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
+    });
+    if ($('archive')) $('archive').addEventListener('click', function () {
+      var b = $('archive'), to = archived ? unarchiveTo() : 'Archived';
+      b.disabled = true; $('actMsg').textContent = 'Saving…';
+      JP.save('properties', r, { stage: to }, [{ field: 'stage', old_value: r.stage, new_value: to }]).then(function () {
+        return load().then(function () { $('actMsg').textContent = to === 'Archived' ? 'Archived. The Asana sync won\'t move it.' : 'Back on ' + to + ', the stage Asana shows.'; });
+      }, function (e) {
+        if ($('actMsg')) $('actMsg').textContent = e.message;
+        if (!e.conflict && $('archive')) $('archive').disabled = false;
+      });
     });
   }
 

@@ -159,6 +159,21 @@ m8 = has(M.check(job({ asana: { checklist: openSheet }, scan: { found: { floorpl
 check('M8: showsheet in the folder 8 days, step open', m8.map(m => m.text), ['Showsheet in the folder since 12 Oct; Create Show Sheet is still open in Asana.']);
 check('M8: 7 days → grace', has(M.check(job({ asana: { checklist: openSheet }, scan: { found: { floorplan: '2026-08-19', showsheet: '2026-10-13' } } }), ctx()), 'M8').length, 0);
 check('M8: no scan → nothing', has(M.check(job({ scan: null }), ctx()), 'M8').length, 0);
+const KIT = require('../assets/js/kit-track.js');
+check('M8: step patterns come from GVC_KIT.STEPS', KIT.STEPS.pieces.map(p => p[0]), ['showsheet', 'floorplan', 'photos', 'postcard']);
+const withPostcard = { block: 'prep', steps: [{ name: 'Just Listed Postcard', done: true, doneOn: '2026-09-03', who: null }] };
+const baseSteps = job().asana.checklist;
+const nightly = pieces => job({ asana: { checklist: baseSteps.concat([withPostcard]) }, scan: { found: { floorplan: '2026-08-19', showsheet: '2026-08-24' }, pieces } });
+check('M8: postcard ticked, nightly scan has no postcard file → fires',
+  has(M.check(nightly({ floorplan: [{ name: 'fp.pdf', modified: '2026-08-19', archived: false }], showsheet: [{ name: 'ss.pdf', modified: '2026-08-24', archived: false }] }), ctx()), 'M8').map(m => [m.key, m.fixAt]),
+  [['M8:postcard', 'Drive']]);
+check('M8: postcard ticked and a postcard file → nothing',
+  has(M.check(nightly({ postcard: [{ name: 'pc.pdf', modified: '2026-09-03', archived: false }] }), ctx()), 'M8').length, 0);
+check('M8: postcard file 8 days old, step open, nightly scan → fires',
+  has(M.check(job({ asana: { checklist: [{ block: 'prep', steps: [{ name: 'Just Listed Postcard', done: false }] }] },
+    scan: { found: {}, pieces: { postcard: [{ name: 'pc.pdf', modified: '2026-10-12', archived: false }] } } }), ctx()), 'M8').map(m => [m.key, m.fixAt]),
+  [['M8:postcard', 'Asana']]);
+check('M8: old scan (list of pieces) never checks the postcard', has(M.check(job({ asana: { checklist: baseSteps.concat([withPostcard]) }, scan: { found: { floorplan: '2026-08-19', showsheet: '2026-08-24' }, pieces: ['floorplan', 'showsheet'] } }), ctx()), 'M8').length, 0);
 
 /* ---------- M9: exclusive expired while Live ---------- */
 check('M9: expired', has(M.check(job({ milestones: { listedOn: { on: '2026-09-01', planned: false }, exclusiveExpiresOn: { on: '2026-10-01', planned: false } } }), ctx()), 'M9')
@@ -180,6 +195,15 @@ check('M11: Point Person names one confirmed and one other → fires',
   has(M.check(job({ core: { agentIds: ['agent-one'] }, asana: { pointPerson: 'AE/BS', fields: Object.assign({}, job().asana.fields, { '🧑‍💼 Point Person': 'AE/BS' }) } }), ctx()), 'M11').length, 1);
 check('M11: no confirmed agents yet → nothing', has(M.check(job({ core: { agentIds: null } }), ctx()), 'M11').length, 0);
 check('M11: ambiguous initials → nothing', has(M.check(job({ asana: { pointPerson: 'QQ' } }), ctx()), 'M11').length, 0);
+const conf1 = from => ({ agentsConfirmed: { from, on: '2026-10-01', by: 'matt' } });
+check('M11: confirmed from the current suggestion, other agents confirmed → nothing',
+  has(M.check(job({ core: Object.assign({ agentIds: ['agent-two'] }, conf1(['agent-one'])) }), ctx()), 'M11').length, 0);
+const m11c = has(M.check(job({ core: Object.assign({ agentIds: ['agent-two'] }, conf1(['agent-two'])) }), ctx()), 'M11');
+check('M11: the suggestion changed since the confirmation → fires at Asana', m11c.map(m => [m.fixAt, m.values.asana, m.values.confirmedFrom]), [['Asana', ['agent-one'], ['agent-two']]]);
+check('M11: text names Point Person and confirmed agents', m11c[0] && m11c[0].text,
+  "Asana's Point Person is now AE (Ann Example); the confirmed agents are Ben Sample. Check the listing's agents.");
+check('M11: confirmed, same set in another order → nothing',
+  has(M.check(job({ asana: { pointPerson: 'AE/BS', fields: Object.assign({}, job().asana.fields, { '🧑‍💼 Point Person': 'AE/BS' }) }, core: Object.assign({ agentIds: ['agent-one'] }, conf1(['agent-two', 'agent-one'])) }), ctx()), 'M11').length, 0);
 
 /* ---------- M12: development milestone open > 14 days past due ---------- */
 const dev = { id: 'dev1', label: 'Example Dev', asana_project_gid: '1210000000000001', next_milestone: { early: [] } };

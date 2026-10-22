@@ -220,7 +220,8 @@
         id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '',
         name: au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing'), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
-        rooms: [beds != null ? beds + ' bd' : '', baths != null ? baths + ' ba' : ''].filter(Boolean).join(' · '),   // whatever is known place: core.neighborhood || core.city || '',
+        rooms: [beds != null ? beds + ' bd' : '', baths != null ? baths + ' ba' : ''].filter(Boolean).join(' · '),   // whatever is known
+        place: core.neighborhood || core.city || '',
         deStatus: p.de_status || de.status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
         folder: p.drive_folder || null, folderState: p.folder_state, pitchedOn: pitch ? pitch.pitched_on : null,
         steps: steps, stageIdx: steps.indexOf(p.stage === 'Rented' && steps.indexOf('Rented') === -1 ? 'Sold' : p.stage), done: done, bars: bars, ticks: ticks,

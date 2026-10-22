@@ -324,6 +324,10 @@ check('rooms: beds unknown still shows the baths', roomsOf({ baths: 2 }), '2 ba'
 check('rooms: a studio is 0 bd', roomsOf({ beds: 0, baths: 1 }), '0 bd · 1 ba');
 check('rooms: nothing known', roomsOf({}), '');
 
+/* ---------- the place line (neighborhood, else city) is back on listings (lost on 2026-10-22, 7169fc1) ---------- */
+check('place: a listing shows its neighborhood', J('p1').place, 'Carnegie Hill');
+check('place: else its city', (W.buildJobs({ properties: [{ id: 'pl', slug: 'pl', stage: 'Prep', market: 'NJ', core: { address: '3 Crosby Ln', city: 'Port Monmouth' } }], pitches: [], devProjects: [], changes: [] }, TODAY)[0] || {}).place, 'Port Monmouth');
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

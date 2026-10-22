@@ -266,7 +266,7 @@ async function syncOnce(opts) {
       browser = await chromium.launch(); page = await browser.newPage();
     }
   };
-  const pageFacts = opts.pageFacts || (async (row, propertyType) => {
+  const pageFacts = opts.pageFacts || (opts.courtesy ? async () => null : async (row, propertyType) => {
     if (!row.listingUrl) return null;
     await lazyPage();
     try { return await require('./de/page-facts.js').readPageFacts(page, row, propertyType); }

@@ -302,12 +302,15 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
     const PF = require('../helper/de/page-facts.js'), fsx = require('fs'), pathx = require('path');
     const fx = n => fsx.readFileSync(pathx.join(__dirname, '..', 'helper', 'fixtures', 'synthetic', n), 'utf8');
     check('page facts: condo page, co-op type', PF.parsePageFacts(fx('de-page-condo.txt'), 'Co-op'),
-      { taxesMonthly: 1234, maintenance: 2345, yearBuilt: 1987, mlsId: 'TEST12345' });
+      { taxesMonthly: 1234, maintenance: 2345, yearBuilt: 1987, mlsId: '12345678' });
     check('page facts: condo type reads common charges; text after SIMILAR LISTINGS ignored', PF.parsePageFacts(fx('de-page-condo.txt'), 'Condo'),
-      { taxesMonthly: 1234, commonCharges: 2345, yearBuilt: 1987, mlsId: 'TEST12345' });
+      { taxesMonthly: 1234, commonCharges: 2345, yearBuilt: 1987, mlsId: '12345678' });
     check('page facts: house page has a lot size in DE\'s words', PF.parsePageFacts(fx('de-page-house.txt'), ['Single family']),
-      { taxesMonthly: 1234, commonCharges: 150, lotSize: '0.35 acres', yearBuilt: 1962, mlsId: 'NJ777' });
+      { taxesMonthly: 1234, commonCharges: 150, lotSize: '0.35 Acres', yearBuilt: 1962, mlsId: 'R7770001' });
     check('page facts: labels in any case, colon optional', PF.parsePageFacts('monthly tax $99 LOT SIZE 2 acres', 'Condo'), { taxesMonthly: 99, lotSize: '2 acres' });
+    check('page facts: no lot on the page, home Sq Ft never a lot, alphanumeric id', PF.parsePageFacts(fx('de-page-nolot.txt'), 'Single family'), { commonCharges: 700, yearBuilt: 2025, mlsId: 'R1115' });
+    check('page facts: Sq Ft lot', PF.parsePageFacts('DETAILS 2,000 Sq Ft Single Family 7,500 Sq Ft Lot Built in 2001', 'Single family'), { lotSize: '7,500 Sq Ft', yearBuilt: 2001 });
+    check('page facts: label-first lot size still read', PF.parsePageFacts('Lot Size: 0.5 acres.', 'Condo'), { lotSize: '0.5 acres' });
     check('page facts: nothing to read', PF.parsePageFacts('hello', 'Condo'), {});
     const T0 = new Date('2026-10-20T07:00:00Z'), job = (de) => ({ de });
     check('needsPage: never read', PF.needsPage(job({}), { price: 5 }, T0), true);
@@ -326,7 +329,7 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
     let d = mk({ maintenance: 1800, facts: { maintenance: { value: 1800, source: 'doc', bySource: { doc: 1800 } } } });
     await run(d, page);
     let c = d.T.properties[0].core;
-    check('apply: DE page replaces the doc value', [c.maintenance, c.facts.maintenance.source, c.taxesMonthly, c.yearBuilt, c.mlsId, c.commonCharges], [2345, 'DE', 1234, 1987, 'TEST12345', undefined]);
+    check('apply: DE page replaces the doc value', [c.maintenance, c.facts.maintenance.source, c.taxesMonthly, c.yearBuilt, c.mlsId, c.commonCharges], [2345, 'DE', 1234, 1987, '12345678', undefined]);
     check('apply: each page change logged as DE', d.T.changes.filter(x => x.source === 'DE' && ['maintenance', 'taxesMonthly', 'yearBuilt', 'mlsId'].includes(x.field)).length, 4);
     check('apply: stamp kept in the snapshot', [d.T.properties[0].de.pageFactsAt, d.T.properties[0].de.pageFactsPrice], [NOW.toISOString(), 1000000]);
 

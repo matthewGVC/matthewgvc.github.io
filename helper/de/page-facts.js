@@ -10,8 +10,10 @@
      needsPage(job, deRow, now) → true when the page was never read, the price
        changed since it was read, or it was read 7 or more days ago.
      await readPageFacts(page, row, propertyType)  opens row.listingUrl.
-   Labels (case-insensitive, colon optional): Monthly Tax, Monthly
-   Maintenance/CC, Lot Size, Year Built, MLS/Listing ID.
+   The page's DETAILS block puts the value before the label ("3,369 Sq Ft Condo
+   $6,428 Monthly Maintenance/CC $5,588 Monthly Tax Built in 2007 MLS/Listing ID
+   23748057"); the label-first forms are a fallback. Lot size: "<x> Acres Lot",
+   "<x> Sq Ft Lot" or "Lot Size <x>".
    ============================================================ */
 'use strict';
 
@@ -20,11 +22,22 @@ const { subjectOf } = require('./courtesy.js');
 const PAGE_FACTS = ['taxesMonthly', 'maintenance', 'commonCharges', 'lotSize', 'yearBuilt', 'mlsId'];
 const WEEK = 7 * 24 * 3600 * 1000;
 
+/* The real page writes the value first ("$5,588 Monthly Tax"); "Monthly Tax: $5,588" is kept as a fallback. */
 function money(subject, label) {
-  const m = new RegExp(label + ':?\\s*\\$\\s*([\\d,]+(?:\\.\\d+)?)', 'i').exec(subject);
+  const m = new RegExp('\\$\\s*([\\d,]+(?:\\.\\d+)?)\\s+' + label + '\\b', 'i').exec(subject)
+    || new RegExp(label + ':?\\s*\\$\\s*([\\d,]+(?:\\.\\d+)?)', 'i').exec(subject);
   if (!m) return null;
   const n = Number(m[1].replace(/,/g, ''));
   return isFinite(n) ? n : null;
+}
+
+const LOT_NUM = '(\\d[\\d,]*(?:\\.\\d+)?)';
+function lotSize(subject) {
+  // "0.35 Acres Lot", "7,500 Sq Ft Lot" (value first), then "Lot Size 0.35 acres"; the home's own "3,369 Sq Ft" is never a lot
+  let m = new RegExp(LOT_NUM + '\\s*(acres?|sq\\.?\\s*ft\\.?)\\s+Lot\\b', 'i').exec(subject);
+  if (m) return (m[1] + ' ' + m[2]).replace(/\s+/g, ' ');
+  m = new RegExp('Lot\\s+Size:?\\s*' + LOT_NUM + '(?:\\s*(acres?|sq\\.?\\s*ft|sf|square feet))?', 'i').exec(subject);
+  return m ? (m[1] + (m[2] ? ' ' + m[2] : '')).replace(/\s+/g, ' ') : null;
 }
 
 function parsePageFacts(text, propertyType) {
@@ -34,9 +47,9 @@ function parsePageFacts(text, propertyType) {
   if (tax != null) out.taxesMonthly = tax;
   const mcc = money(subject, 'Monthly\\s+Maintenance\\s*/\\s*CC');
   if (mcc != null) out[/^(co-?op|condop)$/i.test(String(t || '')) ? 'maintenance' : 'commonCharges'] = mcc;
-  const lot = /Lot\s+Size:?\s*([\d][\d,.]*\s*(?:acres?|sq\.?\s*ft\.?|sf|square feet)?)/i.exec(subject);
-  if (lot) out.lotSize = lot[1].trim();
-  const yr = /Year\s+Built:?\s*((?:1[6-9]|20)\d\d)\b/i.exec(subject);
+  const lot = lotSize(subject);
+  if (lot) out.lotSize = lot;
+  const yr = /(?:\bBuilt\s+in|Year\s+Built:?)\s*((?:1[6-9]|20)\d\d)\b/i.exec(subject);
   if (yr) out.yearBuilt = Number(yr[1]);
   const mls = /MLS(?:\/Listing)?\s+ID:?\s*([A-Z0-9-]+)/i.exec(subject);
   if (mls) out.mlsId = mls[1];

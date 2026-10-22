@@ -7,6 +7,8 @@
        rows      every normalised DE row of the run, each with .stage (DE's own)
        courtesy  async row → { gvcListed, line }: the GVC-listed check (D35),
                  asked once per DE listing, then remembered in de_listings
+       pageFacts optional async (row, propertyType) → { taxesMonthly, maintenance | commonCharges, lotSize,
+                 yearBuilt, mlsId }: DE's public page (page-facts.js), asked only when needsPage says so
      → { runId, changes, created (always 0), errors }
 
    What it does:
@@ -47,6 +49,7 @@ const P = require('../../assets/js/property-library.js');
 const A = require('../../assets/js/address-aliases.js');
 const F = require('../../assets/js/job-facts.js');
 const { storeMatches } = require('../match-store.js');
+const { needsPage, PAGE_FACTS } = require('./page-facts.js');
 
 const DE_FACTS = ['price', 'beds', 'baths', 'halfBaths', 'sqft'];
 const FILL_FACTS = ['city', 'state', 'zip', 'neighborhood'];
@@ -136,6 +139,26 @@ async function writeRows(o, run, out, now) {
         changes.push(log(p.id, k, core[k], shown, note));
         core[k] = shown;
       });
+      // DE's public page carries tax, maintenance / common charges, lot size, year built, MLS id (D47, S20)
+      let pageStamp = null;
+      if (o.pageFacts && r.feed === 'featured' && needsPage(p, r, new Date(now))) {
+        try {
+          const got = await o.pageFacts(r, core.propertyType);
+          PAGE_FACTS.forEach(k => {
+            if (!got || got[k] == null) return;
+            facts = F.adoptEdit(facts, k, core[k]);
+            const wasMatt = facts[k] && facts[k].source === 'Matt';
+            facts = F.applyFact(facts, k, 'DE', got[k]).facts;
+            const shown = facts[k].value;
+            if (sameValue(k, core[k], shown)) return;
+            changes.push(log(p.id, k, core[k], shown, wasMatt && facts[k].source === 'DE' ? "DE's own value changed, so it replaces the one Matt typed" : null));
+            core[k] = shown;
+          });
+          pageStamp = { pageFactsAt: now, pageFactsPrice: r.price == null ? null : r.price };
+        } catch (e) {
+          out.errors.push({ what: 'page', detail: 'DE page not read: ' + e.message, listing: r.id });
+        }
+      }
       if (Object.keys(facts).length) core.facts = facts;
       FILL_FACTS.forEach(k => { if (!core[k] && r[k]) core[k] = r[k]; });
       if (r.listingUrl && core.listingUrl !== r.listingUrl) core.listingUrl = r.listingUrl;
@@ -149,6 +172,9 @@ async function writeRows(o, run, out, now) {
       }
       if (JSON.stringify(core) !== JSON.stringify(p.core)) patch.core = core;
       const snap = snapshot(r);
+      // the page-read stamp belongs to the job's snapshot, not to DE's feed row: carry it over
+      const stamp = pageStamp || (p.de && p.de.pageFactsAt ? { pageFactsAt: p.de.pageFactsAt, pageFactsPrice: p.de.pageFactsPrice } : null);
+      if (stamp) Object.assign(snap, stamp);
       if (JSON.stringify(snap) !== JSON.stringify(p.de)) { patch.de = snap; patch.de_status = r.status; }
       if (p.de_listing_id !== r.id) patch.de_listing_id = r.id;
       // DE's own stage, kept beside Asana's (D50, S8): DE never moves `stage`

@@ -54,8 +54,13 @@
     var r = rel(path);
     if (!r) return false;
     var parts = r.split('/');
-    // a paperwork folder or a paperwork word in ANY segment: "Marketing/Offer from Buyer.pdf" is paperwork
-    for (var i = 0; i < parts.length; i++) if (isPaperworkFolder(parts[i]) || hasPaperworkWord(parts[i])) return false;
+    // a paperwork folder name (prefix rule) in any FOLDER segment, or a paperwork word (whole word)
+    // in any segment, file name included: "Marketing/Offer from Buyer.pdf" is paperwork,
+    // "Marketing/Offering plan.pdf" and "Photos/Edited/Dock view.jpg" are not
+    for (var i = 0; i < parts.length; i++) {
+      if (hasPaperworkWord(parts[i])) return false;
+      if (i < parts.length - 1 && isPaperworkFolder(parts[i])) return false;
+    }
     if (parts.length === 1) {
       var name = parts[0].toLowerCase();
       if (READABLE.indexOf(name) !== -1) return true;              // the folder itself

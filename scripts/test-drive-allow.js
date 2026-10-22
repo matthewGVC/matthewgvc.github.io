@@ -48,6 +48,10 @@ check('older top-level marketing folders readable', ['Show Sheet', 'Open House',
 /* R10: paperwork anywhere in a nested path is refused, not only in the first segment */
 check('nested paperwork word refused', ['Marketing/Offer from Jane Client.pdf', 'Photos/Edited/Signed Contract.jpg', 'Marketing/Showsheet/Exclusive.pdf'].some(R.allowedInJob), false);
 check('nested paperwork folder refused', ['Marketing/Offers/a.pdf', 'Photos/Docs/a.jpg', 'Floorplan/Contracts/v1.pdf', 'Marketing/Deal Sheet/a.pdf'].some(R.allowedInJob), false);
+check('prefix rule only for folders: file names like Offering, Dock, Document are fine',
+  ['Marketing/Offering plan.pdf', 'Photos/Edited/Dock view.jpg', 'Marketing/Brochure/Document.pdf', 'Marketing/Dealer.pdf'].map(R.allowedInJob), [true, true, true, true]);
+check('paperwork folders and words still refused', ['Offers/x.pdf', 'Docs/x.pdf', 'Marketing/Offer from Buyer.pdf', 'Marketing/Documents/a.pdf'].map(R.allowedInJob), [false, false, false, false]);
+check('R13: whole paperwork words hide a file even in Marketing', ['Marketing/Postcard/Exclusive Listing postcard.pdf', 'Photos/Edited/Closing time.jpg'].map(R.allowedInJob), [false, false]);
 check('nested marketing still fine', ['Marketing/Showsheet/Showsheet - 1 Example St - 2026-10-01.pdf', 'Floorplan/v2/Floorplan unbranded.pdf', 'Photos/Edited/01.jpg'].every(R.allowedInJob), true);
 
 /* jobTree: what the page and the tree builder may show */

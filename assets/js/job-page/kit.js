@@ -22,6 +22,12 @@
   var ICON = { floorplan: 'file', photos: 'photo', showsheet: 'file', brochure: 'file', openHouse: 'file', postcard: 'file', signage: 'file', video: 'file' };
   var NO_STEP = ['brochure', 'openHouse', 'signage'];
   var current = {};   // kit key → the newest current piece { path?, name, url? } of the last draw
+  /* what Open may show as a blob: types that never run script (no svg, no html) */
+  var SAFE_EXT = /\.(pdf|jpe?g|png|webp|gif|mp4|mov|m4v|webm)$/i;
+  var SAFE_TYPE = /^(application\/pdf|image\/(jpeg|png|webp|gif)|video\/[a-z0-9.+-]+)$/i;
+  var TYPE_OF = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
+    mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/mp4', webm: 'video/webm' };
+  function keyOf(cur) { for (var k in current) if (current[k] === cur) return k; return null; }
 
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
   function newest(list) {
@@ -76,6 +82,16 @@
     var r = ctx.row, msg = host.querySelector('#kitMsg'), body = host.querySelector('#kitBody');
     var say = function (t) { msg.textContent = t; JP.drive.msgs.kit = t; };
     var count = function (x) { var c = host.querySelector('#kitCount'); if (c) c.textContent = x.done + ' of ' + x.of + ' done'; };
+    /* not a type that opens inline: the stored Drive link, else File Explorer */
+    var elsewhere = function (cur) {
+      var stored = cur.url && /^https:\/\/drive\.google\.com\//.test(cur.url) ? cur.url : null;
+      if (!stored) {
+        var same = ((((r.scan || {}).pieces || {})[keyOf(cur)]) || []).filter(function (x) { return x.name === cur.name; })[0];
+        if (same && /^https:\/\/drive\.google\.com\//.test(same.url || '')) stored = same.url;
+      }
+      if (stored) { global.open(stored, '_blank', 'noopener'); say(''); }
+      else say('Open it from the folder in File Explorer.');
+    };
     var hook = function () {
       body.querySelectorAll('[data-copy]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -87,16 +103,16 @@
         b.addEventListener('click', function () {
           var cur = current[b.dataset.open];
           if (!cur || !cur.path) return;
-          var w = global.open('about:blank', '_blank');
+          // a blob: URL runs with this site's origin, so only types that can't run script open inline
+          if (!SAFE_EXT.test(cur.name)) { elsewhere(cur); return; }
           say('Opening ' + cur.name + '…');
           JP.drive.timed(global.GVC_DRIVE.readJobFile(r.drive_folder, cur.path, { timeoutMs: JP.drive.ms() })).then(function (f) {
-            var u = global.URL.createObjectURL(f);
-            if (w) w.location.href = u; else global.open(u, '_blank');
+            if (f.type && !SAFE_TYPE.test(f.type)) { elsewhere(cur); return; }
+            var typed = f.type ? f : new global.Blob([f], { type: TYPE_OF[(/\.([a-z0-9]+)$/i.exec(cur.name) || [])[1].toLowerCase()] });
+            var u = global.URL.createObjectURL(typed);
+            global.open(u, '_blank', 'noopener');
             say('');
-          }, function (e) {
-            if (w) w.close();
-            say(e.timeout ? JP.drive.FAIL : e.message);
-          });
+          }, function (e) { say(e.timeout ? JP.drive.FAIL : e.message); });
         });
       });
     };

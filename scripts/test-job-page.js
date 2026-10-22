@@ -87,7 +87,8 @@ const FAKE_DRIVE = `(function () {
     d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08')])),
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
-  var log = window.__driveLog = { tree: 0, list: [], read: [], inflight: 0, max: 0 };
+  if (cfg.html) tree.children.push(d('Open House', [f('Open House - 100 Example St 4A.html', '11')]));
+  var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
   function find(path) {
     var node = tree;
     String(path).split('/').filter(Boolean).forEach(function (seg) {
@@ -433,6 +434,25 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('doc: change rows only for what now shows', (s.p_changes || []).map(c => c.field), ['maintenance']);
   check('no paperwork name on the page', /Jane Client|Offer from/.test(await allText(p)), false);
   check('drive cards: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  /* Open: a PDF opens as a blob with noopener; an .html piece is never opened as a blob */
+  t = await open(browser, { path: LISTING, drive: { html: true } });
+  p = t.page;
+  await p.evaluate(() => {
+    window.__opened = []; window.__blobs = [];
+    const mk = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = b => { window.__blobs.push(b.type); return mk(b); };
+    window.open = (u, n, f) => { window.__opened.push([String(u).slice(0, 5), n, f]); return null; };
+  });
+  await p.waitForSelector('#kitCard [data-kit="openHouse"] [data-open]');
+  await p.click('#kitCard [data-kit="openHouse"] [data-open]');
+  await settle(p);
+  check('Open: an .html piece is never opened as a blob', [await p.evaluate(() => window.__blobs), await p.evaluate(() => window.__opened),
+    await p.evaluate(() => window.__driveLog.read.filter(x => /html$/.test(x)).length), await text(p, '#kitMsg')], [[], [], 0, 'Open it from the folder in File Explorer.']);
+  await p.click('#kitCard [data-kit="showsheet"] [data-open]');
+  await settle(p);
+  check('Open: a PDF opens as a blob, with noopener', [await p.evaluate(() => window.__blobs.length), await p.evaluate(() => window.__opened)], [1, [['blob:', '_blank', 'noopener']]]);
   await t.ctx.close();
 
   /* the doc changed since the last read: read on open, once */

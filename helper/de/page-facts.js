@@ -5,15 +5,19 @@
 
      parsePageFacts(text, propertyType) → { taxesMonthly?, maintenance? | commonCharges?, lotSize?, yearBuilt?, mlsId? }
        subject listing only (cut as the courtesy check cuts it). Co-op / Condop
-       maintenance is `maintenance`; everything else is `commonCharges`.
+       maintenance is `maintenance`; any other known type is `commonCharges`; with
+       no property type neither is read (which one it is can't be told).
        Money is a number per month; lotSize is DE's own words ("0.35 acres").
      needsPage(job, deRow, now) → true when the page was never read, the price
        changed since it was read, or it was read 7 or more days ago.
-     await readPageFacts(page, row, propertyType)  opens row.listingUrl.
+     await readPageFacts(page, row, propertyType)  opens row.listingUrl, only when it is an
+       https page on elliman.com; anything else throws, and the DE run logs it
+       ("DE page not read: ...") and skips the page.
    The page's DETAILS block puts the value before the label ("3,369 Sq Ft Condo
    $6,428 Monthly Maintenance/CC $5,588 Monthly Tax Built in 2007 MLS/Listing ID
-   23748057"); the label-first forms are a fallback. Lot size: "<x> Acres Lot",
-   "<x> Sq Ft Lot" or "Lot Size <x>".
+   23748057"). Money is read only that way round: label-first, the figure after
+   a label is the next fact's ("Monthly Maintenance/CC $1,234 Monthly Tax").
+   Lot size: "<x> Acres Lot", "<x> Sq Ft Lot" or "Lot Size <x>".
    ============================================================ */
 'use strict';
 
@@ -22,10 +26,9 @@ const { subjectOf } = require('./courtesy.js');
 const PAGE_FACTS = ['taxesMonthly', 'maintenance', 'commonCharges', 'lotSize', 'yearBuilt', 'mlsId'];
 const WEEK = 7 * 24 * 3600 * 1000;
 
-/* The real page writes the value first ("$5,588 Monthly Tax"); "Monthly Tax: $5,588" is kept as a fallback. */
+/* The real page writes the value first ("$5,588 Monthly Tax"); that is the only form read. */
 function money(subject, label) {
-  const m = new RegExp('\\$\\s*([\\d,]+(?:\\.\\d+)?)\\s+' + label + '\\b', 'i').exec(subject)
-    || new RegExp(label + ':?\\s*\\$\\s*([\\d,]+(?:\\.\\d+)?)', 'i').exec(subject);
+  const m = new RegExp('\\$\\s*([\\d,]+(?:\\.\\d+)?)\\s+' + label + '\\b', 'i').exec(subject);
   if (!m) return null;
   const n = Number(m[1].replace(/,/g, ''));
   return isFinite(n) ? n : null;
@@ -45,8 +48,8 @@ function parsePageFacts(text, propertyType) {
   const subject = subjectOf(text), out = {};
   const tax = money(subject, 'Monthly\\s+Tax(?:es)?');
   if (tax != null) out.taxesMonthly = tax;
-  const mcc = money(subject, 'Monthly\\s+Maintenance\\s*/\\s*CC');
-  if (mcc != null) out[/^(co-?op|condop)$/i.test(String(t || '')) ? 'maintenance' : 'commonCharges'] = mcc;
+  const mcc = String(t || '').trim() ? money(subject, 'Monthly\\s+Maintenance\\s*/\\s*CC') : null;
+  if (mcc != null) out[/^(co-?op|condop)$/i.test(String(t).trim()) ? 'maintenance' : 'commonCharges'] = mcc;
   const lot = lotSize(subject);
   if (lot) out.lotSize = lot;
   const yr = /(?:\bBuilt\s+in|Year\s+Built:?)\s*((?:1[6-9]|20)\d\d)\b/i.exec(subject);
@@ -63,7 +66,16 @@ function needsPage(job, deRow, now) {
   return (now || new Date()).getTime() - new Date(de.pageFactsAt).getTime() >= WEEK;
 }
 
+/* DE's own public pages only: https on elliman.com or a subdomain of it */
+function isDePage(url) {
+  let u;
+  try { u = new URL(String(url || '')); } catch (e) { return false; }
+  const h = u.hostname.toLowerCase();
+  return u.protocol === 'https:' && (h === 'elliman.com' || h.endsWith('.elliman.com'));
+}
+
 async function readPageFacts(page, row, propertyType) {
+  if (!isDePage(row.listingUrl)) throw new Error('the listing address isn\'t an https page on elliman.com.');
   await page.goto(row.listingUrl, { waitUntil: 'networkidle', timeout: 90000 });
   const text = await page.evaluate(() => document.body.innerText);
   return parsePageFacts(text, propertyType);

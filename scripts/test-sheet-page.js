@@ -67,7 +67,7 @@ const FAKE_DRIVE = `(function () {
     connect: function () { return Promise.resolve([]); },
     reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
-    tree: function () { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(tree))); },
+    tree: function () { log.tree++; return cfg.slowTree ? new Promise(function () {}) : Promise.resolve(JSON.parse(JSON.stringify(tree))); },
     listJob: function () { return Promise.resolve([]); },
     readJobFile: function (folder, path) {
       log.read.push(path);
@@ -126,7 +126,7 @@ async function open(browser, opts) {
   await page.goto(BASE + (opts.path || '/tools/showsheet/?listing=100-example-st-4a'), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.GVC_SHEETMODE && window.GVC_SHEETMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, ctx, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
 }
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const st = page => page.evaluate(() => window.__test.state);
@@ -329,6 +329,24 @@ const typeIn = async (page, field, value) => {
   t = await open(browser, { drive: { state: 'needs-click' } });
   await savePdf(t);
   check('Drive not connected: refused', [t.helper.filter(h => h.path === '/piece').length, (await text(t.page, '#jobMsg')).includes('Connect Drive')], [0, true]);
+  await t.ctx.close();
+
+  // review fixes (Task 8)
+  t = await open(browser, { drive: { slowTree: true }, rows: Object.assign(rowsFor({}), {}) });
+  await t.page.evaluate(() => { window.__sheetTimeoutMs = 60000; });
+  await savePdf(t);
+  check('Drive still reading the folder: refused', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length], [0, 0]);
+  await t.ctx.close();
+  t = await open(browser, { helperDown: true, pieceFails: 3 });
+  await savePdf(t);
+  check('printed but not recorded: says printed, not saved to Drive', await text(t.page, '#jobMsg'), 'Printed, but the job didn\'t record it. Press Save PDF to Drive again or reload.');
+  await t.ctx.close();
+  t = await open(browser, {});
+  Object.assign(t.T.properties[0].core, { price: 3900000 });
+  t.T.properties[0].core.facts.price = rec(3900000, 'Matt');
+  t.T.properties[0].version = 9;
+  await savePdf(t);
+  check('the job changed elsewhere since the sheet opened: no PDF made', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('changed')], [0, 0, true]);
   await t.ctx.close();
 
   // team role: read-only

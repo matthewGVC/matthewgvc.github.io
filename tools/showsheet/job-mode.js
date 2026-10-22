@@ -298,7 +298,13 @@
       window.GVC_DRIVE.reconnect().then(function () { return readDrive(); }).then(drawAll, function (e) { setPhotoHtml(esc(e.message)); });
     };
   }
+  /* M.loading covers the whole read (folder and files); M.driveFailed when it didn't finish */
   function readDrive() {
+    M.loading = true; M.driveFailed = false;
+    var done = function () { M.loading = false; };
+    return readDriveNow().then(done, function (e) { done(); throw e; });
+  }
+  function readDriveNow() {
     var D = window.GVC_DRIVE, row = M.row;
     if (!row.drive_folder) { setPhotoHtml('This job has no Drive folder linked yet. Link it on the job page to bring in photos and the floorplan.'); return Promise.resolve(); }
     return D.state().then(function (st) {
@@ -323,9 +329,11 @@
         planNote(plans);
         return readFiles(SJ.photosOf(row, M.editedPaths) || { front: null, back: null, tray: [] });
       }, function (e) {
+        M.driveFailed = true;
         setPhotoHtml(esc(e.timeout ? 'Drive didn\'t answer in time. Reload to try again.' : e.message));
       });
     }).catch(function (e) {
+      M.driveFailed = true;
       // the job and sheet are loaded: a Drive problem is said on the panel, the bar stays
       setPhotoHtml(esc((e && e.message) || 'Drive could not be read.'));
     });
@@ -471,13 +479,16 @@
   /* what the sheet prints must all be here: a photo or plan Drive hasn't brought in refuses the save */
   function notReady() {
     var s = SH.state, r = M.row;
+    if (r.drive_folder && M.drive === 'unsupported') return 'This browser can\'t read Drive. Save the PDF from Chrome on the desktop.';
     if (r.drive_folder && M.drive !== 'connected') return 'Connect Drive on this desktop first, so the sheet has its photos and floorplan.';
+    if (r.drive_folder && M.loading) return 'Drive is still reading the job\'s folder; wait a moment.';
+    if (r.drive_folder && M.driveFailed) return 'Drive didn\'t finish reading the job\'s folder. Reload to try again.';
     if (M.reading) return 'Drive hasn\'t downloaded the photos yet; wait or reload.';
     var printed = [s.heroIndex, s.secondaryIndex].map(function (i) { return i == null ? null : s.photos[i]; }).filter(Boolean)
       .map(function (p) { return p.path; });
     var ph = SJ.photosOf(r, M.editedPaths) || {};
     [ph.front, ph.back].forEach(function (want) { if (want && printed.indexOf(want) === -1) printed.push(want); });
-    if (M.floorplan && s.floorplan === M.fpSrc) printed.push(M.floorplan.path);
+    if (M.floorplan && (!s.floorplan || s.floorplan === M.fpSrc)) printed.push(M.floorplan.path);
     var miss = (M.failed || []).filter(function (f) { return printed.indexOf(f) !== -1; })[0] ||
       (ph.front && !s.photos.some(function (p) { return p.path === ph.front; }) ? ph.front : null);
     return miss ? 'Drive hasn\'t downloaded ' + miss.split('/').pop() + ' yet; wait or reload.' : null;
@@ -485,21 +496,24 @@
   /* the sheet as it prints: the two photos and the plans inline, nothing else in the tray */
   function printable() {
     var s = JSON.parse(JSON.stringify(SH.state)), list = [];
-    [s.heroIndex, s.secondaryIndex].forEach(function (i) {
+    var slot = function (i) {
       var p = i == null ? null : s.photos[i];
-      if (p && p.src) list.push({ src: p.src, fx: p.fx, fy: p.fy, name: p.name });
-    });
+      if (!p || !p.src) return null;
+      list.push({ src: p.src, fx: p.fx, fy: p.fy, name: p.name });
+      return list.length - 1;
+    };
+    var hero = slot(s.heroIndex), back = slot(s.secondaryIndex);
     s.photos = list;
-    s.heroIndex = list.length ? 0 : null;
-    s.secondaryIndex = list.length > 1 ? 1 : null;
+    s.heroIndex = hero;
+    s.secondaryIndex = back;
     return s;
   }
-  function record(bf, output, archived) {
+  function record(bf, output, archived, failMsg) {
     var tries = 0;
     function attempt() {
       tries++;
       return savePiece(bf, output, archived).catch(function (e) {
-        if (tries >= 3) throw new Error(NOT_RECORDED);
+        if (tries >= 3) throw new Error(failMsg || NOT_RECORDED);
         return pause(retryMs()).then(attempt);
       });
     }
@@ -512,7 +526,8 @@
     document.title = name;
     try { window.print(); } finally { document.title = title; }
     bf.via = 'print';
-    return record(bf, { name: name + '.pdf', paper: s.paper || 'a5', madeAt: new Date().toISOString(), via: 'print' }, null).then(function () {
+    return record(bf, { name: name + '.pdf', paper: s.paper || 'a5', madeAt: new Date().toISOString(), via: 'print' }, null,
+      'Printed, but the job didn\'t record it. Press Save PDF to Drive again or reload.').then(function () {
       return 'Printed by hand, file not tracked. Save it into the job\'s showsheet folder yourself.';
     });
   }
@@ -521,7 +536,14 @@
     var why = notReady();
     if (why) { say(why); return Promise.resolve(false); }
     busy(true); say('Saving the facts…');
-    return saveFacts().then(function () { return reloadRow(); }).then(function () {
+    return saveFacts().then(function (saved) {
+      var version = saved && saved.version;
+      return reloadRow().then(function () {
+        if (M.row.version !== version && SJ.factEdits(SH.state, M.row).edits.length) {
+          throw new Error('This job changed somewhere else since the sheet opened. Reload the page to bring the change in, then save.');
+        }
+      });
+    }).then(function () {
       var s = SH.state;
       var bf = SJ.builtFrom(s, M.row, { photos: { front: photoFrom(s.heroIndex), back: photoFrom(s.secondaryIndex) }, floorplan: planFrom(), via: 'helper' });
       say('Making the PDF…');

@@ -395,7 +395,7 @@
       [['beds', 'bed', 'beds'], ['baths', 'bath', 'baths'], ['sqft', 'sq ft', 'sq ft']].forEach(function (k) {
         var x = aFacts[k[0]], y = de[k[0]];
         if (empty(x) || empty(y) || Number(x) === Number(y)) return;
-        if (k[0] !== 'beds' && Number(y) === 0) return;   // DE's 0 sq ft / 0 baths is blank (co-ops); 0 beds is a studio
+        if (F.deBlank(k[0], y)) return;   // DE's 0 sq ft / 0 baths is blank (co-ops); 0 beds is a studio (job-facts.js, shared)
         diff[k[0]] = { asana: x, de: y };
         aw.push(num(x) + ' ' + (Number(x) === 1 ? k[1] : k[2]));
         dw.push(num(y) + ' ' + (Number(y) === 1 ? k[1] : k[2]));

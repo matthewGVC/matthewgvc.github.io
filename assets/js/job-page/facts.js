@@ -49,7 +49,7 @@
     if (editing) {
       var big = f.kind === 'list' || f.kind === 'long';
       var hint = f.kind === 'list' ? 'One item per line.' : f.kind === 'money' ? 'Like 2250000 or $2.25M.' : f.kind === 'baths' ? 'End in .5 for a half bath, like 3.5.' : '';
-      var deHas = rec && rec.bySource && rec.bySource.DE != null && rec.bySource.DE !== '';
+      var deHas = rec && rec.bySource && rec.bySource.DE != null && rec.bySource.DE !== '' && !F().deBlank(f.name, rec.bySource.DE);
       ed = '<div class="fed" data-for="' + esc(f.name) + '">' +
         (big ? '<textarea class="inp" id="fIn" rows="' + (f.kind === 'long' ? 5 : 4) + '" aria-label="' + esc(f.label) + '">' + esc(open.text) + '</textarea>'
              : '<input class="inp" id="fIn" aria-label="' + esc(f.label) + '" value="' + esc(open.text) + '">') +

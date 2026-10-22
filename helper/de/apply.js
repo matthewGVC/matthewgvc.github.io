@@ -16,7 +16,10 @@
      which then gets the DE id): DE's price, beds, baths, half baths and square
      feet go through GVC_FACTS at DE's rank (D79): DE wins, except that a value
      Matt typed holds while DE's own value hasn't changed since (D78); the
-     moment DE's value changes, DE takes over (logged). City/state/zip/
+     moment DE's value changes, DE takes over (logged). DE's 0 sq ft or
+     0 baths means "not known" (GVC_FACTS.deBlank, Match's M4 rule): it is
+     never stored, and a 0 an older run stored is dropped once, logged, so
+     the next source's figure shows (0 beds is a studio and is kept). City/state/zip/
      neighbourhood fill only when empty. DE's status goes in `de_stage`; the
      stage itself belongs to Asana and is never moved here (D50, S8). Every
      changed value is one `changes` row, source DE.
@@ -129,6 +132,15 @@ async function writeRows(o, run, out, now) {
       let facts = core.facts || {};
       DE_FACTS.forEach(k => {
         if (r[k] == null) return;
+        if (F.deBlank(k, r[k])) {
+          // DE doesn't know it: never a fact; a 0 an earlier run stored gives way to the next source
+          if (!facts[k] || !facts[k].bySource || !F.deBlank(k, facts[k].bySource.DE)) return;
+          facts = F.forget(facts, k, 'DE');
+          const next = facts[k] ? facts[k].value : null;
+          changes.push(log(p.id, k, core[k] === undefined ? null : core[k], next, 'DE\'s 0 means not known, so it is no longer shown'));
+          if (next === null) delete core[k]; else core[k] = next;
+          return;
+        }
         facts = F.adoptEdit(facts, k, core[k]);   // a builder's edit to core is Matt's (D78)
         const wasMatt = facts[k] && facts[k].source === 'Matt';
         facts = F.applyFact(facts, k, 'DE', r[k]).facts;

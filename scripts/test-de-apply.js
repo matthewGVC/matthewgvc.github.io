@@ -383,6 +383,34 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
     check('apply: sold rows never open a page', asked, 0);
   }
 
+  /* ---------- DE's 0 sq ft and 0 baths mean "not known" (M4's rule, slice3 tune-up 2) ---------- */
+  {
+    // a new link: DE's 0 sq ft is never stored as a fact; Asana's figure stays shown
+    let d = fakeDb({ properties: [{ id: 'z1', slug: 'z1', stage: 'Live', de_listing_id: '900001', kind: 'sale',
+      core: { address: '100 Example St', unit: '4A', sqft: 1200, facts: { sqft: { value: 1200, source: 'Asana', bySource: { Asana: 1200 } } } } }] });
+    await applyRun({ client: d, report: report([{ id: '900001', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900001', { sqft: 0, baths: 0, beds: 0 })] });
+    const z = d.T.properties[0];
+    check('DE 0 sq ft: Asana\'s figure stays, DE\'s 0 is not kept', [z.core.sqft, z.core.facts.sqft.source, 'DE' in z.core.facts.sqft.bySource], [1200, 'Asana', false]);
+    check('DE 0 baths: no fact stored, no change logged', [z.core.baths, z.core.facts.baths, d.T.changes.some(c => c.field === 'baths' || c.field === 'sqft')], [undefined, undefined, false]);
+    check('DE 0 beds: a studio, kept', [z.core.beds, z.core.facts.beds.source], [0, 'DE']);
+    // an older run stored DE's 0 as the fact: the next run drops it and logs it once
+    d = fakeDb({ properties: [{ id: 'z2', slug: 'z2', stage: 'Live', de_listing_id: '900001', kind: 'sale',
+      core: { address: '100 Example St', unit: '4A', price: 1000000, beds: 2, baths: 2, halfBaths: 0, sqft: 0,
+        facts: { sqft: { value: 0, source: 'DE', bySource: { DE: 0, Asana: 950 } } } } }] });
+    await applyRun({ client: d, report: report([{ id: '900001', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900001', { sqft: 0 })] });
+    const z2 = d.T.properties[0], zc = d.T.changes.filter(c => c.field === 'sqft');
+    check('stored DE 0 sq ft is dropped, Asana shows', [z2.core.sqft, z2.core.facts.sqft], [950, { value: 950, source: 'Asana', bySource: { Asana: 950 } }]);
+    check('the drop is logged once', [zc.length, zc[0] && zc[0].old_value, zc[0] && zc[0].new_value, zc[0] && zc[0].source], [1, 0, 950, 'DE']);
+    const n = d.T.changes.filter(c => c.source !== 'match').length;
+    await applyRun({ client: d, report: report([{ id: '900001', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900001', { sqft: 0 })] });
+    check('next run: nothing more to drop', d.T.changes.filter(c => c.source !== 'match').length, n);
+    // stored DE 0 with nothing else: the fact and core value go
+    d = fakeDb({ properties: [{ id: 'z3', slug: 'z3', stage: 'Live', de_listing_id: '900001', kind: 'sale',
+      core: { address: '100 Example St', unit: '4A', sqft: 0, facts: { sqft: { value: 0, source: 'DE', bySource: { DE: 0 } } } } }] });
+    await applyRun({ client: d, report: report([{ id: '900001', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900001', { sqft: 0 })] });
+    check('stored DE 0 sq ft alone: fact and value removed', ['sqft' in d.T.properties[0].core, 'sqft' in d.T.properties[0].core.facts], [false, false]);
+  }
+
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');
     failures.forEach(f => console.log('  FAIL ' + f));

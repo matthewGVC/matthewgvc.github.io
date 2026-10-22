@@ -136,6 +136,23 @@ check('clear: input untouched', fx.price.source, 'Matt');
 fx = F.applyFact({}, 'price', 'DE', 2400000).facts;
 check('clear: nothing of Matt\'s leaves it alone', F.clear(fx, 'price'), fx);
 
+/* DE's 0 sq ft and 0 baths mean "not known" (Match's M4 rule, shared); 0 beds is a studio (slice3 tune-up 2) */
+check('deBlank: DE 0 sq ft and 0 baths, not beds', [F.deBlank('sqft', 0), F.deBlank('baths', 0), F.deBlank('sqft', '0'), F.deBlank('beds', 0),
+  F.deBlank('sqft', 1200), F.deBlank('sqft', null), F.deBlank('halfBaths', 0)], [true, true, true, false, false, false, false]);
+fx = F.applyFact({}, 'sqft', 'DE', 0).facts;
+sh = F.shown({ sqft: 0, facts: fx }, njHouse);
+check('shown: DE\'s 0 sq ft is Not set', [get(sh, 'sqft').value, get(sh, 'sqft').source, get(sh, 'sqft').badge], [null, null, null]);
+fx = F.applyFact(F.applyFact({}, 'sqft', 'Asana', 1200).facts, 'sqft', 'DE', 0).facts;
+sh = F.shown({ sqft: 0, facts: fx }, njHouse);
+check('shown: DE\'s 0 sq ft gives way to Asana\'s figure', [get(sh, 'sqft').value, get(sh, 'sqft').source, get(sh, 'sqft').others], [1200, 'Asana', []]);
+fx = F.applyFact({}, 'beds', 'DE', 0).facts;
+check('shown: DE\'s 0 beds is a studio and shows', get(F.shown({ beds: 0, facts: fx }, njHouse), 'beds').value, 0);
+fx = F.applyFact(F.applyFact({}, 'sqft', 'DE', 0).facts, 'sqft', 'Matt', 950).facts;
+check('warn: DE\'s 0 sq ft never warns against Matt', [F.warnOf(fx.sqft, 'sqft'), get(F.shown({ sqft: 950, facts: fx }, njHouse), 'sqft').others], [undefined, []]);
+check('forget: drop one source and show the next', F.forget(F.applyFact(F.applyFact({}, 'sqft', 'Asana', 1200).facts, 'sqft', 'DE', 0).facts, 'sqft', 'DE').sqft,
+  { value: 1200, source: 'Asana', bySource: { Asana: 1200 } });
+check('forget: the only source removes the fact', F.forget(F.applyFact({}, 'sqft', 'DE', 0).facts, 'sqft', 'DE'), {});
+
 /* parse values */
 const pv = (k, t) => F.parseValue(k, t);
 check('parse $2.1M', pv('money', '$2.1M'), { ok: true, value: 2100000 });

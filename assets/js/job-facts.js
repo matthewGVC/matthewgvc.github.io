@@ -46,6 +46,12 @@
        with a warning. A DE value that differs from DE's previous one (or DE's
        first value ever) replaces Matt's, and the change is logged by the caller.
 
+   DE sends 0 for a square footage or a bath count it doesn't know (most
+   co-ops): deBlank(field, value) says so, and that DE value is never shown,
+   never warns and is never stored by the DE sync (Match's M4 uses the same
+   rule). DE's 0 beds is a studio and counts. forget(facts, field, source)
+   drops one source's value and shows the best one left.
+
    For the job page (Slice 3), further down: FIELDS and fieldsFor(row) (what a job
    shows by market, type and sale or rental), shown(core, row) (value, badge, other
    sources, warning), clear(facts, field) (drop Matt's value) and parseValue(kind, text)
@@ -81,11 +87,17 @@
     return x !== null && y !== null && x === y;
   }
 
-  /* the warning a shown fact carries, or undefined */
-  function warnOf(fact) {
+  /* DE's 0 sq ft / 0 baths means "not known" (co-ops); 0 beds is a studio (M4) */
+  var DE_ZERO_BLANK = ['sqft', 'baths'];
+  function deBlank(field, value) {
+    return DE_ZERO_BLANK.indexOf(field) !== -1 && !empty(value) && Number(value) === 0;
+  }
+
+  /* the warning a shown fact carries, or undefined (field: so DE's blank 0 never warns) */
+  function warnOf(fact, field) {
     if (!fact || fact.source !== 'Matt') return undefined;
     var by = fact.bySource || {};
-    if (!empty(by.DE) && !eq(by.DE, fact.value)) return { source: 'DE', value: by.DE };
+    if (!empty(by.DE) && !deBlank(field, by.DE) && !eq(by.DE, fact.value)) return { source: 'DE', value: by.DE };
     if (!empty(by.Asana) && !eq(by.Asana, fact.value)) return { source: 'Asana', value: by.Asana };
     return undefined;
   }
@@ -96,7 +108,7 @@
     var cur = out[field];
     if (empty(value)) {
       var r0 = { facts: out, changed: false };
-      var w0 = warnOf(cur);
+      var w0 = warnOf(cur, field);
       if (w0) r0.warn = w0;
       return r0;
     }
@@ -114,7 +126,7 @@
                     : { value: cur.value, source: cur.source, bySource: by };
     out[field] = next;
     var res = { facts: out, changed: !cur || !eq(cur.value, next.value) || cur.source !== next.source };
-    var w = warnOf(next);
+    var w = warnOf(next, field);
     if (w) res.warn = w;
     return res;
   }
@@ -223,7 +235,11 @@
     core = core || {};
     var facts = core.facts || {};
     return fieldsFor(Object.assign({}, row, { core: core })).map(function (f) {
-      var rec = facts[f.name];
+      var rec = facts[f.name], legacyOk = true;
+      if (rec && rec.bySource && deBlank(f.name, rec.bySource.DE)) {   // an older DE run stored its 0: never shown
+        rec = forgetIn(rec, 'DE');
+        legacyOk = false;                                              // core still holds that 0
+      }
       var out = { name: f.name, label: f.label, kind: f.kind, tier: f.tier, others: [] };
       if (rec && !empty(rec.value)) {
         out.value = rec.value; out.source = rec.source; out.badge = BADGE[rec.source] || rec.source;
@@ -233,9 +249,9 @@
             out.others.push({ source: src, badge: BADGE[src], value: by[src] });
           }
         });
-        var w = warnOf(rec);
+        var w = warnOf(rec, f.name);
         if (w) out.warn = w;
-      } else if (!empty(core[f.name])) {
+      } else if (legacyOk && !empty(core[f.name])) {
         out.value = core[f.name]; out.source = 'legacy'; out.badge = BADGE.legacy;
       } else {
         out.value = null; out.source = null; out.badge = null;
@@ -244,19 +260,27 @@
     });
   }
 
-  /* Clear: drop Matt's value, show the best remaining source, or remove the fact.
-     A fact Matt never typed is returned as it is. */
-  function clear(facts, field) {
-    var cur = facts && facts[field];
-    if (!cur || !cur.bySource || !('Matt' in cur.bySource)) return facts;
-    var by = Object.assign({}, cur.bySource);
-    delete by.Matt;
-    var out = Object.assign({}, facts);
+  /* one fact record without a source's value: the best remaining source shows, or null */
+  function forgetIn(rec, source) {
+    var by = Object.assign({}, rec.bySource || {});
+    delete by[source];
     var best = RANK.filter(function (s) { return !empty(by[s]); })[0];
-    if (!best) delete out[field];
-    else out[field] = { value: by[best], source: best, bySource: by };
+    return best ? { value: by[best], source: best, bySource: by } : null;
+  }
+
+  /* drop one source's value; the best remaining source shows, or the fact goes.
+     A fact without that source is returned as it is. */
+  function forget(facts, field, source) {
+    var cur = facts && facts[field];
+    if (!cur || !cur.bySource || !(source in cur.bySource)) return facts;
+    var out = Object.assign({}, facts), next = forgetIn(cur, source);
+    if (!next) delete out[field]; else out[field] = next;
     return out;
   }
+
+  /* Clear: drop Matt's value, show the best remaining source, or remove the fact.
+     A fact Matt never typed is returned as it is. */
+  function clear(facts, field) { return forget(facts, field, 'Matt'); }
 
   /* what a typed value means: { ok, value } or { ok: false, error } (never NaN).
      Empty text is { ok: true, value: null }, which the page treats as Clear. */
@@ -292,6 +316,6 @@
     return { ok: true, value: t.trim() };
   }
 
-  return { RANK: RANK, rankOf: rankOf, applyFact: applyFact, warnOf: warnOf, adoptEdit: adoptEdit,
-           BADGE: BADGE, FIELDS: FIELDS, fieldsFor: fieldsFor, shown: shown, clear: clear, parseValue: parseValue };
+  return { RANK: RANK, rankOf: rankOf, applyFact: applyFact, warnOf: warnOf, adoptEdit: adoptEdit, deBlank: deBlank,
+           BADGE: BADGE, FIELDS: FIELDS, fieldsFor: fieldsFor, shown: shown, clear: clear, forget: forget, parseValue: parseValue };
 });

@@ -342,7 +342,21 @@ check('D88 an Off market listing is a job, with its own chip', [OJ('om1').type, 
 check('D88 its steps: the stages it reached, then Off market (never Sold it didn\'t reach)', [OJ('om1').steps, OJ('om1').stageIdx], [['Pitch', 'Prep', 'Live', 'Off market'], 3]);
 check('D88 never listed: Pitch, Prep, Off market', OJ('om2').steps, ['Pitch', 'Prep', 'Off market']);
 check('D88 its off-market date shows with the deal dates', OJ('om1').dates.map(d => [d.label, d.on]), [['Listed', '2026-06-04'], ['Off market', '2026-10-12']]);
-check('D88 timeline: the Off market bar is its own kind, not Sold', OJ('om1').bars, [{ s: 'off', from: '2026-10-22', to: null }]);
+check('D88 timeline: the Off market bar is its own kind, not Sold, and starts on Asana\'s off-market date', OJ('om1').bars, [{ s: 'off', from: '2026-10-12', to: null }]);
+/* the stage track dates a stage by Asana's deal date when there is one, not the day the workspace first logged the move */
+check('stage track: Off market on Asana\'s offMarketOn (12 Oct), not the day the job arrived (22 Oct)', OJ('om1').done['Off market'], '2026-10-12');
+check('stage track: a stage reached only in Asana (Listed 4 Jun) still gets its date', OJ('om1').done.Live, '2026-06-04');
+check('stage track: Off market from Asana without any logged move', OJ('om2').done, { 'Off market': '2026-09-01' });
+{
+  const ms = { listedOn: { on: '2026-05-02', planned: false }, contractOn: { on: '2026-09-30', planned: false }, closedOn: { on: '2026-12-01', planned: true } };
+  const mv = [['2026-10-01T15:00:00Z', 'Live'], ['2026-10-05T15:00:00Z', 'In contract']].map((m, i) => ({ id: 'mv' + i, property_id: 'ms1', at: m[0], field: 'stage', new_value: m[1] }));
+  const j = W.buildJobs({ properties: [{ id: 'ms1', slug: 'ms1', kind: 'sale', market: 'NJ', stage: 'In contract', core: { address: '5 Date Rd' }, milestones: ms }], pitches: [], devProjects: [], changes: mv }, TODAY)[0];
+  check('stage track: Live on listedOn and In contract on contractOn, earlier than the logged moves', [j.done.Live, j.done['In contract']], ['2026-05-02', '2026-09-30']);
+  check('stage track: a planned closing is not a done Sold date', j.done.Sold, undefined);
+  check('timeline bars start on the same Asana dates', j.bars.map(b => [b.s, b.from, b.to]), [['live', '2026-05-02', '2026-09-30'], ['contract', '2026-09-30', null]]);
+  const k = W.buildJobs({ properties: [{ id: 'ms1', slug: 'ms1', kind: 'sale', market: 'NJ', stage: 'In contract', core: { address: '5 Date Rd' }, milestones: { contractOn: { on: '2026-04-01', planned: false } } }], pitches: [], devProjects: [], changes: mv }, TODAY)[0];
+  check('timeline bars never run backwards when an Asana date is before the previous move', k.bars.map(b => [b.s, b.from, b.to]), [['live', '2026-10-01', '2026-10-01'], ['contract', '2026-10-01', null]]);
+}
 check('D88 flags: no folder asks for one; no "Match DE" for an off-market job', [OJ('om1').flags.map(f => f.k), OJ('om2').flags.map(f => f.k)], [['link'], []]);
 const offStats = W.overviewStats(offJobs), baseStats = W.overviewStats(W.buildJobs({ properties: props, pitches, devProjects: devs, changes }, '2026-10-22'));
 check('D88 overview counts: not live, not in contract; counted in the total and To link',

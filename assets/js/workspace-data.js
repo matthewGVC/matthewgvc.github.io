@@ -10,6 +10,10 @@
          Every job also has:
            dates      [{ key, label, on, planned }]  deal dates from
                       properties.milestones, date order; planned = after today (S7)
+           done       { stage: day } the stage track's dates: Asana's deal date for
+                      the stage (listedOn, contractOn, closedOn, offMarketOn...) when
+                      done, else the day the change log first moved it there; the
+                      timeline bars start on the same days
            match      the stored Match result minus what was dismissed at
                       its current values; mismatches = its length
            asanaUrl   the task's Asana link (https only) or null
@@ -161,6 +165,24 @@
     return s;
   }
 
+  /* the stage track's dates: Asana's deal date for a stage (Listed, Contract signed,
+     Off market...) wins over the day the workspace first logged the move, which is
+     often just the day the job arrived. Only done dates (not planned, not after
+     today), and only for the job's stage and the stages before it. */
+  var STAGE_DATE = { Live: 'listedOn', 'Accepted offer': 'acceptedOfferOn', 'In contract': 'contractOn', Sold: 'closedOn', Rented: 'closedOn', 'Off market': 'offMarketOn' };
+  function stageDates(stage, ms, today, done) {
+    ms = ms || {};
+    var at = STAGES.indexOf(stage);
+    Object.keys(STAGE_DATE).forEach(function (s) {
+      var m = ms[STAGE_DATE[s]], on = m && m.on ? day(m.on) : null;
+      if (!on || m.planned || on > today || STAGES.indexOf(s) > at) return;
+      if (s === 'Rented' && stage !== 'Rented') return;
+      if (s === 'Sold' && stage === 'Rented') return;
+      done[s] = on;
+    });
+    return done;
+  }
+
   /* the stored Match result minus what was dismissed at its current values */
   function activeMatch(m) {
     m = m || {};
@@ -207,14 +229,24 @@
       var pitch = wonPitch[p.id];
       var done = {};
       ch.forEach(function (c) { if (c.field === 'stage' && c.new_value && !done[c.new_value] && STAGES.indexOf(c.new_value) !== -1) done[c.new_value] = day(c.at); });
+      var logged = {}; Object.keys(done).forEach(function (k) { logged[k] = done[k]; });
+      stageDates(p.stage, p.milestones, today, done);
       var found = (p.scan && p.scan.found) || {};
 
       // timeline bars from the stage moves in the change log
       var moves = ch.filter(function (c) { return c.field === 'stage' && c.new_value; });
       var bars = [];
       if (pitch && pitch.pitched_on) bars.push({ s: 'pitch', from: pitch.pitched_on, to: moves.length ? day(moves[0].at) : null });
+      // a stage's first move starts on its Asana date when there is one, never before the move ahead of it
+      var starts = [];
       moves.forEach(function (c, i) {
-        bars.push({ s: BAR[c.new_value] || 'won', from: day(c.at), to: moves[i + 1] ? day(moves[i + 1].at) : null });
+        var d = day(c.at);
+        if (done[c.new_value] && logged[c.new_value] === d && !moves.slice(0, i).some(function (m) { return m.new_value === c.new_value; })) d = done[c.new_value];
+        starts.push(i && d < starts[i - 1] ? starts[i - 1] : d);
+      });
+      if (pitch && pitch.pitched_on && starts.length) bars[0].to = starts[0];
+      moves.forEach(function (c, i) {
+        bars.push({ s: BAR[c.new_value] || 'won', from: starts[i], to: i + 1 < starts.length ? starts[i + 1] : null });
       });
       var ticks = Object.keys(found).map(function (k) { return { d: found[k], label: PIECE_LABEL[k] || k }; })
         .sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });

@@ -493,7 +493,7 @@ body.bleed .crop{display:block;}
       </div>
       <div class="field"><label>Ownership</label>
         <div class="seg" id="ownSeg">
-          <button data-v="co-op">Co-op</button><button data-v="condo">Condo</button><button data-v="new-con">New Construction</button><button data-v="none">None</button><button data-v="house" class="njfl-only">House</button>
+          <button data-v="co-op" class="nyc-only">Co-op</button><button data-v="condo">Condo</button><button data-v="new-con">New Construction</button><button data-v="none">None</button><button data-v="house" class="njfl-only">House</button>
         </div>
       </div>
       <div class="field njfl-only house-only"><label>Property type</label><input type="text" data-field="propertyType" placeholder="Single family"></div>
@@ -767,10 +767,19 @@ const qrSvg = window.GVC_QR;
 function unitDisplay(u){ return GVC_PROPS.unitDisplay(u); }
 /* New York is the sheet as it has always printed; every New Jersey and Florida
    difference below hangs off this one test, so a New York sheet cannot move. */
-function nycSheet(){ return !state.market || state.market === 'nyc'; }
+function nycSheet(){ return marketKey(state.market) === 'nyc'; }
+/* the three markets; anything else is New York, as GVC_LEGAL.listing reads it */
+function marketKey(m){ return m === 'nj' || m === 'fl' ? m : 'nyc'; }
+/* a market and an ownership that belong together: no co-op or house in the wrong place */
+function settleMarket(){
+  state.market = marketKey(state.market);
+  if(state.market !== 'nyc' && state.ownership === 'co-op') state.ownership = 'condo';
+  if(state.market === 'nyc' && state.ownership === 'house') state.ownership = 'none';
+  state.disclaimer = GVC_LEGAL.listing(state.market);
+}
 function rentalSheet(){ return state.kind === 'rental'; }
 function ownLabel(){
-  if(state.ownership === 'house') return String(state.propertyType || 'House').toUpperCase();
+  if(state.ownership === 'house') return esc(String(state.propertyType || 'House')).toUpperCase();
   return {'co-op':'CO-OP', 'condo':'CONDO', 'new-con':'NEW CONSTRUCTION', 'none':''}[state.ownership] ?? 'CO-OP';
 }
 function chipHtml(){
@@ -1640,15 +1649,15 @@ function syncMarket(){
   const nyc = nycSheet();
   $$('#marketSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===(state.market||'nyc')));
   $$('.njfl-only').forEach(e=>e.style.display = nyc ? 'none' : '');
+  $$('.nyc-only').forEach(e=>e.style.display = nyc ? '' : 'none');
   $('#ccLabel').textContent = !nyc && state.ownership === 'house' ? 'HOA (monthly)' : 'Common Charges (monthly)';
   $('#taxLabel').textContent = nyc ? 'Real Estate Taxes (monthly)' : 'Property Taxes (monthly; prints yearly)';
 }
 $('#marketSeg').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b || b.disabled) return;
   state.market = b.dataset.v;
-  // the legal text is the market's (D28), never typed
-  state.disclaimer = GVC_LEGAL.listing(state.market);
-  if(state.market === 'nyc' && state.ownership === 'house') state.ownership = 'none';
+  // the legal text is the market's (D28), never typed; a co-op or a house follows the market
+  settleMarket();
   syncMarket(); syncOwnership(); render(); edited();
 });
 function syncOwnership(){
@@ -2352,7 +2361,9 @@ const CORE_ONLY = ['address','unit','borough','neighborhood','price','beds','bat
 const BLANK_DOC = blankUnit();
 
 /* what property-bar calls before a property's facts go on */
-function resetDocFields(){ state = freshListing(); }
+function resetDocFields(){ state = freshListing(); coreMarket = null; }
+/* the market the loaded property's address says, which a saved sheet's own pick never overrides */
+let coreMarket = null;
 
 /* Nothing is kept in this browser any more, so the tab has to ask before it
    closes on unsaved work — the same warning the other three builders give.
@@ -2398,7 +2409,8 @@ const LIBRARY = {
     // the roster is team-level and carries between listings on purpose; a
     // property with no agents falls back to the default pair, not the last one's
     // a property that knows its state or zip is in that market; else New York, as before
-    if (core.state || core.zip) state.market = GVC_LEGAL.marketOf(core);
+    coreMarket = (core.state || core.zip) ? GVC_LEGAL.marketOf(core) : null;
+    if (coreMarket) state.market = coreMarket;
     state.agentIds = (core.agentIds && core.agentIds.length)
       ? core.agentIds.slice() : BLANK_DOC.agentIds.slice();
     hydrateForm(); render();
@@ -2440,7 +2452,8 @@ const LIBRARY = {
       }
       migratePhotos();
     }
-    state.disclaimer = GVC_LEGAL.listing(state.market);
+    if (coreMarket) state.market = coreMarket;
+    settleMarket();
     hydrateForm(); render();
   }
 };
@@ -2452,14 +2465,26 @@ GVC_PROPBAR.mount(Object.assign({ host: $('#propBar'), tool: 'showsheet' }, LIBR
    way (helper/pdf/render.js): the state carries its photos and plans inline.
    ============================================================ */
 window.__render = async function(s){
-  window.__rendered = false;
-  const base = blankUnit();
-  state = Object.assign(base, JSON.parse(JSON.stringify(s || {})));
-  state.building = Object.assign(blankUnit().building, state.building || {});
-  state.residence = Object.assign(blankUnit().residence, state.residence || {});
+  window.__rendered = false; window.__renderError = null;
+  try { return await drawGiven(s); }
+  catch(e){ window.__renderError = String(e && e.message || e); throw e; }
+};
+async function drawGiven(s){
+  const base = blankUnit(), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  // only keys the sheet knows, each in the shape it expects (a null list or a string building can't break it)
+  Object.keys(given).forEach(k => {
+    if(!(k in base) || given[k] == null) return;
+    if(Array.isArray(base[k]) !== Array.isArray(given[k])) return;
+    if(base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) && (typeof given[k] !== 'object' || Array.isArray(given[k]))) return;
+    base[k] = given[k];
+  });
+  state = base;
+  state.building = Object.assign(blankUnit().building, state.building);
+  state.residence = Object.assign(blankUnit().residence, state.residence);
+  state.photos = state.photos.filter(p => p && typeof p.src === 'string');
   state.floorplanView = normFpView(state.floorplanView);
   state.floorplan2View = normFpView(state.floorplan2View);
-  state.disclaimer = GVC_LEGAL.listing(state.market);
+  settleMarket();
   hydrateForm();
   // every wait is capped: a font or an image that never settles must not hang the helper
   const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
@@ -2471,7 +2496,7 @@ window.__render = async function(s){
   render(); await frame(); await frame();
   window.__rendered = true;
   return true;
-};
+}
 
 /* test hooks (harmless in production) */
 window.__test = {

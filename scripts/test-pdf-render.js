@@ -89,6 +89,14 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   check('rental: Monthly Rent, no carrying', [r.ask, r.numbers.map(x => x[0])], ['Monthly Rent', ['Monthly Rent', 'Lot Size']]);
 
   check('assessments only when present', (await draw(Object.assign({}, NJ, { assessments: '$100/mo' }))).numbers.map(x => x[0]).includes('Assessments'), true);
+  // hostile and broken states: escaped, never thrown, never hung
+  const evil = '<img src=x onerror="window.__xss=1">';
+  await draw(Object.assign({}, NJ, { propertyType: evil, sqft: evil, lotSize: evil, parking: evil, neighborhood: evil, address: evil }));
+  check('hostile text never runs', await page.evaluate(() => window.__xss || 0), 0);
+  const odd = await draw(Object.assign({}, NJ, { market: 'xx', photos: null, agentIds: null, building: 'nope' }));
+  check('unknown market is New York, nulls ignored', [odd.rendered, odd.dis === odd.legal.nyc, odd.logos], [true, true, 1]);
+  const coopNj = await draw(Object.assign({}, FL, { ownership: 'co-op', maintenance: '$3,000' }));
+  check('a co-op in Florida prints as a condo', [coopNj.chip, coopNj.numbers.map(x => x[0]).includes('Maintenance')], ['CONDO·SAMPLETON', false]);
   check('no page errors', errors, []);
   await browser.close();
 

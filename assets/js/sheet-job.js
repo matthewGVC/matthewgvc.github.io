@@ -74,18 +74,17 @@
     return empty(v) ? null : v;
   }
   function listingUrlOf(row) {
-    var u = ((row && row.core) || {}).listingUrl || ((row && row.de) || {}).listingUrl || null;
-    return typeof u === 'string' && /^https:\/\//.test(u) ? u : null;
+    var ok = function (u) { return typeof u === 'string' && /^https:\/\//.test(u) ? u : null; };
+    return ok(((row && row.core) || {}).listingUrl) || ok(((row && row.de) || {}).listingUrl);
   }
   function agentsOf(row) {
     var core = (row && row.core) || {};
     if (core.agentIds && core.agentIds.length) return { ids: core.agentIds.slice(), confirmed: true };
     return { ids: (core.suggestedAgentIds || []).slice(), confirmed: false };
   }
-  /* the place on the chip: the neighbourhood, else (NJ / FL) the town */
+  /* the place on the chip: the neighbourhood, else the town */
   function placeField(row) {
-    if (valueOf(row, 'neighborhood') !== null) return 'neighborhood';
-    return row && (row.market === 'NJ' || row.market === 'FL') ? 'city' : 'neighborhood';
+    return valueOf(row, 'neighborhood') === null && valueOf(row, 'city') !== null ? 'city' : 'neighborhood';
   }
 
   /* the job facts this sheet prints (S15: only these can make it stale) */
@@ -108,7 +107,8 @@
   function text(v) { return v === null || v === undefined ? '' : String(v); }
 
   function fill(state, row, ctx) {
-    var s = clone(state) || {}, core = (row && row.core) || {}, prev = (ctx && ctx.previous) || null, redone = [];
+    row = row || {};
+    var s = clone(state) || {}, core = row.core || {}, prev = (ctx && ctx.previous) || null, redone = [];
     var v = function (n) { return valueOf(row, n); };
     s.market = marketKey(row.market);
     s.kind = row.kind === 'rental' ? 'rental' : 'sale';
@@ -122,7 +122,7 @@
     s.price = price === null ? '' : (numOf(price) !== null ? money(numOf(price)) : String(price));
     s.beds = text(v('beds'));
     var baths = v('baths'), half = v('halfBaths');
-    s.baths = baths === null ? '' : String(baths) + (numOf(half) > 0 ? '.5' : '');
+    s.baths = baths === null ? '' : String(baths) + (numOf(half) > 0 && Number.isInteger(numOf(baths)) ? '.5' : '');
     MONEY.forEach(function (n) { var x = v(n); s[n] = x === null ? '' : (numOf(x) !== null ? money(numOf(x)) : String(x)); });
     if (s.kind === 'rental') MONEY.forEach(function (n) { s[n] = ''; });
     if (s.ownership === 'co-op' && s.market === 'nyc') { s.commonCharges = ''; s.taxesMonthly = ''; }
@@ -187,6 +187,7 @@
   }
 
   function factEdits(state, row) {
+    state = state || {}; row = row || {};
     // what the job alone would put in each field: the editable fields cleared, then the job laid on
     var base = clone(state);
     EDITABLE(row).forEach(function (e) { setAt(base, e[0], ''); });
@@ -216,8 +217,9 @@
     var core = clone((row && row.core) || {}), noRebuild = (opts && opts.noRebuild) || {}, changes = [];
     var facts = core.facts || {};
     (edits || []).forEach(function (e) {
-      facts = F.adoptEdit(facts, e.field, e.to);
-      core[e.field] = e.to;
+      // a value taken away (a half bath removed) drops Matt's value; adoptEdit ignores an empty one
+      facts = e.to === null ? F.clear(facts, e.field) : F.adoptEdit(facts, e.field, e.to);
+      core[e.field] = e.to === null && facts[e.field] ? facts[e.field].value : e.to;
       changes.push({ field: e.field, old_value: e.from, new_value: e.to, note: 'on the Showsheet', no_rebuild: !!noRebuild[e.field] });
     });
     core.facts = facts;
@@ -227,13 +229,13 @@
   /* ---------- what a build printed ---------- */
 
   function builtFrom(state, row, ctx) {
-    ctx = ctx || {};
+    ctx = ctx || {}; state = state || {}; row = row || {};
     var facts = {};
     FIELDS(row, state.ownership).forEach(function (n) { facts[n] = valueOf(row, n); });
     var ag = agentsOf(row);
     return {
       v: 1, market: row.market || 'NYC', kind: row.kind === 'rental' ? 'rental' : 'sale', ownership: state.ownership || null,
-      facts: facts, agents: (state.agentIds || ag.ids).slice(), agentsConfirmed: ag.confirmed, listingUrl: listingUrlOf(row),
+      facts: facts, agents: ag.ids, agentsConfirmed: ag.confirmed, listingUrl: listingUrlOf(row),
       photos: ctx.photos || { front: null, back: null }, floorplan: ctx.floorplan || null,
       print: { paper: state.paper || 'a5', bleed: !!state.bleed }, via: ctx.via || 'helper'
     };

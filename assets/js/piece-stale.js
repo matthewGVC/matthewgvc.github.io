@@ -54,9 +54,10 @@
     var changes = [], add = function (field, label, was, now) { changes.push({ field: field, label: label, was: was, now: now }); };
 
     var printed = S.FIELDS(row, bf.ownership || undefined);
-    Object.keys(bf.facts || {}).forEach(function (name) {
-      if (printed.indexOf(name) === -1) return;
-      var now = S.valueOf(row, name), was = bf.facts[name];
+    // every fact the sheet prints now; one the build didn't hold (the chip moved from town to
+    // neighbourhood) counts as empty then
+    printed.forEach(function (name) {
+      var now = S.valueOf(row, name), was = (bf.facts || {})[name];
       if (!same(was, now)) add(name, labelOf(row, name), was, now);
     });
 

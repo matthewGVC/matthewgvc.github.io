@@ -72,6 +72,10 @@ const dNj = built(nj);
 check('NJ sheet counts sq ft', ST.stale(dNj, job({ row: { market: 'NJ' }, core: { propertyType: 'Single family' }, facts: { sqft: 1500 } }), {}).changes.map(c => c.field), ['sqft']);
 check('label for an NJ house fee is HOA', ST.stale(dNj, job({ row: { market: 'NJ' }, core: { propertyType: 'Single family' }, facts: { commonCharges: 200 } }), {}).changes[0].label, 'HOA');
 
+const town = job({ row: { market: 'NJ' }, core: { propertyType: 'Single family', city: 'Testville' } });
+const dTown = built(town);
+const hood = job({ row: { market: 'NJ' }, core: { propertyType: 'Single family', city: 'Testville', neighborhood: 'Riverside' } });
+check('town to neighbourhood on the chip is stale', ST.stale(dTown, hood, {}).changes.map(c => c.field), ['neighborhood']);
 check('no record: none', ST.stale(null, r0, {}), { state: 'none', changes: [] });
 check('no built_from and no file: none', ST.stale({ state: {} }, r0, { fileFound: false }).state, 'none');
 check('made before the workspace kept track', ST.stale({ state: {} }, r0, { fileFound: true }), { state: 'untracked', changes: [] });

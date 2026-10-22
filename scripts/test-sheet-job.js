@@ -143,6 +143,17 @@ check('applyEdits: change row', ap.changes, [{ field: 'price', old_value: 225000
 check('applyEdits: typo tick', S.applyEdits(coop, e1.edits, { noRebuild: { price: true } }).changes[0].no_rebuild, true);
 check('applyEdits leaves the row alone', coop.core.price, 2250000);
 
+const hb = job({ facts: { baths: 2, halfBaths: 1 } });
+hb.core.facts.halfBaths = { value: 1, source: 'Matt', bySource: { Matt: 1 } };
+const hbEd = S.factEdits(Object.assign({}, S.fill(blank(), hb, {}).state, { baths: '3' }), hb);
+check('removing a half bath is an edit to null', hbEd.edits, [{ field: 'baths', from: 2, to: 3 }, { field: 'halfBaths', from: 1, to: null }]);
+const hbAp = S.applyEdits(hb, hbEd.edits, {});
+check('…and it sticks', [hbAp.set.core.facts.halfBaths, hbAp.set.core.halfBaths], [undefined, null]);
+check('decimal baths from DE are not doubled', S.fill(blank(), job({ facts: { baths: 2.5, halfBaths: 1 } }), {}).state.baths, '2.5');
+check('https link on DE wins over a bad core link', S.listingUrlOf(job({ core: { listingUrl: 'http://x.example' }, de: { listingUrl: 'https://www.elliman.com/y/3' } })), 'https://www.elliman.com/y/3');
+check('NYC with only a city: the chip and FIELDS agree', [S.fill(blank(), job({ core: { city: 'Brooklyn' } }), {}).state.neighborhood, S.FIELDS(job({ core: { city: 'Brooklyn' } })).includes('city')], ['Brooklyn', true]);
+check('no row does not throw', [typeof S.fill(blank(), null, {}).state, typeof S.builtFrom(null, null, {}).facts, S.factEdits(null, null).edits], ['object', 'object', []]);
+
 /* ---------- built_from ---------- */
 const bf = S.builtFrom(filled, coop, { photos: { front: { path: 'P/1.jpg', modified: 'm1' }, back: null }, floorplan: { version: 2, render: 'branded', path: 'F/v2/a.jpg', modified: 'm2' }, via: 'helper' });
 check('builtFrom shape', Object.keys(bf), ['v', 'market', 'kind', 'ownership', 'facts', 'agents', 'agentsConfirmed', 'listingUrl', 'photos', 'floorplan', 'print', 'via']);
@@ -150,6 +161,7 @@ check('builtFrom facts are job values', [bf.facts.price, bf.facts.maintenance, b
 check('builtFrom NYC has no sq ft', 'sqft' in bf.facts, false);
 check('builtFrom NJ has sq ft', S.builtFrom(nf, njHouse, {}).facts.sqft, 2800);
 check('builtFrom keeps an unset printed fact as null', bf.facts.assessments, null);
+check("builtFrom agents are the job's", S.builtFrom(Object.assign({}, filled, { agentIds: ['z'] }), job({ core: { agentIds: ['a'] } }), {}).agents, ['a']);
 check('builtFrom print and via', [bf.print, bf.via, bf.market], [{ paper: 'a5', bleed: false }, 'helper', 'NYC']);
 
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));

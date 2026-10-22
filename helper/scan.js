@@ -11,8 +11,10 @@
        stores `scan` and marks a vanished folder 'broken'. It never moves the
        stage: that is Asana's (D50, S8); the pieces found feed Match's M8.
 
-   Reads names and dates only, never opens a file, and keeps no names:
-   only weekly counts and dates.
+   Reads names and dates only, never opens a file. It keeps weekly counts and
+   dates, plus (S15) the folder's Drive link, the newest 5 finished files of
+   each kit piece with their links, and the folder-health notes. Never a name
+   from paperwork or Docs.
 
    A job at Prep or later with no linked folder: the scan looks for its
    folder with the Link folder suggestions' own matching (folder-link.js
@@ -29,6 +31,8 @@ const fs = require('fs'), path = require('path');
 const RULES = require('../assets/js/drive-rules.js');
 const LINK = require('../assets/js/folder-link.js');
 const ADDR = require('../assets/js/address-aliases.js');
+const HEALTH = require('../assets/js/folder-health.js');
+const { driveLink } = require('./drive-link.js');
 const PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented'];
 const NYC_ROOT = 'GVC - New York/Building Information';
 
@@ -101,6 +105,62 @@ function scanFolder(abs, opts) {
   return { weeks: sorted, found, missing: false };
 }
 
+/* The job folder as GVC_HEALTH's tree, like assets/js/drive.js treeOf (depth 4): every name passes
+   drive-rules BEFORE it is statted or opened. Paperwork folders come out as one skipped line, paperwork
+   and other loose top files are only counted, and a loose top file named like a piece (a showsheet at the
+   top) is passed by name so the health check can flag it. Stats only; no file is ever opened. */
+const NO_STAT = ['raw', 'raws', 'staged', 'print', 'web'];   // photo sets: counted by name
+function treeOf(abs, depth) {
+  const top = { name: path.basename(abs), kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
+  const read = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; } };
+  const skip = n => n.startsWith('.') || /^desktop\.ini$/i.test(n);
+  function fileNode(p, name, segs) {
+    const f = { name, kind: 'file' };
+    if (segs.some(g => NO_STAT.indexOf(g.toLowerCase()) !== -1)) return f;
+    try { const st = fs.statSync(p); f.size = st.size; f.modified = st.mtime.toISOString(); } catch (e) { /* no date */ }
+    return f;
+  }
+  function walk(dir, segs, left, node) {
+    read(dir).forEach(e => {
+      if (skip(e.name) || !(e.isDirectory() || e.isFile())) return;
+      const p = path.join(dir, e.name), at = segs.concat(e.name);
+      if (!segs.length) {
+        const paper = RULES.isPaperworkFolder(e.name) || RULES.hasPaperworkWord(e.name);
+        if (e.isDirectory()) {
+          if (paper) { node.children.push({ name: e.name, kind: 'directory', skipped: true }); return; }
+          if (!RULES.allowedInJob(e.name)) { top.otherCount++; return; }
+        } else {
+          if (paper) { top.looseCount++; return; }
+          if (!RULES.allowedInJob(e.name)) {
+            if (HEALTH.topPieceKey(e.name)) node.children.push(fileNode(p, e.name, segs)); else top.looseCount++;
+            return;
+          }
+        }
+      } else if (!RULES.allowedInJob(at.join('/'))) return;
+      if (!e.isDirectory()) { node.children.push(fileNode(p, e.name, segs)); return; }
+      const d = { name: e.name, kind: 'directory', children: [] };
+      node.children.push(d);
+      if (left <= 1) d.more = true; else walk(p, at, left - 1, d);
+    });
+    node.children.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  walk(abs, [], depth || 4, top);
+  return RULES.jobTree(top);
+}
+
+/* what the job page and the phone show without Drive: the folder's link, the newest 5 files of each kit
+   piece with their links, the health notes and counts, the details doc. Names of allowed files only. */
+function richScan(abs, tree, r) {
+  const h = HEALTH.health(tree, { market: r.market, driveRoot: String(r.drive_folder || '').split('/')[0], isNew: false });
+  const pieces = {};
+  HEALTH.KEYS.forEach(k => {
+    const list = (h.pieces[k] || []).slice().sort((a, b) => (Date.parse(b.modified) || 0) - (Date.parse(a.modified) || 0)).slice(0, 5);
+    if (list.length) pieces[k] = list.map(f => ({ name: f.name, modified: f.modified, archived: !!f.archived,
+      url: driveLink(path.join(abs, ...f.path.split('/')), false) }));
+  });
+  return { folderUrl: driveLink(abs, true), pieces, health: { notes: h.notes, counts: h.counts }, detailsDoc: h.detailsDoc };
+}
+
 async function scanAll(o) {
   const { client } = o;
   const now = o.now || new Date();
@@ -126,7 +186,10 @@ async function scanAll(o) {
       if (s.missing) {
         if (r.folder_state !== 'broken') { patch.folder_state = 'broken'; changes.push(log(owner, r.id, 'folder_state', r.folder_state, 'broken')); out.broken++; }
       } else {
-        patch.scan = { weeks: s.weeks, found: s.found, scannedAt: now.toISOString() };
+        const abs = path.join(o.driveRoot, ...r.drive_folder.split('/'));
+        const keep = {};
+        ['candidate', 'candidateAt'].forEach(k => { if (r.scan && r.scan[k] !== undefined) keep[k] = r.scan[k]; });
+        patch.scan = Object.assign({ weeks: s.weeks, found: s.found, scannedAt: now.toISOString() }, richScan(abs, treeOf(abs, 4), r), keep);
         if (r.folder_state === 'broken') { patch.folder_state = 'linked'; changes.push(log(owner, r.id, 'folder_state', 'broken', 'linked')); }
       }
       try {
@@ -152,7 +215,7 @@ async function scanAll(o) {
   return out;
 }
 
-module.exports = { scanFolder, scanAll, mondayOf, candidateFor, driveLister };
+module.exports = { scanFolder, treeOf, scanAll, mondayOf, candidateFor, driveLister };
 
 if (require.main === module) {
   const { loadConfig } = require('./config.js');

@@ -107,6 +107,32 @@ function req(method, p, headers, body) {
   check('backslash paths too', [o.ok, opened[1] === path.join(fakeRoot, 'GVC - New York', 'A')], [true, true]);
   check('the real route points at the Drive root', /driveRoot: 'G:\\\\Shared drives'/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'routes.js'), 'utf8')), true);
 
+  /* the real Google Drive link of a job folder or file: refused outside the Drive root and for paperwork */
+  const { driveLinkRoute } = require('../helper/routes.js');
+  const dl = driveLinkRoute({ driveRoot: fakeRoot });
+  const jobDir = path.join(fakeRoot, 'GVC - New York', 'A');
+  fs.mkdirSync(path.join(jobDir, 'Floorplan'), { recursive: true });
+  fs.mkdirSync(path.join(jobDir, 'Docs'), { recursive: true });
+  fs.writeFileSync(path.join(jobDir, 'Floorplan', 'plan.pdf'), 'x');
+  fs.writeFileSync(path.join(jobDir, 'Docs', 'x.pdf'), 'x');
+  fs.writeFileSync(path.join(jobDir, 'Exclusive - Jane Client.pdf'), 'x');
+  const dlErr = b => dl(b).then(() => null, e => [e.status, e.message]);
+  check('drive-link: outside Shared drives is 400', await dlErr({ folder: 'GVC - New York/../..' }), [400, "That isn't a path the helper reads."]);
+  check('drive-link: a drive letter is refused', (await dlErr({ folder: 'C:/Windows' }))[0], 400);
+  check('drive-link: Docs file is 403', await dlErr({ folder: 'GVC - New York/A', file: 'Docs/x.pdf' }), [403, "The workspace doesn't link that file."]);
+  check('drive-link: loose paperwork file is 403', (await dlErr({ folder: 'GVC - New York/A', file: 'Exclusive - Jane Client.pdf' }))[0], 403);
+  check('drive-link: a stream name on a file is 403', (await dlErr({ folder: 'GVC - New York/A', file: 'Floorplan/plan.pdf:user.drive.id' }))[0], 403);
+  check('drive-link: file climbing out of the folder is refused', (await dlErr({ folder: 'GVC - New York/A', file: 'Floorplan/../../B/x.pdf' }))[0], 403);
+  check('drive-link: no Drive id is 404', await dlErr({ folder: 'GVC - New York/A' }), [404, 'No Drive id beside this item']);
+  check('drive-link: a file with no id is 404', await dlErr({ folder: 'GVC - New York/A', file: 'Floorplan/plan.pdf' }), [404, 'No Drive id beside this item']);
+  if (process.platform === 'win32') {
+    fs.writeFileSync(jobDir + ':user.drive.id', 'FOLDERID1234567');
+    fs.writeFileSync(path.join(jobDir, 'Floorplan', 'plan.pdf') + ':user.drive.id', 'FILEID1234567\n');
+    check('drive-link: the folder link', await dl({ folder: 'GVC - New York/A' }), { url: 'https://drive.google.com/drive/folders/FOLDERID1234567' });
+    check('drive-link: the file link', await dl({ folder: 'GVC - New York\\A', file: 'Floorplan\\plan.pdf' }), { url: 'https://drive.google.com/file/d/FILEID1234567/view' });
+  }
+  check('the real drive-link route points at the Drive root', /driveLinkRoute\(\{ driveRoot: 'G:\\\\Shared drives'/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'routes.js'), 'utf8')), true);
+
   /* ---------- Asana in the schedule, the runner, the routes and /health ---------- */
   const { due } = require('../helper/schedule.js');
   const { createRunner } = require('../helper/runner.js');

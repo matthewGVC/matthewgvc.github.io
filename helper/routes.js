@@ -6,6 +6,7 @@
      POST /sync         {}                        → Asana, then DE: {asana:{...}, de:{...}}
      POST /pdf          {tool, inputs, paper, outDir}
                                                   → {ok, path, pages}
+     POST /drive-link   {folder, file?}           → {url} (the real Google Drive link; paperwork refused)
      GET  /lab/samples                            → paths of the Showsheet sample files
 
    /pdf in Slice 0 accepts only the repo's sample files as inputs, and
@@ -108,4 +109,36 @@ function openFolderRoute(o) {
 }
 route('POST', '/open-folder', openFolderRoute({ driveRoot: 'G:\\Shared drives' }));
 
-module.exports = { openFolderRoute, asanaSyncRoute, syncRoute };
+/* "Copy Drive link": the real drive.google.com link of a job folder, or of one file in it
+   (relative to the folder). Reads the Drive id Google Drive for Desktop keeps beside the item;
+   writes nothing. Paperwork files are refused before anything is touched. */
+function driveLinkRoute(o) {
+  const root = path.resolve(o.driveRoot);
+  const { allowedInJob } = require('../assets/js/drive-rules.js');
+  const { driveLink } = require('./drive-link.js');
+  const under = rel => {
+    const segs = String(rel || '').split(/[\\/]+/).filter(Boolean);
+    if (!segs.length || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?]/.test(s))) throw fail(400, 'That isn\'t a path the helper reads.');
+    const abs = path.resolve(root, ...segs);
+    if (abs.indexOf(root + path.sep) !== 0) throw fail(400, 'Not under Shared drives');
+    return { abs, segs };
+  };
+  return async body => {
+    const f = under(body.folder);
+    if (!body.file) {
+      const url = driveLink(f.abs, true);
+      if (!url) throw fail(404, 'No Drive id beside this item');
+      return { url };
+    }
+    const inside = String(body.file).split(/[\\/]+/).filter(Boolean).join('/');
+    if (!allowedInJob(inside) || /[:"<>|*?]/.test(inside)) throw fail(403, 'The workspace doesn\'t link that file.');
+    const abs = path.resolve(f.abs, ...inside.split('/'));
+    if (abs.indexOf(f.abs + path.sep) !== 0) throw fail(400, 'That isn\'t a path the helper reads.');
+    const url = driveLink(abs, false);
+    if (!url) throw fail(404, 'No Drive id beside this item');
+    return { url };
+  };
+}
+route('POST', '/drive-link', driveLinkRoute({ driveRoot: 'G:\\Shared drives' }));
+
+module.exports = { driveLinkRoute, openFolderRoute, asanaSyncRoute, syncRoute };

@@ -171,5 +171,5 @@
     return out;
   }
 
-  return { health: health, KEYS: KEYS, LABEL: LABEL, FOLDER: FOLDER };
+  return { health: health, KEYS: KEYS, LABEL: LABEL, FOLDER: FOLDER, topPieceKey: topPieceKey };
 });

@@ -18,6 +18,9 @@
    over G: (helper/scan.js): the nightly scan uses the same matching to find
    an unlinked job's folder (Match's M18). A house of a development (a
    listing with dev_project_id) is also looked for under New Development.
+   Every NJ listing is too, with or without a development row (a TJ New Dev
+   house such as "New Development/619 Bradley Ave"): the top level, and one
+   level inside a development's folder ("New Development/Westwood/<house>").
    ============================================================ */
 (function (global) {
   'use strict';
@@ -56,7 +59,8 @@
       }).then(function () { return out.slice(0, 5); });
     }
     var places = table === 'pitches' ? PLACES.pitch : table === 'dev_projects' ? PLACES['dev' + row.market] || [] : PLACES[row.market] || [];
-    if (table === 'properties' && row.dev_project_id) places = places.concat(PLACES['dev' + row.market] || []);
+    var devPlaces = table === 'properties' ? PLACES['dev' + row.market] || [] : [];
+    if (table === 'properties' && (row.dev_project_id || row.market === 'NJ')) places = places.concat(devPlaces);
     return Promise.all(places.map(function (p) {
       return dirs(p).then(function (names) {
         if (p === NJ) {   // NJ resale is filed by town
@@ -66,6 +70,11 @@
         }
         names.filter(table === 'dev_projects' ? function (n) { return n.replace(/^\d+\s*-\s*/, '').toLowerCase() === String(row.label).toLowerCase(); } : nameMatches)
           .forEach(function (x) { out.push(p + '/' + x); });
+        if (devPlaces.indexOf(p) !== -1) {   // a house inside a development's folder; a house folder that matched is not looked into
+          return Promise.all(names.filter(function (n) { return !nameMatches(n); }).map(function (dev) {
+            return dirs(p + '/' + dev).then(function (xs) { xs.filter(nameMatches).forEach(function (x) { out.push(p + '/' + dev + '/' + x); }); });
+          }));
+        }
       });
     })).then(function () { return out.slice(0, 5); });
   }

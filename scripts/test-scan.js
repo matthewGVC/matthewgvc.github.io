@@ -99,6 +99,10 @@ function file(root, rel, date) {
   fs.mkdirSync(path.join(root2, ...(NYB + '/100 Example St/5B').split('/')), { recursive: true });
   fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/1. Residential Sales/1. Resale/Wall Township/40 Chapel Lane'.split('/')), { recursive: true });
   fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/New Development/610 Agnes Ave'.split('/')), { recursive: true });
+  // an NJ house filed under New Development with no development row (619 Bradley Ave), a house inside a development's folder
+  fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/New Development/619 Bradley Ave/619 Bradley Export'.split('/')), { recursive: true });
+  fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/New Development/Westwood/12 Sample Rd'.split('/')), { recursive: true });
+  fs.mkdirSync(path.join(root2, ...'GVC - New Jersey/New Development/00 SFH TEMPLATE'.split('/')), { recursive: true });
   const tree = dir => { const out = []; (function walk(d) { fs.readdirSync(d, { withFileTypes: true }).forEach(e => { const p = path.join(d, e.name);
     out.push(p + (e.isDirectory() ? '/' : ':' + fs.statSync(p).mtimeMs)); if (e.isDirectory()) walk(p); }); })(dir); return out.sort(); };
   const before2 = tree(root2);
@@ -108,6 +112,9 @@ function file(root, rel, date) {
       { id: 'n2', slug: 'n2', version: 1, stage: 'Live', market: 'NYC', core: { address: '100 Example St', unit: '9Z' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'j1', slug: 'j1', version: 1, stage: 'In contract', market: 'NJ', core: { address: '40 Chapel Ln', city: 'Wall' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'd1', slug: 'd1', version: 1, stage: 'Prep', market: 'NJ', dev_project_id: 'dev1', core: { address: '610 Agnes Ave' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'b1', slug: 'b1', version: 1, stage: 'Off market', market: 'NJ', dev_project_id: null, core: { address: '619 Bradley Ave', city: 'Brielle' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'w1', slug: 'w1', version: 1, stage: 'Live', market: 'NJ', core: { address: '12 Sample Rd', city: 'Westwood' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'y1', slug: 'y1', version: 1, stage: 'Live', market: 'NYC', core: { address: '12 Sample Rd' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'x1', slug: 'x1', version: 1, stage: null, market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'o1', slug: 'o1', version: 1, stage: 'Off market', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' }
     ],
@@ -126,10 +133,18 @@ function file(root, rel, date) {
   check('M18 scan: only the building folder (no unit folder): no candidate', cand('n2'), null);
   check('M18 scan: NJ resale by town', cand('j1'), 'GVC - New Jersey/1. Residential Sales/1. Resale/Wall Township/40 Chapel Lane');
   check('M18 scan: a development house in New Development', cand('d1'), 'GVC - New Jersey/New Development/610 Agnes Ave');
+  check('M18 scan: an NJ house filed in New Development without a development row (619 Bradley Ave)', cand('b1'), 'GVC - New Jersey/New Development/619 Bradley Ave');
+  check('M18 scan: an NJ house one level inside a development\'s folder', cand('w1'), 'GVC - New Jersey/New Development/Westwood/12 Sample Rd');
+  check('M18 scan: an NYC job never looks in NJ New Development', cand('y1'), null);
+  {
+    const LINK = require('../assets/js/folder-link.js'), ADDR = require('../assets/js/address-aliases.js');
+    const got = await LINK.suggest(require('../helper/scan.js').driveLister(root2), ADDR, 'properties', T2.properties.find(p => p.id === 'b1'));
+    check('Link suggestions: the house folder once, not the folders inside it', got, ['GVC - New Jersey/New Development/619 Bradley Ave']);
+  }
   check('M18 scan: never for a row with no stage', T2.properties.find(p => p.id === 'x1').scan, undefined);
   check('M18 scan: an Off market job is looked for too (D88: prep happens while off market)', cand('o1'), NYB + '/100 Example St/4A');
   check('M18 scan: nothing linked by itself', T2.properties.map(p => [p.drive_folder, p.folder_state]).filter(x => x[0] || x[1] !== 'unlinked'), []);
-  check('M18 scan: counted, and Drive left exactly as it was', [out2.candidates, JSON.stringify(tree(root2)) === JSON.stringify(before2)], [4, true]);
+  check('M18 scan: counted, and Drive left exactly as it was', [out2.candidates, JSON.stringify(tree(root2)) === JSON.stringify(before2)], [6, true]);
   const w2 = writes2;
   await scanAll({ client: db2, driveRoot: root2, now: new Date('2026-10-22T02:00:00Z') });
   check('M18 scan: the same candidate again is not written again', writes2 - w2, 0);

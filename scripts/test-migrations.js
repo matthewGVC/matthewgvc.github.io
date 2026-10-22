@@ -401,6 +401,18 @@ const USERS = {
     check('junk piece names refused', await fails('matt', `insert into public.documents (property_id, tool) values ($1, 'Bad Tool!')`, [np]), true);
     check('one-letter piece name refused', await fails('matt', `insert into public.documents (property_id, tool) values ($1, 'x')`, [np]), true);
 
+    // the record columns are the owner's alone, even through a direct write (the rule lets members write documents)
+    const recBefore = canon(await doc(prop));
+    for (const who of ['teamrole', 'team', 'helper']) {
+      check(who + ': direct built_from write refused', await fails(who, `update public.documents set built_from = '{"facts":{}}' where property_id = $1 and tool = 'showsheet'`, [prop]), true);
+      check(who + ': direct output write refused', await fails(who, `update public.documents set output = '{"path":"x.pdf"}', outputs = '[{"path":"x.pdf"}]' where property_id = $1 and tool = 'showsheet'`, [prop]), true);
+      check(who + ': direct built_by write refused', await fails(who, `update public.documents set built_by = null, built_at = null where property_id = $1 and tool = 'showsheet'`, [prop]), true);
+      check(who + ': a new row carrying a record refused', await fails(who, `insert into public.documents (property_id, tool, built_from) values ($1, 'brochure', '{}')`, [prop]), true);
+    }
+    check('refused direct writes changed nothing', canon(await doc(prop)), recBefore);
+    check("the team's sheet save (state only) still works", await fails('team', `update public.documents set state = '{"team":1}', saved_at = now() where property_id = $1 and tool = 'showsheet'`, [prop]), false);
+    check('the owner may still write a record directly', await fails('matt', `update public.documents set built_at = built_at where property_id = $1 and tool = 'showsheet'`, [prop]), false);
+
     // only the owner (D87)
     const before = await doc(np);
     for (const who of ['teamrole', 'team', 'helper', 'stranger']) {

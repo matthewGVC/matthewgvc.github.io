@@ -28,6 +28,17 @@ const TOOLS = {
   }
 };
 
+/* A drawn state may only show pictures it carries inline: the hidden browser
+   loads pictures and media from the site itself and nowhere else. */
+async function guardRequests(page, siteBase) {
+  const origin = new URL(siteBase).origin;
+  await page.route('**/*', route => {
+    const q = route.request(), kind = q.resourceType();
+    if ((kind === 'image' || kind === 'media') && new URL(q.url()).origin !== origin) return route.abort();
+    return route.continue();
+  });
+}
+
 async function renderPiece(opts) {
   const tool = TOOLS[opts.tool];
   if (!tool) throw Object.assign(new Error('The helper can\'t make a ' + opts.tool + ' yet.'), { status: 400 });
@@ -37,6 +48,7 @@ async function renderPiece(opts) {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
+    if (opts.state) await guardRequests(page, opts.siteBase);
     await page.goto(opts.siteBase.replace(/\/$/, '') + tool.path, { waitUntil: 'networkidle', timeout: 90000 });
     if (opts.state) {
       const drawn = await page.evaluate(s => window.__render(s).then(() => ({ ok: window.__rendered === true }), e => ({ error: String(e && e.message || e) })), opts.state);
@@ -62,4 +74,4 @@ async function renderPiece(opts) {
   }
 }
 
-module.exports = { renderPiece, TOOLS };
+module.exports = { renderPiece, guardRequests, TOOLS };

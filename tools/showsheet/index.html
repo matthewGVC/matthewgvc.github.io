@@ -2495,7 +2495,11 @@ async function drawGiven(s){
   state = base;
   state.building = Object.assign(blankUnit().building, state.building);
   state.residence = Object.assign(blankUnit().residence, state.residence);
-  state.photos = state.photos.filter(p => p && typeof p.src === 'string');
+  // pictures come inline only: an address elsewhere (another host, a file) is dropped, never fetched
+  const inline = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(v);
+  state.photos = state.photos.filter(p => p && inline(p.src));
+  if(!inline(state.floorplan)) state.floorplan = null;
+  if(!inline(state.floorplan2)) state.floorplan2 = null;
   state.floorplanView = normFpView(state.floorplanView);
   state.floorplan2View = normFpView(state.floorplan2View);
   settleMarket();

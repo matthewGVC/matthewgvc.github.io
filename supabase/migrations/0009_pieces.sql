@@ -17,6 +17,9 @@
 --   save_job(...)          unchanged, except "Typo, no rebuild": a change ticked so also
 --                          writes its new value into each piece's built_from for that fact,
 --                          in the same save, so nothing goes stale (S16).
+--   documents_record_owner  a direct write to documents (the old tools' way to save a sheet,
+--                          still allowed) may not set or change the record columns unless
+--                          the caller is the owner.
 --
 -- Needs 0004 to 0008. Safe to run more than once; nothing is dropped or renamed except the
 -- old tool check, which is replaced. Before running it on the real project: back up
@@ -46,6 +49,29 @@ end $$;
 drop trigger if exists documents_version on public.documents;
 create trigger documents_version before update on public.documents
   for each row execute function public.documents_version();
+
+-- The record columns are the owner's alone (D87). The member rule from 0004 lets any member
+-- write documents (the old tools save a sheet's state that way, and still may), so a direct
+-- write that sets or changes a record column is refused unless the caller is the active
+-- owner. A session with no signed-in user (the SQL Editor, a restore) is not stopped.
+create or replace function public.documents_record_owner() returns trigger
+language plpgsql security invoker set search_path = public as $$
+begin
+  if auth.uid() is null then return new; end if;
+  if (tg_op = 'INSERT' and (new.built_from is not null or new.output is not null
+        or coalesce(new.outputs, '[]'::jsonb) <> '[]'::jsonb or new.built_at is not null or new.built_by is not null))
+     or (tg_op = 'UPDATE' and (new.built_from is distinct from old.built_from or new.output is distinct from old.output
+        or new.outputs is distinct from old.outputs or new.built_at is distinct from old.built_at
+        or new.built_by is distinct from old.built_by)) then
+    if not exists (select 1 from public.members where user_id = auth.uid() and active and role = 'owner') then
+      raise exception 'not allowed';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists documents_record_owner on public.documents;
+create trigger documents_record_owner before insert or update on public.documents
+  for each row execute function public.documents_record_owner();
 
 alter table public.documents drop constraint if exists documents_tool_check;
 alter table public.documents add constraint documents_tool_check check (tool ~ '^[a-z][a-z0-9-]{1,30}$');

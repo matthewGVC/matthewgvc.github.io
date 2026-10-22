@@ -27,9 +27,10 @@ const RENDER_MS = 3 * 60 * 1000;
 /* the address part of the file name: the job's own, no control characters, no paperwork
    words (a file the workspace makes must never look like deal paperwork), at most 80 characters */
 function safeLabel(s) {
-  return String(s || '').replace(/[\x00-\x1f\x7f]+/g, ' ')
+  // cut first, then strip: a cut can't turn "Offering" into "Offer" after the check
+  return String(s || '').replace(/[\x00-\x1f\x7f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
     .replace(/\b(offers?|contracts?|exclusives?|commissions?|closings?|deals?|leases?|agreements?|signed)\b/gi, ' ')
-    .replace(/\s+/g, ' ').trim().slice(0, 80).trim();
+    .replace(/\s+/g, ' ').trim();
 }
 function capped(p, ms, msg) {
   let t;
@@ -80,6 +81,7 @@ function pieceRoute(o) {
     if (rel(dir).split('/').some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
     const core = row.core || {};
     const label = safeLabel([core.address, core.unit].filter(Boolean).join(' ')) || safeLabel(row.label) || safeLabel(r.label) || 'Job';
+    if (hasPaperworkWord(label)) throw fail(403, 'The workspace doesn\'t write a file with that name.');
     const file = await savePdf(r.pdf, dir, PIECE[body.tool], label, today());
     if (!insideJobPiece(file, jobAbs, dir)) throw fail(500, 'The helper wrote somewhere it shouldn\'t have: ' + file);
 

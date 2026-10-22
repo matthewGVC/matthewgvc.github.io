@@ -243,13 +243,17 @@
   function lay() {
     SH.LIBRARY.blank();
     var saved = M.doc && M.doc.state && typeof M.doc.state === 'object' ? JSON.parse(JSON.stringify(M.doc.state)) : null;
+    var lists = saved && saved.listsFrom && typeof saved.listsFrom === 'object' ? saved.listsFrom : null;
+    if (saved) delete saved.listsFrom;
     M.crops = {};
     if (saved) {
       (Array.isArray(saved.photos) ? saved.photos : []).forEach(function (p) { if (p && p.path) M.crops[p.path] = { fx: p.fx, fy: p.fy }; });
       ['photos', 'heroIndex', 'secondaryIndex', 'secondaryPhoto', 'floorplan', 'floorplan2', 'floorplanFrom'].forEach(function (k) { delete saved[k]; });
     }
     SH.LIBRARY.setDoc(saved);
-    var f = SJ.fill(SH.state, M.row, { previous: M.doc && M.doc.built_from });
+    M.laidVersion = M.row.version;   // the job as the sheet was filled; only the sheet's own saves move it
+    M.laidLists = { buildingFeatures: SJ.valueOf(M.row, 'buildingFeatures'), interiorFeatures: SJ.valueOf(M.row, 'interiorFeatures') };
+    var f = SJ.fill(SH.state, M.row, { previous: lists ? { facts: lists } : M.doc && M.doc.built_from });
     M.redone = f.redone;
     f.state.photos = []; f.state.heroIndex = 0; f.state.secondaryIndex = null;
     f.state.floorplan = null; f.state.floorplan2 = null;
@@ -427,6 +431,9 @@
     delete d.secondaryPhoto;
     d.floorplan = null; d.floorplan2 = null;
     d.floorplanFrom = planFrom();
+    // the job's lists the sheet's Building and Residence wording came from: a draft reopened
+    // keeps its own wording until those lists change on the job
+    d.listsFrom = M.laidLists;
     return d;
   }
   function saveFacts() {
@@ -436,8 +443,12 @@
     var nr = Object.assign({}, M.noRebuild);
     if (nr.baths) nr.halfBaths = true;
     var ap = SJ.applyEdits(M.row, fe.edits, { noRebuild: nr });
+    var from = M.row.version;
     return rpc('save_job', { p_table: 'properties', p_id: M.row.id, p_version: M.row.version, p_set: ap.set, p_changes: ap.changes }).then(function (row) {
-      if (row && row.id) M.row = row;
+      if (row && row.id) {
+        if (from === M.laidVersion) M.laidVersion = row.version;
+        M.row = row;
+      }
       M.noRebuild = {};
       return M.row;
     }, function (e) {
@@ -512,9 +523,18 @@
     var tries = 0;
     function attempt() {
       tries++;
-      return savePiece(bf, output, archived).catch(function (e) {
-        if (tries >= 3) throw new Error(failMsg || NOT_RECORDED);
-        return pause(retryMs()).then(attempt);
+      return savePiece(bf, output, archived).catch(function () {
+        // the save may have landed with its reply lost: read the record before trying again
+        var landed = function () {
+          var o = M.doc && M.doc.output;
+          return !!o && o.name === output.name && o.madeAt === output.madeAt;
+        };
+        var next = function () {
+          if (landed()) return M.doc;
+          if (tries >= 3) throw new Error(failMsg || NOT_RECORDED);
+          return pause(retryMs()).then(attempt);
+        };
+        return reloadDoc().then(next, next);
       });
     }
     return attempt();
@@ -536,10 +556,11 @@
     var why = notReady();
     if (why) { say(why); return Promise.resolve(false); }
     busy(true); say('Saving the facts…');
-    return saveFacts().then(function (saved) {
-      var version = saved && saved.version;
+    return saveFacts().then(function () {
       return reloadRow().then(function () {
-        if (M.row.version !== version && SJ.factEdits(SH.state, M.row).edits.length) {
+        // anything else that moved the job (agents, link, lists, facts) isn't in this sheet: the
+        // record must match what prints, so stop rather than print one thing and record another
+        if (M.row.version !== M.laidVersion) {
           throw new Error('This job changed somewhere else since the sheet opened. Reload the page to bring the change in, then save.');
         }
       });

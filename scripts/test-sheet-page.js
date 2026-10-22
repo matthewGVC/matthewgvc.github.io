@@ -106,6 +106,7 @@ async function open(browser, opts) {
       const doc = Object.assign({ property_id: body.p_property_id, tool: body.p_tool, version: (body.p_version || 0) + 1, state: body.p_state, outputs: [] },
         body.p_built_from ? { built_from: body.p_built_from, output: body.p_output } : {});
       T.documents = [doc];
+      if (opts.pieceLost && pieces.length <= opts.pieceLost) return json(500, { message: 'the reply was lost' });
       return json(200, doc);
     }
     if (m !== 'GET') return json(201, []);
@@ -177,6 +178,8 @@ const typeIn = async (page, field, value) => {
     [false, ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg']]);
   check('Save sheet: the plan record kept', ((t.pieces[0] || {}).p_state || {}).floorplanFrom, { version: 2, render: 'branded', path: 'Floorplan/v2/Plan v2.jpg', modified: '2026-10-09T10:00:00.000Z' });
   check('Save sheet: said so', (await text(p, '#jobMsg')).includes('Saved'), true);
+  const savedLists = (((t.pieces[0] || {}).p_state) || {}).listsFrom || null;
+  check('Save sheet: keeps the lists its wording came from', Object.keys(savedLists || {}).sort(), ['buildingFeatures', 'interiorFeatures']);
   await typeIn(p, 'beds', '4');
   await p.check('[data-typo="beds"]');
   await p.click('#btnSaveSheet');
@@ -380,6 +383,34 @@ const typeIn = async (page, field, value) => {
   check('rebuild: banner lists the price', (await text(p, '#jobBanner')).includes('Price $4,750,000 → $4,500,000'), true);
   check('rebuild: building redone, said so', [(await text(p, '#jobBanner')).includes('Building features changed on the job; The Building was redone from it'), (await st(p)).building.service], [true, 'Full-time doorman']);
   check('rebuild: the sheet\'s own wording kept elsewhere', [(await st(p)).residence.features, (await st(p)).textScale.residence], [['Mine'], 120]);
+  await t.ctx.close();
+
+  // the job moved elsewhere (agents only, nothing the sheet edits) after the sheet opened: no PDF, no record (review I3)
+  t = await open(browser, {});
+  const jp = t.T.properties.find(x => x.id === 'p1');
+  jp.core = Object.assign({}, jp.core, { agentIds: ['someone-else'] });
+  jp.version += 1;
+  await savePdf(t);
+  check('moved elsewhere: no PDF, no record, told to reload', [t.helper.length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('Reload the page')], [0, 0, true]);
+  await t.ctx.close();
+  // the sheet's own fact save moves the version too: that alone never stops it
+  t = await open(browser, {});
+  await t.page.evaluate(() => { window.__test.state.price = '$4,200,000'; });
+  await savePdf(t);
+  check('own save then PDF: goes through', [t.saves.length, t.helper.length, t.pieces.length], [1, 1, 1]);
+  await t.ctx.close();
+
+  // the record landed but its reply was lost: the retry finds it and doesn't record the file twice (review M4)
+  t = await open(browser, { pieceLost: 1 });
+  await savePdf(t);
+  check('reply lost: recorded once, said saved', [t.pieces.length, (await text(t.page, '#jobMsg')).startsWith('Saved to Drive')], [1, true]);
+  await t.ctx.close();
+
+  // a saved draft (never built) opens with its own wording when the job's lists haven't moved (review I1)
+  const DRAFT = { property_id: 'p1', tool: 'showsheet', version: 3, built_from: null,
+    state: { building: { amenities: ['Roof deck'] }, residence: { features: ['Mine'] }, listsFrom: savedLists } };
+  t = await open(browser, { documents: [DRAFT], path: '/tools/showsheet/?listing=100-example-st-4a' });
+  check('draft: its own wording kept on reopen', [(await st(t.page)).building.amenities, (await st(t.page)).residence.features], [['Roof deck'], ['Mine']]);
   await t.ctx.close();
 
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));

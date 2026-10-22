@@ -412,6 +412,39 @@ function req(method, p, headers, body) {
   check('/piece: 41 MB is refused', [r.status, r.json && r.json.error], [413, 'That request is too large.']);
   check('the real /piece route points at the Drive root', /driveRoot: 'G:\\\\Shared drives',\r?\n  driveLink/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'routes.js'), 'utf8')), true);
 
+  /* Task 10 security fixes */
+  const { hasPaperworkWord } = require('../assets/js/drive-rules.js');
+  check('label: the cut never leaves a paperwork word behind', hasPaperworkWord(safeLabel('x'.repeat(74) + ' Offering')), false);
+  // a junction inside the job folder must not carry a new folder or a move outside it
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-outside-'));
+  ROWS.p7 = { id: 'p7', drive_folder: 'GVC - Test/7 Example St', label: '7 Example St', market: 'NJ', core: { address: '7 Example St' } };
+  fs.mkdirSync(job('7 Example St'));
+  fs.symlinkSync(outside, path.join(job('7 Example St'), 'Marketing'), 'junction');
+  check('a Marketing junction is refused', await piece({ propertyId: 'p7', tool: 'showsheet', state: S('7 Example St') }, cfgP).then(() => null, e => e.status), 403);
+  check('…and nothing is made outside the job', fs.readdirSync(outside), []);
+  ROWS.p8 = { id: 'p8', drive_folder: 'GVC - Test/8 Example St', label: '8 Example St', market: 'NJ', core: { address: '8 Example St' } };
+  const sh8 = path.join(job('8 Example St'), 'Marketing', 'Showsheet');
+  fs.mkdirSync(sh8, { recursive: true });
+  const old8 = path.join(sh8, 'Showsheet - 8 Example St - 2026-10-01.pdf');
+  fs.writeFileSync(old8, 'x'.repeat(10));
+  fs.symlinkSync(outside, path.join(sh8, 'Archive'), 'junction');
+  const st8 = fs.statSync(old8);
+  DOCS.p8 = { output: { path: 'Marketing/Showsheet/' + path.basename(old8), size: 10, modified: st8.mtime.toISOString(), via: 'helper' },
+    outputs: [{ path: 'Marketing/Showsheet/' + path.basename(old8) }] };
+  out = await piece({ propertyId: 'p8', tool: 'showsheet', state: S('8 Example St') }, cfgP);
+  check('an Archive junction leaves the older file in place', [!!out.archived.left, fs.existsSync(old8), fs.readdirSync(outside)], [true, true, []]);
+  // a body sent in pieces with no length, over the limit and never ending, is cut off
+  const cut = await new Promise(resolve => {
+    const q = http.request({ host: '127.0.0.1', port: server.address().port, method: 'POST', path: '/drive-link', headers: pairH });
+    const t = setTimeout(() => { q.destroy(); resolve('still open'); }, 8000);
+    q.on('response', rs => { rs.resume(); clearTimeout(t); resolve('answered ' + rs.statusCode); q.destroy(); });
+    q.on('error', () => { clearTimeout(t); resolve('cut off'); });
+    const chunk = Buffer.alloc(256 * 1024, 120);
+    let n = 0;
+    (function more() { if (q.destroyed || n++ > 400) return; q.write(chunk, () => setImmediate(more)); })();
+  });
+  check('an endless body over the limit is cut off', cut === 'still open' ? cut : 'ended', 'ended');
+
   check('bound to loopback', server.address().address, '127.0.0.1');
   server.close();
 

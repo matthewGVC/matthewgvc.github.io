@@ -67,8 +67,11 @@
     if ((bf.listingUrl || null) !== (url || null)) add('listingUrl', 'Listing link', bf.listingUrl || null, url);
 
     var now = S.photosOf(row, opts.editedPaths === undefined ? null : opts.editedPaths);
+    // with no tray order and Drive unknown only the hero is known: the back photo isn't judged
+    var backKnown = ((row && row.photo_order) || []).length > 0 || opts.editedPaths !== undefined;
     if (now) {
       [['front', 'Front photo'], ['back', 'Back photo']].forEach(function (p) {
+        if (p[0] === 'back' && !backKnown) return;
         var was = (bf.photos || {})[p[0]] || null, path = now[p[0]] || null;
         if ((was && was.path || null) !== path) { add('photos.' + p[0], p[1], was && was.path || null, path); return; }
         var f = path && opts.files && opts.files[path];

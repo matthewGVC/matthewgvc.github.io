@@ -54,7 +54,7 @@ function readBody(req, limit) {
     const chunks = [];
     req.on('data', c => {
       size += c.length;
-      if (over) return;
+      if (over) { if (size > limit + 16 * 1024 * 1024) req.destroy(); return; }   // drained 16 MB past the limit, then cut off
       if (size > limit) { over = true; chunks.length = 0; return; }
       chunks.push(c);
     });

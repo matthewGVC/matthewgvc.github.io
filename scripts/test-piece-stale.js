@@ -86,6 +86,12 @@ check('paper never counts', ST.stale(dPaper, r0, {}).state, 'fresh');
 check('a fact the sheet no longer prints is ignored', ST.stale(Object.assign({}, d0, { built_from: Object.assign({}, d0.built_from, { facts: Object.assign({ maintenance: 1 }, d0.built_from.facts) }) }), r0, {}).state, 'fresh');
 check('words', ST.words([{ label: 'Price' }, { label: 'Agents' }, { label: 'Front photo' }]), 'price, agents, front photo');
 
+// a hero with no tray order and Drive unknown (overview, phone): the back photo is unknown, not "gone"
+const heroOnly = job({ row: { photo_order: [] } });
+check('hero only, Drive unknown: back photo not judged', ST.stale(built(heroOnly), heroOnly, {}).state, 'fresh');
+check('hero only, Drive unknown: a new hero still counts', ST.stale(built(heroOnly), job({ row: { photo_hero: 'Photos/Edited/09.jpg', photo_order: [] } }), {}).changes.map(c => c.field), ['photos.front']);
+check('hero only, Drive known: the back photo is judged', ST.stale(built(heroOnly), heroOnly, { editedPaths: ['Photos/Edited/01.jpg', 'Photos/Edited/05.jpg'] }).changes.map(c => c.field), ['photos.back']);
+
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

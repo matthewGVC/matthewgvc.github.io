@@ -19,6 +19,7 @@ const { insideJobPiece } = require('./guard.js');
 const CHANGED = 'older showsheet left in place: it changed after the workspace made it';
 const GONE = 'older showsheet left in place: it isn\'t where the workspace left it';
 const UNKNOWN = 'older showsheet left in place: the workspace has no record of making it';
+const LINKED = 'older showsheet left in place: its Archive folder points outside the job folder';
 
 function relOf(jobAbs, abs) { return path.relative(jobAbs, abs).split(path.sep).join('/'); }
 function same(a, b) { return String(a || '').toLowerCase() === String(b || '').toLowerCase(); }
@@ -47,11 +48,15 @@ function archivePrevious(o) {
   if (!st.isFile()) return { left: prev.path, why: GONE };
   if (st.size !== prev.size || !(Math.abs(st.mtimeMs - ms(prev.modified)) <= 2000)) return { left: prev.path, why: CHANGED };
   const archive = path.join(o.dir, 'Archive');
+  // an Archive junction or link must not carry the move outside the showsheet folder
+  const linked = () => fs.realpathSync(archive).toLowerCase().indexOf(fs.realpathSync(o.dir).toLowerCase() + path.sep) !== 0;
+  if (fs.existsSync(archive) && linked()) return { left: prev.path, why: LINKED };
   fs.mkdirSync(archive, { recursive: true });
+  if (linked()) return { left: prev.path, why: LINKED };
   const target = path.join(archive, freeName(archive, path.basename(abs)));
   if (!insideJobPiece(target, o.jobAbs, o.dir)) return { left: prev.path, why: GONE };
   fs.renameSync(abs, target);
   return { from: relOf(o.jobAbs, abs), to: relOf(o.jobAbs, target) };
 }
 
-module.exports = { archivePrevious, CHANGED, GONE, UNKNOWN };
+module.exports = { archivePrevious, CHANGED, GONE, UNKNOWN, LINKED };

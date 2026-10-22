@@ -97,6 +97,17 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   check('unknown market is New York, nulls ignored', [odd.rendered, odd.dis === odd.legal.nyc, odd.logos], [true, true, 1]);
   const coopNj = await draw(Object.assign({}, FL, { ownership: 'co-op', maintenance: '$3,000' }));
   check('a co-op in Florida prints as a condo', [coopNj.chip, coopNj.numbers.map(x => x[0]).includes('Maintenance')], ['CONDO·SAMPLETON', false]);
+  // a given state may only bring inline pictures: an address elsewhere is dropped, never fetched
+  const probe = require('http').createServer((q, r) => { probe.hits++; r.end(); });
+  probe.hits = 0;
+  await new Promise(r => probe.listen(0, '127.0.0.1', r));
+  const far = 'http://127.0.0.1:' + probe.address().port;
+  const hostile = Object.assign({}, NJ, { photos: [{ src: far + '/p.jpg', fx: 50, fy: 50, name: 'p' }, { src: DOT, fx: 50, fy: 50, name: 'ok' }],
+    floorplan: far + '/f.png', floorplan2: 'file:///C:/Windows/win.ini' });
+  await draw(hostile);
+  const kept = await page.evaluate(() => { const s = window.__test.state; return [s.photos.map(p => p.name), s.floorplan, s.floorplan2]; });
+  check('only inline pictures are kept from a given state', kept, [['ok'], null, null]);
+  check('nothing outside the page is fetched', probe.hits, 0);
   check('no page errors', errors, []);
   await browser.close();
 
@@ -108,9 +119,21 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       const out = await renderPiece({ tool: 'showsheet', state: NJ, paper: 'a5', siteBase: BASE });
       check('renderPiece: 2 pages', out.pages, 2);
       check('renderPiece: label', out.label, '12 Sample Lane');
+      // the hidden browser itself refuses pictures from anywhere but the site
+      probe.hits = 0;
+      const { chromium: ch } = require('playwright');
+      const pg = await (await ch.launch()).newPage();
+      const { guardRequests } = require('../helper/pdf/render.js');
+      await guardRequests(pg, BASE);
+      const seen = await pg.goto(BASE + '/tools/showsheet/', { waitUntil: 'networkidle' }).then(() => pg.evaluate(u => new Promise(r => {
+        const i = new Image(); i.onload = () => r('loaded'); i.onerror = () => r('blocked'); i.src = u;
+      }), far + '/x.png'));
+      check('renderPiece: an outside picture is blocked', [seen, probe.hits], ['blocked', 0]);
+      await pg.context().browser().close();
     } catch (e) { failures.push('renderPiece with a state: ' + e.message); }
   }
 
+  probe.closeAllConnections(); probe.close();
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
   if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }
   console.log();

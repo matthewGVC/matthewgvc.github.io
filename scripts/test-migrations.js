@@ -381,6 +381,17 @@ const USERS = {
     check('second build: newest first, the move kept on the older one', canon([b2.outputs.length, b2.outputs[0].name, b2.outputs[1].name, b2.outputs[1].archived, b2.outputs[0].archived]),
       canon([2, OUT2.name, OUT1.name, { from: OUT1.path, to: 'Marketing/Showsheet/Archive/' + OUT1.name }, null]));
     check('two builds, two change rows', (await pieceRows(prop)).length, 2);
+    // an old tool's direct save of the same sheet now moves its version, so save_piece sees it
+    const b2v = (await doc(prop)).version;
+    await as('matt', `update public.documents set state = '{"from":"old tool"}' where property_id = $1 and tool = 'showsheet'`, [prop]);
+    check("an old tool's save bumps the version", (await doc(prop)).version, b2v + 1);
+    check('save_piece over it with the older version is a conflict', await spErr('matt', prop, 'showsheet', b2v, { a: 4 }, null, null, null), 'conflict');
+    check("…and the old tool's save is kept", (await doc(prop)).state, { from: 'old tool' });
+    await as('matt', `update public.documents set saved_at = now() where property_id = $1 and tool = 'showsheet'`, [prop]);
+    check('a save that changes no state keeps the version', (await doc(prop)).version, b2v + 1);
+    const vNow = (await doc(prop)).version;
+    await sp('matt', prop, 'showsheet', vNow, { a: 5 }, BF, Object.assign({}, OUT2, { name: 'third.pdf' }), null);
+    check('a build moves the version by exactly one', (await doc(prop)).version, vNow + 1);
 
     // a property with no showsheet yet: null version inserts
     const np = (await db.query(`insert into public.properties (slug, label, core) values ('900-example-st', '900 Example St', '{}') returning id`)).rows[0].id;
@@ -408,6 +419,12 @@ const USERS = {
     await sj('matt', prop, await pv(prop), { core: { sqft: 900 } }, [{ field: 'sqft', new_value: 900, no_rebuild: true }]);
     check('a fact the sheet did not print adds nothing', Object.keys((await doc(prop)).built_from.facts).sort(), ['beds', 'price']);
     check('a draft with no built_from is untouched by the typo rule', (await doc(np)).built_from, null);
+    const vTypo = (await doc(prop)).version;
+    await sj('matt', prop, await pv(prop), { core: { price: 2000000 } }, [{ field: 'price', new_value: 2000000, no_rebuild: true }]);
+    check("the typo rule does not move the sheet's version", (await doc(prop)).version, vTypo);
+    await db.query(`update public.members set active = false where role = 'owner'`);
+    check('an inactive owner may not save a piece', await spErr('matt', np, 'showsheet', (await doc(np)).version, { d: 1 }, null, null, null), 'not allowed');
+    await db.query(`update public.members set active = true where role = 'owner'`);
   }
 
   /* ---------- the switch: the shared account stops ---------- */

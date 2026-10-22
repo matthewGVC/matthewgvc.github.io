@@ -32,6 +32,21 @@ alter table public.documents
 comment on column public.documents.built_from is 'What the piece printed from the job when it was made. Null = made before Slice 4, or not made.';
 comment on column public.documents.outputs is 'Every file the workspace made for this piece, newest first; the helper archives only these.';
 
+-- documents had no version stamping: the old tools' saves (a direct upsert of state) left
+-- version alone, so save_piece's check could not see them. A change of state now bumps it
+-- unless the writer set the version itself (save_piece does). built_from alone (the typo rule)
+-- is not a new version of the sheet.
+create or replace function public.documents_version() returns trigger language plpgsql as $$
+begin
+  if new.version = old.version and new.state is distinct from old.state then
+    new.version := old.version + 1;
+  end if;
+  return new;
+end $$;
+drop trigger if exists documents_version on public.documents;
+create trigger documents_version before update on public.documents
+  for each row execute function public.documents_version();
+
 alter table public.documents drop constraint if exists documents_tool_check;
 alter table public.documents add constraint documents_tool_check check (tool ~ '^[a-z][a-z0-9-]{1,30}$');
 
@@ -51,11 +66,12 @@ begin
   if (p_built_from is null) <> (p_output is null) then raise exception 'bad build'; end if;
 
   if p_version is null then
-    if exists (select 1 from public.documents where property_id = p_property_id and tool = p_tool) then
-      raise exception 'conflict' using errcode = 'P0001';
-    end if;
-    insert into public.documents (property_id, tool, state, version, saved_at)
-    values (p_property_id, p_tool, coalesce(p_state, '{}'::jsonb), 1, now());
+    begin
+      insert into public.documents (property_id, tool, state, version, saved_at)
+      values (p_property_id, p_tool, coalesce(p_state, '{}'::jsonb), 1, now());
+    exception when unique_violation then
+      raise exception 'conflict' using errcode = 'P0001';   -- someone saved this piece first
+    end;
   else
     update public.documents set state = coalesce(p_state, '{}'::jsonb), version = version + 1, saved_at = now()
      where property_id = p_property_id and tool = p_tool and version = p_version;

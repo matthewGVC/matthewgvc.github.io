@@ -9,8 +9,8 @@
      GVC_DRIVE_RULES.allowedInJob('Photos/Edited/a.jpg')  → true
      GVC_DRIVE_RULES.allowedInJob('Exclusive signed.pdf') → false
      GVC_DRIVE_RULES.isPaperworkFolder('Offers')          → true  (skipped by the folder scan)
-     GVC_DRIVE_RULES.isPaperwork('Marketing Docs')        → false; isPaperwork('Docs') → true: a folder the walkers
-                                                            never open, at any depth
+     GVC_DRIVE_RULES.isPaperwork('Offer Docs')            → true  (folder rule or paperwork word: the walkers
+                                                            never open such a folder, at any depth)
      GVC_DRIVE_RULES.hasPaperworkWord('Signed Contract.pdf') → true (whole word, anywhere)
      GVC_DRIVE_RULES.rel('\\Photos\\Edited\\')            → 'Photos/Edited' ('..' → null)
      GVC_DRIVE_RULES.allowedInJob('Marketing/Offer 2.pdf') → false (paperwork in ANY segment)

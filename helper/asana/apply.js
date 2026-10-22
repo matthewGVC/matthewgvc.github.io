@@ -36,8 +36,17 @@
      unlinked List-Side task at Pitch (with a pitch date) → In contract, checked
      again every run (a Lead gains its pitch date later), and only with a
      street number (else it is listed as unlinked, "no street number"). A task first met as a
-     candidate already Sold / Rented / Off market is cached as ignored: that
-     decision is kept and it never becomes a job (D54).
+     candidate already Sold / Rented is cached as ignored: that decision is kept
+     and it never becomes a job (D54).
+     Off market (D88, Matt 2026-10-22: "that's when a lot of the prep occurs"):
+     a task that went off market from Prep or later within the last 120 days
+     (L.offMarketOf) becomes a job at 'Off market' like any other candidate; an
+     older one is left out, never set aside, so a later move off market still
+     counts. A task cached as ignored is looked at again under this rule only
+     when the old automatic rule set it aside: it went off market before the
+     day of the workspace's first Asana run and no stored run ever listed it as
+     not linked (so the Match page never offered its Ignore). Matt's Ignore, and
+     a plan row he left out while it was still on the market, stay.
    - facts: a value changed in core outside the helper (a builder's save) is
      adopted first as Matt's (GVC_FACTS.adoptEdit), so Asana repeating its old
      value never undoes it.
@@ -351,6 +360,20 @@ async function writeRun(o, sr, out, now) {
     return createListing(t, stage, null, entry);
   }
 
+  /* D88: was this ignore the old automatic rule's? Only a task that was off market before the day of the
+     first Asana run (so it was set aside when first met) and that no stored run ever listed as not linked
+     (the Match page's Ignore works on those lines only). The earlier runs are read once, when needed. */
+  let earlier = null;
+  async function setAsideBySync(t, off) {
+    if (!earlier) {
+      const rows = await client.select('sync_runs', { kind: 'asana' }, 'started_at,totals', { order: 'started_at.asc' }) || [];
+      const listed = new Set();
+      rows.forEach(r => ((r.totals || {}).unlinked || []).forEach(u => { if (u && u.gid) listed.add(String(u.gid)); }));
+      earlier = { first: rows.length ? MAP.localDay(rows[0].started_at) : null, listed };
+    }
+    return !earlier.listed.has(String(t.gid)) && !!earlier.first && !!off.on && off.on < earlier.first;
+  }
+
   async function oneTask(t, c, entry) {
     const st = MAP.stageOf(t);
     const prop = props.find(p => p.asana_gid === t.gid);
@@ -403,9 +426,15 @@ async function writeRun(o, sr, out, now) {
       if (st.stage === 'Pitch') return t.fields['🗓️ Pitch'] ? linkOrCreate(t, 'Pitch', 'pitch', pr.kind === 'pitch' ? pr.match : null, entry) : undefined;
       return linkOrCreate(t, st.stage, 'listing', pr.kind === 'listing' ? pr.match : null, entry);
     }
-    if ((c && c.ignored) || !MAP.isGvcListing(t)) return;   // decided (by Matt or as closed), or not GVC-listed
+    if (!MAP.isGvcListing(t)) return;                   // not GVC-listed
+    const off = st.stage === 'Off market' ? L.offMarketOf(t, now) : null;
+    if (c && c.ignored) {                               // decided (by Matt, or as closed by the old rule)
+      if (!(off && off.recent && await setAsideBySync(t, off))) return;
+      entry.ignored = false;                            // the old rule's call, looked at again (D88)
+    }
     if (st.stage === 'Pitch' && !t.fields['🗓️ Pitch']) return;
-    if (st.stage !== 'Pitch' && ACTIVE.indexOf(st.stage) === -1) { entry.ignored = true; return; }   // first met closed: never a job, remembered
+    if (st.stage === 'Off market') { if (!off.recent) return; }   // older: left out, not remembered (D88)
+    else if (st.stage !== 'Pitch' && ACTIVE.indexOf(st.stage) === -1) { entry.ignored = true; return; }   // first met Sold / Rented: never a job, remembered
     // never guessed from a name with no street number (as on the plan): listed for Matt instead
     if (!L.hasNumber(t.name)) { out.unlinked.push({ gid: t.gid, name: t.name, why: 'no street number' }); return; }
     if (st.stage === 'Pitch') return linkOrCreate(t, 'Pitch', 'pitch', null, entry);
@@ -429,6 +458,7 @@ async function writeRun(o, sr, out, now) {
   entries.filter(e => e.kind === 'listing' && !e.property_id && !e.pitch_id).forEach(e => {
     const t = fresh.get(e.gid);
     if (!t || !MAP.isGvcListing(t) || out.unlinked.some(u => u.gid === e.gid)) return;
+    if (MAP.stageOf(t).stage === 'Off market' && !L.offMarketOf(t, now).recent) return;   // never a job: not Matt's to link (D88)
     const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && L.sameAddress(t.name, p.core));
     if (hit) out.unlinked.push({ gid: e.gid, name: t.name, why: 'same address', propertyId: hit.id });
   });

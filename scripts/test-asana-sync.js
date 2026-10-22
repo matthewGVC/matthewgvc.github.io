@@ -214,7 +214,11 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('duplicate address: one job for 12 Dup Street', db.T.properties.filter(p => /^12 Dup/.test(p.core.address)).length, 1);
   check('duplicate address: the long-name task is unlinked, same address', out.unlinked.filter(u => u.gid === '9000000000152').map(u => u.why), ['same address']);
 
-  /* the same run again changes nothing */
+  /* the run after the plan brings in the off-market listings the plan left unticked by its old default (D88:
+     off market within 120 days, set aside by the old rule, never listed); then the same run again changes nothing */
+  await applyRun({ client: db, run: await read(world()), now: NOW });
+  check('D88 after the plan: the recent off-market rows it left unticked by default become jobs at Off market',
+    ['9000000000100', '9000000000110'].map(g => (P(g) || {}).stage), ['Off market', 'Off market']);
   let before = db.T.changes.length;
   await applyRun({ client: db, run: await read(world()), now: NOW });
   check('a second identical full run writes no changes', db.T.changes.length, before);
@@ -648,6 +652,98 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   const kPlan = makePlan(kRun, { properties: kProps, pitches: [], devs: [] }).rows;
   check('K1 plan: the sale links to the sale job, the rental is a new listing, both ticked',
     kPlan.map(r => [r.gid, r.tick, r.match && r.match.propertyId || null]), [['g-ks', true, 'p-sale'], ['g-kr', true, null]]);
+
+  /* ---------- OM. Recently off-market listings become jobs (Matt, 2026-10-22: "off market listings should be on
+     there, that's when a lot of the prep occurs"). A List-Side task that went off market from Prep or later within
+     the last 120 days becomes a job at 'Off market'; older ones, lost Leads and Buy-Side rows stay out; a task the
+     sync set aside under the old rule is looked at again, one Matt set aside stays aside. ---------- */
+  const OM_NOW = new Date('2026-10-22T16:00:00Z');
+  const omH = (...m) => m.map(x => ({ type: 'status', at: x[0], from: x[1], to: x[2] }));
+  const omTask = (gid, name, status, history, extra) => Object.assign({ gid, name, projectGid: NJ, market: 'NJ', section: status, permalink: 'https://app.asana.com/0/' + NJ + '/' + gid,
+    assignee: null, completed: false, modifiedAt: history.length ? history[history.length - 1].at : '2026-10-01T15:00:00.000Z',
+    fields: Object.assign({ 'Deal Side': 'List Side', 'Listing Status': status, 'Sale/Rent': 'For Sale', '🧑‍💼 Point Person': 'AB', '💵 Current Price': 1250000 }, (extra || {}).fields || {}),
+    history }, (({ fields, ...rest }) => rest)(extra || {}));
+  const omRun = listings => ({ ok: true, full: true, kind: 'asana', listings, devs: [], loose: [], readProjects: [NJ, NYC] });
+  const OM_FIRST = { id: 'run-first', kind: 'asana', started_at: '2026-10-21T14:49:00.000Z', ok: true, totals: { unlinked: [{ gid: 'g-om-listed', name: '7 Listed Ln', why: 'no job yet', market: 'NJ' }] } };
+  const omDb = cacheRows => fakeDb({ sync_runs: [OM_FIRST], asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }].concat(cacheRows || []) });
+  const omApply = (db, listings) => applyRun({ client: db, run: omRun(listings), now: OM_NOW, roster: [], initials: { AB: 'agent-b' } });
+  const omJob = (db, gid) => db.T.properties.find(p => p.asana_gid === gid);
+  const omCache = (db, gid) => db.T.asana_tasks.find(c => c.gid === gid) || {};
+
+  // OM1. first met off market 10 days ago, from Live: a job at Off market, made like any other candidate
+  const dOM1 = omDb();
+  const oOM1 = await omApply(dOM1, [omTask('g-om1', '619 Sample Ave, Brielle - 1st', 'Graveyard',
+    omH(['2026-06-04T15:00:00.000Z', 'TJ New Dev', 'Active'], ['2026-10-12T15:00:00.000Z', 'Active', 'TOTM'], ['2026-10-12T15:00:02.000Z', 'TOTM', 'Graveyard']))]);
+  const jOM1 = omJob(dOM1, 'g-om1');
+  check('OM1 a recent off-market listing becomes a job at Off market', [!!jOM1, jOM1 && jOM1.stage, jOM1 && jOM1.stage_source, oOM1.created], [true, 'Off market', 'Asana', 1]);
+  check('OM1 made like other candidates: facts, suggested agents, milestones, snapshot, folder unlinked',
+    jOM1 && [jOM1.core.price, jOM1.core.facts.price.source, jOM1.core.suggestedAgentIds, jOM1.milestones.offMarketOn, jOM1.milestones.listedOn.on, jOM1.asana.status, jOM1.folder_state, jOM1.market],
+    [1250000, 'Asana', ['agent-b'], { on: '2026-10-12', planned: false }, '2026-06-04', 'Graveyard', 'unlinked', 'NJ']);
+  check('OM1 logged as found in Asana, stage Off market', dOM1.T.changes.filter(c => jOM1 && c.property_id === jOM1.id && (c.field === 'stage' || !c.field)).map(c => [c.field, c.new_value, c.note]),
+    [[null, null, 'Found in Asana'], ['stage', 'Off market', null]]);
+  check('OM1 the cache row is the job\'s, not ignored', [omCache(dOM1, 'g-om1').ignored, omCache(dOM1, 'g-om1').property_id === (jOM1 && jOM1.id)], [false, true]);
+
+  // OM2. older than 120 days, a lost Lead, a Buy-Side row: no job, and never listed on the Match page
+  const dOM2 = omDb();
+  const oOM2 = await omApply(dOM2, [
+    omTask('g-om-old', '116 Sample Dr, Howell', 'Graveyard', omH(['2025-09-01T15:00:00.000Z', null, 'Active'], ['2026-05-25T15:00:00.000Z', 'Active', 'Graveyard'])),
+    omTask('g-om-lead', '431 Sample St, Beach Haven', 'Graveyard', omH(['2026-01-07T15:00:00.000Z', null, 'Lead'], ['2026-08-10T15:00:00.000Z', 'Lead', 'Graveyard'])),
+    omTask('g-om-buy', '12 Buyer Rd, Rumson', 'TOTM', omH(['2026-09-01T15:00:00.000Z', null, 'Active'], ['2026-10-01T15:00:00.000Z', 'Active', 'TOTM']), { fields: { 'Deal Side': 'Buy Side' } })]);
+  check('OM2 older than 120 days, a lost Lead, Buy-Side: no job', ['g-om-old', 'g-om-lead', 'g-om-buy'].map(g => !!omJob(dOM2, g)), [false, false, false]);
+  check('OM2 none of them is listed as not linked', oOM2.unlinked.filter(u => /^g-om/.test(u.gid)).length, 0);
+  check('OM2 an old off-market task is not set aside for good (a later move off market can still bring it in)', omCache(dOM2, 'g-om-old').ignored, false);
+  check('OM2 Sold first met is still set aside for good', (await (async () => {
+    const d = omDb(); await omApply(d, [omTask('g-om-sold', '9 Sold Ct, Fair Haven', 'Complete', omH(['2026-09-01T15:00:00.000Z', 'Active', 'Complete']))]);
+    return [omCache(d, 'g-om-sold').ignored, !!omJob(d, 'g-om-sold')]; })()), [true, false]);
+  // the 120 days, both sides of the line
+  const dOM2b = omDb();
+  await omApply(dOM2b, [omTask('g-om-120', '120 Edge Rd, Rumson', 'TOTM', omH(['2026-01-01T15:00:00.000Z', null, 'Active'], ['2026-06-24T15:00:00.000Z', 'Active', 'TOTM'])),
+    omTask('g-om-121', '121 Edge Rd, Rumson', 'TOTM', omH(['2026-01-01T15:00:00.000Z', null, 'Active'], ['2026-06-23T15:00:00.000Z', 'Active', 'TOTM']))]);
+  check('OM2 120 days ago still counts; 121 does not', [!!omJob(dOM2b, 'g-om-120'), !!omJob(dOM2b, 'g-om-121')], [true, false]);
+  // no history: Asana's modified date stands in
+  const dOM2c = omDb();
+  await omApply(dOM2c, [omTask('g-om-nh', '5 Quiet Ln, Rumson', 'TOTM', [], { modifiedAt: '2026-09-30T15:00:00.000Z' }),
+    omTask('g-om-nh-old', '6 Quiet Ln, Rumson', 'TOTM', [], { modifiedAt: '2026-03-30T15:00:00.000Z' })]);
+  check('OM2 no history: modified in the last 120 days counts, older does not', [!!omJob(dOM2c, 'g-om-nh'), !!omJob(dOM2c, 'g-om-nh-old')], [true, false]);
+  // no street number: listed for Matt, as other candidates are
+  const dOM2d = omDb();
+  const oOM2d = await omApply(dOM2d, [omTask('g-om-nonum', 'Sample Farm, Colts Neck', 'TOTM', omH(['2026-09-01T15:00:00.000Z', null, 'Active'], ['2026-10-01T15:00:00.000Z', 'Active', 'TOTM']))]);
+  check('OM2 no street number: no job, listed with why', [!!omJob(dOM2d, 'g-om-nonum'), (oOM2d.unlinked.find(u => u.gid === 'g-om-nonum') || {}).why], [false, 'no street number']);
+
+  // an old off-market task at the address of a job linked to another task is not a "same address" line (never a job)
+  const dOM2e = omDb();
+  dOM2e.T.properties.push({ id: 'p-om2e', slug: '116-sample-dr', version: 1, kind: 'sale', market: 'NJ', stage: 'Live', asana_gid: 'g-other', core: { address: '116 Sample Dr', city: 'Howell' } });
+  const oOM2e = await omApply(dOM2e, [omTask('g-om-old2', '116 Sample Dr, Howell', 'Graveyard', omH(['2025-09-01T15:00:00.000Z', null, 'Active'], ['2026-05-25T15:00:00.000Z', 'Active', 'Graveyard']))]);
+  check('OM2 an old off-market task at the address of a linked job is not listed', oOM2e.unlinked.some(u => u.gid === 'g-om-old2'), false);
+
+  // OM3. cached as ignored by the old automatic rule (off market before the workspace's first Asana run, never listed
+  // on the Match page): brought in now. Matt's own Ignore (the task was listed) stays. A task left out on the plan
+  // while it was still on the market, which went off market later, stays out.
+  const recentH = omH(['2026-07-15T15:00:00.000Z', null, 'Active'], ['2026-09-22T15:00:00.000Z', 'Active', 'Graveyard']);
+  const dOM3 = omDb([
+    { gid: 'g-om-auto', project_gid: NJ, kind: 'listing', name: '3 Sample Ln, Port Monmouth', ignored: true, history: recentH },
+    { gid: 'g-om-listed', project_gid: NJ, kind: 'listing', name: '7 Listed Ln', ignored: true, history: recentH },
+    { gid: 'g-om-plan', project_gid: NJ, kind: 'listing', name: '8 Plan Ln, Rumson', ignored: true }]);
+  const laterOff = omH(['2026-07-15T15:00:00.000Z', null, 'Active'], ['2026-10-21T20:00:00.000Z', 'Active', 'TOTM']);
+  await omApply(dOM3, [omTask('g-om-auto', '3 Sample Ln, Port Monmouth', 'Graveyard', recentH), omTask('g-om-listed', '7 Listed Ln, Rumson', 'Graveyard', recentH),
+    omTask('g-om-plan', '8 Plan Ln, Rumson', 'TOTM', laterOff)]);
+  check('OM3 set aside by the old rule: brought in now, no longer ignored', [omJob(dOM3, 'g-om-auto') && omJob(dOM3, 'g-om-auto').stage, omCache(dOM3, 'g-om-auto').ignored], ['Off market', false]);
+  check('OM3 set aside on the Match page (it was listed there): stays ignored, no job', [!!omJob(dOM3, 'g-om-listed'), omCache(dOM3, 'g-om-listed').ignored], [false, true]);
+  check('OM3 left out on the plan while still on the market: stays ignored, no job', [!!omJob(dOM3, 'g-om-plan'), omCache(dOM3, 'g-om-plan').ignored], [false, true]);
+  const omRuns = dOM3.calls.filter(c => c.t === 'sync_runs');
+  check('OM3 the earlier runs are read once, only what the rule needs', [omRuns.length, omRuns[0] && omRuns[0].cols], [1, 'started_at,totals']);
+  // a run with no ignored off-market task never reads the earlier runs
+  check('OM3 no ignored candidate: earlier runs not read', dOM1.calls.filter(c => c.t === 'sync_runs').length, 0);
+  // the next run leaves the made job alone (no second job, no new "Found in Asana")
+  await omApply(dOM3, [omTask('g-om-auto', '3 Sample Ln, Port Monmouth', 'Graveyard', recentH)]);
+  check('OM3 the next run: still one job, found once', [dOM3.T.properties.filter(p => p.asana_gid === 'g-om-auto').length,
+    dOM3.T.changes.filter(c => c.note === 'Found in Asana' && c.property_id === (omJob(dOM3, 'g-om-auto') || {}).id).length], [1, 1]);
+
+  // OM4. a job already linked that goes off market keeps its stage moves as before (Off market, logged)
+  const dOM4 = omDb();
+  await omApply(dOM4, [omTask('g-om4', '44 Moving Rd, Rumson', 'Active', omH(['2026-09-01T15:00:00.000Z', null, 'Active']))]);
+  await omApply(dOM4, [omTask('g-om4', '44 Moving Rd, Rumson', 'TOTM', omH(['2026-09-01T15:00:00.000Z', null, 'Active'], ['2026-10-20T15:00:00.000Z', 'Active', 'TOTM']))]);
+  check('OM4 a linked job that goes off market moves to Off market', [omJob(dOM4, 'g-om4').stage, dOM4.T.properties.length], ['Off market', 1]);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

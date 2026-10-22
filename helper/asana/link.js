@@ -26,6 +26,11 @@
          left out: Buy-Side and Tenant rows, Leads with no pitch date, and the
                    old Graveyard imports (Off market, created before 2026).
          A task with no street number is listed unticked, never guessed.
+     offMarketOf(task, now) → { on, before, recent }   the off-market rule (D88)
+         on: the day the task went off market (MAP.offMarketMove from its
+         history, else Asana's modified date); before: the stage it left;
+         recent: on is within OFF_MARKET_DAYS (120) of now and the task left
+         Prep or later (a Lead moved to the Graveyard is a lost pitch, D55).
      writePlanFiles(plan, dir, date) → { md, json }  exports/asana-link-plan-<date>.*
      readPlanFile(file)        → the plan, with the ticks as the .md now shows
                                  them (Matt ticks the .md; the .json beside it
@@ -40,6 +45,17 @@ const MAP = require('../../assets/js/asana-map.js');
 
 const ACTIVE = ['Prep', 'Live', 'Accepted offer', 'In contract'];
 const IMPORTED_BEFORE = '2026-01-01';
+const OFF_MARKET_DAYS = 120;
+
+function offMarketOf(t, now) {
+  const m = MAP.offMarketMove(t.history || []);
+  const mod = t.modifiedAt || t.modified_at || null;
+  const on = m ? m.on : mod ? MAP.localDay(mod) : null;
+  const today = MAP.localDay(now ? new Date(now) : new Date());
+  const p = s => { const x = s.split('-'); return Date.UTC(+x[0], +x[1] - 1, +x[2]); };
+  const age = on ? Math.round((p(today) - p(on)) / 86400000) : null;
+  return { on, before: m ? m.before : null, recent: age !== null && age <= OFF_MARKET_DAYS && !(m && m.before === 'Pitch') };
+}
 
 function addrOf(name) {
   const s = A.splitName(name);
@@ -193,4 +209,4 @@ function readPlanFile(file) {
   return plan;
 }
 
-module.exports = { addrOf, hasNumber, sameAddress, saleRentOf, matchTask, makePlan, writePlanFiles, readPlanFile, devAddresses, devFor, ACTIVE };
+module.exports = { addrOf, hasNumber, sameAddress, saleRentOf, matchTask, makePlan, writePlanFiles, readPlanFile, devAddresses, devFor, offMarketOf, ACTIVE, OFF_MARKET_DAYS };

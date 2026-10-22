@@ -159,6 +159,50 @@ check('changeTitle: words for each kind of change', [
   'Taxes per month set to $1,250', 'Price cleared', 'Interior features changed', 'Permits / zoning ticked by hand: 3 Oct.', 'Floorplan v3 recorded',
   'Katie says the price drops Friday', 'Price $4,750,000 → $4,500,000']);
 
+/* ---------- change-log words: every field in plain words with its value (slice3 tune-up 1) ---------- */
+check('changeTitle: sync fields in plain words', [
+  W.changeTitle({ field: 'mlsId', old_value: null, new_value: '123456', source: 'DE' }),
+  W.changeTitle({ field: 'de_stage', old_value: 'Live', new_value: 'In contract', source: 'DE' }),
+  W.changeTitle({ field: 'exclusiveOn', old_value: null, new_value: '2026-05-27', source: 'Asana' }),
+  W.changeTitle({ field: 'estListingOn', old_value: '2026-06-01', new_value: '2026-06-15', source: 'Asana' }),
+  W.changeTitle({ field: 'acceptedOfferOn', old_value: null, new_value: '2026-09-03', source: 'Asana' }),
+  W.changeTitle({ field: 'boardApprovedOn', old_value: '2026-10-01', new_value: null, source: 'Asana' }),
+  W.changeTitle({ field: 'asana_gid', old_value: null, new_value: '1201', note: 'Linked to Asana', source: 'Asana' }),
+  W.changeTitle({ field: 'kind', old_value: null, new_value: 'sale', source: 'Asana' }),
+  W.changeTitle({ field: 'kind', old_value: 'sale', new_value: 'rental', source: 'Asana' }),
+  W.changeTitle({ field: 'market', old_value: null, new_value: 'NJ', source: 'Asana' }),
+  W.changeTitle({ field: 'county', old_value: null, new_value: 'Monmouth', source: 'Asana' }),
+  W.changeTitle({ field: 'closeDate', old_value: null, new_value: '2026-10-02', source: 'DE' }),
+  W.changeTitle({ field: 'pitched_on', old_value: null, new_value: '2026-09-10', source: 'Asana' }),
+  W.changeTitle({ field: 'outcome', old_value: 'open', new_value: 'not won', source: 'Asana' }),
+  W.changeTitle({ field: 'yearBuilt', old_value: null, new_value: 2007, source: 'DE' }),
+  W.changeTitle({ field: 'state', old_value: null, new_value: 'NJ', source: 'Asana' })
+], ['MLS number set to 123456', 'DE stage moved to In contract', 'Exclusive date set to 27 May', 'Est. listing date 1 Jun → 15 Jun',
+  'Accepted offer date set to 3 Sep', 'Board approval date cleared', 'Linked to Asana', 'Sale or rental set to Sale', 'Sale or rental Sale → Rental',
+  'Market set to NJ', 'County set to Monmouth', 'DE closing date set to 2 Oct', 'Pitch date set to 10 Sep', 'Outcome Open → Not won',
+  'Year built set to 2007', 'State set to NJ']);
+check('changeTitle: an unknown field is humanised, never raw', [
+  W.changeTitle({ field: 'someNewField', old_value: null, new_value: 'x' }),
+  W.changeTitle({ field: 'other_new_thing', old_value: 'a', new_value: 'b' }),
+  W.changeTitle({ field: 'dev_project_id', old_value: null, new_value: 'd1' }),
+  W.changeTitle({ field: 'from_pitch_id', old_value: null, new_value: 'p1' })
+], ['Some new field set to x', 'Other new thing a → b', 'Joined a development', 'Made from a won pitch']);
+check('changeTitle: no line ever shows a raw camelCase or snake_case name',
+  ['mlsId', 'de_stage', 'exclusiveOn', 'estListingOn', 'acceptedOfferOn', 'boardApprovedOn', 'asana_gid', 'kind', 'asana_project_gid', 'suggestedAgentIds',
+   'closePrice', 'listingUrl', 'mapsUrl', 'driveLink', 'levels', 'contractOn', 'exclusiveExpiresOn', 'offMarketOn', 'milestone_hints']
+    .map(f => W.changeTitle({ field: f, old_value: null, new_value: f === 'suggestedAgentIds' ? [] : '2026-05-27', source: 'Asana' }))
+    .filter(t => /[a-z][A-Z]|_/.test(t)), []);
+check('W.fieldLabel: one label map', [W.fieldLabel('mlsId'), W.fieldLabel('sqft'), W.fieldLabel('exclusiveOn'), W.fieldLabel('fooBarBaz')],
+  ['MLS number', 'Sq ft', 'Exclusive date', 'Foo bar baz']);
+
+/* ---------- DE's 0 sq ft / 0 baths is blank, as Match's M4 says (slice3 tune-up 2) ---------- */
+check('changeTitle: DE\'s 0 sq ft and 0 baths read as blank, 0 beds is a studio', [
+  W.changeTitle({ field: 'sqft', old_value: null, new_value: 0, source: 'DE' }),
+  W.changeTitle({ field: 'baths', old_value: null, new_value: 0, source: 'DE' }),
+  W.changeTitle({ field: 'beds', old_value: null, new_value: 0, source: 'DE' }),
+  W.changeTitle({ field: 'sqft', old_value: 0, new_value: 1200, source: 'DE' })
+], ['Sq ft is blank on DE', 'Baths is blank on DE', 'Beds set to 0', 'Sq ft set to 1200']);
+
 /* ---------- DE sync status (spec §2.9) ---------- */
 const now = new Date('2026-10-20T10:00:00Z');
 check('never synced', W.syncHealth(null, now).state, 'never');

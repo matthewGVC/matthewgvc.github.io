@@ -22,7 +22,14 @@
      taskFlags(jobs)                 → [{ job, href, text, market }]  (no "won or lost?", D32)
      recentChanges(changes, jobs, n) → [{ job, href, title, when, kind }]
      changeTitle(change, nameOf?) → the change in words (stage, price, agents, photo picks,
-                           facts by label, milestones, floorplan versions, notes)
+                           facts by label, milestones, floorplan versions, notes), always
+                           with the value: "MLS number set to 123456", "Exclusive date set
+                           to 27 May", "DE stage moved to In contract". DE's 0 sq ft or
+                           0 baths reads as blank (GVC_FACTS.deBlank, Match's M4 rule).
+     fieldLabel(field)    → a field's name in words, from one map: the facts list's labels
+                           (job-facts.js FIELDS), the deal dates (DATE_LABEL, asana-map.js
+                           datesOf's keys), a few sync fields, else the name humanised
+                           ("someNewField" → "Some new field"); never the raw name
      syncHealth(lastDeRun, now)      → { state: 'ok'|'amber'|'red'|'never', text, why }   36 h
      asanaHealth(lastAsanaRun, now)  → the same for Asana, amber after 6 h
      statusRows(jobs)   → [{ market, rows: [{ name, href, stage, chip, lastMilestone,
@@ -309,6 +316,31 @@
     if (Array.isArray(v)) return v.join(', ');
     return String(v);
   }
+  /* field names the facts list doesn't carry: sync and page fields, in words */
+  var MORE_LABEL = { mlsId: 'MLS number', county: 'County', levels: 'Levels', market: 'Market', kind: 'Sale or rental',
+    de_stage: 'DE stage', closePrice: 'Closing price', closeDate: 'DE closing date', pitched_on: 'Pitch date', outcome: 'Outcome',
+    listingUrl: 'Listing link', mapsUrl: 'Google Maps link', driveLink: 'Drive link' };
+  var LINKS = ['listingUrl', 'mapsUrl', 'driveLink'];
+  var DATES = ['closeDate', 'pitched_on'];
+  function humanise(name) {
+    var s = String(name).replace(/_/g, ' ').replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/\s+/g, ' ').trim().toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function factField(name) {
+    var F = name && factsApi();
+    return F ? F.FIELDS.filter(function (x) { return x.name === name; })[0] || null : null;
+  }
+  function fieldLabel(name) {
+    if (!name) return '';
+    var f = factField(name);
+    if (f) return f.label;
+    if (MORE_LABEL[name]) return MORE_LABEL[name];
+    if (name === 'exclusiveExpiresOn') return 'Exclusive expiry date';
+    if (DATE_LABEL[name]) return DATE_LABEL[name][1] + ' date';
+    return humanise(name);
+  }
+  function cap(v) { var s = String(v); return s.charAt(0).toUpperCase() + s.slice(1); }
+
   function changeTitle(c, nameOf) {
     nameOf = nameOf || function (id) { var a = global && global.GVC_AGENT && global.GVC_AGENT(id); return a ? a.name : null; };
     var names = function (ids) { return (Array.isArray(ids) ? ids : []).map(function (id) { return nameOf(id) || 'Unknown agent (' + id + ')'; }).join(', '); };
@@ -322,16 +354,28 @@
     if (c.field === 'suggestedAgentIds') return (c.new_value && c.new_value.length) ? 'Asana suggests ' + names(c.new_value) : 'Asana suggests no agents';
     if (c.field === 'photo_hero' || c.field === 'photo_order' || c.field === 'photos') return 'Photo picks saved';
     if (c.field === 'floorplan') return 'Floorplan ' + (c.new_value && c.new_value.version ? 'v' + c.new_value.version + ' ' : 'version ') + 'recorded';
-    var F = c.field && factsApi(), f = F && F.FIELDS.filter(function (x) { return x.name === c.field; })[0];
-    if (f) {
-      var a = factWords(f.kind, c.old_value), b = factWords(f.kind, c.new_value);
-      if (f.kind === 'long' || f.kind === 'list') return b ? f.label + ' changed' : f.label + ' cleared';
-      if (!b) return f.label + ' cleared';
-      if (!a) return f.label + ' set to ' + b;
-      return f.label + ' ' + a + ' → ' + b;
-    }
-    if (c.field) return c.field + ' changed';
-    return c.note || 'Changed';
+    if (c.field === 'de_stage') return c.new_value ? 'DE stage moved to ' + c.new_value : 'DE stage cleared';
+    if (c.field === 'asana_gid' || c.field === 'asana_project_gid') return c.new_value ? 'Linked to Asana' : 'Asana link removed';
+    if (c.field === 'dev_project_id') return c.new_value ? 'Joined a development' : 'Left its development';
+    if (c.field === 'from_pitch_id') return 'Made from a won pitch';
+    if (!c.field) return c.note || 'Changed';
+    var F = factsApi(), f = factField(c.field), label = fieldLabel(c.field);
+    var kind = f ? f.kind : DATE_LABEL[c.field] || DATES.indexOf(c.field) !== -1 ? 'date' : LINKS.indexOf(c.field) !== -1 ? 'link' : 'text';
+    var deBlank = function (v) { return c.source === 'DE' && F && F.deBlank && F.deBlank(c.field, v); };
+    if (deBlank(c.new_value)) return label + ' is blank on DE';
+    var words = function (v) {
+      if (deBlank(v) || v === null || v === undefined || v === '') return '';
+      if (kind === 'date') return fmtDay(v);
+      if (typeof v === 'object' && !Array.isArray(v)) return '';
+      if (c.field === 'kind' || c.field === 'outcome') return cap(v);
+      return factWords(kind, v);
+    };
+    var a = words(c.old_value), b = words(c.new_value);
+    if (kind === 'long' || kind === 'list') return b ? label + ' changed' : label + ' cleared';
+    if (kind === 'link') return b ? label + (a ? ' changed' : ' set') : label + ' cleared';
+    if (!b) return c.new_value !== null && c.new_value !== undefined && c.new_value !== '' ? label + ' changed' : label + ' cleared';
+    if (!a) return label + ' set to ' + b;
+    return label + ' ' + a + ' → ' + b;
   }
 
   function recentChanges(changes, jobs, n) {
@@ -471,5 +515,5 @@
     buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable,
-    changeTitle: changeTitle };
+    changeTitle: changeTitle, fieldLabel: fieldLabel };
 });

@@ -111,10 +111,11 @@ route('POST', '/open-folder', openFolderRoute({ driveRoot: 'G:\\Shared drives' }
 
 /* "Copy Drive link": the real drive.google.com link of a job folder, or of one file in it
    (relative to the folder). Reads the Drive id Google Drive for Desktop keeps beside the item;
-   writes nothing. Paperwork files are refused before anything is touched. */
+   writes nothing. Paperwork files, a folder with paperwork in its path ("<job>/Docs") and a
+   whole shared drive are refused before anything is touched. */
 function driveLinkRoute(o) {
   const root = path.resolve(o.driveRoot);
-  const { allowedInJob } = require('../assets/js/drive-rules.js');
+  const { allowedInJob, isPaperworkFolder, hasPaperworkWord } = require('../assets/js/drive-rules.js');
   const { driveLink } = require('./drive-link.js');
   const under = rel => {
     const segs = String(rel || '').split(/[\\/]+/).filter(Boolean);
@@ -125,6 +126,7 @@ function driveLinkRoute(o) {
   };
   return async body => {
     const f = under(body.folder);
+    if (f.segs.length < 2 || f.segs.some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t link that folder.');
     if (!body.file) {
       const url = driveLink(f.abs, true);
       if (!url) throw fail(404, 'No Drive id beside this item');

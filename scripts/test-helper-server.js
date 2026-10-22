@@ -123,6 +123,15 @@ function req(method, p, headers, body) {
   check('drive-link: loose paperwork file is 403', (await dlErr({ folder: 'GVC - New York/A', file: 'Exclusive - Jane Client.pdf' }))[0], 403);
   check('drive-link: a stream name on a file is 403', (await dlErr({ folder: 'GVC - New York/A', file: 'Floorplan/plan.pdf:user.drive.id' }))[0], 403);
   check('drive-link: file climbing out of the folder is refused', (await dlErr({ folder: 'GVC - New York/A', file: 'Floorplan/../../B/x.pdf' }))[0], 403);
+  /* final review 4: a paperwork folder, or a whole shared drive, is never linked */
+  fs.mkdirSync(path.join(jobDir, 'Marketing', 'Offer Docs'), { recursive: true });
+  for (const p of [jobDir, path.join(jobDir, 'Docs'), path.join(jobDir, 'Marketing', 'Offer Docs'), path.join(fakeRoot, 'GVC - New York')])
+    try { fs.writeFileSync(p + ':user.drive.id', 'SOMEID1234567'); } catch (e) { /* no streams off Windows: the 403 comes first anyway */ }
+  check('drive-link: a Docs folder is 403', await dlErr({ folder: 'GVC - New York/A/Docs' }), [403, "The workspace doesn't link that folder."]);
+  check('drive-link: a paperwork folder deeper down is 403', (await dlErr({ folder: 'GVC - New York\\A\\Marketing\\Offer Docs' }))[0], 403);
+  check('drive-link: a paperwork folder with a file is 403', (await dlErr({ folder: 'GVC - New York/A/Docs', file: 'Floorplan/plan.pdf' }))[0], 403);
+  check('drive-link: a whole shared drive is 403', (await dlErr({ folder: 'GVC - New York' }))[0], 403);
+  fs.unlinkSync(jobDir + ':user.drive.id');
   check('drive-link: no Drive id is 404', await dlErr({ folder: 'GVC - New York/A' }), [404, 'No Drive id beside this item']);
   check('drive-link: a file with no id is 404', await dlErr({ folder: 'GVC - New York/A', file: 'Floorplan/plan.pdf' }), [404, 'No Drive id beside this item']);
   if (process.platform === 'win32') {

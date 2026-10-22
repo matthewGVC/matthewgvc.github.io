@@ -41,15 +41,17 @@
 
   /* ---------- the Showsheet's record (Slice 4: S15, S20, S21) ----------
      judge(ctx, pieces, live) → GVC_STALE's { state, changes } for the showsheet, or null
-     (not a listing, or the check isn't loaded). Live from Drive the photo and floorplan
-     dates count too (the same picks the sheet makes); from the scan they're unknown. */
+     (not a listing, the check isn't loaded, or it couldn't read the record). Live from Drive
+     the photo and floorplan dates count too (the same picks the sheet makes); from the scan
+     they're unknown. A file found live or in last night's scan counts, as in the sheet's bar. */
   var IMG = /\.(jpe?g|png|webp)$/i;
   var DRIVE_LINK = /^https:\/\/drive\.google\.com\//;
   function judge(ctx, pieces, live) {
     var ST = global.GVC_STALE;
     if (!ST || ctx.kind !== 'listing') return null;
     pieces = pieces || {};
-    var opts = { fileFound: !!newest(pieces.showsheet) };
+    var scanned = ((ctx.row.scan && ctx.row.scan.pieces) || {}).showsheet;
+    var opts = { fileFound: !!(newest(pieces.showsheet) || newest(scanned)) };
     if (live) {
       var R = global.GVC_DRIVE_RULES;
       var ok = function (f) { return !f.archived && f.path && R.allowedInJob(f.path) && !R.isJunk(f.name); };
@@ -59,7 +61,8 @@
       opts.editedPaths = photos.map(function (f) { return f.path; });
       opts.floorplan = global.GVC_SHEETJOB.pickFloorplan(plans);
     }
-    return ST.stale(ctx.doc || null, ctx.row, opts);
+    try { return ST.stale(ctx.doc || null, ctx.row, opts); }
+    catch (e) { return null; }   // a record the check can't read never takes the page down
   }
   function sheetHref(ctx, rebuild) {
     return '../../tools/showsheet/?listing=' + encodeURIComponent(ctx.row.slug) + (rebuild ? '&rebuild=1' : '');
@@ -196,7 +199,7 @@
     JP.drive.folder(ctx).then(function (x) {
       var out = rowsHtml(x.health.pieces, ctx, true);
       body.innerHTML = out.html;
-      if (out.sheet && ctx.onSheet) ctx.onSheet(out.sheet);
+      if (ctx.onSheet && body.isConnected) ctx.onSheet(out.sheet);   // a read that lands after a redraw paints nothing
       count(out);
       hook();
     }, function (e) {

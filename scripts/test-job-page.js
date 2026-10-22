@@ -90,6 +90,7 @@ const FAKE_DRIVE = `(function () {
     d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08'), f('Thumbs.db', '12'), f('._01.jpg', '12'), f('03.jpg.xmp', '12')])),
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
+  if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
   if (cfg.html) tree.children.push(d('Open House', [f('Open House - 100 Example St 4A.html', '11')]));
   var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
   function find(path) {
@@ -137,6 +138,7 @@ async function open(browser, opts) {
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => { delete window.showDirectoryPicker; });
   await page.route(MAMMOTH_URL, r => r.abort());
+  if (opts.staleThrows) await page.route('**/assets/js/piece-stale.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: 'window.GVC_STALE = { stale: function () { throw new Error("bad record"); }, words: function () { return ""; } };' }));
   if (opts.drive) {
     await page.addInitScript(([cfg, html]) => {
       window.__FAKE_DRIVE = cfg;
@@ -694,6 +696,17 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const live = await sheetBits(t.page);
     check('kit live: front photo file updated on Drive is stale, header follows', [live.state, live.header.map(h => h[0])], ['Stale: front photo', ['Rebuild 1 stale']]);
     check('kit live: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    // live Drive without the showsheet folder: last night's scan still proves a file (as the sheet's own bar does)
+    t = await open(browser, { rows: RU, path: LISTING, drive: { noSheet: true } });
+    await t.page.waitForTimeout(800);
+    check('kit live, folder not listed now: the scan\'s file still counts', (await sheetBits(t.page)).state, 'Made before the workspace kept track');
+    await t.ctx.close();
+
+    // a stale check that throws never takes the page down
+    t = await open(browser, { rows: RS, path: LISTING, staleThrows: true });
+    check('kit stale check throws: page up, no sheet line, no header button', [await t.page.$$eval('#factsCard', e => e.length), (await sheetBits(t.page)).state, (await sheetBits(t.page)).header, t.errors], [1, null, [], []]);
     await t.ctx.close();
 
     // a documents read that fails (0009 not run yet): the page still opens, state from the folder

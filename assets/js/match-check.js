@@ -122,9 +122,11 @@
     'Sold': 'closedOn', 'Rented': 'closedOn', 'Off market': 'offMarketOn' };
   var PIECE_STEPS = KIT.STEPS.pieces;                    // step name patterns live in kit-track.js
   var NEVER_FILE = KIT.STEPS.neverFile;                 // built in DE StudioPro, no file (D74)
-  var SCANNED = ['floorplan', 'showsheet', 'photos', 'brochure'];   // the old scan's pieces
-  var PIECE_LABEL = { showsheet: 'showsheet', floorplan: 'floorplan', photos: 'edited photos', postcard: 'postcard', brochure: 'brochure' };
-  var KIT_KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'openHouse', 'postcard', 'signage', 'video'];
+  /* M8 checks a piece only when it has its own Asana step (PIECE_STEPS). A scan that stores pieces
+     keyed by piece (the nightly scan since Slice 3, or the page's live Drive read) covers every kit
+     piece (KIT.KEYS); an older stored scan without them covered only these four. */
+  var SCANNED = ['floorplan', 'showsheet', 'photos', 'brochure'];
+  var PIECE_LABEL = { showsheet: 'showsheet', floorplan: 'floorplan', photos: 'edited photos', postcard: 'postcard', brochure: 'brochure' };   // M8's words for a piece
   var FACT_LABEL = { price: 'the price', originalPrice: 'the original price', beds: 'beds', baths: 'baths', halfBaths: 'half baths', sqft: 'sq ft' };
 
   /* ---------- small helpers ---------- */
@@ -454,7 +456,7 @@
     if (a && found) {
       var rawPieces = (drive && drive.pieces) || (scan && scan.pieces) || null;
       var byKey = rawPieces && !Array.isArray(rawPieces) && typeof rawPieces === 'object' ? rawPieces : null;   // the nightly scan lists only pieces with files
-      var pieces = byKey ? KIT_KEYS : (rawPieces || SCANNED);
+      var pieces = byKey ? KIT.KEYS : (rawPieces || SCANNED);
       var steps = [];
       (a.checklist || []).forEach(function (b) { (b.steps || []).forEach(function (s) { steps.push(s); }); });
       PIECE_STEPS.forEach(function (ps) {

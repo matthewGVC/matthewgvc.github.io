@@ -427,7 +427,9 @@ body.bleed .crop{display:block;}
 <!-- ======================= EDITOR ======================= -->
 <aside id="editor">
   <!-- the property library mounts here, identically in all four builders -->
+  <div id="jobBar" hidden></div>
   <div id="propBar"></div>
+  <div id="jobFacts" hidden></div>
   <div class="ed-body">
 
   <details class="ed-sec" id="quickBar">
@@ -1564,6 +1566,7 @@ function hydrateForm(){
   renderTray();
   syncDropZones();
   syncTextPanel();
+  if(window.__afterHydrate) window.__afterHydrate();   // job mode locks what belongs to the job
 }
 function syncDropZones(){
   $('#docxDrop').classList.toggle('loaded', !!state.docxName);
@@ -2457,7 +2460,18 @@ const LIBRARY = {
     hydrateForm(); render();
   }
 };
-GVC_PROPBAR.mount(Object.assign({ host: $('#propBar'), tool: 'showsheet' }, LIBRARY));
+/* Opened from a job (?listing=<slug>, Slice 4): job-mode.js runs the sheet from the job instead
+   of the property bar. Without it the tool is exactly as it always was. */
+const JOB_MODE = new URLSearchParams(location.search).has('listing');
+if (!JOB_MODE) GVC_PROPBAR.mount(Object.assign({ host: $('#propBar'), tool: 'showsheet' }, LIBRARY));
+
+/* what job-mode.js works through: the sheet's own state, drawing and image intake */
+window.__sheet = {
+  get state(){ return state; },
+  set state(s){ state = s; hydrateForm(); render(); },
+  blankUnit, hydrateForm, render, LIBRARY, renderTray, syncDropZones, normFpView, toast, edited,
+  fileToImage, reencode, floorplanHeaderY, trimRect, setFloorplanFile, printSheet, ESSENTIALS: () => ESSENTIALS
+};
 
 /* ============================================================
    __render(state): draw a given sheet with no network beyond the page's own
@@ -2529,6 +2543,23 @@ window.__test = {
     return found;
   }
 };
+</script>
+<script>
+/* job mode's own files, only when the sheet was opened from a job */
+if (new URLSearchParams(location.search).has('listing')) {
+  ['../../assets/js/drive-rules.js', '../../assets/js/drive.js', '../../assets/js/folder-health.js', '../../assets/js/job-facts.js',
+   '../../assets/js/sheet-job.js', '../../assets/js/piece-stale.js', '../../assets/js/workspace-shell.js', 'job-mode.js']
+    .reduce((ready, src) => ready.then(() => new Promise((ok, fail) => {
+      const el = document.createElement('script');
+      el.src = src; el.onload = ok; el.onerror = () => fail(new Error(src));
+      document.body.appendChild(el);
+    })), Promise.resolve())
+    .catch(e => {
+      const bar = document.getElementById('jobBar');
+      bar.hidden = false;
+      bar.textContent = "The job couldn't load (" + e.message + "). Reload the page.";
+    });
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
 <script src="../../assets/js/chrome.js"></script>

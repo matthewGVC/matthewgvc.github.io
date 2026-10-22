@@ -1,0 +1,264 @@
+/* ============================================================
+   Browser tests for the Showsheet in job mode (Slice 4, Tasks 6 and 8):
+   /tools/showsheet/?listing=<slug> opens filled from the job, with its
+   photos and floorplan read from Drive, and saves back through save_job,
+   save_piece and the helper's POST /piece. Supabase, Drive and the helper
+   are mocked by request interception (made-up rows and names; nothing real).
+
+     BASE=http://localhost:8096 node scripts/test-sheet-page.js
+   ============================================================ */
+'use strict';
+
+const { chromium } = require('playwright');
+const BASE = process.env.BASE || 'http://localhost:8080';
+
+let pass = 0;
+const failures = [];
+function check(name, got, want) {
+  const g = JSON.stringify(got), w = JSON.stringify(want);
+  if (g === w) { pass++; return; }
+  failures.push(name + '\n      expected ' + w + '\n      got      ' + g);
+}
+
+const rec = (value, source, by) => ({ value, source: source || 'DE', bySource: by || { [source || 'DE']: value } });
+function rowsFor(over) {
+  over = over || {};
+  const T = {
+    properties: [
+      { id: 'p1', slug: '100-example-st-4a', label: 'x', kind: 'sale', market: 'NYC', stage: 'Live', version: 7,
+        core: { address: '100 Example St', unit: '4A', neighborhood: 'Testville', propertyType: 'Condo', price: 4500000, beds: 3, baths: 2,
+          commonCharges: 2100, taxesMonthly: 1900, agentIds: ['john-gasdaska'],
+          buildingFeatures: ['Pre-war', 'Full-time doorman'], interiorFeatures: ['South exposure', 'Wood floors'],
+          facts: {
+            price: rec(4500000, 'DE'), beds: rec(3, 'DE'), baths: rec(2, 'DE'),
+            commonCharges: rec(2200, 'Matt', { DE: 2100, Matt: 2200 }), taxesMonthly: rec(1900, 'DE'),
+            buildingFeatures: rec(['Pre-war', 'Full-time doorman'], 'DE'), interiorFeatures: rec(['South exposure', 'Wood floors'], 'DE')
+          } },
+        de: { listingUrl: 'https://www.elliman.com/new-york-city/100-example-st/4a/9001' },
+        drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
+        photo_hero: null, photo_order: [] },
+      { id: 'p9', slug: 'evil', label: 'e', kind: 'sale', market: 'FL', stage: 'Prep', version: 1,
+        core: { address: '<img src=x onerror="window.__xss=1">', unit: '"><b>', propertyType: 'Condo',
+          facts: { headline: rec('<script>window.__xss=3</script>', 'Matt') } }, folder_state: 'unlinked' }
+    ],
+    documents: over.documents || [],
+    floorplans: []
+  };
+  return T;
+}
+
+const FAKE_DRIVE = `(function () {
+  var cfg = window.__FAKE_DRIVE || {};
+  var PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), function (c) { return c.charCodeAt(0); });
+  function f(name, day) { return { name: name, kind: 'file', size: 1000, modified: '2026-10-' + day + 'T10:00:00.000Z' }; }
+  function d(name, children) { return { name: name, kind: 'directory', children: children }; }
+  var plans = cfg.pdfOnly ? [d('v2', [f('Plan v2.pdf', '09'), f('Plan v2.ai', '09')])]
+    : [d('v1', [f('Plan v1.jpg', '04')]), d('v2', [f('Plan v2.jpg', '09'), f('Plan v2 unbranded.png', '09')])];
+  var tree = d('4A', [
+    f('Exclusive - Jane Client.pdf', '02'),
+    d('Marketing', [d('Showsheet', [f('Showsheet - 100 Example St 4A - 2026-10-12.pdf', '12')])]),
+    d('Floorplan', plans),
+    d('Photos', [d('Edited', [f('01.jpg', '08'), f('02.jpg', '08'), f('03.jpg', '08'), f('Signed contract Jane Client.jpg', '08')])])
+  ]);
+  var log = window.__driveLog = { tree: 0, read: [] };
+  window.GVC_DRIVE = {
+    supported: function () { return true; },
+    state: function () { return Promise.resolve(cfg.state || 'connected'); },
+    connect: function () { return Promise.resolve([]); },
+    reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
+    list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
+    tree: function () { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(tree))); },
+    listJob: function () { return Promise.resolve([]); },
+    readJobFile: function (folder, path) {
+      log.read.push(path);
+      if (path === cfg.slow) return new Promise(function () {});
+      return new Promise(function (res) { setTimeout(function () { res(new File([PNG], path.split('/').pop(), { type: 'image/png' })); }, 30); });
+    }
+  };
+})();`;
+
+async function open(browser, opts) {
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [], saves = [], pieces = [], helper = [], prints = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
+  await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
+  await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__sheetTimeoutMs = 300; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
+  await page.route('**/assets/js/drive.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FAKE_DRIVE }));
+  const T = opts.rows || rowsFor(opts);
+  await page.route('**/rest/v1/**', r => {
+    const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
+    const json = (status, body) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+    if (table === 'members') return json(200, opts.members || [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]);
+    if (table === 'save_job') {
+      const body = JSON.parse(r.request().postData() || '{}');
+      saves.push(body);
+      if (opts.conflict) return json(400, { code: 'P0001', message: 'conflict' });
+      const row = T.properties.find(x => x.id === body.p_id);
+      Object.assign(row, body.p_set, { version: row.version + 1 });
+      return json(200, row);
+    }
+    if (table === 'save_piece') {
+      const body = JSON.parse(r.request().postData() || '{}');
+      pieces.push(body);
+      if (opts.pieceFails && pieces.length <= opts.pieceFails) return json(500, { message: 'boom' });
+      const doc = Object.assign({ property_id: body.p_property_id, tool: body.p_tool, version: (body.p_version || 0) + 1, state: body.p_state, outputs: [] },
+        body.p_built_from ? { built_from: body.p_built_from, output: body.p_output } : {});
+      T.documents = [doc];
+      return json(200, doc);
+    }
+    if (m !== 'GET') return json(201, []);
+    const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
+    const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
+    json(200, (T[table] || []).filter(hit));
+  });
+  await page.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'u1', email: 'matt@example.com' }) }));
+  await page.route('http://localhost:47610/**', r => {
+    if (opts.helperDown) return r.abort();
+    if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
+    const body = JSON.parse(r.request().postData() || '{}');
+    helper.push({ path: new URL(r.request().url()).pathname, body, pair: r.request().headers()['x-gvc-pair'] });
+    const reply = opts.helperReply || { ok: true, path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf',
+      size: 12345, modified: '2026-10-22T15:00:00.000Z', url: 'https://drive.google.com/file/d/NEW/view', pages: 2, archived: { from: 'a', to: 'b' } };
+    r.fulfill({ status: opts.helperStatus || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(reply) });
+  });
+  await page.goto(BASE + (opts.path || '/tools/showsheet/?listing=100-example-st-4a'), { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.GVC_SHEETMODE && window.GVC_SHEETMODE.ready, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(400);
+  return { page, errors, saves, pieces, helper, ctx };
+}
+const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
+const st = page => page.evaluate(() => window.__test.state);
+const typeIn = async (page, field, value) => {
+  await page.$eval('[data-field="' + field + '"]', e => { const d = e.closest('details'); if (d) d.open = true; });
+  await page.fill('[data-field="' + field + '"]', value);
+  await page.waitForTimeout(250);
+};
+
+(async () => {
+  const browser = await chromium.launch();
+  let t, p, s;
+
+  /* ---------- opening a job's sheet (Task 6) ---------- */
+  t = await open(browser, {});
+  p = t.page;
+  if (process.env.SHOT) await p.screenshot({ path: process.env.SHOT });
+  check('job mode: no page errors', t.errors, []);
+  check('job mode: the bar names the job', (await text(p, '#jobBar')).includes('Showsheet for 100 Example St · 4A'), true);
+  check('job mode: link back to the job page', await p.$eval('#jobBar a[data-back]', a => a.getAttribute('href')), '../../workspace/job/?listing=100-example-st-4a');
+  check('job mode: no property bar', await p.$eval('#propBar', e => e.children.length), 0);
+  s = await st(p);
+  check('job mode: facts on the sheet', [s.address, s.unit, s.price, s.commonCharges, s.ownership, s.market, s.listingUrl, s.agentIds],
+    ['100 Example St', '4A', '$4,500,000', '$2,200', 'condo', 'nyc', 'https://www.elliman.com/new-york-city/100-example-st/4a/9001', ['john-gasdaska']]);
+  check('job mode: lists through the reader rules', [s.building.service, s.residence.exposures], ['Full-time doorman', 'South exposure']);
+  check('job mode: badges', [await text(p, '[data-jf="price"] .chip'), await text(p, '[data-jf="commonCharges"] .chip')], ['DE', 'Matt']);
+  check('job mode: Matt vs DE warning', (await text(p, '[data-jf="commonCharges"] .jfw')) || '', 'DE says $2,100');
+  check('job mode: photos from Drive, by name', s.photos.map(x => x.path), ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg']);
+  check('job mode: front and back', [s.photos[s.heroIndex].path, s.photos[s.secondaryIndex].path], ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg']);
+  check('job mode: photo files are inline images', /^data:image\//.test(s.photos[0].src), true);
+  check('job mode: paperwork never read or shown', [(await p.evaluate(() => window.__driveLog.read)).some(x => /Jane Client/.test(x)), (await p.content()).includes('Jane Client')], [false, false]);
+  check('job mode: newest branded floorplan', await p.evaluate(() => window.GVC_SHEETMODE.floorplan), { version: 2, render: 'branded', path: 'Floorplan/v2/Plan v2.jpg', modified: '2026-10-09T10:00:00.000Z' });
+  check('job mode: the plan is on the sheet', /^data:image\//.test(s.floorplan || ''), true);
+  check('job mode: address is read-only', await p.$eval('[data-field="address"]', e => e.readOnly), true);
+  check('job mode: agents are the job\'s', (await text(p, '#agentPick')).includes('Change agents on the job page'), true);
+  check('job mode: a file there but no record', (await text(p, '#jobBar')).includes('Made before the workspace kept track'), true);
+
+  // a fact typed on the sheet saves to the job (S4), with the typo tick
+  await typeIn(p, 'price', '$4.2M');
+  check('fact edit: says it saves to the job', (await text(p, '[data-jf="price"]')).includes('yours, saves to the job'), true);
+  await p.click('#btnSaveSheet');
+  await p.waitForTimeout(600);
+  check('Save sheet: one save_job', t.saves.length, 1);
+  check('Save sheet: the price change', (t.saves[0] || {}).p_changes, [{ field: 'price', old_value: 4500000, new_value: 4200000, note: 'on the Showsheet', no_rebuild: false }]);
+  check('Save sheet: as Matt\'s value', [(t.saves[0] || {}).p_version, ((t.saves[0] || {}).p_set || {}).core.facts.price.source], [7, 'Matt']);
+  check('Save sheet: then one draft save_piece', [t.pieces.length, (t.pieces[0] || {}).p_built_from, (t.pieces[0] || {}).p_output, (t.pieces[0] || {}).p_version], [1, null, null, null]);
+  check('Save sheet: no image data stored, paths kept', [JSON.stringify((t.pieces[0] || {}).p_state).includes('data:'), ((t.pieces[0] || {}).p_state.photos || []).map(x => x.path)],
+    [false, ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg']]);
+  check('Save sheet: said so', (await text(p, '#jobMsg')).includes('Saved'), true);
+  await typeIn(p, 'beds', '4');
+  await p.check('[data-typo="beds"]');
+  await p.click('#btnSaveSheet');
+  await p.waitForTimeout(600);
+  check('Typo, no rebuild', ((t.saves[1] || {}).p_changes || []).map(c => [c.field, c.no_rebuild]), [['beds', true]]);
+  check('second draft uses the saved version', (t.pieces[1] || {}).p_version, 1);
+  check('job mode: no page errors after saves', t.errors, []);
+  await t.ctx.close();
+
+  // a weird value is refused with a sentence, nothing saved
+  t = await open(browser, {});
+  await typeIn(t.page, 'price', 'Call for price');
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(400);
+  check('weird price refused', [await text(t.page, '#jobMsg'), t.saves.length, t.pieces.length], ['Type a number, like 2250000 or $2.25M.', 0, 0]);
+  await t.ctx.close();
+
+  // conflict: the job reloads, the sheet keeps its typing
+  t = await open(browser, { conflict: true });
+  await typeIn(t.page, 'price', '4100000');
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(600);
+  check('conflict: sentence, nothing else saved, typing kept', [await text(t.page, '#jobMsg'), t.pieces.length, (await st(t.page)).price],
+    ['This job changed a moment ago. Reloaded; try again.', 0, '4100000']);
+  await t.ctx.close();
+
+  // a photo Drive hasn't downloaded
+  t = await open(browser, { drive: { slow: 'Photos/Edited/01.jpg' } });
+  await t.page.waitForTimeout(500);
+  check('photo times out: said on the panel', (await text(t.page, '#jobPhotoMsg')).includes('Drive hasn\'t downloaded this yet: 01.jpg'), true);
+  check('photo times out: facts still filled', (await st(t.page)).price, '$4,500,000');
+  await t.ctx.close();
+
+  // Drive not connected here
+  t = await open(browser, { drive: { state: 'needs-click' } });
+  check('no Drive: says so with Reconnect', [(await text(t.page, '#jobPhotoMsg')).includes('Connect Drive on this desktop to bring in photos and the floorplan'), !!(await t.page.$('#jobReconnect'))], [true, true]);
+  check('no Drive: facts filled', (await st(t.page)).price, '$4,500,000');
+  await t.page.click('#jobReconnect');
+  await t.page.waitForTimeout(800);
+  check('Reconnect brings the photos in', (await st(t.page)).photos.length, 3);
+  await t.ctx.close();
+
+  // a floorplan folder with only PDF / Illustrator files (S8)
+  t = await open(browser, { drive: { pdfOnly: true } });
+  check('PDF-only floorplan: says what to do', (await text(t.page, '#jobPlanMsg')), 'No floorplan image in Floorplan\\v2\\ (only PDF). Export a JPG there, or drop one here for this sheet.');
+  check('PDF-only floorplan: drop zone shown', await t.page.$eval('#fpDrop', e => getComputedStyle(e).display !== 'none' && !e.closest('[hidden]')), true);
+  await t.ctx.close();
+
+  // team role: read-only
+  t = await open(browser, { members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
+  check('team: no save buttons', [await t.page.$('#btnSaveSheet'), await t.page.$('#btnSavePdf')], [null, null]);
+  check('team: fields read-only, print stays', [await t.page.$eval('[data-field="price"]', e => e.readOnly || e.disabled), !!(await t.page.$('#btnPrint'))], [true, true]);
+  await t.ctx.close();
+
+  // unknown slug
+  t = await open(browser, { path: '/tools/showsheet/?listing=no-such-job' });
+  check('unknown slug', (await text(t.page, '#jobBar')).includes('No job called "no-such-job"'), true);
+  await t.ctx.close();
+
+  // hostile values never run
+  t = await open(browser, { path: '/tools/showsheet/?listing=evil' });
+  check('hostile job: nothing runs', [await t.page.evaluate(() => window.__xss || 0), t.errors], [0, []]);
+  await t.ctx.close();
+
+  // Rebuild: the banner lists what changed since the last build
+  const BF = { v: 1, market: 'NYC', kind: 'sale', ownership: 'condo', facts: { price: 4750000, beds: 3, baths: 2, halfBaths: null, neighborhood: 'Testville', yearBuilt: null, headline: null,
+    interiorFeatures: ['South exposure', 'Wood floors'], buildingFeatures: ['Pre-war'], assessments: null, commonCharges: 2200, taxesMonthly: 1900 },
+    agents: ['john-gasdaska'], agentsConfirmed: true, listingUrl: 'https://www.elliman.com/new-york-city/100-example-st/4a/9001',
+    photos: { front: { path: 'Photos/Edited/01.jpg', modified: '2026-10-08T10:00:00.000Z' }, back: { path: 'Photos/Edited/02.jpg', modified: '2026-10-08T10:00:00.000Z' } },
+    floorplan: { version: 2, render: 'branded', path: 'Floorplan/v2/Plan v2.jpg', modified: '2026-10-09T10:00:00.000Z' }, print: { paper: 'a5', bleed: false }, via: 'helper' };
+  const DOC = { property_id: 'p1', tool: 'showsheet', version: 4, built_from: BF, built_at: '2026-10-20T10:00:00Z',
+    output: { name: 'Showsheet - 100 Example St 4A - 2026-10-20.pdf', path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-20.pdf', paper: 'a5', madeAt: '2026-10-20T10:00:00Z', via: 'helper' },
+    state: { building: { service: 'My own service line', amenities: ['Roof deck'] }, residence: { features: ['Mine'] }, textScale: { residence: 120 } } };
+  t = await open(browser, { documents: [DOC], path: '/tools/showsheet/?listing=100-example-st-4a&rebuild=1' });
+  p = t.page;
+  check('rebuild: stale in the bar', (await text(p, '#jobBar')).includes('Stale: price, building features'), true);
+  check('rebuild: banner lists the price', (await text(p, '#jobBanner')).includes('Price $4,750,000 → $4,500,000'), true);
+  check('rebuild: building redone, said so', [(await text(p, '#jobBanner')).includes('Building features changed on the job; The Building was redone from it'), (await st(p)).building.service], [true, 'Full-time doorman']);
+  check('rebuild: the sheet\'s own wording kept elsewhere', [(await st(p)).residence.features, (await st(p)).textScale.residence], [['Mine'], 120]);
+  await t.ctx.close();
+
+  console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
+  if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }
+  console.log();
+  await browser.close();
+})().catch(e => { console.log('  FAIL ' + (e.stack || e)); process.exit(1); });

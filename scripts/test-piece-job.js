@@ -205,6 +205,14 @@ check('a date-only end runs to the end of that day', J.upcomingOpenHouses(ohAt([
 check('typed dates survive a first build when DE has none', J.fill('open-house', { dates: [{ day: 'Sunday 2 to 4' }] }, job({}), {}).state.dates, [{ day: 'Sunday 2 to 4' }]);
 check('signage: the job with no listing link prints the team site (blank), never an old link', J.fill('signage', { qrUrl: 'https://old.example/x' }, job({}), {}).state.qrUrl, '');
 
+// final review fixes (Slice 6)
+const four = [1, 2, 3, 4].map(d => ({ type: 'Public', startTime: '2099-05-0' + d + 'T13:00:00', endTime: '2099-05-0' + d + 'T15:00:00' }));
+check('open houses: only the three the flyer prints count', J.value('open-house', job({ core: { openHouses: four } }), 'openHouses').length, 3);
+check('flyer FIELDS: the description when there is no short description', J.FIELDS('open-house', job({ facts: { description: 'x' } })).slice(-1), ['description']);
+check('a QR link only from Douglas Elliman: anything else is the team site', [J.linkOf(job({ core: { listingUrl: 'https://evil.example/x' } })), J.linkOf(job({ core: { listingUrl: 'https://www.elliman.com/a/1' } })),
+  J.fill('signage', {}, job({ core: { listingUrl: 'https://elliman.com.evil.example/x' } }), {}).state.qrUrl], [null, 'https://www.elliman.com/a/1', '']);
+check('builtFrom records the trusted link only', J.builtFrom('signage', {}, job({ core: { listingUrl: 'https://evil.example/x' } }), {}).listingUrl, null);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

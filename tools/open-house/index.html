@@ -43,7 +43,8 @@
 .oh-title{position:relative;font:900 56pt/.92 var(--sans);letter-spacing:-.01em;}
 .oh-dates{position:relative;margin-top:.16in;display:flex;flex-direction:column;gap:.04in;}
 .oh-date{font:800 15pt/1.2 var(--sans);color:var(--sky);}
-.oh-date .k{font-weight:600;font-family:var(--body);color:#fff;margin-right:.08in;}
+.oh-date .k{font-weight:600;font-family:var(--body);color:var(--ow);margin-right:.08in;}
+.oh-date.broker{font-size:12pt;color:var(--ow);}
 .oh-date.appt{color:#fff;}
 
 /* photos */
@@ -66,7 +67,7 @@
 .oh-side{display:grid;grid-template-rows:1fr 1fr;gap:.08in;min-height:0;}
 
 /* the foot */
-.oh-foot{flex:none;height:2.35in;background:var(--navy);color:#fff;padding:.26in .55in .2in;display:grid;grid-template-columns:1fr 1.22in;gap:.3in;position:relative;}
+.oh-foot{flex:none;height:2.45in;background:var(--navy);color:#fff;padding:.26in .55in .2in;display:grid;grid-template-columns:1fr 1.22in;gap:.3in;position:relative;}
 .oh-agents{display:flex;gap:.24in;}
 .oh-ag{display:flex;gap:.12in;align-items:flex-start;min-width:0;flex:1;}
 .oh-ag .shot{flex:none;width:.86in;height:.86in;background:var(--ow);overflow:hidden;position:relative;}
@@ -80,7 +81,7 @@
 .oh-brand .rule{width:.6pt;height:.38in;background:rgba(229,229,229,.4);}
 .oh-de{display:block;width:1.5in;color:#fff;}
 .oh-de svg{display:block;width:100%;height:auto;}
-.oh-legal{position:absolute;left:.55in;right:.55in;bottom:.14in;font:400 5pt/1.4 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--sky2);}
+.oh-legal{position:absolute;left:.55in;right:.55in;bottom:.24in;font:400 5.6pt/1.4 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--ow);opacity:.8;}
 .oh-qr svg{display:block;width:1.22in;height:1.22in;}
 .oh-qr svg path{fill:var(--sky);}
 .oh-qr .cap{margin-top:.06in;text-align:center;font:800 6.4pt/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--sky);}
@@ -279,7 +280,7 @@ function datesHtml() {
   // a typed line that is only "Broker" still prints (as a broker open house with no date)
   const lines = (state.dates || []).map(dateLine).filter(x => x && (x.text || x.broker)).slice(0, 3);
   if (!lines.length) return '<div class="oh-date appt">By appointment</div>';
-  return lines.map(l => '<div class="oh-date">' + (l.broker ? '<span class="k">Broker open house</span>' : '') + esc(l.text) + '</div>').join('');
+  return lines.map(l => '<div class="oh-date' + (l.broker ? ' broker' : '') + '">' + (l.broker ? '<span class="k">Broker open house</span>' : '') + esc(l.text) + '</div>').join('');
 }
 
 /* ---------- the page ---------- */
@@ -464,7 +465,7 @@ function sanitize(s) {
   const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
   const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
   Object.keys(given).forEach(k => {
-    if (!(k in base) || given[k] == null) return;
+    if (!Object.prototype.hasOwnProperty.call(base, k) || given[k] == null) return;
     if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
     base[k] = given[k];
   });

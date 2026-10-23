@@ -72,7 +72,7 @@ body.dir{--pw:24.4in;--ph:18.4in;}
 /* Open House arrow */
 .dr{background:linear-gradient(150deg,var(--sky2) -20%,var(--navy) 55%);}
 .dr .sg-mono{right:-1.3in;top:-1.6in;height:17in;width:auto;opacity:.12;}
-.dr .sg-big{position:absolute;left:1.15in;top:.95in;font:900 275pt/.86 var(--sans);color:#fff;letter-spacing:-.005em;}
+.dr .sg-big{position:absolute;left:1.05in;top:.75in;font:900 350pt/.84 var(--sans);color:#fff;letter-spacing:-.005em;}
 .dr .sg-arrow{position:absolute;left:1.15in;right:1.15in;top:10.95in;height:2.8in;}
 .dr .sg-arrow svg{display:block;width:100%;height:100%;}
 .dr.left .sg-arrow svg{transform:scaleX(-1);}
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function sanitize(s) {
   const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
   Object.keys(given).forEach(k => {
-    if (!(k in base) || given[k] == null) return;
+    if (!Object.prototype.hasOwnProperty.call(base, k) || given[k] == null) return;
     if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
     base[k] = given[k];
   });

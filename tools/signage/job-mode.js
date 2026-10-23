@@ -32,7 +32,7 @@
     note: function (row) {
       var n = [];
       if (row.market === 'NYC') n.push('The kit doesn\'t use signs in New York; this one prints all the same.');
-      if (!J.LINKED || !window.GVC_SHEETJOB.listingUrlOf(row)) n.push('No DE listing link yet: the QR points at the team\'s site.');
+      if (!J.linkOf(row)) n.push('No DE listing link yet: the QR points at the team\'s site.');
       return n.join(' ');
     },
     lay: function (doc, row, prev) {

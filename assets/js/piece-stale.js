@@ -73,8 +73,9 @@
       var ag = J.agents(tool, row).ids;
       if (JSON.stringify(bf.agents || []) !== JSON.stringify(ag)) add('agents', 'Agents', bf.agents || [], ag);
     }
+    if (tool === 'signage' && bf.market && row.market && bf.market !== row.market) add('market', 'Market', bf.market, row.market);   // the office line
     if ((J.LINKED || ['brochure']).indexOf(tool) !== -1) {
-      var url = S.listingUrlOf(row);
+      var url = J.linkOf ? J.linkOf(row) : S.listingUrlOf(row);
       if ((bf.listingUrl || null) !== (url || null)) add('listingUrl', 'Listing link', bf.listingUrl || null, url);
     }
     // photos: the list in order; with no picks and Drive unknown, not judged

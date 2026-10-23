@@ -169,6 +169,11 @@ check('sign fresh', ST.stale(sign, ohJob(OH1), {}).state, 'fresh');
 check('sign: a price change never counts', ST.stale(sign, ohJob(OH1, { facts: { price: 1, city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } }), {}).state, 'fresh');
 check('sign: the agents and the link count', ST.stale(sign, ohJob(OH1, { core: { openHouses: OH1, agentIds: ['b'] }, row: { de: {} } }), {}).changes.map(c => c.field), ['agents', 'listingUrl']);
 check('label for open houses', ST.stale(fly, ohJob([]), {}).changes.map(c => c.label), ['Open houses']);
+// final review fixes (Slice 6)
+const sgJob = (over) => job(Object.assign({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } }, over || {}));
+const sgDoc = v2('signage', sgJob({ row: { market: 'NYC' } }));
+check('sign: a market move counts (the office line changes)', ST.stale(sgDoc, sgJob({ row: { market: 'NJ' } }), {}).changes.map(c => c.field), ['market']);
+check('sign: an outside link never counts as the listing link', ST.stale(sgDoc, sgJob({ row: { market: 'NYC' }, core: { listingUrl: 'https://evil.example/x' } }), {}).state, 'fresh');
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

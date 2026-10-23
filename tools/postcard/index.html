@@ -631,7 +631,7 @@ const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
 function sanitize(s) {
   const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
   Object.keys(given).forEach(k => {
-    if (!(k in base) || given[k] == null) return;
+    if (!Object.prototype.hasOwnProperty.call(base, k) || given[k] == null) return;
     if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
     base[k] = given[k];
   });

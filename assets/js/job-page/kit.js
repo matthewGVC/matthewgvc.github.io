@@ -165,12 +165,12 @@
     if (ctx.kind !== 'listing') return out;
     add('showsheet'); add('brochure'); add('open-house');
     if (ctx.row.kind !== 'rental') { add('postcard-listed'); add('postcard-sold'); add('seller'); }
-    if (ctx.row.market !== 'NYC') add('signage');   // the kit doesn't use signs in New York
+    if (ctx.row.market !== 'NYC' && ctx.row.kind !== 'rental') add('signage');   // no signs in New York; the For Sale sign isn't for a rental
     return out;
   }
   function extraBits(ctx, key, pieces, live) {
     var tools = TOOLS_OF[key];
-    if (!tools || (key === 'postcard' && ctx.row.kind === 'rental') || (key === 'signage' && ctx.row.market === 'NYC')) return null;
+    if (!tools || (key === 'postcard' && ctx.row.kind === 'rental') || (key === 'signage' && (ctx.row.market === 'NYC' || ctx.row.kind === 'rental'))) return null;
     var lines = '', acts = '';
     tools.forEach(function (t) {
       var s = judgeTool(ctx, t, pieces, live);

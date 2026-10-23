@@ -222,6 +222,9 @@
     var out = { stale: [], stalePieces: [] };
     (docs[p.id] || []).forEach(function (doc) {
       if (doc.tool !== 'showsheet' && !(doc.built_from && doc.built_from.v === 2)) return;
+      // only the pieces the job page offers: no sign in New York or for a rental, no postcard for a rental
+      if (doc.tool === 'signage' && (p.market === 'NYC' || p.kind === 'rental')) return;
+      if (/^postcard-/.test(doc.tool) && p.kind === 'rental') return;
       try {
         var pieces = (p.scan && p.scan.pieces) || {};
         var s = staleApi().stale(doc, p, { fileFound: (pieces[doc.tool] || []).length > 0 });

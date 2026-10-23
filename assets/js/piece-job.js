@@ -59,6 +59,16 @@
   function joinUnit(a, u) { return [String(a || '').trim(), unitDisplay(u)].filter(Boolean).join(', '); }
 
   function core(row) { return (row && row.core) || {}; }
+  /* the listing link a piece prints as a QR: the job's DE listing on elliman.com only. Any other
+     address (typed into the job by anyone) prints the team's site instead, so a printed sign or
+     flyer can never send buyers somewhere else. */
+  var DE_HOST = /^https:\/\/([a-z0-9-]+\.)*elliman\.com(\/|$)/i;
+  function linkOf(row) {
+    var u = S.listingUrlOf(row);
+    if (u && DE_HOST.test(u)) return u;
+    var d = row && row.de && row.de.listingUrl;
+    return typeof d === 'string' && DE_HOST.test(d) ? d : null;
+  }
   function rental(row) { return !!(row && row.kind === 'rental'); }
   function v(row, name) { return S.valueOf(row, name); }
   function place(row) { return v(row, 'neighborhood') === null && v(row, 'city') !== null ? 'city' : 'neighborhood'; }
@@ -125,12 +135,15 @@
         .concat(l, ['city', 'state', 'zip'], PITCH_FACTS);
     }
     if (tool === 'pitch-map') return ['mapAddresses'];
-    if (tool === 'open-house') return [rental(row) ? 'rent' : 'price', 'beds', 'baths', 'halfBaths', 'sqft', place(row), 'openHouses', 'shortDescription'];
+    // the blurb is the short description, else the description: whichever prints is the one tracked
+    if (tool === 'open-house') return [rental(row) ? 'rent' : 'price', 'beds', 'baths', 'halfBaths', 'sqft', place(row), 'openHouses',
+      v(row, 'shortDescription') !== null || v(row, 'description') === null ? 'shortDescription' : 'description'];
     return [];
   }
   function value(tool, row, name) {
     if (name === 'mapAddresses') return mapAddresses(row);
-    if (name === 'openHouses') { var oh = upcomingOpenHouses(row); return oh.length ? oh : null; }
+    // the three the flyer prints (a fourth one changing changes nothing printed)
+    if (name === 'openHouses') { var oh = upcomingOpenHouses(row).slice(0, 3); return oh.length ? oh : null; }
     if (PITCH_FACTS.indexOf(name) !== -1) { var x = core(row)[name]; return empty(x) ? null : x; }
     return v(row, name);
   }
@@ -163,7 +176,7 @@
       s.beds = text(v(row, 'beds')); s.baths = bathsText(row);
       s.sqft = text(v(row, 'sqft')); s.parking = text(v(row, 'parking'));
       if (v(row, 'description') !== null) s.blurb = String(v(row, 'description'));
-      var url = S.listingUrlOf(row);
+      var url = linkOf(row);
       if (url) s.listingUrl = url;
       if (a.ids.length) s.agents = a.ids;
       if (featureList(row, lists).length && listsChanged(row, ctx, lists)) { s.features = featureList(row, lists).join('\n'); redone.push('features'); }
@@ -197,8 +210,7 @@
       var short = v(row, 'shortDescription') || v(row, 'description');
       if (short !== null) s.blurb = String(short);
       s.market = S.marketKey(row.market);
-      var link = S.listingUrlOf(row);
-      if (link) s.listingUrl = link;
+      s.listingUrl = linkOf(row) || '';
       if (a.ids.length) s.agents = a.ids;
       // the dates: DE's upcoming open houses, redone when they changed since the last build
       var oh = value(tool, row, 'openHouses') || [];
@@ -211,7 +223,7 @@
     } else if (tool === 'signage') {
       s.kind = 'for-sale';
       // the job's DE listing, else blank (the sign prints the team's site): never an old link
-      s.qrUrl = S.listingUrlOf(row) || '';
+      s.qrUrl = linkOf(row) || '';
       s.market = S.marketKey(row.market);
       if (a.ids.length) s.agents = a.ids;
     }
@@ -328,7 +340,7 @@
     var a = agents(tool, row);
     return {
       v: 2, tool: tool, market: row.market || 'NYC', kind: rental(row) ? 'rental' : 'sale',
-      facts: facts, agents: a.ids, agentsConfirmed: a.confirmed, listingUrl: LINKED.indexOf(tool) !== -1 ? S.listingUrlOf(row) : null,
+      facts: facts, agents: a.ids, agentsConfirmed: a.confirmed, listingUrl: LINKED.indexOf(tool) !== -1 ? linkOf(row) : null,
       photos: ctx.photos || [], plans: ctx.plans || [], map: ctx.map || null,
       print: { paper: state.paper || null, bleed: state.bleed || null }, via: ctx.via || 'helper'
     };
@@ -392,6 +404,6 @@
     TOOLS: TOOLS, FIELDS: FIELDS, value: value, fill: fill, factEdits: factEdits, applyEdits: applyEdits, builtFrom: builtFrom,
     photosFor: photosFor, pickFloorplans: pickFloorplans, pitchPhotos: pitchPhotos, mapAddresses: mapAddresses,
     label: function (t) { return LABEL[t] || t; }, note: function (t) { return NOTE[t]; }, maxAgents: function (t) { return MAX_AGENTS[t] || 0; },
-    agents: agents, joinUnit: joinUnit, PITCH_FACTS: PITCH_FACTS, upcomingOpenHouses: upcomingOpenHouses, LINKED: LINKED
+    agents: agents, joinUnit: joinUnit, PITCH_FACTS: PITCH_FACTS, upcomingOpenHouses: upcomingOpenHouses, LINKED: LINKED, linkOf: linkOf
   };
 });

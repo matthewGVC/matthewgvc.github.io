@@ -434,6 +434,7 @@ check('D88 recent changes colour it as off market', W.recentChanges(offChanges, 
   const a = mk('n1'), b = mk('r1', { kind: 'rental', market: 'NJ' });
   const old = t => { const bf = PJ.builtFrom(t, {}, a, {}); bf.listingUrl = 'https://www.elliman.com/old'; bf.facts.price = 5; return bf; };
   const jobs = W.buildJobs({ properties: [a, b], changes: [], documents: [
+    { property_id: 'r1', tool: 'seller', built_from: old('seller'), output: {} },
     { property_id: 'n1', tool: 'signage', built_from: old('signage'), output: {} },
     { property_id: 'r1', tool: 'postcard-listed', built_from: old('postcard-listed'), output: {} },
     { property_id: 'r1', tool: 'signage', built_from: old('signage'), output: {} }] }, TODAY);

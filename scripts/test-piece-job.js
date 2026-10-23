@@ -213,6 +213,11 @@ check('a QR link only from Douglas Elliman: anything else is the team site', [J.
   J.fill('signage', {}, job({ core: { listingUrl: 'https://elliman.com.evil.example/x' } }), {}).state.qrUrl], [null, 'https://www.elliman.com/a/1', '']);
 check('builtFrom records the trusted link only', J.builtFrom('signage', {}, job({ core: { listingUrl: 'https://evil.example/x' } }), {}).listingUrl, null);
 
+// re-review fixes (Slice 6)
+check('DE links with a port, a query or a fragment are trusted', ['https://www.elliman.com:443/a', 'https://elliman.com?x=1', 'https://elliman.com#a'].map(u => J.linkOf(job({ core: { listingUrl: u } }))),
+  ['https://www.elliman.com:443/a', 'https://elliman.com?x=1', 'https://elliman.com#a']);
+check('the brochure drops an old outside link when the job has no DE link', J.fill('brochure', { listingUrl: 'https://evil.example/old' }, job({ core: { listingUrl: 'https://evil.example/x' } }), {}).state.listingUrl, '');
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

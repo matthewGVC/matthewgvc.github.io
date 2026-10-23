@@ -280,6 +280,10 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   check('flyer: no Douglas Elliman wordmark means no drawing (the helper reports it)', await page.evaluate(s => window.__render(s).then(() => 'drawn', e => 'refused'), FLY), 'refused');
   await page.unroute('**/douglas-elliman.svg');
 
+  await page.goto(BASE + '/tools/signage/', { waitUntil: 'networkidle' });
+  await page.evaluate(s => window.__render(s), { kind: 'for-sale', market: 'constructor', agents: ['tj-verdiglione'] });
+  check('sign: an inherited name is never a market', [await page.evaluate(() => window.__piece.state.market), /function|object Object/.test(await page.evaluate(() => document.querySelector('.sg-foot').textContent))], ['nj', false]);
+
   check('no page errors', errors, []);
   await browser.close();
 

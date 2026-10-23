@@ -62,7 +62,7 @@
   /* the listing link a piece prints as a QR: the job's DE listing on elliman.com only. Any other
      address (typed into the job by anyone) prints the team's site instead, so a printed sign or
      flyer can never send buyers somewhere else. */
-  var DE_HOST = /^https:\/\/([a-z0-9-]+\.)*elliman\.com(\/|$)/i;
+  var DE_HOST = /^https:\/\/([a-z0-9-]+\.)*elliman\.com(:443)?([\/?#]|$)/i;
   function linkOf(row) {
     var u = S.listingUrlOf(row);
     if (u && DE_HOST.test(u)) return u;
@@ -176,8 +176,7 @@
       s.beds = text(v(row, 'beds')); s.baths = bathsText(row);
       s.sqft = text(v(row, 'sqft')); s.parking = text(v(row, 'parking'));
       if (v(row, 'description') !== null) s.blurb = String(v(row, 'description'));
-      var url = linkOf(row);
-      if (url) s.listingUrl = url;
+      s.listingUrl = linkOf(row) || '';   // the job's DE listing, else none (never an old outside link)
       if (a.ids.length) s.agents = a.ids;
       if (featureList(row, lists).length && listsChanged(row, ctx, lists)) { s.features = featureList(row, lists).join('\n'); redone.push('features'); }
     } else if (tool === 'postcard-listed' || tool === 'postcard-sold') {

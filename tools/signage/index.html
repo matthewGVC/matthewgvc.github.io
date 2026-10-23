@@ -305,7 +305,7 @@ function sanitize(s) {
   });
   if (base.kind !== 'directional') base.kind = 'for-sale';
   if (base.arrow !== 'left') base.arrow = 'right';
-  if (!(base.market in OFFICE)) base.market = 'nj';
+  if (!Object.prototype.hasOwnProperty.call(OFFICE, base.market)) base.market = 'nj';
   base.agents = base.agents.filter(a => typeof a === 'string').slice(0, 2);
   base.qrUrl = String(base.qrUrl || '');
   return base;

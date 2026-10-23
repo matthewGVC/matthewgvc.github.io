@@ -1,10 +1,10 @@
 /* ============================================================
    WORKSPACE SHELL — the top bar, banner and footer of every /workspace/ page
    (from the locked mockup's shell.js, now wired to real state).
-   Main nav: Overview · Jobs · Match · Status. The footer keeps the links to
+   Main nav: Overview · Resell · New Dev · Errors (Status is Resell's Table view). The footer keeps the links to
    the rest of the site: Team tools (../#tools), Listing rules and Tasks.
 
-     <body data-nav="overview|jobs|job|match|status" data-root="./ or ../">
+     <body data-nav="overview|resell|newdev|job|match" data-root="./ or ../">
      const shell = GVC_SHELL.mount({ onSynced, onDrive, noDrive })   after the page's markup
                                 noDrive: the page never needs Drive (Match, Status):
                                 no Drive pill, no read-only banner
@@ -54,6 +54,24 @@
     copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>'
   };
   function icon(n) { return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>'; }
+  /* a job's Asana / Drive / DE badges (GVC_WS.syncOf): a tick, a cross or a dash */
+  function syncBadges(list) {
+    return '<span class="syncb">' + (list || []).map(function (b) {
+      var c = b.ok === true ? 'ok' : b.ok === false ? 'no' : 'na';
+      return '<span class="sb ' + c + '" title="' + esc(b.src + ': ' + b.why) + '"><i aria-hidden="true">' + (c === 'ok' ? '✓' : c === 'no' ? '✗' : '○') + '</i>' + esc(b.src) +
+        '<span class="sr">: ' + esc(b.why) + '</span></span>';
+    }).join('') + '</span>';
+  }
+  /* confirmed agents as headshots (Sydney's note), the name on hover and for screen readers;
+     anyone the roster doesn't know prints as a name */
+  function faces(ids) {
+    var A = global.GVC_AGENT;
+    return '<span class="faces">' + (ids || []).map(function (id) {
+      var a = A && A(id);
+      if (!a) return '<span class="face-n">' + esc(id) + '</span>';
+      return '<span class="face" title="' + esc(a.name) + '"><img src="' + esc(a.photo) + '" alt="' + esc(a.name) + '" loading="lazy"></span>';
+    }).join('') + '</span>';
+  }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   var HELPER = 'http://localhost:47610', PAIR_KEY = 'gvc.helper.pair';
@@ -81,8 +99,8 @@
     var top = doc.createElement('header');
     top.className = 'top';
     top.innerHTML = '<a class="brand" href="' + root + '"><img src="' + root + '../assets/logos/monogram.svg" alt="">GVC Workspace</a>' +
-      '<nav class="nav" aria-label="Main"><a href="' + root + '"' + cur('overview') + '>Overview</a><a href="' + root + 'jobs/"' + cur('jobs') + '>Jobs</a>' +
-      '<a href="' + root + 'match/"' + cur('match') + '>Match</a><a href="' + root + 'status/"' + cur('status') + '>Status</a></nav>' +
+      '<nav class="nav" aria-label="Main"><a href="' + root + '"' + cur('overview') + '>Overview</a><a href="' + root + 'jobs/"' + cur('resell') + '>Resell</a>' +
+      '<a href="' + root + 'new-dev/"' + cur('newdev') + '>New Dev</a><a href="' + root + 'match/"' + cur('match') + '>Errors</a></nav>' +
       '<div class="top-r"><button class="pill-ok off" type="button" id="wsDrive">Drive…</button>' +
       '<button class="ibtn" type="button" id="wsSync" title="Sync now: Asana, then DE">' + icon('sync') + '<span class="sr">Sync now: Asana, then DE</span></button>' +
       '<button class="ibtn" type="button" id="wsSearchBtn" title="Search jobs">' + icon('search') + '<span class="sr">Search jobs</span></button>' +
@@ -247,4 +265,6 @@
   global.GVC_SHELL = { mount: mount, helper: helper, syncWords: syncWords, onTeam: onTeam, NOT_ON_TEAM: NOT_ON_TEAM, CANT_CHECK: CANT_CHECK };
   global.GVC_ICON = icon;
   global.GVC_ESC = esc;
+  global.GVC_SYNCB = syncBadges;
+  global.GVC_FACES = faces;
 })(window);

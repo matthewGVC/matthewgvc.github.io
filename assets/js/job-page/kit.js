@@ -125,6 +125,13 @@
     try { return ST.stale(docOf(ctx, tool), ctx.row, opts); }
     catch (e) { return null; }
   }
+  /* the Photos row points at the whole Photos folder, not its newest file (Sydney's note):
+     the folder of that file up to its "Photos" folder, else the file's own folder */
+  function photosDir(cur) {
+    var segs = String((cur && cur.path) || '').split('/').slice(0, -1);
+    for (var i = 0; i < segs.length; i++) if (/^photos$/i.test(segs[i])) return segs.slice(0, i + 1).join('/');
+    return segs.length ? segs.join('/') : 'Photos';
+  }
   function pieceHref(ctx, tool, rebuild) {
     var q = (ctx.kind === 'pitch' ? 'pitch' : 'listing') + '=' + encodeURIComponent(ctx.row.slug);
     if (tool === 'postcard-sold') q += '&card=sold';
@@ -199,7 +206,7 @@
       return '<div class="kr" data-kit="' + ctx.esc(tool) + '"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">' + ctx.esc(title) + '</div>' + b.lines +
         '</div><div class="a">' + b.act + '</div></div>';
     };
-    return '<div class="card" id="pitchPieces"><div class="card-h"><div><h2>Pieces</h2><p>Made from this pitch: they go in its folder\'s Marketing, Pitch.</p></div></div>' +
+    return '<div class="card" id="pitchPieces"><div class="card-h"><div><h2>Pieces</h2></div></div>' +
       '<div class="kit">' + row('seller', 'Seller pitch') + row('pitch-map', 'Map') + '</div></div>';
   }
 
@@ -233,7 +240,10 @@
       var step = x.step ? 'Asana: ' + esc(x.step.name) + (x.step.done ? ', ticked' + (x.step.doneOn ? ' ' + esc(D.day(x.step.doneOn)) : '') + (x.step.who ? ' by ' + esc(x.step.who) : '') : ', open')
         : x.file && NO_STEP.indexOf(x.key) !== -1 ? 'No Asana step for this piece' : '';
       var acts = '', bits = x.key === 'showsheet' && sheet ? sheetBits(ctx, sheet) : extraBits(ctx, x.key, pieces, live);
-      if (cur) {
+      if (cur && x.key === 'photos' && ctx.row.drive_folder) {
+        acts += '<button class="b sm ghost" type="button" data-open-dir>Open folder</button>' +
+          '<button class="b sm ghost" type="button" data-copy-dir>' + I('copy') + 'Copy Drive link</button>';
+      } else if (cur) {
         if (live && cur.path) acts += '<button class="b sm ghost" type="button" data-open="' + esc(x.key) + '">Open</button>';
         else if (cur.url && /^https:\/\/drive\.google\.com\//.test(cur.url)) acts += '<a class="b sm ghost" href="' + esc(cur.url) + '" target="_blank" rel="noopener">Open</a>';
         acts += '<button class="b sm ghost" type="button" data-copy="' + esc(x.key) + '">' + I('copy') + 'Copy Drive link</button>';
@@ -259,7 +269,7 @@
       var x = rowsHtml((ctx.row.scan && ctx.row.scan.pieces) || {}, ctx, false);
       body = JP.drive.scanLine(ctx.row, ctx.esc) + x.html;
     } else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
-    return '<div class="card" id="kitCard"><div class="card-h"><div><h2>Marketing track</h2><p>Each piece: the newest file in the folder beside Asana\'s step.</p></div>' +
+    return '<div class="card" id="kitCard"><div class="card-h"><div><h2>Marketing track</h2></div>' +
       '<span class="chip" id="kitCount"></span></div><div id="kitBody">' + body + '</div>' +
       '<p class="soft" id="kitMsg" role="status" style="font-size:13px;margin-top:8px">' + ctx.esc(JP.drive.msgs.kit || '') + '</p></div>';
   }
@@ -284,6 +294,17 @@
           var cur = current[b.dataset.copy] || {};
           JP.drive.copyLink(r, cur.path || null, cur.url || null, msg).then(function () { JP.drive.msgs.kit = msg.textContent; });
         });
+      });
+      var dir = function () { return { drive_folder: r.drive_folder + '/' + photosDir(current.photos) }; };
+      body.querySelectorAll('[data-open-dir]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          global.GVC_SHELL.helper('POST', '/open-folder', { folder: dir().drive_folder }).then(function (x) {
+            say(x.ok ? 'Opened the Photos folder in File Explorer.' : (x.error || 'The helper couldn\'t open it.'));
+          }, function (e) { say(e.message); });
+        });
+      });
+      body.querySelectorAll('[data-copy-dir]').forEach(function (b) {
+        b.addEventListener('click', function () { JP.drive.copyLink(dir(), null, null, msg).then(function () { JP.drive.msgs.kit = msg.textContent; }); });
       });
       body.querySelectorAll('[data-sheet-copy]').forEach(function (b) {
         b.addEventListener('click', function () {

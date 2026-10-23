@@ -239,7 +239,7 @@ check('status: grouped by market', st.map(g => g.market), ['NYC', 'NJ']);
 check('status: by stage order inside a market', st[0].rows.map(r => r.stage + ' ' + r.name), ['Pitch 90 Pitch St 11B', 'Live 20 Sample Ave 7B', 'In contract 100 Example St 4A', 'Sold 1 Old St']);
 check('status: developments are not on it', st.some(g => g.rows.some(r => /Example Ave|West Example/.test(r.name))), false);
 check('status: a row', st[0].rows[2], { name: '100 Example St 4A', href: 'job/?listing=100-example-st-residence-4a', stage: 'In contract', chip: 'contract',
-  lastMilestone: { label: 'Contract signed', on: '2026-10-12' }, nextDate: { label: 'Closing', on: '2026-12-15' }, agents: ['Elyse Gutman'], mismatches: 3 });
+  lastMilestone: { label: 'Contract signed', on: '2026-10-12' }, nextDate: { label: 'Closing', on: '2026-12-15' }, agents: ['Elyse Gutman'], agentIds: ['elyse-gutman'], mismatches: 3 });
 check('status: no dates, no milestone', st[0].rows[1].lastMilestone, null);
 check('status: a pitch\'s milestone is its pitch day', st[0].rows[0].lastMilestone, { label: 'Pitched', on: '2026-08-04' });
 

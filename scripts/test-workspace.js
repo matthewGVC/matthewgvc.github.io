@@ -71,6 +71,7 @@ async function open(browser, opts) {
   page.on('pageerror', e => errors.push(e.message));
   if (opts.signedIn !== false) {
     await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
+    await page.addInitScript(() => localStorage.setItem('gvc.collapse.all', 'open'));   // every card open: these tests read inside them
   }
   if (!opts.drive) await page.addInitScript(() => { delete window.showDirectoryPicker; });
   const T = opts.rows || rowsFor();
@@ -171,14 +172,14 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('sync card ok', [await p.$eval('#deCard', e => e.className), (await text(p, '#deTitle'))], ['card health', 'DE sync ran']);
   check('read-only banner without Drive', [(await text(p, '.banner')).includes('Read-only here'), await text(p, '#wsDrive')], [true, 'Read-only here']);
   check('avatar initials', await text(p, '#wsMe'), 'MB');
-  check('nav: Overview, Jobs, Match, Status', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Jobs', 'Match', 'Status']);
+  check('nav: Overview, Resell, New Dev, Errors', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Resell', 'New Dev', 'Errors']);
   check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
     [['Team tools', './../#tools'], ['Listing rules', './../listing-rules/'], ['Tasks', './#tasks']]);
   check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
   check('footer: Asana beside DE', (await text(p, '#wsFootAsana')).startsWith('Asana last synced'), true);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
-  check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 mismatches'), true);
-  check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 mismatches', 'match/']);
+  check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 errors'), true);
+  check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 errors', 'match/']);
   check('development row: next, slips, construction, hints', [(await text(p, 'a.pj[href*="619"]')).includes('Next: Permits / zoning'), (await text(p, 'a.pj[href*="619"]')).includes('re-dated 2 times'),
     await p.$$eval('a.pj[href*="619"] .cons', els => els.length), (await text(p, 'a.pj[href*="619"]')).includes('2 milestones suggested from Asana')], [true, true, 1, true]);
 
@@ -262,6 +263,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const phone = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const pp = await phone.newPage();
   await pp.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
+  await pp.addInitScript(() => localStorage.setItem('gvc.collapse.all', 'open'));   // every card open: these tests read inside them
   const T0 = rowsFor({ members: [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] });
   await pp.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T0[new URL(r.request().url()).pathname.split('/').pop()] || []) }));
   await pp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
@@ -273,7 +275,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
 
   /* ---------- the jobs list ---------- */
   t = await open(browser, { path: '/workspace/jobs/' });
-  check('jobs: rows', await t.page.$$eval('#rows tr', els => els.length), 6);
+  check('jobs: rows (Resell: no developments)', await t.page.$$eval('#rows tr', els => els.length), 5);
   check('jobs: link to the job page', await t.page.$eval('#rows a[href*="100-example"]', a => a.getAttribute('href')), '../job/?listing=100-example-st-residence-4a');
   check('jobs: DE status in words', (await text(t.page, '#rows')).includes('Contract signed'), true);
   const firstName = () => t.page.$eval('#rows tr:first-child td.nm a', a => a.textContent);
@@ -290,8 +292,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.page.click('#typ button[data-v="pitch"]');
   check('jobs: type filter', await t.page.$$eval('#rows tr', els => els.length), 1);
   check('jobs: to link box', (await text(t.page, '#n2')).includes('20 Sample Ave 7B'), true);
-  await t.page.focus('#typ button[data-v="development"]'); await t.page.keyboard.press('Enter');
-  check('jobs: keyboard focus stays on the Type button', await t.page.evaluate(() => [document.activeElement.dataset.v, document.activeElement.getAttribute('aria-pressed'), document.querySelector('#typ button[data-v="pitch"]').getAttribute('aria-pressed')]), ['development', 'true', 'false']);
+  await t.page.focus('#typ button[data-v="listing"]'); await t.page.keyboard.press('Enter');
+  check('jobs: keyboard focus stays on the Type button', await t.page.evaluate(() => [document.activeElement.dataset.v, document.activeElement.getAttribute('aria-pressed'), document.querySelector('#typ button[data-v="pitch"]').getAttribute('aria-pressed')]), ['listing', 'true', 'false']);
   check('jobs: no page errors', t.errors, []);
   await t.ctx.close();
 
@@ -304,7 +306,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: Open in Asana on each line', await mp.$eval('.mg:first-of-type .mline a.asana', a => [a.getAttribute('href'), a.target]), ['https://app.asana.com/0/1/1201', '_blank']);
   check('match: M7 shows the link to paste', await mp.$$eval('.mline .paste', els => els.map(e => e.textContent.trim())), ['https://drive.google.com/drive/folders/abc']);
   check('match: roster drift uses the latest People read only', [(await text(mp, '.mg:last-of-type')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg:last-of-type')).includes('Old Person')], [true, false]);
-  check('match: total in the header', (await text(mp, '#lead')).startsWith('4 mismatches'), true);
+  check('match: total in the header', (await text(mp, '#lead')).startsWith('4 errors'), true);
   check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
     ['/#tools', '/listing-rules/', '/workspace/#tasks']);
   check('match: no Drive pill or read-only banner', [await visible(mp, '#wsDrive'), await visible(mp, '.banner')], [false, false]);
@@ -341,7 +343,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: DE-only listing shows in the Asana group', [asanaGroup.includes('DE listing 9101'), asanaGroup.includes('On DE, not in Asana.'), asanaGroup.includes('9103')], [true, true, false]);
   check('match: Open on DE link', await mp.$eval('.mline[data-key="M2:de:9101"] a.de', a => a.getAttribute('href')).catch(() => null), 'https://www.elliman.com/x/9101');
   check('match: unlinked tasks from the latest run, ignored left out', [asanaGroup.includes('7 Lone Pl'), asanaGroup.includes('Asana task not linked'), asanaGroup.includes('8 Ignored Pl'), asanaGroup.includes('6 Old Pl')], [true, true, false, false]);
-  check('match: they count in the header', (await text(mp, '#lead')).startsWith('6 mismatches'), true);
+  check('match: they count in the header', (await text(mp, '#lead')).startsWith('6 errors'), true);
   check('match: no page errors with loose lines', t.errors, []);
   await t.ctx.close();
   /* Link by hand (tune-up A): a loose line can be linked to a job, or set aside */
@@ -444,7 +446,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     await mp.$eval('.bulk [data-bulk]', b => [b.getAttribute('aria-expanded'), b.textContent.trim()])], [true, 2, ['true', 'Hide the jobs']]);
   await mp.click('.bulk [data-bulk]');
   check('match M6: hide again', await visible(mp, '.bulk .bulk-list'), false);
-  check('match M6: the header total still counts them', (await text(mp, '#lead')).startsWith('6 mismatches'), true);
+  check('match M6: the header total still counts them', (await text(mp, '#lead')).startsWith('6 errors'), true);
   check('match M6: other groups unchanged', await mp.$$eval('.mg > .card-h h2', els => els.map(e => e.textContent.trim())), ['Asana', 'DE', 'Drive', 'Roster']);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
@@ -463,7 +465,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('deepen: no page errors', t.errors, []);
   const mattGroup = await mp.$$eval('.mg', gs => gs.filter(g => g.querySelector('h2').textContent.trim() === 'Matt').map(g => [g.querySelector('.card-h p').textContent.trim(), g.querySelectorAll('.mline').length]));
   check('deepen: M18 and M19 sit in the workspace (Matt) group, which says what it holds', mattGroup,
-    [['Yours to settle in the workspace: folders and DE listings to link, rows to tidy, and values you typed that disagree with DE or Asana.', 2]]);
+    [['Fix in the workspace.', 2]]);
   check('deepen: M18 is its own line, not folded into the Drive group', await mp.$$eval('.bulk', els => els.length), 0);
   const deLine = (await text(mp, '.mline[data-key="M2:de:9301"]')) || '';
   check('deepen: the DE line names the job M19 points at, and keeps its buttons', [deLine.includes('Probably the same listing as 20 Sample Ave 7B'),
@@ -485,6 +487,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await sphone.route(/mammoth\.browser\.min\.js/, r => r.abort());
   const spp = await sphone.newPage();
   await spp.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
+  await spp.addInitScript(() => localStorage.setItem('gvc.collapse.all', 'open'));   // every card open: these tests read inside them
   const T1 = rowsFor({ members: [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] });
   await spp.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T1[new URL(r.request().url()).pathname.split('/').pop()] || []) }));
   await spp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
@@ -677,7 +680,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   R7.properties.push({ id: 'pa', slug: '9-gone-st', label: 'a', kind: 'sale', market: 'NYC', stage: 'Archived', stage_source: 'Asana', version: 1, core: { address: '9 Gone St' },
     folder_state: 'linked', drive_folder: 'g', match: { list: [{ code: 'M3', key: 'M3', text: 'Asana says $1; DE says $2.', values: {}, fixAt: 'Asana', who: ['Elyse Gutman'], since: '2026-10-01' }], dismissed: {} } });
   t = await open(browser, { path: '/workspace/match/', rows: R7 });
-  check('B7 match: Archived jobs left out', [((await text(t.page, '#groups')) || '').includes('9 Gone St'), (await text(t.page, '#lead')).startsWith('4 mismatches')], [false, true]);
+  check('B7 match: Archived jobs left out', [((await text(t.page, '#groups')) || '').includes('9 Gone St'), (await text(t.page, '#lead')).startsWith('4 errors')], [false, true]);
   await t.ctx.close();
   // B8: the "not linked" list comes from the newest ok Asana run only
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ sync_runs: [
@@ -733,6 +736,90 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     ['Pitch', 'Prep', 'Live', 'Off market*']);
   check('D88 job page: the Asana card shows Off market', await t.page.$eval('#asanaCard .chip', c => [c.textContent.trim(), c.className]).catch(() => null), ['Off market', 'chip off']);
   check('D88 job page: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  /* ---------- tune-ups 2 (Matt's notes, 10-23) ---------- */
+  // the tabs: Overview | Resell | New Dev | Errors
+  t = await open(browser, { path: '/workspace/jobs/' });
+  check('tabs: the four names', await t.page.$$eval('.nav a', as => as.map(a => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('aria-current')])),
+    [['Overview', '../', null], ['Resell', '../jobs/', 'page'], ['New Dev', '../new-dev/', null], ['Errors', '../match/', null]]);
+  check('Resell: listings, rentals and pitches, no developments', await t.page.$$eval('#rows .nm a', as => as.map(a => a.textContent.trim()).sort()),
+    ['100 Example St 4A', '12 Sample Lane', '20 Sample Ave 7B', '90 Pitch St 11B', '<img src=x onerror="window.__xss=1">'].sort());
+  check('Resell: the Table view is the status table', await t.page.$eval('[aria-label="View"] a[href="../status/"]', a => a.textContent), 'Table');
+  check('Resell: sync badges per job (100 Example St: all three linked)', await t.page.$$eval('#rows tr:first-child .sb', bs => bs.map(b => b.className + ':' + b.textContent.replace(/:.*/, ''))),
+    ['sb ok:✓Asana', 'sb ok:✓Drive', 'sb ok:✓DE']);
+  check('Resell: no page errors', t.errors, []);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/new-dev/' });
+  check('New Dev: only developments', await t.page.$$eval('#rows .nm a', as => as.map(a => a.textContent.trim())), ['619 Example Ave']);
+  check('New Dev: the tab is current', await t.page.$eval('.nav a[aria-current="page"]', a => a.textContent.trim()), 'New Dev');
+  check('New Dev: no page errors', t.errors, []);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/status/' });
+  check('Table view: under the Resell tab', await t.page.$eval('.nav a[aria-current="page"]', a => a.textContent.trim()), 'Resell');
+  await t.ctx.close();
+
+  // the badges on the overview: a broken folder is a cross, a Prep job has no DE yet
+  t = await open(browser, {});
+  const sbOf = name => t.page.$$eval('.pj', (els, n) => { const e = els.find(x => x.querySelector('h3').textContent.indexOf(n) === 0); return e ? [...e.querySelectorAll('.sb')].map(b => b.className.replace('sb ', '') + ' ' + b.title) : null; }, name);
+  check('overview badges: 12 Sample Lane (folder moved, not on DE while Live)', await sbOf('12 Sample Lane'),
+    ['no Asana: No Asana task linked', 'no Drive: The Drive folder moved or was renamed', 'no DE: Not matched to a DE listing']);
+  await t.ctx.close();
+
+  // folding: the Jobs list opens, Tasks starts folded, and a choice is remembered
+  {
+    const ctx = await browser.newContext(), pg = await ctx.newPage();
+    await ctx.route(/mammoth\.browser\.min\.js/, r => r.abort());
+    await pg.addInitScript(() => { localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })); delete window.showDirectoryPicker; });
+    const T = rowsFor();
+    await pg.route('**/rest/v1/**', r => { const tb = new URL(r.request().url()).pathname.split('/').pop();
+      r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(tb === 'members' ? [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] : T[tb] || []) }); });
+    await pg.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'u1', email: 'matt@example.com' }) }));
+    await pg.route('http://localhost:47610/**', r => r.abort());
+    await pg.goto(BASE + '/workspace/', { waitUntil: 'networkidle' });
+    await pg.waitForTimeout(300);
+    const shut = sel => pg.$eval(sel, c => c.classList.contains('cz-shut'));
+    check('fold: the Jobs list starts open, Tasks folded', [await shut('section[aria-labelledby="pipe-h"]'), await shut('#tasks'), await visible(pg, '#newTask')], [false, true, false]);
+    await pg.click('#tasks .cz-btn');
+    check('fold: Tasks opens from its button', [await shut('#tasks'), await pg.$eval('#tasks .cz-btn', b => b.getAttribute('aria-expanded'))], [false, 'true']);
+    await pg.reload({ waitUntil: 'networkidle' });
+    await pg.waitForTimeout(300);
+    check('fold: the choice is remembered', await shut('#tasks'), false);
+    await pg.goto(BASE + '/workspace/job/?listing=100-example-st-residence-4a', { waitUntil: 'networkidle' });
+    await pg.waitForTimeout(500);
+    check('fold: a job page opens Stages, folds the rest', await pg.$$eval('.card.cz-head, .card', cs => cs.filter(c => c.querySelector(':scope > .cz-head')).map(c => (c.querySelector('h2') || {}).textContent + ':' + (c.classList.contains('cz-shut') ? 'shut' : 'open'))
+      .filter(x => /^(Stages|Change log|Agents):/.test(x))), ['Stages:open', 'Change log:shut', 'Agents:shut']);
+    await ctx.close();
+  }
+
+  // Errors: claim, mark fixed, still wrong; only owner, admin or marketing may
+  const CL = (over) => rowsFor(Object.assign({ match_claims: [
+    { owner_table: 'properties', owner_id: 'p1', key: 'M3', claimed_name: 'Matt Bloomfield', claimed_at: iso(NOW - 864e5) },
+    { owner_table: 'properties', owner_id: 'p1', key: 'M7:drive', claimed_name: 'Matt Bloomfield', claimed_at: iso(NOW - 864e5), fixed_name: 'Matt Bloomfield', fixed_at: iso(NOW - 600e3) },
+    { owner_table: 'properties', owner_id: 'p1', key: 'M5:closedOn', fixed_name: 'Matt Bloomfield', fixed_at: iso(NOW - 2 * 3600e3) }] }, over || {}));
+  t = await open(browser, { path: '/workspace/match/', rows: CL() });
+  const lineOf = key => t.page.$eval('.mline[data-key="' + key + '"]', li => [li.classList.contains('waiting'), (li.querySelector('.claim') || {}).textContent || null,
+    [...li.querySelectorAll('.meta button')].map(b => b.textContent)]).catch(() => null);
+  check('errors: claimed', await lineOf('M3'), [false, 'Matt Bloomfield is on it', ['Mark fixed', 'Unclaim', 'Dismiss']]);
+  const m7 = await lineOf('M7:drive');
+  check('errors: fixed since the last sync waits, with Undo', [m7[0], /^Fixed by Matt Bloomfield .+ · waiting for the next sync$/.test(m7[1]), m7[2]], [true, true, ['Copy', 'Undo', 'Dismiss']]);
+  check('errors: fixed before a later sync that still finds it', await lineOf('M5:closedOn'), [false, 'Still wrong after Matt Bloomfield marked it fixed ' + await t.page.evaluate(d => window.GVC_WS.fmtDay(d), iso(NOW - 2 * 3600e3)), ['Mark fixed', 'Dismiss']]);
+  check('errors: an unclaimed line offers I\'m on it', (await lineOf('M12:g7'))[2], ["I'm on it", 'Dismiss']);
+  await t.page.click('.mline[data-key="M12:g7"] [data-claim]');
+  await t.page.waitForTimeout(400);
+  const cw = t.writes.filter(w => /POST match_claims/.test(w));
+  check('errors: I\'m on it writes one claim row', cw.length === 1 && /"owner_table":"dev_projects","owner_id":"d1","key":"M12:g7","claimed_at"/.test(cw[0]), true);
+  check('errors: no page errors', t.errors, []);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/match/', rows: CL(), members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+  check('errors: the shared login sees who is on it, but no buttons', [(await lineOf('M3'))[1], (await lineOf('M3'))[2], (await lineOf('M12:g7'))[2]],
+    ['Matt Bloomfield is on it', ['Dismiss'], ['Dismiss']]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/match/', rows: CL(), members: [{ name: 'Sydney', initials: 'S', role: 'marketing' }] });
+  check('errors: the marketing team may claim', (await lineOf('M12:g7'))[2], ["I'm on it", 'Dismiss']);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/match/', rows: rowsFor(), missing: ['match_claims'] });
+  check('errors: before 0011, no claim buttons and nothing breaks', [(await lineOf('M3'))[2], t.errors], [['Dismiss'], []]);
   await t.ctx.close();
 
   await browser.close();

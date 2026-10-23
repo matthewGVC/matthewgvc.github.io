@@ -68,9 +68,7 @@
     var core = list.filter(function (f) { return f.tier === 'core'; }), extra = list.filter(function (f) { return f.tier !== 'core'; });
     var filled = extra.filter(function (f) { return f.value !== null && f.value !== undefined && f.value !== ''; }).length;
     var extraOpen = open && extra.some(function (f) { return f.name === open.name; });
-    return '<div class="card" id="factsCard"><div class="card-h"><div><h2>Facts</h2><p>' +
-      (ctx.canEdit ? 'Click a value to change it. DE wins where it has a value, unless you typed a newer one; then a warning shows until DE changes.'
-                   : 'Where each value came from. Only the owner account changes facts.') + '</p></div></div>' +
+    return '<div class="card" id="factsCard"><div class="card-h"><div><h2>Facts</h2></div></div>' +
       '<table class="ft"><tbody>' + core.map(function (f) { return row(f, ctx); }).join('') + '</tbody></table>' +
       '<details class="fx"' + (extraOpen ? ' open' : '') + '><summary>Extras · ' + filled + ' filled</summary><table class="ft"><tbody>' +
       extra.map(function (f) { return row(f, ctx); }).join('') + '</tbody></table></details></div>';

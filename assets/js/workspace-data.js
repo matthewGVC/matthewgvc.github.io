@@ -308,7 +308,7 @@
         deStatus: p.de_status || de.status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
         folder: p.drive_folder || null, folderState: p.folder_state, pitchedOn: pitch ? pitch.pitched_on : null,
         steps: steps, stageIdx: steps.indexOf(p.stage === 'Rented' && steps.indexOf('Rented') === -1 ? 'Sold' : p.stage), done: done, bars: bars, ticks: ticks,
-        dates: datesOf(p.milestones, today), match: match, mismatches: match.length, asanaUrl: asanaUrlOf(p), agents: namesOf(core), stale: staleOf(p, sheets).stale, stalePieces: staleOf(p, sheets).stalePieces,
+        dates: datesOf(p.milestones, today), match: match, mismatches: match.length, asanaUrl: asanaUrlOf(p), asanaGone: !!(p.asana && p.asana.gone), agents: namesOf(core), agentIds: (core.agentIds || []).slice(), stale: staleOf(p, sheets).stale, stalePieces: staleOf(p, sheets).stalePieces,
         activity: (p.scan && p.scan.weeks) || {}, flags: flags, last: dates.length ? dates[dates.length - 1] : null,
         href: 'job/?listing=' + encodeURIComponent(p.slug), version: p.version
       });
@@ -362,7 +362,21 @@
         last: dated.length ? dated.map(function (x) { return x.d; }).sort().pop() : null, href: 'job/?dev=' + encodeURIComponent(d.slug), version: d.version
       });
     });
+    jobs.forEach(function (j) { j.sync = syncOf(j); });
     return jobs;
+  }
+
+  /* Each job's three sources (Matt, 10-23): true = linked, false = should be and isn't,
+     null = not expected yet (DE before a listing goes live; DE for pitches and developments). */
+  var PRE_DE = ['Pitch', 'Prep', 'Not won', 'Archived', 'Off market'];
+  function syncOf(j) {
+    var listing = j.type === 'listing' || j.type === 'rental';
+    return [
+      { src: 'Asana', ok: !!j.asanaUrl && !j.asanaGone, why: !j.asanaUrl ? 'No Asana task linked' : j.asanaGone ? 'The Asana task is gone' : 'Linked to its Asana task' },
+      { src: 'Drive', ok: j.folderState === 'linked', why: j.folderState === 'linked' ? 'Drive folder linked' : j.folderState === 'broken' ? 'The Drive folder moved or was renamed' : 'No Drive folder linked' },
+      { src: 'DE', ok: !listing ? null : j.deId ? true : PRE_DE.indexOf(j.stage) !== -1 ? null : false,
+        why: !listing ? 'Not on DE' : j.deId ? 'Matched to its DE listing' : PRE_DE.indexOf(j.stage) !== -1 ? 'Not on DE yet' : 'Not matched to a DE listing' }
+    ];
   }
 
   function overviewStats(jobs) {
@@ -504,7 +518,7 @@
         name: j.name, href: j.href, stage: j.stage, chip: j.chip,
         lastMilestone: last ? { label: last.label, on: last.on } : null,
         nextDate: planned.length ? { label: planned[0].label, on: planned[0].on } : null,
-        agents: (j.agents || []).slice(), mismatches: j.mismatches || 0
+        agents: (j.agents || []).slice(), agentIds: (j.agentIds || []).slice(), mismatches: j.mismatches || 0
       });
     });
     var keys = Object.keys(by).sort(function (a, b) {
@@ -596,7 +610,7 @@
   function deLabel(s) { return s ? DE_WORDS[s] || s : ''; }
 
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
-    buildJobs: buildJobs, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
+    buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable,
     changeTitle: changeTitle, fieldLabel: fieldLabel };

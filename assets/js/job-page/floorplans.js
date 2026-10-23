@@ -96,7 +96,7 @@
     else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     var acts = ctx.canEdit ? (recording ? formHtml(ctx) : '<div class="fbtn"><button class="b sm" type="button" id="fpNew">Record new version</button>' +
       '<span class="soft" style="font-size:13px;align-self:center">When an agent asks for a change. Nothing is drawn here.</span></div>') : '';
-    return '<div class="card" id="fpCard"><div class="card-h"><div><h2>Floorplans</h2><p>Versions down, renders across, from the Floorplan folder.</p></div></div>' +
+    return '<div class="card" id="fpCard"><div class="card-h"><div><h2>Floorplans</h2></div></div>' +
       '<div id="fpBody">' + body + '</div>' + acts + '</div>';
   }
 

@@ -85,7 +85,7 @@
       <h1>Overview</h1>
       <p id="lead">Loading the jobs…</p>
     </div>
-    <div class="seg" role="group" aria-label="Market" id="mkt">
+    <div class="seg mkt" role="group" aria-label="Market" id="mkt">
       <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="NYC">NYC</button><button type="button" aria-pressed="false" data-v="NJ">NJ</button><button type="button" aria-pressed="false" data-v="FL">FL</button>
     </div>
   </div>
@@ -97,9 +97,9 @@
     <div class="grid3" id="recent" style="margin-top:20px"></div>
 
     <div class="split" style="margin-top:24px">
-      <section class="card" aria-labelledby="pipe-h">
+      <section class="card" aria-labelledby="pipe-h" data-open>
         <div class="card-h">
-          <div><h2 id="pipe-h">Jobs</h2><p>Every listing, pitch and development, newest activity first</p></div>
+          <div><h2 id="pipe-h">Jobs</h2></div>
           <div class="seg" role="group" aria-label="View" id="view"><button type="button" aria-pressed="true" data-v="list">List</button><button type="button" aria-pressed="false" data-v="time">Timeline</button></div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
@@ -111,20 +111,20 @@
         </div>
         <div id="jobs"></div>
         <div class="chart">
-          <div class="card-h" style="margin:22px 0 4px"><div><h2 style="font-size:18px">Folder activity</h2><p>Files touched per week, all jobs</p></div><span class="mono soft" style="font-size:11px" id="range"></span></div>
+          <div class="card-h" style="margin:22px 0 4px"><div><h2 style="font-size:18px">Folder activity</h2></div><span class="mono soft" style="font-size:11px" id="range"></span></div>
           <div id="chart"></div>
         </div>
       </section>
 
       <aside class="stack">
         <section class="card" id="tasks" aria-labelledby="tasks-h">
-          <div class="card-h"><div><h2 id="tasks-h">Tasks</h2><p>Flagged by the workspace, then yours</p></div><span class="chip made" id="tcount"></span></div>
+          <div class="card-h"><div><h2 id="tasks-h">Tasks</h2></div><span class="chip made" id="tcount"></span></div>
           <p id="tmsg" role="alert" style="color:var(--danger);font-size:13px;margin:0 0 6px"></p>
           <div id="tlist"></div>
           <form class="addt" id="addTask"><input class="inp" id="newTask" placeholder="Add a task" aria-label="New task"><button class="b ghost" type="submit" id="addBtn"></button></form>
         </section>
         <section class="card" id="waitCard" aria-labelledby="wait-h">
-          <div class="card-h"><div><h2 id="wait-h">Waiting on others</h2><p>Needed before a piece can be finished</p></div></div>
+          <div class="card-h"><div><h2 id="wait-h">Waiting on others</h2></div></div>
           <div id="wait"></div>
         </section>
         <section class="card health" id="asCard">
@@ -151,6 +151,7 @@
 <script src="../assets/js/piece-stale.js"></script>
 <script src="../assets/js/workspace-data.js"></script>
 <script src="../assets/js/workspace-shell.js"></script>
+<script defer src="../assets/js/ws-collapse.js"></script>
 <script>
 (function () {
   'use strict';
@@ -229,8 +230,8 @@
     $('stats').innerHTML = card('Live', 'arrow', s.live, 'listed and on the market', s.live / n * 100) +
       card('In contract', 'file', s.contract, 'contract signed', s.contract / n * 100, 'c') +
       card('To link', 'link', s.toLink, 'folder or DE match missing', s.toLink / n * 100);
-    $('lead').innerHTML = esc(s.total + ' job' + (s.total === 1 ? '' : 's') + ' across ' + (f.market || 'NYC, NJ and FL') + '. Stages and dates from Asana, statuses from DE, files from Drive.') +
-      (s.mismatches ? ' <a class="link" id="mmTotal" href="match/">' + s.mismatches + ' mismatch' + (s.mismatches === 1 ? '' : 'es') + '</a>' : '');
+    $('lead').innerHTML = esc(s.total + ' job' + (s.total === 1 ? '' : 's') + (f.market ? ' in ' + f.market : '')) +
+      (s.mismatches ? ' · <a class="link" id="mmTotal" href="match/">' + s.mismatches + ' error' + (s.mismatches === 1 ? '' : 's') + '</a>' : '');
   }
 
   function recent(js) {
@@ -265,9 +266,7 @@
     if (!js.length) return '<div class="empty"><b>No jobs here</b>' + (data.properties.length + data.pitches.length + data.devProjects.length
       ? 'Nothing matches these filters.' : 'The database is ready but empty. Jobs arrive from the seed and the first DE sync.') + '</div>';
     return '<div class="pipe">' + js.map(function (j) {
-      var warn = j.flags.map(function (x) { return x.t; });
-      if (j.mismatches) warn.push(j.mismatches + ' mismatch' + (j.mismatches === 1 ? '' : 'es'));
-      var right = warn.length ? '<span class="r warn">' + I('alert') + esc(warn.join(' · ')) + '</span>'
+      var right = j.mismatches ? '<span class="r warn">' + I('alert') + esc(j.mismatches + ' error' + (j.mismatches === 1 ? '' : 's')) + '</span>'
         : '<span class="r">' + I('clock') + (j.last ? 'Last ' + esc(W.fmtDay(j.last)) : 'No dates') + '</span>';
       var meta = [j.market];
       if (j.type === 'rental') meta.push('Rental'); if (j.type === 'pitch') meta.push('Pitch'); if (j.type === 'development') meta.push('Development');
@@ -285,7 +284,7 @@
         if (j.hints) dev += '<div class="dates"><span>' + j.hints + ' milestone' + (j.hints === 1 ? '' : 's') + ' suggested from Asana. Review them on the job page.</span></div>';
       }
       var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc((j.stalePieces || []).map(function (x) { return x.label + ' stale: ' + x.words.join(', '); }).join('; ')) + '">stale</span>' : '';
-      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div></div>' + right + '</div>' +
+      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
         '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div>' + dates + dev + '</a>';
     }).join('') + '</div>';
   }
@@ -313,7 +312,7 @@
   function chart(js) {
     var ws = weeks.filter(function (w) { return w <= today; });
     var v = ws.map(function (w) { return js.reduce(function (a, j) { return a + wcount(j, w); }, 0); });
-    if (!v.some(Boolean)) { $('chart').innerHTML = '<p class="soft" style="font-size:13px">No folder activity yet. The helper counts files each night once folders are linked.</p>'; return; }
+    if (!v.some(Boolean)) { $('chart').innerHTML = '<p class="soft" style="font-size:13px">No folder activity yet.</p>'; return; }
     var mx = Math.max.apply(null, v.concat([1])), Wd = 600, H = 110, bw = Wd / v.length;
     var bars = v.map(function (n, i) { var h = n ? Math.max(2, Math.log10(n + 1) / Math.log10(mx + 1) * (H - 14)) : 0; return '<rect x="' + (i * bw + 1) + '" y="' + (H - h) + '" width="' + (bw - 2) + '" height="' + h + '" rx="1.5" fill="' + (i === v.length - 1 ? 'var(--cyan)' : 'var(--ink)') + '"><title>Week of ' + esc(W.fmtDay(ws[i])) + ': ' + n + ' files</title></rect>'; }).join('');
     $('chart').innerHTML = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Files touched per week">' + bars + '<line x1="0" x2="' + Wd + '" y1="' + H + '" y2="' + H + '" stroke="var(--rule)"/></svg>';
@@ -332,7 +331,6 @@
     // personal to-dos are Matt's: only his own sign-in shows them (the team sign-in sees the workspace's flags only)
     var personal = !!data.personal;
     $('addTask').style.display = personal ? '' : 'none'; $('waitCard').hidden = !personal;
-    $('tasks').querySelector('.card-h p').textContent = personal ? 'Flagged by the workspace, then yours' : 'Flagged by the workspace';
     var todos = personal ? data.todos : [];
     var mine = todos.filter(function (t) { return t.section !== 'Waiting on others'; }).map(function (t) {
       return '<div class="todo-i"><button class="bx" type="button" data-done="' + esc(t.id) + '" aria-label="Done: ' + esc(t.body) + '"></button><div>' + esc(t.body) + '<div class="meta"><span class="chip">' + esc(t.section) + '</span></div></div></div>';
@@ -343,7 +341,7 @@
     $('wait').innerHTML = wait.length ? wait.map(function (t) {
       var lines = String(t.body).split('\n');
       return '<div class="dep">' + I('people') + '<div>' + esc(lines[0]) + (lines[1] ? '<small>' + esc(lines.slice(1).join(' ')) + '</small>' : '') + '</div></div>';
-    }).join('') : '<p class="soft" style="font-size:13.5px">Nothing waiting. Add a to-do in the section "Waiting on others" to list it here.</p>';
+    }).join('') : '<p class="soft" style="font-size:13.5px">Nothing waiting.</p>';
   }
 
   function health() {

@@ -36,7 +36,7 @@
         '<select class="inp" id="noteWho" aria-label="Who asked">' + opts.join('') + '</select>' +
         '<button class="b primary sm" type="button" id="noteAdd">Log</button></div><p class="fmsg" id="noteMsg" role="alert">' + esc(d.msg || '') + '</p>';
     }
-    return '<div class="card" id="logCard"><div class="card-h"><div><h2>Change log</h2><p>Newest first. Entries are never edited or deleted.</p></div></div>' + box +
+    return '<div class="card" id="logCard"><div class="card-h"><div><h2>Change log</h2></div></div>' + box +
       (items.length ? '<ul class="log" id="changeLog">' + items.join('') + '</ul>' : '<p class="soft">Nothing logged yet.</p>') + '</div>';
   }
 

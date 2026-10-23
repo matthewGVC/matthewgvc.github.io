@@ -34,6 +34,11 @@
 .bulk > div > b{font-size:14px;font-weight:600}
 .bulk .bulk-list{margin-top:10px}
 .bulk .bulk-list[hidden]{display:none}
+/* who is dealing with it (0011): claimed, fixed and waiting for a sync, or still wrong */
+.mline .claim{font-family:var(--mono);font-size:11px;border-radius:999px;padding:1px 8px;background:var(--paper-2);color:var(--ink)}
+.mline .claim.still{background:none;border:1px solid var(--danger);color:var(--danger)}
+.mline.waiting{opacity:.62}
+.mline .lnk.do{font-weight:600}
 .mline .lnk,.bulk .lnk{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
 </style>
 </head>
@@ -41,8 +46,7 @@
 <main class="wrap">
   <div class="page-h">
     <div>
-      <div class="eyebrow">Asana, DE and Drive</div>
-      <h1>Match</h1>
+      <h1>Errors</h1>
       <p id="lead">Loading the mismatches…</p>
     </div>
   </div>
@@ -64,6 +68,7 @@
 <script src="../../assets/js/workspace-data.js"></script>
 <script src="../../assets/js/match-link.js"></script>
 <script src="../../assets/js/workspace-shell.js"></script>
+<script defer src="../../assets/js/ws-collapse.js"></script>
 <script>
 (function () {
   'use strict';
@@ -74,9 +79,9 @@
   var today = W.today(), data = null;
   var shell = GVC_SHELL.mount({ noDrive: true, onSynced: function () { load(); } });
   var WHERE = {
-    Asana: 'Fix these in Asana.', DE: 'Fix these on DE, or ask the agent to.', Drive: 'Fix these on Drive.',
-    Matt: 'Yours to settle in the workspace: folders and DE listings to link, rows to tidy, and values you typed that disagree with DE or Asana.',
-    Roster: 'Asana\'s People and the workspace roster disagree. The roster is updated by hand.'
+    Asana: 'Fix in Asana.', DE: 'Fix on DE.', Drive: 'Fix on Drive.',
+    Matt: 'Fix in the workspace.',
+    Roster: 'Update the roster by hand.'
   };
   var OWNER = { properties: 'property_id', dev_projects: 'dev_project_id', pitches: 'pitch_id' };
 
@@ -103,7 +108,11 @@
       // (either failing to read leaves those lines out, never the page)
       rest('/de_listings?select=de_listing_id,kind,gvc_listed,property_id,ignored,courtesy,raw,checked_at&gvc_listed=is.true&property_id=is.null&ignored=is.false').catch(function () { return []; }),
       rest('/sync_runs?select=kind,started_at,ok,totals&kind=eq.asana&ok=is.true&order=started_at.desc&limit=1').catch(function () { return []; }),
-      rest('/asana_tasks?select=gid&ignored=eq.true').catch(function () { return []; })
+      rest('/asana_tasks?select=gid&ignored=eq.true').catch(function () { return []; }),
+      // who claimed or fixed what (0011); missing before the migration: no claim buttons then
+      rest('/match_claims?select=*').catch(function () { return null; }),
+      rest('/sync_runs?select=started_at&ok=is.true&order=started_at.desc&limit=1').catch(function () { return []; }),
+      P.whoAmI().catch(function () { return {}; })
     ]).then(function (r) {
       var people = r[2] || [], latest = people.reduce(function (m, p) { return p.seen_at && p.seen_at > m ? p.seen_at : m; }, '');
       // the newest good Asana run's unlinked tasks: a failed run's list is never trusted (tune-up B8)
@@ -120,6 +129,11 @@
         loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }),
           linkedGids: props.map(function (p) { return p.asana_gid; }).filter(Boolean),
           linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean), claims: claims }, M) };
+      data.claims = null;
+      if (r[6]) { data.claims = {}; r[6].forEach(function (c) { data.claims[c.owner_table + '|' + c.owner_id + '|' + c.key] = c; }); }
+      data.lastSync = (r[7] || []).reduce(function (m, x) { return x && x.started_at && Date.parse(x.started_at) > Date.parse(m || 0) ? x.started_at : m; }, '');
+      // only the marketing team and admins claim and fix (Matt, 10-23); the database says the same
+      data.canFix = ['owner', 'admin', 'marketing'].indexOf((r[8] || {}).role) !== -1;
       data.links = {};
       data.loose.forEach(function (l) { if (l.item.link) data.links[l.item.key] = l.item; });
       render();
@@ -137,14 +151,51 @@
     if (it.asanaUrl && fix !== 'Roster') meta.push('<a class="link asana" href="' + esc(it.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>');
     if (it.deUrl) meta.push('<a class="link de" href="' + esc(it.deUrl) + '" target="_blank" rel="noopener">Open on DE</a>');
     if (it.paste) meta.push('<span>Paste: <span class="paste">' + esc(it.paste) + '</span></span><button class="lnk" type="button" data-copy="' + esc(it.paste) + '">Copy</button>');
+    var cl = claimOf(it), waiting = false;
+    if (cl && cl.fixed_at && !(Date.parse(data.lastSync) > Date.parse(cl.fixed_at))) {
+      waiting = true;
+      meta.unshift('<span class="claim">Fixed by ' + esc(cl.fixed_name || 'someone') + ' ' + esc(W.fmtDay(cl.fixed_at)) + ' · waiting for the next sync</span>');
+      if (data.canFix) meta.push('<button class="lnk" type="button" data-unfix>Undo</button>');
+    } else if (cl && cl.fixed_at) {
+      meta.unshift('<span class="claim still">Still wrong after ' + esc(cl.fixed_name || 'someone') + ' marked it fixed ' + esc(W.fmtDay(cl.fixed_at)) + '</span>');
+      if (data.canFix) meta.push('<button class="lnk do" type="button" data-fix>Mark fixed</button>');
+    } else if (cl && cl.claimed_at) {
+      meta.unshift('<span class="claim">' + esc(cl.claimed_name || 'Someone') + ' is on it</span>');
+      if (data.canFix) meta.push('<button class="lnk do" type="button" data-fix>Mark fixed</button><button class="lnk" type="button" data-unclaim>Unclaim</button>');
+    } else if (it.id && data.claims && data.canFix) {
+      meta.push('<button class="lnk do" type="button" data-claim>I\'m on it</button>');
+    }
     if (it.id) meta.push('<button class="lnk" type="button" data-dismiss>Dismiss</button>');
     // a line that belongs to no job: tie it to one, or set it aside (tune-up A)
     if (it.link && L) meta.push('<button class="lnk" type="button" data-link>Link to a job</button><button class="lnk" type="button" data-aside>' + (it.link.type === 'de' ? 'Not ours' : 'Ignore') + '</button>');
-    return '<li class="mline" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code"' + (KEY[it.code] ? ' title="' + esc(KEY[it.code]) + '"' : '') + '>' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
+    return '<li class="mline' + (waiting ? ' waiting' : '') + '" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code"' + (KEY[it.code] ? ' title="' + esc(KEY[it.code]) + '"' : '') + '>' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
       (it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
       (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
       (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +
       '<button class="b sm primary" type="button" data-confirm>Dismiss</button><button class="b sm" type="button" data-cancel>Cancel</button></div>' : '') + '<p class="msg" role="alert"></p></div></li>';
+  }
+
+  function claimOf(it) { return it.id && data.claims ? data.claims[(it.table || 'properties') + '|' + it.id + '|' + it.key] || null : null; }
+
+  /* I'm on it / Mark fixed / Unclaim / Undo: one row per error in match_claims; the database
+     stamps the name and time of whoever is signed in */
+  function claimSet(li, patch) {
+    if (busy) return;
+    var msg = li.querySelector('.msg'), table = li.dataset.table || 'properties', id = li.dataset.id, key = li.dataset.key;
+    var body = Object.assign({ owner_table: table, owner_id: id, key: key }, patch);
+    if (patch.fixed_at) {
+      var row = (table === 'dev_projects' ? data.devProjects : data.properties).filter(function (x) { return x.id === id; })[0];
+      var item = row && ((row.match || {}).list || []).filter(function (m) { return (m.key || m.code) === key; })[0];
+      body.fixed_values = item && item.values !== undefined ? item.values : null;
+    }
+    busy = true; msg.textContent = 'Saving…';
+    li.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    P.call('/rest/v1/match_claims?on_conflict=owner_table,owner_id,key', {
+      method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: JSON.stringify(body)
+    }).then(function () { busy = false; return load(); }, function (e) {
+      busy = false; msg.textContent = /row-level security|permission/i.test(e.message) ? 'Only the marketing team and admins can do this.' : e.message;
+      li.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+    });
   }
 
   function render() {
@@ -155,13 +206,13 @@
     var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
     var loose = data.loose || [];
     var groups = W.matchGroups(jobs, drift, loose), n = W.overviewStats(jobs).mismatches + loose.length;
-    $('lead').textContent = (n ? n + ' mismatch' + (n === 1 ? '' : 'es') + ', grouped by where to fix them, then by person, so each person can get their own list.' : 'No mismatches between Asana, DE and Drive.') +
-      (drift.length ? ' ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') + ' at the end.' : '');
-    if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b>Asana, DE and Drive agree on every job.</div>'; return; }
+    $('lead').textContent = (n ? n + ' error' + (n === 1 ? '' : 's') : 'No errors') +
+      (drift.length ? ' · ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') : '');
+    if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b></div>'; return; }
     $('groups').innerHTML = groups.map(function (g) {
       var bulk = g.bulk || [];
       var count = g.people.reduce(function (a, p) { return a + p.items.length; }, 0) + bulk.reduce(function (a, b) { return a + b.items.length; }, 0);
-      return '<section class="card mg"><div class="card-h"><div><h2>' + esc(g.fixAt) + '</h2><p>' + esc(WHERE[g.fixAt] || '') + '</p></div><span class="chip made">' + count + '</span></div>' +
+      return '<section class="card mg" data-open><div class="card-h"><div><h2>' + esc(g.fixAt) + '</h2><p>' + esc(WHERE[g.fixAt] || '') + '</p></div><span class="chip made">' + count + '</span></div>' +
         bulk.map(function (b, i) {
           var id = 'bulk-' + esc(g.fixAt) + '-' + i;
           return '<div class="who bulk" data-key="' + esc(b.key) + '"><span class="code">' + esc(b.code) + '</span><div><b>' + esc(b.text) + '</b> ' +
@@ -248,6 +299,10 @@
     } else if (b.hasAttribute('data-cancel')) {
       li.querySelector('.dz').hidden = true; li.querySelector('[data-dismiss]').hidden = false; li.querySelector('.msg').textContent = '';
     } else if (b.hasAttribute('data-confirm')) dismiss(li);
+    else if (b.hasAttribute('data-claim')) claimSet(li, { claimed_at: new Date().toISOString() });
+    else if (b.hasAttribute('data-unclaim')) claimSet(li, { claimed_at: null });
+    else if (b.hasAttribute('data-fix')) claimSet(li, { fixed_at: new Date().toISOString() });
+    else if (b.hasAttribute('data-unfix')) claimSet(li, { fixed_at: null });
   });
   $('groups').addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.classList.contains('reason')) { e.preventDefault(); dismiss(e.target.closest('.mline')); }
@@ -255,7 +310,7 @@
 
   if (P.signedIn()) load();
   else {
-    gate('Sign in', 'The Match page is for the GVC team. Sign in with your own email and password.', 'Sign in');
+    gate('Sign in', 'For the GVC team.', 'Sign in');
     $('gateBtn').addEventListener('click', function () { P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) { shell.paintMe(); load(); } }); });
   }
 })();

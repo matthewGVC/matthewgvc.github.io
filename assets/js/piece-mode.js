@@ -255,7 +255,7 @@
         return null;
       }
       var docs = '/documents?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*';
-      return Promise.all([rest(docs), P.whoAmI().then(null, function () { return { role: null }; })]).then(function (r) {
+      return Promise.all([rest(docs).catch(function () { return []; }), P.whoAmI().then(null, function () { return { role: null }; })]).then(function (r) {
         var all = r[0] || [];
         M.row = row; M.me = r[1] || {};
         M.doc = all.filter(function (d) { return d.tool === A.tool; })[0] || null;

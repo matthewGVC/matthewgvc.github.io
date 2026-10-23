@@ -104,7 +104,12 @@
     builtCtx: function () {
       var s = B.state;
       return {
-        photos: s.images.filter(function (im) { return im.role !== 'exclude' && pathOf[im.id]; }).map(function (im) { return { path: pathOf[im.id].path, modified: pathOf[im.id].modified }; }),
+        // an unused photo is recorded too (flagged), so the job's picks still match the record
+        photos: s.images.filter(function (im) { return pathOf[im.id]; }).map(function (im) {
+          var o = { path: pathOf[im.id].path, modified: pathOf[im.id].modified };
+          if (im.role === 'exclude') o.excluded = true;
+          return o;
+        }),
         plans: s.floorplans.filter(function (f) { return pathOf[f.id]; }).map(function (f) { var p = pathOf[f.id]; return { path: p.path, modified: p.modified, version: p.version, render: p.render }; })
       };
     },

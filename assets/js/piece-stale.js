@@ -80,6 +80,9 @@
     // photos: the list in order; with no picks and Drive unknown, not judged
     var was = paths(bf.photos), now = opts.photoPaths !== undefined ? opts.photoPaths
       : J.photosFor(tool, row, opts.editedPaths === undefined ? null : opts.editedPaths);
+    // with no tray order and Drive unknown only the hero is known (as the Showsheet's back photo)
+    var heroOnly = opts.photoPaths === undefined && opts.editedPaths === undefined && !((row.photo_order || []).length);
+    if (now && heroOnly) { now = now.slice(0, 1); was = was.slice(0, 1); }
     if (now && tool !== 'pitch-map' && (was.length || now.length)) {
       if (JSON.stringify(was) !== JSON.stringify(now.slice(0, Math.max(was.length, now.length)))) add('photos', 'Photos', was, now);
       else if (opts.files && (bf.photos || []).some(function (p) {

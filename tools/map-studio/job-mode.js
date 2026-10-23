@@ -38,7 +38,10 @@
 
   /* "100 Example St, Residence 4A" → number, street, unit, and where to look */
   function record(line, place) {
-    var at = line.indexOf(', '), head = at === -1 ? line : line.slice(0, at), unit = at === -1 ? '' : line.slice(at + 2).replace(/^Residence\s+/i, '');
+    // "<street>, Residence 4A" is the subject's unit; any other tail ("12 Elm St, Jersey City") is a town
+    var at = line.indexOf(', '), head = at === -1 ? line : line.slice(0, at), tail = at === -1 ? '' : line.slice(at + 2).trim(), unit = '';
+    if (/^(residence|apt\.?|apartment|unit|#)\s*/i.test(tail) || /^[\w-]{1,7}$/.test(tail)) unit = tail.replace(/^(residence|apt\.?|apartment|unit)\s+|^#\s*/i, '');
+    else if (tail) place = /,|[A-Z]{2}$/.test(tail) ? tail : tail + ', ' + (place.split(', ').pop() || '');
     var m = /^(\S+)\s+(.+)$/.exec(head.trim());
     return m ? { number: m[1], street: m[2], city: '', unit: unit, place: place } : null;
   }
@@ -116,7 +119,7 @@
       if (e && e.status) { say(e.message); return; }   // the helper answered and refused
       download(canvas);
       say('The helper isn\'t running here, so the map downloaded. Put it in the ' + kind + ' folder\'s Marketing\\Pitch, or drop it on the seller pitch.');
-    });
+    }).catch(function (e) { say((e && e.message) || 'The map was not saved.'); });   // never a half-done export with nothing said
   };
 
   (P.signedIn() ? Promise.resolve(true) : P.askSignIn('Sign in to make this ' + kind + '\'s map.')).then(function (ok) {
@@ -125,7 +128,7 @@
       var row = rows && rows[0];
       if (!row) { bar.innerHTML = '<b>No ' + kind + ' called "' + esc(slug) + '"</b>. <a href="../../workspace/">Back to the overview</a>'; return null; }
       return Promise.all([
-        rest('/documents?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&tool=eq.pitch-map&select=*'),
+        rest('/documents?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&tool=eq.pitch-map&select=*').catch(function () { return []; }),   // before 0010: no record yet
         P.whoAmI().then(null, function () { return { role: null }; })
       ]).then(function (r) {
         M.row = row; M.doc = (r[0] || [])[0] || null; M.canEdit = (r[1] || {}).role === 'owner';

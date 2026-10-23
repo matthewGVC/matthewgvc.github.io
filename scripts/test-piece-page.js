@@ -430,6 +430,27 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
     [false, '', 'undefined']);
   await o.ctx.close();
 
+  /* review fixes (Tasks 9-12) */
+  o = await open(browser, { path: PCL, prefix: 'Just Listed Postcard' });
+  await o.page.evaluate(() => { const s = JSON.parse(JSON.stringify(window.__piece.state)); s.photos.reverse(); s.photos[0].x = 11; window.__piece.set(s); });
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(700);
+  check('postcard: Make main records the photos in their new order, crops on the right file', [(o.pieces[0] || {}).p_built_from && o.pieces[0].p_built_from.photos.map(p => p.path),
+    ((o.pieces[0] || {}).p_state || {}).photos && o.pieces[0].p_state.photos.map(p => [p.path, p.x])],
+    [['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg'], [['Photos/Edited/01.jpg', 11], ['Photos/Edited/02.jpg', 50]]]);
+  await o.ctx.close();
+  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Pitch' });
+  await o.page.evaluate(() => { const s = JSON.parse(JSON.stringify(window.__piece.state)); s.photos[2].role = 'exclude'; window.__piece.set(s); });
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(700);
+  check('seller: an unused photo is recorded, flagged', ((o.pieces[0] || {}).p_built_from || { photos: [] }).photos.map(p => !!p.excluded), [false, false, true]);
+  await o.ctx.close();
+  const commaRows = rowsFor(); commaRows.pitches[0].core.comps = [{ address: '7 Elm St, Red Bank' }];
+  o = await mapPage({ rows: commaRows });
+  check('map: a comp with its town looks there, not as a unit', await o.page.evaluate(() => window.__mapRecords().map(r => [r.number, r.street, r.unit, r.place])),
+    [['12', 'Sample Ln', '', 'Testville, NJ'], ['7', 'Elm St', '', 'Red Bank, NJ']]);
+  await o.ctx.close();
+
   await browser.close();
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
   if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }

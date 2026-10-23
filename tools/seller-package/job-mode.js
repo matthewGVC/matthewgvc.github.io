@@ -109,7 +109,12 @@
     printable: function () { return clone(B.state); },
     builtCtx: function () {
       return {
-        photos: B.state.photos.filter(function (p) { return p.role !== 'exclude' && pathOf[p.id]; }).map(function (p) { return { path: pathOf[p.id].path, modified: pathOf[p.id].modified }; }),
+        // an unused photo is recorded too (flagged), so the job's picks still match the record
+        photos: B.state.photos.filter(function (p) { return pathOf[p.id]; }).map(function (p) {
+          var o = { path: pathOf[p.id].path, modified: pathOf[p.id].modified };
+          if (p.role === 'exclude') o.excluded = true;
+          return o;
+        }),
         map: mapFrom()
       };
     },

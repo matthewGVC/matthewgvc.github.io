@@ -149,6 +149,14 @@ check('a v2 record of an unknown piece is never stale and never throws', ST.stal
 check('postcard: a floorplan appearing never counts', ST.stale(v2('postcard-listed', brochureRow, { plans: [] }), brochureRow, { plans: pl1 }).state, 'fresh');
 check('junk plan entries never throw', ST.stale({ built_from: Object.assign({}, withPl.built_from, { plans: [null, pl1[0]] }) }, brochureRow, { plans: [null].concat(pl1) }).state, 'fresh');
 check('a map with no dates on either side is not judged', ST.stale(v2('seller', mapRow, { map: { path: 'a.png' } }), mapRow, { map: { path: 'b.png' } }).state, 'fresh');
+// review fixes (Tasks 9-12): an excluded photo is recorded, so it never reads as a change; a hero-only job without Drive judges the hero only
+const exRow = job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } });
+const exDoc = v2('seller', exRow, { photos: [{ path: 'Photos/Edited/01.jpg' }, { path: 'Photos/Edited/02.jpg', excluded: true }] });
+check('an excluded photo recorded with its flag is no change', ST.stale(exDoc, exRow, {}).state, 'fresh');
+const heroRow = job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_order: [] } });
+const heroDoc = v2('postcard-listed', heroRow, { photos: [{ path: 'Photos/Edited/01.jpg' }, { path: 'Photos/Edited/05.jpg' }] });
+check('hero only, Drive unknown: the second photo is not judged', ST.stale(heroDoc, heroRow, {}).state, 'fresh');
+check('hero only, Drive unknown: a new hero still counts', ST.stale(heroDoc, job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_hero: 'Photos/Edited/09.jpg', photo_order: [] } }), {}).changes.map(c => c.field), ['photos']);
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

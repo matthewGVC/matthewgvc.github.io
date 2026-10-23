@@ -16,12 +16,13 @@
   var sold = new URLSearchParams(location.search).get('card') === 'sold';
   var TOOL = sold ? 'postcard-sold' : 'postcard-listed';
   var OWN = ['headline', 'message', 'sign', 'backHead', 'cta', 'layout', 'bleed', 'priceLabel'];
-  var crops = {}, paths = [];
+  var crops = {}, fileOf = {};   // a picture as drawn → its file in the job folder
   var css = document.createElement('style');
   css.textContent = 'body.piece-mode #photoDrop{display:none!important}';
   document.head.appendChild(css);
 
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function keyOf(name, url) { return String(name) + '|' + String(url); }
   /* the job's agents and the kind of card are the job's: shown, not changed here */
   function lock() {
     var pick = document.getElementById('rosterPick');
@@ -61,7 +62,8 @@
     wants: function (d) { return { photos: J.photosFor(TOOL, d.row, d.editedPaths) || [] }; },
     apply: function (read) {
       var s = clone(B.state);
-      paths = read.photos.map(function (p) { return { path: p.path, modified: p.modified || null }; });
+      fileOf = {};
+      read.photos.forEach(function (p) { fileOf[keyOf(p.name, p.src)] = { path: p.path, modified: p.modified || null }; });
       s.photos = read.photos.map(function (p) {
         var c = crops[p.path] || {};
         return { url: p.src, name: p.name, x: Number.isFinite(+c.x) ? +c.x : 50, y: Number.isFinite(+c.y) ? +c.y : 50, w: p.w || 0 };
@@ -73,7 +75,8 @@
     storable: function () {
       var s = B.state, d = {};
       OWN.forEach(function (k) { d[k] = s[k]; });
-      d.photos = s.photos.map(function (p, i) { return paths[i] ? { path: paths[i].path, name: p.name, x: p.x, y: p.y } : null; }).filter(Boolean);
+      // by the picture itself, so Make main, Remove or a dropped photo never shift a crop onto another file
+      d.photos = s.photos.map(function (p) { var f = fileOf[keyOf(p.name, p.url)]; return f ? { path: f.path, name: p.name, x: p.x, y: p.y } : null; }).filter(Boolean);
       // a crop saved for a photo Drive didn't bring in this time is kept
       Object.keys(crops).forEach(function (p) {
         if (!d.photos.some(function (x) { return x.path === p; })) d.photos.push({ path: p, name: p.split('/').pop(), x: crops[p].x, y: crops[p].y });
@@ -81,7 +84,7 @@
       return d;
     },
     printable: function () { return clone(B.state); },
-    builtCtx: function () { return { photos: paths.slice(0, B.state.photos.length) }; },
+    builtCtx: function () { return { photos: B.state.photos.map(function (p) { return fileOf[keyOf(p.name, p.url)] || { path: null, dropped: true }; }) }; },
     paper: function () { return B.state.bleed === 'trim' ? 'trim' : 'bleed'; }
   });
 })();

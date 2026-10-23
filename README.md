@@ -87,6 +87,13 @@ and Marli). The front page is NJ by county and the back is a Monmouth + Ocean
 town-by-town map; `?view=towns` gives a no-figures version. After replacing rows, run
 `node scripts/test-nj-footprint.js`.
 
+## Open House Flyer tool
+
+`tools/open-house/` makes a one-page US Letter Open House flyer: the dates, three photos, price, rooms, a
+short description, up to two agents and a QR to the listing, in the team's sign look. Standalone the words
+are kept in `localStorage`; opened from a job (`?listing=`) it fills from the job and saves through the
+helper (Slice 6). Tests: `scripts/test-pdf-render.js`, `scripts/test-piece-page.js`.
+
 ## Postcards tool
 
 `tools/postcard/` makes a two-sided 6 x 9 in Just Sold or For Sale postcard, at

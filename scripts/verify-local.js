@@ -39,6 +39,7 @@ const PAGES = [
   ['Listing Rules',   '/listing-rules/'],
   ['Office Screens',  '/tools/office-screens/'],
   ['Postcards',       '/tools/postcard/'],
+  ['Open House Flyer', '/tools/open-house/'],
   ['Workspace',       '/workspace/'],
   ['Workspace jobs',  '/workspace/jobs/'],
   ['Workspace job',   '/workspace/job/?listing=none'],

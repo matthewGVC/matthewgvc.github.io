@@ -30,7 +30,8 @@ const TOOLS = {
   brochure: { path: '/tools/brochure/?draw=1', label: () => window.__piece.state.address },
   'postcard-listed': { path: '/tools/postcard/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
   'postcard-sold': { path: '/tools/postcard/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
-  seller: { path: '/tools/seller-package/?draw=1', label: () => window.__piece.state.address }
+  seller: { path: '/tools/seller-package/?draw=1', label: () => window.__piece.state.address },
+  'open-house': { path: '/tools/open-house/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') }
 };
 
 /* A drawn state may only show pictures it carries inline, and nothing it carries may reach out:

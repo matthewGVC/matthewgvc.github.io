@@ -94,6 +94,13 @@ short description, up to two agents and a QR to the listing, in the team's sign 
 are kept in `localStorage`; opened from a job (`?listing=`) it fills from the job and saves through the
 helper (Slice 6). Tests: `scripts/test-pdf-render.js`, `scripts/test-piece-page.js`.
 
+## Signage tool
+
+`tools/signage/` makes the team's For Sale sign (24 x 30 in: up to two agents and a QR, as the sign files
+in GVC - Marketing > GVC - For Sale Sign) and the Open House arrow sign (24.4 x 18.4 in, left or right).
+Standalone the choices are kept in `localStorage`; opened from a job it makes the For Sale sign with the
+job's agents and listing QR and saves through the helper (Slice 6). Tests: `scripts/test-pdf-render.js`.
+
 ## Postcards tool
 
 `tools/postcard/` makes a two-sided 6 x 9 in Just Sold or For Sale postcard, at

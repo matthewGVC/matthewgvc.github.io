@@ -233,6 +233,30 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   await fly(FLY);
   check('flyer: drawing never touches this browser\'s saved words', await page.evaluate(() => localStorage.getItem('gvc.open-house.state')), JSON.stringify({ address: 'From this browser' }));
 
+  /* ---------- Slice 6: the signs drawn from a given state ---------- */
+  await page.goto(BASE + '/tools/signage/', { waitUntil: 'networkidle' });
+  const sgn = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, kind: window.__piece.state.kind, names: [...document.querySelectorAll('.sg-nm')].map(n => n.textContent),
+      phones: [...document.querySelectorAll('.sg-ph')].map(n => n.textContent), foot: (document.querySelector('.sg-foot, .sg-web') || {}).textContent,
+      office: (document.querySelector('.sg-office') || {}).textContent || null, two: !!document.querySelector('.fs.two'), left: !!document.querySelector('.dr.left'),
+      size: document.querySelector('#pagesize').textContent, heights: [...document.querySelectorAll('.sg-agents')].map(a => a.getBoundingClientRect().height > 0) }));
+  };
+  const s1 = await sgn({ kind: 'for-sale', market: 'nj', agents: ['george-putykewycz'], qrUrl: 'https://www.elliman.com/x/1' });
+  check('sign: For Sale, one agent, M line, NJ office line, 24 x 30', [s1.rendered, s1.kind, s1.names, s1.phones, /^O 732\.387\.3807\|gvcrealestateteam\.com\|/.test(s1.foot), /24in 30in/.test(s1.size), s1.heights],
+    [true, 'for-sale', ['George Putykewycz'], ['M 732.546.7375'], true, true, [true]]);
+  check('sign: one 24 x 30 in page', await pages(), 1);
+  const s2 = await sgn({ kind: 'for-sale', market: 'fl', agents: ['tj-verdiglione', 'marli-silver', 'john-gasdaska'] });
+  check('sign: two agents at most, stacked; Florida has no office number', [s2.names, s2.two, /^gvcrealestateteam\.com/.test(s2.foot)], [['TJ Verdiglione', 'Marli Silver'], true, true]);
+  const s3 = await sgn({ kind: 'directional', market: 'nj', arrow: 'left' });
+  check('sign: the Open House arrow, left, 24.4 x 18.4, office line', [s3.kind, s3.left, /24\.4in 18\.4in/.test(s3.size), s3.office], ['directional', true, true, 'office: 732.387.3807']);
+  check('sign: arrow sign one page', await pages(), 1);
+  await sgn({ kind: 'nope', market: evil, agents: [evil, 7], qrUrl: 'javascript:alert(1)', arrow: evil });
+  await page.waitForTimeout(200);
+  check('sign: hostile state never runs, kind and market fall back', [await page.evaluate(() => [window.__piece.state.kind, window.__piece.state.market, window.__piece.state.arrow]), await page.evaluate(() => window.__xss || 0)],
+    [['for-sale', 'nj', 'right'], 0]);
+  check('sign: a QR that is not a web link points at the team site', await page.evaluate(() => !!document.querySelector('.sg-qr svg')), true);
+
   check('no page errors', errors, []);
   await browser.close();
 
@@ -252,6 +276,8 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       check('renderPiece seller: 12 pages, label', [os2.pages, os2.label], [12, '12 Sample Lane']);
       const ofl = await renderPiece({ tool: 'open-house', state: FLY, siteBase: BASE });
       check('renderPiece open house flyer: 1 page, label', [ofl.pages, ofl.label], [1, '12 Sample Lane']);
+      const osg = await renderPiece({ tool: 'signage', state: { kind: 'for-sale', market: 'nj', agents: ['tj-verdiglione'], address: '12 Sample Lane' }, siteBase: BASE });
+      check('renderPiece sign: 1 page', osg.pages, 1);
       // the hidden browser itself refuses pictures from anywhere but the site
       probe.hits = 0;
       const { chromium: ch } = require('playwright');

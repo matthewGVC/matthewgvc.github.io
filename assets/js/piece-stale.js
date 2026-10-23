@@ -47,7 +47,7 @@
 
   var EXTRA_LABELS = { rent: 'Rent', city: 'Town', headline: 'Headline', mapAddresses: 'Mapped addresses', comps: 'Comps',
     priceLow: 'Low price', priceMid: 'Recommended price', priceHigh: 'High price', recBand: 'Recommended band',
-    closePrice: 'Closing price', features: 'Features' };
+    closePrice: 'Closing price', features: 'Features', openHouses: 'Open houses', shortDescription: 'Short description' };
   function pieces() { return typeof PJ === 'function' ? PJ() : PJ; }
 
   function labelOf(row, name) {
@@ -73,8 +73,9 @@
       var ag = J.agents(tool, row).ids;
       if (JSON.stringify(bf.agents || []) !== JSON.stringify(ag)) add('agents', 'Agents', bf.agents || [], ag);
     }
-    if (tool === 'brochure') {
-      var url = S.listingUrlOf(row);
+    if (tool === 'signage' && bf.market && row.market && bf.market !== row.market) add('market', 'Market', bf.market, row.market);   // the office line
+    if ((J.LINKED || ['brochure']).indexOf(tool) !== -1) {
+      var url = J.linkOf ? J.linkOf(row) : S.listingUrlOf(row);
       if ((bf.listingUrl || null) !== (url || null)) add('listingUrl', 'Listing link', bf.listingUrl || null, url);
     }
     // photos: the list in order; with no picks and Drive unknown, not judged

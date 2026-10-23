@@ -95,10 +95,13 @@
      gets the Seller pitch and its Map (pitchHtml). Same words and buttons as the
      Showsheet's: Not made yet / Up to date / Stale: price / Made before the workspace
      kept track, Make / Open / Rebuild; a teammate opens, never makes; a phone sees states. */
-  var TOOLS_OF = { brochure: ['brochure'], postcard: ['postcard-listed', 'postcard-sold'] };
-  var NAME = { brochure: 'brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'seller pitch', 'pitch-map': 'map' };
-  var DIR = { brochure: 'brochure', 'postcard-listed': 'postcard', 'postcard-sold': 'postcard', seller: 'seller-package', 'pitch-map': 'map-studio' };
-  var FOLDER_KEY = { brochure: 'brochure' };   // postcards share one folder (which card a file is can't be told); pitch pieces have no kit folder
+  var TOOLS_OF = { brochure: ['brochure'], postcard: ['postcard-listed', 'postcard-sold'], openHouse: ['open-house'], signage: ['signage'] };
+  var NAME = { brochure: 'brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'seller pitch', 'pitch-map': 'map',
+    'open-house': 'open house flyer', signage: 'sign' };
+  var DIR = { brochure: 'brochure', 'postcard-listed': 'postcard', 'postcard-sold': 'postcard', seller: 'seller-package', 'pitch-map': 'map-studio',
+    'open-house': 'open-house', signage: 'signage' };
+  // postcards share one folder (which card a file is can't be told); pitch pieces have no kit folder
+  var FOLDER_KEY = { brochure: 'brochure', 'open-house': 'openHouse', signage: 'signage' };
   function docOf(ctx, tool) {
     if (tool === 'showsheet') return ctx.doc || (ctx.docs || []).filter(function (d) { return d && d.tool === tool; })[0] || null;
     return (ctx.docs || []).filter(function (d) { return d && d.tool === tool; })[0] || null;
@@ -160,13 +163,14 @@
     var out = [], add = function (tool) { var s = judgeTool(ctx, tool, pieces, live); if (s) out.push({ tool: tool, s: s, href: tool === 'showsheet' ? sheetHref(ctx, true) : pieceHref(ctx, tool, true) }); };
     if (ctx.kind === 'pitch') { add('seller'); add('pitch-map'); return out; }
     if (ctx.kind !== 'listing') return out;
-    add('showsheet'); add('brochure');
+    add('showsheet'); add('brochure'); add('open-house');
     if (ctx.row.kind !== 'rental') { add('postcard-listed'); add('postcard-sold'); add('seller'); }
+    if (ctx.row.market !== 'NYC' && ctx.row.kind !== 'rental') add('signage');   // no signs in New York; the For Sale sign isn't for a rental
     return out;
   }
   function extraBits(ctx, key, pieces, live) {
     var tools = TOOLS_OF[key];
-    if (!tools || (key === 'postcard' && ctx.row.kind === 'rental')) return null;
+    if (!tools || (key === 'postcard' && ctx.row.kind === 'rental') || (key === 'signage' && (ctx.row.market === 'NYC' || ctx.row.kind === 'rental'))) return null;
     var lines = '', acts = '';
     tools.forEach(function (t) {
       var s = judgeTool(ctx, t, pieces, live);
@@ -204,9 +208,10 @@
     var s = judge(ctx, (ctx.row.scan && ctx.row.scan.pieces) || {}, false);
     if (!s) return '';
     var b = sheetBits(ctx, s);
-    var more = ['brochure', 'postcard'].map(function (k) {
+    var more = ['brochure', 'openHouse', 'postcard', 'signage'].map(function (k) {
       var x = extraBits(ctx, k, {}, false);
-      return x ? '<div class="kr" data-kit="' + k + '"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">' + ctx.esc({ brochure: 'Brochure', postcard: 'Postcard' }[k]) + '</div>' + x.lines +
+      return x ? '<div class="kr" data-kit="' + k + '"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">' +
+        ctx.esc({ brochure: 'Brochure', openHouse: 'Open house flyer', postcard: 'Postcard', signage: 'Signage' }[k]) + '</div>' + x.lines +
         '</div><div class="a">' + x.act + '</div></div>' : '';
     }).join('');
     return '<div class="kit"><div class="kr" data-kit="showsheet"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">Showsheet</div>' + b.lines +

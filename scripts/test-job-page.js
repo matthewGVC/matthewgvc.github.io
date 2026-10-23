@@ -680,6 +680,47 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     await t.ctx.close();
   }
 
+  /* ---------- Slice 6: the Open house flyer and Signage rows ---------- */
+  {
+    const PJ = require('../assets/js/piece-job.js');
+    const v2 = (tool, row, over) => {
+      const bf = PJ.builtFrom(tool, {}, row, { photos: (PJ.photosFor(tool, row, null) || []).map(p => ({ path: p })) });
+      Object.assign(bf.facts, (over && over.facts) || {});
+      if (over && 'listingUrl' in over) bf.listingUrl = over.listingUrl;
+      return { property_id: row.id, tool, version: 2, built_from: bf, built_at: '2026-10-22T14:00:00.000Z',
+        output: { name: tool + '.pdf', paper: 'letter', madeAt: '2026-10-22T14:00:00.000Z', via: 'helper' } };
+    };
+    const line = (pg, tool) => text(pg, '#kitCard [data-piece-line="' + tool + '"]');
+    const acts = (pg, kit) => pg.$$eval('#kitCard [data-kit="' + kit + '"] [data-piece]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]));
+
+    const RO = rowsFor();
+    RO.properties[0].market = 'NJ';
+    RO.documents = [v2('open-house', RO.properties[0], { facts: { price: 1 } })];
+    t = await open(browser, { rows: RO, path: LISTING });
+    let p = t.page;
+    check('kit: the flyer stale on its price, Rebuild', [await line(p, 'open-house'), await acts(p, 'openHouse')],
+      ['Stale: price', [['Rebuild open house flyer', '../../tools/open-house/?listing=100-example-st-4a&rebuild=1']]]);
+    check('kit: the sign not made, Make sign (NJ)', [await line(p, 'signage'), await acts(p, 'signage')],
+      ['Not made yet', [['Make sign', '../../tools/signage/?listing=100-example-st-4a']]]);
+    check('kit: Rebuild n stale counts the flyer', await p.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')])),
+      [['Rebuild 1 stale', '../../tools/open-house/?listing=100-example-st-4a&rebuild=1']]);
+    check('kit slice 6: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    const RN = rowsFor();
+    RN.properties[0].market = 'NYC'; RN.documents = [];
+    t = await open(browser, { rows: RN, path: LISTING });
+    check('kit: no sign offered in New York', [await t.page.$$eval('#kitCard [data-kit="signage"] [data-piece]', e => e.length), (await acts(t.page, 'openHouse')).map(a => a[0])],
+      [0, ['Make open house flyer']]);
+    await t.ctx.close();
+
+    const RR = rowsFor();
+    RR.properties[0].kind = 'rental'; RR.properties[0].market = 'NJ'; RR.documents = [];
+    t = await open(browser, { rows: RR, path: LISTING });
+    check('kit: a rental gets the flyer too', (await acts(t.page, 'openHouse')).map(a => a[0]), ['Make open house flyer']);
+    await t.ctx.close();
+  }
+
   /* ---------- Slice 4: the Kit's Showsheet row, Rebuild n stale (S15, S20, S21) ---------- */
   {
     const SHEET = '/tools/showsheet/?listing=100-example-st-4a';

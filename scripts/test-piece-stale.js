@@ -157,6 +157,23 @@ const heroRow = job({ facts: { city: 'New York', state: 'NY', zip: '10024', desc
 const heroDoc = v2('postcard-listed', heroRow, { photos: [{ path: 'Photos/Edited/01.jpg' }, { path: 'Photos/Edited/05.jpg' }] });
 check('hero only, Drive unknown: the second photo is not judged', ST.stale(heroDoc, heroRow, {}).state, 'fresh');
 check('hero only, Drive unknown: a new hero still counts', ST.stale(heroDoc, job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_hero: 'Photos/Edited/09.jpg', photo_order: [] } }), {}).changes.map(c => c.field), ['photos']);
+// Slice 6: the flyer and the sign
+const ohJob = (oh, over) => job(Object.assign({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, core: { openHouses: oh } }, over || {}));
+const OH1 = [{ type: 'Public', startTime: '2099-05-03T13:00:00', endTime: '2099-05-03T15:00:00' }];
+const fly = v2('open-house', ohJob(OH1));
+check('flyer fresh', ST.stale(fly, ohJob(OH1), {}).state, 'fresh');
+check('flyer: a new open house from DE makes it stale', ST.stale(fly, ohJob(OH1.concat([{ type: 'Broker', startTime: '2099-05-05T12:00:00' }])), {}).changes.map(c => c.field), ['openHouses']);
+check('flyer: the listing link counts', ST.stale(fly, ohJob(OH1, { row: { de: {} } }), {}).changes.map(c => c.field), ['listingUrl']);
+const sign = v2('signage', ohJob(OH1));
+check('sign fresh', ST.stale(sign, ohJob(OH1), {}).state, 'fresh');
+check('sign: a price change never counts', ST.stale(sign, ohJob(OH1, { facts: { price: 1, city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } }), {}).state, 'fresh');
+check('sign: the agents and the link count', ST.stale(sign, ohJob(OH1, { core: { openHouses: OH1, agentIds: ['b'] }, row: { de: {} } }), {}).changes.map(c => c.field), ['agents', 'listingUrl']);
+check('label for open houses', ST.stale(fly, ohJob([]), {}).changes.map(c => c.label), ['Open houses']);
+// final review fixes (Slice 6)
+const sgJob = (over) => job(Object.assign({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } }, over || {}));
+const sgDoc = v2('signage', sgJob({ row: { market: 'NYC' } }));
+check('sign: a market move counts (the office line changes)', ST.stale(sgDoc, sgJob({ row: { market: 'NJ' } }), {}).changes.map(c => c.field), ['market']);
+check('sign: an outside link never counts as the listing link', ST.stale(sgDoc, sgJob({ row: { market: 'NYC' }, core: { listingUrl: 'https://evil.example/x' } }), {}).state, 'fresh');
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

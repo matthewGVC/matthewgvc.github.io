@@ -416,6 +416,31 @@ check('D88 recent changes colour it as off market', W.recentChanges(offChanges, 
   check('Slice 5 stale: a pitch piece never lands on a listing', J_('t2').stalePieces.length, 0);
 }
 
+/* Slice 6: the flyer and the sign count on the overview */
+{
+  const PJ = require('../assets/js/piece-job.js');
+  const r = { id: 'u1', slug: 'u1', label: 'u1', kind: 'sale', market: 'NJ', stage: 'Live', folder_state: 'linked', drive_folder: 'x',
+    core: { address: '1 Sign St', price: 900000, agentIds: ['katie-cook'] }, de: { listingUrl: 'https://www.elliman.com/x/9' } };
+  const sign = PJ.builtFrom('signage', {}, r, {}); sign.listingUrl = 'https://www.elliman.com/old';
+  const jobs = W.buildJobs({ properties: [r], documents: [{ property_id: 'u1', tool: 'signage', built_from: sign, output: { name: 's.pdf' } }], changes: [] }, TODAY);
+  check('Slice 6 stale: the sign\'s link moved', [jobs[0].stale, jobs[0].stalePieces.map(x => x.label)], [['listing link'], ['Signage']]);
+}
+
+/* Slice 6 final review: the overview counts only pieces the Kit offers */
+{
+  const PJ = require('../assets/js/piece-job.js');
+  const mk = (id, over) => Object.assign({ id, slug: id, label: id, kind: 'sale', market: 'NYC', stage: 'Live', folder_state: 'linked', drive_folder: 'x',
+    core: { address: id, price: 1, agentIds: ['katie-cook'] }, de: { listingUrl: 'https://www.elliman.com/x/9' } }, over || {});
+  const a = mk('n1'), b = mk('r1', { kind: 'rental', market: 'NJ' });
+  const old = t => { const bf = PJ.builtFrom(t, {}, a, {}); bf.listingUrl = 'https://www.elliman.com/old'; bf.facts.price = 5; return bf; };
+  const jobs = W.buildJobs({ properties: [a, b], changes: [], documents: [
+    { property_id: 'r1', tool: 'seller', built_from: old('seller'), output: {} },
+    { property_id: 'n1', tool: 'signage', built_from: old('signage'), output: {} },
+    { property_id: 'r1', tool: 'postcard-listed', built_from: old('postcard-listed'), output: {} },
+    { property_id: 'r1', tool: 'signage', built_from: old('signage'), output: {} }] }, TODAY);
+  check('overview: no sign judged in New York, no postcard or sign for a rental', jobs.map(j => j.stalePieces.length), [0, 0]);
+}
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

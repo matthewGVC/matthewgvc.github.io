@@ -215,13 +215,16 @@
     return null;
   }
   var STALE_LABEL = { showsheet: 'Showsheet', brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard',
-    seller: 'Seller pitch', 'pitch-map': 'Map' };
+    seller: 'Seller pitch', 'pitch-map': 'Map', 'open-house': 'Open house flyer', signage: 'Signage' };
   /* { stale: words, stalePieces } for one job from its pieces' records. The Showsheet's
      record is the Slice 4 kind; any other piece is judged only from a Slice 5 record (v 2) */
   function staleOf(p, docs) {
     var out = { stale: [], stalePieces: [] };
     (docs[p.id] || []).forEach(function (doc) {
       if (doc.tool !== 'showsheet' && !(doc.built_from && doc.built_from.v === 2)) return;
+      // only the pieces the job page offers: no sign in New York or for a rental, no postcard for a rental
+      if (doc.tool === 'signage' && (p.market === 'NYC' || p.kind === 'rental')) return;
+      if ((/^postcard-/.test(doc.tool) || doc.tool === 'seller') && p.kind === 'rental') return;
       try {
         var pieces = (p.scan && p.scan.pieces) || {};
         var s = staleApi().stale(doc, p, { fileFound: (pieces[doc.tool] || []).length > 0 });

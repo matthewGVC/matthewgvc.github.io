@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open House Flyer — Matt Bloomfield</title>
+<meta name="description" content="A one-page Open House flyer for a GVC listing: the dates, photos, price, rooms, agents and a QR to the listing, on US Letter.">
+<meta property="og:title" content="Open House Flyer — Matt Bloomfield">
+<meta property="og:description" content="A one-page Open House flyer for a GVC listing: the dates, photos, price, rooms, agents and a QR to the listing, on US Letter.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/open-house/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
+     printing to PDF, which validators reject as "fonts not embedded". Do not put a
+     fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/panel-collapse.css">
+<style>
+/* ============================================================
+   The flyer: one US Letter page, portrait. No designed open house flyer
+   exists on the drive, so it takes the team's newest signs' look (GVC -
+   Marketing > GVC - For Sale Sign, Aug to Oct 2026): a navy band with a big
+   OPEN HOUSE in Nunito Sans and the faint monogram behind it, sky lines, the
+   lock-up with the Douglas Elliman wordmark. Under the band: the hero photo,
+   the address and price, the rooms, two more photos, a short description,
+   and a navy foot with the agents, a QR to the listing and the legal text.
+   ============================================================ */
+.oh{position:absolute;inset:0;overflow:hidden;background:#fff;color:var(--navy);display:flex;flex-direction:column;}
+.oh b,.oh strong{font-weight:700;}
+.oh-stamp{display:inline-block;border:1.2pt solid var(--danger);color:var(--danger);background:#fff;
+  font:800 7.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:.03in .09in;border-radius:2pt;}
+
+/* the band */
+.oh-band{position:relative;flex:none;height:2.5in;padding:.36in .55in 0;background:linear-gradient(160deg,var(--sky2) -40%,var(--navy) 58%);color:#fff;overflow:hidden;}
+.oh-band .mono{position:absolute;right:-.35in;top:-.55in;height:3.9in;width:auto;opacity:.12;pointer-events:none;}
+.oh-title{position:relative;font:900 56pt/.92 var(--sans);letter-spacing:-.01em;}
+.oh-dates{position:relative;margin-top:.16in;display:flex;flex-direction:column;gap:.04in;}
+.oh-date{font:800 15pt/1.2 var(--sans);color:var(--sky);}
+.oh-date .k{font-weight:600;font-family:var(--body);color:var(--ow);margin-right:.08in;}
+.oh-date.broker{font-size:12pt;color:var(--ow);}
+.oh-date.appt{color:#fff;}
+
+/* photos */
+.oh-ph{position:relative;overflow:hidden;background:var(--ui-ink-soft);cursor:grab;touch-action:none;}
+.oh-ph.empty{display:flex;align-items:center;justify-content:center;cursor:default;}
+.oh-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+.oh-ph.over{outline:3px solid var(--sky);outline-offset:-3px;}
+.oh-hero{flex:none;height:3in;}
+
+/* the property */
+.oh-body{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:1fr 2.6in;gap:.3in;padding:.28in .55in .22in;}
+.oh-addr{font:800 19pt/1.12 var(--sans);}
+.oh-town{margin-top:.04in;font:800 8.6pt/1.3 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-ink-soft);}
+.oh-price{margin-top:.14in;font:800 22pt/1 var(--sans);}
+.oh-price small{display:block;margin-top:.04in;font:800 7.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-ink-soft);}
+.oh-strip{margin-top:.14in;display:flex;gap:.26in;padding-top:.12in;border-top:1pt solid var(--ui-rule);}
+.oh-strip div{font:800 15pt/1 var(--sans);}
+.oh-strip span{display:block;margin-top:.04in;font:800 6.8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-ink-soft);}
+.oh-blurb{margin-top:.16in;font:400 9.4pt/1.5 var(--body);overflow:hidden;}
+.oh-side{display:grid;grid-template-rows:1fr 1fr;gap:.08in;min-height:0;}
+
+/* the foot */
+.oh-foot{flex:none;height:2.45in;background:var(--navy);color:#fff;padding:.26in .55in .2in;display:grid;grid-template-columns:1fr 1.22in;gap:.3in;position:relative;}
+.oh-agents{display:flex;gap:.24in;}
+.oh-ag{display:flex;gap:.12in;align-items:flex-start;min-width:0;flex:1;}
+.oh-ag .shot{flex:none;width:.86in;height:.86in;background:var(--ow);overflow:hidden;position:relative;}
+.oh-ag .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.oh-ag .nm{font:800 11pt/1.15 var(--sans);}
+.oh-ag .tt{font:600 7.2pt/1.3 var(--body);margin-top:.03in;color:var(--ow);}
+.oh-ag .ct{font:700 8.4pt/1.45 var(--sans);margin-top:.06in;}
+.oh-ag .em{font:600 7.2pt var(--body);overflow-wrap:anywhere;color:var(--sky);}
+.oh-brand{display:flex;align-items:center;gap:.18in;margin-top:.22in;}
+.oh-brand .lk{display:block;width:1.55in;height:auto;color:#fff;}
+.oh-brand .rule{width:.6pt;height:.38in;background:rgba(229,229,229,.4);}
+.oh-de{display:block;width:1.5in;color:#fff;}
+.oh-de svg{display:block;width:100%;height:auto;}
+.oh-legal{position:absolute;left:.55in;right:.55in;bottom:.24in;font:400 5.6pt/1.4 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--ow);opacity:.8;}
+.oh-qr svg{display:block;width:1.22in;height:1.22in;}
+.oh-qr svg path{fill:var(--sky);}
+.oh-qr .cap{margin-top:.06in;text-align:center;font:800 6.4pt/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--sky);}
+
+/* editor: photo rows */
+.ph-row{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;margin-top:10px;padding:8px;border:1px solid var(--ui-rule);border-radius:8px;background:#fff;}
+.ph-row img{width:64px;height:44px;object-fit:cover;border-radius:4px;display:block;}
+.ph-row b{display:block;font:800 10px var(--sans);letter-spacing:.06em;color:var(--navy);}
+.ph-row i{display:block;font:400 9.5px var(--ui-mono);font-style:normal;color:var(--ui-ink-soft);margin-top:2px;overflow-wrap:anywhere;}
+.ph-acts{display:flex;gap:6px;}
+</style>
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">Open House Flyer</h1>
+
+<div id="app">
+  <aside id="editor">
+    <div class="ed-body">
+      <details class="ed-sec" open>
+        <summary>Open house <span class="hint">US Letter, one page</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Dates and times</label>
+            <textarea id="fDates" rows="3" placeholder="Sunday, October 25 · 3:00 to 5:00 PM"></textarea>
+            <div class="note">One line each, up to three. "Broker" at the start of a line marks a broker open house. Blank prints "By appointment".</div>
+          </div>
+          <div class="field">
+            <label>Market</label>
+            <div class="seg pick" id="marketPick" role="group" aria-label="Market">
+              <button type="button" data-market="nyc">New York</button>
+              <button type="button" data-market="nj">New Jersey</button>
+              <button type="button" data-market="fl">Florida</button>
+            </div>
+            <div class="note">Sets the legal text at the foot.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Property</summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Address</label>
+            <input type="text" id="fAddress" placeholder="12 Sample Lane">
+          </div>
+          <div class="f-row">
+            <div class="field">
+              <label>Unit</label>
+              <input type="text" id="fUnit">
+            </div>
+            <div class="field">
+              <label>Town line</label>
+              <input type="text" id="fTown" placeholder="Rumson, NJ">
+            </div>
+          </div>
+          <div class="f-row">
+            <div class="field">
+              <label>Price</label>
+              <input type="text" id="fPrice" placeholder="Blank leaves it off">
+            </div>
+            <div class="field">
+              <label>Price label</label>
+              <input type="text" id="fPriceLabel" placeholder="List Price">
+            </div>
+          </div>
+          <div class="f-row">
+            <div class="field"><label>Beds</label><input type="text" id="fBeds"></div>
+            <div class="field"><label>Baths</label><input type="text" id="fBaths"></div>
+            <div class="field"><label>Sq ft</label><input type="text" id="fSqft"></div>
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea id="fBlurb" rows="5" placeholder="Two or three sentences."></textarea>
+          </div>
+          <div class="field">
+            <label>Listing link for the QR</label>
+            <input type="url" id="fLink" placeholder="https://www.elliman.com/...">
+            <div class="note">Blank prints the team's site.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Photos <span class="hint" id="photoHint"></span></summary>
+        <div class="sec-in">
+          <div class="drop" id="photoDrop" tabindex="0" role="button" aria-label="Add photos">
+            <div class="d-big">Drop photos</div>
+            <div class="d-sub">or click to choose. The first is the large photo.</div>
+          </div>
+          <input type="file" id="photoFile" accept="image/*" multiple hidden>
+          <div id="photoList"></div>
+          <div class="sec-note">Drag a photo on the flyer to move it in its frame.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Agents <span class="hint">up to 2</span></summary>
+        <div class="sec-in"><div id="rosterPick"></div></div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Warnings</summary>
+        <div class="sec-in"><div class="warn" id="warnGeneral" hidden></div></div>
+      </details>
+    </div>
+  </aside>
+
+  <div id="stage"><div id="pages"></div></div>
+
+  <div id="stageBar">
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button type="button" class="btn sm ghost" id="btnZoom">Zoom 100%</button>
+    <button type="button" class="btn lg" id="btnPrint" title="In the print dialog: Destination 'Save as PDF' &middot; Paper 'Letter' &middot; Margins 'None' &middot; enable 'Background graphics'.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
+<script src="../../assets/js/bios.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/legal.js"></script>
+<script src="../../assets/js/qr.js"></script>
+<script src="../../assets/js/images.js"></script>
+<script src="../../assets/js/pitch.js"></script>
+<script>
+'use strict';
+const P = window.Pitch;
+const esc = P.esc;
+const $ = s => document.querySelector(s);
+
+/* Fixed team material. Not fields. */
+const TEAM_SITE = 'https://www.gvcrealestateteam.com';
+const MONO = '../../assets/logos/monogram-white.svg';
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+let DE = '';
+const DE_READY = fetch('../../assets/logos/sheet/douglas-elliman.svg').then(r => r.ok ? r.text() : '').catch(() => '')
+  .then(t => { DE = /^\s*<svg[\s>]/.test(t) ? t.trim() : ''; redraw(); });
+const deMark = () => '<span class="oh-de" role="img" aria-label="Douglas Elliman">' + DE + '</span>';
+
+/* Opened from a job (?listing=<slug>, Slice 6) or drawn by the helper (?draw=1): the job fills
+   the flyer and saves it; this browser's own saved words are neither read nor overwritten. */
+const JOB_MODE = (q => q.has('listing') || q.has('draw'))(new URLSearchParams(location.search));
+
+/* Saved between visits: the words, never the photos (data URLs are too big) and nothing about any visitor. */
+const KEY = 'gvc.open-house.state';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* private window or full */ } };
+
+const DEFAULTS = {
+  address: '', unit: '', town: '', price: '', priceLabel: '', beds: '', baths: '', sqft: '', blurb: '',
+  dates: [], listingUrl: '', market: 'nj', agents: []
+};
+// photos: [{url, name, x, y, w}]; saved words are cut to what the flyer knows, so a damaged save never breaks the page
+const state = JOB_MODE ? Object.assign(structuredClone(DEFAULTS), { photos: [] }) : Object.assign(sanitize(load()), { photos: [] });
+
+function persist() {
+  if (JOB_MODE) return;
+  const s = Object.assign({}, state); delete s.photos;
+  save(s);
+}
+
+/* ---------- the dates ----------
+   A date is either DE's open house ({ start, end, broker }) or a typed line ({ day }). */
+function hourOf(d) {
+  let h = d.getHours(); const m = d.getMinutes(), pm = h >= 12;
+  h = h % 12 || 12;
+  return h + (m ? ':' + String(m).padStart(2, '0') : ':00') + (pm ? ' PM' : ' AM');
+}
+function dateLine(o) {
+  if (o && typeof o.day === 'string') {
+    const t = o.day.trim(), broker = /^broker\b/i.test(t);
+    return { broker, text: broker ? t.replace(/^broker\b[\s:,-]*/i, '') : t, typed: true };
+  }
+  // DE's times are New York wall clock with no zone: read the digits, never shift them
+  const wall = v => { const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(String(v || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null; };
+  const s = wall(o && o.start), e = wall(o && o.end);
+  if (!s) return null;
+  const day = DAYS[s.getDay()] + ', ' + MONTHS[s.getMonth()] + ' ' + s.getDate();
+  const time = /T\d/.test(String(o.start)) ? hourOf(s) + (e && /T\d/.test(String(o.end)) ? ' to ' + hourOf(e) : '') : '';
+  if (!time) return { broker: !!(o && o.broker), text: day };
+  return { broker: !!(o && o.broker), text: day + ' · ' + time };
+}
+function datesHtml() {
+  // a typed line that is only "Broker" still prints (as a broker open house with no date)
+  const lines = (state.dates || []).map(dateLine).filter(x => x && (x.text || x.broker)).slice(0, 3);
+  if (!lines.length) return '<div class="oh-date appt">By appointment</div>';
+  return lines.map(l => '<div class="oh-date' + (l.broker ? ' broker' : '') + '">' + (l.broker ? '<span class="k">Broker open house</span>' : '') + esc(l.text) + '</div>').join('');
+}
+
+/* ---------- the page ---------- */
+let qrTooLong = false;
+function photoSlot(i, cls) {
+  const ph = state.photos[i];
+  if (!ph) return '<div class="oh-ph empty ' + cls + '" data-slot="' + i + '"><span class="oh-stamp">Photo needed</span></div>';
+  return '<div class="oh-ph ' + cls + '" data-slot="' + i + '"><img src="' + ph.url + '" alt="" style="object-position:' + ph.x + '% ' + ph.y + '%"></div>';
+}
+function agentBlock(a) {
+  const phone = String(a.mobile || a.phone || '').trim();
+  return '<div class="oh-ag"><div class="shot"><img src="' + esc(a.photo) + '" alt=""></div>' +
+    '<div><div class="nm">' + esc(a.name) + '</div><div class="tt">' + esc(a.title) + '</div>' +
+    (phone ? '<div class="ct">' + esc(phone) + '</div>' : '') +
+    (String(a.email || '').trim() ? '<div class="em">' + esc(a.email.trim()) + '</div>' : '') + '</div></div>';
+}
+function page() {
+  const agents = state.agents.map(id => window.GVC_AGENT(id)).filter(Boolean).slice(0, 2);
+  const price = P.money(state.price) || String(state.price || '').trim();
+  // whole numbers of four digits or more get their comma (2800 → 2,800); anything else prints as typed
+  const figure = v => /^\d{4,}$/.test(v) ? Number(v).toLocaleString('en-US') : v;
+  const stat = (v, k) => String(v || '').trim() ? '<div>' + esc(figure(String(v).trim())) + '<span>' + k + '</span></div>' : '';
+  const strip = stat(state.beds, 'Bedrooms') + stat(state.baths, 'Bathrooms') + stat(state.sqft, 'Sq Ft');
+  const street = [state.address, state.unit].map(v => String(v || '').trim()).filter(Boolean).join(', ');
+  const link = /^https?:\/\//i.test(String(state.listingUrl || '').trim()) ? state.listingUrl.trim() : TEAM_SITE;
+  qrTooLong = false;
+  let qr = window.GVC_QR_URL(link);
+  if (!qr && link !== TEAM_SITE) { qrTooLong = true; qr = window.GVC_QR_URL(TEAM_SITE); }
+  return '<div class="oh">' +
+    '<div class="oh-band"><img class="mono" src="' + MONO + '" alt=""><div class="oh-title">OPEN<br>HOUSE</div><div class="oh-dates">' + datesHtml() + '</div></div>' +
+    photoSlot(0, 'oh-hero') +
+    '<div class="oh-body"><div>' +
+      '<div class="oh-addr">' + (street ? esc(street) : '<span class="oh-stamp">Address needed</span>') + '</div>' +
+      (String(state.town || '').trim() ? '<div class="oh-town">' + esc(state.town.trim()) + '</div>' : '') +
+      (price ? '<div class="oh-price">' + esc(price) + '<small>' + esc(String(state.priceLabel || '').trim() || 'List Price') + '</small></div>' : '') +
+      (strip ? '<div class="oh-strip">' + strip + '</div>' : '') +
+      (String(state.blurb || '').trim() ? '<div class="oh-blurb">' + esc(state.blurb.trim()).replace(/\n/g, '<br>') + '</div>' : '') +
+    '</div><div class="oh-side">' + photoSlot(1, '') + photoSlot(2, '') + '</div></div>' +
+    '<div class="oh-foot"><div>' +
+      '<div class="oh-agents">' + (agents.length ? agents.map(agentBlock).join('') : '<span class="oh-stamp">Pick an agent</span>') + '</div>' +
+      '<div class="oh-brand">' + P.LOCKUP + '<span class="rule"></span>' + deMark() + '</div>' +
+    '</div><div class="oh-qr">' + qr + '<div class="cap">Scan for details</div></div>' +
+    '<div class="oh-legal">' + esc(window.GVC_LEGAL.listing(state.market)) + '</div></div>' +
+  '</div>';
+}
+
+/* ---------- warnings ---------- */
+function checkWarnings() {
+  const msgs = [];
+  // the text column against its box: the box clips, so a column taller than it is cut off
+  const box0 = document.querySelector('.oh-body'), col = box0 && box0.firstElementChild;
+  if (col && col.scrollHeight > box0.clientHeight - parseFloat(getComputedStyle(box0).paddingTop) - parseFloat(getComputedStyle(box0).paddingBottom) + 1) {
+    msgs.push('The description is longer than the flyer holds. Shorten it, or it will be cut off.');
+  }
+  if (state.photos.length < 3) msgs.push('The flyer takes three photos: ' + state.photos.length + ' so far.');
+  if (qrTooLong) msgs.push('That link is too long for a QR, so the QR points at the team\'s site. Use the listing\'s short link.');
+  state.photos.forEach((ph, i) => { if (ph.w && ph.w < 1600) msgs.push('Photo ' + (i + 1) + ' is only ' + ph.w + ' px wide and may print soft.'); });
+  const box = $('#warnGeneral');
+  box.innerHTML = msgs.map(m => '<div class="warn-item">' + esc(m) + '</div>').join('');
+  box.hidden = !msgs.length;
+}
+
+/* ---------- photos ---------- */
+const MAX_EDGE = 2600;
+async function addFiles(files, slot) {
+  const imgs = [...files].filter(f => /^image\//.test(f.type));
+  for (const f of imgs) {
+    try {
+      const img = await window.GVC_IMAGES.fileToImage(f);
+      const ph = { url: window.GVC_IMAGES.reencode(img, MAX_EDGE, 0.9), name: f.name, x: 50, y: 50, w: img.naturalWidth };
+      if (slot != null) { state.photos[slot] = ph; slot = null; } else state.photos.push(ph);
+    } catch (e) { /* not an image we can read */ }
+  }
+  state.photos = state.photos.filter(Boolean).slice(0, 3);
+  GVC_UNSAVED.touch();
+  paintPhotoList(); redraw();
+}
+function paintPhotoList() {
+  const host = $('#photoList');
+  host.innerHTML = '';
+  state.photos.forEach((ph, i) => {
+    const row = document.createElement('div');
+    row.className = 'ph-row';
+    row.innerHTML = '<img src="' + ph.url + '" alt=""><div><b>' + (i === 0 ? 'Large photo' : 'Photo ' + (i + 1)) + '</b><i>' + esc(ph.name) + '</i></div>' +
+      '<div class="ph-acts">' + (i > 0 ? '<button type="button" class="btn sm ghost" data-act="main">Make large</button>' : '') +
+      '<button type="button" class="btn sm ghost" data-act="del" aria-label="Remove ' + esc(ph.name) + '">Remove</button></div>';
+    row.querySelector('[data-act="del"]').addEventListener('click', () => { state.photos.splice(i, 1); GVC_UNSAVED.touch(); paintPhotoList(); redraw(); });
+    const mk = row.querySelector('[data-act="main"]');
+    if (mk) mk.addEventListener('click', () => { state.photos.unshift(state.photos.splice(i, 1)[0]); GVC_UNSAVED.touch(); paintPhotoList(); redraw(); });
+    host.appendChild(row);
+  });
+  $('#photoHint').textContent = state.photos.length + ' of 3';
+}
+/* drag inside a frame moves the photo in it; a file dropped on a frame replaces it */
+function wireFrames() {
+  const host = $('#pages');
+  let drag = null;
+  host.addEventListener('pointerdown', e => {
+    const slot = e.target.closest('.oh-ph:not(.empty)');
+    if (!slot) return;
+    const ph = state.photos[+slot.dataset.slot], img = slot.querySelector('img');
+    if (!ph || !img) return;
+    const r = slot.getBoundingClientRect(), sc = Math.max(r.width / img.naturalWidth, r.height / img.naturalHeight);
+    drag = { ph, img, sx: e.clientX, sy: e.clientY, x0: ph.x, y0: ph.y, ox: img.naturalWidth * sc - r.width, oy: img.naturalHeight * sc - r.height };
+    slot.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  host.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const clamp = v => Math.max(0, Math.min(100, v));
+    if (drag.ox > 1) drag.ph.x = clamp(drag.x0 - (e.clientX - drag.sx) / drag.ox * 100);
+    if (drag.oy > 1) drag.ph.y = clamp(drag.y0 - (e.clientY - drag.sy) / drag.oy * 100);
+    drag.img.style.objectPosition = drag.ph.x + '% ' + drag.ph.y + '%';
+  });
+  const end = () => { if (drag) { drag = null; GVC_UNSAVED.touch(); } };
+  host.addEventListener('pointerup', end);
+  host.addEventListener('pointercancel', end);
+  host.addEventListener('dragover', e => { const s = e.target.closest('.oh-ph'); if (!s) return; e.preventDefault(); s.classList.add('over'); });
+  host.addEventListener('dragleave', e => { const s = e.target.closest('.oh-ph'); if (s) s.classList.remove('over'); });
+  host.addEventListener('drop', e => {
+    const s = e.target.closest('.oh-ph');
+    if (!s) return;
+    e.preventDefault();
+    addFiles(e.dataTransfer.files, Math.min(+s.dataset.slot, state.photos.length));
+  });
+}
+function wireDropZone() {
+  const box = $('#photoDrop'), input = $('#photoFile');
+  box.addEventListener('click', () => input.click());
+  box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+  box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('over'); });
+  box.addEventListener('dragleave', () => box.classList.remove('over'));
+  box.addEventListener('drop', e => { e.preventDefault(); box.classList.remove('over'); addFiles(e.dataTransfer.files); });
+  input.addEventListener('change', () => { addFiles(input.files); input.value = ''; });
+}
+
+/* ---------- fields ---------- */
+const FIELDS = [['#fAddress', 'address'], ['#fUnit', 'unit'], ['#fTown', 'town'], ['#fPrice', 'price'], ['#fPriceLabel', 'priceLabel'],
+  ['#fBeds', 'beds'], ['#fBaths', 'baths'], ['#fSqft', 'sqft'], ['#fBlurb', 'blurb'], ['#fLink', 'listingUrl']];
+/* the dates box shows each line as it prints */
+const datesText = () => (state.dates || []).map(dateLine).filter(x => x && x.text).map(l => (l.broker ? 'Broker ' : '') + l.text).join('\n');
+
+let builder = null;
+const repaint = [];
+function redraw() {
+  if (!builder) return;
+  builder.rebuild();
+  setTimeout(checkWarnings, 0);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  FIELDS.forEach(([sel, k]) => {
+    const el = $(sel);
+    el.value = state[k] || '';
+    el.addEventListener('input', () => { state[k] = el.value; persist(); redraw(); });
+  });
+  const dates = $('#fDates');
+  dates.value = datesText();
+  dates.addEventListener('input', () => {
+    state.dates = dates.value.split(/\n/).map(s => s.trim()).filter(Boolean).slice(0, 3).map(day => ({ day }));
+    persist(); redraw();
+  });
+  repaint.push(P.segPick($('#marketPick'), 'market', () => state.market, v => { state.market = v; persist(); redraw(); }));
+  repaint.push(window.GVC_PICKER($('#rosterPick'), state, { key: 'agents', max: 2, onChange: () => { persist(); redraw(); } }));
+  wireDropZone();
+  wireFrames();
+  paintPhotoList();
+  builder = Builder.init({
+    pages: 1, label: 'Page',
+    printName: () => ['Open House Flyer', [state.address, state.unit].map(v => String(v || '').trim()).filter(Boolean).join(' ')].filter(Boolean).join(' - '),
+    render: (pg) => { pg.innerHTML = page(); }
+  });
+  redraw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkWarnings);
+  GVC_UNSAVED.watch();
+});
+
+/* what a job mode works through (Slice 6): the flyer's state, drawing and photo intake */
+/* A flyer from outside (a job, the helper's drawing, this browser's saved words), cut to what the
+   flyer knows: words as words, three pictures at most, inline only (a whole base64 data URL). */
+function sanitize(s) {
+  const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
+  const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  Object.keys(given).forEach(k => {
+    if (!Object.prototype.hasOwnProperty.call(base, k) || given[k] == null) return;
+    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
+    base[k] = given[k];
+  });
+  const num = (v, d) => Number.isFinite(+v) && v !== '' && v !== null ? +v : d;
+  const str = v => (v == null ? '' : String(v));
+  base.photos = (Array.isArray(given.photos) ? given.photos : [])
+    .filter(p => p && typeof p === 'object' && typeof p.url === 'string' && INLINE.test(p.url)).slice(0, 3)
+    .map(p => ({ url: p.url, name: str(p.name), x: num(p.x, 50), y: num(p.y, 50), w: num(p.w, 0) }));
+  base.dates = base.dates.filter(d => d && typeof d === 'object').slice(0, 3).map(d => typeof d.day === 'string'
+    ? { day: d.day } : { start: str(d.start), end: d.end == null ? null : str(d.end), broker: !!d.broker });
+  base.agents = base.agents.filter(a => typeof a === 'string').slice(0, 2);
+  ['address', 'unit', 'town', 'price', 'priceLabel', 'beds', 'baths', 'sqft', 'blurb', 'listingUrl'].forEach(k => { base[k] = str(base[k]); });
+  if (['nyc', 'nj', 'fl'].indexOf(base.market) === -1) base.market = 'nj';
+  return base;
+}
+window.__piece = {
+  get state() { return state; },
+  JOB_MODE, sanitize, ready: () => !!builder, MAX_EDGE,
+  /* replace the whole flyer (sanitized), then draw; nothing is saved in this browser */
+  set(s) {
+    if (!builder) throw new Error('The flyer page has not finished loading.');
+    const base = sanitize(s);
+    Object.keys(state).forEach(k => { delete state[k]; });
+    Object.assign(state, base);
+    FIELDS.forEach(([sel, k]) => { const el = $(sel); if (el) el.value = state[k] || ''; });
+    $('#fDates').value = datesText();
+    repaint.forEach(f => typeof f === 'function' && f());
+    paintPhotoList(); redraw();
+  },
+  redraw, paintPhotoList, checkWarnings,
+  fileToImage: f => window.GVC_IMAGES.fileToImage(f), reencode: (img, edge, q) => window.GVC_IMAGES.reencode(img, edge, q)
+};
+
+/* ============================================================
+   __render(state): draw a given flyer with no network beyond the page's own
+   files, then say so (window.__rendered). The helper prints a job's flyer
+   this way (helper/pdf/render.js): its photos come inline.
+   ============================================================ */
+window.__render = async function (s) {
+  window.__rendered = false; window.__renderError = null;
+  try { return await drawGiven(s); }
+  catch (e) { window.__renderError = String(e && e.message || e); throw e; }
+};
+async function drawGiven(s) {
+  const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
+  const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
+  for (let i = 0; i < 100 && !builder; i++) await new Promise(r => setTimeout(r, 50));
+  await capped(DE_READY, 10000);
+  if (!DE) throw new Error('The Douglas Elliman wordmark did not load, so the flyer was not drawn.');
+  window.__piece.set(s);
+  if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
+  await frame(); await frame();
+  await capped(Promise.all([...document.images].map(i => i.complete ? null : new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))), 20000);
+  redraw(); await frame(); await frame();
+  checkWarnings();
+  window.__rendered = true;
+  return true;
+}
+</script>
+<script src="../../assets/js/piece-loader.js" data-job="job-mode.js"></script>
+<script src="../../assets/js/panel-collapse.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
+</body>
+</html>

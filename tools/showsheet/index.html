@@ -2487,7 +2487,7 @@ async function drawGiven(s){
   const base = blankUnit(), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
   // only keys the sheet knows, each in the shape it expects (a null list or a string building can't break it)
   Object.keys(given).forEach(k => {
-    if(!(k in base) || given[k] == null) return;
+    if(!Object.prototype.hasOwnProperty.call(base, k) || given[k] == null) return;
     if(Array.isArray(base[k]) !== Array.isArray(given[k])) return;
     if(base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) && (typeof given[k] !== 'object' || Array.isArray(given[k]))) return;
     base[k] = given[k];

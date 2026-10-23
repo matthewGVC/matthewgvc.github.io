@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signage — Matt Bloomfield</title>
+<meta name="description" content="The GVC For Sale sign with the agents and a listing QR, and the Open House arrow sign, ready for the sign shop.">
+<meta property="og:title" content="Signage — Matt Bloomfield">
+<meta property="og:description" content="The GVC For Sale sign with the agents and a listing QR, and the Open House arrow sign, ready for the sign shop.">
+<meta property="og:url" content="https://matthewgvc.github.io/tools/signage/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
+     printing to PDF, which validators reject as "fonts not embedded". Do not put a
+     fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/panel-collapse.css">
+<style>
+/* ============================================================
+   The team's signs, as they are on the drive (GVC - Marketing > GVC - For
+   Sale Sign): the For Sale sign, 24 x 30 in (Agent, Oct 2026), navy with the
+   faint monogram, the lock-up and a sky QR across the top, a sky rule, one
+   agent large or two stacked (name, title, M phone, email), the Douglas
+   Elliman wordmark and a sky office line; and the Open House arrow sign,
+   24.4 x 18.4 in (Directional, Aug 2026). Sizes and positions are taken from
+   those files. The feather flag carries nothing that changes, so it stays
+   the Illustrator file.
+
+   Set on the body element, not :root: builder.css sets the Letter canvas on
+   :root and builder.js reads the live size off the body.
+   ============================================================ */
+body{--pw:24in;--ph:30in;}
+body.dir{--pw:24.4in;--ph:18.4in;}
+
+.sg{position:absolute;inset:0;overflow:hidden;background:var(--navy);color:var(--ow);}
+.sg-stamp{display:inline-block;border:6pt solid var(--danger);color:var(--danger);background:#fff;
+  font:800 40pt var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:.15in .4in;border-radius:8pt;}
+.sg-mono{position:absolute;pointer-events:none;opacity:.07;}
+
+/* For Sale */
+.fs .sg-mono{left:12.4in;top:9.2in;height:20.6in;width:auto;}
+.fs .lk{position:absolute;left:1.68in;top:2.3in;width:15.1in;height:auto;color:var(--ow);}
+.fs .sg-qr{position:absolute;left:18.27in;top:2.38in;width:4.02in;height:4.02in;}
+.fs .sg-qr svg{display:block;width:100%;height:100%;}
+.fs .sg-qr svg path{fill:var(--sky2);}
+.fs .sg-rule{position:absolute;left:1.72in;right:1.68in;top:9.03in;height:.11in;background:var(--sky);}
+.fs.two .sg-rule{top:8.5in;}
+.fs .sg-agents{position:absolute;left:1.68in;right:1.68in;top:11.7in;display:flex;flex-direction:column;gap:1.05in;}
+.fs.two .sg-agents{top:9.42in;gap:1.45in;}
+.fs .sg-nm{font:800 155pt/1 var(--sans);white-space:nowrap;}
+.fs .sg-tt{margin-top:.38in;font:400 74pt/1 var(--sans);}
+.fs .sg-ph{margin-top:.42in;font:800 130pt/1 var(--sans);}
+.fs .sg-em{margin-top:.36in;font:700 75pt/1 var(--sans);}
+.fs.two .sg-nm{font-size:108pt;}
+.fs.two .sg-tt{font-size:48pt;margin-top:.38in;}
+.fs.two .sg-ph{font-size:85pt;margin-top:.36in;}
+.fs.two .sg-em{font-size:49pt;margin-top:.32in;}
+.fs .de{position:absolute;left:1.5in;width:20.8in;top:23.3in;color:#fff;}
+.fs .de svg,.dr .de svg{display:block;width:100%;height:auto;}
+.fs .sg-foot{position:absolute;left:1.5in;right:1.5in;top:27.55in;display:flex;align-items:center;gap:.42in;font:700 68pt/1 var(--sans);color:var(--sky2);white-space:nowrap;}
+.fs .sg-foot .sg-bar{font-weight:400;color:var(--ow);}
+.eho{display:inline-block;width:1.05in;height:1.05in;vertical-align:middle;}
+.eho svg{display:block;width:100%;height:100%;}
+
+/* Open House arrow */
+.dr{background:linear-gradient(150deg,var(--sky2) -20%,var(--navy) 55%);}
+.dr .sg-mono{right:-1.3in;top:-1.6in;height:17in;width:auto;opacity:.12;}
+.dr .sg-big{position:absolute;left:1.05in;top:.75in;font:900 350pt/.84 var(--sans);color:#fff;letter-spacing:-.005em;}
+.dr .sg-arrow{position:absolute;left:1.15in;right:1.15in;top:10.95in;height:2.8in;}
+.dr .sg-arrow svg{display:block;width:100%;height:100%;}
+.dr.left .sg-arrow svg{transform:scaleX(-1);}
+.dr .lk{position:absolute;left:1.15in;bottom:1.1in;width:10.4in;height:auto;color:var(--ow);}
+.dr .sg-right{position:absolute;right:1.15in;bottom:1.05in;width:10.5in;text-align:center;}
+.dr .de{display:block;width:10.3in;margin:0 auto;color:#fff;}
+.dr .sg-web{margin-top:.18in;font:700 58pt/1 var(--sans);color:var(--sky2);display:flex;align-items:center;justify-content:center;gap:.3in;}
+.dr .sg-web .sg-bar{font-weight:400;color:var(--ow);}
+.dr .sg-office{margin-top:.12in;font:300 50pt/1 var(--body);color:var(--sky2);}
+</style>
+<style id="pagesize">@page{size:24in 30in;margin:0;}</style>
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">Signage</h1>
+
+<div id="app">
+  <aside id="editor">
+    <div class="ed-body">
+      <details class="ed-sec" open>
+        <summary>Sign <span class="hint" id="sizeHint"></span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Kind</label>
+            <div class="seg pick" id="kindPick" role="group" aria-label="Kind">
+              <button type="button" data-kind="for-sale">For Sale</button>
+              <button type="button" data-kind="directional">Open House arrow</button>
+            </div>
+          </div>
+          <div class="field" id="arrowField">
+            <label>Arrow</label>
+            <div class="seg pick" id="arrowPick" role="group" aria-label="Arrow">
+              <button type="button" data-arrow="right">Right</button>
+              <button type="button" data-arrow="left">Left</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Market</label>
+            <div class="seg pick" id="marketPick" role="group" aria-label="Market">
+              <button type="button" data-market="nj">New Jersey</button>
+              <button type="button" data-market="fl">Florida</button>
+              <button type="button" data-market="nyc">New York</button>
+            </div>
+            <div class="note" id="officeNote"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open id="forSaleSec">
+        <summary>For Sale sign <span class="hint">up to 2 agents</span></summary>
+        <div class="sec-in">
+          <div id="rosterPick"></div>
+          <div class="field">
+            <label>QR link</label>
+            <input type="url" id="fQr" placeholder="https://www.gvcrealestateteam.com">
+            <div class="note">Blank points the QR at the team's site.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ed-sec">
+        <summary>Warnings</summary>
+        <div class="sec-in"><div class="warn" id="warnGeneral" hidden></div></div>
+      </details>
+    </div>
+  </aside>
+
+  <div id="stage"><div id="pages"></div></div>
+
+  <div id="stageBar">
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button type="button" class="btn sm ghost" id="btnZoom">Zoom 100%</button>
+    <button type="button" class="btn lg" id="btnPrint" title="In the print dialog: Destination 'Save as PDF' &middot; Margins 'None' &middot; enable 'Background graphics'. The paper size is set by the sign.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
+<script src="../../assets/js/bios.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/qr.js"></script>
+<script src="../../assets/js/pitch.js"></script>
+<script>
+'use strict';
+const P = window.Pitch;
+const esc = P.esc;
+const $ = s => document.querySelector(s);
+
+/* Fixed team material, as printed on the team's signs. Not fields. */
+const TEAM_SITE = 'https://www.gvcrealestateteam.com';
+const SITE_WORDS = 'gvcrealestateteam.com';
+/* The office line by market: only New Jersey's number is on the signs (and anywhere in the
+   workspace); Florida and New York print the website alone rather than an invented number. */
+const OFFICE = { nj: '732.387.3807', fl: '', nyc: '' };
+const MONO = '../../assets/logos/monogram-white.svg';
+/* the equal housing opportunity mark: a house with an equals sign */
+const EHO = '<span class="eho" role="img" aria-label="Equal Housing Opportunity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5.5 9.6V21h13V9.6"/><path d="M9 13.2h6M9 16.6h6"/></svg></span>';
+/* the arrow from the directional sign: a long shaft and three chevrons (sky2, sky, white) */
+const ARROW = '<svg viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">' +
+  '<rect x="0" y="48" width="810" height="24" rx="12" style="fill:var(--sky2)"/>' +
+  '<path d="M770 4h52l52 56-52 56h-52l52-56z" style="fill:var(--sky2)"/>' +
+  '<path d="M832 4h52l52 56-52 56h-52l52-56z" style="fill:var(--sky)"/>' +
+  '<path d="M894 4h52l52 56-52 56h-52l52-56z" style="fill:var(--ow)"/></svg>';
+
+let DE = '';
+const DE_READY = fetch('../../assets/logos/sheet/douglas-elliman.svg').then(r => r.ok ? r.text() : '').catch(() => '')
+  .then(t => { DE = /^\s*<svg[\s>]/.test(t) ? t.trim() : ''; redraw(); });
+const deMark = () => '<span class="de" role="img" aria-label="Douglas Elliman">' + DE + '</span>';
+
+/* Opened from a job (?listing=<slug>, Slice 6) or drawn by the helper (?draw=1): the job fills the
+   For Sale sign and saves it; this browser's own saved choices are neither read nor overwritten. */
+const JOB_MODE = (q => q.has('listing') || q.has('draw'))(new URLSearchParams(location.search));
+const KEY = 'gvc.signage.state';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* private window or full */ } };
+
+const DEFAULTS = { kind: 'for-sale', arrow: 'right', market: 'nj', agents: [], qrUrl: '' };
+// a saved choice is cut to what the sign knows, so a damaged one never breaks the page
+const state = JOB_MODE ? structuredClone(DEFAULTS) : sanitize(load());
+function persist() { if (!JOB_MODE) save(Object.assign({}, state)); }
+
+const SIZE = { 'for-sale': [24, 30], directional: [24.4, 18.4] };
+function syncSize() {
+  const dir = state.kind === 'directional', sz = SIZE[state.kind] || SIZE['for-sale'];
+  document.body.classList.toggle('dir', dir);
+  $('#pagesize').textContent = '@page{size:' + sz[0] + 'in ' + sz[1] + 'in;margin:0;}';
+  $('#sizeHint').textContent = sz[0] + ' × ' + sz[1] + ' in';
+  $('#arrowField').hidden = !dir;
+  $('#forSaleSec').hidden = dir;
+  const office = OFFICE[state.market];
+  $('#officeNote').textContent = office ? 'Prints the office line O ' + office + '.' : 'No office number on file for this market: the sign prints the website alone.';
+}
+
+/* ---------- the signs ---------- */
+function agentBlock(a) {
+  const phone = String(a.mobile || a.phone || '').trim();
+  return '<div class="sg-ag"><div class="sg-nm">' + esc(a.name) + '</div><div class="sg-tt">' + esc(a.title) + '</div>' +
+    (phone ? '<div class="sg-ph">M ' + esc(phone) + '</div>' : '') + (String(a.email || '').trim() ? '<div class="sg-em">' + esc(a.email.trim()) + '</div>' : '') + '</div>';
+}
+/* the QR for a link: the team's site when the link is blank, not a web link, or too long for a QR */
+let qrTooLong = false;
+function qrFor(raw) {
+  const link = /^https?:\/\//i.test(String(raw || '').trim()) ? String(raw).trim() : TEAM_SITE;
+  const svg = window.GVC_QR_URL(link);
+  qrTooLong = !svg && link !== TEAM_SITE;
+  return svg || window.GVC_QR_URL(TEAM_SITE);
+}
+function forSale() {
+  const agents = state.agents.map(id => window.GVC_AGENT(id)).filter(Boolean).slice(0, 2);
+  const office = OFFICE[state.market];
+  return '<div class="sg fs' + (agents.length > 1 ? ' two' : '') + '">' +
+    '<img class="sg-mono" src="' + MONO + '" alt="">' + P.LOCKUP +
+    '<div class="sg-qr">' + qrFor(state.qrUrl) + '</div><div class="sg-rule"></div>' +
+    '<div class="sg-agents">' + (agents.length ? agents.map(agentBlock).join('') : '<span class="sg-stamp">Pick an agent</span>') + '</div>' +
+    deMark() +
+    '<div class="sg-foot">' + (office ? '<span>O ' + esc(office) + '</span><span class="sg-bar">|</span>' : '') +
+      '<span>' + esc(SITE_WORDS) + '</span><span class="sg-bar">|</span>' + EHO + '</div>' +
+  '</div>';
+}
+function directional() {
+  const office = OFFICE[state.market];
+  return '<div class="sg dr' + (state.arrow === 'left' ? ' left' : '') + '">' +
+    '<img class="sg-mono" src="' + MONO + '" alt="">' +
+    '<div class="sg-big">OPEN<br>HOUSE</div><div class="sg-arrow">' + ARROW + '</div>' + P.LOCKUP +
+    '<div class="sg-right">' + deMark() + '<div class="sg-web"><span>' + esc(SITE_WORDS) + '</span><span class="sg-bar">|</span>' + EHO + '</div>' +
+      (office ? '<div class="sg-office">office: ' + esc(office) + '</div>' : '') + '</div>' +
+  '</div>';
+}
+
+function checkWarnings() {
+  const msgs = [];
+  if (state.kind === 'for-sale') {
+    const over = [...document.querySelectorAll('.fs .sg-nm, .fs .sg-em')].some(el => el.scrollWidth > el.parentElement.clientWidth + 2);
+    if (over) msgs.push('A name or email is wider than the sign. Pick one agent, or ask for a shorter line.');
+    if (!state.agents.length) msgs.push('Pick an agent for the sign.');
+    if (!String(state.qrUrl || '').trim()) msgs.push('The QR points at the team\'s site. Paste the listing link to point it at the listing.');
+    if (qrTooLong) msgs.push('That link is too long for a QR, so the QR points at the team\'s site. Use the listing\'s short link.');
+  }
+  if (!OFFICE[state.market]) msgs.push('No office number on file for this market: the sign prints the website alone.');
+  const box = $('#warnGeneral');
+  box.innerHTML = msgs.map(m => '<div class="warn-item">' + esc(m) + '</div>').join('');
+  box.hidden = !msgs.length;
+}
+
+let builder = null;
+const repaint = [];
+function redraw() {
+  if (!builder) return;
+  builder.rebuild();
+  setTimeout(checkWarnings, 0);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const qr = $('#fQr');
+  qr.value = state.qrUrl || '';
+  qr.addEventListener('input', () => { state.qrUrl = qr.value; persist(); redraw(); });
+  repaint.push(P.segPick($('#kindPick'), 'kind', () => state.kind, v => { state.kind = v; syncSize(); persist(); redraw(); }));
+  repaint.push(P.segPick($('#arrowPick'), 'arrow', () => state.arrow, v => { state.arrow = v; persist(); redraw(); }));
+  repaint.push(P.segPick($('#marketPick'), 'market', () => state.market, v => { state.market = v; syncSize(); persist(); redraw(); }));
+  repaint.push(window.GVC_PICKER($('#rosterPick'), state, { key: 'agents', max: 2, onChange: () => { persist(); redraw(); } }));
+  syncSize();
+  builder = Builder.init({
+    pages: 1, label: 'Sign',
+    sizeLabel: () => (SIZE[state.kind] || SIZE['for-sale']).join(' × ') + ' in',
+    printName: () => state.kind === 'directional' ? 'Open House Sign - ' + (state.arrow === 'left' ? 'Left' : 'Right') : 'For Sale Sign',
+    render: (pg) => { pg.innerHTML = state.kind === 'directional' ? directional() : forSale(); }
+  });
+  redraw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkWarnings);
+  GVC_UNSAVED.watch();
+});
+
+/* what a job mode works through (Slice 6): the sign's state and drawing */
+/* A sign from outside (a job, or the helper's drawing), cut to what the sign knows. */
+function sanitize(s) {
+  const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  Object.keys(given).forEach(k => {
+    if (!Object.prototype.hasOwnProperty.call(base, k) || given[k] == null) return;
+    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
+    base[k] = given[k];
+  });
+  if (base.kind !== 'directional') base.kind = 'for-sale';
+  if (base.arrow !== 'left') base.arrow = 'right';
+  if (!Object.prototype.hasOwnProperty.call(OFFICE, base.market)) base.market = 'nj';
+  base.agents = base.agents.filter(a => typeof a === 'string').slice(0, 2);
+  base.qrUrl = String(base.qrUrl || '');
+  return base;
+}
+window.__piece = {
+  get state() { return state; },
+  JOB_MODE, sanitize, ready: () => !!builder,
+  /* replace the whole sign (sanitized), then draw; nothing is saved in this browser */
+  set(s) {
+    if (!builder) throw new Error('The sign page has not finished loading.');
+    const base = sanitize(s);
+    Object.keys(state).forEach(k => { delete state[k]; });
+    Object.assign(state, base);
+    $('#fQr').value = state.qrUrl || '';
+    repaint.forEach(f => typeof f === 'function' && f());
+    syncSize(); redraw();
+  },
+  redraw, checkWarnings
+};
+
+/* ============================================================
+   __render(state): draw a given sign with no network beyond the page's own
+   files, then say so (window.__rendered). The helper prints a job's For
+   Sale sign this way (helper/pdf/render.js).
+   ============================================================ */
+window.__render = async function (s) {
+  window.__rendered = false; window.__renderError = null;
+  try { return await drawGiven(s); }
+  catch (e) { window.__renderError = String(e && e.message || e); throw e; }
+};
+async function drawGiven(s) {
+  const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
+  const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
+  for (let i = 0; i < 100 && !builder; i++) await new Promise(r => setTimeout(r, 50));
+  await capped(DE_READY, 10000);
+  if (!DE) throw new Error('The Douglas Elliman wordmark did not load, so the sign was not drawn.');
+  window.__piece.set(s);
+  if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
+  await frame(); await frame();
+  await capped(Promise.all([...document.images].map(i => i.complete ? null : new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))), 20000);
+  redraw(); await frame(); await frame();
+  checkWarnings();
+  window.__rendered = true;
+  return true;
+}
+</script>
+<script src="../../assets/js/piece-loader.js" data-job="job-mode.js"></script>
+<script src="../../assets/js/panel-collapse.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
+</body>
+</html>

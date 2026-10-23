@@ -366,6 +366,30 @@ check('D88 the team Status page lists it after the live stages', W.statusRows(of
 check('D88 a stage change to Off market reads plainly', W.changeTitle({ field: 'stage', new_value: 'Off market' }), 'Stage moved to Off market');
 check('D88 recent changes colour it as off market', W.recentChanges(offChanges, offJobs, 1)[0].kind, 'off');
 
+/* Slice 4 (S21): buildJobs reads the pieces' records and says what is stale */
+{
+  const SJ = require('../assets/js/sheet-job.js');
+  const sp = (id, over) => Object.assign({ id, slug: id, label: id, kind: 'sale', market: 'NYC', stage: 'Live', folder_state: 'linked', drive_folder: 'x',
+    core: { address: id + ' Stale St', price: 2100000, propertyType: 'Co-op', agentIds: ['katie-cook'] } }, over || {});
+  const sStale = sp('s1'), sFresh = sp('s2'), sNone = sp('s3', { scan: { pieces: { showsheet: [{ name: 'Showsheet old.pdf', modified: '2026-09-01T10:00:00.000Z' }] } } });
+  const bfOf = row => SJ.builtFrom({}, row, {});
+  const was = bfOf(sStale); was.facts.price = 2250000;
+  const documents = [
+    { property_id: 's1', tool: 'showsheet', built_from: was, output: { name: 'a.pdf' } },
+    { property_id: 's2', tool: 'showsheet', built_from: bfOf(sFresh), output: { name: 'b.pdf' } },
+    { property_id: 's3', tool: 'brochure', built_from: { facts: { price: 1 } }, output: null }
+  ];
+  const SJobs = W.buildJobs({ properties: [sStale, sFresh, sNone], pitches, devProjects: devs, changes: [], documents }, TODAY);
+  const SJ_ = id => SJobs.find(j => j.id === id) || {};
+  check('S21 stale: a changed price', SJ_('s1').stale, ['price']);
+  check('S21 stale: as built is fresh', SJ_('s2').stale, []);
+  check('S21 stale: a file made before the workspace kept track, or another tool\'s record, is never stale', SJ_('s3').stale, []);
+  check('S21 stale: pitches and developments carry an empty list', SJobs.filter(j => j.type !== 'listing' && j.type !== 'rental').map(j => j.stale), SJobs.filter(j => j.type !== 'listing' && j.type !== 'rental').map(() => []));
+  check('S21 stale: no documents read at all is fine', W.buildJobs({ properties: [sStale] }, TODAY)[0].stale, []);
+  const noisy = W.buildJobs({ properties: [sStale], documents: [{ property_id: 's1', tool: 'showsheet', built_from: 'junk' }, null] }, TODAY)[0];
+  check('S21 stale: a junk record never throws', Array.isArray(noisy.stale), true);
+}
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

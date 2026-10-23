@@ -7,6 +7,7 @@
 'use strict';
 
 const { chromium } = require('playwright');
+const SJ = require('../assets/js/sheet-job.js');
 const BASE = process.env.BASE || 'http://localhost:8080';
 
 let pass = 0;
@@ -130,6 +131,25 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('recent: newest first', (await text(p, '#recent')).includes('Price $4,750,000 → $4,500,000'), true);
   check('tasks: flags and own items', [(await text(p, '#tlist')).includes('20 Sample Ave 7B: Link the Drive folder'), (await text(p, '#tlist')).includes('Florida office signage')], [true, true]);
   check('no won-or-lost task', /won or lost/i.test(await text(p, '#tlist')), false);
+
+  /* Slice 4 (S21): the overview row's small "stale" mark */
+  {
+    const RS = rowsFor();
+    const row = RS.properties.find(x => x.id === 'p1');
+    const was = SJ.builtFrom({}, row, {});
+    was.facts.price = 3900000;
+    RS.documents = [{ property_id: 'p1', tool: 'showsheet', built_from: was, output: { name: 'a.pdf' } },
+      { property_id: 'p2', tool: 'showsheet', built_from: SJ.builtFrom({}, RS.properties.find(x => x.id === 'p2'), {}), output: { name: 'b.pdf' } }];
+    let ts = await open(browser, { rows: RS });
+    check('overview stale: one documents read, the record columns only', ts.reads.filter(x => / documents$/.test(x)).length, 1);
+    check('overview stale: the stale job has the mark', await ts.page.$$eval('a.pj', els => els.filter(a => a.querySelector('.chip.stalemark')).map(a => [a.getAttribute('href'), a.querySelector('.chip.stalemark').textContent.trim(), a.querySelector('.chip.stalemark').getAttribute('title')])),
+      [['job/?listing=100-example-st-residence-4a', 'stale', 'Showsheet stale: price']]);
+    check('overview stale: no page errors', ts.errors, []);
+    await ts.ctx.close();
+    ts = await open(browser, { rows: RS, missing: ['documents'] });
+    check('overview stale: documents not readable yet (0009 not run): the board still loads, no marks', [await visible(ts.page, '#board'), await ts.page.$$eval('.chip.stalemark', e => e.length), ts.errors], [true, 0, []]);
+    await ts.ctx.close();
+  }
   {
     // the To-do page is Matt's own: the team sign-in sees a note, and the list is never read
     const tt = await open(browser, { path: '/tools/todo/', members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });

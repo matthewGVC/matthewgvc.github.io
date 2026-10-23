@@ -10,8 +10,9 @@
      });
 
    Slice 0 knows one tool, the Showsheet, fed the way a person feeds it:
-   the three files dropped into its file inputs. Slice 3 adds "open the
-   job's saved state" (spec §1 C). Nothing here writes a file: name.js does.
+   the three files dropped into its file inputs. Slice 4 adds { state }: a
+   job's sheet, photos and plans inline, drawn by window.__render.
+   Nothing here writes a file: name.js does.
    ============================================================ */
 'use strict';
 
@@ -22,10 +23,21 @@ const TOOLS = {
     path: '/tools/showsheet/',
     inputs: { docx: '#docxFile', photo: '#phFile', floorplan: '#fpFile' },
     ready: () => typeof state !== 'undefined' && !!state.address,          // eslint-disable-line no-undef
-    label: () => [state.address, state.unit].filter(Boolean).join(' '),    // eslint-disable-line no-undef
+    label: () => [state.address, typeof GVC_PROPS !== 'undefined' ? GVC_PROPS.unitDisplay(state.unit) : state.unit].filter(Boolean).join(' '),  // eslint-disable-line no-undef
     paper: async (page, paper) => { await page.click('#paperSeg button[data-v="' + paper + '"]'); }
   }
 };
+
+/* A drawn state may only show pictures it carries inline: the hidden browser
+   loads pictures and media from the site itself and nowhere else. */
+async function guardRequests(page, siteBase) {
+  const origin = new URL(siteBase).origin;
+  await page.route('**/*', route => {
+    const q = route.request(), kind = q.resourceType();
+    if ((kind === 'image' || kind === 'media') && new URL(q.url()).origin !== origin) return route.abort();
+    return route.continue();
+  });
+}
 
 async function renderPiece(opts) {
   const tool = TOOLS[opts.tool];
@@ -36,11 +48,17 @@ async function renderPiece(opts) {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
+    if (opts.state) await guardRequests(page, opts.siteBase);
     await page.goto(opts.siteBase.replace(/\/$/, '') + tool.path, { waitUntil: 'networkidle', timeout: 90000 });
-    for (const k of Object.keys(tool.inputs)) {
-      if (opts.inputs && opts.inputs[k]) await page.setInputFiles(tool.inputs[k], opts.inputs[k]);
+    if (opts.state) {
+      const drawn = await page.evaluate(s => window.__render(s).then(() => ({ ok: window.__rendered === true }), e => ({ error: String(e && e.message || e) })), opts.state);
+      if (!drawn.ok) throw new Error('The ' + opts.tool + ' could not be drawn: ' + (drawn.error || 'it never finished'));
+    } else {
+      for (const k of Object.keys(tool.inputs)) {
+        if (opts.inputs && opts.inputs[k]) await page.setInputFiles(tool.inputs[k], opts.inputs[k]);
+      }
+      await page.waitForFunction(tool.ready, null, { timeout: 30000 });
     }
-    await page.waitForFunction(tool.ready, null, { timeout: 30000 });
     if (opts.paper) await tool.paper(page, opts.paper);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => Array.from(document.images).every(i => !i.src || (i.complete && i.naturalWidth > 0)), null, { timeout: 30000 });
@@ -56,4 +74,4 @@ async function renderPiece(opts) {
   }
 }
 
-module.exports = { renderPiece, TOOLS };
+module.exports = { renderPiece, guardRequests, TOOLS };

@@ -8,6 +8,9 @@
                                                   → {ok, path, pages}
      POST /drive-link   {folder, file?}           → {url} (the real Google Drive link; paperwork refused)
      GET  /lab/samples                            → paths of the Showsheet sample files
+     POST /piece        {propertyId, tool, state, paper}
+                                                  → the showsheet PDF written into the job's
+                                                    folder (helper/piece.js); body up to 40 MB
 
    /pdf in Slice 0 accepts only the repo's sample files as inputs, and
    writes only inside the configured output roots (helper/pdf/guard.js).
@@ -142,5 +145,14 @@ function driveLinkRoute(o) {
   };
 }
 route('POST', '/drive-link', driveLinkRoute({ driveRoot: 'G:\\Shared drives' }));
+
+/* "Save PDF to Drive" on a job's Showsheet. The helper's own account reads the job. */
+let pieceDb = null;
+route('POST', '/piece', require('./piece.js').pieceRoute({
+  db: cfg => (pieceDb = pieceDb || require('./supabase.js').createClient(cfg)),
+  render: o => require('./pdf/render.js').renderPiece(o),
+  driveRoot: 'G:\\Shared drives',
+  driveLink: (abs, isFolder) => require('./drive-link.js').driveLink(abs, isFolder)
+}), { maxBody: 40 * 1024 * 1024 });
 
 module.exports = { driveLinkRoute, openFolderRoute, asanaSyncRoute, syncRoute };

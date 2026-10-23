@@ -9,6 +9,8 @@
 'use strict';
 
 const { chromium } = require('playwright');
+const SJ = require('../assets/js/sheet-job.js');
+const ST = require('../assets/js/piece-stale.js');
 const BASE = process.env.BASE || 'http://localhost:8080';
 
 let pass = 0;
@@ -88,6 +90,7 @@ const FAKE_DRIVE = `(function () {
     d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08'), f('Thumbs.db', '12'), f('._01.jpg', '12'), f('03.jpg.xmp', '12')])),
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
+  if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
   if (cfg.html) tree.children.push(d('Open House', [f('Open House - 100 Example St 4A.html', '11')]));
   var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
   function find(path) {
@@ -135,6 +138,7 @@ async function open(browser, opts) {
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => { delete window.showDirectoryPicker; });
   await page.route(MAMMOTH_URL, r => r.abort());
+  if (opts.staleThrows) await page.route('**/assets/js/piece-stale.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: 'window.GVC_STALE = { stale: function () { throw new Error("bad record"); }, words: function () { return ""; } };' }));
   if (opts.drive) {
     await page.addInitScript(([cfg, html]) => {
       window.__FAKE_DRIVE = cfg;
@@ -148,6 +152,7 @@ async function open(browser, opts) {
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
     if (table === 'members') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(opts.members || [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]) });
+    if (table === 'documents' && opts.documentsFail) return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'column documents.built_from does not exist' }) });
     if (table === 'save_job') {
       const body = JSON.parse(r.request().postData() || '{}');
       saves.push(body);
@@ -594,6 +599,139 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { path: LISTING });
     check('tune-up: a neighborhood shows under Neighborhood', await text(t.page, '.facts > div:nth-child(5)'), 'NeighborhoodTestville');
     await t.ctx.close();
+  }
+
+  /* ---------- Slice 4: the Kit's Showsheet row, Rebuild n stale (S15, S20, S21) ---------- */
+  {
+    const SHEET = '/tools/showsheet/?listing=100-example-st-4a';
+    const docFor = (row, over) => {
+      over = over || {};
+      const bf = SJ.builtFrom({}, row, { photos: { front: { path: 'Photos/Edited/03.jpg', modified: '2026-10-08T10:00:00.000Z' }, back: { path: 'Photos/Edited/99.jpg' } } });
+      Object.assign(bf.facts, over.facts || {});
+      if (over.photos) bf.photos = over.photos;
+      return { id: 'doc1', property_id: 'p1', tool: 'showsheet', version: 2, built_from: bf, built_at: '2026-10-22T14:00:00.000Z',
+        output: Object.assign({ path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf',
+          url: 'https://drive.google.com/file/d/NEW1/view', paper: 'a5', madeAt: '2026-10-22T14:00:00.000Z', via: 'helper' }, over.output || {}) };
+    };
+    const kitRow = '#kitCard [data-kit="showsheet"]';
+    const sheetBits = async pg => ({
+      state: await text(pg, kitRow + ' [data-sheet-state]'),
+      made: await text(pg, kitRow + ' [data-sheet-made]'),
+      acts: await pg.$$eval(kitRow + ' [data-sheet]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')])),
+      header: await pg.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]))
+    });
+
+    // the fixture itself: fresh as built
+    const R0 = rowsFor();
+    check('fixture: the built_from is fresh against its row', ST.stale(docFor(R0.properties[0]), R0.properties[0], {}).state, 'fresh');
+
+    // none: no record, no file in the folder
+    const RN = rowsFor();
+    delete RN.properties[0].scan.pieces.showsheet;
+    RN.documents = [];
+    t = await open(browser, { rows: RN, path: LISTING });
+    check('kit none: Make showsheet, no header button', await sheetBits(t.page),
+      { state: 'Not made yet', made: null, acts: [['Make showsheet', '../..' + SHEET]], header: [] });
+    check('kit none: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    // untracked: a file in the folder, no record (S15)
+    const RU = rowsFor();
+    RU.documents = [];
+    t = await open(browser, { rows: RU, path: LISTING });
+    check('kit untracked: made before the workspace kept track, Open sheet', await sheetBits(t.page),
+      { state: 'Made before the workspace kept track', made: null, acts: [['Open sheet', '../..' + SHEET]], header: [] });
+    await t.ctx.close();
+
+    // fresh
+    const RF = rowsFor();
+    RF.documents = [docFor(RF.properties[0])];
+    t = await open(browser, { rows: RF, path: LISTING, drive: { state: 'not-connected' } });
+    p = t.page;
+    check('kit fresh: up to date, made line with Open and Copy Drive link, Open sheet', await sheetBits(p),
+      { state: 'Up to date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [['Open sheet', '../..' + SHEET]], header: [] });
+    check('kit fresh: Open is the recorded Drive link', await p.$eval(kitRow + ' [data-sheet-made] a', a => a.getAttribute('href')), 'https://drive.google.com/file/d/NEW1/view');
+    await p.click(kitRow + ' [data-sheet-made] [data-sheet-copy]');
+    await settle(p);
+    check('kit fresh: Copy Drive link copies the recorded link', [await text(p, '#kitMsg'), await p.evaluate(() => navigator.clipboard.readText())],
+      ['Drive link copied.', 'https://drive.google.com/file/d/NEW1/view']);
+    check('kit fresh: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    // stale on price, owner
+    const RS = rowsFor();
+    RS.documents = [docFor(RS.properties[0], { facts: { price: 2250000 } })];
+    t = await open(browser, { rows: RS, path: LISTING });
+    p = t.page;
+    check('kit stale: Stale: price, Rebuild, header Rebuild 1 stale', await sheetBits(p),
+      { state: 'Stale: price', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [['Rebuild', '../..' + SHEET + '&rebuild=1']],
+        header: [['Rebuild 1 stale', '../..' + SHEET + '&rebuild=1']] });
+    check('kit stale: the documents read asks for this job\'s showsheet only', await p.evaluate(() => performance.getEntriesByType('resource').map(e => e.name)
+      .filter(u => /\/rest\/v1\/documents\?/.test(u)).map(u => /property_id=eq\.p1/.test(u) && /tool=eq\.showsheet/.test(u))), [true]);
+    check('kit stale: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    // a teammate: Open sheet (read-only there), never Make or Rebuild
+    for (const [name, rows, state, made] of [['stale', RS, 'Stale: price', 'Made 22 Oct · A5 · Open · Copy Drive link'], ['none', RN, 'Not made yet', null]]) {
+      t = await open(browser, { rows, path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
+      check('kit team ' + name + ': Open sheet, no Make or Rebuild', await sheetBits(t.page), { state, made, acts: [['Open sheet', '../..' + SHEET]], header: [] });
+      await t.ctx.close();
+    }
+
+    // printed by hand: no Open or Copy Drive link, says so
+    const RP = rowsFor();
+    RP.documents = [docFor(RP.properties[0], { output: { via: 'print', url: null, path: null, paper: 'letter' } })];
+    t = await open(browser, { rows: RP, path: LISTING });
+    check('kit printed by hand: says so, no file links', await text(t.page, kitRow + ' [data-sheet-made]'), 'Made 22 Oct · LETTER · printed by hand, file not tracked');
+    await t.ctx.close();
+
+    // Drive connected: the photo dates count (a front photo with a new date is stale only live)
+    const RL = rowsFor();
+    RL.documents = [docFor(RL.properties[0], { photos: { front: { path: 'Photos/Edited/03.jpg', modified: '2026-10-01T10:00:00.000Z' }, back: { path: 'Photos/Edited/99.jpg' } } })];
+    t = await open(browser, { rows: RL, path: LISTING });
+    check('kit scan: a photo date is unknown, so fresh', (await sheetBits(t.page)).state, 'Up to date');
+    await t.ctx.close();
+    t = await open(browser, { rows: RL, path: LISTING, drive: {} });
+    await t.page.waitForTimeout(800);
+    const live = await sheetBits(t.page);
+    check('kit live: front photo file updated on Drive is stale, header follows', [live.state, live.header.map(h => h[0])], ['Stale: front photo', ['Rebuild 1 stale']]);
+    check('kit live: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    // live Drive without the showsheet folder: last night's scan still proves a file (as the sheet's own bar does)
+    t = await open(browser, { rows: RU, path: LISTING, drive: { noSheet: true } });
+    await t.page.waitForTimeout(800);
+    check('kit live, folder not listed now: the scan\'s file still counts', (await sheetBits(t.page)).state, 'Made before the workspace kept track');
+    await t.ctx.close();
+
+    // a stale check that throws never takes the page down
+    t = await open(browser, { rows: RS, path: LISTING, staleThrows: true });
+    check('kit stale check throws: page up, no sheet line, no header button', [await t.page.$$eval('#factsCard', e => e.length), (await sheetBits(t.page)).state, (await sheetBits(t.page)).header, t.errors], [1, null, [], []]);
+    await t.ctx.close();
+
+    // a documents read that fails (0009 not run yet): the page still opens, state from the folder
+    t = await open(browser, { path: LISTING, documentsFail: true });
+    check('kit documents unreadable: page opens, state from the folder', [(await sheetBits(t.page)).state, t.errors], ['Made before the workspace kept track', []]);
+    await t.ctx.close();
+
+    // hostile record: shown as text
+    const RX = rowsFor();
+    RX.documents = [docFor(RX.properties[0], { output: { name: '<img src=x onerror="window.__xss=7">', paper: '<b onmouseover=1>', url: 'javascript:alert(1)', madeAt: '<i>' } })];
+    t = await open(browser, { rows: RX, path: LISTING });
+    check('kit hostile record stays inert', [await t.page.evaluate(() => window.__xss || null), await t.page.$$eval(kitRow + ' [data-sheet-made] a', els => els.length),
+      await t.page.$$eval(kitRow + ' b, ' + kitRow + ' img, ' + kitRow + ' i:not(.ic)', els => els.length), t.errors], [null, 0, 0, []]);
+    await t.ctx.close();
+
+    // phone: the state and what's stale, no Make or Rebuild buttons, no sideways scroll (S20)
+    for (const [name, rows] of [['stale', RS], ['none', RN]]) {
+      t = await open(browser, { rows, path: LISTING, phone: true });
+      p = t.page;
+      check('375 px kit ' + name + ': state shown, no Make or Rebuild', [await p.isVisible(kitRow + ' [data-sheet-state]'),
+        await p.evaluate(() => [...document.querySelectorAll('[data-sheet], #rebuildStale')].filter(e => e.getClientRects().length).map(e => e.textContent.trim()))],
+        [true, []]);
+      check('375 px kit ' + name + ': no sideways scroll', await p.evaluate(() => document.documentElement.scrollWidth <= 376), true);
+      await t.ctx.close();
+    }
   }
 
   /* ---------- phone, hostile text, dashes ---------- */

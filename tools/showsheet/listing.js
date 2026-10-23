@@ -137,6 +137,69 @@
   };
   const BEDS_BATHS = /(\d+)\s*BD\s*\/?\s*(\d+(?:\.\d+)?)\s*BA/i;
 
+  /* A listing's building lines → the sheet's Built, Service, Policies and
+     amenities. read() runs a Word doc's "Building Features" through this, and
+     a job's own building feature list goes through it too (Slice 4), so a line
+     lands in the same place whichever way it arrived. Lines are cleaned here. */
+  function buildingFrom(lines) {
+    const building = (lines || []).map(x => cleanLine(String(x == null ? '' : x))).filter(Boolean);
+    const out = {}, found = [];
+    const claimed = new Set();
+    for (const ln of building) {
+      let m;
+      if ((m = ln.match(/^built\s+(.+)/i))) {
+        out.builtYear = m[1].replace(/\s*,\s*/g, ', ').trim(); claimed.add(ln); found.push('built');
+      } else if ((m = ln.match(/(\d+)\s*floors?\s*\/\s*(\d+)\s*units?/i))) {
+        out.stories = m[1]; out.residences = m[2]; claimed.add(ln); found.push('stories/residences');
+      }
+    }
+    const svc = building.filter(ln => !claimed.has(ln) && /(full[\s-]?service|doorman|concierge|door staff|attended lobby|resident manager|superintendent)/i.test(ln));
+    if (svc.length) {
+      out.service = svc.slice(0, 2).map(s => s.replace(/\s*(cooperative|coop|co-op|condominium|condo|building)\s*$/i, '').trim()).filter(Boolean).join(' · ');
+      svc.slice(0, 2).forEach(l => claimed.add(l));
+      found.push('service');
+    }
+    const pol = building.filter(ln => !claimed.has(ln) && /(pied|pets?\b|sublet|guarantor|co-?purchas|gifting|washer\/?dryer allowed)/i.test(ln));
+    if (pol.length) {
+      out.policy = pol.map(s => s.trim()).join(' · ');
+      pol.forEach(l => claimed.add(l));
+      found.push('policies');
+    }
+    const amen = dedupeLines(building.filter(ln => !claimed.has(ln)));
+    if (amen.length) { out.amenities = amen; found.push('amenities'); }
+
+    return { building: out, found };
+  }
+
+  /* A listing's interior lines → Exposures, Outdoor, Ceilings, Climate and the
+     feature bullets, the same way for a Word doc and for a job's list. */
+  function residenceFrom(lines) {
+    const interior = (lines || []).map(x => cleanLine(String(x == null ? '' : x))).filter(Boolean);
+    const out = {}, found = [];
+    /* A first line that only restates the beds, baths and ownership ("4BD /
+       4BA Condominium") is already on the sheet in the stat strip and the
+       ownership chip, so it is not repeated as a bullet. It used to go further:
+       any first line mentioning a penthouse, a duplex, a loft or prewar was
+       moved into a field nothing ever printed, and simply vanished. */
+    const rclaimed = new Set();
+    const first = interior[0] || '';
+    const leftover = first.replace(BEDS_BATHS, '')
+      .replace(/\b(condominium|condo|co-?op(erative)?|residence|apartment|home|unit)\b/gi, '').replace(/[^a-z0-9]/gi, '');
+    if (first && BEDS_BATHS.test(first) && !leftover) rclaimed.add(first);
+    const grab = re => interior.find(x => !rclaimed.has(x) && re.test(x)) || '';
+    [['exposures', /exposure|facing\b|northern|southern|eastern|western light/i],
+     ['outdoor', /terrace|balcon|private garden|roof rights|outdoor space/i],
+     ['ceiling', /ceiling/i],
+     ['climate', /air.?condition|central air|central heat|hvac|mini.?split|heating/i]].forEach(([key, re]) => {
+      const ln = grab(re);
+      if (ln) { out[key] = ln; rclaimed.add(ln); }
+    });
+    const feats = dedupeLines(interior.filter(x => !rclaimed.has(x)));
+    if (feats.length) { out.features = feats; found.push('features'); }
+
+    return { residence: out, found };
+  }
+
   /* Everything the document states, as facts in the sheet's own field names.
      A field is present only when the document gave a value for it, so laying
      the result over a sheet never blanks what the agent already typed.
@@ -207,59 +270,17 @@
     const bb = everything.match(BEDS_BATHS);
     if (bb) { f.beds = bb[1]; f.baths = bb[2]; found.push('beds/baths'); }
 
-    // -------- building lines → structured --------
-    const claimed = new Set();
-    for (const ln of building) {
-      let m;
-      if ((m = ln.match(/^built\s+(.+)/i))) {
-        f.building.builtYear = m[1].replace(/\s*,\s*/g, ', ').trim(); claimed.add(ln); found.push('built');
-      } else if ((m = ln.match(/(\d+)\s*floors?\s*\/\s*(\d+)\s*units?/i))) {
-        f.building.stories = m[1]; f.building.residences = m[2]; claimed.add(ln); found.push('stories/residences');
-      }
-    }
-    const svc = building.filter(ln => !claimed.has(ln) && /(full[\s-]?service|doorman|concierge|door staff|attended lobby|resident manager|superintendent)/i.test(ln));
-    if (svc.length) {
-      f.building.service = svc.slice(0, 2).map(s => s.replace(/\s*(cooperative|coop|co-op|condominium|condo|building)\s*$/i, '').trim()).filter(Boolean).join(' · ');
-      svc.slice(0, 2).forEach(l => claimed.add(l));
-      found.push('service');
-    }
-    const pol = building.filter(ln => !claimed.has(ln) && /(pied|pets?\b|sublet|guarantor|co-?purchas|gifting|washer\/?dryer allowed)/i.test(ln));
-    if (pol.length) {
-      f.building.policy = pol.map(s => s.trim()).join(' · ');
-      pol.forEach(l => claimed.add(l));
-      found.push('policies');
-    }
-    const amen = dedupeLines(building.filter(ln => !claimed.has(ln)));
-    if (amen.length) { f.building.amenities = amen; found.push('amenities'); }
-
-    // -------- interior lines → residence --------
-    /* A first line that only restates the beds, baths and ownership ("4BD /
-       4BA Condominium") is already on the sheet in the stat strip and the
-       ownership chip, so it is not repeated as a bullet. It used to go further:
-       any first line mentioning a penthouse, a duplex, a loft or prewar was
-       moved into a field nothing ever printed, and simply vanished. */
-    const rclaimed = new Set();
-    const first = interior[0] || '';
-    const leftover = first.replace(BEDS_BATHS, '')
-      .replace(/\b(condominium|condo|co-?op(erative)?|residence|apartment|home|unit)\b/gi, '').replace(/[^a-z0-9]/gi, '');
-    if (first && BEDS_BATHS.test(first) && !leftover) rclaimed.add(first);
-    const grab = re => interior.find(x => !rclaimed.has(x) && re.test(x)) || '';
-    [['exposures', /exposure|facing\b|northern|southern|eastern|western light/i],
-     ['outdoor', /terrace|balcon|private garden|roof rights|outdoor space/i],
-     ['ceiling', /ceiling/i],
-     ['climate', /air.?condition|central air|central heat|hvac|mini.?split|heating/i]].forEach(([key, re]) => {
-      const ln = grab(re);
-      if (ln) { f.residence[key] = ln; rclaimed.add(ln); }
-    });
-    const feats = dedupeLines(interior.filter(x => !rclaimed.has(x)));
-    if (feats.length) { f.residence.features = feats; found.push('features'); }
+    const b = buildingFrom(building), r = residenceFrom(interior);
+    Object.assign(f.building, b.building);
+    Object.assign(f.residence, r.residence);
+    found.push(...b.found, ...r.found);
 
     f.found = [...new Set(found)];
     return f;
   }
 
   const api = { blankish, moneyNum, fmtMoney, displayPrice, BARE_MONEY, monthlyAmount, moneyText, carrying,
-                blocksFromHtml, titleOf, read, dedupeLines, fixPct };
+                blocksFromHtml, titleOf, read, buildingFrom, residenceFrom, dedupeLines, fixPct };
   global.GVC_LISTING = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

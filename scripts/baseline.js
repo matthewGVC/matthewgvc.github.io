@@ -39,9 +39,30 @@ const showsheet = paper => async page => {
   await page.click('#paperSeg button[data-v="' + paper + '"]');
 };
 
+/* New Jersey and Florida sheets (Slice 4), drawn from a made-up state through
+   window.__render, the way the helper prints a job's sheet. */
+const dataUrl = (file, type) => 'data:' + type + ';base64,' + fs.readFileSync(path.join(SAMPLE, file)).toString('base64');
+const SHEET_BASE = () => ({ unit: '', agentIds: ['john-gasdaska', 'tj-verdiglione'],
+  photos: [{ src: dataUrl('hero.jpg', 'image/jpeg'), fx: 50, fy: 50, name: 'Photo' }], heroIndex: 0, floorplan: dataUrl('floorplan.jpg', 'image/jpeg'),
+  listingUrl: 'https://www.elliman.com/new-jersey/sales/detail/12-sample-lane/1234567' });
+const sheetState = s => async page => {
+  await page.evaluate(st => window.__render(st), Object.assign(SHEET_BASE(), s));
+};
+const NJ_HOUSE = { market: 'nj', ownership: 'house', propertyType: 'Single family', address: '12 Sample Lane', neighborhood: 'Testville',
+  price: '$1,850,000', beds: '4', baths: '3.5', sqft: '2800', lotSize: '0.5 acre', parking: 'Two-car garage', taxesMonthly: '$1,200', commonCharges: '$150',
+  positioning: 'A shingle-style colonial a short walk from the river.',
+  building: { builtYear: '1998', amenities: ['Heated pool', 'Finished lower level', 'Bluestone patio'] },
+  residence: { exposures: 'Southern light', outdoor: 'Wraparound porch', features: ["Chef's kitchen", 'Primary suite with dressing room', 'Wide-plank oak floors'] } };
+const FL_CONDO = { market: 'fl', ownership: 'condo', propertyType: 'Condo', address: '9 Sample Way', unit: '12B', neighborhood: 'Sampleton',
+  price: '$990,000', beds: '2', baths: '2', sqft: '1,350', commonCharges: '$900', taxesMonthly: '$700', assessments: '$75/mo',
+  building: { builtYear: '2016', stories: '18', residences: '120', service: 'Full-time concierge', amenities: ['Oceanfront pool', 'Fitness center'] },
+  residence: { exposures: 'East to the ocean', features: ['Floor-to-ceiling windows', 'Summer kitchen on the terrace'] } };
+
 const VARIANTS = [
   ['showsheet', 'a5', showsheet('a5')],
   ['showsheet', 'letter', showsheet('letter')],
+  ['showsheet', 'nj-house', sheetState(NJ_HOUSE)],
+  ['showsheet', 'fl-condo', sheetState(FL_CONDO)],
   ['brochure', 'letter', click('#paperSeg button[data-v="letter"]')],
   ['brochure', 'half', click('#paperSeg button[data-v="half"]')],
   ['seller-package', 'default', null],

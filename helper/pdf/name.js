@@ -31,13 +31,19 @@ async function savePdf(buf, dir, piece, label, date) {
   for (let tries = 0; tries < 50; tries++) {
     const name = outputName(piece, label, date, fs.readdirSync(dir));
     const file = path.join(dir, name);
+    let fd;
+    try { fd = fs.openSync(file, 'wx'); } catch (e) {
+      if (e.code === 'EEXIST') continue;
+      throw e;
+    }
     try {
-      fs.writeFileSync(file, buf, { flag: 'wx' });
+      fs.writeFileSync(fd, buf);
+      fs.closeSync(fd);
       return file;
     } catch (e) {
-      if (e.code === 'EEXIST') continue;
-      // a half-written file must not sit in the folder looking like the real one
-      try { fs.unlinkSync(file); } catch (ignore) { /* never created */ }
+      // a half-written file this call created must not sit in the folder looking like the real one
+      try { fs.closeSync(fd); } catch (ignore) { /* already closed */ }
+      try { fs.unlinkSync(file); } catch (ignore) { /* gone already */ }
       throw e;
     }
   }

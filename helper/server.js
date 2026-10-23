@@ -12,6 +12,7 @@
 
      node helper/server.js          start (Task Scheduler does this at log on)
      route('POST', '/pdf', fn)      routes: fn(body, cfg) → Promise<{ok, …}>
+     route('POST', '/piece', fn, { maxBody: 40 MB })   a bigger body for one route (default 1 MB)
 
    Errors go back as {ok: false, error: '<plain sentence>'}.
    ============================================================ */
@@ -34,7 +35,9 @@ function healthAsana(cfg, r) {
   return a ? Object.assign({ at: a.at, ok: a.ok }, a.error ? { error: a.error } : {}) : { at: null, ok: null };
 }
 
-function route(method, path, handler) { routes[method + ' ' + path] = handler; }
+function route(method, path, handler, opts) {
+  routes[method + ' ' + path] = { fn: handler, maxBody: (opts && opts.maxBody) || MAX_BODY };
+}
 
 function send(res, status, body, origin) {
   const h = { 'content-type': 'application/json', vary: 'Origin' };
@@ -43,15 +46,22 @@ function send(res, status, body, origin) {
   res.end(JSON.stringify(body));
 }
 
-function readBody(req) {
+/* Over the limit: the rest is read and dropped, so the answer still reaches the browser. */
+function readBody(req, limit) {
+  limit = limit || MAX_BODY;
   return new Promise((resolve, reject) => {
-    let size = 0, text = '';
+    let size = 0, over = false;
+    const chunks = [];
     req.on('data', c => {
       size += c.length;
-      if (size > MAX_BODY) { reject(new Error('That request is too large.')); req.destroy(); return; }
-      text += c;
+      if (over) { if (size > limit + 16 * 1024 * 1024) req.destroy(); return; }   // drained 16 MB past the limit, then cut off
+      if (size > limit) { over = true; chunks.length = 0; return; }
+      chunks.push(c);
     });
+    req.on('error', reject);
     req.on('end', () => {
+      if (over) return reject(Object.assign(new Error('That request is too large.'), { status: 413 }));
+      const text = Buffer.concat(chunks).toString('utf8');
       if (!text) return resolve({});
       try { resolve(JSON.parse(text)); } catch (e) { reject(new Error('That request wasn\'t valid JSON.')); }
     });
@@ -90,11 +100,16 @@ function handle(cfg) {
       return send(res, 403, { ok: false, error: 'This browser isn\'t paired with the helper yet.' }, origin);
     }
 
-    const fn = routes[req.method + ' ' + path];
-    if (!fn) return send(res, 404, { ok: false, error: 'The helper has no ' + path + '.' }, origin);
+    const r = routes[req.method + ' ' + path];
+    if (!r) return send(res, 404, { ok: false, error: 'The helper has no ' + path + '.' }, origin);
 
-    readBody(req)
-      .then(body => fn(body, cfg))
+    if (+req.headers['content-length'] > r.maxBody) {
+      res.setHeader('connection', 'close');
+      send(res, 413, { ok: false, error: 'That request is too large.' }, origin);
+      return req.destroy();
+    }
+    readBody(req, r.maxBody)
+      .then(body => r.fn(body, cfg))
       .then(out => send(res, out && out.status || 200, out, origin))
       .catch(e => send(res, e.status || 500, { ok: false, error: e.message || String(e) }, origin));
   };
@@ -109,7 +124,7 @@ function startServer(cfg) {
   });
 }
 
-module.exports = { startServer, route, healthAsana, VERSION };
+module.exports = { startServer, route, readBody, healthAsana, VERSION };
 
 if (require.main === module) {
   require('./routes.js');

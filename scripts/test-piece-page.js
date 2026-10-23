@@ -337,6 +337,53 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('postcard: standalone has no job mode', await o.page.evaluate(() => !!window.GVC_PIECEMODE), false);
   await o.ctx.close();
 
+  /* ---------- the Seller pitch from a listing and from a pitch ---------- */
+  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Pitch' });
+  s = await pstate(o.page);
+  check('seller on a listing: the bar', /^Seller pitch for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
+  check('seller on a listing: subject facts, comps, market', [s.address, s.beds, s.sqft, s.city, s.comps.length, s.comps[0].address, s.market, s.agents],
+    ['100 Example St, Residence 4A', '3', '1800', 'Testville', 1, '14 Example St', 'nj', ['john-gasdaska']]);
+  check('seller on a listing: photos from the picks', s.photos.length, 3);
+  check('seller: Make the map opens Map Studio for this job', await o.page.$eval('#makeMap', a => a.getAttribute('href')), '../map-studio/?listing=100-example-st-4a');
+  await typeIn(o.page, '[data-f="priceMid"]', '4,350,000');
+  await o.page.click('#btnPieceSave');
+  await o.page.waitForTimeout(500);
+  check('seller on a listing: the price band saves to the job', o.saves.map(x => [x.p_table, x.p_changes.map(c => [c.field, c.new_value, c.note])]),
+    [['properties', [['priceMid', 4350000, 'on the Seller pitch']]]]);
+  check('seller on a listing: the draft is on the listing, paths only', [o.pieces[0] && o.pieces[0].p_table, o.pieces[0] && o.pieces[0].p_tool, noData(o.pieces[0] && o.pieces[0].p_state)], ['properties', 'seller', true]);
+  check('seller: no page errors', o.errors, []);
+  await o.ctx.close();
+
+  const PITCH = '/tools/seller-package/?pitch=12-sample-ln-2026-10-01';
+  const mapDoc = { pitch_id: 'q1', tool: 'pitch-map', version: 1, state: {}, built_from: { v: 2, tool: 'pitch-map', facts: {} },
+    output: { path: 'Marketing/Pitch/Map - 12 Sample Ln - 2026-10-20.png', name: 'Map - 12 Sample Ln - 2026-10-20.png', via: 'helper', modified: '2026-10-20T10:00:00.000Z' } };
+  o = await open(browser, { path: PITCH, documents: [mapDoc], prefix: 'Seller Pitch',
+    helperReply: { ok: true, path: 'Marketing/Pitch/Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', size: 1, modified: '2026-10-22T15:00:00.000Z', url: null, pages: 12, archived: null } });
+  s = await pstate(o.page);
+  check('seller on a pitch: the bar points at the pitch page', [/^Seller pitch for 12 Sample Ln/.test(await text(o.page, '#pieceBar .jb-t')), await o.page.$eval('#pieceBar [data-back]', a => a.getAttribute('href'))],
+    [true, '../../workspace/job/?pitch=12-sample-ln-2026-10-01']);
+  check('seller on a pitch: facts from the pitch, Asana\'s agents flagged', [s.address, s.priceMid, s.comps.length, /Agents not confirmed on the pitch/.test(await text(o.page, '#pieceBar'))], ['12 Sample Ln', '1900000', 1, true]);
+  check('seller on a pitch: photos from its Photos folder only, never loose files', [s.photos.map(p => p.name), await o.page.evaluate(() => window.__driveLog.read.indexOf('img.jpg'))], [['back.jpg', 'front.jpg'], -1]);
+  check('seller on a pitch: the map from the map record\'s file', [!!s.map, s.map && s.map.name], [true, 'Map - 12 Sample Ln - 2026-10-20.png']);
+  await typeIn(o.page, '[data-f="beds"]', '4');
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(800);
+  check('seller on a pitch: a fact saves to the pitch', o.saves.map(x => [x.p_table, x.p_id, x.p_changes.map(c => c.field)]), [['pitches', 'q1', ['beds']]]);
+  check('seller on a pitch: the helper is asked with the pitch', [o.helper[0] && o.helper[0].body.pitchId, o.helper[0] && o.helper[0].body.propertyId, o.helper[0] && o.helper[0].body.tool], ['q1', undefined, 'seller']);
+  const pb = o.pieces[0] || {};
+  check('seller on a pitch: recorded on the pitch with the map it printed', [pb.p_table, pb.p_id, pb.p_built_from && pb.p_built_from.map && pb.p_built_from.map.path, pb.p_built_from && pb.p_built_from.photos.length],
+    ['pitches', 'q1', 'Marketing/Pitch/Map - 12 Sample Ln - 2026-10-20.png', 2]);
+  check('seller on a pitch: no page errors', o.errors, []);
+  await o.ctx.close();
+  // Florida: the New Jersey wording, said
+  const flRows = rowsFor(); flRows.properties[0].market = 'FL';
+  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', rows: flRows });
+  check('seller in Florida: New Jersey wording, said', [(await pstate(o.page)).market, /Florida has no seller deck/.test(await text(o.page, '#pieceBar'))], ['nj', true]);
+  await o.ctx.close();
+  o = await open(browser, { path: '/tools/seller-package/' });
+  check('seller: standalone has no job mode', await o.page.evaluate(() => !!window.GVC_PIECEMODE), false);
+  await o.ctx.close();
+
   await browser.close();
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
   if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }

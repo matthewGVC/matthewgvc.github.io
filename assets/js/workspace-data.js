@@ -35,6 +35,8 @@
                            with the value: "MLS number set to 123456", "Exclusive date set
                            to 27 May", "DE stage moved to In contract". DE's 0 sq ft or
                            0 baths reads as blank (GVC_FACTS.deBlank, Match's M4 rule).
+     postsOf(rows)        → { posted, coming } a job's social posts (asana_tasks kind 'post'),
+                           newest first; "Did Not Post" left out
      fieldLabel(field)    → a field's name in words, from one map: the facts list's labels
                            (job-facts.js FIELDS), the deal dates (DATE_LABEL, asana-map.js
                            datesOf's keys), a few sync fields, else the name humanised
@@ -605,6 +607,15 @@
     return out;
   }
 
+  /* a job's social posts (asana_tasks kind 'post', 💬 Social Media): posted = ticked done in
+     Asana, coming = still open; "Did Not Post" counts as neither. Newest first. */
+  function postsOf(rows) {
+    var on = function (r) { return day(r.completed_at) || r.due_on || ''; };
+    var list = (rows || []).filter(function (r) { return r && ((r.fields || {}).stage || '') !== 'Did Not Post'; })
+      .slice().sort(function (a, b) { return on(a) > on(b) ? -1 : on(a) < on(b) ? 1 : 0; });
+    return { posted: list.filter(function (r) { return !!r.completed_at; }), coming: list.filter(function (r) { return !r.completed_at; }) };
+  }
+
   /* DE's status codes in the words DE's own site uses */
   var DE_WORDS = { Active: 'Active', ActiveUnderContract: 'Contract signed', Pending: 'Pending', Sold: 'Sold', Rented: 'Rented' };
   function deLabel(s) { return s ? DE_WORDS[s] || s : ''; }
@@ -613,5 +624,5 @@
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable,
-    changeTitle: changeTitle, fieldLabel: fieldLabel };
+    changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf };
 });

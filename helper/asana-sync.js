@@ -28,8 +28,10 @@
                  refused for anything that would write the real database
 
      syncNow({ cfg, client, fetch?, fixturesDir?, full?, plan?, kind?, now? })
-       → applyRun's result + { report }      one sync at a time; a second call
-                                             joins the one running
+       → applyRun's result + { report, posts }   one sync at a time; a second call
+                                             joins the one running. posts: the 💬 Social
+                                             Media project counted per job (asana/posts.js),
+                                             { linked, unlinked } or { error }
      planNow({ cfg, client?, fetch?, fixturesDir?, outDir?, date? }) → { plan, files, report }
 
    Needs asanaToken in the helper's config. Without it: "No Asana token yet…",
@@ -45,6 +47,7 @@ const { recordKept } = require('./asana/record.js');
 const { readRun, looseNeedles, namesOne } = require('./asana/read.js');
 const { makePlan, writePlanFiles, readPlanFile } = require('./asana/link.js');
 const { applyRun } = require('./asana/apply.js');
+const { readPosts, applyPosts } = require('./asana/posts.js');
 const { replayFetch } = require('./asana/replay.js');
 
 const REPO = path.join(__dirname, '..');
@@ -171,6 +174,13 @@ async function syncOnce(o) {
     run = await readRun({ asana, cfg, full, since: full ? null : last.started_at, lastOpen, looseNames: looseNeedles(linked) });
   }
   const res = await applyRun({ client, run, now, plan: o.plan, helperVersion: require('./package.json').version });
+  // social posts per job: read whole every run (a few pages); a failure here never fails the sync
+  if (o.kind !== 'people' && run.ok !== false && cfg.asana && cfg.asana.posts) {
+    try {
+      const p = await applyPosts({ client, posts: await readPosts(asana, cfg.asana.posts), now });
+      res.posts = { linked: p.linked, unlinked: p.unlinked.length };
+    } catch (e) { res.posts = { error: e.message }; }
+  }
   return Object.assign(res, { report: summary(run) });
 }
 
@@ -202,6 +212,7 @@ function done(r) {
   if (rep.ok === false) { console.log('Asana sync stopped (nothing changed): ' + rep.aborted); process.exit(1); }
   console.log('Asana sync done: ' + r.changes + ' change(s), ' + r.created + ' new row(s), ' + r.errors.length + ' note(s), ' +
     r.unlinked.length + ' task(s) not linked.');
+  if (r.posts) console.log(r.posts.error ? '  social posts not read: ' + r.posts.error : '  social posts: ' + r.posts.linked + ' on a job, ' + r.posts.unlinked + ' tag(s) naming no job.');
   r.errors.forEach(e => console.log('  ' + e.what + ': ' + e.detail));
   (rep.warnings || []).forEach(w => console.log('  warning: ' + w));
   process.exit(r.errors.some(e => e.what === 'no plan') ? 1 : 0);

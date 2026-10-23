@@ -441,6 +441,19 @@ check('D88 recent changes colour it as off market', W.recentChanges(offChanges, 
   check('overview: no sign judged in New York, no postcard or sign for a rental', jobs.map(j => j.stalePieces.length), [0, 0]);
 }
 
+/* ---------- a job's social posts ---------- */
+{
+  const ps = W.postsOf([
+    { gid: 'a', completed_at: '2026-10-01T15:00:00Z', due_on: '2026-10-01', fields: {} },
+    { gid: 'b', completed_at: null, due_on: '2026-11-02', fields: { stage: 'Production' } },
+    { gid: 'c', completed_at: '2026-10-08T15:00:00Z', due_on: '2026-10-05', fields: {} },
+    { gid: 'd', completed_at: null, due_on: '2026-09-01', fields: { stage: 'Did Not Post' } },
+    { gid: 'e', completed_at: null, due_on: null }]);
+  check('posts: posted newest first (by the day it was done)', ps.posted.map(r => r.gid), ['c', 'a']);
+  check('posts: coming, Did Not Post left out, undated last', ps.coming.map(r => r.gid), ['b', 'e']);
+  check('posts: none', W.postsOf(null), { posted: [], coming: [] });
+}
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

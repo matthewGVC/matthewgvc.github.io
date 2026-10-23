@@ -57,6 +57,13 @@ function rowsFor(over) {
     sync_runs: [{ kind: 'de', started_at: iso(NOW - 3 * 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 3600e3), ok: true }],
     asana_people: [{ gid: 'a1', name: 'Eve Newcomer', section: 'Partners', title: 'Licensed Salesperson', past: false, seen_at: iso(NOW - 3600e3) },
       { gid: 'a0', name: 'Old Person', section: 'Partners', title: 'Licensed Salesperson', past: false, seen_at: iso(NOW - 9 * 864e5) }],
+    // 💬 Social Media posts (0012): two posted, one coming, one that didn't post, one with an unsafe link
+    asana_tasks: [
+      { gid: 's1', kind: 'post', property_id: 'p1', name: 'Carousel: the kitchen', due_on: '2026-10-01', completed_at: '2026-10-01T15:00:00Z', fields: { format: 'Carousel', stage: 'Completed', link: 'https://www.instagram.com/p/abc/' } },
+      { gid: 's2', kind: 'post', property_id: 'p1', name: 'Reel <b>tour</b>', due_on: '2026-10-08', completed_at: '2026-10-08T15:00:00Z', fields: { format: 'Reel', link: 'javascript:alert(1)' } },
+      { gid: 's3', kind: 'post', property_id: 'p1', name: 'Just sold story', due_on: '2026-11-02', completed_at: null, fields: { format: 'Story', stage: 'Production' } },
+      { gid: 's4', kind: 'post', property_id: 'p1', name: 'Dropped idea', due_on: '2026-09-01', completed_at: null, fields: { stage: 'Did Not Post' } }
+    ],
     todos: [{ id: 't1', section: 'Up next', body: 'Florida office signage', done: false, position: 1 },
       { id: 't2', section: 'Waiting on others', body: 'Real headshot for an agent\nOnly a small temporary photo', done: false, position: 2 }]
   };
@@ -280,7 +287,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('jobs: DE status in words', (await text(t.page, '#rows')).includes('Contract signed'), true);
   const firstName = () => t.page.$eval('#rows tr:first-child td.nm a', a => a.textContent);
   const sortState = () => t.page.$$eval('thead th[aria-sort]', ths => ths.map(th => th.querySelector('button').dataset.sort + ':' + th.getAttribute('aria-sort')));
-  check('jobs: every column has a sort button', await t.page.$$eval('thead th button[data-sort]', bs => bs.length), 7);
+  check('jobs: every column has a sort button', await t.page.$$eval('thead th button[data-sort]', bs => bs.length), 8);
+  check('jobs: Posts column: posted, then coming', [await text(t.page, '#rows tr:has(a[href*="100-example"]) td.posts'), await text(t.page, '#rows tr:has(a[href*="20-sample"]) td.posts')], ['21 coming', '0']);
   await t.page.click('thead th button[data-sort="price"]');
   const hi = await firstName();
   check('jobs: price sorts high to low first, arrow shown', [await sortState(), (await text(t.page, 'thead th[aria-sort] button')).includes('↓')], [['price:descending'], true]);
@@ -538,6 +546,9 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('job: current stage', await text(jp, '.step.cur'), '5In contract' + (await jp.$eval('.step.cur .d', e => e.textContent)));
   check('job: DE status in words', (await text(jp, '.facts')).includes('Contract signed'), true);
   check('job: skipped stages dashed', await jp.$$eval('.step.skip', els => els.map(e => e.childNodes[1].textContent.trim())), ['Pitch', 'Prep', 'Accepted offer']);
+  check('job: social posts counted, Did Not Post left out', await text(jp, '#postsCount'), '2 posted · 1 coming');
+  check('job: posts newest first, coming above posted', await jp.$$eval('#postsCard .pn', els => els.map(e => e.textContent)), ['Just sold story', 'Reel <b>tour</b>', 'Carousel: the kitchen']);
+  check('job: a post links only over https', await jp.$$eval('#postsCard .pn a', as => as.map(a => a.getAttribute('href'))), ['https://www.instagram.com/p/abc/']);
   check('job: DE pill, the time on hover', [await text(jp, '#wsFootSync'), (await jp.$eval('#wsFootSync', e => e.title)).startsWith('DE synced ')], ['DE synced', true]);
   check('job: change log', await jp.$$eval('#changeLog li', els => els.length), 3);
   /* the Asana card (read-only) */

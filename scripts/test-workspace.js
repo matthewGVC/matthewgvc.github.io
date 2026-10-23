@@ -115,7 +115,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   /* signed out: sign-in only, nothing else */
   let t = await open(browser, { signedIn: false });
   check('signed out: gate shown', [await visible(t.page, '#gate'), await visible(t.page, '#board')], [true, false]);
-  check('signed out: footer says why there is no sync status', await text(t.page, '#wsFootSync'), 'Sign in to see the DE sync');
+  check('signed out: footer says why there is no sync status', await t.page.$eval('#wsFootSync', e => e.title), 'Sign in to see the DE sync');
   await t.page.click('#gateBtn');
   check('signed out: sign-in dialog', await visible(t.page, 'dialog.gvc-signin'), true);
   await t.ctx.close();
@@ -176,7 +176,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
     [['Team tools', './../#tools'], ['Listing rules', './../listing-rules/'], ['Tasks', './#tasks']]);
   check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
-  check('footer: Asana beside DE', (await text(p, '#wsFootAsana')).startsWith('Asana last synced'), true);
+  check('top bar: Asana pill beside DE, the time on hover', [await text(p, '#wsFootAsana'), (await p.$eval('#wsFootAsana', e => e.title)).startsWith('Asana last synced'), await p.$eval('#wsFootAsana', e => e.className)], ['Asana synced', true, 'pill-ok']);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
   check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 errors'), true);
   check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 errors', 'match/']);
@@ -538,7 +538,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('job: current stage', await text(jp, '.step.cur'), '5In contract' + (await jp.$eval('.step.cur .d', e => e.textContent)));
   check('job: DE status in words', (await text(jp, '.facts')).includes('Contract signed'), true);
   check('job: skipped stages dashed', await jp.$$eval('.step.skip', els => els.map(e => e.childNodes[1].textContent.trim())), ['Pitch', 'Prep', 'Accepted offer']);
-  check('job: footer shows the sync', (await text(jp, '#wsFootSync')).startsWith('DE synced'), true);
+  check('job: DE pill, the time on hover', [await text(jp, '#wsFootSync'), (await jp.$eval('#wsFootSync', e => e.title)).startsWith('DE synced ')], ['DE synced', true]);
   check('job: change log', await jp.$$eval('#changeLog li', els => els.length), 3);
   /* the Asana card (read-only) */
   check('job: Asana card stage', (await text(jp, '#asanaCard')).includes('In contract'), true);

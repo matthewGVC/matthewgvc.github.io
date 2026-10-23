@@ -9,8 +9,9 @@
                                 noDrive: the page never needs Drive (Match, Status):
                                 no Drive pill, no read-only banner
      shell.setSync(health)      health from GVC_WS.syncHealth(); updates the
-                                sync button's title and the footer
-     shell.setAsana(health)     the same for GVC_WS.asanaHealth() (footer)
+                                sync button's title and the DE pill (its hover
+                                says when it last synced)
+     shell.setAsana(health)     the same for GVC_WS.asanaHealth() (Asana pill)
      GVC_SHELL.syncWords(r)     POST /sync's { ok, asana, de } in one plain line,
                                 each part read on its own (ok is false whenever
                                 Asana has no token, even when DE synced)
@@ -101,8 +102,9 @@
     top.innerHTML = '<a class="brand" href="' + root + '"><img src="' + root + '../assets/logos/monogram.svg" alt="">GVC Workspace</a>' +
       '<nav class="nav" aria-label="Main"><a href="' + root + '"' + cur('overview') + '>Overview</a><a href="' + root + 'jobs/"' + cur('resell') + '>Resell</a>' +
       '<a href="' + root + 'new-dev/"' + cur('newdev') + '>New Dev</a><a href="' + root + 'match/"' + cur('match') + '>Errors</a></nav>' +
-      // the DE and Asana sync lines sit beside the Drive pill (Matt, 10-23); ids kept from the footer days
-      '<div class="top-r"><span class="top-sync"><span class="ok" id="wsFootSync">DE sync status loading</span><span class="ok" id="wsFootAsana">Asana sync status loading</span></span>' +
+      // the DE and Asana sync pills sit beside the Drive pill, the same bubble, the last sync on hover (Matt, 10-23);
+      // ids kept from the footer days
+      '<div class="top-r"><span class="top-sync"><span class="pill-ok off" id="wsFootSync" title="DE sync status loading">DE…</span><span class="pill-ok off" id="wsFootAsana" title="Asana sync status loading">Asana…</span></span>' +
       '<button class="pill-ok off" type="button" id="wsDrive">Drive…</button>' +
       '<button class="ibtn" type="button" id="wsSync" title="Sync now: Asana, then DE">' + icon('sync') + '<span class="sr">Sync now: Asana, then DE</span></button>' +
       '<button class="ibtn" type="button" id="wsSearchBtn" title="Search jobs">' + icon('search') + '<span class="sr">Search jobs</span></button>' +
@@ -179,15 +181,18 @@
     shell.setSync = function (h) {
       syncText = h.text;
       if (!syncBtn.disabled && !shell.lastSync) syncBtn.title = 'Sync now: Asana, then DE. ' + h.text;   // a sync's result stays readable
-      var f = doc.getElementById('wsFootSync');
-      f.textContent = h.text; f.title = h.text;
-      f.className = h.state === 'ok' ? 'ok' : '';
+      paintSync(doc.getElementById('wsFootSync'), 'DE', h);
     };
-    shell.setAsana = function (h) {
-      var f = doc.getElementById('wsFootAsana');
-      f.textContent = h.text; f.title = h.text;
-      f.className = h.state === 'ok' ? 'ok' : '';
-    };
+    shell.setAsana = function (h) { paintSync(doc.getElementById('wsFootAsana'), 'Asana', h); };
+    /* a short label in the pill, the whole line (when it last ran, or why not) on hover */
+    var SYNC_LABEL = { ok: [' synced', ''], amber: [' sync late', 'warn'], red: [' sync failed', 'warn'], never: [' not synced', 'off'] };
+    function paintSync(el, src, h) {
+      el.hidden = !h.text;
+      var l = SYNC_LABEL[h.state] || SYNC_LABEL.never;
+      el.textContent = src + l[0];
+      el.className = 'pill-ok' + (l[1] ? ' ' + l[1] : '');
+      el.title = h.text + (h.why ? '. ' + h.why : '');
+    }
 
     /* ---------- search ---------- */
     doc.getElementById('wsSearchBtn').addEventListener('click', function () {

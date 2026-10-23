@@ -188,12 +188,22 @@ check('open-house: price typed goes to the job', J.factEdits('open-house', Objec
 check('open-house: dates typed are the flyer\'s own', J.factEdits('open-house', Object.assign({}, of.state, { dates: [] }), ohRow).edits, []);
 const sf = J.fill('signage', { kind: 'directional', agents: [] }, ohRow, {}).state;
 check('signage fill: the For Sale sign, two agents, the listing QR, the market', [sf.kind, sf.agents, sf.qrUrl, sf.market], ['for-sale', ['a', 'b'], 'https://www.elliman.com/x/2', 'nj']);
-check('signage fill: no listing link keeps the typed QR', J.fill('signage', { qrUrl: 'https://www.gvcrealestateteam.com' }, job({}), {}).state.qrUrl, 'https://www.gvcrealestateteam.com');
 check('signage: nothing goes back to the job', J.factEdits('signage', sf, ohRow), { edits: [], errors: [] });
 const sbf = J.builtFrom('signage', {}, ohRow, {});
 check('signage builtFrom: agents and link', [sbf.tool, sbf.facts, sbf.agents, sbf.listingUrl], ['signage', {}, ['a', 'b'], 'https://www.elliman.com/x/2']);
 check('open-house builtFrom keeps the link and the open houses', [J.builtFrom('open-house', {}, ohRow, {}).listingUrl, J.builtFrom('open-house', {}, ohRow, {}).facts.openHouses.length], ['https://www.elliman.com/x/2', 2]);
 check('photosFor: the flyer prints three, the sign none', [J.photosFor('open-house', job({ row: { photo_order: ['1.jpg', '2.jpg', '3.jpg', '4.jpg'] } }), null).length, J.photosFor('signage', job({ row: { photo_order: ['1.jpg'] } }), null)], [3, []]);
+
+// review fixes (Slice 6 Task 1)
+const ohAt = list => job({ core: { openHouses: list } });
+check('a garbled end time falls back to the start', J.upcomingOpenHouses(ohAt([{ startTime: '2099-01-01T10:00:00', endTime: 'TBD' }]), 0).length, 1);
+// DE's times are New York wall-clock times: "now" is read in New York, whatever this computer's zone
+const nyNow = Date.parse('2026-10-25T21:30:00Z');   // 5:30 pm in New York (EDT)
+check('an open house that ended at 5 pm New York time is past at 5:30 pm New York time', J.upcomingOpenHouses(ohAt([{ startTime: '2026-10-25T15:00:00', endTime: '2026-10-25T17:00:00' }]), nyNow), []);
+check('one ending at 6 pm New York time is still on', J.upcomingOpenHouses(ohAt([{ startTime: '2026-10-25T15:00:00', endTime: '2026-10-25T18:00:00' }]), nyNow).length, 1);
+check('a date-only end runs to the end of that day', J.upcomingOpenHouses(ohAt([{ startTime: '2026-10-25', endTime: '2026-10-25' }]), nyNow).length, 1);
+check('typed dates survive a first build when DE has none', J.fill('open-house', { dates: [{ day: 'Sunday 2 to 4' }] }, job({}), {}).state.dates, [{ day: 'Sunday 2 to 4' }]);
+check('signage: the job with no listing link prints the team site (blank), never an old link', J.fill('signage', { qrUrl: 'https://old.example/x' }, job({}), {}).state.qrUrl, '');
 
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');

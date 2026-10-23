@@ -86,15 +86,31 @@
   }
 
   /* Slice 6: DE's open houses still to come, oldest first: [{ type, start, end }] (DE's local times) */
+  /* DE's open house times are New York wall-clock times with no zone ("2026-10-25T15:00:00"):
+     they are compared as text with "now" written the same way in New York, so a computer in
+     another zone never moves them. A date alone ("2026-10-25") runs to the end of that day. */
+  var WALL = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/;
+  function wall(s, endOfDay) {
+    if (typeof s !== 'string' || !WALL.test(s)) return null;
+    if (s.length === 10) return s + (endOfDay ? 'T23:59:59' : 'T00:00:00');
+    return s.length === 16 ? s + ':00' : s;
+  }
+  function nyNow(t) {
+    var parts = {};
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(t)).forEach(function (p) { parts[p.type] = p.value; });
+      return parts.year + '-' + parts.month + '-' + parts.day + 'T' + parts.hour + ':' + parts.minute + ':' + parts.second;
+    } catch (e) { return new Date(t).toISOString().slice(0, 19); }
+  }
   function upcomingOpenHouses(row, now) {
     var list = core(row).openHouses;
     if (!Array.isArray(list) || !list.length) list = (row && row.de && row.de.openHouses) || [];
-    var t = typeof now === 'number' ? now : Date.now();
-    return (Array.isArray(list) ? list : []).filter(function (o) {
-      return o && typeof o === 'object' && typeof o.startTime === 'string' && !isNaN(Date.parse(o.startTime));
-    }).filter(function (o) { return Date.parse(o.endTime || o.startTime) >= t; })
-      .map(function (o) { return { type: o.type === 'Broker' ? 'Broker' : 'Public', start: o.startTime, end: typeof o.endTime === 'string' ? o.endTime : null }; })
-      .sort(function (a, b) { return Date.parse(a.start) - Date.parse(b.start); });
+    var at = nyNow(typeof now === 'number' ? now : Date.now());
+    return (Array.isArray(list) ? list : []).filter(function (o) { return o && typeof o === 'object' && wall(o.startTime); })
+      .filter(function (o) { return (wall(o.endTime, true) || wall(o.startTime, true)) >= at; })
+      .map(function (o) { return { type: o.type === 'Broker' ? 'Broker' : 'Public', start: o.startTime, end: wall(o.endTime) ? o.endTime : null }; })
+      .sort(function (a, b) { return wall(a.start) < wall(b.start) ? -1 : wall(a.start) > wall(b.start) ? 1 : 0; });
   }
 
   function FIELDS(tool, row) {
@@ -187,14 +203,15 @@
       // the dates: DE's upcoming open houses, redone when they changed since the last build
       var oh = value(tool, row, 'openHouses') || [];
       var pf = ctx && ctx.previous && ctx.previous.facts;
-      if (!pf || JSON.stringify(pf.openHouses || null) !== JSON.stringify(oh.length ? oh : null)) {
+      // (a first build with no open houses on DE keeps the dates typed on the flyer)
+      if ((pf || oh.length) && JSON.stringify((pf && pf.openHouses) || null) !== JSON.stringify(oh.length ? oh : null)) {
         s.dates = oh.slice(0, 3).map(function (o) { return { start: o.start, end: o.end, broker: o.type === 'Broker' }; });
         redone.push('dates');
       }
     } else if (tool === 'signage') {
       s.kind = 'for-sale';
-      var q = S.listingUrlOf(row);
-      if (q) s.qrUrl = q;
+      // the job's DE listing, else blank (the sign prints the team's site): never an old link
+      s.qrUrl = S.listingUrlOf(row) || '';
       s.market = S.marketKey(row.market);
       if (a.ids.length) s.agents = a.ids;
     }

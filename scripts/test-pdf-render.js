@@ -257,6 +257,29 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
     [['for-sale', 'nj', 'right'], 0]);
   check('sign: a QR that is not a web link points at the team site', await page.evaluate(() => !!document.querySelector('.sg-qr svg')), true);
 
+  // review fixes (Slice 6 Tasks 2-3)
+  await page.goto(BASE + '/tools/signage/', { waitUntil: 'networkidle' });
+  await page.evaluate(s => window.__render(s), { kind: 'directional', arrow: 'left' });
+  check('sign: the left arrow really points left', await page.evaluate(() => getComputedStyle(document.querySelector('.sg-arrow svg')).transform), 'matrix(-1, 0, 0, 1, 0, 0)');
+  await page.evaluate(s => window.__render(s), { kind: 'for-sale', agents: ['tj-verdiglione'], qrUrl: 'https://example.com/' + 'x'.repeat(3000) });
+  check('sign: a link too long for a QR falls back to the team site and says so', [await page.evaluate(() => !!document.querySelector('.sg-qr svg')),
+    /too long for a QR/.test(await page.evaluate(() => document.getElementById('warnGeneral').textContent))], [true, true]);
+  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
+  await page.evaluate(s => window.__render(s), Object.assign({}, FLY, { blurb: 'A long description that runs on. '.repeat(40) }));
+  check('flyer: a description too long for the page is warned about', /description is longer/.test(await page.evaluate(() => document.getElementById('warnGeneral').textContent)), true);
+  check('flyer: and never runs under the foot', await page.evaluate(() => { const b = document.querySelector('.oh-body'); return getComputedStyle(b).overflow; }), 'hidden');
+  await page.evaluate(s => window.__render(s), Object.assign({}, FLY, { dates: [{ day: 'Broker' }] }));
+  check('flyer: a line that is just "Broker" still prints as a broker open house', await page.evaluate(() => [...document.querySelectorAll('.oh-date')].map(d => d.textContent)), ['Broker open house']);
+  await page.evaluate(() => localStorage.setItem('gvc.open-house.state', '{"agents":"x","dates":"x","photos":"x"}'));
+  const errsBefore = errors.length;
+  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
+  check('flyer: a damaged saved state never breaks the page', errors.length, errsBefore);
+  await page.evaluate(() => localStorage.removeItem('gvc.open-house.state'));
+  await page.route('**/douglas-elliman.svg', r => r.abort());
+  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
+  check('flyer: no Douglas Elliman wordmark means no drawing (the helper reports it)', await page.evaluate(s => window.__render(s).then(() => 'drawn', e => 'refused'), FLY), 'refused');
+  await page.unroute('**/douglas-elliman.svg');
+
   check('no page errors', errors, []);
   await browser.close();
 

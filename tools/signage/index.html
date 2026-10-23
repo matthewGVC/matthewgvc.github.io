@@ -75,7 +75,7 @@ body.dir{--pw:24.4in;--ph:18.4in;}
 .dr .sg-big{position:absolute;left:1.15in;top:.95in;font:900 275pt/.86 var(--sans);color:#fff;letter-spacing:-.005em;}
 .dr .sg-arrow{position:absolute;left:1.15in;right:1.15in;top:10.95in;height:2.8in;}
 .dr .sg-arrow svg{display:block;width:100%;height:100%;}
-.dr.left .arrow svg{transform:scaleX(-1);}
+.dr.left .sg-arrow svg{transform:scaleX(-1);}
 .dr .lk{position:absolute;left:1.15in;bottom:1.1in;width:10.4in;height:auto;color:var(--ow);}
 .dr .sg-right{position:absolute;right:1.15in;bottom:1.05in;width:10.5in;text-align:center;}
 .dr .de{display:block;width:10.3in;margin:0 auto;color:#fff;}
@@ -184,7 +184,7 @@ const ARROW = '<svg viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidde
   '<rect x="0" y="48" width="810" height="24" rx="12" style="fill:var(--sky2)"/>' +
   '<path d="M770 4h52l52 56-52 56h-52l52-56z" style="fill:var(--sky2)"/>' +
   '<path d="M832 4h52l52 56-52 56h-52l52-56z" style="fill:var(--sky)"/>' +
-  '<path d="M894 4h52l52 56-52 56h-52l52-56z" fill="#fff"/></svg>';
+  '<path d="M894 4h52l52 56-52 56h-52l52-56z" style="fill:var(--ow)"/></svg>';
 
 let DE = '';
 const DE_READY = fetch('../../assets/logos/sheet/douglas-elliman.svg').then(r => r.ok ? r.text() : '').catch(() => '')
@@ -199,7 +199,8 @@ const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
 const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* private window or full */ } };
 
 const DEFAULTS = { kind: 'for-sale', arrow: 'right', market: 'nj', agents: [], qrUrl: '' };
-const state = Object.assign(structuredClone(DEFAULTS), JOB_MODE ? {} : load());
+// a saved choice is cut to what the sign knows, so a damaged one never breaks the page
+const state = JOB_MODE ? structuredClone(DEFAULTS) : sanitize(load());
 function persist() { if (!JOB_MODE) save(Object.assign({}, state)); }
 
 const SIZE = { 'for-sale': [24, 30], directional: [24.4, 18.4] };
@@ -220,13 +221,20 @@ function agentBlock(a) {
   return '<div class="sg-ag"><div class="sg-nm">' + esc(a.name) + '</div><div class="sg-tt">' + esc(a.title) + '</div>' +
     (phone ? '<div class="sg-ph">M ' + esc(phone) + '</div>' : '') + (String(a.email || '').trim() ? '<div class="sg-em">' + esc(a.email.trim()) + '</div>' : '') + '</div>';
 }
+/* the QR for a link: the team's site when the link is blank, not a web link, or too long for a QR */
+let qrTooLong = false;
+function qrFor(raw) {
+  const link = /^https?:\/\//i.test(String(raw || '').trim()) ? String(raw).trim() : TEAM_SITE;
+  const svg = window.GVC_QR_URL(link);
+  qrTooLong = !svg && link !== TEAM_SITE;
+  return svg || window.GVC_QR_URL(TEAM_SITE);
+}
 function forSale() {
   const agents = state.agents.map(id => window.GVC_AGENT(id)).filter(Boolean).slice(0, 2);
-  const link = /^https?:\/\//i.test(String(state.qrUrl || '').trim()) ? state.qrUrl.trim() : TEAM_SITE;
   const office = OFFICE[state.market];
   return '<div class="sg fs' + (agents.length > 1 ? ' two' : '') + '">' +
     '<img class="sg-mono" src="' + MONO + '" alt="">' + P.LOCKUP +
-    '<div class="sg-qr">' + window.GVC_QR_URL(link) + '</div><div class="sg-rule"></div>' +
+    '<div class="sg-qr">' + qrFor(state.qrUrl) + '</div><div class="sg-rule"></div>' +
     '<div class="sg-agents">' + (agents.length ? agents.map(agentBlock).join('') : '<span class="sg-stamp">Pick an agent</span>') + '</div>' +
     deMark() +
     '<div class="sg-foot">' + (office ? '<span>O ' + esc(office) + '</span><span class="sg-bar">|</span>' : '') +
@@ -250,6 +258,7 @@ function checkWarnings() {
     if (over) msgs.push('A name or email is wider than the sign. Pick one agent, or ask for a shorter line.');
     if (!state.agents.length) msgs.push('Pick an agent for the sign.');
     if (!String(state.qrUrl || '').trim()) msgs.push('The QR points at the team\'s site. Paste the listing link to point it at the listing.');
+    if (qrTooLong) msgs.push('That link is too long for a QR, so the QR points at the team\'s site. Use the listing\'s short link.');
   }
   if (!OFFICE[state.market]) msgs.push('No office number on file for this market: the sign prints the website alone.');
   const box = $('#warnGeneral');
@@ -332,6 +341,7 @@ async function drawGiven(s) {
   const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
   for (let i = 0; i < 100 && !builder; i++) await new Promise(r => setTimeout(r, 50));
   await capped(DE_READY, 10000);
+  if (!DE) throw new Error('The Douglas Elliman wordmark did not load, so the sign was not drawn.');
   window.__piece.set(s);
   if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
   await frame(); await frame();

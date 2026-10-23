@@ -54,9 +54,9 @@
 .oh-hero{flex:none;height:3in;}
 
 /* the property */
-.oh-body{flex:1;min-height:0;display:grid;grid-template-columns:1fr 2.6in;gap:.3in;padding:.28in .55in .22in;}
+.oh-body{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:1fr 2.6in;gap:.3in;padding:.28in .55in .22in;}
 .oh-addr{font:800 19pt/1.12 var(--sans);}
-.oh-town{margin-top:.04in;font:800 8.6pt/1.3 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--sky2);}
+.oh-town{margin-top:.04in;font:800 8.6pt/1.3 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-ink-soft);}
 .oh-price{margin-top:.14in;font:800 22pt/1 var(--sans);}
 .oh-price small{display:block;margin-top:.04in;font:800 7.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-ink-soft);}
 .oh-strip{margin-top:.14in;display:flex;gap:.26in;padding-top:.12in;border-top:1pt solid var(--ui-rule);}
@@ -245,7 +245,8 @@ const DEFAULTS = {
   address: '', unit: '', town: '', price: '', priceLabel: '', beds: '', baths: '', sqft: '', blurb: '',
   dates: [], listingUrl: '', market: 'nj', agents: []
 };
-const state = Object.assign(structuredClone(DEFAULTS), JOB_MODE ? {} : load(), { photos: [] });   // photos: [{url, name, x, y, w}]
+// photos: [{url, name, x, y, w}]; saved words are cut to what the flyer knows, so a damaged save never breaks the page
+const state = JOB_MODE ? Object.assign(structuredClone(DEFAULTS), { photos: [] }) : Object.assign(sanitize(load()), { photos: [] });
 
 function persist() {
   if (JOB_MODE) return;
@@ -263,7 +264,7 @@ function hourOf(d) {
 function dateLine(o) {
   if (o && typeof o.day === 'string') {
     const t = o.day.trim(), broker = /^broker\b/i.test(t);
-    return { broker, text: broker ? t.replace(/^broker\b[\s:,-]*/i, '') : t };
+    return { broker, text: broker ? t.replace(/^broker\b[\s:,-]*/i, '') : t, typed: true };
   }
   // DE's times are New York wall clock with no zone: read the digits, never shift them
   const wall = v => { const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(String(v || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null; };
@@ -275,12 +276,14 @@ function dateLine(o) {
   return { broker: !!(o && o.broker), text: day + ' · ' + time };
 }
 function datesHtml() {
-  const lines = (state.dates || []).map(dateLine).filter(x => x && x.text).slice(0, 3);
+  // a typed line that is only "Broker" still prints (as a broker open house with no date)
+  const lines = (state.dates || []).map(dateLine).filter(x => x && (x.text || x.broker)).slice(0, 3);
   if (!lines.length) return '<div class="oh-date appt">By appointment</div>';
   return lines.map(l => '<div class="oh-date">' + (l.broker ? '<span class="k">Broker open house</span>' : '') + esc(l.text) + '</div>').join('');
 }
 
 /* ---------- the page ---------- */
+let qrTooLong = false;
 function photoSlot(i, cls) {
   const ph = state.photos[i];
   if (!ph) return '<div class="oh-ph empty ' + cls + '" data-slot="' + i + '"><span class="oh-stamp">Photo needed</span></div>';
@@ -302,6 +305,9 @@ function page() {
   const strip = stat(state.beds, 'Bedrooms') + stat(state.baths, 'Bathrooms') + stat(state.sqft, 'Sq Ft');
   const street = [state.address, state.unit].map(v => String(v || '').trim()).filter(Boolean).join(', ');
   const link = /^https?:\/\//i.test(String(state.listingUrl || '').trim()) ? state.listingUrl.trim() : TEAM_SITE;
+  qrTooLong = false;
+  let qr = window.GVC_QR_URL(link);
+  if (!qr && link !== TEAM_SITE) { qrTooLong = true; qr = window.GVC_QR_URL(TEAM_SITE); }
   return '<div class="oh">' +
     '<div class="oh-band"><img class="mono" src="' + MONO + '" alt=""><div class="oh-title">OPEN<br>HOUSE</div><div class="oh-dates">' + datesHtml() + '</div></div>' +
     photoSlot(0, 'oh-hero') +
@@ -315,7 +321,7 @@ function page() {
     '<div class="oh-foot"><div>' +
       '<div class="oh-agents">' + (agents.length ? agents.map(agentBlock).join('') : '<span class="oh-stamp">Pick an agent</span>') + '</div>' +
       '<div class="oh-brand">' + P.LOCKUP + '<span class="rule"></span>' + deMark() + '</div>' +
-    '</div><div class="oh-qr">' + window.GVC_QR_URL(link) + '<div class="cap">Scan for details</div></div>' +
+    '</div><div class="oh-qr">' + qr + '<div class="cap">Scan for details</div></div>' +
     '<div class="oh-legal">' + esc(window.GVC_LEGAL.listing(state.market)) + '</div></div>' +
   '</div>';
 }
@@ -323,9 +329,13 @@ function page() {
 /* ---------- warnings ---------- */
 function checkWarnings() {
   const msgs = [];
-  const blurb = document.querySelector('.oh-blurb');
-  if (blurb && P.overflowing(blurb)) msgs.push('The description is longer than the flyer holds. Shorten it, or it will be cut off.');
+  // the text column against its box: the box clips, so a column taller than it is cut off
+  const box0 = document.querySelector('.oh-body'), col = box0 && box0.firstElementChild;
+  if (col && col.scrollHeight > box0.clientHeight - parseFloat(getComputedStyle(box0).paddingTop) - parseFloat(getComputedStyle(box0).paddingBottom) + 1) {
+    msgs.push('The description is longer than the flyer holds. Shorten it, or it will be cut off.');
+  }
   if (state.photos.length < 3) msgs.push('The flyer takes three photos: ' + state.photos.length + ' so far.');
+  if (qrTooLong) msgs.push('That link is too long for a QR, so the QR points at the team\'s site. Use the listing\'s short link.');
   state.photos.forEach((ph, i) => { if (ph.w && ph.w < 1600) msgs.push('Photo ' + (i + 1) + ' is only ' + ph.w + ' px wide and may print soft.'); });
   const box = $('#warnGeneral');
   box.innerHTML = msgs.map(m => '<div class="warn-item">' + esc(m) + '</div>').join('');
@@ -448,10 +458,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* what a job mode works through (Slice 6): the flyer's state, drawing and photo intake */
-/* A flyer from outside (a job, or the helper's drawing), cut to what the flyer knows: words as
-   words, three pictures at most, inline only (a whole base64 data URL). */
-const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
+/* A flyer from outside (a job, the helper's drawing, this browser's saved words), cut to what the
+   flyer knows: words as words, three pictures at most, inline only (a whole base64 data URL). */
 function sanitize(s) {
+  const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
   const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
   Object.keys(given).forEach(k => {
     if (!(k in base) || given[k] == null) return;
@@ -472,7 +482,7 @@ function sanitize(s) {
 }
 window.__piece = {
   get state() { return state; },
-  JOB_MODE, INLINE, sanitize, ready: () => !!builder, MAX_EDGE,
+  JOB_MODE, sanitize, ready: () => !!builder, MAX_EDGE,
   /* replace the whole flyer (sanitized), then draw; nothing is saved in this browser */
   set(s) {
     if (!builder) throw new Error('The flyer page has not finished loading.');
@@ -503,6 +513,7 @@ async function drawGiven(s) {
   const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
   for (let i = 0; i < 100 && !builder; i++) await new Promise(r => setTimeout(r, 50));
   await capped(DE_READY, 10000);
+  if (!DE) throw new Error('The Douglas Elliman wordmark did not load, so the flyer was not drawn.');
   window.__piece.set(s);
   if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
   await frame(); await frame();

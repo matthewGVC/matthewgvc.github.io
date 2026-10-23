@@ -451,6 +451,55 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
     [['12', 'Sample Ln', '', 'Testville, NJ'], ['7', 'Elm St', '', 'Red Bank, NJ']]);
   await o.ctx.close();
 
+  /* ---------- Slice 6: the Open House flyer and the For Sale sign from a job ---------- */
+  const ohRows = () => { const r = rowsFor(); r.properties[0].core.openHouses = [{ type: 'Public', startTime: '2099-05-03T13:00:00', endTime: '2099-05-03T15:00:00' }];
+    r.properties[0].core.shortDescription = 'Short words.'; return r; };
+  const OHP = '/tools/open-house/?listing=100-example-st-4a';
+  o = await open(browser, { path: OHP, rows: ohRows(), prefix: 'Open House Flyer' });
+  s = await pstate(o.page);
+  check('flyer from a job: the bar', /^Open house flyer for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
+  check('flyer from a job: facts, DE dates, agents, link, market', [s.address, s.price, s.priceLabel, s.beds, s.sqft, s.blurb, s.dates.map(d => d.start), s.agents, s.listingUrl, s.market],
+    ['100 Example St', '4600000', 'List Price', '3', '1800', 'Short words.', ['2099-05-03T13:00:00'], ['john-gasdaska'], 'https://www.elliman.com/new-jersey/100-example-st/9001', 'nj']);
+  check('flyer from a job: three photos, hero first', [s.photos.length, (await o.page.evaluate(() => window.__driveLog.read.slice(0, 3)))], [3, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/03.jpg']]);
+  check('flyer from a job: the dates on the page', await text(o.page, '.oh-date'), 'Sunday, May 3 · 1:00 PM to 3:00 PM');
+  check('flyer from a job: address, link and market are the job\'s', await o.page.evaluate(() => [document.querySelector('#fAddress').readOnly, document.querySelector('#fLink').readOnly, document.querySelector('#marketPick button').disabled]), [true, true, true]);
+  await typeIn(o.page, '#fDates', 'Saturday 11 to 1');
+  await o.page.click('#btnPieceSave');
+  await o.page.waitForTimeout(500);
+  check('flyer: typed dates stay the flyer\'s own, never the job\'s', [o.saves.length, (o.pieces[0] || {}).p_tool, ((o.pieces[0] || {}).p_state || {}).dates], [0, 'open-house', [{ day: 'Saturday 11 to 1' }]]);
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(800);
+  const hf = o.helper[0] || { body: {} };
+  check('flyer: Save PDF asks the helper for the flyer, photos inline', [hf.body.tool, hf.body.propertyId, hf.body.state && hf.body.state.photos.length, /data:image/.test(JSON.stringify(hf.body.state || {}))], ['open-house', 'p1', 3, true]);
+  const bfo = ((o.pieces[1] || {}).p_built_from) || { facts: {}, photos: [] };
+  check('flyer: built_from has the open houses, link and photos printed', [bfo.tool, (bfo.facts.openHouses || []).length, bfo.listingUrl, bfo.photos.map(p => p.path)],
+    ['open-house', 1, 'https://www.elliman.com/new-jersey/100-example-st/9001', ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/03.jpg']]);
+  check('flyer: no page errors', o.errors, []);
+  await o.ctx.close();
+  o = await open(browser, { path: OHP, prefix: 'Open House Flyer' });
+  check('flyer: no DE open house is said, By appointment prints', [/no upcoming open house/.test(await text(o.page, '#pieceBar')), await text(o.page, '.oh-date')], [true, 'By appointment']);
+  await o.ctx.close();
+
+  const SGP = '/tools/signage/?listing=100-example-st-4a';
+  o = await open(browser, { path: SGP, prefix: 'For Sale Sign',
+    helperReply: { ok: true, path: 'Marketing/Signage/For Sale Sign - 100 Example St 4A - 2026-10-22.pdf', name: 'For Sale Sign - 100 Example St 4A - 2026-10-22.pdf', size: 9, modified: '2026-10-22T15:00:00.000Z', url: null, pages: 1, archived: null } });
+  s = await pstate(o.page);
+  check('sign from a job: the bar', /^For Sale sign for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
+  check('sign from a job: For Sale, the job\'s agents, the DE link, NJ', [s.kind, s.agents, s.qrUrl, s.market], ['for-sale', ['john-gasdaska'], 'https://www.elliman.com/new-jersey/100-example-st/9001', 'nj']);
+  check('sign from a job: kind, market and QR are the job\'s', await o.page.evaluate(() => [document.querySelector('#kindPick button').disabled, document.querySelector('#fQr').readOnly]), [true, true]);
+  check('sign from a job: no photos read', await o.page.evaluate(() => window.__driveLog.read.length), 0);
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(700);
+  const hs = o.helper[0] || { body: {} };
+  check('sign: Save PDF asks for the sign', [hs.body.tool, hs.body.propertyId, hs.body.state && hs.body.state.kind], ['signage', 'p1', 'for-sale']);
+  const bfs = ((o.pieces[0] || {}).p_built_from) || {};
+  check('sign: built_from holds the agents and link', [bfs.tool, bfs.agents, bfs.listingUrl, ((o.pieces[0] || {}).p_output || {}).name], ['signage', ['john-gasdaska'], 'https://www.elliman.com/new-jersey/100-example-st/9001', 'For Sale Sign - 100 Example St 4A - 2026-10-22.pdf']);
+  check('sign: no page errors', o.errors, []);
+  await o.ctx.close();
+  o = await open(browser, { path: '/tools/signage/' });
+  check('sign: standalone has no job mode', await o.page.evaluate(() => !!window.GVC_PIECEMODE), false);
+  await o.ctx.close();
+
   await browser.close();
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
   if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }

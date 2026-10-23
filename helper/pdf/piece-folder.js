@@ -2,10 +2,13 @@
    PIECE FOLDER — where a job's showsheet goes (spec S17).
 
      showsheetDir(jobAbs) → { dir, made }
+     pieceDir(jobAbs, spec, ownerTable) → { dir, made }     (Slice 5, any piece in pieces.js)
 
    A folder named Showsheet, Showsheets or Show Sheet (any case) inside the
    job's Marketing\ first, then at the job folder's top. None → the helper
    makes Marketing\Showsheet\ (made: true). Nothing is renamed or moved.
+   Other pieces the same way with their own folder names; a piece a pitch
+   owns goes in the pitch's own folder (made: false).
    ============================================================ */
 'use strict';
 
@@ -22,18 +25,21 @@ function childDir(parent, rx) {
   return hit ? path.join(parent, hit) : null;
 }
 
-function showsheetDir(jobAbs) {
+function pieceDir(jobAbs, spec, ownerTable) {
+  if (ownerTable === 'pitches') return { dir: jobAbs, made: false };
   const marketing = childDir(jobAbs, /^marketing$/i);
   // a Marketing junction or link must not carry a new folder outside the job
   const real = p => fs.realpathSync(p).toLowerCase();
   if (marketing && real(marketing).indexOf(real(jobAbs) + path.sep) !== 0) {
-    throw Object.assign(new Error('The job\'s showsheet folder points outside the job folder.'), { status: 403 });
+    throw Object.assign(new Error('The job\'s ' + spec.words + ' folder points outside the job folder.'), { status: 403 });
   }
-  const found = (marketing && childDir(marketing, SHOWSHEET)) || childDir(jobAbs, SHOWSHEET);
+  const found = (marketing && childDir(marketing, spec.folder)) || childDir(jobAbs, spec.folder);
   if (found) return { dir: found, made: false };
-  const dir = path.join(marketing || path.join(jobAbs, 'Marketing'), 'Showsheet');
+  const dir = path.join(marketing || path.join(jobAbs, 'Marketing'), spec.make);
   fs.mkdirSync(dir, { recursive: true });
   return { dir, made: true };
 }
 
-module.exports = { showsheetDir, SHOWSHEET };
+function showsheetDir(jobAbs) { return pieceDir(jobAbs, { words: 'showsheet', folder: SHOWSHEET, make: 'Showsheet' }, 'properties'); }
+
+module.exports = { showsheetDir, pieceDir, SHOWSHEET };

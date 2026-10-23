@@ -399,6 +399,82 @@ function req(method, p, headers, body) {
   DOCS.p6 = { output: { path: 'Marketing/Showsheet/notes.txt', size: 10, modified: 0, via: 'helper' }, outputs: [{ path: 'Marketing/Showsheet/notes.txt' }] };
   check('archive: only a PDF is ever moved', !!(await piece({ propertyId: 'p6', tool: 'showsheet', state: S('6 Example St') }, cfgP)).archived.left, true);
 
+  /* ---------- Slice 5: one /piece for every piece, a listing or a pitch ---------- */
+  {
+    const r5 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-piece5-'));
+    const j5 = n => path.join(r5, 'GVC - Test', n);
+    ['10 Example St', '11 Example St', '2026-10-01 12 Sample Ln', '13 Example St/Contracts', '14 Example St'].forEach(n => fs.mkdirSync(j5(n), { recursive: true }));
+    fs.mkdirSync(path.join(j5('11 Example St'), 'Marketing', 'Postcards'), { recursive: true });
+    fs.writeFileSync(path.join(j5('2026-10-01 12 Sample Ln'), '12 Sample Ln.pdf'), 'their own pitch');
+    const PROPS = {
+      l10: { id: 'l10', drive_folder: 'GVC - Test/10 Example St', label: '10 Example St', market: 'NJ', core: { address: '10 Example St', unit: '' } },
+      l11: { id: 'l11', drive_folder: 'GVC - Test/11 Example St', label: '11 Example St', market: 'NJ', core: { address: '11 Example St' } },
+      l14: { id: 'l14', drive_folder: 'GVC - Test/14 Example St', label: '14 Example St', market: 'NYC', core: { address: '14 Example St' } }
+    };
+    const PITCHES = {
+      q12: { id: 'q12', drive_folder: 'GVC - Test/2026-10-01 12 Sample Ln', label: '12 Sample Ln', market: 'NJ', core: { address: '12 Sample Ln' } },
+      q13: { id: 'q13', drive_folder: 'GVC - Test/13 Example St/Contracts', label: '13 Example St', market: 'NJ', core: { address: '13 Example St' } },
+      qnone: { id: 'qnone', drive_folder: null, label: 'x', core: {} }
+    };
+    const D5 = {};
+    const asked = [];
+    const db5 = { select: async (t, m) => {
+      asked.push(t);
+      if (t === 'properties') return PROPS[m.id] ? [PROPS[m.id]] : [];
+      if (t === 'pitches') return PITCHES[m.id] ? [PITCHES[m.id]] : [];
+      const k = (m.property_id || m.pitch_id) + '|' + m.tool;
+      return D5[k] ? [D5[k]] : [];
+    } };
+    let drawn = [];
+    const p5 = pieceRoute({ db: db5, driveRoot: r5, today: () => '2026-10-22', sleep: async () => {},
+      render: async o => { drawn.push([o.tool, o.paper]); return { pdf: Buffer.alloc(2048, 'y'), pages: o.tool === 'brochure' ? 5 : 2 }; },
+      driveLink: () => null });
+    const e5 = b => p5(b, cfgP).then(() => null, e => [e.status, e.message]);
+    const PNG = 'data:image/png;base64,' + Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40, 1)]).toString('base64');
+
+    let o5 = await p5({ propertyId: 'l10', tool: 'brochure', state: { paper: 'half' } }, cfgP);
+    check('brochure: Marketing\\Brochure made', [o5.path, o5.folderMade, o5.pages], ['Marketing/Brochure/Brochure - 10 Example St - 2026-10-22.pdf', true, 5]);
+    check('brochure: drawn with no paper forced', drawn[0], ['brochure', null]);
+    o5 = await p5({ propertyId: 'l11', tool: 'postcard-listed', state: {} }, cfgP);
+    check('postcard listed: an existing Postcards folder', o5.path, 'Marketing/Postcards/Just Listed Postcard - 11 Example St - 2026-10-22.pdf');
+    o5 = await p5({ propertyId: 'l11', tool: 'postcard-sold', state: {} }, cfgP);
+    check('postcard sold: beside it', o5.path, 'Marketing/Postcards/Just Sold Postcard - 11 Example St - 2026-10-22.pdf');
+    o5 = await p5({ propertyId: 'l14', tool: 'seller', state: {} }, cfgP);
+    check('seller on a listing: Marketing\\Pitch made', [o5.path, o5.folderMade], ['Marketing/Pitch/Seller Pitch - 14 Example St - 2026-10-22.pdf', true]);
+    const s1 = await p5({ pitchId: 'q12', tool: 'seller', state: {} }, cfgP);
+    check('seller on a pitch: the pitch folder itself', [s1.path, s1.folderMade, asked.indexOf('pitches') !== -1], ['Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', false, true]);
+    D5['q12|seller'] = { output: { path: s1.path, size: s1.size, modified: s1.modified, via: 'helper' }, outputs: [{ path: s1.path }] };
+    const s2 = await p5({ pitchId: 'q12', tool: 'seller', state: {} }, cfgP);
+    check('seller on a pitch: the older one into the pitch folder\'s Archive', [s2.name, s2.archived],
+      ['Seller Pitch - 12 Sample Ln - 2026-10-22 (2).pdf', { from: s1.path, to: 'Archive/' + s1.name }]);
+    check('the pitch\'s own files untouched', fs.readFileSync(path.join(j5('2026-10-01 12 Sample Ln'), '12 Sample Ln.pdf'), 'utf8'), 'their own pitch');
+
+    const m1 = await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP);
+    check('map: written as sent, a .png, nothing drawn', [m1.path, m1.size, drawn.filter(d => d[0] === 'pitch-map').length], ['Map - 12 Sample Ln - 2026-10-22.png', 48, 0]);
+    D5['q12|pitch-map'] = { output: { path: m1.path, size: m1.size, modified: m1.modified, via: 'helper' }, outputs: [{ path: m1.path }] };
+    const m2 = await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP);
+    check('map: the older map archived', m2.archived, { from: m1.path, to: 'Archive/' + m1.name });
+    D5['q12|pitch-map'] = { output: { path: m2.path, size: 1, modified: m2.modified, via: 'helper' }, outputs: [{ path: m2.path }] };
+    check('map: a changed older map is left, named as a map', (await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP)).archived.why,
+      'older map left in place: it changed after the workspace made it');
+    o5 = await p5({ propertyId: 'l14', tool: 'pitch-map', image: PNG }, cfgP);
+    check('map on a listing: beside its seller pitch', o5.path, 'Marketing/Pitch/Map - 14 Example St - 2026-10-22.png');
+
+    check('map: not a PNG refused', await e5({ pitchId: 'q12', tool: 'pitch-map', image: 'data:image/png;base64,' + Buffer.from('<svg onload=x>').toString('base64') }), [400, 'The map has to come as a PNG picture.']);
+    check('map: a JPEG data URL refused', (await e5({ pitchId: 'q12', tool: 'pitch-map', image: 'data:image/jpeg;base64,AAAA' }))[0], 400);
+    check('map: no image refused', (await e5({ pitchId: 'q12', tool: 'pitch-map', state: {} }))[0], 400);
+    check('a postcard on a pitch refused', (await e5({ pitchId: 'q12', tool: 'postcard-listed', state: {} }))[0], 400);
+    check('both owners named refused', await e5({ propertyId: 'l10', pitchId: 'q12', tool: 'seller', state: {} }), [400, 'The request didn\'t say which job.']);
+    check('no owner named refused', (await e5({ tool: 'seller', state: {} }))[0], 400);
+    check('a pitch with no folder', await e5({ pitchId: 'qnone', tool: 'seller', state: {} }), [409, 'This pitch has no Drive folder linked.']);
+    check('an unknown pitch', (await e5({ pitchId: 'zz', tool: 'seller', state: {} }))[0], 404);
+    check('a pitch folder that is paperwork', (await e5({ pitchId: 'q13', tool: 'seller', state: {} }))[0], 403);
+    check('an inherited name is not a piece', (await e5({ propertyId: 'l10', tool: 'constructor', state: {} }))[0], 400);
+    check('a brochure with no state refused', (await e5({ propertyId: 'l10', tool: 'brochure' }))[0], 400);
+    check('guard: a pitch folder itself only with top', [insideJobPiece(path.join(j5('x'), 'a.pdf'), j5('x'), j5('x')), insideJobPiece(path.join(j5('x'), 'a.pdf'), j5('x'), j5('x'), { top: true })], [false, true]);
+    check('archive sentences per piece', require('../helper/pdf/archive.js').sentences('brochure').GONE, 'older brochure left in place: it isn\'t where the workspace left it');
+  }
+
   /* body sizes: /piece takes up to 40 MB, every other route 1 MB */
   const big = mb => ({ propertyId: 'nobody', tool: 'showsheet', state: { pad: 'x'.repeat(mb * 1024 * 1024) } });
   const pairH = { origin: 'http://localhost:8080', 'x-gvc-pair': cfg.pairCode };

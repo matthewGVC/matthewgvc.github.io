@@ -18,11 +18,12 @@ function insideRoots(dir, roots) {
   });
 }
 
-function insideJobPiece(file, jobAbs, dir) {
+/* opts.top: the piece's folder may be the job folder itself (a pitch's folder, Slice 5) */
+function insideJobPiece(file, jobAbs, dir, opts) {
   if (!file || !jobAbs || !dir || !path.isAbsolute(file) || !path.isAbsolute(jobAbs) || !path.isAbsolute(dir)) return false;
   const low = p => path.resolve(p).toLowerCase();
   const job = low(jobAbs), d = low(dir), parent = path.dirname(low(file));
-  if (d.indexOf(job + path.sep) !== 0) return false;
+  if (d.indexOf(job + path.sep) !== 0 && !(opts && opts.top && d === job)) return false;
   return parent === d || parent === path.join(d, 'archive');
 }
 

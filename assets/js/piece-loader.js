@@ -16,6 +16,8 @@
   var files = ['drive-rules.js', 'drive.js', 'folder-health.js', 'job-facts.js', 'sheet-job.js', 'piece-job.js', 'piece-stale.js', 'workspace-shell.js']
     .map(function (f) { return A + f; });
   if (!window.GVC_IMAGES) files.push(A + 'images.js');
+  // the sign-in and the job's rows come through the property library (the Postcard doesn't load it itself)
+  if (!window.GVC_PROPS) files.unshift(A + 'supabase-config.js', A + 'property-library.js');
   files.push(A + 'piece-mode.js', (me && me.dataset.job) || 'job-mode.js');
   files.reduce(function (ready, src) {
     return ready.then(function () {

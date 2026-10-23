@@ -2433,7 +2433,7 @@ const resetDocFields = () => {
 
 /* Opened from a job (?listing=<slug>, Slice 5): job-mode.js runs the brochure from the job
    instead of the property bar. Without it the tool is exactly as it always was. */
-const JOB_MODE = (q => q.has('listing') || q.has('draw'))(new URLSearchParams(location.search));
+const JOB_MODE = (q => q.has('listing') || q.has('pitch') || q.has('draw'))(new URLSearchParams(location.search));
 
 const LIBRARY = {
   blank: resetDocFields,

@@ -236,12 +236,16 @@
     var r = A.lay(saved, M.row, lists ? { facts: lists } : (M.doc && M.doc.built_from) || null) || {};
     M.redone = r.redone || [];
     if (A.afterLay) A.afterLay(M.canEdit);
-    if (!M.canEdit) {
-      $$((A.panel || 'body') + ' [data-field], ' + (A.panel || 'body') + ' [data-f], ' + (A.panel || 'body') + ' input, ' + (A.panel || 'body') + ' textarea').forEach(function (el) {
-        if (el.closest('#pieceBar, #pieceFacts')) return;
-        if (el.tagName === 'SELECT' || el.type === 'checkbox' || el.type === 'range' || el.type === 'file') el.disabled = true; else el.readOnly = true;
-      });
-    }
+    lockForTeam();
+  }
+  /* a teammate sees the piece read-only; run after every draw, since a draw rebuilds rows */
+  function lockForTeam() {
+    if (M.canEdit) return;
+    var root = A.panel || 'body';
+    $$(root + ' input, ' + root + ' textarea, ' + root + ' select, ' + root + ' .seg button').forEach(function (el) {
+      if (el.closest('#pieceBar, #pieceFacts')) return;
+      if (el.tagName === 'SELECT' || el.tagName === 'BUTTON' || el.type === 'checkbox' || el.type === 'range' || el.type === 'file') el.disabled = true; else el.readOnly = true;
+    });
   }
   function load() {
     return rest('/' + TABLE + '?slug=eq.' + encodeURIComponent(slug) + '&select=*').then(function (rows) {
@@ -388,6 +392,7 @@
       M.failed = failed;
       M.read = read;
       A.apply(read);
+      lockForTeam();
       setPhotoHtml(failed.length ? esc('Drive hasn\'t downloaded this yet: ' + failed.map(function (f) { return f.split('/').pop(); }).join(', ') +
         '. Open the folder in File Explorer to download it, then reload.') : '');
     });
@@ -432,6 +437,8 @@
   }
   M.saveSheet = function () {
     if (!M.canEdit || M.busy) return Promise.resolve(false);
+    // what the piece shows is what is kept: never while Drive is still bringing it in
+    if (M.loading || M.reading) { say('Drive is still reading the ' + NOUN + '\'s folder; wait a moment, then save.'); return Promise.resolve(false); }
     busy(true); say('Saving…');
     return saveFacts().then(function () { return savePiece(null, null, null); }).then(function () {
       drawAll(); say('Saved. The facts are on the ' + NOUN + '; the wording and crops are kept with the ' + A.label.toLowerCase() + '.'); return true;

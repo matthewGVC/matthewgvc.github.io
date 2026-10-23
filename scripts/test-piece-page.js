@@ -259,6 +259,84 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('brochure: standalone has no job mode', await o.page.evaluate(() => [!!window.GVC_PIECEMODE, !!document.getElementById('pieceBar')]), [false, false]);
   await o.ctx.close();
 
+  // review fixes: saved ids never handed to another photo; saved plan labels survive a Save sheet before Drive is in
+  const SAVED2 = { property_id: 'p1', tool: 'brochure', version: 4, state: {
+    images: [{ id: 1, path: 'Photos/Edited/03.jpg', role: 'info-top', name: '03.jpg' }, { id: 2, path: 'Photos/Edited/01.jpg', role: 'exclude', name: '01.jpg' }],
+    floorplans: [{ id: 5, path: 'Floorplan/v2/Level 2 v2.jpg', label: 'Upper floor', zoom: 1.4, tx: 3, ty: 0 }],
+    gallery: [{ rows: [{ cells: [{ id: 1 }] }] }] } };
+  o = await open(browser, { path: BRO, documents: [SAVED2] });
+  s = await pstate(o.page);
+  const byName = n => s.images.filter(i => i.name === n)[0] || {};
+  check('brochure: a new hero never takes a saved photo\'s id', [byName('03.jpg').id, byName('03.jpg').role, byName('01.jpg').id, byName('01.jpg').role, byName('02.jpg').id !== 1 && byName('02.jpg').id !== 2],
+    [1, 'info-top', 2, 'exclude', true]);
+  check('brochure: ids are all different', new Set(s.images.map(i => i.id).concat(s.floorplans.map(f => f.id))).size, s.images.length + s.floorplans.length);
+  check('brochure: a saved plan keeps its label and crop', s.floorplans.filter(f => f.name === 'Level 2 v2.jpg').map(f => [f.id, f.label, f.zoom, f.tx]), [[5, 'Upper floor', 1.4, 3]]);
+  await o.ctx.close();
+  o = await open(browser, { path: BRO, documents: [SAVED2], drive: { slow: 'Floorplan/v2/Level 1 v2.jpg' } });
+  await o.page.click('#btnPieceSave');
+  await o.page.waitForTimeout(400);
+  check('brochure: a plan Drive did not bring in keeps its saved label in the draft', ((o.pieces[0] || {}).p_state || {}).floorplans.map(f => [f.id, f.label]).sort(), [[5, 'Upper floor']]);
+  await o.ctx.close();
+  o = await open(browser, { path: BRO, documents: [SAVED2], drive: { state: 'prompt' } });
+  await o.page.click('#btnPieceSave');
+  await o.page.waitForTimeout(400);
+  const kept = (o.pieces[0] || {}).p_state || {};
+  check('brochure: with Drive not connected, a draft keeps the saved photos and plans', [(kept.images || []).map(i => i.id), (kept.floorplans || []).map(f => [f.id, f.label])], [[1, 2], [[5, 'Upper floor']]]);
+  await o.ctx.close();
+  o = await open(browser, { path: BRO, members: [{ name: 'Team', initials: 'T', role: 'team' }] });
+  check('brochure: team read-only covers the rows Drive filled in', await o.page.evaluate(() => [...document.querySelectorAll('#editor .fp-label, #editor input[type=range]')].every(e => e.readOnly || e.disabled)), true);
+  await o.ctx.close();
+  o = await open(browser, { path: '/tools/brochure/?pitch=12-sample-ln-2026-10-01' });
+  check('brochure: a pitch address never shows the property bar or reads saved work', await o.page.$eval('#propBar', e => getComputedStyle(e).display), 'none');
+  await o.ctx.close();
+
+  /* ---------- the Postcards from a job ---------- */
+  const PCL = '/tools/postcard/?listing=100-example-st-4a';
+  o = await open(browser, { path: PCL, prefix: 'Just Listed Postcard' });
+  await o.page.evaluate(() => localStorage.setItem('gvc.postcard.state', JSON.stringify({ headline: 'From this browser' })));
+  s = await pstate(o.page);
+  check('postcard listed: the bar', /^Just Listed postcard for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
+  check('postcard listed: from the job', [s.kind, s.address, s.unit, s.town, s.price, s.agents, s.headline], ['sale', '100 Example St', '4A', 'Testville', '4600000', ['john-gasdaska'], '']);
+  check('postcard: two photos, hero first', [s.photos.length, o.T && (await o.page.evaluate(() => window.__driveLog.read.slice(0, 2)))], [2, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg']]);
+  check('postcard: kind and address are the job\'s', await o.page.evaluate(() => [document.querySelector('#kindPick button').disabled, document.querySelector('#fAddress').readOnly]), [true, true]);
+  await typeIn(o.page, '#fHeadline', 'Open Sunday');
+  await typeIn(o.page, '#fPrice', '4,450,000');
+  await o.page.click('#btnPieceSave');
+  await o.page.waitForTimeout(500);
+  check('postcard: the price goes to the job, logged on the Postcard', o.saves.map(x => x.p_changes.map(c => [c.field, c.new_value, c.note])), [[['price', 4450000, 'on the Postcard']]]);
+  check('postcard: its own words kept with the card, photos by path', [o.pieces[0] && o.pieces[0].p_tool, o.pieces[0] && o.pieces[0].p_state.headline, noData(o.pieces[0] && o.pieces[0].p_state),
+    (o.pieces[0] && o.pieces[0].p_state.photos || []).map(p => p.path)], ['postcard-listed', 'Open Sunday', true, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg']]);
+  check('postcard: this browser\'s saved card untouched', await o.page.evaluate(() => localStorage.getItem('gvc.postcard.state')), JSON.stringify({ headline: 'From this browser' }));
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(700);
+  check('postcard: Save PDF asks for the listed card with two inline photos', [o.helper[0] && o.helper[0].body.tool, o.helper[0] && o.helper[0].body.state.photos.length,
+    o.helper[0] && /data:image/.test(JSON.stringify(o.helper[0].body.state))], ['postcard-listed', 2, true]);
+  check('postcard: built_from', [o.pieces[1] && o.pieces[1].p_built_from.tool, o.pieces[1] && o.pieces[1].p_built_from.photos.length, o.pieces[1] && o.pieces[1].p_built_from.facts.price],
+    ['postcard-listed', 2, 4450000]);
+  check('postcard: no page errors', o.errors, []);
+  await o.ctx.close();
+
+  // Just Sold: DE's closing price when it has one; no price goes back to the job
+  const soldRows = rowsFor(); soldRows.properties[0].core.closePrice = 4300000; soldRows.properties[0].stage = 'Sold';
+  o = await open(browser, { path: PCL + '&card=sold', rows: soldRows, prefix: 'Just Sold Postcard' });
+  s = await pstate(o.page);
+  check('postcard sold: the closing price', [s.kind, s.price, /^Just Sold postcard/.test(await text(o.page, '#pieceBar .jb-t'))], ['sold', '4300000', true]);
+  await o.page.click('#btnPieceSave');
+  await o.page.waitForTimeout(400);
+  check('postcard sold: its own record, nothing saved to the job', [o.pieces[0] && o.pieces[0].p_tool, o.saves.length], ['postcard-sold', 0]);
+  await o.ctx.close();
+  o = await open(browser, { path: PCL + '&card=sold', prefix: 'Just Sold Postcard' });
+  check('postcard sold before DE has a closing price: said', /no closing price/.test(await text(o.page, '#pieceBar')), true);
+  await o.ctx.close();
+  // a saved card's crops come back for the same photo
+  o = await open(browser, { path: PCL, documents: [{ property_id: 'p1', tool: 'postcard-listed', version: 2, state: { headline: 'Kept', photos: [{ path: 'Photos/Edited/01.jpg', x: 10, y: 90 }] } }] });
+  s = await pstate(o.page);
+  check('postcard: saved words and crops come back', [s.headline, s.photos[1] && [s.photos[1].x, s.photos[1].y]], ['Kept', [10, 90]]);
+  await o.ctx.close();
+  o = await open(browser, { path: '/tools/postcard/' });
+  check('postcard: standalone has no job mode', await o.page.evaluate(() => !!window.GVC_PIECEMODE), false);
+  await o.ctx.close();
+
   await browser.close();
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
   if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }

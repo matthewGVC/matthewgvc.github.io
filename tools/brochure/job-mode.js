@@ -54,10 +54,15 @@
     afterLay: function () { lockAgents(); },
     wants: function (d) { return { photos: J.photosFor('brochure', d.row, d.editedPaths) || [], plans: d.plans || [] }; },
     apply: function (read) {
-      var s = clone(B.state), used = {};
+      // a second read (Reconnect) starts from what is on the brochure now, so unsaved edits stay
+      if (Object.keys(pathOf).length) { var now = this.storable(); saved.images = now.images; saved.floorplans = now.floorplans; saved.gallery = now.gallery; }
+      var s = clone(B.state), used = {}, reserved = {};
+      // every saved id stays its photo's: a new photo never takes one, even when it comes first
+      saved.images.concat(saved.floorplans).forEach(function (x) { if (Number.isFinite(+x.id)) reserved[+x.id] = true; });
       pathOf = {};
       var idFor = function (prev) {
-        var id = prev && Number.isFinite(+prev.id) && !used[prev.id] ? +prev.id : B.nextId();
+        var id = prev && Number.isFinite(+prev.id) && !used[+prev.id] ? +prev.id : null;
+        while (id === null || used[id] || (reserved[id] && !(prev && +prev.id === id))) id = B.nextId();
         used[id] = true;
         return id;
       };
@@ -86,6 +91,9 @@
       saved.images.forEach(function (im) { if (!byPath(d.images, im.path)) d.images.push(clone(im)); });
       d.floorplans = s.floorplans.map(function (f) { var p = pathOf[f.id] || {}; return { id: f.id, path: p.path || null, name: f.name, label: f.label, zoom: f.zoom, tx: f.tx, ty: f.ty }; })
         .filter(function (f) { return f.path; });
+      saved.floorplans.forEach(function (f) { if (!byPath(d.floorplans, f.path)) d.floorplans.push(clone(f)); });
+      // with nothing from Drive yet, the saved gallery stands (the brochure on screen has no photos to lay it out)
+      if (!Object.keys(pathOf).length) d.gallery = clone(saved.gallery);
       return d;
     },
     printable: function () {

@@ -338,7 +338,7 @@ const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch 
 
 /* Opened from a job (?listing=<slug>, Slice 5): job-mode.js fills the card from the job and
    saves it on the job; this browser's own saved card is neither read nor overwritten. */
-const JOB_MODE = (q => q.has('listing') || q.has('draw'))(new URLSearchParams(location.search));
+const JOB_MODE = (q => q.has('listing') || q.has('pitch') || q.has('draw'))(new URLSearchParams(location.search));
 const DEFAULTS = {
   kind: 'sold', layout: 'panel', bleed: 'bleed',
   address: '', unit: '', town: '', price: '', priceLabel: '',
@@ -688,6 +688,7 @@ async function drawGiven(s) {
   return true;
 }
 </script>
+<script src="../../assets/js/piece-loader.js" data-job="job-mode.js"></script>
 <script src="../../assets/js/panel-collapse.js"></script>
 <script src="../../assets/js/field-labels.js"></script>
 </body>

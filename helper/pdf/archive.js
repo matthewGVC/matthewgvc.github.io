@@ -1,7 +1,7 @@
 /* ============================================================
    ARCHIVE MOVE — the only move the workspace ever makes (spec S18).
 
-     archivePrevious({ jobAbs, dir, prev, outputs, words?, ext?, top? })
+     archivePrevious({ jobAbs, dir, prev, outputs, words?, ext? })
        → null                 nothing to move (no earlier file, or it was printed by hand)
        | { from, to }         moved into <dir>\Archive\ (paths relative to the job folder, '/')
        | { left, why }        left where it is, and why
@@ -11,8 +11,7 @@
    and date are still what the workspace recorded. A name already in
    Archive\ gets ' (2)'. Nothing is overwritten or deleted.
    Slice 5: the sentences name the piece (words, default 'showsheet'); ext is
-   the file type it moves ('pdf', or 'png' for the map); top lets the piece's
-   folder be the job folder itself (a pitch's own folder).
+   the file type it moves ('pdf', or 'png' for the map).
    ============================================================ */
 'use strict';
 
@@ -41,14 +40,14 @@ function freeName(folder, name) {
 function archivePrevious(o) {
   const prev = o.prev;
   if (!prev || prev.via !== 'helper' || !prev.path) return null;
-  const said = sentences(o.words), top = { top: !!o.top };
+  const said = sentences(o.words);
   const ext = o.ext === 'png' ? /\.png$/i : /\.pdf$/i;
   const segs = String(prev.path).split(/[\\/]+/).filter(Boolean);
   if (!segs.length || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?\x00-\x1f]/.test(s)) || !ext.test(segs[segs.length - 1])) {
     return { left: prev.path, why: said.GONE };
   }
   const abs = path.resolve(o.jobAbs, ...segs);
-  if (!insideJobPiece(abs, o.jobAbs, o.dir, top) || !same(path.dirname(abs), o.dir)) return { left: prev.path, why: said.GONE };
+  if (!insideJobPiece(abs, o.jobAbs, o.dir) || !same(path.dirname(abs), o.dir)) return { left: prev.path, why: said.GONE };
   if (!(o.outputs || []).some(x => x && same(String(x.path || '').split(/[\\/]+/).join('/'), segs.join('/')))) return { left: prev.path, why: said.UNKNOWN };
   let st;
   try { st = fs.statSync(abs); } catch (e) { return { left: prev.path, why: said.GONE }; }
@@ -61,7 +60,7 @@ function archivePrevious(o) {
   fs.mkdirSync(archive, { recursive: true });
   if (linked()) return { left: prev.path, why: said.LINKED };
   const target = path.join(archive, freeName(archive, path.basename(abs)));
-  if (!insideJobPiece(target, o.jobAbs, o.dir, top)) return { left: prev.path, why: said.GONE };
+  if (!insideJobPiece(target, o.jobAbs, o.dir)) return { left: prev.path, why: said.GONE };
   fs.renameSync(abs, target);
   return { from: relOf(o.jobAbs, abs), to: relOf(o.jobAbs, target) };
 }

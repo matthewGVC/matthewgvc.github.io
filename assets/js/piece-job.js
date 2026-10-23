@@ -17,7 +17,7 @@
      GVC_PIECEJOB.builtFrom(tool, state, row, ctx) → the v2 snapshot (plan §10)
      GVC_PIECEJOB.photosFor(tool, row, editedPaths) → [paths] | null (unknown)
      GVC_PIECEJOB.pickFloorplans(files)  every image of the newest version, one per level
-     GVC_PIECEJOB.pitchPhotos(files)     a pitch folder's photos (top level and Photos/), maps left out
+     GVC_PIECEJOB.pitchPhotos(files)     a pitch folder's photos (its Photos/ folder), maps left out
      GVC_PIECEJOB.mapAddresses(row)      the subject, then each comp's address
      GVC_PIECEJOB.label(tool), note(tool), maxAgents(tool), joinUnit(a, u)
 
@@ -323,7 +323,7 @@
     return (files || []).filter(function (f) {
       var p = String(f.path || ''), segs = p.split('/'), name = segs[segs.length - 1];
       if (!IMG.test(name) || MAP_FILE.test(name)) return false;
-      return segs.length === 1 || (segs.length === 2 && /^photos$/i.test(segs[0]));
+      return segs.length === 2 && /^photos$/i.test(segs[0]);
     }).map(function (f) { return f.path; }).sort(byName).slice(0, 12);
   }
 

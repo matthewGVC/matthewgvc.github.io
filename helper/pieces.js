@@ -7,8 +7,9 @@
        folder   the folder it goes in, looked for in Marketing\ first, then the job's top
        make     the folder made under Marketing\ when there is none
        ext      'pdf' (drawn by the page) or 'png' (the map, sent ready-made)
-       owners   'properties' (a listing) and/or 'pitches'; on a pitch the piece goes in
-                the pitch's own folder (pitch folders keep the PDF and map at the top)
+       owners   'properties' (a listing) and/or 'pitches'; a pitch's folder is treated like a
+                job's: its seller pitch and map go in its Marketing\Pitch\ (the browser may
+                read Marketing\ back, never a folder's loose top-level files)
      }
 
    piece.js, piece-folder.js, archive.js and routes.js read this one table.

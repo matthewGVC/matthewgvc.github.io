@@ -2433,7 +2433,7 @@ const resetDocFields = () => {
 
 /* Opened from a job (?listing=<slug>, Slice 5): job-mode.js runs the brochure from the job
    instead of the property bar. Without it the tool is exactly as it always was. */
-const JOB_MODE = new URLSearchParams(location.search).has('listing');
+const JOB_MODE = (q => q.has('listing') || q.has('draw'))(new URLSearchParams(location.search));
 
 const LIBRARY = {
   blank: resetDocFields,
@@ -2507,18 +2507,61 @@ const fillFields = () => document.querySelectorAll('[data-field]').forEach(el =>
   const k = el.dataset.field;
   if (k in state) el.value = state[k];
 });
+/* A state from outside (a job, or the helper's drawing), cut to what the brochure knows: each
+   key in its own shape, numbers as numbers, words as words, pictures inline only (a whole
+   base64 data URL, nothing that could close an attribute). */
+const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
+function sanitize(s) {
+  const base = structuredClone(BLANK), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  Object.keys(given).forEach(k => {
+    if (!(k in base) || given[k] == null) return;
+    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
+    base[k] = given[k];
+  });
+  const num = (v, d) => Number.isFinite(+v) && v !== '' && v !== null ? +v : d;
+  const str = v => (v == null ? '' : String(v));
+  const obj = x => x && typeof x === 'object' && !Array.isArray(x);
+  const ROLE_OK = ROLES.map(r => r[0]);
+  base.images = base.images.filter(im => obj(im) && typeof im.url === 'string' && INLINE.test(im.url) && Number.isFinite(+im.id))
+    .map(im => ({ id: +im.id, name: str(im.name), url: im.url, ar: num(im.ar, 1.5), role: ROLE_OK.indexOf(im.role) !== -1 ? im.role : 'auto' }));
+  base.floorplans = base.floorplans.filter(f => obj(f) && typeof f.url === 'string' && INLINE.test(f.url) && Number.isFinite(+f.id))
+    .map(f => ({ id: +f.id, name: str(f.name), url: f.url, label: str(f.label), zoom: num(f.zoom, 1), tx: num(f.tx, 0), ty: num(f.ty, 0) }));
+  const cell = c => {
+    const o = { id: +c.id };
+    ['w', 'fx', 'fy', 'z'].forEach(k => { if (k in c && Number.isFinite(+c[k])) o[k] = +c[k]; });
+    if ('label' in c) o.label = str(c.label);
+    return o;
+  };
+  base.gallery = base.gallery.filter(obj).map(pg => ({ rows: (Array.isArray(pg.rows) ? pg.rows : []).filter(obj).map(r => {
+    const row = { cells: (Array.isArray(r.cells) ? r.cells : []).filter(c => obj(c) && Number.isFinite(+c.id)).map(cell) };
+    if ('h' in r && Number.isFinite(+r.h)) row.h = +r.h;
+    return row;
+  }) }));
+  ['coverPos', 'infoTopPos'].forEach(k => { const p = obj(base[k]) ? base[k] : {}; base[k] = { x: num(p.x, 50), y: num(p.y, 50) }; });
+  ['address', 'city', 'state', 'zip', 'price', 'blurb', 'features', 'listingUrl', 'beds', 'baths', 'parking', 'sqft', 'fpNote', 'strategy']
+    .forEach(k => { base[k] = str(base[k]); });
+  base.agents = base.agents.filter(a => typeof a === 'string').slice(0, MAX_AGENTS);
+  base.galCaptions = !!base.galCaptions;
+  base.galPage = Math.max(0, Math.floor(num(base.galPage, 0)));
+  if (base.paper !== 'half') base.paper = 'letter';
+  // one Cover and one Top banner at most, as setDoc keeps it
+  ['hero', 'info-top'].forEach(role => base.images.filter(im => im.role === role).slice(1).forEach(im => { im.role = 'auto'; }));
+  return base;
+}
 window.__piece = {
   get state() { return state; },
-  blank: () => structuredClone(BLANK), LIBRARY, JOB_MODE,
+  blank: () => structuredClone(BLANK), LIBRARY, JOB_MODE, INLINE, sanitize,
   nextId: () => ++uid,
-  /* replace the whole state (keys the brochure knows only), then draw */
+  ready: () => !!builder,
+  /* replace the whole state (sanitized), then draw */
   set(s) {
+    const base = sanitize(s);
     Object.keys(state).forEach(k => { delete state[k]; });
-    Object.assign(state, structuredClone(BLANK), s);
+    Object.assign(state, base);
     state.galSel = null;
-    uid = Math.max(uid, ...state.images.map(i => +i.id || 0), ...state.floorplans.map(f => +f.id || 0), 0);
+    uid = Math.max(uid, ...state.images.map(i => i.id), ...state.floorplans.map(f => f.id), 0);
     fillFields(); syncPaper(); syncStrategy(); renderRoster();
-    renderImgList(); renderFpList(); renderGalleryPanel(); redraw();
+    renderImgList(); renderFpList(); renderGalleryPanel(); redraw(); updateBentoNote();
   },
   redraw, renderImgList, renderFpList, renderGalleryPanel, fillFields, checkOverflow,
   fileToImage, reencode, floorplanHeaderY, trimRect
@@ -2535,20 +2578,8 @@ window.__render = async function (s) {
   catch (e) { window.__renderError = String(e && e.message || e); throw e; }
 };
 async function drawGiven(s) {
-  const base = structuredClone(BLANK), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
-  // only keys the brochure knows, each in the shape it expects
-  Object.keys(given).forEach(k => {
-    if (!(k in base) || given[k] == null) return;
-    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
-    base[k] = given[k];
-  });
-  // pictures come inline only: an address elsewhere is dropped, never fetched
-  const inline = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(v);
-  base.images = base.images.filter(im => im && typeof im === 'object' && inline(im.url) && Number.isFinite(+im.id));
-  base.floorplans = base.floorplans.filter(f => f && typeof f === 'object' && inline(f.url) && Number.isFinite(+f.id));
-  base.agents = base.agents.filter(a => typeof a === 'string');
-  if (base.paper !== 'half') base.paper = 'letter';
-  window.__piece.set(base);
+  if (!builder) throw new Error('The brochure page did not finish loading.');
+  window.__piece.set(s);
   // every wait is capped: a font or an image that never settles must not hang the helper
   const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
   if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);

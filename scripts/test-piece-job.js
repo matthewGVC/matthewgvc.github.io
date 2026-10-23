@@ -148,7 +148,7 @@ check('pickFloorplans: none', J.pickFloorplans([{ path: 'Floorplan/v1/x.pdf' }])
 check('pitchPhotos', J.pitchPhotos([
   { path: 'img.jpg' }, { path: 'Photos/b.png' }, { path: 'gvc-3d-property-map.png' }, { path: 'Map - 12 Sample Ln - 2026-10-22.png' },
   { path: 'Assets/deep/x.jpg' }, { path: 'Photos/sub/y.jpg' }, { path: 'notes.pdf' }, { path: 'Archive/old.jpg' }
-]), ['Photos/b.png', 'img.jpg']);   // by file name
+]), ['Photos/b.png']);   // Photos/ only: a folder's loose top-level files are never read (plan §9)
 
 /* ---------- review fixes (Tasks 2-4) ---------- */
 const untouched = J.fill('seller', { recBand: 'mid', comps: [] }, pitch(), {}).state;

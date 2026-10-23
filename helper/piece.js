@@ -101,24 +101,23 @@ function pieceRoute(o) {
         'The ' + spec.words + ' took too long to draw. Nothing was saved; try again.');
     }
 
-    const top = table === 'pitches';
-    const { dir, made } = pieceDir(jobAbs, spec, table);
+    const { dir, made } = pieceDir(jobAbs, spec);
     // a junction or link inside the job folder must not carry the write somewhere else
     const realDir = fs.realpathSync(dir).toLowerCase(), realJob = fs.realpathSync(jobAbs).toLowerCase();
-    if (!(top ? realDir === realJob : realDir.indexOf(realJob + path.sep) === 0)) {
+    if (realDir.indexOf(realJob + path.sep) !== 0) {
       throw fail(403, 'The job\'s ' + spec.words + ' folder points outside the job folder.');
     }
     const rel = abs => path.relative(jobAbs, abs).split(path.sep).join('/');
-    if (rel(dir).split('/').some(s => s && (isPaperworkFolder(s) || hasPaperworkWord(s)))) throw fail(403, 'The workspace doesn\'t write into that folder.');
+    if (rel(dir).split('/').some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
     const core = row.core || {};
     const label = safeLabel([core.address, core.unit].filter(Boolean).join(' ')) || safeLabel(row.label) || safeLabel(r.label) || 'Job';
     if (hasPaperworkWord(label)) throw fail(403, 'The workspace doesn\'t write a file with that name.');
     const file = await savePdf(r.pdf, dir, spec.prefix, label, today(), spec.ext);
-    if (!insideJobPiece(file, jobAbs, dir, { top })) throw fail(500, 'The helper wrote somewhere it shouldn\'t have: ' + file);
+    if (!insideJobPiece(file, jobAbs, dir)) throw fail(500, 'The helper wrote somewhere it shouldn\'t have: ' + file);
 
     // the file is on Drive now: nothing after this may turn the answer into an error
     let archived;
-    try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs, words: spec.words, ext: spec.ext, top }); }
+    try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs, words: spec.words, ext: spec.ext }); }
     catch (e) { archived = { left: doc.output && doc.output.path, why: 'older ' + spec.words + ' left in place: it couldn\'t be moved (' + (e.code || e.message) + ')' }; }
     const st = fs.statSync(file);
     let url = null;

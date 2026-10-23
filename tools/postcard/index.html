@@ -338,7 +338,7 @@ const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch 
 
 /* Opened from a job (?listing=<slug>, Slice 5): job-mode.js fills the card from the job and
    saves it on the job; this browser's own saved card is neither read nor overwritten. */
-const JOB_MODE = new URLSearchParams(location.search).has('listing');
+const JOB_MODE = (q => q.has('listing') || q.has('draw'))(new URLSearchParams(location.search));
 const DEFAULTS = {
   kind: 'sold', layout: 'panel', bleed: 'bleed',
   address: '', unit: '', town: '', price: '', priceLabel: '',
@@ -624,15 +624,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* what a job mode works through (Slice 5): the card's own state, drawing and photo intake */
+/* A card from outside (a job, or the helper's drawing), cut to what the card knows: each key in
+   its own shape, words as words, two pictures at most, inline only (a whole base64 data URL,
+   nothing that could close an attribute). */
+const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
+function sanitize(s) {
+  const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  Object.keys(given).forEach(k => {
+    if (!(k in base) || given[k] == null) return;
+    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
+    base[k] = given[k];
+  });
+  const num = (v, d) => Number.isFinite(+v) && v !== '' && v !== null ? +v : d;
+  base.photos = (Array.isArray(given.photos) ? given.photos : [])
+    .filter(p => p && typeof p === 'object' && typeof p.url === 'string' && INLINE.test(p.url)).slice(0, 2)
+    .map(p => ({ url: p.url, name: String(p.name == null ? '' : p.name), x: num(p.x, 50), y: num(p.y, 50), w: num(p.w, 0) }));
+  base.agents = base.agents.filter(a => typeof a === 'string').slice(0, 2);
+  if (base.kind !== 'sale') base.kind = 'sold';
+  if (base.layout !== 'band') base.layout = 'panel';
+  if (base.bleed !== 'trim') base.bleed = 'bleed';
+  return base;
+}
 window.__piece = {
   get state() { return state; },
-  JOB_MODE, ready: () => !!builder, MAX_EDGE,
-  /* replace the whole card (keys it knows only), then draw; nothing is saved in this browser */
+  JOB_MODE, INLINE, sanitize, ready: () => !!builder, MAX_EDGE,
+  /* replace the whole card (sanitized), then draw; nothing is saved in this browser */
   set(s) {
+    if (!builder) throw new Error('The postcard page has not finished loading.');
+    const base = sanitize(s);
     Object.keys(state).forEach(k => { delete state[k]; });
-    Object.assign(state, structuredClone(DEFAULTS), { photos: [] }, s);
-    if (state.layout !== 'band') state.layout = 'panel';
-    if (state.bleed !== 'trim') state.bleed = 'bleed';
+    Object.assign(state, base);
     FIELDS.forEach(([sel, k]) => { const el = $(sel); if (el) el.value = state[k] || ''; });
     paintPlaceholders(); repaint.forEach(f => typeof f === 'function' && f());
     syncSize(); paintPhotoList(); redraw();
@@ -652,23 +673,12 @@ window.__render = async function (s) {
   catch (e) { window.__renderError = String(e && e.message || e); throw e; }
 };
 async function drawGiven(s) {
-  const base = structuredClone(DEFAULTS), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
-  Object.keys(given).forEach(k => {
-    if (!(k in base) || given[k] == null) return;
-    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
-    base[k] = given[k];
-  });
-  // pictures come inline only: an address elsewhere is dropped, never fetched
-  const inline = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(v);
-  base.photos = (Array.isArray(given.photos) ? given.photos : []).filter(p => p && typeof p === 'object' && inline(p.url)).slice(0, 2)
-    .map(p => ({ url: p.url, name: String(p.name || ''), x: Number.isFinite(+p.x) ? +p.x : 50, y: Number.isFinite(+p.y) ? +p.y : 50, w: +p.w || 0 }));
-  base.agents = base.agents.filter(a => typeof a === 'string');
   // every wait is capped: a logo, a font or an image that never settles must not hang the helper
   const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
   const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
   for (let i = 0; i < 100 && !builder; i++) await new Promise(r => setTimeout(r, 50));
   await capped(DE_READY, 10000);
-  window.__piece.set(base);
+  window.__piece.set(s);
   if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
   await frame(); await frame();
   await capped(Promise.all([...document.images].map(i => i.complete ? null : new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))), 20000);

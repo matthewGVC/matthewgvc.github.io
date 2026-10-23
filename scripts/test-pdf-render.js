@@ -153,6 +153,49 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   check('postcard: inline pictures only, two at most, nothing fetched or run',
     [await page.evaluate(() => window.__piece.state.photos.map(p => p.name)), probe.hits, await page.evaluate(() => window.__xss || 0)], [['ok', 'x'], 0, 0]);
 
+  /* ---------- Slice 5: the Seller pitch drawn from a given state ---------- */
+  const DECK = { address: '12 Sample Lane', city: 'Testville', state: 'NJ', zip: '07000', beds: '4', baths: '3.5', sqft: '2800', ptype: 'Single family',
+    market: 'nj', agents: ['john-gasdaska'], comps: [{ address: '14 Sample Lane', price: '1,900,000', sqft: '2,700', bb: '4/3', date: '2026-08' }],
+    priceLow: '1800000', priceMid: '1900000', priceHigh: '2000000', recBand: 'mid',
+    photos: [{ id: 1, name: 'p1', url: DOT, role: 'auto' }], map: { name: 'map', url: DOT } };
+  await page.goto(BASE + '/tools/seller-package/', { waitUntil: 'networkidle' });
+  const deck = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, pages: document.querySelectorAll('.page').length, market: window.__piece.state.market,
+      map: !!window.__piece.state.map, text: document.querySelector('#pages, body').innerText.indexOf('14 Sample Lane') !== -1 }));
+  };
+  const d1 = await deck(DECK);
+  check('seller: rendered, 12 pages, NJ, the map and comps in', [d1.rendered, d1.pages, d1.market, d1.map, d1.text], [true, 12, 'nj', true, true]);
+  check('seller: 12 printed pages', await pages(), 12);
+  const d2 = await deck(Object.assign({}, DECK, { showProperty: false, market: 'fl' }));
+  check('seller: no property page, an unknown market speaks New York', [d2.pages, d2.market], [11, 'nyc']);
+  await deck(Object.assign({}, DECK, { photos: [{ id: 1, name: 'far', url: far + '/s.jpg', role: 'auto' }], map: { name: 'farmap', url: far + '/m.png' }, address: evil, videos: 'x', reviews: [1, 'a'] }));
+  check('seller: inline pictures only, nothing fetched or run',
+    [await page.evaluate(() => [window.__piece.state.photos.length, window.__piece.state.map, window.__piece.state.reviews]), probe.hits, await page.evaluate(() => window.__xss || 0)], [[0, null, ['a']], 0, 0]);
+
+  /* review fix: a picture that only starts like an inline one, or a position that isn't a number,
+     must not get into the page (every tool, the Showsheet too) */
+  const BAD = 'data:image/png;base64,"><img src=x onerror="window.__xss=1">';
+  for (const [tool, s] of [
+    ['showsheet', Object.assign({}, NJ, { photos: [{ src: BAD, fx: 50, fy: 50, name: 'bad' }], floorplan: BAD })],
+    ['brochure', Object.assign({}, BRO, { images: [{ id: 1, name: 'bad', url: BAD, ar: 1, role: 'auto' }, { id: 2, name: 'ok', url: DOT, ar: 1, role: 'hero' }],
+      coverPos: { x: '1%" onerror="window.__xss=2', y: 1 }, floorplans: [{ id: 3, name: 'p', url: DOT, zoom: '2) " onload="window.__xss=3', tx: 0, ty: 0 }],
+      gallery: [{ rows: [{ h: 1, cells: [{ id: 2, w: '1" onclick="x', fx: 'evil', label: evil }] }] }] })],
+    ['postcard', Object.assign({}, CARD, { photos: [{ url: BAD, name: 'bad' }, { url: DOT, name: 'ok', x: '1%" onerror="window.__xss=4', y: 2 }] })],
+    ['seller-package', Object.assign({}, DECK, { photos: [{ id: 1, name: 'bad', url: BAD, role: 'auto' }], map: { name: 'm', url: BAD },
+      pos: { hero: { x: '1%" onerror="window.__xss=5', y: 1 } }, comps: [{ address: evil, price: '1', note: evil }] })]
+  ]) {
+    await page.goto(BASE + '/tools/' + tool + '/', { waitUntil: 'networkidle' });
+    await page.evaluate(s => window.__render(s), s);
+    await page.waitForTimeout(300);
+    check(tool + ': nothing injected runs', await page.evaluate(() => window.__xss || 0), 0);
+  }
+  check('brochure: positions and zoom come back as numbers', await (async () => {
+    await page.goto(BASE + '/tools/brochure/', { waitUntil: 'networkidle' });
+    await page.evaluate(s => window.__render(s), Object.assign({}, BRO, { coverPos: { x: '7', y: 'x' }, floorplans: [{ id: 3, name: 'p', url: DOT, zoom: '2', tx: 'a' }] }));
+    return page.evaluate(() => [window.__piece.state.coverPos, window.__piece.state.floorplans[0].zoom, window.__piece.state.floorplans[0].tx]);
+  })(), [{ x: 7, y: 50 }, 2, 0]);
+
   check('no page errors', errors, []);
   await browser.close();
 
@@ -168,6 +211,8 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       check('renderPiece brochure: 5 pages, label', [ob.pages, ob.label], [5, '12 Sample Lane']);
       const oc = await renderPiece({ tool: 'postcard-sold', state: Object.assign({}, CARD, { kind: 'sold' }), siteBase: BASE });
       check('renderPiece postcard: 2 pages, label', [oc.pages, oc.label], [2, '12 Sample Lane']);
+      const os2 = await renderPiece({ tool: 'seller', state: DECK, siteBase: BASE });
+      check('renderPiece seller: 12 pages, label', [os2.pages, os2.label], [12, '12 Sample Lane']);
       // the hidden browser itself refuses pictures from anywhere but the site
       probe.hits = 0;
       const { chromium: ch } = require('playwright');

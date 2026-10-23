@@ -33,10 +33,13 @@
 })(typeof window !== 'undefined' ? window : globalThis, function (F, S) {
   'use strict';
 
-  var TOOLS = ['brochure', 'postcard-listed', 'postcard-sold', 'seller', 'pitch-map'];
-  var LABEL = { brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'Seller pitch', 'pitch-map': 'Map' };
-  var NOTE = { brochure: 'on the Brochure', 'postcard-listed': 'on the Postcard', 'postcard-sold': 'on the Postcard', seller: 'on the Seller pitch', 'pitch-map': 'on the Map' };
-  var MAX_AGENTS = { brochure: 2, 'postcard-listed': 2, 'postcard-sold': 2, seller: 2, 'pitch-map': 0 };
+  var TOOLS = ['brochure', 'postcard-listed', 'postcard-sold', 'seller', 'pitch-map', 'open-house', 'signage'];
+  var LABEL = { brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'Seller pitch', 'pitch-map': 'Map',
+    'open-house': 'Open house flyer', signage: 'Signage' };
+  var NOTE = { brochure: 'on the Brochure', 'postcard-listed': 'on the Postcard', 'postcard-sold': 'on the Postcard', seller: 'on the Seller pitch', 'pitch-map': 'on the Map',
+    'open-house': 'on the Open House flyer', signage: 'on the Sign' };
+  var MAX_AGENTS = { brochure: 2, 'postcard-listed': 2, 'postcard-sold': 2, seller: 2, 'pitch-map': 0, 'open-house': 2, signage: 2 };
+  var LINKED = ['brochure', 'open-house', 'signage'];   // pieces that print the listing link (a QR)
   var PITCH_FACTS = ['comps', 'priceLow', 'priceMid', 'priceHigh', 'recBand'];
   var IMG = /\.(jpe?g|png|webp)$/i;
 
@@ -82,6 +85,18 @@
     return out;
   }
 
+  /* Slice 6: DE's open houses still to come, oldest first: [{ type, start, end }] (DE's local times) */
+  function upcomingOpenHouses(row, now) {
+    var list = core(row).openHouses;
+    if (!Array.isArray(list) || !list.length) list = (row && row.de && row.de.openHouses) || [];
+    var t = typeof now === 'number' ? now : Date.now();
+    return (Array.isArray(list) ? list : []).filter(function (o) {
+      return o && typeof o === 'object' && typeof o.startTime === 'string' && !isNaN(Date.parse(o.startTime));
+    }).filter(function (o) { return Date.parse(o.endTime || o.startTime) >= t; })
+      .map(function (o) { return { type: o.type === 'Broker' ? 'Broker' : 'Public', start: o.startTime, end: typeof o.endTime === 'string' ? o.endTime : null }; })
+      .sort(function (a, b) { return Date.parse(a.start) - Date.parse(b.start); });
+  }
+
   function FIELDS(tool, row) {
     if (tool === 'brochure') {
       return [rental(row) ? 'rent' : 'price', 'beds', 'baths', 'halfBaths', 'sqft', 'parking', 'city', 'state', 'zip', 'description'].concat(listFields(row));
@@ -94,10 +109,12 @@
         .concat(l, ['city', 'state', 'zip'], PITCH_FACTS);
     }
     if (tool === 'pitch-map') return ['mapAddresses'];
+    if (tool === 'open-house') return [rental(row) ? 'rent' : 'price', 'beds', 'baths', 'halfBaths', 'sqft', place(row), 'openHouses', 'shortDescription'];
     return [];
   }
   function value(tool, row, name) {
     if (name === 'mapAddresses') return mapAddresses(row);
+    if (name === 'openHouses') { var oh = upcomingOpenHouses(row); return oh.length ? oh : null; }
     if (PITCH_FACTS.indexOf(name) !== -1) { var x = core(row)[name]; return empty(x) ? null : x; }
     return v(row, name);
   }
@@ -155,6 +172,31 @@
       // the deck speaks New York or New Jersey; Florida takes New Jersey's wording (D100)
       s.market = row.market === 'NYC' ? 'nyc' : row.market === 'NJ' || row.market === 'FL' ? 'nj' : (s.market || 'nyc');
       if (a.ids.length) s.agents = a.ids;
+    } else if (tool === 'open-house') {
+      s.address = text(c.address); s.unit = text(c.unit);
+      s.town = text(v(row, 'neighborhood') || v(row, 'city') || '');
+      s.price = figure(v(row, rental(row) ? 'rent' : 'price'));
+      s.priceLabel = rental(row) ? 'Monthly Rent' : 'List Price';
+      s.beds = text(v(row, 'beds')); s.baths = bathsText(row); s.sqft = text(v(row, 'sqft'));
+      var short = v(row, 'shortDescription') || v(row, 'description');
+      if (short !== null) s.blurb = String(short);
+      s.market = S.marketKey(row.market);
+      var link = S.listingUrlOf(row);
+      if (link) s.listingUrl = link;
+      if (a.ids.length) s.agents = a.ids;
+      // the dates: DE's upcoming open houses, redone when they changed since the last build
+      var oh = value(tool, row, 'openHouses') || [];
+      var pf = ctx && ctx.previous && ctx.previous.facts;
+      if (!pf || JSON.stringify(pf.openHouses || null) !== JSON.stringify(oh.length ? oh : null)) {
+        s.dates = oh.slice(0, 3).map(function (o) { return { start: o.start, end: o.end, broker: o.type === 'Broker' }; });
+        redone.push('dates');
+      }
+    } else if (tool === 'signage') {
+      s.kind = 'for-sale';
+      var q = S.listingUrlOf(row);
+      if (q) s.qrUrl = q;
+      s.market = S.marketKey(row.market);
+      if (a.ids.length) s.agents = a.ids;
     }
     return { state: s, redone: redone };
   }
@@ -170,6 +212,7 @@
         ['zip', 'zip', 'text'], ['blurb', 'description', 'text']];
     }
     if (tool === 'postcard-listed') return [['price', 'price', 'money']];
+    if (tool === 'open-house') return [['price', r ? 'rent' : 'price', 'money']];
     if (tool === 'seller') {
       return [['beds', 'beds', 'number'], ['baths', 'baths', 'baths'], ['sqft', 'sqft', 'number'], ['ptype', 'propertyType', 'text'],
         ['year', 'yearBuilt', 'soft'], ['taxes', 'taxesMonthly', 'money'], ['cc', 'commonCharges', 'money'], ['blurb', 'description', 'text'],
@@ -268,7 +311,7 @@
     var a = agents(tool, row);
     return {
       v: 2, tool: tool, market: row.market || 'NYC', kind: rental(row) ? 'rental' : 'sale',
-      facts: facts, agents: a.ids, agentsConfirmed: a.confirmed, listingUrl: tool === 'brochure' ? S.listingUrlOf(row) : null,
+      facts: facts, agents: a.ids, agentsConfirmed: a.confirmed, listingUrl: LINKED.indexOf(tool) !== -1 ? S.listingUrlOf(row) : null,
       photos: ctx.photos || [], plans: ctx.plans || [], map: ctx.map || null,
       print: { paper: state.paper || null, bleed: state.bleed || null }, via: ctx.via || 'helper'
     };
@@ -286,6 +329,7 @@
     if (tool === 'postcard-listed' || tool === 'postcard-sold') return list.slice(0, 2);
     if (tool === 'brochure') return list.slice(0, 24);
     if (tool === 'seller') return list.slice(0, 12);
+    if (tool === 'open-house') return list.slice(0, 3);
     return [];
   }
 
@@ -331,6 +375,6 @@
     TOOLS: TOOLS, FIELDS: FIELDS, value: value, fill: fill, factEdits: factEdits, applyEdits: applyEdits, builtFrom: builtFrom,
     photosFor: photosFor, pickFloorplans: pickFloorplans, pitchPhotos: pitchPhotos, mapAddresses: mapAddresses,
     label: function (t) { return LABEL[t] || t; }, note: function (t) { return NOTE[t]; }, maxAgents: function (t) { return MAX_AGENTS[t] || 0; },
-    agents: agents, joinUnit: joinUnit, PITCH_FACTS: PITCH_FACTS
+    agents: agents, joinUnit: joinUnit, PITCH_FACTS: PITCH_FACTS, upcomingOpenHouses: upcomingOpenHouses, LINKED: LINKED
   };
 });

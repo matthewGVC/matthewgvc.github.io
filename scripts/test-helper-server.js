@@ -483,6 +483,17 @@ function req(method, p, headers, body) {
       check('…and nothing was written there', fs.readdirSync(outside).length, 0);
       fs.rmdirSync(j5('15 Linked St'));   // removes the link only
     }
+    /* Slice 6: the Open House flyer and the For Sale sign */
+    fs.mkdirSync(path.join(j5('10 Example St'), 'Marketing', 'Open House'), { recursive: true });
+    o5 = await p5({ propertyId: 'l10', tool: 'open-house', state: {} }, cfgP);
+    check('open house flyer: into an existing Marketing\\Open House', [o5.path, o5.folderMade], ['Marketing/Open House/Open House Flyer - 10 Example St - 2026-10-22.pdf', false]);
+    o5 = await p5({ propertyId: 'l11', tool: 'signage', state: {} }, cfgP);
+    check('signage: Marketing\\Signage made', [o5.path, o5.folderMade], ['Marketing/Signage/For Sale Sign - 11 Example St - 2026-10-22.pdf', true]);
+    fs.mkdirSync(path.join(j5('14 Example St'), 'Signs'), { recursive: true });
+    o5 = await p5({ propertyId: 'l14', tool: 'signage', state: {} }, cfgP);
+    check('signage: an old Signs folder at the top is used', o5.path, 'Signs/For Sale Sign - 14 Example St - 2026-10-22.pdf');
+    check('a sign for a pitch is refused', (await e5({ pitchId: 'q12', tool: 'signage', state: {} }))[0], 400);
+    check('an open house flyer for a pitch is refused', (await e5({ pitchId: 'q12', tool: 'open-house', state: {} }))[0], 400);
     check('archive sentences per piece', require('../helper/pdf/archive.js').sentences('brochure').GONE, 'older brochure left in place: it isn\'t where the workspace left it');
   }
 

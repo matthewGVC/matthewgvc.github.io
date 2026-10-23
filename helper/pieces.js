@@ -25,7 +25,10 @@ const PIECES = {
   'postcard-listed': { prefix: 'Just Listed Postcard', words: 'postcard', folder: /^postcards?\b/i, make: 'Postcard', ext: 'pdf', owners: ['properties'] },
   'postcard-sold': { prefix: 'Just Sold Postcard', words: 'postcard', folder: /^postcards?\b/i, make: 'Postcard', ext: 'pdf', owners: ['properties'] },
   seller: { prefix: 'Seller Pitch', words: 'seller pitch', folder: PITCH_DIR, make: 'Pitch', ext: 'pdf', owners: ['properties', 'pitches'] },
-  'pitch-map': { prefix: 'Map', words: 'map', folder: PITCH_DIR, make: 'Pitch', ext: 'png', owners: ['properties', 'pitches'] }
+  'pitch-map': { prefix: 'Map', words: 'map', folder: PITCH_DIR, make: 'Pitch', ext: 'png', owners: ['properties', 'pitches'] },
+  // Slice 6
+  'open-house': { prefix: 'Open House Flyer', words: 'open house flyer', folder: /^open house\b/i, make: 'Open House', ext: 'pdf', owners: ['properties'] },
+  signage: { prefix: 'For Sale Sign', words: 'sign', folder: /^(signage|signs?)\b/i, make: 'Signage', ext: 'pdf', owners: ['properties'] }
 };
 
 module.exports = { PIECES };

@@ -26,6 +26,12 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .foot .foot-links{display:inline-flex;gap:6px 16px;flex-wrap:wrap}
 .foot .foot-links a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
 .foot .ok::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cyan)}
+/* the DE and Asana sync lines in the top bar */
+.top-sync{display:flex;flex-direction:column;gap:2px;max-width:330px;font-family:var(--mono);font-size:10.5px;line-height:1.3;color:var(--ink-soft)}
+.top-sync span{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-sync span::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--danger)}
+.top-sync span.ok::before{background:var(--cyan)}
+@media (max-width:1180px){ .top-sync{display:none} }
 
 /* ---------- page ---------- */
 .wrap{max-width:1440px;margin:0 auto;padding:36px 32px 0;width:100%}
@@ -137,6 +143,8 @@ h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
 .sb.no{background:color-mix(in srgb,var(--danger) 10%,var(--paper));border-color:color-mix(in srgb,var(--danger) 45%,var(--rule));color:var(--danger)}
 .sb.na{color:var(--ink-soft);opacity:.75}
 
+.chip:empty{display:none}
+
 /* stage stepper */
 .steps{display:flex;align-items:flex-start;position:relative}
 .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;font-size:12.5px;text-align:center;color:var(--ink-soft)}
@@ -184,6 +192,7 @@ h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
 button.pill-ok{cursor:pointer;font:inherit;font-family:var(--mono);font-size:11px}
 .banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 32px;font-size:13.5px;background:var(--bone);color:var(--ink);border-bottom:1px solid var(--rule)}
 .banner .b{margin-left:auto}
+.banner[hidden]{display:none}   /* hidden must win over display:flex, or an empty grey band shows */
 .health .ic.amber{background:color-mix(in srgb,var(--danger) 30%,var(--bone));color:var(--ink)}
 .health .ic.red{background:var(--danger);color:var(--paper)}
 .health.amber{border-color:color-mix(in srgb,var(--danger) 45%,var(--bone))}

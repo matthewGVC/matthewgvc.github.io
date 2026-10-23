@@ -75,6 +75,14 @@
 details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 0 4px}
 /* agents */
 .agents{list-style:none;margin:0;padding:0}
+/* the header's Link buttons: green and "Relink" once linked */
+.acts .links{display:contents}
+.b.lk.ok{background:#E4F2E8;border-color:#2E7D4F;color:#1E5A36}
+.b.lk.ok:hover{background:#D5EBDC}
+.b.lk:not(.ok){border-color:var(--danger);color:var(--danger)}
+/* Floorplans and Photos inside the Marketing track */
+#kitCard .mt-sub{margin-top:18px;padding-top:4px;border-top:1px solid var(--rule)}
+#kitCard .mt-sub > .card{border:0;background:none;box-shadow:none;padding:12px 0 0;margin:0}
 .agent{display:flex;align-items:center;gap:12px;padding:8px 0}
 .agent .ph{width:40px;height:40px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);object-fit:cover;flex-shrink:0}
 .agent .aw{flex:1;min-width:0;overflow-wrap:anywhere}
@@ -182,6 +190,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/workspace-shell.js"></script>
 <script defer src="../../assets/js/ws-collapse.js"></script>
 <script src="../../assets/js/folder-link.js"></script>
+<script src="../../assets/js/match-link.js"></script>
 <script src="../../assets/js/job-page/save.js"></script>
 <script src="../../assets/js/job-page/facts.js"></script>
 <script src="../../assets/js/job-page/agents.js"></script>
@@ -345,16 +354,13 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   function steps() {
     var j = state.job;
     if (kind === 'dev') return '';
-    return '<div class="card" data-open style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2></div></div><div class="steps-wrap"><div class="steps">' +
+    return '<div class="card" data-collapse="off" style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2></div></div><div class="steps-wrap"><div class="steps">' +
       j.steps.map(function (s, i) {
         var cls = i === j.stageIdx ? 'cur' : (j.done[s] || (s === 'Pitch' && j.pitchedOn)) ? 'done' : i < j.stageIdx ? 'skip' : '';
         var d = s === 'Pitch' ? (j.pitchedOn || j.done.Pitch) : j.done[s];
         return '<div class="step ' + cls + '"><span class="dot">' + (cls === 'done' ? I('check') : (i + 1)) + '</span>' + esc(s) + '<span class="d">' + (d ? esc(W.fmtDay(d)) : '') + '</span></div>';
       }).join('') + '</div></div></div>';
   }
-
-  /* S8: the only stage button. Unarchive goes back to the stage Asana shows now. */
-  function unarchiveTo() { var a = state.row.asana || {}; return a.stageFromStatus || a.stageFromSection || 'Prep'; }
 
   /* S13: the folder's Drive link, from the helper, else last night's scan, else the G: path (GVC_JP.drive) */
   function gPath() { return JP.drive.gPath(state.row); }
@@ -366,26 +372,26 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var sub = ['<span class="chip">' + esc(j.market || '?') + '</span>'];
     if (j.place) sub.push(esc(j.place));
     if (j.pitchedOn && kind !== 'pitch') sub.push('Pitched ' + esc(W.fmtDay(j.pitchedOn)));
-    var link = r.folder_state === 'linked' ? 'Change folder' : r.folder_state === 'broken' ? 'Relink folder' : 'Link folder';
-    var archived = r.stage === 'Archived';
-    var acts = '<div class="acts"><span id="rebuildHost"></span>' +
+    // red "Link …" until linked, green "Relink …" once linked; a folder that moved is red "Relink"
+    var linkBtn = function (id, what, ok, again) {
+      return '<button class="b lk' + (ok ? ' ok' : '') + '" type="button" id="' + id + '">' + (ok ? I('check') : I('link')) + (ok || again ? 'Relink ' : 'Link ') + esc(what) + '</button>';
+    };
+    var links = JP.canEdit ? '<div class="links">' + linkBtn('link', 'Google Drive', r.folder_state === 'linked', r.folder_state === 'broken') +
+      (kind === 'listing' ? linkBtn('linkAsana', 'Asana', !!r.asana_gid && !(r.asana && r.asana.gone)) + linkBtn('linkDe', 'DE', !!r.de_listing_id) : '') + '</div>' : '';
+    var acts = '<div class="acts"><span id="rebuildHost"></span>' + links +
       '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
-      '<button class="b" type="button" id="copyLink"' + (r.drive_folder ? '' : ' disabled') + '>' + I('link') + 'Copy Drive link</button>' +
-      '<button class="b" type="button" id="copy"' + (r.drive_folder ? '' : ' disabled') + '>' + I('copy') + 'Copy folder path</button>' +
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
-      (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
-      (kind === 'listing' && JP.canEdit ? '<button class="b" type="button" id="archive">' + esc(archived ? 'Unarchive (back to ' + unarchiveTo() + ')' : 'Archive') + '</button>' : '') +
-      (JP.canEdit ? '<button class="b' + (r.folder_state === 'linked' ? '' : ' primary') + '" type="button" id="link">' + I('link') + esc(link) + '</button>' : '') + '</div>';
+      (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div>';
     var right = [], left = [];
-    if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c) + '</div>', '<div id="fpHost">' + JP.floorplans.html(c) + '</div>',
-      '<div id="photosHost">' + JP.photos.html(c) + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
+    if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
+      '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
     if (kind === 'pitch') left.push(JP.kit.pitchHtml(c));
     left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
     if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="folderHost">' + JP.folder.html(c) + '</div>');
     if (kind === 'listing') right.push(asanaCard());
-    page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>' +
+    page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
       '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + steps() +
@@ -402,22 +408,16 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
     $('open').addEventListener('click', function () {
       GVC_SHELL.helper('POST', '/open-folder', { folder: r.drive_folder }).then(function (x) { $('actMsg').textContent = x.ok ? 'Opened in File Explorer.' : (x.error || 'Couldn\'t open it.'); },
-        function (e) { $('actMsg').textContent = e.message + ' Use Copy folder path instead.'; });
+        function (e) { $('actMsg').textContent = e.message; });
     });
-    $('copy').addEventListener('click', function () { JP.drive.copy(gPath(), 'Copied: paste it into File Explorer\'s address bar.', $('actMsg')); });
-    $('copyLink').addEventListener('click', function () { JP.drive.copyLink(r, null, null, $('actMsg')); });
+    ['linkAsana', 'linkDe'].forEach(function (b) {
+      if ($(b)) $(b).addEventListener('click', function () {
+        window.GVC_MATCH_LINK.openForJob({ row: r, type: b === 'linkDe' ? 'de' : 'asana', name: j.name }).then(function (ok) { if (ok) load(); },
+          function (e) { $('actMsg').textContent = e.message; });
+      });
+    });
     if ($('link')) $('link').addEventListener('click', function () {
       GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
-    });
-    if ($('archive')) $('archive').addEventListener('click', function () {
-      var b = $('archive'), to = archived ? unarchiveTo() : 'Archived';
-      b.disabled = true; $('actMsg').textContent = 'Saving…';
-      JP.save('properties', r, { stage: to }, [{ field: 'stage', old_value: r.stage, new_value: to }]).then(function () {
-        return load().then(function () { $('actMsg').textContent = to === 'Archived' ? 'Archived. The Asana sync won\'t move it.' : 'Back on ' + to + ', the stage Asana shows.'; });
-      }, function (e) {
-        if ($('actMsg')) $('actMsg').textContent = e.message;
-        if (!e.conflict && $('archive')) $('archive').disabled = false;
-      });
     });
   }
 

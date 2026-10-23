@@ -148,6 +148,29 @@ const AS = { type: 'asana', gid: '1600', name: '52 E4 - 10', market: 'NYC' };
   try { await L.setAside(api, DE); } catch (e) { err = e; }
   check('not ours: signed out: nothing written', [err && err.message, api.calls.length], ['Sign in first.', 0]);
 
+  /* ---------- tune-ups 3: Link Asana / Link DE from the job ---------- */
+  const NOWS = new Date().toISOString(), OLD = new Date(Date.now() - 60 * 864e5).toISOString();
+  const DEL = [
+    { de_listing_id: '9201', feed: 'featured', kind: 'sale', raw: { street: '1006 PHEASANT LN', unit: '204', city: 'Wall', status: 'Pending' }, last_seen: NOWS },
+    { de_listing_id: '9202', feed: 'featured', kind: 'rental', raw: { street: '1006 PHEASANT LN', unit: '9' }, last_seen: NOWS },
+    { de_listing_id: '9203', feed: 'transactions', kind: 'sale', gvc_listed: false, raw: { street: '5 Other St' }, last_seen: NOWS },
+    { de_listing_id: '9204', feed: 'featured', kind: 'sale', raw: { street: '5 Other St' }, last_seen: NOWS, property_id: 'p9' },
+    { de_listing_id: '9205', feed: 'featured', kind: 'sale', raw: { street: '7 Stale Rd' }, last_seen: OLD },
+    { de_listing_id: '9206', feed: 'transactions', kind: 'sale', gvc_listed: true, raw: { street: '2 Sold Ave' }, last_seen: NOWS },
+    { de_listing_id: '9207', feed: 'featured', kind: 'sale', raw: { street: '3 Ignored Pl' }, last_seen: NOWS, ignored: true }];
+  check('from the job, DE: same kind, recent, featured or the team\'s, free, same street first',
+    L.jobCandidates(ROWS[0], 'de', DEL, A).map(c => [c.link.id, c.same]), [['9201', true], ['9206', false]]);
+  const TASKS = [{ gid: '1', kind: 'listing', name: 'Pheasant Ln 204' }, { gid: '2', kind: 'listing', name: '1006 Pheasant Ln, Wall', property_id: 'p1' },
+    { gid: '3', kind: 'listing', name: 'Taken', property_id: 'p2' }, { gid: '4', kind: 'dev', name: 'A dev task' }, { gid: '5', kind: 'listing', name: 'Ignored', ignored: true }];
+  const tc = L.jobCandidates(Object.assign({}, ROWS[0], { asana_gid: '2' }), 'asana', TASKS, A);
+  check('from the job, Asana: listing tasks not another job\'s; the linked one first', tc.map(c => [c.link.gid, c.current]), [['2', true], ['1', false]]);
+  api = fakeApi([['PATCH', '/rest/v1/properties', [{ id: 'p3', version: 2 }]]]);
+  await L.linkTo(api, ROWS[2], { type: 'de', id: '9202', kind: 'rental' }, { replace: true });
+  check('relink DE: the job, then the old listing lets go, then the new one, then the log', api.calls.map(x => x[0] + ' ' + x[1].split('?')[0] + (x[1].indexOf('8001') !== -1 ? ' (old)' : '')),
+    ['PATCH /rest/v1/properties', 'PATCH /rest/v1/de_listings (old)', 'PATCH /rest/v1/de_listings', 'POST /rest/v1/changes']);
+  check('relink DE: the old listing only if it still points at this job; the log says Relinked', [api.calls[1][1].indexOf('property_id=eq.p3') !== -1, api.calls[1][2], api.calls[3][2].note],
+    [true, { property_id: null }, 'Relinked to DE by hand']);
+
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');
     failures.forEach(f => console.log('  FAIL ' + f));

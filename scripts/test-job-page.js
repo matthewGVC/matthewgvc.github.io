@@ -246,13 +246,10 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   s = t.saves[5] || {};
   check('note: a change with no field', [s.p_table, JSON.stringify(s.p_set), (s.p_changes || []).map(c => [c.field, c.note, c.asked_by])],
     ['properties', '{}', [[null, 'Katie says the price drops Friday', 'Katie Cook']]]);
-  // Archive
-  await p.click('#archive');
-  await settle(p);
-  s = t.saves[6] || {};
-  check('archive: stage Archived', [s.p_set && s.p_set.stage, (s.p_changes || []).map(c => [c.field, c.old_value, c.new_value])], ['Archived', [['stage', 'Live', 'Archived']]]);
-  check('archive: says so', (await text(p, '#actMsg')).startsWith('Archived.'), true);
-  check('header: Open in Asana and Copy Drive link', [await p.$eval('#asanaLink', a => a.getAttribute('href')), await p.$$eval('#copyLink', e => e.length)], ['https://app.asana.com/0/1/1201', 1]);
+  // the header (tune-ups 3): Link Google Drive / Asana / DE, green Relink once linked; no Copy or Archive buttons
+  check('header: Open in Asana, no copy or archive buttons', [await p.$eval('#asanaLink', a => a.getAttribute('href')), await p.$$eval('#copyLink, #copy, #archive', e => e.length)], ['https://app.asana.com/0/1/1201', 0]);
+  check('header: the three link buttons', await p.$$eval('.acts .lk', bs => bs.map(b => [b.id, b.textContent.trim(), b.classList.contains('ok')])),
+    [['link', 'Relink Google Drive', true], ['linkAsana', 'Relink Asana', true], ['linkDe', 'Relink DE', true]]);
   check('facts: no page errors after saving', t.errors, []);
   await t.ctx.close();
 
@@ -300,11 +297,6 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await p.click('[data-drop="gone-agent"]');
   await settle(p);
   check('agents: × removes the unknown id', t.saves[0] && t.saves[0].p_set.core.agentIds, ['katie-cook']);
-  // Unarchive goes back to Asana's stage
-  check('unarchive: names the stage', await text(p, '#archive'), 'Unarchive (back to Live)');
-  await p.click('#archive');
-  await settle(p);
-  check('unarchive: Asana\'s stage', t.saves[1] && t.saves[1].p_set, { stage: 'Live' });
   await t.ctx.close();
 
   /* ---------- a teammate: read-only, note box ---------- */

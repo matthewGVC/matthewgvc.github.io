@@ -36,7 +36,9 @@
   function person(id, i, ctx, edit) {
     var esc = ctx.esc, a = agent(id);
     var pic = a ? '<img class="ph" src="' + esc(a.photo) + '" alt="">' : '<span class="ph">' + ctx.I('people') + '</span>';
-    var who = a ? '<div class="an">' + esc(a.name) + (i === 0 ? ' <span class="chip">Lead</span>' : '') + '</div><div class="at">' + esc(a.title) + '</div>'
+    var reach = a && !edit ? [a.mobile || a.phone ? 'M ' + (a.mobile || a.phone) : '', a.email || ''].filter(Boolean) : [];
+    var who = a ? '<div class="an">' + esc(a.name) + (i === 0 ? ' <span class="chip">Lead</span>' : '') + '</div><div class="at">' + esc(a.title) + '</div>' +
+                  (reach.length ? '<div class="at ac">' + reach.map(esc).join('<br>') + '</div>' : '')
                 : '<div class="an">' + esc('Unknown agent (' + id + ')') + '</div><div class="at">No longer on the roster</div>';
     var btn = '';
     if (edit) {
@@ -88,7 +90,7 @@
       acts = (!ids.length && sug.length ? '<button class="b primary sm" type="button" id="agConfirm">Confirm</button>' : '') +
         '<button class="b sm" type="button" id="agChange">' + (ids.length || sug.length ? 'Change' : 'Add') + '</button>';
     }
-    return '<div class="card" id="agentsCard"><div class="card-h"><div><h2>Agents</h2></div></div>' +
+    return '<div class="card" id="agentsCard"' + (ids.length || ui ? ' data-open' : '') + '><div class="card-h"><div><h2>Agents</h2></div></div>' +
       body + (acts ? '<div class="fbtn">' + acts + '</div>' : '') + '<p class="fmsg" id="agMsg" role="alert">' + esc((ui && ui.msg) || '') + '</p></div>';
   }
 

@@ -28,6 +28,13 @@
          when the row has an owner.
      open({ link, rows, nameOf, what }) → Promise<boolean>  the picker dialog
          (true once linked). Needs GVC_PROPS, GVC_ADDR, GVC_ESC.
+     openForJob({ row, type: 'asana'|'de', name }) → Promise<boolean>  the other way
+         round, from a job page's Link Asana / Link DE (tune-ups 3): the job's
+         candidates (Asana listing tasks not ignored and not another job's; DE
+         listings seen in the last 30 days, featured or the team's, same kind),
+         same street first. A job already linked is relinked: the old task or
+         listing lets go of it (replace).
+     linkTo(api, row, link, { replace: true }) skips the "already linked" refusal.
    Signed out: nothing is written. The helper respects both on its next run:
    DE apply finds a job by its stored de_listing_id, Asana apply by its stored
    asana_gid, and neither unsets `ignored`.
@@ -77,9 +84,10 @@
 
   function enc(v) { return encodeURIComponent(v); }
 
-  function linkTo(api, row, link) {
+  function linkTo(api, row, link, opts) {
     if (!api.signedIn()) return Promise.reject(new Error(SIGN_IN));
-    var no = refusal(row, link);
+    var replace = !!(opts && opts.replace);
+    var no = replace ? null : refusal(row, link);
     if (no) return Promise.reject(new Error(no));
     var de = link.type === 'de', value = de ? link.id : link.gid, field = de ? 'de_listing_id' : 'asana_gid';
     var patch = {}; patch[field] = value;
@@ -89,11 +97,14 @@
       if (!rows || !rows.length) { var e = new Error('Someone changed this job meanwhile. Reload the page and link it again.'); e.conflict = true; throw e; }
       // the job holds the link now; the rest is bookkeeping the next sync also fills in
       var cache = de ? '/rest/v1/de_listings?de_listing_id=eq.' + enc(link.id) : '/rest/v1/asana_tasks?gid=eq.' + enc(link.gid);
-      var missed = [];
-      return api.call(cache, { method: 'PATCH', body: JSON.stringify({ property_id: row.id }) }).catch(function (e) { missed.push('the ' + (de ? 'DE' : 'Asana') + ' copy (' + e.message + ')'); })
+      var missed = [], old = row[field] && row[field] !== value ? row[field] : null;
+      // a relink: the old task or listing lets go of the job (the next sync agrees)
+      var letGo = !replace || !old ? Promise.resolve() : api.call((de ? '/rest/v1/de_listings?de_listing_id=eq.' : '/rest/v1/asana_tasks?gid=eq.') + enc(old) + '&property_id=eq.' + enc(row.id),
+        { method: 'PATCH', body: JSON.stringify({ property_id: null }) }).catch(function (e) { missed.push('letting go of the old one (' + e.message + ')'); });
+      return letGo.then(function () { return api.call(cache, { method: 'PATCH', body: JSON.stringify({ property_id: row.id }) }); }).catch(function (e) { missed.push('the ' + (de ? 'DE' : 'Asana') + ' copy (' + e.message + ')'); })
         .then(function () {
           return api.call('/rest/v1/changes', { method: 'POST', body: JSON.stringify({ property_id: row.id, field: field, old_value: row[field] || null, new_value: value,
-            note: de ? 'Linked to DE by hand' : 'Linked to Asana by hand', source: 'Matt' }) }).catch(function (e) { missed.push('the change log (' + e.message + ')'); });
+            note: (old ? 'Relinked' : 'Linked') + (de ? ' to DE by hand' : ' to Asana by hand'), source: 'Matt' }) }).catch(function (e) { missed.push('the change log (' + e.message + ')'); });
         }).then(function () {
           if (!missed.length) return rows[0];
           var e = new Error('Linked, but ' + missed.join(' and ') + ' didn\'t save. The job keeps the link and the next sync fills in the rest; there\'s nothing to redo.');
@@ -181,5 +192,83 @@
     });
   }
 
-  return { candidates: candidates, filter: filter, refusal: refusal, linkTo: linkTo, setAside: setAside, open: open };
+  /* ---------- the picker from a job: Link Asana / Link DE ---------- */
+  var MONTH = 30 * 864e5;
+  function jobCandidates(row, type, list, A) {
+    var addr = addressOf(row), out = [];
+    (list || []).forEach(function (x) {
+      var c;
+      if (type === 'asana') {
+        if (x.ignored || x.kind !== 'listing' || (x.property_id && x.property_id !== row.id)) return;
+        c = { link: { type: 'asana', gid: x.gid, name: x.name || null, market: row.market || null }, title: x.name || 'Asana task ' + x.gid, sub: x.section || '', street: x.name || '', current: x.gid === row.asana_gid };
+      } else {
+        var raw = x.raw || {};
+        if (x.ignored || (x.property_id && x.property_id !== row.id)) return;
+        if (x.feed !== 'featured' && x.gvc_listed !== true) return;
+        if (x.kind && row.kind && KIND[x.kind] && KIND[row.kind] && x.kind !== row.kind) return;
+        if (x.last_seen && Date.now() - Date.parse(x.last_seen) > MONTH) return;
+        var street = raw.street ? String(raw.street).trim() : '';
+        c = { link: { type: 'de', id: x.de_listing_id, kind: x.kind || null, market: row.market || null, street: street, unit: raw.unit || null },
+          title: [street, raw.unit].filter(Boolean).join(' ') || 'DE listing ' + x.de_listing_id,
+          sub: [raw.city, raw.status, 'DE ' + x.de_listing_id].filter(Boolean).join(' · '), street: street, current: x.de_listing_id === row.de_listing_id };
+      }
+      c.same = !!(addr && c.street && A && A.sameStreet(c.street, addr));
+      out.push(c);
+    });
+    var by = function (a, b) { return a.current !== b.current ? (a.current ? -1 : 1) : a.same !== b.same ? (a.same ? -1 : 1) : a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1; };
+    return out.sort(by);
+  }
+  function openForJob(o) {
+    var doc = global.document, P = global.GVC_PROPS, A = global.GVC_ADDR, esc = global.GVC_ESC, row = o.row, de = o.type === 'de';
+    var read = de ? '/rest/v1/de_listings?select=de_listing_id,feed,kind,raw,gvc_listed,property_id,ignored,last_seen&ignored=is.false'
+      : '/rest/v1/asana_tasks?select=gid,kind,name,section,property_id,ignored&kind=eq.listing&ignored=is.false';
+    return P.call(read).then(function (list) {
+      var all = jobCandidates(row, o.type, list, A);
+      return new Promise(function (resolve) {
+        var d = doc.createElement('dialog');
+        d.className = 'gvc-link gvc-mlink';
+        d.setAttribute('aria-labelledby', 'mjTitle');
+        d.style.cssText = 'border:1px solid var(--rule);border-radius:10px;padding:22px 24px;max-width:560px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)';
+        d.innerHTML = '<h2 id="mjTitle" style="font-size:22px;margin:0 0 4px"></h2><p class="soft" style="margin:0 0 12px;font-size:13.5px" id="mjWhat"></p>' +
+          '<input class="inp" id="mjSearch" type="search" aria-label="Search" autocomplete="off" style="width:100%;margin-bottom:10px">' +
+          '<div id="mjList" style="max-height:min(50vh,420px);overflow:auto"></div>' +
+          '<p id="mjMsg" role="alert" style="min-height:1.2em;color:var(--danger);font-size:13px;margin:10px 0 0"></p>' +
+          '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button type="button" class="b" id="mjCancel">Cancel</button></div>';
+        d.querySelector('#mjTitle').textContent = (row[de ? 'de_listing_id' : 'asana_gid'] ? 'Relink ' : 'Link ') + (de ? 'DE' : 'Asana');
+        d.querySelector('#mjWhat').textContent = 'Pick the ' + (de ? 'DE listing' : 'Asana task') + ' for ' + (o.name || 'this job') + '. The next sync fills the job in from it.';
+        d.querySelector('#mjSearch').placeholder = de ? 'Search DE listings' : 'Search Asana tasks';
+        var list = d.querySelector('#mjList'), msg = d.querySelector('#mjMsg'), search = d.querySelector('#mjSearch');
+        var opener = doc.activeElement, saved = false, busy = false;
+        var done = function (ok) { d.close(); d.remove(); if (opener && opener.focus && opener.isConnected) opener.focus(); resolve(ok); };
+        var lock = function (on) { d.querySelectorAll('#mjCancel, #mjSearch, button[data-i]').forEach(function (b) { b.disabled = on; }); };
+        var draw = function () {
+          var t = search.value.trim().toLowerCase(), shown = all.filter(function (c) { return !t || (c.title + ' ' + c.sub).toLowerCase().indexOf(t) !== -1; }).slice(0, 80);
+          list.innerHTML = shown.length ? shown.map(function (c) {
+            return '<button type="button" class="b" data-i="' + all.indexOf(c) + '" style="display:flex;width:100%;justify-content:space-between;gap:10px;margin-bottom:6px;white-space:normal;text-align:left"' + (c.current ? ' disabled' : '') + '>' +
+              '<span>' + esc(c.title) + (c.current ? ' (linked now)' : c.same ? ' · same street' : '') + '</span><span class="soft" style="font-size:12px">' + esc(c.sub) + '</span></button>';
+          }).join('') : '<p class="soft">' + (t ? 'Nothing has that in its name.' : 'Nothing to link.') + '</p>';
+        };
+        list.addEventListener('click', function (e) {
+          var b = e.target.closest('button[data-i]'); if (!b || busy || saved) return;
+          var c = all[+b.dataset.i];
+          busy = true; lock(true); msg.textContent = 'Saving…';
+          linkTo(P, row, c.link, { replace: true }).then(function () { done(true); }, function (err) {
+            msg.textContent = err.message;
+            if (err.linked) { saved = true; var x = d.querySelector('#mjCancel'); x.textContent = 'Close'; x.disabled = false; return; }
+            busy = false; lock(false);
+          });
+        });
+        search.addEventListener('input', draw);
+        d.querySelector('#mjCancel').addEventListener('click', function () { done(saved); });
+        d.addEventListener('cancel', function (e) { e.preventDefault(); if (!busy || saved) done(saved); });
+        draw();
+        doc.body.appendChild(d);
+        d.showModal();
+        search.focus();
+      });
+    });
+  }
+
+  return { candidates: candidates, filter: filter, refusal: refusal, linkTo: linkTo, setAside: setAside, open: open,
+    jobCandidates: jobCandidates, openForJob: openForJob };
 });

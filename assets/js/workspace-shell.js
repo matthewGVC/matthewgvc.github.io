@@ -101,7 +101,9 @@
     top.innerHTML = '<a class="brand" href="' + root + '"><img src="' + root + '../assets/logos/monogram.svg" alt="">GVC Workspace</a>' +
       '<nav class="nav" aria-label="Main"><a href="' + root + '"' + cur('overview') + '>Overview</a><a href="' + root + 'jobs/"' + cur('resell') + '>Resell</a>' +
       '<a href="' + root + 'new-dev/"' + cur('newdev') + '>New Dev</a><a href="' + root + 'match/"' + cur('match') + '>Errors</a></nav>' +
-      '<div class="top-r"><button class="pill-ok off" type="button" id="wsDrive">Drive…</button>' +
+      // the DE and Asana sync lines sit beside the Drive pill (Matt, 10-23); ids kept from the footer days
+      '<div class="top-r"><span class="top-sync"><span class="ok" id="wsFootSync">DE sync status loading</span><span class="ok" id="wsFootAsana">Asana sync status loading</span></span>' +
+      '<button class="pill-ok off" type="button" id="wsDrive">Drive…</button>' +
       '<button class="ibtn" type="button" id="wsSync" title="Sync now: Asana, then DE">' + icon('sync') + '<span class="sr">Sync now: Asana, then DE</span></button>' +
       '<button class="ibtn" type="button" id="wsSearchBtn" title="Search jobs">' + icon('search') + '<span class="sr">Search jobs</span></button>' +
       '<button class="avatar" type="button" id="wsMe" title="Signed in" aria-haspopup="true">·</button></div>';
@@ -113,8 +115,7 @@
 
     var foot = doc.createElement('footer');
     foot.className = 'foot';
-    foot.innerHTML = '<span class="ok" id="wsFootSync">DE sync status loading</span><span class="ok" id="wsFootAsana">Asana sync status loading</span><span id="wsFootDrive"></span>' +
-      '<nav class="foot-links" aria-label="More"><a href="' + root + '../#tools">Team tools</a><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a></nav>' +
+    foot.innerHTML = '<nav class="foot-links" aria-label="More"><a href="' + root + '../#tools">Team tools</a><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a></nav>' +
       '<span>The GVC Team · Douglas Elliman</span>';
     body.appendChild(foot);
 
@@ -127,7 +128,6 @@
       var l = DRIVE_LABEL[s] || DRIVE_LABEL.error;
       pill.textContent = l[0]; pill.className = 'pill-ok' + (l[1] ? ' ' + l[1] : '');
       shell.readOnly = s !== 'connected';
-      doc.getElementById('wsFootDrive').textContent = s === 'connected' ? 'Drive G:\\Shared drives' : 'Read-only: no Drive here';
       banner.hidden = !shell.readOnly;
       banner.innerHTML = '';
       if (shell.readOnly) {
@@ -153,7 +153,7 @@
     }
     pill.addEventListener('click', driveClick);
     // pages that never need Drive (Match, Status): no pill, no read-only banner
-    if (opts.noDrive) { pill.style.display = 'none'; banner.style.display = 'none'; doc.getElementById('wsFootDrive').style.display = 'none'; }
+    if (opts.noDrive) { pill.style.display = 'none'; banner.style.display = 'none'; }
     shell.driveState = refreshDrive;
     refreshDrive();
 
@@ -180,12 +180,12 @@
       syncText = h.text;
       if (!syncBtn.disabled && !shell.lastSync) syncBtn.title = 'Sync now: Asana, then DE. ' + h.text;   // a sync's result stays readable
       var f = doc.getElementById('wsFootSync');
-      f.textContent = h.text;
+      f.textContent = h.text; f.title = h.text;
       f.className = h.state === 'ok' ? 'ok' : '';
     };
     shell.setAsana = function (h) {
       var f = doc.getElementById('wsFootAsana');
-      f.textContent = h.text;
+      f.textContent = h.text; f.title = h.text;
       f.className = h.state === 'ok' ? 'ok' : '';
     };
 

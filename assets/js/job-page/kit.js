@@ -262,7 +262,7 @@
     return { html: '<div class="kit">' + rows + sellerRow(ctx, pieces, live) + '</div>' + only, done: done, of: counted.length, sheet: sheet, all: judgeAll(ctx, pieces, live) };
   }
 
-  function html(ctx) {
+  function html(ctx, inner) {
     var m = JP.drive.mode(ctx), body;
     if (m === 'none') body = '<p class="soft">Link the job\'s Drive folder to see its files.</p>' + sheetOnly(ctx);
     else if (m === 'scan') {
@@ -271,7 +271,7 @@
     } else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     return '<div class="card" id="kitCard"><div class="card-h"><div><h2>Marketing track</h2></div>' +
       '<span class="chip" id="kitCount"></span></div><div id="kitBody">' + body + '</div>' +
-      '<p class="soft" id="kitMsg" role="status" style="font-size:13px;margin-top:8px">' + ctx.esc(JP.drive.msgs.kit || '') + '</p></div>';
+      '<p class="soft" id="kitMsg" role="status" style="font-size:13px;margin-top:8px">' + ctx.esc(JP.drive.msgs.kit || '') + '</p>' + (inner || '') + '</div>';
   }
 
   function wire(host, ctx) {

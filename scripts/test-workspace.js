@@ -558,7 +558,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
 
   t = await open(browser, { rows: R, path: '/workspace/job/?listing=12-sample-lane' });
   check('job: unsafe link never rendered', await t.page.$$eval('a[href^="javascript"]', els => els.length), 0);
-  check('job: broken folder flagged', [(await text(t.page, '#link')).includes('Relink'), (await text(t.page, '.path')).includes('moved or renamed')], [true, true]);
+  check('job: broken folder flagged', [(await text(t.page, '#link')).includes('Relink'), await t.page.$eval('#link', b => b.classList.contains('ok')), (await text(t.page, '.path')).includes('moved or renamed')], [true, false, true]);
   await t.ctx.close();
 
   t = await open(browser, { path: '/workspace/job/?listing=nobody-lives-here' });
@@ -788,7 +788,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     await pg.goto(BASE + '/workspace/job/?listing=100-example-st-residence-4a', { waitUntil: 'networkidle' });
     await pg.waitForTimeout(500);
     check('fold: a job page opens Stages, folds the rest', await pg.$$eval('.card.cz-head, .card', cs => cs.filter(c => c.querySelector(':scope > .cz-head')).map(c => (c.querySelector('h2') || {}).textContent + ':' + (c.classList.contains('cz-shut') ? 'shut' : 'open'))
-      .filter(x => /^(Stages|Change log|Agents):/.test(x))), ['Stages:open', 'Change log:shut', 'Agents:shut']);
+      .filter(x => /^(Stages|Change log|Agents):/.test(x))), ['Change log:shut', 'Agents:shut']);
     await ctx.close();
   }
 

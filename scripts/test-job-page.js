@@ -91,7 +91,7 @@ const FAKE_DRIVE = `(function () {
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
   if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
-  if (cfg.html) tree.children.push(d('Open House', [f('Open House - 100 Example St 4A.html', '11')]));
+  if (cfg.html) tree.children.push(d('Signage', [f('Signage - 100 Example St 4A.html', '11')]));
   var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
   function find(path) {
     var node = tree;
@@ -386,7 +386,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('folder: health note from the tree', (await text(p, '#folderBody [data-note="pieceAtTop"]')) || '', 'A brochure file sits loose at the top of the folder. The standard keeps it in its own folder.');
   check('folder: the tree is read once for every card', await p.evaluate(() => window.__driveLog.tree), 1);
   /* the marketing track */
-  check('kit: nine rows (Slice 5 adds the Seller pitch)', await p.$$eval('#kitCard .kr', e => e.length), 9);
+  check('kit: eight rows (Slice 5 adds the Seller pitch)', await p.$$eval('#kitCard .kr', e => e.length), 8);
   const kit = async key => text(p, '#kitCard [data-kit="' + key + '"]');
   check('kit: showsheet done, Asana ticked', [(await kit('showsheet')).includes('Done'), (await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older')], [true, true, true]);
   check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
@@ -394,7 +394,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('kit: signage not used in NYC, video tracked', [(await kit('signage')).includes('Not used here'), (await kit('video')).includes('Tracked only')], [true, true]);
   check('kit: the video piece is the film, never its sidecar (tune-up 3)', [(await kit('video')).includes('GVC Video Clips.m4v ·'), /xmp|desktop\.ini/i.test(await kit('video'))], [true, false]);
   check('kit: checklist only', await p.$$eval('#kitCard .ck-block li', els => els.map(e => e.textContent.replace(/\d+ \w+$/, '').trim())), ['Advertising Spots', 'Send Just Listed Email']);
-  check('kit: count', await text(p, '#kitCount'), '3 of 6 done');
+  check('kit: count', await text(p, '#kitCount'), '3 of 5 done');
   const links = [];
   await p.route('http://localhost:47610/drive-link', r => { links.push(JSON.parse(r.request().postData())); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"url":"https://drive.google.com/file/d/SS1live/view"}' }); });
   await p.click('#kitCard [data-kit="showsheet"] [data-copy]');
@@ -472,8 +472,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const st = window.setTimeout;
     window.setTimeout = function (fn, ms) { if (ms === 60000) { window.__later.push(fn); return 0; } return st.apply(window, arguments); };
   });
-  await p.waitForSelector('#kitCard [data-kit="openHouse"] [data-open]');
-  await p.click('#kitCard [data-kit="openHouse"] [data-open]');
+  await p.waitForSelector('#kitCard [data-kit="signage"] [data-open]');
+  await p.click('#kitCard [data-kit="signage"] [data-open]');
   await settle(p);
   check('Open: an .html piece is never opened as a blob', [await p.evaluate(() => window.__blobs), await p.evaluate(() => window.__opened),
     await p.evaluate(() => window.__driveLog.read.filter(x => /html$/.test(x)).length), await text(p, '#kitMsg')], [[], [], 0, 'Open it from the folder in File Explorer.']);
@@ -501,7 +501,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { rows: R8, path: LISTING, drive: { slow: '100 Example St 4A details.docx' } });
   await t.page.waitForTimeout(900);
   check('slow file times out: the doc card says so', await text(t.page, '#docMsg'), 'Drive hasn\'t downloaded this yet.');
-  check('slow file times out: nothing saved, other cards fine', [t.saves.length, await t.page.$$eval('#kitCard .kr', e => e.length), await t.page.$$eval('#factsCard tr', e => e.length) > 5], [0, 9, true]);
+  check('slow file times out: nothing saved, other cards fine', [t.saves.length, await t.page.$$eval('#kitCard .kr', e => e.length), await t.page.$$eval('#factsCard tr', e => e.length) > 5], [0, 8, true]);
   await t.ctx.close();
 
   /* a teammate on the desktop: everything read-only, the doc not read for them */
@@ -618,8 +618,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     RA.documents = [v2('brochure', RA.properties[0], { facts: { price: 2250000 } }), v2('postcard-listed', RA.properties[0])];
     t = await open(browser, { rows: RA, path: LISTING });
     let p = t.page;
-    check('kit: nine rows, the eight pieces and the Seller pitch', await p.$$eval('#kitCard .kr', e => e.map(x => x.dataset.kit)),
-      ['floorplan', 'photos', 'showsheet', 'brochure', 'openHouse', 'postcard', 'signage', 'video', 'seller']);
+    check('kit: eight rows, the seven pieces and the Seller pitch', await p.$$eval('#kitCard .kr', e => e.map(x => x.dataset.kit)),
+      ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video', 'seller']);
     check('kit: the brochure is stale on its price', [await line(p, 'brochure'), await acts(p, 'brochure')],
       ['Stale: price', [['Rebuild brochure', '../../tools/brochure/?listing=100-example-st-4a&rebuild=1']]]);
     check('kit: the brochure made line', await text(p, '#kitCard [data-piece-made="brochure"]'), 'Made 22 Oct · LETTER · Open');
@@ -680,44 +680,31 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     await t.ctx.close();
   }
 
-  /* ---------- Slice 6: the Open house flyer and Signage rows ---------- */
+  /* ---------- Slice 6: the Signage row ---------- */
   {
-    const PJ = require('../assets/js/piece-job.js');
-    const v2 = (tool, row, over) => {
-      const bf = PJ.builtFrom(tool, {}, row, { photos: (PJ.photosFor(tool, row, null) || []).map(p => ({ path: p })) });
-      Object.assign(bf.facts, (over && over.facts) || {});
-      if (over && 'listingUrl' in over) bf.listingUrl = over.listingUrl;
-      return { property_id: row.id, tool, version: 2, built_from: bf, built_at: '2026-10-22T14:00:00.000Z',
-        output: { name: tool + '.pdf', paper: 'letter', madeAt: '2026-10-22T14:00:00.000Z', via: 'helper' } };
-    };
     const line = (pg, tool) => text(pg, '#kitCard [data-piece-line="' + tool + '"]');
     const acts = (pg, kit) => pg.$$eval('#kitCard [data-kit="' + kit + '"] [data-piece]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]));
 
     const RO = rowsFor();
-    RO.properties[0].market = 'NJ';
-    RO.documents = [v2('open-house', RO.properties[0], { facts: { price: 1 } })];
+    RO.properties[0].market = 'NJ'; RO.documents = [];
     t = await open(browser, { rows: RO, path: LISTING });
     let p = t.page;
-    check('kit: the flyer stale on its price, Rebuild', [await line(p, 'open-house'), await acts(p, 'openHouse')],
-      ['Stale: price', [['Rebuild open house flyer', '../../tools/open-house/?listing=100-example-st-4a&rebuild=1']]]);
     check('kit: the sign not made, Make sign (NJ)', [await line(p, 'signage'), await acts(p, 'signage')],
       ['Not made yet', [['Make sign', '../../tools/signage/?listing=100-example-st-4a']]]);
-    check('kit: Rebuild n stale counts the flyer', await p.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')])),
-      [['Rebuild 1 stale', '../../tools/open-house/?listing=100-example-st-4a&rebuild=1']]);
+    check('kit: no open house flyer row', await p.$$eval('#kitCard [data-kit="openHouse"], #kitCard [data-piece-line="open-house"]', e => e.length), 0);
     check('kit slice 6: no page errors', t.errors, []);
     await t.ctx.close();
 
     const RN = rowsFor();
     RN.properties[0].market = 'NYC'; RN.documents = [];
     t = await open(browser, { rows: RN, path: LISTING });
-    check('kit: no sign offered in New York', [await t.page.$$eval('#kitCard [data-kit="signage"] [data-piece]', e => e.length), (await acts(t.page, 'openHouse')).map(a => a[0])],
-      [0, ['Make open house flyer']]);
+    check('kit: no sign offered in New York', await t.page.$$eval('#kitCard [data-kit="signage"] [data-piece]', e => e.length), 0);
     await t.ctx.close();
 
     const RR = rowsFor();
     RR.properties[0].kind = 'rental'; RR.properties[0].market = 'NJ'; RR.documents = [];
     t = await open(browser, { rows: RR, path: LISTING });
-    check('kit: a rental gets the flyer too', (await acts(t.page, 'openHouse')).map(a => a[0]), ['Make open house flyer']);
+    check('kit: no sign offered for a rental', await t.page.$$eval('#kitCard [data-kit="signage"] [data-piece]', e => e.length), 0);
     await t.ctx.close();
   }
 

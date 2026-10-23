@@ -202,37 +202,6 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   await page.waitForTimeout(300);
   check('seller: a comp\'s beds and baths never run', [await page.evaluate(() => window.__xss || 0), await page.evaluate(() => document.body.innerText.indexOf('<img src=x') !== -1)], [0, true]);
 
-  /* ---------- Slice 6: the Open House flyer drawn from a given state ---------- */
-  const FLY = { address: '12 Sample Lane', unit: '', town: 'Testville, NJ', price: '1850000', priceLabel: 'List Price', beds: '4', baths: '3.5', sqft: '2800',
-    blurb: 'A made-up house.', market: 'nj', agents: ['john-gasdaska', 'tj-verdiglione'], listingUrl: 'https://www.elliman.com/x/1',
-    dates: [{ start: '2026-10-25T15:00:00', end: '2026-10-25T17:00:00', broker: false }, { start: '2026-10-27T12:00:00', end: '2026-10-27T13:30:00', broker: true }],
-    photos: [{ url: DOT, name: 'a', x: 50, y: 50, w: 3000 }, { url: DOT, name: 'b', x: 50, y: 50, w: 3000 }, { url: DOT, name: 'c', x: 50, y: 50, w: 3000 }] };
-  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
-  const fly = async s => {
-    await page.evaluate(s => window.__render(s), s);
-    return page.evaluate(() => ({ rendered: window.__rendered === true, dates: [...document.querySelectorAll('.oh-date')].map(d => d.textContent),
-      legal: (document.querySelector('.oh-legal') || {}).textContent, njLegal: GVC_LEGAL.listing('nj'), addr: (document.querySelector('.oh-addr') || {}).textContent,
-      strip: [...document.querySelectorAll('.oh-strip span')].map(s => s.textContent), photos: document.querySelectorAll('.oh-ph img').length,
-      agents: document.querySelectorAll('.oh-ag').length, qr: !!document.querySelector('.oh-qr svg') }));
-  };
-  const f1 = await fly(FLY);
-  check('flyer: rendered, DE dates as New York wall clock, broker marked', [f1.rendered, f1.dates],
-    [true, ['Sunday, October 25 · 3:00 PM to 5:00 PM', 'Broker open houseTuesday, October 27 · 12:00 PM to 1:30 PM']]);
-  check('flyer: the property, rooms, three photos, two agents, QR, NJ legal', [f1.addr, f1.strip, f1.photos, f1.agents, f1.qr, f1.legal === f1.njLegal],
-    ['12 Sample Lane', ['Bedrooms', 'Bathrooms', 'Sq Ft'], 3, 2, true, true]);
-  check('flyer: one Letter page', await pages(), 1);
-  check('flyer: no dates prints By appointment; typed lines print as typed', [(await fly(Object.assign({}, FLY, { dates: [] }))).dates,
-    (await fly(Object.assign({}, FLY, { dates: [{ day: 'Broker Saturday 11 to 1' }, { day: 'Sunday 1 to 3' }] }))).dates],
-    [['By appointment'], ['Broker open houseSaturday 11 to 1', 'Sunday 1 to 3']]);
-  await fly(Object.assign({}, FLY, { photos: [{ url: BAD, name: 'bad' }, { url: far + '/x.jpg', name: 'far' }, { url: DOT, name: 'ok', x: '1%" onerror="window.__xss=7', y: 2 }],
-    address: evil, blurb: evil, dates: [{ day: evil }, { start: evil }], agents: 'x', market: 'zz' }));
-  await page.waitForTimeout(300);
-  check('flyer: hostile state never runs or fetches', [await page.evaluate(() => window.__piece.state.photos.map(p => [p.name, p.x])), probe.hits, await page.evaluate(() => window.__xss || 0), await page.evaluate(() => window.__piece.state.market)],
-    [[['ok', 50]], 0, 0, 'nj']);
-  await page.evaluate(() => localStorage.setItem('gvc.open-house.state', JSON.stringify({ address: 'From this browser' })));
-  await fly(FLY);
-  check('flyer: drawing never touches this browser\'s saved words', await page.evaluate(() => localStorage.getItem('gvc.open-house.state')), JSON.stringify({ address: 'From this browser' }));
-
   /* ---------- Slice 6: the signs drawn from a given state ---------- */
   await page.goto(BASE + '/tools/signage/', { waitUntil: 'networkidle' });
   const sgn = async s => {
@@ -247,7 +216,9 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
     [true, 'for-sale', ['George Putykewycz'], ['M 732.546.7375'], true, true, [true]]);
   check('sign: one 24 x 30 in page', await pages(), 1);
   const s2 = await sgn({ kind: 'for-sale', market: 'fl', agents: ['tj-verdiglione', 'marli-silver', 'john-gasdaska'] });
-  check('sign: two agents at most, stacked; Florida has no office number', [s2.names, s2.two, /^gvcrealestateteam\.com/.test(s2.foot)], [['TJ Verdiglione', 'Marli Silver'], true, true]);
+  check('sign: two agents at most, stacked; Florida\'s office line', [s2.names, s2.two, /^O 561\.245\.2635\|gvcrealestateteam\.com/.test(s2.foot)], [['TJ Verdiglione', 'Marli Silver'], true, true]);
+  const s2n = await sgn({ kind: 'for-sale', market: 'nyc', agents: ['tj-verdiglione'] });
+  check('sign: New York\'s office line', /^O 212\.891\.7167\|gvcrealestateteam\.com/.test(s2n.foot), true);
   const s3 = await sgn({ kind: 'directional', market: 'nj', arrow: 'left' });
   check('sign: the Open House arrow, left, 24.4 x 18.4, office line', [s3.kind, s3.left, /24\.4in 18\.4in/.test(s3.size), s3.office], ['directional', true, true, 'office: 732.387.3807']);
   check('sign: arrow sign one page', await pages(), 1);
@@ -264,21 +235,6 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   await page.evaluate(s => window.__render(s), { kind: 'for-sale', agents: ['tj-verdiglione'], qrUrl: 'https://example.com/' + 'x'.repeat(3000) });
   check('sign: a link too long for a QR falls back to the team site and says so', [await page.evaluate(() => !!document.querySelector('.sg-qr svg')),
     /too long for a QR/.test(await page.evaluate(() => document.getElementById('warnGeneral').textContent))], [true, true]);
-  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
-  await page.evaluate(s => window.__render(s), Object.assign({}, FLY, { blurb: 'A long description that runs on. '.repeat(40) }));
-  check('flyer: a description too long for the page is warned about', /description is longer/.test(await page.evaluate(() => document.getElementById('warnGeneral').textContent)), true);
-  check('flyer: and never runs under the foot', await page.evaluate(() => { const b = document.querySelector('.oh-body'); return getComputedStyle(b).overflow; }), 'hidden');
-  await page.evaluate(s => window.__render(s), Object.assign({}, FLY, { dates: [{ day: 'Broker' }] }));
-  check('flyer: a line that is just "Broker" still prints as a broker open house', await page.evaluate(() => [...document.querySelectorAll('.oh-date')].map(d => d.textContent)), ['Broker open house']);
-  await page.evaluate(() => localStorage.setItem('gvc.open-house.state', '{"agents":"x","dates":"x","photos":"x"}'));
-  const errsBefore = errors.length;
-  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
-  check('flyer: a damaged saved state never breaks the page', errors.length, errsBefore);
-  await page.evaluate(() => localStorage.removeItem('gvc.open-house.state'));
-  await page.route('**/douglas-elliman.svg', r => r.abort());
-  await page.goto(BASE + '/tools/open-house/', { waitUntil: 'networkidle' });
-  check('flyer: no Douglas Elliman wordmark means no drawing (the helper reports it)', await page.evaluate(s => window.__render(s).then(() => 'drawn', e => 'refused'), FLY), 'refused');
-  await page.unroute('**/douglas-elliman.svg');
 
   await page.goto(BASE + '/tools/signage/', { waitUntil: 'networkidle' });
   await page.evaluate(s => window.__render(s), { kind: 'for-sale', market: 'constructor', agents: ['tj-verdiglione'] });
@@ -301,8 +257,6 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       check('renderPiece postcard: 2 pages, label', [oc.pages, oc.label], [2, '12 Sample Lane']);
       const os2 = await renderPiece({ tool: 'seller', state: DECK, siteBase: BASE });
       check('renderPiece seller: 12 pages, label', [os2.pages, os2.label], [12, '12 Sample Lane']);
-      const ofl = await renderPiece({ tool: 'open-house', state: FLY, siteBase: BASE });
-      check('renderPiece open house flyer: 1 page, label', [ofl.pages, ofl.label], [1, '12 Sample Lane']);
       const osg = await renderPiece({ tool: 'signage', state: { kind: 'for-sale', market: 'nj', agents: ['tj-verdiglione'], address: '12 Sample Lane' }, siteBase: BASE });
       check('renderPiece sign: 1 page', osg.pages, 1);
       // the hidden browser itself refuses pictures from anywhere but the site

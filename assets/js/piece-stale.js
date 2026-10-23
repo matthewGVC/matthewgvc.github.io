@@ -47,7 +47,7 @@
 
   var EXTRA_LABELS = { rent: 'Rent', city: 'Town', headline: 'Headline', mapAddresses: 'Mapped addresses', comps: 'Comps',
     priceLow: 'Low price', priceMid: 'Recommended price', priceHigh: 'High price', recBand: 'Recommended band',
-    closePrice: 'Closing price', features: 'Features', openHouses: 'Open houses', shortDescription: 'Short description' };
+    closePrice: 'Closing price', features: 'Features' };
   function pieces() { return typeof PJ === 'function' ? PJ() : PJ; }
 
   function labelOf(row, name) {

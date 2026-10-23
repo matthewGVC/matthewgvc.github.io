@@ -9,7 +9,7 @@
    night's scan. Open shows the file from Drive (desktop); Copy Drive link
    asks the helper (POST /drive-link), else uses the scan's stored link,
    else copies the G: path. A piece with a file but no Asana step to match
-   (brochure, open house flyer, signage) says so. Under the rows: the
+   (brochure, signage) says so. Under the rows: the
    checklist-only steps (Advertising Spots, NYC's Just Listed Email).
    The Showsheet row also carries its record (Slice 4, S21): Not made yet /
    Up to date / Stale: price, agents / Made before the workspace kept track,
@@ -24,8 +24,8 @@
     done: ['Done', 'made dot'], fileOpen: ['File, Asana open', 'stale'], tickedNoFile: ['Ticked, no file', 'stale'],
     notStarted: ['Not started', ''], notUsed: ['Not used here', ''], tracked: ['Tracked only', '']
   };
-  var ICON = { floorplan: 'file', photos: 'photo', showsheet: 'file', brochure: 'file', openHouse: 'file', postcard: 'file', signage: 'file', video: 'file' };
-  var NO_STEP = ['brochure', 'openHouse', 'signage'];
+  var ICON = { floorplan: 'file', photos: 'photo', showsheet: 'file', brochure: 'file', postcard: 'file', signage: 'file', video: 'file' };
+  var NO_STEP = ['brochure', 'signage'];
   var current = {};   // kit key → the newest current piece { path?, name, url? } of the last draw
   /* what Open may show as a blob: types that never run script (no svg, no html) */
   var SAFE_EXT = /\.(pdf|jpe?g|png|webp|gif|mp4|mov|m4v|webm)$/i;
@@ -95,13 +95,13 @@
      gets the Seller pitch and its Map (pitchHtml). Same words and buttons as the
      Showsheet's: Not made yet / Up to date / Stale: price / Made before the workspace
      kept track, Make / Open / Rebuild; a teammate opens, never makes; a phone sees states. */
-  var TOOLS_OF = { brochure: ['brochure'], postcard: ['postcard-listed', 'postcard-sold'], openHouse: ['open-house'], signage: ['signage'] };
+  var TOOLS_OF = { brochure: ['brochure'], postcard: ['postcard-listed', 'postcard-sold'], signage: ['signage'] };
   var NAME = { brochure: 'brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'seller pitch', 'pitch-map': 'map',
-    'open-house': 'open house flyer', signage: 'sign' };
+    signage: 'sign' };
   var DIR = { brochure: 'brochure', 'postcard-listed': 'postcard', 'postcard-sold': 'postcard', seller: 'seller-package', 'pitch-map': 'map-studio',
-    'open-house': 'open-house', signage: 'signage' };
+    signage: 'signage' };
   // postcards share one folder (which card a file is can't be told); pitch pieces have no kit folder
-  var FOLDER_KEY = { brochure: 'brochure', 'open-house': 'openHouse', signage: 'signage' };
+  var FOLDER_KEY = { brochure: 'brochure', signage: 'signage' };
   function docOf(ctx, tool) {
     if (tool === 'showsheet') return ctx.doc || (ctx.docs || []).filter(function (d) { return d && d.tool === tool; })[0] || null;
     return (ctx.docs || []).filter(function (d) { return d && d.tool === tool; })[0] || null;
@@ -163,7 +163,7 @@
     var out = [], add = function (tool) { var s = judgeTool(ctx, tool, pieces, live); if (s) out.push({ tool: tool, s: s, href: tool === 'showsheet' ? sheetHref(ctx, true) : pieceHref(ctx, tool, true) }); };
     if (ctx.kind === 'pitch') { add('seller'); add('pitch-map'); return out; }
     if (ctx.kind !== 'listing') return out;
-    add('showsheet'); add('brochure'); add('open-house');
+    add('showsheet'); add('brochure');
     if (ctx.row.kind !== 'rental') { add('postcard-listed'); add('postcard-sold'); add('seller'); }
     if (ctx.row.market !== 'NYC' && ctx.row.kind !== 'rental') add('signage');   // no signs in New York; the For Sale sign isn't for a rental
     return out;
@@ -208,10 +208,10 @@
     var s = judge(ctx, (ctx.row.scan && ctx.row.scan.pieces) || {}, false);
     if (!s) return '';
     var b = sheetBits(ctx, s);
-    var more = ['brochure', 'openHouse', 'postcard', 'signage'].map(function (k) {
+    var more = ['brochure', 'postcard', 'signage'].map(function (k) {
       var x = extraBits(ctx, k, {}, false);
       return x ? '<div class="kr" data-kit="' + k + '"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">' +
-        ctx.esc({ brochure: 'Brochure', openHouse: 'Open house flyer', postcard: 'Postcard', signage: 'Signage' }[k]) + '</div>' + x.lines +
+        ctx.esc({ brochure: 'Brochure', postcard: 'Postcard', signage: 'Signage' }[k]) + '</div>' + x.lines +
         '</div><div class="a">' + x.act + '</div></div>' : '';
     }).join('');
     return '<div class="kit"><div class="kr" data-kit="showsheet"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">Showsheet</div>' + b.lines +

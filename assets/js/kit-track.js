@@ -32,9 +32,9 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'openHouse', 'postcard', 'signage', 'video'];
+  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
   var LABELS = { floorplan: 'Floorplan', photos: 'Photos', showsheet: 'Showsheet', brochure: 'Brochure',
-    openHouse: 'Open house flyer', postcard: 'Postcard', signage: 'Signage', video: 'Video' };
+    postcard: 'Postcard', signage: 'Signage', video: 'Video' };
 
   var STEPS = {
     pieces: [

@@ -31,7 +31,6 @@ const TOOLS = {
   'postcard-listed': { path: '/tools/postcard/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
   'postcard-sold': { path: '/tools/postcard/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
   seller: { path: '/tools/seller-package/?draw=1', label: () => window.__piece.state.address },
-  'open-house': { path: '/tools/open-house/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
   // the sign carries no address: the file name takes the job's, as every piece's does (piece.js)
   signage: { path: '/tools/signage/?draw=1', label: () => '' }
 };

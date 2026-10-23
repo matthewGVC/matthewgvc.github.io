@@ -161,54 +161,22 @@ const ef = J.fill('seller', {}, extra, {}).state;
 check('seller: comps with extra keys, untouched, no edit', J.factEdits('seller', ef, extra).edits, []);
 const ef2 = Object.assign({}, ef, { comps: ef.comps.concat([{ address: '20 Sample Ln', price: '', sqft: '', bb: '', date: '' }]) });
 check('seller: a comp added keeps the others\' extra keys', J.factEdits('seller', ef2, extra).edits[0].to[0].url, 'https://example.com/x');
-/* ---------- Slice 6: the Open House flyer and the For Sale sign ---------- */
+/* ---------- Slice 6: the For Sale sign ---------- */
 const OH = [{ type: 'Public', startTime: '2099-05-03T13:00:00', endTime: '2099-05-03T15:00:00' },
   { type: 'Broker', startTime: '2099-05-05T12:00:00', endTime: '2099-05-05T13:30:00' },
   { type: 'Public', startTime: '2001-01-01T13:00:00', endTime: '2001-01-01T15:00:00' }];
 const ohRow = job({ facts: { price: 1850000, beds: 4, baths: 3, sqft: 2800, city: 'Testville', description: 'A made-up house with a long story.' },
   core: { openHouses: OH, shortDescription: 'Short and sweet.', agentIds: ['a', 'b', 'c'] }, row: { market: 'NJ', de: { listingUrl: 'https://www.elliman.com/x/2' } } });
-check('tools include the new pieces', J.TOOLS.slice(-2), ['open-house', 'signage']);
-check('labels', ['open-house', 'signage'].map(J.label), ['Open house flyer', 'Signage']);
-check('upcoming open houses only, in order, past ones dropped', J.upcomingOpenHouses(ohRow, Date.parse('2026-10-23T00:00:00')).map(o => [o.type, o.start]),
-  [['Public', '2099-05-03T13:00:00'], ['Broker', '2099-05-05T12:00:00']]);
-check('upcoming open houses: from DE\'s snapshot when core has none', J.upcomingOpenHouses(job({ row: { de: { openHouses: OH.slice(0, 1) } } }), 0).length, 1);
-check('upcoming open houses: junk skipped', J.upcomingOpenHouses(job({ core: { openHouses: [null, { startTime: 'soon' }, 7] } }), 0), []);
-check('open-house FIELDS', J.FIELDS('open-house', ohRow), ['price', 'beds', 'baths', 'halfBaths', 'sqft', 'city', 'openHouses', 'shortDescription']);
-check('open-house FIELDS: a rental prints the rent', J.FIELDS('open-house', job({ row: { kind: 'rental' } }))[0], 'rent');
+check('tools include the sign, no open house flyer', [J.TOOLS.slice(-1), J.TOOLS.indexOf('open-house')], [['signage'], -1]);
+check('labels', ['signage'].map(J.label), ['Signage']);
 check('signage FIELDS: none (agents and link only)', J.FIELDS('signage', ohRow), []);
-const of = J.fill('open-house', { dates: [{ day: 'kept' }], agents: [] }, ohRow, {});
-check('open-house fill', [of.state.address, of.state.unit, of.state.town, of.state.price, of.state.priceLabel, of.state.beds, of.state.baths, of.state.sqft, of.state.blurb, of.state.market, of.state.agents, of.state.listingUrl],
-  ['100 Example St', '4A', 'Testville', '1850000', 'List Price', '4', '3', '2800', 'Short and sweet.', 'nj', ['a', 'b'], 'https://www.elliman.com/x/2']);
-check('open-house fill: dates from DE, redone', [of.state.dates.map(d => [d.start, d.end, d.broker]), of.redone], [[['2099-05-03T13:00:00', '2099-05-03T15:00:00', false], ['2099-05-05T12:00:00', '2099-05-05T13:30:00', true]], ['dates']]);
-const prevOH = { facts: { openHouses: J.value('open-house', ohRow, 'openHouses') } };
-check('open-house fill: the same open houses keep the flyer\'s own wording', J.fill('open-house', { dates: [{ day: 'Sunday', time: 'Noon' }] }, ohRow, { previous: prevOH }).state.dates, [{ day: 'Sunday', time: 'Noon' }]);
-check('open-house fill: no short description takes the description', J.fill('open-house', {}, job({ facts: { description: 'Long.' } }), {}).state.blurb, 'Long.');
-check('open-house fill: rental', J.fill('open-house', {}, job({ row: { kind: 'rental' }, facts: { rent: 6500 } }), {}).state.priceLabel, 'Monthly Rent');
-check('open-house: price typed goes to the job', J.factEdits('open-house', Object.assign({}, of.state, { price: '1,900,000' }), ohRow).edits, [{ field: 'price', from: 1850000, to: 1900000 }]);
-check('open-house: dates typed are the flyer\'s own', J.factEdits('open-house', Object.assign({}, of.state, { dates: [] }), ohRow).edits, []);
 const sf = J.fill('signage', { kind: 'directional', agents: [] }, ohRow, {}).state;
 check('signage fill: the For Sale sign, two agents, the listing QR, the market', [sf.kind, sf.agents, sf.qrUrl, sf.market], ['for-sale', ['a', 'b'], 'https://www.elliman.com/x/2', 'nj']);
 check('signage: nothing goes back to the job', J.factEdits('signage', sf, ohRow), { edits: [], errors: [] });
 const sbf = J.builtFrom('signage', {}, ohRow, {});
 check('signage builtFrom: agents and link', [sbf.tool, sbf.facts, sbf.agents, sbf.listingUrl], ['signage', {}, ['a', 'b'], 'https://www.elliman.com/x/2']);
-check('open-house builtFrom keeps the link and the open houses', [J.builtFrom('open-house', {}, ohRow, {}).listingUrl, J.builtFrom('open-house', {}, ohRow, {}).facts.openHouses.length], ['https://www.elliman.com/x/2', 2]);
-check('photosFor: the flyer prints three, the sign none', [J.photosFor('open-house', job({ row: { photo_order: ['1.jpg', '2.jpg', '3.jpg', '4.jpg'] } }), null).length, J.photosFor('signage', job({ row: { photo_order: ['1.jpg'] } }), null)], [3, []]);
-
-// review fixes (Slice 6 Task 1)
-const ohAt = list => job({ core: { openHouses: list } });
-check('a garbled end time falls back to the start', J.upcomingOpenHouses(ohAt([{ startTime: '2099-01-01T10:00:00', endTime: 'TBD' }]), 0).length, 1);
-// DE's times are New York wall-clock times: "now" is read in New York, whatever this computer's zone
-const nyNow = Date.parse('2026-10-25T21:30:00Z');   // 5:30 pm in New York (EDT)
-check('an open house that ended at 5 pm New York time is past at 5:30 pm New York time', J.upcomingOpenHouses(ohAt([{ startTime: '2026-10-25T15:00:00', endTime: '2026-10-25T17:00:00' }]), nyNow), []);
-check('one ending at 6 pm New York time is still on', J.upcomingOpenHouses(ohAt([{ startTime: '2026-10-25T15:00:00', endTime: '2026-10-25T18:00:00' }]), nyNow).length, 1);
-check('a date-only end runs to the end of that day', J.upcomingOpenHouses(ohAt([{ startTime: '2026-10-25', endTime: '2026-10-25' }]), nyNow).length, 1);
-check('typed dates survive a first build when DE has none', J.fill('open-house', { dates: [{ day: 'Sunday 2 to 4' }] }, job({}), {}).state.dates, [{ day: 'Sunday 2 to 4' }]);
+check('photosFor: the sign prints none', J.photosFor('signage', job({ row: { photo_order: ['1.jpg'] } }), null), []);
 check('signage: the job with no listing link prints the team site (blank), never an old link', J.fill('signage', { qrUrl: 'https://old.example/x' }, job({}), {}).state.qrUrl, '');
-
-// final review fixes (Slice 6)
-const four = [1, 2, 3, 4].map(d => ({ type: 'Public', startTime: '2099-05-0' + d + 'T13:00:00', endTime: '2099-05-0' + d + 'T15:00:00' }));
-check('open houses: only the three the flyer prints count', J.value('open-house', job({ core: { openHouses: four } }), 'openHouses').length, 3);
-check('flyer FIELDS: the description when there is no short description', J.FIELDS('open-house', job({ facts: { description: 'x' } })).slice(-1), ['description']);
 check('a QR link only from Douglas Elliman: anything else is the team site', [J.linkOf(job({ core: { listingUrl: 'https://evil.example/x' } })), J.linkOf(job({ core: { listingUrl: 'https://www.elliman.com/a/1' } })),
   J.fill('signage', {}, job({ core: { listingUrl: 'https://elliman.com.evil.example/x' } }), {}).state.qrUrl], [null, 'https://www.elliman.com/a/1', '']);
 check('builtFrom records the trusted link only', J.builtFrom('signage', {}, job({ core: { listingUrl: 'https://evil.example/x' } }), {}).listingUrl, null);

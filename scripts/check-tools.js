@@ -3,7 +3,7 @@
 
    Static check of every tools/<slug>/index.html, no server needed:
      node scripts/check-tools.js            every tool
-     node scripts/check-tools.js open-house one tool (or a,b,c)
+     node scripts/check-tools.js signage    one tool (or a,b,c)
 
    What it holds a tool to is written up in
    .claude/skills/building-gvc-tools/SKILL.md. FAIL lines are rules a new

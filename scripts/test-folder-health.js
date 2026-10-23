@@ -114,10 +114,10 @@ check('broken flag', codes(H.health({ broken: true }, NYC)), ['broken']);
 /* pieces found under old and new names */
 tree = d('x', [
   d('Floor Plans', [f('old.pdf')]), d('Photos', [d('Matt Edits', [f('m.jpg')])]),
-  d('Marketing', [d('Brochure', [f('b.pdf')]), d('Open House', [f('oh.pdf')]), d('Postcard', [f('pc.pdf')]), d('Signage', [f('sg.pdf')]), d('Video', [f('v.mp4')]), d('Show Sheet', [f('s.pdf')])])
+  d('Marketing', [d('Brochure', [f('b.pdf')]), d('Postcard', [f('pc.pdf')]), d('Signage', [f('sg.pdf')]), d('Video', [f('v.mp4')]), d('Show Sheet', [f('s.pdf')])])
 ]);
 r = H.health(tree, NYC);
-check('old and new names', Object.keys(r.pieces).map((k) => r.pieces[k].length), [1, 1, 1, 1, 1, 1, 1, 1]);
+check('old and new names', Object.keys(r.pieces).map((k) => r.pieces[k].length), [1, 1, 1, 1, 1, 1, 1]);
 
 console.log((failures.length ? failures.join('\n') + '\n' : '') + pass + ' passed, ' + failures.length + ' failed');
 process.exit(failures.length ? 1 : 0);

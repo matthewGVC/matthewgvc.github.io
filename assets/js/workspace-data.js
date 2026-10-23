@@ -215,7 +215,7 @@
     return null;
   }
   var STALE_LABEL = { showsheet: 'Showsheet', brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard',
-    seller: 'Seller pitch', 'pitch-map': 'Map', 'open-house': 'Open house flyer', signage: 'Signage' };
+    seller: 'Seller pitch', 'pitch-map': 'Map', signage: 'Signage' };
   /* { stale: words, stalePieces } for one job from its pieces' records. The Showsheet's
      record is the Slice 4 kind; any other piece is judged only from a Slice 5 record (v 2) */
   function staleOf(p, docs) {

@@ -30,9 +30,9 @@
   'use strict';
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'openHouse', 'postcard', 'signage', 'video'];
+  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
   var LABEL = { floorplan: 'floorplan', photos: 'edited photo', showsheet: 'showsheet', brochure: 'brochure',
-    openHouse: 'open house flyer', postcard: 'postcard', signage: 'signage', video: 'video' };
+    postcard: 'postcard', signage: 'signage', video: 'video' };
 
   /* piece folder names, old and new (plan §9), tested on the lower-cased name */
   var FOLDER = {
@@ -40,7 +40,6 @@
     photos: /^(edited|edits|matt[- ]edits)$/,
     showsheet: /^(showsheet|showsheets|show sheet)$/,
     brochure: /^(brochure|brochures)$/,
-    openHouse: /^open house$/,
     postcard: /^(postcard|postcards)$/,
     signage: /^(signage|signs)$/,
     video: /^(video|film)$/
@@ -50,7 +49,6 @@
     floorplan: /^(floorplans?|floor plans?)\b/i,
     showsheet: /^(showsheets?|show sheets?)\b/i,
     brochure: /^brochures?\b/i,
-    openHouse: /^open house\b/i,
     postcard: /^postcards?\b/i,
     signage: /^(signage|signs?)\b/i,
     video: /^(video|film)\b/i
@@ -59,7 +57,7 @@
   var MARKET_NAME = { NYC: 'New York', NJ: 'New Jersey', FL: 'Florida' };
   /* pieces where two current files side by side is wrong (floorplans and photos
      hold many files on purpose; postcards come as listed and sold) */
-  var ONE_CURRENT = ['showsheet', 'brochure', 'openHouse'];
+  var ONE_CURRENT = ['showsheet', 'brochure'];
 
   function low(s) { return String(s || '').toLowerCase(); }
   function isDir(n) { return !!n && n.kind === 'directory'; }

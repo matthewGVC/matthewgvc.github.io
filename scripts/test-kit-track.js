@@ -20,15 +20,15 @@ const file = (name, modified, archived) => ({ path: 'Marketing/' + name, name, m
 const step = (name, done, doneOn, who) => ({ name, done, doneOn: doneOn || null, who: who || null });
 const row = (res, key) => res.rows.filter((r) => r.key === key)[0];
 
-const ORDER = ['floorplan', 'photos', 'showsheet', 'brochure', 'openHouse', 'postcard', 'signage', 'video'];
+const ORDER = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
 
 /* NYC sale: Global order, signage not used */
 let res = K.track({ kind: 'sale', market: 'NYC', pieces: {}, checklist: [], match: null });
 check('order', res.rows.map((r) => r.key), ORDER);
-check('labels', res.rows.map((r) => r.label), ['Floorplan', 'Photos', 'Showsheet', 'Brochure', 'Open house flyer', 'Postcard', 'Signage', 'Video']);
+check('labels', res.rows.map((r) => r.label), ['Floorplan', 'Photos', 'Showsheet', 'Brochure', 'Postcard', 'Signage', 'Video']);
 check('NYC signage notUsed', row(res, 'signage').state, 'notUsed');
 check('video tracked', row(res, 'video').state, 'tracked');
-check('nothing yet', res.rows.filter((r) => ['notUsed', 'tracked'].indexOf(r.state) === -1).map((r) => r.state), ['notStarted', 'notStarted', 'notStarted', 'notStarted', 'notStarted', 'notStarted']);
+check('nothing yet', res.rows.filter((r) => ['notUsed', 'tracked'].indexOf(r.state) === -1).map((r) => r.state), ['notStarted', 'notStarted', 'notStarted', 'notStarted', 'notStarted']);
 check('no checklist only', res.checklistOnly, []);
 
 /* NJ signage is a normal row */

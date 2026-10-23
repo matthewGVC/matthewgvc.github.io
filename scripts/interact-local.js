@@ -26,7 +26,7 @@ const engine = require('playwright')[ENGINE];
 const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://localhost:8092 to test another copy */
 const SAMPLE = path.resolve(__dirname, '../tools/showsheet/sample') + path.sep;
 const ALL = ['showsheet', 'seller-package', 'brochure', 'buyer-package', 'agent-info', 'destination-guide',
-  'nj-footprint', 'calculator', 'floorplan', 'map-studio', 'watermark', 'properties', 'office-screens', 'todo', 'postcard', 'open-house', 'signage'];
+  'nj-footprint', 'calculator', 'floorplan', 'map-studio', 'watermark', 'properties', 'office-screens', 'todo', 'postcard', 'signage'];
 const TOOLS = process.argv[2] ? process.argv[2].split(',') : ALL;
 
 const CONTROLS = 'button, [role=button], select, input[type=checkbox], input[type=radio], input[type=range], ' +
@@ -84,7 +84,6 @@ async function run(browser, tool) {
   }
   if (tool === 'brochure') await feed('#imgFile', [SAMPLE + 'hero.jpg', SAMPLE + 'hero.jpg']);
   if (tool === 'seller-package') await feed('#filePhotos', [SAMPLE + 'hero.jpg', SAMPLE + 'floorplan.jpg']);
-  if (tool === 'open-house') await feed('#photoFile', [SAMPLE + 'hero.jpg', SAMPLE + 'hero.jpg', SAMPLE + 'floorplan.jpg']);
 
   let actions = 0;
   const count = await page.locator(CONTROLS).count();

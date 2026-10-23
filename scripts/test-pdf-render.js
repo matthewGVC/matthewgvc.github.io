@@ -133,6 +133,26 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   const b3 = await bro(Object.assign({}, BRO, { state: 'FL', zip: '33000' }));
   check('brochure: Florida legal follows the state', b3.market, 'fl');
 
+  /* ---------- Slice 5: the Postcard drawn from a given state ---------- */
+  const CARD = { kind: 'sale', address: '12 Sample Lane', unit: '', town: 'Testville', price: '1850000', agents: ['john-gasdaska'], bleed: 'bleed',
+    photos: [{ url: DOT, name: 'a', x: 50, y: 50, w: 3000 }, { url: DOT, name: 'b', x: 50, y: 50, w: 3000 }] };
+  await page.goto(BASE + '/tools/postcard/', { waitUntil: 'networkidle' });
+  await page.evaluate(() => localStorage.setItem('gvc.postcard.state', JSON.stringify({ headline: 'Saved in this browser' })));
+  const card = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, kind: window.__piece.state.kind, text: document.querySelector('#pages').innerText,
+      size: document.querySelector('#pagesize').textContent, stored: localStorage.getItem('gvc.postcard.state') }));
+  };
+  const c1 = await card(CARD);
+  check('postcard listed: rendered, its own headlines', [c1.rendered, c1.kind, /For Sale/i.test(c1.text), /Now Available/i.test(c1.text), /1,850,000/.test(c1.text)], [true, 'sale', true, true, true]);
+  check('postcard: drawing never touches this browser\'s saved card', c1.stored, JSON.stringify({ headline: 'Saved in this browser' }));
+  check('postcard: 2 pages', await pages(), 2);
+  const c2 = await card(Object.assign({}, CARD, { kind: 'sold', price: '1800000', bleed: 'trim' }));
+  check('postcard sold: Just Sold headlines, trim size', [/Just Sold/i.test(c2.text), /Sold in Your Neighborhood/i.test(c2.text), /9in 6in/.test(c2.size)], [true, true, true]);
+  await card(Object.assign({}, CARD, { photos: [{ url: far + '/c.jpg', name: 'far' }, { url: DOT, name: 'ok' }, { url: DOT, name: 'x' }, { url: DOT, name: 'y' }], headline: evil, agents: 'nope' }));
+  check('postcard: inline pictures only, two at most, nothing fetched or run',
+    [await page.evaluate(() => window.__piece.state.photos.map(p => p.name)), probe.hits, await page.evaluate(() => window.__xss || 0)], [['ok', 'x'], 0, 0]);
+
   check('no page errors', errors, []);
   await browser.close();
 
@@ -146,6 +166,8 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       check('renderPiece: label', out.label, '12 Sample Lane');
       const ob = await renderPiece({ tool: 'brochure', state: BRO, siteBase: BASE });
       check('renderPiece brochure: 5 pages, label', [ob.pages, ob.label], [5, '12 Sample Lane']);
+      const oc = await renderPiece({ tool: 'postcard-sold', state: Object.assign({}, CARD, { kind: 'sold' }), siteBase: BASE });
+      check('renderPiece postcard: 2 pages, label', [oc.pages, oc.label], [2, '12 Sample Lane']);
       // the hidden browser itself refuses pictures from anywhere but the site
       probe.hits = 0;
       const { chromium: ch } = require('playwright');

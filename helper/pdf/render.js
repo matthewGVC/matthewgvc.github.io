@@ -27,7 +27,9 @@ const TOOLS = {
     paper: async (page, paper) => { await page.click('#paperSeg button[data-v="' + paper + '"]'); }
   },
   /* Slice 5: drawn only from a given state, which carries its own paper */
-  brochure: { path: '/tools/brochure/', label: () => window.__piece.state.address }
+  brochure: { path: '/tools/brochure/', label: () => window.__piece.state.address },
+  'postcard-listed': { path: '/tools/postcard/', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
+  'postcard-sold': { path: '/tools/postcard/', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') }
 };
 
 /* A drawn state may only show pictures it carries inline: the hidden browser

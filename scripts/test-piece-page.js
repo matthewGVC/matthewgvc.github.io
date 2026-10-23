@@ -384,6 +384,52 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('seller: standalone has no job mode', await o.page.evaluate(() => !!window.GVC_PIECEMODE), false);
   await o.ctx.close();
 
+  /* ---------- Map Studio for a pitch ---------- */
+  const mapPage = async (opts) => {
+    const x = await open(browser, Object.assign({ path: '/tools/map-studio/?pitch=12-sample-ln-2026-10-01',
+      helperReply: { ok: true, path: 'Marketing/Pitch/Map - 12 Sample Ln - 2026-10-22.png', name: 'Map - 12 Sample Ln - 2026-10-22.png', size: 48, modified: '2026-10-22T15:00:00.000Z', url: null, archived: null } }, opts));
+    x.geo = [];
+    await x.page.route('https://api.mapbox.com/**', r => { x.geo.push(r.request().url()); r.fulfill({ status: 200, contentType: 'application/json', body: '{"features":[]}' }); });
+    await x.page.waitForFunction(() => window.GVC_MAPJOB && window.GVC_MAPJOB.ready, null, { timeout: 15000 }).catch(() => {});
+    return x;
+  };
+  o = await mapPage({});
+  check('map: the bar names the pitch', /^Map for 12 Sample Ln/.test(await text(o.page, '#mapJobBar')), true);
+  check('map: the subject and comps listed, read-only', await o.page.$eval('#addresses', t => [t.value, t.readOnly]), ['12 Sample Ln\n14 Sample Ln', true]);
+  check('map: the owner saves to the pitch', await text(o.page, '#export'), 'Save map to the pitch');
+  await o.page.fill('#token', 'pk.test');
+  await o.page.$eval('#token', t => t.dispatchEvent(new Event('change')));
+  await o.page.evaluate(() => window.__mapStudio.build());
+  await o.page.waitForTimeout(600);
+  check('map: looked for in the pitch\'s town, near Monmouth County', [o.geo.length, /q=12%20Sample%20Ln%2C%20Testville%2C%20NJ/.test(o.geo[0] || ''), /proximity=-74\.064,40\.347/.test(o.geo[0] || '')], [2, true, true]);
+  check('map: the token remembered on this computer', await o.page.evaluate(() => localStorage.getItem('gvc.mapStudio.token')), 'pk.test');
+  // the finished picture goes to the helper, then onto the pitch's record
+  await o.page.evaluate(() => { const c = document.createElement('canvas'); c.width = 4; c.height = 4; window.__downloads = 0; return window.__mapExport(c, () => { window.__downloads++; }); });
+  await o.page.waitForTimeout(300);
+  const mh = o.helper[0] || { body: {} };
+  check('map: Save map sends a PNG for the pitch', [mh.body.tool, mh.body.pitchId, /^data:image\/png;base64,/.test(mh.body.image || '')], ['pitch-map', 'q1', true]);
+  const mp = o.pieces[0] || {};
+  check('map: recorded on the pitch with the addresses mapped', [mp.p_table, mp.p_tool, mp.p_built_from && mp.p_built_from.facts.mapAddresses, mp.p_output && mp.p_output.name],
+    ['pitches', 'pitch-map', ['12 Sample Ln', '14 Sample Ln'], 'Map - 12 Sample Ln - 2026-10-22.png']);
+  check('map: said, nothing downloaded', [/Saved to Drive: Map - 12 Sample Ln/.test(await text(o.page, '#mapJobMsg')), await o.page.evaluate(() => window.__downloads)], [true, 0]);
+  check('map: no page errors', o.errors.filter(e => !/mapbox/i.test(e)), []);
+  await o.ctx.close();
+  o = await mapPage({ helperDown: true });
+  await o.page.evaluate(() => { const c = document.createElement('canvas'); window.__downloads = 0; return window.__mapExport(c, () => { window.__downloads++; }); });
+  await o.page.waitForTimeout(300);
+  check('map: helper down → downloaded as today, said, nothing recorded', [await o.page.evaluate(() => window.__downloads), /downloaded/.test(await text(o.page, '#mapJobMsg')), o.pieces.length], [1, true, 0]);
+  await o.ctx.close();
+  o = await mapPage({ members: [{ name: 'Team', initials: 'T', role: 'team' }] });
+  await o.page.evaluate(() => { const c = document.createElement('canvas'); window.__downloads = 0; return window.__mapExport(c, () => { window.__downloads++; }); });
+  check('map: a teammate exports as today, nothing saved', [await text(o.page, '#export'), await o.page.evaluate(() => window.__downloads), o.helper.length], ['⬇ Export static image (PNG)', 1, 0]);
+  await o.ctx.close();
+  o = await mapPage({ path: '/tools/map-studio/' });
+  await o.page.evaluate(() => localStorage.setItem('gvc.mapStudio.token', 'pk.remembered'));
+  await o.page.reload({ waitUntil: 'networkidle' });
+  check('map: standalone untouched (no bar, no remembered token, Manhattan)', await o.page.evaluate(() => [!!document.getElementById('mapJobBar'), document.getElementById('token').value, typeof window.__mapRecords]),
+    [false, '', 'undefined']);
+  await o.ctx.close();
+
   await browser.close();
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
   if (failures.length) { console.log('\n  ' + failures.join('\n\n  ') + '\n'); process.exit(1); }

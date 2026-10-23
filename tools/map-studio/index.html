@@ -277,17 +277,20 @@ function dedupe(records){
   const m = new Map();
   for(const r of records){
     const key = (r.number+' '+r.street).toLowerCase().replace(/\s+/g,' ').trim();
-    if(!m.has(key)) m.set(key,{ number:r.number, street:r.street, city:r.city, units:[] });
+    if(!m.has(key)) m.set(key,{ number:r.number, street:r.street, city:r.city, place:r.place, units:[] });
     if(r.unit) m.get(key).units.push(r.unit);
   }
   return [...m.values()];
 }
 
 /* ---------- geocoding ---------- */
+/* Where an address is looked for. Standalone it is always Manhattan; a job's map
+   (job-mode.js, Slice 5) gives each address its town and the market's centre. */
+let GEO_NEAR = '-73.962,40.773';
 async function geocode(b, token){
-  const q = `${b.number} ${b.street}, New York, NY`;
+  const q = `${b.number} ${b.street}, ${b.place || 'New York, NY'}`;
   const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(q)}`
-    + `&access_token=${encodeURIComponent(token)}&limit=1&country=us&proximity=-73.962,40.773`;
+    + `&access_token=${encodeURIComponent(token)}&limit=1&country=us&proximity=${GEO_NEAR}`;
   const res = await fetch(url);
   if(!res.ok) throw new Error('Geocoding failed ('+res.status+')');
   const data = await res.json();
@@ -632,10 +635,9 @@ async function exportImage(){
     }
   }
 
-  const a=document.createElement('a');
-  a.download='gvc-3d-property-map.png';
-  a.href=out.toDataURL('image/png');
-  a.click();
+  // a job's map (Slice 5) is saved to the job instead of downloaded
+  if (window.__mapExport) await window.__mapExport(out, download);
+  else download(out);
   } finally {
     if(resized){
       if(savedStyle===null) mapEl.removeAttribute('style'); else mapEl.setAttribute('style',savedStyle);
@@ -644,6 +646,13 @@ async function exportImage(){
       setStatus('Exported a tall PNG. Reframe and export again anytime.');
     }
   }
+}
+
+function download(canvas){
+  const a=document.createElement('a');
+  a.download='gvc-3d-property-map.png';
+  a.href=canvas.toDataURL('image/png');
+  a.click();
 }
 
 function wrap(ctx,text,maxW){
@@ -664,7 +673,7 @@ async function build(){
   if(!token){ setStatus('Add your Mapbox access token first.',true); return; }
   if(!raw.trim()){ setStatus('Paste your address list first.',true); return; }
 
-  const records=parseAddresses(raw);
+  const records=window.__mapRecords ? window.__mapRecords() : parseAddresses(raw);
   if(!records.length){ setStatus('No addresses parsed — expecting number / street / unit / "New York" per record.',true); return; }
   buildings=dedupe(records).map((b,i)=>({...b,lng:null,lat:null,ok:false,outlier:false,idx:i+1}));
 
@@ -733,7 +742,10 @@ $('resetView').onclick=()=>{
 $('build').onclick=build;
 $('export').onclick=exportImage;
 updateModifierState();
+/* what a job's map works through (Slice 5, job-mode.js) */
+window.__mapStudio = { setNear(p){ GEO_NEAR = p; }, build, setStatus, get buildings(){ return buildings; }, get map(){ return map; } };
 </script>
+<script src="../../assets/js/piece-loader.js" data-job="job-mode.js"></script>
 <script src="../../assets/js/panel-collapse.js"></script>
 <script src="../../assets/js/field-labels.js"></script>
 </body>

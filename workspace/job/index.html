@@ -191,6 +191,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script async id="mammothJs" src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" integrity="sha384-/cXAMbzovUIKbBERjPmR3SnPTh8siWr5lsvFYj1Uq4XP0yaJUZJmsh0YXyGv5P0y" crossorigin="anonymous" onerror="this.dataset.failed='1'"></script>
 <script src="../../tools/showsheet/listing.js"></script>
 <script src="../../assets/js/sheet-job.js"></script>
+<script src="../../assets/js/piece-job.js"></script>
 <script src="../../assets/js/piece-stale.js"></script>
 <script src="../../assets/js/details-doc.js"></script>
 <script src="../../assets/js/folder-health.js"></script>
@@ -234,14 +235,15 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         kind === 'listing' ? rest('/pitches?won_property_id=eq.' + encodeURIComponent(row.id) + '&select=*') : Promise.resolve([]),
         kind === 'pitch' && row.won_property_id ? rest('/properties?id=eq.' + encodeURIComponent(row.won_property_id) + '&select=slug,label,core') : Promise.resolve([]),
         who(),
-        // the showsheet's record (Slice 4); unreadable (0009 not run yet) means none, never a broken page
-        kind === 'listing' ? rest('/documents?property_id=eq.' + encodeURIComponent(row.id) + '&tool=eq.showsheet&select=property_id,tool,version,built_from,built_at,output')
+        // the pieces' records (Slice 4, 5); unreadable (0009 or 0010 not run yet) means none, never a broken page
+        kind === 'listing' || kind === 'pitch' ? rest('/documents?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=tool,version,built_from,built_at,output')
           .catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
         state.me = r[3];
-        state.doc = (r[4] || [])[0] || null;
+        state.docs = r[4] || [];
+        state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         JP.canEdit = state.me.role === 'owner';
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
         if (kind === 'listing') { data.properties = [row]; data.pitches = r[1] || []; }
@@ -263,15 +265,16 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, onSheet: paintRebuild };
+      doc: state.doc, docs: state.docs, onSheet: paintRebuild };
   }
 
-  /* S21: Rebuild n stale in the header (owner only; Slice 4 has one piece), from the scan at first, then live */
-  function paintRebuild(s) {
+  /* S21: Rebuild n stale in the header (owner only), from the scan at first, then live. Slice 5: every
+     piece of the job counts (JP.kit.judgeAll: [{ tool, s, href }]); the button opens the first stale one */
+  function paintRebuild(list) {
     var host = $('rebuildHost');
     if (!host) return;
-    var n = s && s.state === 'stale' ? 1 : 0;
-    host.innerHTML = n && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="../../tools/showsheet/?listing=' + esc(encodeURIComponent(state.row.slug)) + '&amp;rebuild=1">Rebuild ' + n + ' stale</a>' : '';
+    var stale = (Array.isArray(list) ? list : []).filter(function (x) { return x && x.s && x.s.state === 'stale'; });
+    host.innerHTML = stale.length && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="' + esc(stale[0].href) + '">Rebuild ' + stale.length + ' stale</a>' : '';
   }
 
   function tile(k, v, s, badge) {
@@ -375,6 +378,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c) + '</div>', '<div id="fpHost">' + JP.floorplans.html(c) + '</div>',
       '<div id="photosHost">' + JP.photos.html(c) + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
+    if (kind === 'pitch') left.push(JP.kit.pitchHtml(c));
     left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
     if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
@@ -385,7 +389,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
-    if (kind === 'listing') paintRebuild(JP.kit.judge(c, (r.scan && r.scan.pieces) || {}, false));
+    if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
     if (kind === 'dev') JP.dev.wire($('topHost'), c);
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);

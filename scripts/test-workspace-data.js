@@ -390,6 +390,32 @@ check('D88 recent changes colour it as off market', W.recentChanges(offChanges, 
   check('S21 stale: a junk record never throws', Array.isArray(noisy.stale), true);
 }
 
+/* Slice 5: every piece counts, a pitch's too */
+{
+  const SJ = require('../assets/js/sheet-job.js'), PJ = require('../assets/js/piece-job.js');
+  const sp = (id, over) => Object.assign({ id, slug: id, label: id, kind: 'sale', market: 'NJ', stage: 'Live', folder_state: 'linked', drive_folder: 'x',
+    core: { address: id + ' Piece St', price: 900000, agentIds: ['katie-cook'] } }, over || {});
+  const a = sp('t1'), b = sp('t2');
+  const bro = PJ.builtFrom('brochure', {}, a, { via: 'helper' }); bro.facts.price = 950000;
+  const card = PJ.builtFrom('postcard-listed', {}, a, { via: 'helper' }); card.facts.price = 950000;
+  const fresh = PJ.builtFrom('brochure', {}, b, { via: 'helper' });
+  const q = { id: 'q9', slug: 'q9', label: '9 Pitch Ln', market: 'NJ', outcome: 'open', pitched_on: '2026-10-01', core: { address: '9 Pitch Ln', comps: [{ address: '1 Comp Rd' }] } };
+  const mapBf = PJ.builtFrom('pitch-map', {}, { core: { address: '9 Pitch Ln', comps: [] } }, {});
+  const documents = [
+    { property_id: 't1', tool: 'brochure', built_from: bro, output: { name: 'b.pdf' } },
+    { property_id: 't1', tool: 'postcard-listed', built_from: card, output: { name: 'p.pdf' } },
+    { property_id: 't1', tool: 'showsheet', built_from: SJ.builtFrom({}, a, {}), output: { name: 's.pdf' } },
+    { property_id: 't2', tool: 'brochure', built_from: fresh, output: { name: 'c.pdf' } },
+    { pitch_id: 'q9', property_id: null, tool: 'pitch-map', built_from: mapBf, output: { name: 'm.png' } }
+  ];
+  const jobs = W.buildJobs({ properties: [a, b], pitches: [q], documents, changes: [] }, TODAY);
+  const J_ = id => jobs.find(j => j.id === id) || {};
+  check('Slice 5 stale: every stale piece of a listing, once each word', [J_('t1').stale, J_('t1').stalePieces.map(x => x.tool)], [['price'], ['brochure', 'postcard-listed']]);
+  check('Slice 5 stale: a piece made as the job is now is fresh', [J_('t2').stale, J_('t2').stalePieces], [[], []]);
+  check('Slice 5 stale: a pitch\'s map goes stale when its comps change', [J_('q9').stale, J_('q9').stalePieces.map(x => [x.tool, x.label])], [['mapped addresses'], [['pitch-map', 'Map']]]);
+  check('Slice 5 stale: a pitch piece never lands on a listing', J_('t2').stalePieces.length, 0);
+}
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

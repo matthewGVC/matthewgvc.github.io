@@ -9,10 +9,12 @@
   // one page script, two tabs: Resell (listings, rentals, pitches) and New Dev (developments)
   var DEV = document.body.dataset.nav === 'newdev';
   var mine = function (j) { return DEV ? j.type === 'development' : j.type !== 'development'; };
-  var f = { market: '', type: '', q: '' }, data = null, agentsOf = {};
+  var f = { market: '', type: '', q: '' }, data = null, agentsOf = {}, postsBy = {};
   /* column sorting: no column chosen = last activity, newest first */
   var sort = { key: null, dir: 1 };
   var COLS = [['name', 'Job', ''], ['type', 'Type', ''], ['market', 'Market', ''], ['stage', 'Stage', ''], ['price', 'Price', 'r'], ['agents', 'Agents', ''], ['de', 'DE status', 'r']];
+  // Resell: each listing's social posts from Asana's Social Media project (posted, and how many are coming)
+  if (!DEV) COLS.splice(6, 0, ['posts', 'Posts', 'r']);
   var TYPE_WORD = { listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' };
   var num = function (s) { var n = Number(String(s || '').replace(/[^0-9.]/g, '')); return s && !isNaN(n) ? n : null; };
   var SORT_BY = {
@@ -22,7 +24,8 @@
     stage: function (j) { var i = (W.STAGES || []).indexOf(j.stage); return i === -1 ? 999 : i; },
     price: function (j) { return num(j.price); },
     agents: function (j) { return (agentsOf[j.id] || []).join(', ').toLowerCase(); },
-    de: function (j) { return W.deLabel(j.deStatus) || ''; }
+    de: function (j) { return W.deLabel(j.deStatus) || ''; },
+    posts: function (j) { var p = postsBy[j.id]; return p ? p.posted.length : null; }
   };
   function heads() {
     $('heads').innerHTML = COLS.map(function (c) {
@@ -55,9 +58,15 @@
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,scan,version&stage=not.is.null'),
       rest('/pitches?select=*'), rest('/dev_projects?select=*'),
-      rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000')
+      rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
+      // unreadable (0012 not run yet) means no counts, never a broken list
+      DEV ? Promise.resolve([]) : rest('/asana_tasks?kind=eq.post&property_id=not.is.null&select=property_id,completed_at,due_on,fields').catch(function () { return []; })
     ]).then(function (r) {
       data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [] };
+      var byJob = {};
+      (r[4] || []).forEach(function (x) { (byJob[x.property_id] = byJob[x.property_id] || []).push(x); });
+      postsBy = {};
+      Object.keys(byJob).forEach(function (id) { postsBy[id] = W.postsOf(byJob[id]); });
       (data.properties).forEach(function (p) {
         agentsOf[p.id] = ((p.core || {}).agentIds || []).map(function (id) { var a = window.GVC_AGENT && GVC_AGENT(id); return a ? a.name : null; }).filter(Boolean);
       });
@@ -66,6 +75,10 @@
       if (e.status === 404 || e.status === 400 || /does not exist|schema cache/i.test(e.message)) gate('The workspace tables aren\'t set up yet', 'Migrations 0004 and 0005 haven\'t been applied to the database yet.');
       else gate('The jobs couldn\'t load', e.message);
     });
+  }
+  function postsCell(p) {
+    if (!p || (!p.posted.length && !p.coming.length)) return '<span class="soft">0</span>';
+    return esc(p.posted.length) + (p.coming.length ? '<small>' + esc(p.coming.length) + ' coming</small>' : '');
   }
   function pass(j) {
     var hay = (j.name + ' ' + (j.place || '') + ' ' + (agentsOf[j.id] || []).join(' ')).toLowerCase();
@@ -96,8 +109,9 @@
         '<td>' + esc({ listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' }[j.type]) + '</td><td>' + esc(j.market) + '</td>' +
         '<td class="stg"><span class="chip ' + j.chip + '">' + esc(j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
         '<td class="r price">' + (j.price ? esc(j.price) : '<span class="soft">Not set</span>') + '</td><td>' + ((j.agentIds || []).length ? window.GVC_FACES(j.agentIds) : ag.length ? '<span class="soft">' + esc(ag.join(', ')) + ' (from Asana)</span>' : '<span class="soft">Not set</span>') + '</td>' +
+        (DEV ? '' : '<td class="r posts">' + (j.type === 'pitch' ? '' : postsCell(postsBy[j.id])) + '</td>') +
         '<td class="r">' + (W.deLabel(j.deStatus) || (j.type !== 'pitch' && j.type !== 'development') ? '<span class="chip">' + esc(W.deLabel(j.deStatus) || 'not on DE') + '</span>' : '') + '</td></tr>';
-    }).join('') : '<tr><td colspan="7" class="empty">' + (all.length ? 'Nothing matches these filters.' : (DEV ? 'No developments yet.' : 'No jobs yet.')) + '</td></tr>';
+    }).join('') : '<tr><td colspan="' + COLS.length + '" class="empty">' + (all.length ? 'Nothing matches these filters.' : (DEV ? 'No developments yet.' : 'No jobs yet.')) + '</td></tr>';
     $('count').textContent = js.length + ' of ' + all.length + ' jobs';
     var tl = W.taskFlags(all).filter(function (t) { return t.kind !== 'archive'; });
     $('n2').innerHTML = tl.length ? tl.map(function (t) { return '<li><a href="../' + esc(t.href) + '">' + esc(t.job) + '</a><span>' + esc(t.text) + '</span></li>'; }).join('') : '<li class="soft">Everything is linked.</li>';

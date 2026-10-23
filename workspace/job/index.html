@@ -80,9 +80,15 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .b.lk.ok{background:#E4F2E8;border-color:#2E7D4F;color:#1E5A36}
 .b.lk.ok:hover{background:#D5EBDC}
 .b.lk:not(.ok){border-color:var(--danger);color:var(--danger)}
-/* Floorplans and Photos inside the Marketing track */
+/* Floorplans, Photos and Social posts inside the Marketing track */
 #kitCard .mt-sub{margin-top:18px;padding-top:4px;border-top:1px solid var(--rule)}
 #kitCard .mt-sub > .card{border:0;background:none;box-shadow:none;padding:12px 0 0;margin:0}
+#postsCard .ph3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:12px 0 4px;font-weight:600}
+#postsCard .posts{list-style:none;margin:0;padding:0;font-size:13.5px}
+#postsCard .posts li{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--rule)}
+#postsCard .posts li:last-child{border-bottom:0}
+#postsCard .pd{flex:none;width:52px;color:var(--ink-soft);font-family:var(--mono);font-size:11.5px}
+#postsCard .pn{flex:1;min-width:0;overflow-wrap:anywhere}
 .agent{display:flex;align-items:center;gap:12px;padding:8px 0}
 .agent .ph{width:40px;height:40px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);object-fit:cover;flex-shrink:0}
 .agent .aw{flex:1;min-width:0;overflow-wrap:anywhere}
@@ -210,6 +216,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/kit.js"></script>
 <script src="../../assets/js/job-page/floorplans.js"></script>
 <script src="../../assets/js/job-page/photos.js"></script>
+<script src="../../assets/js/job-page/posts.js"></script>
 <script src="../../assets/js/job-page/doc.js"></script>
 <script>
 (function () {
@@ -247,12 +254,16 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         who(),
         // the pieces' records (Slice 4, 5); unreadable (0009 or 0010 not run yet) means none, never a broken page
         kind === 'listing' || kind === 'pitch' ? rest('/documents?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=tool,version,built_from,built_at,output')
+          .catch(function () { return []; }) : Promise.resolve([]),
+        // its social posts from Asana (0012); unreadable means none
+        kind === 'listing' ? rest('/asana_tasks?property_id=eq.' + encodeURIComponent(row.id) + '&kind=eq.post&select=gid,name,due_on,completed_at,fields')
           .catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
         state.me = r[3];
         state.docs = r[4] || [];
+        state.posts = r[5] || [];
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         JP.canEdit = state.me.role === 'owner';
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
@@ -275,7 +286,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, docs: state.docs, onSheet: paintRebuild };
+      doc: state.doc, docs: state.docs, posts: state.posts, onSheet: paintRebuild };
   }
 
   /* S21: Rebuild n stale in the header (owner only), from the scan at first, then live. Slice 5: every
@@ -384,7 +395,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div>';
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
-      '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
+      '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
     if (kind === 'pitch') left.push(JP.kit.pitchHtml(c));
     left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');

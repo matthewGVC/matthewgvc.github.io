@@ -16,9 +16,12 @@
      keepPerson(raw)             → { gid, name, section, title, state, team,
                                      deBioUrl, deProfileUrl, past }
      keepLoose(raw, projectGid?) → { gid, name, projectGid, dueOn, completedAt, assignee }
+     keepPost(raw, projectGid?)  → { gid, name, completed, completedAt, dueOn, section,
+                                     projectGid, tags, format, stage, link }   (💬 Social Media)
      (projectGid: the project being read, used when Asana sent no memberships)
      missingKept(tasks)          → kept field names no task has at all (a renamed field)
      KEPT_FIELDS, TASK_FIELDS    the names kept; the opt_fields string asked for
+     POST_FIELDS                 the opt_fields string for the social posts project
 
    A kept field a task has but left empty is present as null; one the task
    doesn't have is absent. That difference is how a rename is noticed.
@@ -160,9 +163,34 @@ function keepLoose(raw, projectGid) {
   };
 }
 
+/* Social posts (💬 Social Media): only what a job's post count needs. The listing
+   each post is for (any "🏡 <year> Properties" tag), its format and production stage,
+   and the public post link (https only). Engagement figures, hooks, vendors, shoot
+   dates, estimates and notes are never read. */
+const POST_FIELDS = [
+  'name', 'completed', 'completed_at', 'due_on', 'memberships.section.name', 'memberships.project.gid',
+  'custom_fields.name', 'custom_fields.display_value', 'custom_fields.enum_value.name', 'custom_fields.multi_enum_values.name'
+].join(',');
+const PROPERTY_TAG = /^🏡\s*\d{4} Properties$/;
+
+function keepPost(raw, projectGid) {
+  const m = membership(raw, projectGid);
+  const out = { gid: raw.gid, name: raw.name, completed: !!raw.completed, completedAt: raw.completed_at || null,
+    dueOn: raw.due_on || null, section: nm(m.section), projectGid: gidOf(m.project) || projectGid || null,
+    tags: [], format: null, stage: null, link: null };
+  (raw.custom_fields || []).forEach(cf => {
+    const name = spaced(cf.name), v = valueOf(cf);
+    if (PROPERTY_TAG.test(name) && v !== null) out.tags = out.tags.concat(Array.isArray(v) ? v : [String(v)]);
+    else if (name === 'Post Format' && typeof v === 'string') out.format = v;
+    else if (name === 'Production Stage' && typeof v === 'string') out.stage = v;
+    else if (name === 'Post Link' && typeof v === 'string' && /^https:\/\/\S+$/.test(v.trim())) out.link = v.trim();
+  });
+  return out;
+}
+
 function missingKept(tasks) {
   if (!tasks || !tasks.length) return [];
   return KEPT_FIELDS.filter(n => !tasks.some(t => t.fields && n in t.fields));
 }
 
-module.exports = { keepTask, keepSubtask, keepStory, keepPerson, keepLoose, missingKept, KEPT_FIELDS, TASK_FIELDS, STORY_FIELDS };
+module.exports = { keepTask, keepSubtask, keepStory, keepPerson, keepLoose, keepPost, missingKept, KEPT_FIELDS, TASK_FIELDS, STORY_FIELDS, POST_FIELDS };

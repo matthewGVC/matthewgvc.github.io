@@ -2431,10 +2431,11 @@ const resetDocFields = () => {
   syncStrategy();
 };
 
-GVC_PROPBAR.mount({
-  host: $('#propBar'),
-  tool: 'brochure',
+/* Opened from a job (?listing=<slug>, Slice 5): job-mode.js runs the brochure from the job
+   instead of the property bar. Without it the tool is exactly as it always was. */
+const JOB_MODE = new URLSearchParams(location.search).has('listing');
 
+const LIBRARY = {
   blank: resetDocFields,
 
   /* One address box and no unit box, so the unit travels inside the line the
@@ -2496,9 +2497,69 @@ GVC_PROPBAR.mount({
     syncPaper(); syncStrategy();
     renderImgList(); renderFpList(); renderGalleryPanel(); redraw(); updateBentoNote();
   }
-});
+};
+if (!JOB_MODE) GVC_PROPBAR.mount(Object.assign({ host: $('#propBar'), tool: 'brochure' }, LIBRARY));
 // webfont metrics change block heights, so re-measure once they land
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkOverflow);
+
+/* what a job mode works through (Slice 5): the brochure's own state, drawing and image intake */
+const fillFields = () => document.querySelectorAll('[data-field]').forEach(el => {
+  const k = el.dataset.field;
+  if (k in state) el.value = state[k];
+});
+window.__piece = {
+  get state() { return state; },
+  blank: () => structuredClone(BLANK), LIBRARY, JOB_MODE,
+  nextId: () => ++uid,
+  /* replace the whole state (keys the brochure knows only), then draw */
+  set(s) {
+    Object.keys(state).forEach(k => { delete state[k]; });
+    Object.assign(state, structuredClone(BLANK), s);
+    state.galSel = null;
+    uid = Math.max(uid, ...state.images.map(i => +i.id || 0), ...state.floorplans.map(f => +f.id || 0), 0);
+    fillFields(); syncPaper(); syncStrategy(); renderRoster();
+    renderImgList(); renderFpList(); renderGalleryPanel(); redraw();
+  },
+  redraw, renderImgList, renderFpList, renderGalleryPanel, fillFields, checkOverflow,
+  fileToImage, reencode, floorplanHeaderY, trimRect
+};
+
+/* ============================================================
+   __render(state): draw a given brochure with no network beyond the page's
+   own files, then say so (window.__rendered). The helper prints a job's
+   brochure this way (helper/pdf/render.js): photos and plans come inline.
+   ============================================================ */
+window.__render = async function (s) {
+  window.__rendered = false; window.__renderError = null;
+  try { return await drawGiven(s); }
+  catch (e) { window.__renderError = String(e && e.message || e); throw e; }
+};
+async function drawGiven(s) {
+  const base = structuredClone(BLANK), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  // only keys the brochure knows, each in the shape it expects
+  Object.keys(given).forEach(k => {
+    if (!(k in base) || given[k] == null) return;
+    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
+    base[k] = given[k];
+  });
+  // pictures come inline only: an address elsewhere is dropped, never fetched
+  const inline = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(v);
+  base.images = base.images.filter(im => im && typeof im === 'object' && inline(im.url) && Number.isFinite(+im.id));
+  base.floorplans = base.floorplans.filter(f => f && typeof f === 'object' && inline(f.url) && Number.isFinite(+f.id));
+  base.agents = base.agents.filter(a => typeof a === 'string');
+  if (base.paper !== 'half') base.paper = 'letter';
+  window.__piece.set(base);
+  // every wait is capped: a font or an image that never settles must not hang the helper
+  const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
+  if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
+  const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
+  await frame(); await frame();
+  await capped(Promise.all([...document.images].map(i => i.complete ? null : new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))), 20000);
+  redraw(); await frame(); await frame();
+  checkOverflow();
+  window.__rendered = true;
+  return true;
+}
 </script>
 
 <style>

@@ -108,6 +108,31 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   const kept = await page.evaluate(() => { const s = window.__test.state; return [s.photos.map(p => p.name), s.floorplan, s.floorplan2]; });
   check('only inline pictures are kept from a given state', kept, [['ok'], null, null]);
   check('nothing outside the page is fetched', probe.hits, 0);
+  /* ---------- Slice 5: the Brochure drawn from a given state ---------- */
+  const BRO = { address: '12 Sample Lane', city: 'Testville', state: 'NJ', zip: '07000', price: '1850000', beds: '4', baths: '3.5', sqft: '2800',
+    blurb: 'A made-up house.', features: 'Pool\nFinished basement', agents: ['john-gasdaska'], paper: 'letter',
+    images: [1, 2, 3].map(i => ({ id: i, name: 'p' + i, url: DOT, ar: 1.5, role: 'auto' })),
+    floorplans: [{ id: 4, name: 'plan', url: DOT, label: 'Level 1', zoom: 1, tx: 0, ty: 0 }] };
+  await page.goto(BASE + '/tools/brochure/', { waitUntil: 'networkidle' });
+  const bro = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, pages: document.querySelectorAll('.page').length,
+      market: GVC_LEGAL.marketOf(window.__piece.state), addr: window.__piece.state.address, paper: window.__piece.state.paper,
+      text: document.body.innerText.indexOf('A made-up house.') !== -1, prop: !!document.querySelector('#propBar').children.length }));
+  };
+  const b1 = await bro(BRO);
+  check('brochure: rendered, five pages (cover, gallery, info, plan, closing)', [b1.rendered, b1.pages], [true, 5]);
+  check('brochure: market from the state, the words on the page', [b1.market, b1.addr, b1.text], ['nj', '12 Sample Lane', true]);
+  check('brochure: printed through the print dialog\'s path', await pages(), 5);
+  const b2 = await bro(Object.assign({}, BRO, { paper: 'half', floorplans: [] }));
+  check('brochure: half letter, no plan page', [b2.paper, b2.pages], ['half', 4]);
+  await bro(Object.assign({}, BRO, { images: [{ id: 1, name: 'far', url: far + '/b.jpg', ar: 1, role: 'auto' }, { id: 2, name: 'ok', url: DOT, ar: 1, role: 'auto' }],
+    floorplans: [{ id: 3, name: 'farplan', url: 'file:///C:/x.png' }], agents: null, gallery: 'nope', address: evil }));
+  check('brochure: only inline pictures kept, nothing fetched, nothing run', [await page.evaluate(() => window.__piece.state.images.map(i => i.name).concat(window.__piece.state.floorplans.map(f => f.name))), probe.hits, await page.evaluate(() => window.__xss || 0)],
+    [['ok'], 0, 0]);
+  const b3 = await bro(Object.assign({}, BRO, { state: 'FL', zip: '33000' }));
+  check('brochure: Florida legal follows the state', b3.market, 'fl');
+
   check('no page errors', errors, []);
   await browser.close();
 
@@ -119,6 +144,8 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       const out = await renderPiece({ tool: 'showsheet', state: NJ, paper: 'a5', siteBase: BASE });
       check('renderPiece: 2 pages', out.pages, 2);
       check('renderPiece: label', out.label, '12 Sample Lane');
+      const ob = await renderPiece({ tool: 'brochure', state: BRO, siteBase: BASE });
+      check('renderPiece brochure: 5 pages, label', [ob.pages, ob.label], [5, '12 Sample Lane']);
       // the hidden browser itself refuses pictures from anywhere but the site
       probe.hits = 0;
       const { chromium: ch } = require('playwright');

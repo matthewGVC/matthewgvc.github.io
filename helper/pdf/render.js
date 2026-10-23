@@ -25,7 +25,9 @@ const TOOLS = {
     ready: () => typeof state !== 'undefined' && !!state.address,          // eslint-disable-line no-undef
     label: () => [state.address, typeof GVC_PROPS !== 'undefined' ? GVC_PROPS.unitDisplay(state.unit) : state.unit].filter(Boolean).join(' '),  // eslint-disable-line no-undef
     paper: async (page, paper) => { await page.click('#paperSeg button[data-v="' + paper + '"]'); }
-  }
+  },
+  /* Slice 5: drawn only from a given state, which carries its own paper */
+  brochure: { path: '/tools/brochure/', label: () => window.__piece.state.address }
 };
 
 /* A drawn state may only show pictures it carries inline: the hidden browser
@@ -40,7 +42,7 @@ async function guardRequests(page, siteBase) {
 }
 
 async function renderPiece(opts) {
-  const tool = TOOLS[opts.tool];
+  const tool = Object.prototype.hasOwnProperty.call(TOOLS, opts.tool) ? TOOLS[opts.tool] : null;
   if (!tool) throw Object.assign(new Error('The helper can\'t make a ' + opts.tool + ' yet.'), { status: 400 });
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
@@ -54,12 +56,13 @@ async function renderPiece(opts) {
       const drawn = await page.evaluate(s => window.__render(s).then(() => ({ ok: window.__rendered === true }), e => ({ error: String(e && e.message || e) })), opts.state);
       if (!drawn.ok) throw new Error('The ' + opts.tool + ' could not be drawn: ' + (drawn.error || 'it never finished'));
     } else {
+      if (!tool.inputs) throw Object.assign(new Error('The ' + opts.tool + ' is drawn from a job only.'), { status: 400 });
       for (const k of Object.keys(tool.inputs)) {
         if (opts.inputs && opts.inputs[k]) await page.setInputFiles(tool.inputs[k], opts.inputs[k]);
       }
       await page.waitForFunction(tool.ready, null, { timeout: 30000 });
     }
-    if (opts.paper) await tool.paper(page, opts.paper);
+    if (opts.paper && tool.paper) await tool.paper(page, opts.paper);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => Array.from(document.images).every(i => !i.src || (i.complete && i.naturalWidth > 0)), null, { timeout: 30000 });
     await page.waitForTimeout(500);   // the sheet's autofit runs after images settle

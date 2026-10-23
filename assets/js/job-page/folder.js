@@ -176,7 +176,7 @@
     if (m === 'none') body = '<p class="soft">' + (r.drive_folder ? 'The folder link is broken.' + (ctx.canEdit ? ' Relink it from the top of the page.' : '') : 'No Drive folder linked yet.') + '</p>';
     else if (m === 'scan') body = scanBody(ctx);
     else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
-    return '<div class="card" id="folderCard"><div class="card-h"><div><h2>Folder</h2><p>Only the Floorplan, Photos and Marketing folders and the details doc are read. Nothing is moved.</p></div>' +
+    return '<div class="card" id="folderCard"><div class="card-h"><div><h2>Folder</h2></div>' +
       (r.drive_folder ? '<button class="b sm" type="button" data-copy-folder>' + ctx.I('link') + 'Copy Drive link</button>' : '') + '</div>' +
       (r.drive_folder ? '<div class="path">' + esc(gPath(r)) + '</div>' : '') + mismatchLines(ctx) +
       '<div id="folderBody">' + body + '</div><p class="soft" id="folderMsg" role="status" style="font-size:13px;margin-top:8px">' + esc(msgs.folder || '') + '</p></div>';

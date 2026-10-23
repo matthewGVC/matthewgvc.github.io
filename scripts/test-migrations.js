@@ -104,7 +104,8 @@ const USERS = {
 
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
-  check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings', 'dev_projects', 'developments', 'documents', 'floorplans', 'members', 'photos', 'pitches', 'properties', 'sync_runs', 'todos']);
+  check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings', 'dev_projects', 'developments', 'documents', 'floorplans']
+    .concat(UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos', 'pitches', 'properties', 'sync_runs', 'todos']));
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
     'drive_folder', 'folder_state', 'scan', 'photo_hero', 'photo_order', 'version', 'updated_by', 'from_pitch_id',
@@ -506,6 +507,25 @@ const USERS = {
     await db.query(`insert into public.documents (pitch_id, tool) values ($1, 'seller')`, [gone]);
     await db.query('delete from public.pitches where id = $1', [gone]);
     check('a deleted pitch takes its pieces', (await db.query('select count(*)::int n from public.documents where pitch_id = $1', [gone])).rows[0].n, 0);
+  }
+
+  /* ---------- 0011: who claims and fixes an error ---------- */
+  if (UPTO >= '0011') {
+    const pid = (await db.query('select id from public.properties order by slug limit 1')).rows[0].id;
+    const ins = `insert into public.match_claims (owner_table, owner_id, key, claimed_at, claimed_name) values ('properties', $1, 'M7', now(), 'Someone else') returning claimed_name, claimed_by`;
+    const mine = (await as('matt', ins, [pid])).rows[0];
+    check('matt claims an error: his name, whatever the page sent', [mine.claimed_name, mine.claimed_by], ['Matt Bloomfield', id.matt]);
+    check('the shared team account cannot claim', await fails('team', `insert into public.match_claims (owner_table, owner_id, key, claimed_at) values ('properties', $1, 'M8', now())`, [pid]), true);
+    check('the team reads the claims', (await as('team', 'select count(*)::int n from public.match_claims')).rows[0].n, 1);
+    check('the shared account cannot mark it fixed', (await as('team', `update public.match_claims set fixed_at = now() where key = 'M7' returning id`)).rows.length, 0);
+    const fx = (await as('matt', `update public.match_claims set fixed_at = now(), fixed_values = '{"a":1}' where key = 'M7' returning fixed_name, fixed_values`)).rows[0];
+    check('matt marks it fixed', [fx.fixed_name, fx.fixed_values], ['Matt Bloomfield', { a: 1 }]);
+    const un = (await as('matt', `update public.match_claims set fixed_at = null where key = 'M7' returning fixed_name, fixed_values`)).rows[0];
+    check('undo clears who fixed it', [un.fixed_name, un.fixed_values], [null, null]);
+    await db.query(`update public.members set role = 'marketing' where role = 'shared'`);
+    check('a marketing member can claim', await fails('team', `insert into public.match_claims (owner_table, owner_id, key, claimed_at) values ('properties', $1, 'M9', now())`, [pid]), false);
+    await db.query(`update public.members set role = 'shared' where role = 'marketing'`);
+    check('anon reads nothing', (await as('anon', 'select * from public.match_claims')).rows.length, 0);
   }
 
   /* ---------- the switch: the shared account stops ---------- */

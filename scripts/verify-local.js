@@ -42,6 +42,7 @@ const PAGES = [
   ['Signage',         '/tools/signage/'],
   ['Workspace',       '/workspace/'],
   ['Workspace jobs',  '/workspace/jobs/'],
+  ['Workspace new dev', '/workspace/new-dev/'],
   ['Workspace job',   '/workspace/job/?listing=none'],
   ['Workspace match', '/workspace/match/'],
   ['Workspace status','/workspace/status/']

@@ -136,6 +136,7 @@ async function open(browser, opts) {
   const errors = [], saves = [], writes = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
+  await page.addInitScript(() => localStorage.setItem('gvc.collapse.all', 'open'));   // every card open: these tests read inside them
   await page.addInitScript(() => { delete window.showDirectoryPicker; });
   await page.route(MAMMOTH_URL, r => r.abort());
   if (opts.staleThrows) await page.route('**/assets/js/piece-stale.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: 'window.GVC_STALE = { stale: function () { throw new Error("bad record"); }, words: function () { return ""; } };' }));

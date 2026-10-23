@@ -88,7 +88,7 @@
       acts = (!ids.length && sug.length ? '<button class="b primary sm" type="button" id="agConfirm">Confirm</button>' : '') +
         '<button class="b sm" type="button" id="agChange">' + (ids.length || sug.length ? 'Change' : 'Add') + '</button>';
     }
-    return '<div class="card" id="agentsCard"><div class="card-h"><div><h2>Agents</h2><p>Every piece prints the agents confirmed here; the first is the lead.</p></div></div>' +
+    return '<div class="card" id="agentsCard"><div class="card-h"><div><h2>Agents</h2></div></div>' +
       body + (acts ? '<div class="fbtn">' + acts + '</div>' : '') + '<p class="fmsg" id="agMsg" role="alert">' + esc((ui && ui.msg) || '') + '</p></div>';
   }
 

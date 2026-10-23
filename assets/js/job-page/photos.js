@@ -139,7 +139,7 @@
       var c = ((((ctx.row.scan || {}).health || {}).counts || {}).photos) || {};
       body = JP.drive.scanLine(ctx.row, ctx.esc) + (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + (+c.edited || 0) + ' edited photos in the folder.</p>' : '');
     } else body = '<p class="soft">Link the job\'s Drive folder to see its photos.</p>';
-    return '<div class="card" id="photosCard"><div class="card-h"><div><h2>Photos</h2><p>Pick the hero and the order once; every piece uses them.</p></div></div>' +
+    return '<div class="card" id="photosCard"><div class="card-h"><div><h2>Photos</h2></div></div>' +
       '<div id="phBody">' + body + '</div><div id="phPicks">' + picksHtml(ctx) + '</div></div>';
   }
 

@@ -40,7 +40,7 @@
 .logf #noteText{flex:1 1 200px}
 .logf select{flex:0 1 auto;max-width:100%}
 .path{font-family:var(--mono);font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere}
-.steps-wrap{overflow-x:auto}
+.steps-wrap{overflow-x:auto;padding:6px 4px}   /* room for the current step's halo: a scrolling box clips it */
 .steps{min-width:640px}
 .ck-block{margin-top:14px}
 .ck-block h3{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
@@ -168,7 +168,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 </head>
 <body data-nav="job" data-root="../">
 <main class="wrap">
-  <div class="crumb" id="crumb"><a href="../jobs/">Jobs</a></div>
+  <div class="crumb" id="crumb"><a href="../jobs/">Resell</a></div>
   <div id="page"><p class="soft" style="margin-top:20px">Loading the job…</p></div>
 </main>
 <script src="../../assets/js/supabase-config.js"></script>
@@ -180,6 +180,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-facts.js"></script>
 <script src="../../assets/js/workspace-data.js"></script>
 <script src="../../assets/js/workspace-shell.js"></script>
+<script defer src="../../assets/js/ws-collapse.js"></script>
 <script src="../../assets/js/folder-link.js"></script>
 <script src="../../assets/js/job-page/save.js"></script>
 <script src="../../assets/js/job-page/facts.js"></script>
@@ -287,7 +288,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var r = state.row, j = state.job;
     if (kind === 'dev') return JP.dev.html(ctx());
     if (kind === 'pitch') {
-      return '<div class="card"><div class="card-h"><div><h2>Pitch</h2><p>The pitch date and outcome come from Asana. Change them there.</p></div>' +
+      return '<div class="card"><div class="card-h"><div><h2>Pitch</h2></div>' +
         (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div><div class="facts">' +
         tile('Pitched', r.pitched_on ? W.fmtDay(r.pitched_on) + ' ' + r.pitched_on.slice(0, 4) : '') +
         tile('Outcome', r.outcome === 'won' ? 'Won' : r.outcome === 'not won' ? 'Not won' : 'Open') + tile('Market', r.market) + '</div>' +
@@ -316,7 +317,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   var BLOCK = { prep: 'Prep', 'price change': 'Price change', contract: 'Contract', 'post-closing': 'Post-closing' };
   function asanaCard() {
     var r = state.row, j = state.job, a = r.asana;
-    var head = '<div class="card-h"><div><h2>Asana</h2><p>Read-only. Change it in Asana; the workspace picks it up within 30 minutes.</p></div>' +
+    var head = '<div class="card-h"><div><h2>Asana</h2></div>' +
       (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>' : '') + '</div>';
     if (!a && !r.asana_gid) return '<div class="card" id="asanaCard">' + head + '<p class="soft">Not linked to an Asana task yet.</p></div>';
     a = a || {};
@@ -334,7 +335,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     }).join('');
     var mm = j.match.length ? '<div class="as-mm"><h3>Mismatches</h3><ul class="mm">' + j.match.map(function (m) {
       return '<li><span class="code">' + esc(m.code) + '</span><span>' + esc(m.text) + '</span></li>';
-    }).join('') + '</ul><p style="margin-top:8px"><a class="link" href="../match/">See every mismatch</a></p></div>' : '';
+    }).join('') + '</ul><p style="margin-top:8px"><a class="link" href="../match/">See every error</a></p></div>' : '';
     return '<div class="card" id="asanaCard">' + head +
       '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip ' + esc(W.chipOf(stage)) + '">' + esc(stage) + '</span>' + (a.gone ? '<span class="chip stale">Asana task gone</span>' : '') + '</div>' +
       (st.length ? '<div class="as-st">' + esc(st.join(' · ')) + '</div>' : '') + dates + mm +
@@ -344,7 +345,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   function steps() {
     var j = state.job;
     if (kind === 'dev') return '';
-    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2><p>Asana\'s stage. Any stage can be skipped</p></div></div><div class="steps-wrap"><div class="steps">' +
+    return '<div class="card" data-open style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2></div></div><div class="steps-wrap"><div class="steps">' +
       j.steps.map(function (s, i) {
         var cls = i === j.stageIdx ? 'cur' : (j.done[s] || (s === 'Pitch' && j.pitchedOn)) ? 'done' : i < j.stageIdx ? 'skip' : '';
         var d = s === 'Pitch' ? (j.pitchedOn || j.done.Pitch) : j.done[s];
@@ -361,7 +362,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   function render() {
     var r = state.row, j = state.job, c = ctx();
     document.title = j.name + ' · GVC Workspace';
-    $('crumb').innerHTML = '<a href="../jobs/">Jobs</a><span>/</span><span>' + esc({ listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
+    $('crumb').innerHTML = (kind === 'dev' ? '<a href="../new-dev/">New Dev</a>' : '<a href="../jobs/">Resell</a>') + '<span>/</span><span>' + esc({ listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
     var sub = ['<span class="chip">' + esc(j.market || '?') + '</span>'];
     if (j.place) sub.push(esc(j.place));
     if (j.pitchedOn && kind !== 'pitch') sub.push('Pitched ' + esc(W.fmtDay(j.pitchedOn)));
@@ -384,7 +385,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="folderHost">' + JP.folder.html(c) + '</div>');
     if (kind === 'listing') right.push(asanaCard());
-    page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' +
+    page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>' +
       '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + steps() +

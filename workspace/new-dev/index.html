@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Dev · GVC Workspace</title>
+<meta name="description" content="GVC new developments.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/workspace.css">
+<style>
+.bar-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin:0 0 14px}
+.bar-row .r{display:flex;align-items:center;gap:10px}
+.nm a{font-family:var(--serif);font-size:18px;overflow-wrap:anywhere}
+.nm a:hover{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:4px}
+.nm small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+.stg .track{height:4px;border-radius:2px;background:var(--paper-2);margin-top:6px;width:150px;overflow:hidden}
+.stg .track i{display:block;height:100%;background:var(--ink)}
+.stg .track i.c{background:var(--cyan)}
+.price{font-family:var(--mono);font-size:13.5px}
+.tbl-card{padding:0;overflow:hidden}
+.tbl-foot{display:flex;justify-content:space-between;padding:14px 18px;font-size:13.5px;color:var(--ink-soft)}
+.need h3{font-size:19px;margin:4px 0 8px}
+.need ul{list-style:none;padding:0;margin:0}
+.need li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.need li:last-child{border-bottom:0}
+.need li a{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+.need li span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+</style>
+</head>
+<body data-nav="newdev" data-root="../">
+<main class="wrap">
+  <div class="page-h">
+    <div>
+      <h1>New Dev</h1>
+    </div>
+    <label class="search"><span id="si"></span><input id="wsSearch" placeholder="Search address, unit, agent" aria-label="Search jobs"></label>
+  </div>
+  <div id="gate" hidden></div>
+  <div id="board" hidden>
+    <div class="bar-row">
+      <div></div>
+      <div class="r"><div class="seg mkt" role="group" aria-label="Market" id="mkt"><button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="NYC">NYC</button><button type="button" aria-pressed="false" data-v="NJ">NJ</button><button type="button" aria-pressed="false" data-v="FL">FL</button></div></div>
+    </div>
+    <div class="card tbl-card"><div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr id="heads"></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+      <div class="tbl-foot"><span id="count"></span><span id="sortedBy">Sorted by last activity</span></div>
+    </div>
+    <div class="grid3" style="margin-top:20px">
+      <section class="card need"><h3>To link</h3><ul id="n2"></ul></section>
+    </div>
+  </div>
+</main>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/drive-rules.js"></script>
+<script src="../../assets/js/drive.js"></script>
+<script src="../../assets/js/workspace-data.js"></script>
+<script src="../../assets/js/workspace-shell.js"></script>
+<script defer src="../../assets/js/ws-collapse.js"></script>
+<script src="../../assets/js/ws-jobs.js"></script>
+</body>
+</html>

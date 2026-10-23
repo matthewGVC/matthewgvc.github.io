@@ -59,9 +59,14 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 /* segmented control */
 .seg{display:inline-flex;background:var(--paper-2);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
 .seg button,.seg a{font:inherit;font-size:13.5px;background:none;border:0;border-radius:6px;padding:6px 13px;color:var(--ink-soft);cursor:pointer}
-.seg [aria-pressed="true"],.seg [aria-current="true"]{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,39,58,.08)}
+.seg [aria-pressed="true"],.seg [aria-current="true"],.seg [aria-current="page"]{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,39,58,.08)}
 .seg button:focus-visible{outline:2px solid var(--sky)}
 .seg .n{font-family:var(--mono);font-size:11px;margin-left:5px;color:var(--ink-soft)}
+/* the market tabs (All, NYC, NJ, FL): larger, the chosen one filled */
+.seg.mkt{padding:4px;gap:4px}
+.seg.mkt button{font-size:16px;font-weight:600;padding:9px 22px;letter-spacing:.02em}
+.seg.mkt [aria-pressed="true"]{background:var(--ink);color:var(--bone);box-shadow:none}
+@media (max-width:640px){ .seg.mkt button{padding:8px 14px;font-size:15px} }
 
 /* chips / status */
 .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;border-radius:999px;padding:2px 9px;border:1px solid var(--rule);color:var(--ink-soft);background:var(--paper);white-space:nowrap}
@@ -104,6 +109,33 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .todo-i .dm{width:9px;height:9px;background:var(--ink);transform:rotate(45deg);margin:5px 0 0 4px}
 .todo-i .meta{display:flex;gap:8px;align-items:center;margin-top:5px;font-size:12.5px;color:var(--ink-soft)}
 .todo-i a{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+
+/* folding cards (ws-collapse.js): the title row stays, everything else folds away */
+.cz-head{cursor:pointer;position:relative}
+.card-h.cz-head{display:flex;align-items:flex-start;gap:12px}
+.cz-btn{margin-left:auto;flex:none;width:30px;height:30px;border-radius:6px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.cz-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+.cz-btn:focus-visible{outline:2px solid var(--sky)}
+.cz-shut .cz-btn svg{transform:rotate(-90deg)}
+.card.cz-shut > :not(.cz-head){display:none !important}
+.card.cz-shut > .card-h.cz-head{margin-bottom:0}
+h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
+@media (prefers-reduced-motion:reduce){ .cz-btn svg{transition:none} }
+
+/* a job's Asana / Drive / DE badges */
+.pj-sync{margin-top:7px}
+/* confirmed agents as headshots */
+.faces{display:inline-flex;align-items:center;flex-wrap:wrap}
+.face{width:34px;height:34px;border-radius:50%;overflow:hidden;background:var(--paper-2);border:2px solid var(--paper);margin-left:-6px;display:inline-block}
+.face:first-child{margin-left:0}
+.face img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;display:block}
+.face-n{font-size:13px;margin-right:6px}
+.syncb{display:inline-flex;gap:5px;flex-wrap:wrap;vertical-align:middle}
+.sb{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;border-radius:999px;padding:2px 8px 2px 6px;border:1px solid var(--rule);white-space:nowrap}
+.sb i{font-style:normal;font-weight:700;font-size:11px}
+.sb.ok{background:color-mix(in srgb,var(--cyan) 14%,var(--paper));border-color:color-mix(in srgb,var(--cyan) 45%,var(--rule));color:var(--ink)}
+.sb.no{background:color-mix(in srgb,var(--danger) 10%,var(--paper));border-color:color-mix(in srgb,var(--danger) 45%,var(--rule));color:var(--danger)}
+.sb.na{color:var(--ink-soft);opacity:.75}
 
 /* stage stepper */
 .steps{display:flex;align-items:flex-start;position:relative}

@@ -39,17 +39,18 @@
 }
 </style>
 </head>
-<body data-nav="status" data-root="../">
+<body data-nav="resell" data-root="../">
 <main class="wrap">
   <div class="page-h">
     <div>
-      <div class="eyebrow">For the team</div>
-      <h1>Status</h1>
-      <p id="lead">Loading where every property stands…</p>
+      <h1>Resell</h1>
+      <p id="lead">Loading…</p>
     </div>
-    <div class="seg" role="group" aria-label="Market" id="mkt">
+    <div class="r" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div class="seg" role="group" aria-label="View"><a href="../jobs/">List</a><a aria-current="page" href="./">Table</a></div>
+    <div class="seg mkt" role="group" aria-label="Market" id="mkt">
       <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="NYC">NYC</button><button type="button" aria-pressed="false" data-v="NJ">NJ</button><button type="button" aria-pressed="false" data-v="FL">FL</button>
-    </div>
+    </div></div>
   </div>
   <div id="gate" hidden></div>
   <div id="board" hidden><div id="markets"></div></div>
@@ -61,6 +62,7 @@
 <script src="../../assets/js/drive.js"></script>
 <script src="../../assets/js/workspace-data.js"></script>
 <script src="../../assets/js/workspace-shell.js"></script>
+<script defer src="../../assets/js/ws-collapse.js"></script>
 <script>
 (function () {
   'use strict';
@@ -103,16 +105,16 @@
   function render() {
     var groups = W.statusRows(W.buildJobs(data, today)).filter(function (g) { return !market || g.market === market; });
     var n = groups.reduce(function (a, g) { return a + g.rows.length; }, 0);
-    $('lead').textContent = n + ' propert' + (n === 1 ? 'y' : 'ies') + (market ? ' in ' + market : '') + ', by market and stage. Stages and dates come from Asana; the mismatch count says how many details still disagree.';
+    $('lead').textContent = n + ' propert' + (n === 1 ? 'y' : 'ies') + (market ? ' in ' + market : '');
     if (!groups.length) { $('markets').innerHTML = '<div class="card empty"><b>No properties here</b>' + (data.properties.length + data.pitches.length ? 'Nothing in this market yet.' : 'They show here once Asana and DE fill the workspace.') + '</div>'; return; }
     $('markets').innerHTML = groups.map(function (g) {
-      return '<section class="card mkt"><div class="card-h"><h2>' + esc(g.market || 'No market') + '</h2><span>' + g.rows.length + ' propert' + (g.rows.length === 1 ? 'y' : 'ies') + '</span></div>' +
+      return '<section class="card mkt" data-open><div class="card-h"><h2>' + esc(g.market || 'No market') + '</h2><span>' + g.rows.length + ' propert' + (g.rows.length === 1 ? 'y' : 'ies') + '</span></div>' +
         '<table class="tbl st"><thead><tr><th>Property</th><th>Stage</th><th>Last milestone</th><th>Next date</th><th>Agents</th><th class="r">Mismatches</th></tr></thead><tbody>' +
         g.rows.map(function (r) {
           return '<tr data-href="' + esc(r.href) + '"><td class="nm"><a href="../' + esc(r.href) + '">' + esc(r.name) + '</a></td>' +
             '<td class="stg" data-l="Stage"><span class="chip ' + esc(r.chip) + '">' + esc(r.stage) + '</span></td>' +
             '<td class="dt" data-l="Last milestone">' + when(r.lastMilestone) + '</td><td class="dt" data-l="Next date">' + when(r.nextDate) + '</td>' +
-            '<td data-l="Agents">' + (r.agents.length ? esc(r.agents.join(', ')) : '<span class="soft">Not set</span>') + '</td>' +
+            '<td data-l="Agents">' + ((r.agentIds || []).length ? window.GVC_FACES(r.agentIds) : r.agents.length ? '<span class="soft">' + esc(r.agents.join(', ')) + ' (from Asana)</span>' : '<span class="soft">Not set</span>') + '</td>' +
             '<td class="n' + (r.mismatches ? ' warn' : '') + '" data-l="Mismatches">' + r.mismatches + '</td></tr>';
         }).join('') + '</tbody></table></section>';
     }).join('');

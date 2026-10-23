@@ -18,9 +18,11 @@
                       its current values; mismatches = its length
            asanaUrl   the task's Asana link (https only) or null
            agents     confirmed agent names, else the ones Asana suggests
-           stale      what the showsheet has fallen behind on, lower case ['price',
-                      'agents'], from documents (GVC_STALE; no Drive here, so photo
-                      dates aren't judged); [] when fresh, never made, or not a listing
+           stale      what the job's pieces have fallen behind on, lower case ['price',
+                      'agents'], each word once, from documents (GVC_STALE; no Drive
+                      here, so photo dates aren't judged); [] when all are fresh or none made
+           stalePieces  [{ tool, label, words }] each stale piece (Slice 5: brochure,
+                      postcards, seller pitch, the pitch's map, as well as the showsheet)
          and a development: next { key, label, on, overdue } | null,
          slips (times a milestone was re-dated, D67), progress { done, total }
          (confirmed milestones of D66's 18), construction { done, total } | null,
@@ -212,14 +214,24 @@
     if (typeof module === 'object' && module.exports && typeof require === 'function') return require('./piece-stale.js');
     return null;
   }
+  var STALE_LABEL = { showsheet: 'Showsheet', brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard',
+    seller: 'Seller pitch', 'pitch-map': 'Map' };
+  /* { stale: words, stalePieces } for one job from its pieces' records. The Showsheet's
+     record is the Slice 4 kind; any other piece is judged only from a Slice 5 record (v 2) */
   function staleOf(p, docs) {
-    var doc = docs[p.id];
-    if (!doc) return [];
-    try {
-      var pieces = (p.scan && p.scan.pieces) || {};
-      var s = staleApi().stale(doc, p, { fileFound: (pieces.showsheet || []).length > 0 });
-      return s.state === 'stale' ? s.changes.map(function (c) { return String(c.label || c.field).toLowerCase(); }) : [];
-    } catch (e) { return []; }   // a record the check can't read never stops the overview
+    var out = { stale: [], stalePieces: [] };
+    (docs[p.id] || []).forEach(function (doc) {
+      if (doc.tool !== 'showsheet' && !(doc.built_from && doc.built_from.v === 2)) return;
+      try {
+        var pieces = (p.scan && p.scan.pieces) || {};
+        var s = staleApi().stale(doc, p, { fileFound: (pieces[doc.tool] || []).length > 0 });
+        if (s.state !== 'stale') return;
+        var words = s.changes.map(function (c) { return String(c.label || c.field).toLowerCase(); });
+        out.stalePieces.push({ tool: doc.tool, label: STALE_LABEL[doc.tool] || doc.tool, words: words });
+        words.forEach(function (w) { if (out.stale.indexOf(w) === -1) out.stale.push(w); });
+      } catch (e) { /* a record the check can't read never stops the overview */ }
+    });
+    return out;
   }
 
   function buildJobs(rows, today, opts) {
@@ -241,8 +253,11 @@
     var staged = {}; (rows.properties || []).forEach(function (p) { if (p.stage) staged[p.id] = true; });
     (rows.pitches || []).forEach(function (p) { if (p.outcome === 'won' && staged[p.won_property_id]) wonPitch[p.won_property_id] = p; });
     var jobs = [];
-    var sheets = {};   // property id → its showsheet record (Slice 4 has one piece)
-    (rows.documents || []).forEach(function (d) { if (d && d.tool === 'showsheet' && d.property_id) sheets[d.property_id] = d; });
+    var sheets = {};   // property or pitch id → its pieces' records
+    (rows.documents || []).forEach(function (d) {
+      var k = d && (d.property_id || d.pitch_id);
+      if (k && d.tool) (sheets[k] = sheets[k] || []).push(d);
+    });
 
     (rows.properties || []).forEach(function (p) {
       if (!p.stage || (p.stage === 'Archived' && !archived)) return;
@@ -290,7 +305,7 @@
         deStatus: p.de_status || de.status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
         folder: p.drive_folder || null, folderState: p.folder_state, pitchedOn: pitch ? pitch.pitched_on : null,
         steps: steps, stageIdx: steps.indexOf(p.stage === 'Rented' && steps.indexOf('Rented') === -1 ? 'Sold' : p.stage), done: done, bars: bars, ticks: ticks,
-        dates: datesOf(p.milestones, today), match: match, mismatches: match.length, asanaUrl: asanaUrlOf(p), agents: namesOf(core), stale: staleOf(p, sheets),
+        dates: datesOf(p.milestones, today), match: match, mismatches: match.length, asanaUrl: asanaUrlOf(p), agents: namesOf(core), stale: staleOf(p, sheets).stale, stalePieces: staleOf(p, sheets).stalePieces,
         activity: (p.scan && p.scan.weeks) || {}, flags: flags, last: dates.length ? dates[dates.length - 1] : null,
         href: 'job/?listing=' + encodeURIComponent(p.slug), version: p.version
       });
@@ -307,7 +322,7 @@
         chip: 'pre', price: '', rooms: '', place: '', folder: q.drive_folder || null, folderState: q.folder_state,
         pitchedOn: q.pitched_on, steps: stepsOf('sale', 'Pitch'), stageIdx: 0, done: { Pitch: q.pitched_on }, outcome: q.outcome,
         dates: q.pitched_on ? [{ key: 'pitchedOn', label: q.pitched_on > today ? 'Pitch' : 'Pitched', on: q.pitched_on, planned: q.pitched_on > today }] : [],
-        match: [], mismatches: 0, asanaUrl: asanaUrlOf({ asana_gid: q.asana_gid }), agents: [], stale: [],
+        match: [], mismatches: 0, asanaUrl: asanaUrlOf({ asana_gid: q.asana_gid }), agents: [], stale: staleOf(q, sheets).stale, stalePieces: staleOf(q, sheets).stalePieces,
         bars: q.pitched_on ? [{ s: 'pitch', from: q.pitched_on, to: null }] : [], ticks: [], activity: (q.scan && q.scan.weeks) || {},
         flags: flags, last: dates.length ? dates[dates.length - 1] : null, href: 'job/?pitch=' + encodeURIComponent(q.slug), version: q.version
       });
@@ -338,7 +353,7 @@
         id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: idx >= 0 ? DEV[idx] : 'No milestones yet',
         chip: 'pre', price: '', rooms: '', place: d.size_band ? d.size_band : '', folder: d.drive_folder || null, folderState: d.folder_state,
         steps: DEV, stageIdx: idx, done: {}, milestones: ms, bars: [], ticks: dated, activity: {}, flags: flags,
-        dates: [], match: match, mismatches: match.length, stale: [], asanaUrl: d.asana_project_gid && /^\d+$/.test(String(d.asana_project_gid)) ? 'https://app.asana.com/0/' + d.asana_project_gid : null, agents: [],
+        dates: [], match: match, mismatches: match.length, stale: [], stalePieces: [], asanaUrl: d.asana_project_gid && /^\d+$/.test(String(d.asana_project_gid)) ? 'https://app.asana.com/0/' + d.asana_project_gid : null, agents: [],
         next: next, slips: slips, progress: { done: DEV_KEYS.filter(function (k) { return ms[k] && ms[k].done; }).length, total: DEV_KEYS.length },
         construction: cons, hints: (d.milestone_hints || []).length,
         last: dated.length ? dated.map(function (x) { return x.d; }).sort().pop() : null, href: 'job/?dev=' + encodeURIComponent(d.slug), version: d.version

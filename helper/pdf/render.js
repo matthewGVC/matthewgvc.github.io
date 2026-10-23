@@ -25,27 +25,38 @@ const TOOLS = {
     ready: () => typeof state !== 'undefined' && !!state.address,          // eslint-disable-line no-undef
     label: () => [state.address, typeof GVC_PROPS !== 'undefined' ? GVC_PROPS.unitDisplay(state.unit) : state.unit].filter(Boolean).join(' '),  // eslint-disable-line no-undef
     paper: async (page, paper) => { await page.click('#paperSeg button[data-v="' + paper + '"]'); }
-  }
+  },
+  /* Slice 5: drawn only from a given state, which carries its own paper */
+  brochure: { path: '/tools/brochure/?draw=1', label: () => window.__piece.state.address },
+  'postcard-listed': { path: '/tools/postcard/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
+  'postcard-sold': { path: '/tools/postcard/?draw=1', label: () => [window.__piece.state.address, window.__piece.state.unit].filter(Boolean).join(' ') },
+  seller: { path: '/tools/seller-package/?draw=1', label: () => window.__piece.state.address }
 };
 
-/* A drawn state may only show pictures it carries inline: the hidden browser
-   loads pictures and media from the site itself and nowhere else. */
+/* A drawn state may only show pictures it carries inline, and nothing it carries may reach out:
+   the hidden browser loads from the site itself, plus the two outside hosts the tools' pages
+   need (their pinned CDN scripts and Google's fonts), and nothing else, of any kind. */
+const OUTSIDE = { 'https://cdn.jsdelivr.net': ['script'], 'https://fonts.googleapis.com': ['stylesheet'], 'https://fonts.gstatic.com': ['font'] };
 async function guardRequests(page, siteBase) {
   const origin = new URL(siteBase).origin;
   await page.route('**/*', route => {
     const q = route.request(), kind = q.resourceType();
-    if ((kind === 'image' || kind === 'media') && new URL(q.url()).origin !== origin) return route.abort();
-    return route.continue();
+    let u;
+    try { u = new URL(q.url()); } catch (e) { return route.abort(); }
+    if (u.protocol === 'data:' || u.protocol === 'blob:' || u.origin === origin) return route.continue();
+    if ((OUTSIDE[u.origin] || []).indexOf(kind) !== -1) return route.continue();
+    return route.abort();
   });
+  if (page.routeWebSocket) await page.routeWebSocket(/.*/, ws => ws.close());
 }
 
 async function renderPiece(opts) {
-  const tool = TOOLS[opts.tool];
+  const tool = Object.prototype.hasOwnProperty.call(TOOLS, opts.tool) ? TOOLS[opts.tool] : null;
   if (!tool) throw Object.assign(new Error('The helper can\'t make a ' + opts.tool + ' yet.'), { status: 400 });
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
   try {
-    const page = await browser.newPage();
+    const page = await (await browser.newContext({ serviceWorkers: 'block' })).newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     if (opts.state) await guardRequests(page, opts.siteBase);
@@ -54,12 +65,13 @@ async function renderPiece(opts) {
       const drawn = await page.evaluate(s => window.__render(s).then(() => ({ ok: window.__rendered === true }), e => ({ error: String(e && e.message || e) })), opts.state);
       if (!drawn.ok) throw new Error('The ' + opts.tool + ' could not be drawn: ' + (drawn.error || 'it never finished'));
     } else {
+      if (!tool.inputs) throw Object.assign(new Error('The ' + opts.tool + ' is drawn from a job only.'), { status: 400 });
       for (const k of Object.keys(tool.inputs)) {
         if (opts.inputs && opts.inputs[k]) await page.setInputFiles(tool.inputs[k], opts.inputs[k]);
       }
       await page.waitForFunction(tool.ready, null, { timeout: 30000 });
     }
-    if (opts.paper) await tool.paper(page, opts.paper);
+    if (opts.paper && tool.paper) await tool.paper(page, opts.paper);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => Array.from(document.images).every(i => !i.src || (i.complete && i.naturalWidth > 0)), null, { timeout: 30000 });
     await page.waitForTimeout(500);   // the sheet's autofit runs after images settle

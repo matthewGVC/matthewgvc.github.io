@@ -92,6 +92,71 @@ check('hero only, Drive unknown: back photo not judged', ST.stale(built(heroOnly
 check('hero only, Drive unknown: a new hero still counts', ST.stale(built(heroOnly), job({ row: { photo_hero: 'Photos/Edited/09.jpg', photo_order: [] } }), {}).changes.map(c => c.field), ['photos.front']);
 check('hero only, Drive known: the back photo is judged', ST.stale(built(heroOnly), heroOnly, { editedPaths: ['Photos/Edited/01.jpg', 'Photos/Edited/05.jpg'] }).changes.map(c => c.field), ['photos.back']);
 
+
+/* ---------- Slice 5: every other piece (built_from v2, GVC_PIECEJOB) ---------- */
+const J = require('../assets/js/piece-job.js');
+const brochureRow = job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } });
+// built with the photos the job offered then, unless a test says otherwise
+const v2 = (tool, row, ctx) => ({ built_from: J.builtFrom(tool, {}, row, Object.assign({ via: 'helper',
+  photos: (J.photosFor(tool, row, null) || []).map(p => ({ path: p })) }, ctx || {})) });
+check('brochure fresh', ST.stale(v2('brochure', brochureRow), brochureRow, {}).state, 'fresh');
+check('brochure: price moved', ST.stale(v2('brochure', brochureRow), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.', price: 2100000 } }), {}).changes,
+  [{ field: 'price', label: 'Price', was: 2250000, now: 2100000 }]);
+check('brochure: a showsheet-only fact never counts', ST.stale(v2('brochure', brochureRow), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.', commonCharges: 1 } }), {}).state, 'fresh');
+check('brochure: a third agent added doesn\'t count (two print)', ST.stale(v2('brochure', brochureRow), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, core: { agentIds: ['a', 'b', 'c'] } }), {}).state, 'fresh');
+check('brochure: agent order counts', ST.stale(v2('brochure', brochureRow), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, core: { agentIds: ['b', 'a'] } }), {}).changes.map(c => c.field), ['agents']);
+check('brochure: listing link counts', ST.stale(v2('brochure', brochureRow), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { de: {} } }), {}).changes.map(c => c.field), ['listingUrl']);
+check('postcard: listing link never counts', ST.stale(v2('postcard-listed', brochureRow), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { de: {} } }), {}).state, 'fresh');
+
+// photos as a list
+const ph = [{ path: 'Photos/Edited/01.jpg', modified: '2026-10-01T00:00:00Z' }, { path: 'Photos/Edited/02.jpg', modified: '2026-10-01T00:00:00Z' }];
+const withPh = v2('brochure', brochureRow, { photos: ph });
+check('photos same: fresh', ST.stale(withPh, brochureRow, {}).state, 'fresh');
+const reordered = job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_hero: 'Photos/Edited/02.jpg', photo_order: ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg'] } });
+check('photos reordered: stale', ST.stale(withPh, reordered, {}).changes.map(c => [c.field, c.label]), [['photos', 'Photos']]);
+check('photos: a file updated on Drive', ST.stale(withPh, brochureRow, { files: { 'Photos/Edited/02.jpg': { modified: '2026-10-05T00:00:00Z' } } }).changes.map(c => c.now), ['file updated on Drive']);
+check('photos: no picks and Drive unknown, not judged', ST.stale(withPh, job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_hero: null, photo_order: [] } }), {}).state, 'fresh');
+check('photos: a photo added to the picks', ST.stale(withPh, job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_order: ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg'] } }), {}).changes.map(c => c.field), ['photos']);
+check('postcard: a third pick never counts (two print)', ST.stale(v2('postcard-listed', brochureRow, { photos: ph }), job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_order: ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg'] } }), {}).state, 'fresh');
+check('photos: given straight (a pitch folder)', ST.stale(v2('seller', brochureRow, { photos: [{ path: 'img.jpg' }] }), brochureRow, { photoPaths: ['img.jpg', 'b.jpg'] }).changes.map(c => c.field), ['photos']);
+
+// floorplans
+const pl1 = [{ version: 1, render: 'branded', path: 'Floorplan/v1/A v1.jpg', modified: '2026-09-01T00:00:00Z' }];
+const withPl = v2('brochure', brochureRow, { plans: pl1 });
+check('plans: newer version', ST.stale(withPl, brochureRow, { plans: [{ version: 2, render: 'branded', path: 'Floorplan/v2/A v2.jpg', modified: '2026-10-01T00:00:00Z' }] }).changes,
+  [{ field: 'floorplan', label: 'Floorplan', was: 'v1', now: 'v2' }]);
+check('plans: same file, newer date', ST.stale(withPl, brochureRow, { plans: [Object.assign({}, pl1[0], { modified: '2026-10-02T00:00:00Z' })] }).changes.map(c => c.now), ['file updated on Drive']);
+check('plans: a level added', ST.stale(withPl, brochureRow, { plans: pl1.concat([{ version: 1, render: 'branded', path: 'Floorplan/v1/B v1.jpg', modified: '2026-09-01T00:00:00Z' }]) }).changes.map(c => c.field), ['floorplan']);
+check('plans: unknown, not judged', ST.stale(withPl, brochureRow, {}).state, 'fresh');
+check('plans: none printed and none now', ST.stale(v2('brochure', brochureRow), brochureRow, { plans: [] }).state, 'fresh');
+
+// the map
+const mapRow = { id: 'q1', market: 'NJ', core: { address: '12 Sample Ln', comps: [{ address: '14 Sample Ln' }] } };
+const mapDoc = v2('pitch-map', mapRow);
+check('map piece fresh', ST.stale(mapDoc, mapRow, {}).state, 'fresh');
+check('map piece: a comp added makes it stale', ST.stale(mapDoc, { id: 'q1', market: 'NJ', core: { address: '12 Sample Ln', comps: [{ address: '14 Sample Ln' }, { address: '9 Other Rd' }] } }, {}).changes.map(c => [c.field, c.label]),
+  [['mapAddresses', 'Mapped addresses']]);
+check('map piece: a comp price change doesn\'t', ST.stale(mapDoc, { id: 'q1', market: 'NJ', core: { address: '12 Sample Ln', comps: [{ address: '14 Sample Ln', price: '9' }] } }, {}).state, 'fresh');
+const sellerDoc = v2('seller', mapRow, { map: { path: 'Map - 12 Sample Ln - 2026-10-20.png', modified: '2026-10-20T00:00:00Z' } });
+check('seller: a newer map', ST.stale(sellerDoc, mapRow, { map: { path: 'Map - 12 Sample Ln - 2026-10-22.png', modified: '2026-10-22T00:00:00Z' } }).changes.map(c => [c.field, c.label]), [['map', 'Map']]);
+check('seller: same map', ST.stale(sellerDoc, mapRow, { map: { path: 'Map - 12 Sample Ln - 2026-10-20.png', modified: '2026-10-20T00:00:00Z' } }).state, 'fresh');
+check('seller: a dropped map never counts', ST.stale(v2('seller', mapRow, { map: { dropped: true } }), mapRow, { map: { path: 'x.png', modified: '2026-10-22T00:00:00Z' } }).state, 'fresh');
+check('seller: a band change counts', ST.stale(sellerDoc, { id: 'q1', market: 'NJ', core: { address: '12 Sample Ln', comps: [{ address: '14 Sample Ln' }], priceMid: 5 } }, {}).changes.map(c => [c.field, c.label]), [['priceMid', 'Recommended price']]);
+check('seller: comps change counts', ST.stale(sellerDoc, { id: 'q1', market: 'NJ', core: { address: '12 Sample Ln', comps: [{ address: '15 Sample Ln' }] } }, {}).changes.map(c => c.field), ['comps']);
+check('words of new labels', ST.words([{ label: 'Photos' }, { label: 'Mapped addresses' }]), 'photos, mapped addresses');
+check('a v2 record of an unknown piece is never stale and never throws', ST.stale({ built_from: { v: 2, tool: 'flyer', facts: { price: 1 }, agents: ['a', 'b'] } }, brochureRow, {}).state, 'fresh');
+// review fixes: plans only for pieces that print them, junk entries, unknown map dates
+check('postcard: a floorplan appearing never counts', ST.stale(v2('postcard-listed', brochureRow, { plans: [] }), brochureRow, { plans: pl1 }).state, 'fresh');
+check('junk plan entries never throw', ST.stale({ built_from: Object.assign({}, withPl.built_from, { plans: [null, pl1[0]] }) }, brochureRow, { plans: [null].concat(pl1) }).state, 'fresh');
+check('a map with no dates on either side is not judged', ST.stale(v2('seller', mapRow, { map: { path: 'a.png' } }), mapRow, { map: { path: 'b.png' } }).state, 'fresh');
+// review fixes (Tasks 9-12): an excluded photo is recorded, so it never reads as a change; a hero-only job without Drive judges the hero only
+const exRow = job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' } });
+const exDoc = v2('seller', exRow, { photos: [{ path: 'Photos/Edited/01.jpg' }, { path: 'Photos/Edited/02.jpg', excluded: true }] });
+check('an excluded photo recorded with its flag is no change', ST.stale(exDoc, exRow, {}).state, 'fresh');
+const heroRow = job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_order: [] } });
+const heroDoc = v2('postcard-listed', heroRow, { photos: [{ path: 'Photos/Edited/01.jpg' }, { path: 'Photos/Edited/05.jpg' }] });
+check('hero only, Drive unknown: the second photo is not judged', ST.stale(heroDoc, heroRow, {}).state, 'fresh');
+check('hero only, Drive unknown: a new hero still counts', ST.stale(heroDoc, job({ facts: { city: 'New York', state: 'NY', zip: '10024', description: 'Sunny.' }, row: { photo_hero: 'Photos/Edited/09.jpg', photo_order: [] } }), {}).changes.map(c => c.field), ['photos']);
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

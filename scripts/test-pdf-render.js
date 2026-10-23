@@ -108,6 +108,100 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   const kept = await page.evaluate(() => { const s = window.__test.state; return [s.photos.map(p => p.name), s.floorplan, s.floorplan2]; });
   check('only inline pictures are kept from a given state', kept, [['ok'], null, null]);
   check('nothing outside the page is fetched', probe.hits, 0);
+  /* ---------- Slice 5: the Brochure drawn from a given state ---------- */
+  const BRO = { address: '12 Sample Lane', city: 'Testville', state: 'NJ', zip: '07000', price: '1850000', beds: '4', baths: '3.5', sqft: '2800',
+    blurb: 'A made-up house.', features: 'Pool\nFinished basement', agents: ['john-gasdaska'], paper: 'letter',
+    images: [1, 2, 3].map(i => ({ id: i, name: 'p' + i, url: DOT, ar: 1.5, role: 'auto' })),
+    floorplans: [{ id: 4, name: 'plan', url: DOT, label: 'Level 1', zoom: 1, tx: 0, ty: 0 }] };
+  await page.goto(BASE + '/tools/brochure/', { waitUntil: 'networkidle' });
+  const bro = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, pages: document.querySelectorAll('.page').length,
+      market: GVC_LEGAL.marketOf(window.__piece.state), addr: window.__piece.state.address, paper: window.__piece.state.paper,
+      text: document.body.innerText.indexOf('A made-up house.') !== -1, prop: !!document.querySelector('#propBar').children.length }));
+  };
+  const b1 = await bro(BRO);
+  check('brochure: rendered, five pages (cover, gallery, info, plan, closing)', [b1.rendered, b1.pages], [true, 5]);
+  check('brochure: market from the state, the words on the page', [b1.market, b1.addr, b1.text], ['nj', '12 Sample Lane', true]);
+  check('brochure: printed through the print dialog\'s path', await pages(), 5);
+  const b2 = await bro(Object.assign({}, BRO, { paper: 'half', floorplans: [] }));
+  check('brochure: half letter, no plan page', [b2.paper, b2.pages], ['half', 4]);
+  await bro(Object.assign({}, BRO, { images: [{ id: 1, name: 'far', url: far + '/b.jpg', ar: 1, role: 'auto' }, { id: 2, name: 'ok', url: DOT, ar: 1, role: 'auto' }],
+    floorplans: [{ id: 3, name: 'farplan', url: 'file:///C:/x.png' }], agents: null, gallery: 'nope', address: evil }));
+  check('brochure: only inline pictures kept, nothing fetched, nothing run', [await page.evaluate(() => window.__piece.state.images.map(i => i.name).concat(window.__piece.state.floorplans.map(f => f.name))), probe.hits, await page.evaluate(() => window.__xss || 0)],
+    [['ok'], 0, 0]);
+  const b3 = await bro(Object.assign({}, BRO, { state: 'FL', zip: '33000' }));
+  check('brochure: Florida legal follows the state', b3.market, 'fl');
+
+  /* ---------- Slice 5: the Postcard drawn from a given state ---------- */
+  const CARD = { kind: 'sale', address: '12 Sample Lane', unit: '', town: 'Testville', price: '1850000', agents: ['john-gasdaska'], bleed: 'bleed',
+    photos: [{ url: DOT, name: 'a', x: 50, y: 50, w: 3000 }, { url: DOT, name: 'b', x: 50, y: 50, w: 3000 }] };
+  await page.goto(BASE + '/tools/postcard/', { waitUntil: 'networkidle' });
+  await page.evaluate(() => localStorage.setItem('gvc.postcard.state', JSON.stringify({ headline: 'Saved in this browser' })));
+  const card = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, kind: window.__piece.state.kind, text: document.querySelector('#pages').innerText,
+      size: document.querySelector('#pagesize').textContent, stored: localStorage.getItem('gvc.postcard.state') }));
+  };
+  const c1 = await card(CARD);
+  check('postcard listed: rendered, its own headlines', [c1.rendered, c1.kind, /For Sale/i.test(c1.text), /Now Available/i.test(c1.text), /1,850,000/.test(c1.text)], [true, 'sale', true, true, true]);
+  check('postcard: drawing never touches this browser\'s saved card', c1.stored, JSON.stringify({ headline: 'Saved in this browser' }));
+  check('postcard: 2 pages', await pages(), 2);
+  const c2 = await card(Object.assign({}, CARD, { kind: 'sold', price: '1800000', bleed: 'trim' }));
+  check('postcard sold: Just Sold headlines, trim size', [/Just Sold/i.test(c2.text), /Sold in Your Neighborhood/i.test(c2.text), /9in 6in/.test(c2.size)], [true, true, true]);
+  await card(Object.assign({}, CARD, { photos: [{ url: far + '/c.jpg', name: 'far' }, { url: DOT, name: 'ok' }, { url: DOT, name: 'x' }, { url: DOT, name: 'y' }], headline: evil, agents: 'nope' }));
+  check('postcard: inline pictures only, two at most, nothing fetched or run',
+    [await page.evaluate(() => window.__piece.state.photos.map(p => p.name)), probe.hits, await page.evaluate(() => window.__xss || 0)], [['ok', 'x'], 0, 0]);
+
+  /* ---------- Slice 5: the Seller pitch drawn from a given state ---------- */
+  const DECK = { address: '12 Sample Lane', city: 'Testville', state: 'NJ', zip: '07000', beds: '4', baths: '3.5', sqft: '2800', ptype: 'Single family',
+    market: 'nj', agents: ['john-gasdaska'], comps: [{ address: '14 Sample Lane', price: '1,900,000', sqft: '2,700', bb: '4/3', date: '2026-08' }],
+    priceLow: '1800000', priceMid: '1900000', priceHigh: '2000000', recBand: 'mid',
+    photos: [{ id: 1, name: 'p1', url: DOT, role: 'auto' }], map: { name: 'map', url: DOT } };
+  await page.goto(BASE + '/tools/seller-package/', { waitUntil: 'networkidle' });
+  const deck = async s => {
+    await page.evaluate(s => window.__render(s), s);
+    return page.evaluate(() => ({ rendered: window.__rendered === true, pages: document.querySelectorAll('.page').length, market: window.__piece.state.market,
+      map: !!window.__piece.state.map, text: document.querySelector('#pages, body').innerText.indexOf('14 Sample Lane') !== -1 }));
+  };
+  const d1 = await deck(DECK);
+  check('seller: rendered, 12 pages, NJ, the map and comps in', [d1.rendered, d1.pages, d1.market, d1.map, d1.text], [true, 12, 'nj', true, true]);
+  check('seller: 12 printed pages', await pages(), 12);
+  const d2 = await deck(Object.assign({}, DECK, { showProperty: false, market: 'fl' }));
+  check('seller: no property page, an unknown market speaks New York', [d2.pages, d2.market], [11, 'nyc']);
+  await deck(Object.assign({}, DECK, { photos: [{ id: 1, name: 'far', url: far + '/s.jpg', role: 'auto' }], map: { name: 'farmap', url: far + '/m.png' }, address: evil, videos: 'x', reviews: [1, 'a'] }));
+  check('seller: inline pictures only, nothing fetched or run',
+    [await page.evaluate(() => [window.__piece.state.photos.length, window.__piece.state.map, window.__piece.state.reviews]), probe.hits, await page.evaluate(() => window.__xss || 0)], [[0, null, ['a']], 0, 0]);
+
+  /* review fix: a picture that only starts like an inline one, or a position that isn't a number,
+     must not get into the page (every tool, the Showsheet too) */
+  const BAD = 'data:image/png;base64,"><img src=x onerror="window.__xss=1">';
+  for (const [tool, s] of [
+    ['showsheet', Object.assign({}, NJ, { photos: [{ src: BAD, fx: 50, fy: 50, name: 'bad' }], floorplan: BAD })],
+    ['brochure', Object.assign({}, BRO, { images: [{ id: 1, name: 'bad', url: BAD, ar: 1, role: 'auto' }, { id: 2, name: 'ok', url: DOT, ar: 1, role: 'hero' }],
+      coverPos: { x: '1%" onerror="window.__xss=2', y: 1 }, floorplans: [{ id: 3, name: 'p', url: DOT, zoom: '2) " onload="window.__xss=3', tx: 0, ty: 0 }],
+      gallery: [{ rows: [{ h: 1, cells: [{ id: 2, w: '1" onclick="x', fx: 'evil', label: evil }] }] }] })],
+    ['postcard', Object.assign({}, CARD, { photos: [{ url: BAD, name: 'bad' }, { url: DOT, name: 'ok', x: '1%" onerror="window.__xss=4', y: 2 }] })],
+    ['seller-package', Object.assign({}, DECK, { photos: [{ id: 1, name: 'bad', url: BAD, role: 'auto' }], map: { name: 'm', url: BAD },
+      pos: { hero: { x: '1%" onerror="window.__xss=5', y: 1 } }, comps: [{ address: evil, price: '1', note: evil }] })]
+  ]) {
+    await page.goto(BASE + '/tools/' + tool + '/', { waitUntil: 'networkidle' });
+    await page.evaluate(s => window.__render(s), s);
+    await page.waitForTimeout(300);
+    check(tool + ': nothing injected runs', await page.evaluate(() => window.__xss || 0), 0);
+  }
+  check('brochure: positions and zoom come back as numbers', await (async () => {
+    await page.goto(BASE + '/tools/brochure/', { waitUntil: 'networkidle' });
+    await page.evaluate(s => window.__render(s), Object.assign({}, BRO, { coverPos: { x: '7', y: 'x' }, floorplans: [{ id: 3, name: 'p', url: DOT, zoom: '2', tx: 'a' }] }));
+    return page.evaluate(() => [window.__piece.state.coverPos, window.__piece.state.floorplans[0].zoom, window.__piece.state.floorplans[0].tx]);
+  })(), [{ x: 7, y: 50 }, 2, 0]);
+
+  // security review: a comp's beds / baths line is printed as text
+  await page.goto(BASE + '/tools/seller-package/', { waitUntil: 'networkidle' });
+  await page.evaluate(s => window.__render(s), Object.assign({}, DECK, { comps: [{ address: '1 A St', price: '1', bb: '<img src=x onerror="window.__xss=9">' }] }));
+  await page.waitForTimeout(300);
+  check('seller: a comp\'s beds and baths never run', [await page.evaluate(() => window.__xss || 0), await page.evaluate(() => document.body.innerText.indexOf('<img src=x') !== -1)], [0, true]);
+
   check('no page errors', errors, []);
   await browser.close();
 
@@ -119,6 +213,12 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
       const out = await renderPiece({ tool: 'showsheet', state: NJ, paper: 'a5', siteBase: BASE });
       check('renderPiece: 2 pages', out.pages, 2);
       check('renderPiece: label', out.label, '12 Sample Lane');
+      const ob = await renderPiece({ tool: 'brochure', state: BRO, siteBase: BASE });
+      check('renderPiece brochure: 5 pages, label', [ob.pages, ob.label], [5, '12 Sample Lane']);
+      const oc = await renderPiece({ tool: 'postcard-sold', state: Object.assign({}, CARD, { kind: 'sold' }), siteBase: BASE });
+      check('renderPiece postcard: 2 pages, label', [oc.pages, oc.label], [2, '12 Sample Lane']);
+      const os2 = await renderPiece({ tool: 'seller', state: DECK, siteBase: BASE });
+      check('renderPiece seller: 12 pages, label', [os2.pages, os2.label], [12, '12 Sample Lane']);
       // the hidden browser itself refuses pictures from anywhere but the site
       probe.hits = 0;
       const { chromium: ch } = require('playwright');
@@ -129,6 +229,11 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
         const i = new Image(); i.onload = () => r('loaded'); i.onerror = () => r('blocked'); i.src = u;
       }), far + '/x.png'));
       check('renderPiece: an outside picture is blocked', [seen, probe.hits], ['blocked', 0]);
+      // security review: a script in a drawn page reaches nothing outside the site either
+      const fetched = await pg.evaluate(u => fetch(u).then(() => 'reached', () => 'blocked'), far + '/leak');
+      const styled = await pg.evaluate(u => new Promise(r => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = u; l.onload = () => r('loaded'); l.onerror = () => r('blocked'); document.head.appendChild(l); }), far + '/x.css');
+      check('renderPiece: an outside fetch or stylesheet is blocked', [fetched, styled, probe.hits], ['blocked', 'blocked', 0]);
+      check('renderPiece: the CDN scripts the tools need still load', await pg.evaluate(() => typeof window.gsap), 'object');
       await pg.context().browser().close();
     } catch (e) { failures.push('renderPiece with a state: ' + e.message); }
   }

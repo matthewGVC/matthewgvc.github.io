@@ -2496,7 +2496,8 @@ async function drawGiven(s){
   state.building = Object.assign(blankUnit().building, state.building);
   state.residence = Object.assign(blankUnit().residence, state.residence);
   // pictures come inline only: an address elsewhere (another host, a file) is dropped, never fetched
-  const inline = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(v);
+  // a whole base64 data URL: nothing after the prefix may close the attribute it is drawn into
+  const inline = v => typeof v === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(v);
   state.photos = state.photos.filter(p => p && inline(p.src));
   if(!inline(state.floorplan)) state.floorplan = null;
   if(!inline(state.floorplan2)) state.floorplan2 = null;

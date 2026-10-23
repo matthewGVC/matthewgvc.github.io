@@ -17,19 +17,20 @@ function clean(s) {
   return String(s || '').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').replace(/-+$/, '').trim();
 }
 
-function outputName(piece, label, date, existing) {
+function outputName(piece, label, date, existing, ext) {
   const base = clean(piece) + ' - ' + clean(label) + ' - ' + date;
   const taken = new Set((existing || []).map(n => n.toLowerCase()));
+  const dot = '.' + (ext === 'png' ? 'png' : 'pdf');
   for (let n = 1; ; n++) {
-    const name = base + (n === 1 ? '' : ' (' + n + ')') + '.pdf';
+    const name = base + (n === 1 ? '' : ' (' + n + ')') + dot;
     if (!taken.has(name.toLowerCase())) return name;
   }
 }
 
-async function savePdf(buf, dir, piece, label, date) {
+async function savePdf(buf, dir, piece, label, date, ext) {
   fs.mkdirSync(dir, { recursive: true });
   for (let tries = 0; tries < 50; tries++) {
-    const name = outputName(piece, label, date, fs.readdirSync(dir));
+    const name = outputName(piece, label, date, fs.readdirSync(dir), ext);
     const file = path.join(dir, name);
     let fd;
     try { fd = fs.openSync(file, 'wx'); } catch (e) {

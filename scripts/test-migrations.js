@@ -439,6 +439,75 @@ const USERS = {
     await db.query(`update public.members set active = true where role = 'owner'`);
   }
 
+  /* ---------- 0010: a piece a pitch owns, save_piece_of, the typo rule on a pitch ---------- */
+  if (UPTO >= '0010') {
+    const spo = (who, table, oid, tool, ver, st, bf, out, arch) => as(who, 'select public.save_piece_of($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb) r',
+      [table, oid, tool, ver, JSON.stringify(st), bf == null ? null : JSON.stringify(bf), out == null ? null : JSON.stringify(out), arch == null ? null : JSON.stringify(arch)]);
+    const spoErr = async (...a) => { try { await spo(...a); return null; } catch (e) { return e.message; } };
+    const pdoc = async (pid, tool) => (await db.query('select * from public.documents where pitch_id = $1 and tool = $2', [pid, tool || 'seller'])).rows[0];
+    const pitch = (await db.query(`insert into public.pitches (slug, label, market, core) values ('12-sample-ln-2026-10-01', '12 Sample Ln', 'NJ',
+      '{"address":"12 Sample Ln","comps":[{"address":"14 Sample Ln"}]}') returning id`)).rows[0].id;
+
+    const dc = (await db.query(`select column_name, is_nullable from information_schema.columns where table_name = 'documents' and column_name in ('property_id', 'pitch_id') order by 1`)).rows;
+    check('documents: pitch_id added, property_id may be empty', dc, [{ column_name: 'pitch_id', is_nullable: 'YES' }, { column_name: 'property_id', is_nullable: 'YES' }]);
+    // the old tools save with an upsert on (property_id, tool): it must still find its row
+    const n0 = (await db.query('select count(*)::int n from public.documents where property_id = $1', [prop])).rows[0].n;
+    await as('team', `insert into public.documents (property_id, tool, state) values ($1, 'showsheet', '{"upsert":1}')
+                      on conflict (property_id, tool) do update set state = excluded.state`, [prop]);
+    check("the old tools' upsert still updates its row", [(await db.query('select count(*)::int n from public.documents where property_id = $1', [prop])).rows[0].n,
+      (await db.query(`select state from public.documents where property_id = $1 and tool = 'showsheet'`, [prop])).rows[0].state], [n0, { upsert: 1 }]);
+    check('a row with no owner refused', await fails('matt', `insert into public.documents (tool) values ('seller')`), true);
+    check('a row with two owners refused', await fails('matt', `insert into public.documents (property_id, pitch_id, tool) values ($1, $2, 'seller')`, [prop, pitch]), true);
+    check('a pitch may own a piece directly (state only, as the old tools save)', await fails('team', `insert into public.documents (pitch_id, tool, state) values ($1, 'brochure', '{}')`, [pitch]), false);
+    check('one piece per pitch and name', await fails('matt', `insert into public.documents (pitch_id, tool) values ($1, 'brochure')`, [pitch]), true);
+    check('a listing and a pitch may each have a seller pitch', await fails('matt', `insert into public.documents (property_id, tool) values ($1, 'seller')`, [prop]), false);
+    check('a pitch piece with no property saves (the touch rule skips it)', await fails('matt', `update public.documents set state = '{"t":2}' where pitch_id = $1 and tool = 'brochure'`, [pitch]), false);
+    check('anon cannot run save_piece_of', await fails('anon', `select public.save_piece_of('pitches', $1, 'seller', null, '{}', null, null, null)`, [pitch]), true);
+
+    const ins = (await spo('matt', 'pitches', pitch, 'seller', null, { s: 1 }, null, null, null)).rows[0].r;
+    check('pitch piece inserted', [ins.state, ins.version, ins.pitch_id, ins.property_id], [{ s: 1 }, 1, pitch, null]);
+    check('insert again is a conflict', await spoErr('matt', 'pitches', pitch, 'seller', null, { s: 2 }, null, null, null), 'conflict');
+    check('stale version is a conflict', await spoErr('matt', 'pitches', pitch, 'seller', 9, { s: 2 }, null, null, null), 'conflict');
+    const PBF = { v: 2, tool: 'seller', facts: { comps: [{ address: '14 Sample Ln' }], beds: 4 } };
+    const POUT = { path: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', size: 10, via: 'helper' };
+    check('pitch build without output refused', await spoErr('matt', 'pitches', pitch, 'seller', 1, { s: 2 }, PBF, null, null), 'bad build');
+    const pb = (await spo('matt', 'pitches', pitch, 'seller', 1, { s: 2 }, PBF, POUT, null)).rows[0].r;
+    check('pitch build recorded', [pb.version, pb.output.name, pb.outputs.length, pb.built_by], [2, POUT.name, 1, id.matt]);
+    check('pitch build logs one change row on the pitch', (await db.query(`select field, new_value, note, property_id from public.changes where pitch_id = $1 and field like 'piece:%'`, [pitch])).rows,
+      [{ field: 'piece:seller', new_value: POUT.name, note: 'Seller pitch made', property_id: null }]);
+    const MOUT = { path: 'Map - 12 Sample Ln - 2026-10-22.png', name: 'Map - 12 Sample Ln - 2026-10-22.png', size: 5, via: 'helper' };
+    await spo('matt', 'pitches', pitch, 'pitch-map', null, {}, { v: 2, tool: 'pitch-map', facts: {} }, MOUT, null);
+    check('a map build logs "Map made"', (await db.query(`select note from public.changes where pitch_id = $1 and field = 'piece:pitch-map'`, [pitch])).rows, [{ note: 'Map made' }]);
+    for (const who of ['teamrole', 'team', 'helper', 'stranger']) {
+      check(who + ': save_piece_of not allowed', await spoErr(who, 'pitches', pitch, 'seller', pb.version, { x: 1 }, null, null, null), 'not allowed');
+    }
+    check('save_piece_of refuses another table', await spoErr('matt', 'dev_projects', pitch, 'seller', null, {}, null, null, null), 'bad table');
+    // a listing's piece through the new function, and the old one still works
+    const lb = (await spo('matt', 'properties', prop, 'brochure', null, { b: 1 }, null, null, null)).rows[0].r;
+    check('save_piece_of on a listing', [lb.property_id, lb.pitch_id, lb.tool], [prop, null, 'brochure']);
+    await spo('matt', 'properties', prop, 'brochure', lb.version, { b: 2 }, { v: 2, tool: 'brochure', facts: {} }, { name: 'B.pdf', via: 'helper' }, null);
+    await spo('matt', 'properties', prop, 'postcard-sold', null, {}, { v: 2, tool: 'postcard-sold', facts: {} }, { name: 'P.pdf', via: 'helper' }, null);
+    check('labels per piece', (await db.query(`select field, note from public.changes where property_id = $1 and field in ('piece:brochure', 'piece:postcard-sold') order by field`, [prop])).rows,
+      [{ field: 'piece:brochure', note: 'Brochure made' }, { field: 'piece:postcard-sold', note: 'Just Sold postcard made' }]);
+    const vOld = (await db.query(`select version from public.documents where property_id = $1 and tool = 'showsheet'`, [prop])).rows[0].version;
+    check('save_piece still works for a listing', (await as('matt', `select public.save_piece($1, 'showsheet', $2, '{"old":1}', null, null, null) r`, [prop, vOld])).rows[0].r.state, { old: 1 });
+
+    // the typo rule on a pitch: its pieces take the new value
+    const pver = async () => (await db.query('select version from public.pitches where id = $1', [pitch])).rows[0].version;
+    await as('matt', 'select public.save_job($1, $2, $3, $4::jsonb, $5::jsonb)', ['pitches', pitch, await pver(), JSON.stringify({ core: { address: '12 Sample Ln', beds: 5 } }),
+      JSON.stringify([{ field: 'beds', old_value: 4, new_value: 5, no_rebuild: true }])]);
+    check('typo tick on a pitch updates its piece', (await pdoc(pitch)).built_from.facts.beds, 5);
+    await as('matt', 'select public.save_job($1, $2, $3, $4::jsonb, $5::jsonb)', ['pitches', pitch, await pver(), JSON.stringify({ core: { address: '12 Sample Ln', beds: 6 } }),
+      JSON.stringify([{ field: 'beds', old_value: 5, new_value: 6 }])]);
+    check('a real change on a pitch leaves it', (await pdoc(pitch)).built_from.facts.beds, 5);
+    check('the record columns stay the owner\'s on a pitch piece', await fails('team', `update public.documents set built_from = '{}' where pitch_id = $1 and tool = 'seller'`, [pitch]), true);
+    // a pitch that goes away takes its pieces with it (nothing else points at them)
+    const gone = (await db.query(`insert into public.pitches (slug, label) values ('gone-pitch', 'Gone') returning id`)).rows[0].id;
+    await db.query(`insert into public.documents (pitch_id, tool) values ($1, 'seller')`, [gone]);
+    await db.query('delete from public.pitches where id = $1', [gone]);
+    check('a deleted pitch takes its pieces', (await db.query('select count(*)::int n from public.documents where pitch_id = $1', [gone])).rows[0].n, 0);
+  }
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);

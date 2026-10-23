@@ -23,7 +23,8 @@ const { insideRoots } = require('./pdf/guard.js');
 const { savePdf } = require('./pdf/name.js');
 
 const SAMPLES = path.join(__dirname, '..', 'tools', 'showsheet', 'sample');
-const PIECE = { showsheet: 'Showsheet' };
+// the Slice 0 test route draws the Showsheet only; its file prefix comes from the one table
+const PIECE = { showsheet: require('./pieces.js').PIECES.showsheet.prefix };
 
 function fail(status, msg) { return Object.assign(new Error(msg), { status }); }
 function today() {
@@ -146,7 +147,7 @@ function driveLinkRoute(o) {
 }
 route('POST', '/drive-link', driveLinkRoute({ driveRoot: 'G:\\Shared drives' }));
 
-/* "Save PDF to Drive" on a job's Showsheet. The helper's own account reads the job. */
+/* "Save PDF to Drive" on a job's piece (pieces.js). The helper's own account reads the job. */
 let pieceDb = null;
 route('POST', '/piece', require('./piece.js').pieceRoute({
   db: cfg => (pieceDb = pieceDb || require('./supabase.js').createClient(cfg)),

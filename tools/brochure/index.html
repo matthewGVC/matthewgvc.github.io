@@ -2431,10 +2431,11 @@ const resetDocFields = () => {
   syncStrategy();
 };
 
-GVC_PROPBAR.mount({
-  host: $('#propBar'),
-  tool: 'brochure',
+/* Opened from a job (?listing=<slug>, Slice 5): job-mode.js runs the brochure from the job
+   instead of the property bar. Without it the tool is exactly as it always was. */
+const JOB_MODE = (q => q.has('listing') || q.has('pitch') || q.has('draw'))(new URLSearchParams(location.search));
 
+const LIBRARY = {
   blank: resetDocFields,
 
   /* One address box and no unit box, so the unit travels inside the line the
@@ -2496,9 +2497,100 @@ GVC_PROPBAR.mount({
     syncPaper(); syncStrategy();
     renderImgList(); renderFpList(); renderGalleryPanel(); redraw(); updateBentoNote();
   }
-});
+};
+if (!JOB_MODE) GVC_PROPBAR.mount(Object.assign({ host: $('#propBar'), tool: 'brochure' }, LIBRARY));
 // webfont metrics change block heights, so re-measure once they land
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkOverflow);
+
+/* what a job mode works through (Slice 5): the brochure's own state, drawing and image intake */
+const fillFields = () => document.querySelectorAll('[data-field]').forEach(el => {
+  const k = el.dataset.field;
+  if (k in state) el.value = state[k];
+});
+/* A state from outside (a job, or the helper's drawing), cut to what the brochure knows: each
+   key in its own shape, numbers as numbers, words as words, pictures inline only (a whole
+   base64 data URL, nothing that could close an attribute). */
+const INLINE = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
+function sanitize(s) {
+  const base = structuredClone(BLANK), given = JSON.parse(JSON.stringify(s && typeof s === 'object' ? s : {}));
+  Object.keys(given).forEach(k => {
+    if (!(k in base) || given[k] == null) return;
+    if (Array.isArray(base[k]) !== Array.isArray(given[k]) || typeof base[k] !== typeof given[k]) return;
+    base[k] = given[k];
+  });
+  const num = (v, d) => Number.isFinite(+v) && v !== '' && v !== null ? +v : d;
+  const str = v => (v == null ? '' : String(v));
+  const obj = x => x && typeof x === 'object' && !Array.isArray(x);
+  const ROLE_OK = ROLES.map(r => r[0]);
+  base.images = base.images.filter(im => obj(im) && typeof im.url === 'string' && INLINE.test(im.url) && Number.isFinite(+im.id))
+    .map(im => ({ id: +im.id, name: str(im.name), url: im.url, ar: num(im.ar, 1.5), role: ROLE_OK.indexOf(im.role) !== -1 ? im.role : 'auto' }));
+  base.floorplans = base.floorplans.filter(f => obj(f) && typeof f.url === 'string' && INLINE.test(f.url) && Number.isFinite(+f.id))
+    .map(f => ({ id: +f.id, name: str(f.name), url: f.url, label: str(f.label), zoom: num(f.zoom, 1), tx: num(f.tx, 0), ty: num(f.ty, 0) }));
+  const cell = c => {
+    const o = { id: +c.id };
+    ['w', 'fx', 'fy', 'z'].forEach(k => { if (k in c && Number.isFinite(+c[k])) o[k] = +c[k]; });
+    if ('label' in c) o.label = str(c.label);
+    return o;
+  };
+  base.gallery = base.gallery.filter(obj).map(pg => ({ rows: (Array.isArray(pg.rows) ? pg.rows : []).filter(obj).map(r => {
+    const row = { cells: (Array.isArray(r.cells) ? r.cells : []).filter(c => obj(c) && Number.isFinite(+c.id)).map(cell) };
+    if ('h' in r && Number.isFinite(+r.h)) row.h = +r.h;
+    return row;
+  }) }));
+  ['coverPos', 'infoTopPos'].forEach(k => { const p = obj(base[k]) ? base[k] : {}; base[k] = { x: num(p.x, 50), y: num(p.y, 50) }; });
+  ['address', 'city', 'state', 'zip', 'price', 'blurb', 'features', 'listingUrl', 'beds', 'baths', 'parking', 'sqft', 'fpNote', 'strategy']
+    .forEach(k => { base[k] = str(base[k]); });
+  base.agents = base.agents.filter(a => typeof a === 'string').slice(0, MAX_AGENTS);
+  base.galCaptions = !!base.galCaptions;
+  base.galPage = Math.max(0, Math.floor(num(base.galPage, 0)));
+  if (base.paper !== 'half') base.paper = 'letter';
+  // one Cover and one Top banner at most, as setDoc keeps it
+  ['hero', 'info-top'].forEach(role => base.images.filter(im => im.role === role).slice(1).forEach(im => { im.role = 'auto'; }));
+  return base;
+}
+window.__piece = {
+  get state() { return state; },
+  blank: () => structuredClone(BLANK), LIBRARY, JOB_MODE, INLINE, sanitize,
+  nextId: () => ++uid,
+  ready: () => !!builder,
+  /* replace the whole state (sanitized), then draw */
+  set(s) {
+    const base = sanitize(s);
+    Object.keys(state).forEach(k => { delete state[k]; });
+    Object.assign(state, base);
+    state.galSel = null;
+    uid = Math.max(uid, ...state.images.map(i => i.id), ...state.floorplans.map(f => f.id), 0);
+    fillFields(); syncPaper(); syncStrategy(); renderRoster();
+    renderImgList(); renderFpList(); renderGalleryPanel(); redraw(); updateBentoNote();
+  },
+  redraw, renderImgList, renderFpList, renderGalleryPanel, fillFields, checkOverflow,
+  fileToImage, reencode, floorplanHeaderY, trimRect
+};
+
+/* ============================================================
+   __render(state): draw a given brochure with no network beyond the page's
+   own files, then say so (window.__rendered). The helper prints a job's
+   brochure this way (helper/pdf/render.js): photos and plans come inline.
+   ============================================================ */
+window.__render = async function (s) {
+  window.__rendered = false; window.__renderError = null;
+  try { return await drawGiven(s); }
+  catch (e) { window.__renderError = String(e && e.message || e); throw e; }
+};
+async function drawGiven(s) {
+  if (!builder) throw new Error('The brochure page did not finish loading.');
+  window.__piece.set(s);
+  // every wait is capped: a font or an image that never settles must not hang the helper
+  const capped = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
+  if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 10000);
+  const frame = () => new Promise(r => document.hidden ? setTimeout(r, 0) : requestAnimationFrame(() => r()));
+  await frame(); await frame();
+  await capped(Promise.all([...document.images].map(i => i.complete ? null : new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))), 20000);
+  redraw(); await frame(); await frame();
+  checkOverflow();
+  window.__rendered = true;
+  return true;
+}
 </script>
 
 <style>
@@ -2530,6 +2622,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkOverf
 .linkish:hover{color:var(--navy);}
 .linkish:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
 </style>
+<script src="../../assets/js/piece-loader.js" data-job="job-mode.js"></script>
 <script src="../../assets/js/panel-collapse.js"></script>
 <script src="../../assets/js/field-labels.js"></script>
 </body>

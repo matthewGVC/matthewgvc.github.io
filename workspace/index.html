@@ -147,6 +147,7 @@
 <script src="../assets/js/roster.js"></script>
 <script src="../assets/js/job-facts.js"></script>
 <script src="../assets/js/sheet-job.js"></script>
+<script src="../assets/js/piece-job.js"></script>
 <script src="../assets/js/piece-stale.js"></script>
 <script src="../assets/js/workspace-data.js"></script>
 <script src="../assets/js/workspace-shell.js"></script>
@@ -201,7 +202,8 @@
       mine.then(function (yes) { return yes ? rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc') : []; }),
       rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1'),
       // the pieces' records, for the stale mark; unreadable (0009 not run yet) means no marks, never a broken board
-      rest('/documents?select=property_id,tool,built_from,output').catch(function () { return []; })
+      // a pitch's pieces since 0010 (Slice 5); before it the column isn't there, so ask without it
+      rest('/documents?select=property_id,pitch_id,tool,built_from,output').catch(function () { return rest('/documents?select=property_id,tool,built_from,output'); }).catch(function () { return []; })
     ]).then(function (r) {
       data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null, personal: personal, documents: r[7] || [] };
       try { render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
@@ -282,7 +284,7 @@
         if (j.construction) dev += '<div class="prog" style="margin-top:10px"><span>Construction</span><span>' + j.construction.done + ' of ' + j.construction.total + '</span></div><div class="cons"><i style="width:' + (j.construction.done / j.construction.total * 100) + '%"></i></div>';
         if (j.hints) dev += '<div class="dates"><span>' + j.hints + ' milestone' + (j.hints === 1 ? '' : 's') + ' suggested from Asana. Review them on the job page.</span></div>';
       }
-      var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc('Showsheet stale: ' + j.stale.join(', ')) + '">stale</span>' : '';
+      var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc((j.stalePieces || []).map(function (x) { return x.label + ' stale: ' + x.words.join(', '); }).join('; ')) + '">stale</span>' : '';
       return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div></div>' + right + '</div>' +
         '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div>' + dates + dev + '</a>';
     }).join('') + '</div>';

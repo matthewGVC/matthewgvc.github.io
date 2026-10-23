@@ -1312,7 +1312,7 @@ function pgComps(n) {
       '<td class="num">' + (c.price ? P.money(c.price) : '—') + '</td>' +
       '<td class="num">' + (c.sqft ? esc(c.sqft) : '—') + '</td>' +
       '<td class="num">' + (c.price && P.num(c.sqft) ? P.money(P.num(c.price) / P.num(c.sqft)) : '—') + '</td>' +
-      '<td class="num">' + (c.bb || '—') + '</td>' +
+      '<td class="num">' + esc(c.bb || '—') + '</td>' +
       '<td class="num">' + esc(c.date || '—') + '</td>' +
     '</tr>';
   const body =

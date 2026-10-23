@@ -1,7 +1,6 @@
 /* ============================================================
    PIECE FOLDER — where a job's showsheet goes (spec S17).
 
-     showsheetDir(jobAbs) → { dir, made }
      pieceDir(jobAbs, spec) → { dir, made }     (Slice 5, any piece in pieces.js)
 
    A folder named Showsheet, Showsheets or Show Sheet (any case) inside the
@@ -14,7 +13,6 @@
 
 const fs = require('fs'), path = require('path');
 
-const SHOWSHEET = /^(showsheets?|show sheets?)$/i;
 
 function childDir(parent, rx) {
   let list;
@@ -39,6 +37,4 @@ function pieceDir(jobAbs, spec) {
   return { dir, made: true };
 }
 
-function showsheetDir(jobAbs) { return pieceDir(jobAbs, { words: 'showsheet', folder: SHOWSHEET, make: 'Showsheet' }); }
-
-module.exports = { showsheetDir, pieceDir, SHOWSHEET };
+module.exports = { pieceDir };

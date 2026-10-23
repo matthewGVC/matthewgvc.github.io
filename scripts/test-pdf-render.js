@@ -196,6 +196,12 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
     return page.evaluate(() => [window.__piece.state.coverPos, window.__piece.state.floorplans[0].zoom, window.__piece.state.floorplans[0].tx]);
   })(), [{ x: 7, y: 50 }, 2, 0]);
 
+  // security review: a comp's beds / baths line is printed as text
+  await page.goto(BASE + '/tools/seller-package/', { waitUntil: 'networkidle' });
+  await page.evaluate(s => window.__render(s), Object.assign({}, DECK, { comps: [{ address: '1 A St', price: '1', bb: '<img src=x onerror="window.__xss=9">' }] }));
+  await page.waitForTimeout(300);
+  check('seller: a comp\'s beds and baths never run', [await page.evaluate(() => window.__xss || 0), await page.evaluate(() => document.body.innerText.indexOf('<img src=x') !== -1)], [0, true]);
+
   check('no page errors', errors, []);
   await browser.close();
 
@@ -223,6 +229,11 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
         const i = new Image(); i.onload = () => r('loaded'); i.onerror = () => r('blocked'); i.src = u;
       }), far + '/x.png'));
       check('renderPiece: an outside picture is blocked', [seen, probe.hits], ['blocked', 0]);
+      // security review: a script in a drawn page reaches nothing outside the site either
+      const fetched = await pg.evaluate(u => fetch(u).then(() => 'reached', () => 'blocked'), far + '/leak');
+      const styled = await pg.evaluate(u => new Promise(r => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = u; l.onload = () => r('loaded'); l.onerror = () => r('blocked'); document.head.appendChild(l); }), far + '/x.css');
+      check('renderPiece: an outside fetch or stylesheet is blocked', [fetched, styled, probe.hits], ['blocked', 'blocked', 0]);
+      check('renderPiece: the CDN scripts the tools need still load', await pg.evaluate(() => typeof window.gsap), 'object');
       await pg.context().browser().close();
     } catch (e) { failures.push('renderPiece with a state: ' + e.message); }
   }

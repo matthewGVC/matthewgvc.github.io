@@ -41,7 +41,7 @@
     // "<street>, Residence 4A" is the subject's unit; any other tail ("12 Elm St, Jersey City") is a town
     var at = line.indexOf(', '), head = at === -1 ? line : line.slice(0, at), tail = at === -1 ? '' : line.slice(at + 2).trim(), unit = '';
     if (/^(residence|apt\.?|apartment|unit|#)\s*/i.test(tail) || /^[\w-]{1,7}$/.test(tail)) unit = tail.replace(/^(residence|apt\.?|apartment|unit)\s+|^#\s*/i, '');
-    else if (tail) place = /,|[A-Z]{2}$/.test(tail) ? tail : tail + ', ' + (place.split(', ').pop() || '');
+    else if (tail) place = /,|\b[A-Z]{2}$/.test(tail) ? tail : tail + ', ' + (place.split(', ').pop() || '');
     var m = /^(\S+)\s+(.+)$/.exec(head.trim());
     return m ? { number: m[1], street: m[2], city: '', unit: unit, place: place } : null;
   }

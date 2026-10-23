@@ -150,6 +150,24 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   const c2 = createClient(CFG, { fetch: lying });
   check('count mismatch fails', await throwsName(() => backup({ client: c2, outDir: out + '-2', tables: ['todos'] })), 'Error');
 
+  /* Slice 5: documents are read in (property_id, pitch_id, tool) order; before 0010 there is no
+     pitch_id column, so the read falls back to (property_id, tool) and still works */
+  {
+    const fk = fakeSupabase({ documents: [{ property_id: 'p1', tool: 'showsheet' }] });
+    const before0010 = (url, opts) => /\/rest\/v1\/documents\?.*order=[^&]*pitch_id/.test(url)
+      ? Promise.resolve({ ok: false, status: 400, headers: { get: () => null }, json: () => Promise.resolve({ message: 'column documents.pitch_id does not exist' }), text: () => Promise.resolve('') })
+      : fk.fetch(url, opts);
+    const c3 = createClient(CFG, { fetch: before0010 });
+    check('documents before 0010: the read still works', (await c3.select('documents', { property_id: 'p1' }, 'tool')).map(d => d.tool), ['showsheet']);
+    check('documents before 0010: asked once with pitch_id, then without', fk.log.filter(l => /documents/.test(l)).map(l => /pitch_id/.test(l)), [false]);
+    const c4 = createClient(CFG, { fetch: fk.fetch });
+    await c4.select('documents', { property_id: 'p1' }, 'tool');
+    check('documents after 0010: ordered with pitch_id', /order=property_id%2Cpitch_id%2Ctool|order=property_id,pitch_id,tool/.test(fk.log.filter(l => /documents/.test(l)).pop()), true);
+    const other = (url, opts) => /\/rest\/v1\/todos/.test(url)
+      ? Promise.resolve({ ok: false, status: 400, headers: { get: () => null }, json: () => Promise.resolve({ message: 'bad' }), text: () => Promise.resolve('') }) : fk.fetch(url, opts);
+    check('another table\'s 400 is still an error', await throwsName(() => createClient(CFG, { fetch: other }).select('todos')), 'Error');
+  }
+
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');
     failures.forEach(f => console.log('  FAIL ' + f));

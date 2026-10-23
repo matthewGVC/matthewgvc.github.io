@@ -33,15 +33,21 @@ const TOOLS = {
   seller: { path: '/tools/seller-package/?draw=1', label: () => window.__piece.state.address }
 };
 
-/* A drawn state may only show pictures it carries inline: the hidden browser
-   loads pictures and media from the site itself and nowhere else. */
+/* A drawn state may only show pictures it carries inline, and nothing it carries may reach out:
+   the hidden browser loads from the site itself, plus the two outside hosts the tools' pages
+   need (their pinned CDN scripts and Google's fonts), and nothing else, of any kind. */
+const OUTSIDE = { 'https://cdn.jsdelivr.net': ['script'], 'https://fonts.googleapis.com': ['stylesheet'], 'https://fonts.gstatic.com': ['font'] };
 async function guardRequests(page, siteBase) {
   const origin = new URL(siteBase).origin;
   await page.route('**/*', route => {
     const q = route.request(), kind = q.resourceType();
-    if ((kind === 'image' || kind === 'media') && new URL(q.url()).origin !== origin) return route.abort();
-    return route.continue();
+    let u;
+    try { u = new URL(q.url()); } catch (e) { return route.abort(); }
+    if (u.protocol === 'data:' || u.protocol === 'blob:' || u.origin === origin) return route.continue();
+    if ((OUTSIDE[u.origin] || []).indexOf(kind) !== -1) return route.continue();
+    return route.abort();
   });
+  if (page.routeWebSocket) await page.routeWebSocket(/.*/, ws => ws.close());
 }
 
 async function renderPiece(opts) {
@@ -50,7 +56,7 @@ async function renderPiece(opts) {
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
   try {
-    const page = await browser.newPage();
+    const page = await (await browser.newContext({ serviceWorkers: 'block' })).newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     if (opts.state) await guardRequests(page, opts.siteBase);

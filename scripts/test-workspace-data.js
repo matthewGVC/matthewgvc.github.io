@@ -416,6 +416,16 @@ check('D88 recent changes colour it as off market', W.recentChanges(offChanges, 
   check('Slice 5 stale: a pitch piece never lands on a listing', J_('t2').stalePieces.length, 0);
 }
 
+/* Slice 6: the flyer and the sign count on the overview */
+{
+  const PJ = require('../assets/js/piece-job.js');
+  const r = { id: 'u1', slug: 'u1', label: 'u1', kind: 'sale', market: 'NJ', stage: 'Live', folder_state: 'linked', drive_folder: 'x',
+    core: { address: '1 Sign St', price: 900000, agentIds: ['katie-cook'] }, de: { listingUrl: 'https://www.elliman.com/x/9' } };
+  const sign = PJ.builtFrom('signage', {}, r, {}); sign.listingUrl = 'https://www.elliman.com/old';
+  const jobs = W.buildJobs({ properties: [r], documents: [{ property_id: 'u1', tool: 'signage', built_from: sign, output: { name: 's.pdf' } }], changes: [] }, TODAY);
+  check('Slice 6 stale: the sign\'s link moved', [jobs[0].stale, jobs[0].stalePieces.map(x => x.label)], [['listing link'], ['Signage']]);
+}
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

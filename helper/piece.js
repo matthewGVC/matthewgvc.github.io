@@ -65,14 +65,14 @@ function pieceRoute(o) {
 
   return async (body, cfg) => {
     body = body || {};
-    const spec = Object.prototype.hasOwnProperty.call(PIECES, body.tool) ? PIECES[body.tool] : null;
+    const spec = typeof body.tool === 'string' && Object.prototype.hasOwnProperty.call(PIECES, body.tool) ? PIECES[body.tool] : null;
     if (!spec) throw fail(400, 'The helper can\'t make a ' + String(body.tool || 'piece') + ' yet.');
     const hasP = typeof body.propertyId === 'string' && body.propertyId, hasQ = typeof body.pitchId === 'string' && body.pitchId;
     if (!hasP === !hasQ) throw fail(400, 'The request didn\'t say which job.');
     const table = hasQ ? 'pitches' : 'properties';
     if (spec.owners.indexOf(table) === -1) throw fail(400, 'A pitch doesn\'t have a ' + spec.words + '.');
     const ready = spec.ext === 'png' ? pngOf(body.image) : null;
-    if (!ready && (!body.state || typeof body.state !== 'object')) throw fail(400, 'The request had no ' + spec.words + ' to print.');
+    if (!ready && (!body.state || typeof body.state !== 'object' || Array.isArray(body.state))) throw fail(400, 'The request had no ' + spec.words + ' to print.');
     const client = db(cfg);
     if (client.ready && !client.ready()) throw fail(503, 'The helper has no account yet, so it can\'t read the job.');
 
@@ -86,6 +86,10 @@ function pieceRoute(o) {
     const jobAbs = path.resolve(root, ...segs);
     if (jobAbs.indexOf(root + path.sep) !== 0) throw fail(400, 'The ' + noun + '\'s Drive folder isn\'t a path the helper writes to.');
     if (!fs.existsSync(jobAbs) || !fs.statSync(jobAbs).isDirectory()) throw fail(404, 'The ' + noun + '\'s Drive folder isn\'t on this computer.');
+    // the folder itself (or a folder on its way) may be a junction: it must still land under the Drive root
+    if (fs.realpathSync(jobAbs).toLowerCase().indexOf(fs.realpathSync(root).toLowerCase() + path.sep) !== 0) {
+      throw fail(403, 'The ' + noun + '\'s Drive folder points outside the shared drives.');
+    }
 
     const owner = table === 'pitches' ? { pitch_id: row.id, tool: body.tool } : { property_id: row.id, tool: body.tool };
     const doc = (await client.select('documents', owner, 'output,outputs'))[0] || {};

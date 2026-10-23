@@ -472,6 +472,18 @@ function req(method, p, headers, body) {
     check('an inherited name is not a piece', (await e5({ propertyId: 'l10', tool: 'constructor', state: {} }))[0], 400);
     check('a brochure with no state refused', (await e5({ propertyId: 'l10', tool: 'brochure' }))[0], 400);
     check('guard: a pitch folder itself only with top', [insideJobPiece(path.join(j5('x'), 'a.pdf'), j5('x'), j5('x')), insideJobPiece(path.join(j5('x'), 'a.pdf'), j5('x'), j5('x'), { top: true })], [false, true]);
+    check('a tool given as a list is refused', (await e5({ propertyId: 'l10', tool: ['brochure'], state: {} }))[0], 400);
+    check('a state given as a list is refused', (await e5({ propertyId: 'l10', tool: 'brochure', state: [] }))[0], 400);
+    // a job folder that is a junction pointing outside the Drive root is refused
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-outside-'));
+    let linked = true;
+    try { fs.symlinkSync(outside, j5('15 Linked St'), 'junction'); } catch (e) { linked = false; }
+    if (linked) {
+      PROPS.l15 = { id: 'l15', drive_folder: 'GVC - Test/15 Linked St', label: '15 Linked St', market: 'NJ', core: { address: '15 Linked St' } };
+      check('a job folder linked outside the Drive root is refused', (await e5({ propertyId: 'l15', tool: 'brochure', state: {} }))[0], 403);
+      check('…and nothing was written there', fs.readdirSync(outside).length, 0);
+      fs.rmdirSync(j5('15 Linked St'));   // removes the link only
+    }
     check('archive sentences per piece', require('../helper/pdf/archive.js').sentences('brochure').GONE, 'older brochure left in place: it isn\'t where the workspace left it');
   }
 

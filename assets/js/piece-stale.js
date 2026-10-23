@@ -88,19 +88,22 @@
       })) add('photos', 'Photos', was, 'file updated on Drive');
     }
     // floorplans: a newer version, a level added or gone, or a newer file
-    if (Array.isArray(opts.plans) && Array.isArray(bf.plans)) {
-      var bv = Math.max.apply(null, [0].concat(bf.plans.map(function (p) { return p.version || 0; })));
-      var nv = Math.max.apply(null, [0].concat(opts.plans.map(function (p) { return p.version || 0; })));
+    // (only the pieces that print plans; a junk entry is skipped, never thrown on)
+    var real = function (list) { return list.filter(function (p) { return p && typeof p === 'object' && p.path; }); };
+    if ((tool === 'brochure' || tool === 'seller') && Array.isArray(opts.plans) && Array.isArray(bf.plans)) {
+      var bp = real(bf.plans), np = real(opts.plans);
+      var bv = Math.max.apply(null, [0].concat(bp.map(function (p) { return p.version || 0; })));
+      var nv = Math.max.apply(null, [0].concat(np.map(function (p) { return p.version || 0; })));
       if (nv > bv) add('floorplan', 'Floorplan', 'v' + bv, 'v' + nv);
-      else if (JSON.stringify(paths(bf.plans).sort()) !== JSON.stringify(paths(opts.plans).sort()) && nv === bv) add('floorplan', 'Floorplan', paths(bf.plans), paths(opts.plans));
-      else if (bf.plans.some(function (p) {
-        var n = opts.plans.filter(function (x) { return x.path === p.path; })[0];
+      else if (JSON.stringify(paths(bp).sort()) !== JSON.stringify(paths(np).sort()) && nv === bv) add('floorplan', 'Floorplan', paths(bp), paths(np));
+      else if (bp.some(function (p) {
+        var n = np.filter(function (x) { return x.path === p.path; })[0];
         return n && ms(n.modified) > ms(p.modified);
-      })) add('floorplan', 'Floorplan', paths(bf.plans), 'file updated on Drive');
+      })) add('floorplan', 'Floorplan', paths(bp), 'file updated on Drive');
     }
-    // the map: a newer file than the one printed (a dropped map never counts)
+    // the map: a newer file than the one printed (a dropped map never counts; no dates, not judged)
     var bm = bf.map, nm = opts.map;
-    if (bm && !bm.dropped && nm && nm.path) {
+    if (bm && !bm.dropped && nm && nm.path && ms(nm.modified)) {
       if (nm.path !== bm.path ? ms(nm.modified) >= ms(bm.modified) : ms(nm.modified) > ms(bm.modified)) {
         add('map', 'Map', bm.path, nm.path === bm.path ? 'file updated on Drive' : nm.path);
       }

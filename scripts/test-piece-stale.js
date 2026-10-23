@@ -145,6 +145,10 @@ check('seller: a band change counts', ST.stale(sellerDoc, { id: 'q1', market: 'N
 check('seller: comps change counts', ST.stale(sellerDoc, { id: 'q1', market: 'NJ', core: { address: '12 Sample Ln', comps: [{ address: '15 Sample Ln' }] } }, {}).changes.map(c => c.field), ['comps']);
 check('words of new labels', ST.words([{ label: 'Photos' }, { label: 'Mapped addresses' }]), 'photos, mapped addresses');
 check('a v2 record of an unknown piece is never stale and never throws', ST.stale({ built_from: { v: 2, tool: 'flyer', facts: { price: 1 }, agents: ['a', 'b'] } }, brochureRow, {}).state, 'fresh');
+// review fixes: plans only for pieces that print them, junk entries, unknown map dates
+check('postcard: a floorplan appearing never counts', ST.stale(v2('postcard-listed', brochureRow, { plans: [] }), brochureRow, { plans: pl1 }).state, 'fresh');
+check('junk plan entries never throw', ST.stale({ built_from: Object.assign({}, withPl.built_from, { plans: [null, pl1[0]] }) }, brochureRow, { plans: [null].concat(pl1) }).state, 'fresh');
+check('a map with no dates on either side is not judged', ST.stale(v2('seller', mapRow, { map: { path: 'a.png' } }), mapRow, { map: { path: 'b.png' } }).state, 'fresh');
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

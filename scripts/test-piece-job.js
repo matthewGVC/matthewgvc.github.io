@@ -114,7 +114,7 @@ check('seller applyEdits: band and comps plain on core, taxes as Matt\'s', [sap.
 check('seller applyEdits: note', sap.changes.map(c => c.note), ['on the Seller pitch', 'on the Seller pitch', 'on the Seller pitch']);
 const pfillP = J.fill('seller', {}, pitch(), {}).state;
 const pe = J.factEdits('seller', Object.assign({}, pfillP, { beds: '3', comps: [{ address: '14 Sample Ln' }] }), pitch());
-check('seller on a pitch: beds and comps', pe.edits.map(e => [e.field, e.to]), [['beds', 3], ['comps', [{ address: '14 Sample Ln', price: '', sqft: '', bb: '', date: '' }]]]);
+check('seller on a pitch: beds and comps', pe.edits.map(e => [e.field, e.to]), [['beds', 3], ['comps', [{ address: '14 Sample Ln' }]]]);   // the deck's rows as typed
 const pap = J.applyEdits('seller', pitch(), pe.edits, {});
 check('seller on a pitch: core gains a facts record only for the typed fact', [Object.keys(pap.set.core.facts), pap.set.core.beds], [['beds'], 3]);
 check('a pitch with only band edits keeps no facts record', J.applyEdits('seller', pitch(), [{ field: 'priceMid', from: null, to: 1 }], {}).set.core.facts, undefined);
@@ -150,6 +150,17 @@ check('pitchPhotos', J.pitchPhotos([
   { path: 'Assets/deep/x.jpg' }, { path: 'Photos/sub/y.jpg' }, { path: 'notes.pdf' }, { path: 'Archive/old.jpg' }
 ]), ['Photos/b.png', 'img.jpg']);   // by file name
 
+/* ---------- review fixes (Tasks 2-4) ---------- */
+const untouched = J.fill('seller', { recBand: 'mid', comps: [] }, pitch(), {}).state;
+check('seller: the tool\'s default band is no edit', J.factEdits('seller', untouched, pitch()), { edits: [], errors: [] });
+check('seller: a band picked by hand is an edit', J.factEdits('seller', Object.assign({}, untouched, { recBand: 'high' }), pitch()).edits, [{ field: 'recBand', from: null, to: 'high' }]);
+const banded = pitch({ core: { priceMid: 2100000 } });
+check('seller: a price band retyped with commas is no edit', J.factEdits('seller', Object.assign({}, J.fill('seller', {}, banded, {}).state, { priceMid: '2,100,000' }), banded).edits, []);
+const extra = pitch({ core: { comps: [{ address: '14 Sample Ln', price: '1', sqft: '', bb: '', date: '', url: 'https://example.com/x' }] } });
+const ef = J.fill('seller', {}, extra, {}).state;
+check('seller: comps with extra keys, untouched, no edit', J.factEdits('seller', ef, extra).edits, []);
+const ef2 = Object.assign({}, ef, { comps: ef.comps.concat([{ address: '20 Sample Ln', price: '', sqft: '', bb: '', date: '' }]) });
+check('seller: a comp added keeps the others\' extra keys', J.factEdits('seller', ef2, extra).edits[0].to[0].url, 'https://example.com/x');
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

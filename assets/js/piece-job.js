@@ -151,7 +151,7 @@
       if (featureList(row, fl).length && listsChanged(row, ctx, fl)) { s.features = featureList(row, fl).join('\n'); redone.push('features'); }
       s.comps = Array.isArray(c.comps) ? clone(c.comps) : [];
       ['priceLow', 'priceMid', 'priceHigh'].forEach(function (k) { s[k] = text(c[k]); });
-      if (c.recBand) s.recBand = String(c.recBand);
+      s.recBand = c.recBand ? String(c.recBand) : (s.recBand || 'mid');
       // the deck speaks New York or New Jersey; Florida takes New Jersey's wording (D100)
       s.market = row.market === 'NYC' ? 'nyc' : row.market === 'NJ' || row.market === 'FL' ? 'nj' : (s.market || 'nyc');
       if (a.ids.length) s.agents = a.ids;
@@ -190,6 +190,12 @@
       .filter(function (x) { return x.address || x.price || x.sqft || x.bb || x.date; });
   }
 
+  /* the deck's comp rows as saved: blank rows dropped, every other key kept */
+  function keepComps(list) {
+    return (Array.isArray(list) ? list : []).filter(function (x) { return x && typeof x === 'object' && cleanComps([x]).length; })
+      .map(function (x) { return clone(x); });
+  }
+
   function factEdits(tool, state, row) {
     state = state || {}; row = row || {};
     var base = clone(state);
@@ -199,11 +205,23 @@
     EDITABLE(tool, row).forEach(function (e) {
       var key = e[0], field = e[1], kind = e[2];
       if (kind === 'pitch') {
-        var now = key === 'comps' ? cleanComps(state.comps) : text(state[key]).trim();
-        var was = key === 'comps' ? cleanComps(core(row).comps) : text(core(row)[key]).trim();
-        if (JSON.stringify(now) === JSON.stringify(was)) return;
-        if (key !== 'comps' && key !== 'recBand' && now && numOf(now) === null) { errors.push({ field: field, error: 'The price band needs figures, like 2,100,000.' }); return; }
-        edits.push({ field: field, from: core(row)[key] === undefined ? null : core(row)[key], to: key === 'comps' ? now : (now === '' ? null : (key === 'recBand' ? now : numOf(now))) });
+        var from = core(row)[key] === undefined ? null : core(row)[key];
+        if (key === 'comps') {
+          // compared on what the deck prints; saved as the rows the deck holds (other keys kept)
+          if (JSON.stringify(cleanComps(state.comps)) === JSON.stringify(cleanComps(core(row).comps))) return;
+          edits.push({ field: field, from: from, to: keepComps(state.comps) });
+          return;
+        }
+        if (key === 'recBand') {
+          // 'mid' is the deck's own default: no band on the job and 'mid' on the deck is no change
+          var nb = text(state.recBand).trim() || 'mid', ob = text(from).trim() || 'mid';
+          if (nb !== ob) edits.push({ field: field, from: from, to: nb });
+          return;
+        }
+        var nowT = text(state[key]).trim(), wasT = text(from).trim();
+        if (nowT === wasT || (numOf(nowT) !== null && numOf(nowT) === numOf(wasT))) return;
+        if (nowT && numOf(nowT) === null) { errors.push({ field: field, error: 'The price band needs figures, like 2,100,000.' }); return; }
+        edits.push({ field: field, from: from, to: nowT === '' ? null : numOf(nowT) });
         return;
       }
       var t = text(state[key]).trim(), w = text(shown[key]).trim();

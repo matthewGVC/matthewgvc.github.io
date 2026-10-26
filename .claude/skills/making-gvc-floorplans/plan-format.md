@@ -147,7 +147,9 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
   `"dir": [dx, dy]` to point the arrow the way the source's arrow points. When the source's arrow
   isn't a straight run along the flight, use `"arrow": false` and draw it with `lines`. A stair that
   turns: the straight flight is the `stair` area, and the turn is drawn with `lines`, as the source
-  draws it.
+  draws it. The `stair` area spaces its treads evenly: when the source's treads are uneven, draw the
+  flight's outline and each tread as `lines` at the source's own positions instead (an arrow line
+  with `"arrow": true` for its UP or DN).
 - `void`: a crossed box (open to below, shafts).
 - `floor`: no outline, only its swatch, for a tiled bathroom floor. `roof`: a thin outline with its
   swatch.

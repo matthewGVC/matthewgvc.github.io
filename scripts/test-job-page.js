@@ -439,8 +439,9 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     'Floorplan folder: G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A\\Floorplan',
     'References in Design\\:',
     '- cubicasa.png (modified ' + dd('2026-10-20T10:00:00.000Z') + ')', '- architect.pdf (modified ' + dd('2026-10-22T10:00:00.000Z') + ')',
-    'Save as version v4.', '', 'Use the making-gvc-floorplans skill.'].join(\n'));
+    'Save as version v4.', '', 'Use the making-gvc-floorplans skill.'].join('\n'));
   await p2.click('#fpCopy');
+  await p2.waitForFunction(() => document.querySelector('#fpCopy').textContent === 'Copied', null, { timeout: 3000 }).catch(() => {});
   check('prompt: Copy reads Copied and the clipboard has the text', [await text(p2, '#fpCopy'), (await p2.evaluate(() => navigator.clipboard.readText())).startsWith('Make the floorplan for x')], ['Copied', true]);
   await t2.ctx.close();
   /* photos */

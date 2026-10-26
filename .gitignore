@@ -10,3 +10,4 @@ exports/
 .impeccable/
 helper/fixtures/recorded/
 helper/node_modules/
+tmp/

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Team · GVC Workspace (mockup)</title>
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.pg{max-width:1200px;margin:0 auto;padding:24px 24px 64px;width:100%}
+.pg h1{font-size:40px;line-height:1}
+.lead{margin-top:10px;color:var(--ink-soft);max-width:62ch}
+.area{margin-top:34px}
+.area > h2{font-size:24px;border-bottom:1px solid var(--ink);padding-bottom:8px}
+.list{list-style:none}
+.list li{display:grid;grid-template-columns:240px 1fr auto;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--rule)}
+.list .nm{font-family:var(--serif);font-size:18px}
+.list .what{font-size:14px;color:var(--ink-soft)}
+.list .where{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.list a.nm:hover{text-decoration:underline;text-underline-offset:3px}
+@media (max-width:720px){ .pg{padding:16px} .list li{grid-template-columns:1fr} }
+</style>
+</head>
+<body data-nav="team">
+<main class="pg">
+  <h1>Team</h1>
+  <p class="lead">Pieces that belong to the team, not to one job. Each opens the tool that exists today.</p>
+  <section class="area" id="agents"><h2>Team</h2>
+    <ul class="list">
+      <li><a class="nm" href="../../tools/agent-info/">Agents &amp; bios</a><span class="what">Roster, headshots and bios every piece pulls from</span><span class="where">roster.js</span></li>
+      <li id="guides"><a class="nm" href="../../tools/destination-guide/">Destination guides</a><span class="what">County guides. Saves to the workspace instead of Downloads</span><span class="where">Destination Guide</span></li>
+      <li id="footprint"><a class="nm" href="../../tools/nj-footprint/">NJ Footprint</a><span class="what">NJ sales map, figures and Towns versions</span><span class="where">NJ Footprint</span></li>
+      <li id="screens"><a class="nm" href="../../tools/office-screens/">Office screens</a><span class="what">13 approved loops, landscape and portrait</span><span class="where">Office Screens</span></li>
+      <li id="info"><a class="nm" href="../../tools/agent-info/">Agent info</a><span class="what">Agent crib sheets</span><span class="where">Agent Info</span></li>
+      <li><a class="nm" href="../../tools/buyer-package/">Buyer package</a><span class="what">Tool only, no job. Gets saving</span><span class="where">Buyer Package</span></li>
+      <li><a class="nm" href="../../tools/postcard/">Expired postcards</a><span class="what">Postcards not tied to a listing</span><span class="where">Postcard</span></li>
+    </ul>
+  </section>
+  <section class="area" id="reference"><h2>Reference</h2>
+    <ul class="list">
+      <li><a class="nm" href="../../listing-rules/">Listing rules</a><span class="what">StreetEasy, MLS, Stellar rules; also feed the floorplan and listing checks</span><span class="where">listing-rules/</span></li>
+      <li><a class="nm" href="../../tools/calculator/">Calculator</a><span class="what">Feet and inches, floorplan helper</span><span class="where">Calculator</span></li>
+    </ul>
+  </section>
+</main>
+<script src="data.js"></script>
+<script>if (location.hash === '#reference') { document.querySelector('[data-nav]').dataset.nav = 'reference'; }</script>
+<script src="shell.js"></script>
+</body>
+</html>

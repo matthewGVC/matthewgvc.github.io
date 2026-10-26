@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>GVC Workspace</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-surface-variant": "#45464d", "on-tertiary-fixed": "#002114", "primary": "#000000", "primary-fixed": "#dae2fd", "on-secondary": "#ffffff", "tertiary-fixed": "#85f8c4", "on-primary": "#ffffff", "on-background": "#0b1c30", "on-surface": "#0b1c30", "inverse-surface": "#213145", "surface": "#f8f9ff", "on-tertiary-container": "#069669", "surface-variant": "#d3e4fe", "surface-bright": "#f8f9ff", "surface-container-low": "#eff4ff", "inverse-on-surface": "#eaf1ff", "error-container": "#ffdad6", "on-error-container": "#93000a", "surface-container-highest": "#d3e4fe", "primary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#3f465c", "surface-container-high": "#dce9ff", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#b4c5ff", "error": "#ba1a1a", "on-secondary-fixed": "#00174b", "secondary-container": "#316bf3", "tertiary-container": "#002114", "surface-tint": "#565e74", "surface-container": "#e5eeff", "on-primary-fixed": "#131b2e", "outline": "#76777d", "on-primary-container": "#7c839b", "tertiary": "#000000", "on-tertiary-fixed-variant": "#005137", "on-error": "#ffffff", "background": "#f8f9ff", "on-secondary-fixed-variant": "#003ea8", "tertiary-fixed-dim": "#68dba9", "secondary": "#0051d5", "inverse-primary": "#bec6e0", "surface-dim": "#cbdbf5", "on-secondary-container": "#fefcff", "on-tertiary": "#ffffff", "secondary-fixed": "#dbe1ff", "outline-variant": "#c6c6cd", "primary-container": "#131b2e" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-tablet": "1.5rem", "space-sm": "0.5rem", "margin-desktop": "2rem", "space-md": "0.75rem", "gutter-desktop": "1.5rem", "space-xl": "2rem", "margin": "1rem", "space-lg": "1.25rem", "gutter": "1rem", "space-xs": "0.25rem" }, "fontFamily": { "headline-lg": ["Inter"], "headline-xl-mobile": ["Inter"], "label-sm": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "body-sm": ["Inter"], "data-mono-sm": ["JetBrains Mono"], "data-mono-lg": ["JetBrains Mono"], "data-mono-md": ["JetBrains Mono"], "headline-sm": ["Inter"], "headline-xl": ["Inter"], "body-lg": ["Inter"] }, "fontSize": { "headline-lg": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-xl-mobile": ["1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "-0.006em", "fontWeight": "400" }], "label-md": ["0.8125rem", { "lineHeight": "1.125rem", "letterSpacing": "-0.005em", "fontWeight": "500" }], "body-sm": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0", "fontWeight": "400" }], "data-mono-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0", "fontWeight": "400" }], "data-mono-lg": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.02em", "fontWeight": "500" }], "data-mono-md": ["0.8125rem", { "lineHeight": "1.125rem", "letterSpacing": "-0.01em", "fontWeight": "400" }], "headline-sm": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-xl": ["2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" }], "body-lg": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.011em", "fontWeight": "400" }] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen flex flex-col antialiased selection:bg-surface-variant selection:text-on-surface"><header class="fixed top-0 inset-x-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/30"><div class="h-14 w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-sm select-none cursor-pointer"><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-surface">GVC Workspace</span><span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">v2.4</span></div><nav class="hidden md:flex items-center gap-1" data-active-classes="text-on-surface font-semibold bg-surface-container-low"><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="overview" href="#">Overview</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="jobs" href="#">Jobs</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="team" href="#">Team</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="reference" href="#">Reference</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="tasks" href="#">Tasks</a></nav></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-low border border-outline-variant/30"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Drive Connected</span></div><button aria-label="Sync status" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">sync</span></button><button aria-label="Search workspace" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">search</span></button><div class="h-4 w-px bg-outline-variant/40 mx-space-xs"></div><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center select-none ring-1 ring-outline-variant/20 shadow-sm"><span class="font-label-sm text-label-sm text-on-primary font-medium tracking-tight">MB</span></div></div></div></div></header><main class="flex-1 w-full pt-14 bg-surface"><div class="flex flex-col w-full">
+<div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col gap-space-xl">
+<!-- Top Context & Header -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<span>Portal</span>
+<span class="material-symbols-outlined text-[13px] text-outline">chevron_right</span>
+<span class="text-secondary font-semibold">Shared Resources</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Team &amp; Creative Assets</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+          Central directory for regional team members, production master templates, spatial data tools, and reference guidelines.
+        </p>
+</div>
+<!-- Right Utility Controls -->
+<div class="flex flex-wrap items-center gap-space-md">
+<!-- Minimal Search -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span>
+<input class="h-[34px] w-64 pl-8 pr-10 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md placeholder:text-outline shadow-sm focus:outline-none focus:ring-1 focus:ring-secondary" placeholder="Search assets, specs, people..." type="text"/>
+<kbd class="absolute right-2 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-mono-sm text-data-mono-sm">⌘K</kbd>
+</div>
+<!-- Segmented Market Filter -->
+<div class="flex items-center p-0.5 rounded-lg bg-surface-container-low shadow-sm">
+<button class="px-space-md py-1 rounded-md text-on-surface font-label-md text-label-md bg-surface-container-lowest shadow-sm transition-all">All</button>
+<button class="px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors">Region A</button>
+<button class="px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors">Region B</button>
+<button class="px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors">Region C</button>
+</div>
+</div>
+</div>
+<!-- Section 2: Creative Tools & Studio Launchpads -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter-desktop">
+<!-- Tool 1 -->
+<div class="group flex flex-col justify-between p-space-lg rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">slideshow</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-medium">v4.2 PROD</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">Presentation Builder</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Standardized pitch decks, executive client portfolios, and unified master narrative kits.</p>
+</div>
+</div>
+<div class="pt-space-md mt-space-md">
+<a class="inline-flex items-center gap-1 font-label-md text-label-md text-secondary hover:text-secondary/80 font-medium group-hover:translate-x-0.5 transition-transform" href="#">
+<span>Open Builder</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Tool 2 -->
+<div class="group flex flex-col justify-between p-space-lg rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">map</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium">Spatial Data</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">Maps &amp; Regional Guides</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Vector regional base layers, demographic telemetry datasheets, and boundary templates.</p>
+</div>
+</div>
+<div class="pt-space-md mt-space-md">
+<a class="inline-flex items-center gap-1 font-label-md text-label-md text-secondary hover:text-secondary/80 font-medium group-hover:translate-x-0.5 transition-transform" href="#">
+<span>Access Library</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Tool 3 -->
+<div class="group flex flex-col justify-between p-space-lg rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">cast</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium">Asset Dist.</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">Media &amp; Display Hub</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Centralized high-resolution architectural screen carousels, showroom loops, and reels.</p>
+</div>
+</div>
+<div class="pt-space-md mt-space-md">
+<a class="inline-flex items-center gap-1 font-label-md text-label-md text-secondary hover:text-secondary/80 font-medium group-hover:translate-x-0.5 transition-transform" href="#">
+<span>Manage Displays</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Section 3: Performance Metrics Strip -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-space-lg">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Active Team</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">12 Members</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">3 Regional Desks Operational</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">folder_copy</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Shared Assets</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">148 Templates</div>
+<div class="font-body-sm text-body-sm text-on-tertiary-container flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+<span>99.8% Master Sync Rate</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Pipeline Velocity</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold">+18% Delivery</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Ahead of Q4 Milestones</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">cloud_done</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">System Status</span>
+</div>
+<div class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
+<span>All Connected</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Cloud Vault Latency 14ms</div>
+</div>
+</div>
+</div>
+<!-- Section 4: Team Roster Grid -->
+<div class="flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Regional Team Roster</h2>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-data-mono-sm text-data-mono-sm text-on-surface-variant">12 Active</span>
+</div>
+<!-- Tab filters -->
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">
+<button class="px-space-sm py-0.5 rounded-md text-on-surface bg-surface-container-lowest shadow-sm font-label-sm text-label-sm font-medium">All (12)</button>
+<button class="px-space-sm py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm">Region A (4)</button>
+<button class="px-space-sm py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm">Region B (4)</button>
+<button class="px-space-sm py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm">Region C (4)</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter-desktop">
+<!-- Team Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-md text-label-md font-semibold text-on-surface">
+                JD
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Jordan Davis</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Senior Production Lead</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-data-mono-sm text-data-mono-sm font-medium">Region A</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-space-xs">
+<span class="font-body-sm text-body-sm">8 Active · 14 Delivered</span>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary">
+<button class="hover:underline">Profile</button>
+<span class="text-outline">·</span>
+<button class="hover:underline">Contact</button>
+</div>
+</div>
+</div>
+<!-- Team Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-md text-label-md font-semibold text-on-surface">
+                AM
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Alex Morgan</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Creative Specialist</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm font-medium">Region B</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-space-xs">
+<span class="font-body-sm text-body-sm">6 Active · 22 Delivered</span>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary">
+<button class="hover:underline">Profile</button>
+<span class="text-outline">·</span>
+<button class="hover:underline">Contact</button>
+</div>
+</div>
+</div>
+<!-- Team Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-md text-label-md font-semibold text-on-surface">
+                KL
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Kendall Lee</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Architectural Director</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-data-mono-sm text-data-mono-sm font-medium">Region A</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-space-xs">
+<span class="font-body-sm text-body-sm">11 Active · 35 Delivered</span>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary">
+<button class="hover:underline">Profile</button>
+<span class="text-outline">·</span>
+<button class="hover:underline">Contact</button>
+</div>
+</div>
+</div>
+<!-- Team Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-md text-label-md font-semibold text-on-surface">
+                TC
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Taylor Chen</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Brand Visuals Strategist</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm font-medium">Region C</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-space-xs">
+<span class="font-body-sm text-body-sm">4 Active · 19 Delivered</span>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary">
+<button class="hover:underline">Profile</button>
+<span class="text-outline">·</span>
+<button class="hover:underline">Contact</button>
+</div>
+</div>
+</div>
+<!-- Team Card 5 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-md text-label-md font-semibold text-on-surface">
+                SR
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Siddharth Rao</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Spatial UX Lead</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm font-medium">Region B</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-space-xs">
+<span class="font-body-sm text-body-sm">9 Active · 28 Delivered</span>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary">
+<button class="hover:underline">Profile</button>
+<span class="text-outline">·</span>
+<button class="hover:underline">Contact</button>
+</div>
+</div>
+</div>
+<!-- Team Card 6 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-md text-label-md font-semibold text-on-surface">
+                EW
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Elena Wright</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">3D Asset Specialist</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm font-medium">Region C</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-space-xs">
+<span class="font-body-sm text-body-sm">7 Active · 16 Delivered</span>
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary">
+<button class="hover:underline">Profile</button>
+<span class="text-outline">·</span>
+<button class="hover:underline">Contact</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 5: Studio Facilities & Reference Standards (Split Cards) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter-desktop">
+<!-- Studio Atelier Card with Visual -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+<div class="relative w-full h-56 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="An ultra modern, serene architectural design studio with polished pale concrete floors, expansive floor-to-ceiling glass windows overlooking a calm misty courtyard, solid oak model tables with white minimalist architectural maquettes, dual monitors showing blueprints, natural soft daylight, subtle executive slate and off-white palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeilB59C7NoKoDru1cELLeliSP-lSRMH6SkYg9OxxzZb96V_JhIbCs8E265NbzFqBf8XXypeu27fJA5ZuHCqcydhcOTXJzq5xs9D2nz1jtFeQ5-L2ZjuBIU27AeUoVlla5L4vtWg0a5hYaWbiCRYvpje4aKwugdkf-OMWuxsZiZO2pw3ENtzahfyViDj8XIQzU5GG4cQetLFO1-es_oQfAstLOrmqBE4Yg5byiSQiERuZssXQCD4MK8A"/>
+<div class="absolute top-space-md left-space-md px-2.5 py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-md shadow-sm flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container"></span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface font-medium">Studio Bay 04 · Ready</span>
+</div>
+</div>
+<div class="p-space-lg flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Physical Facilities &amp; Atelier Desks</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Building B / Floor 3</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Equipped with 10-bit color-calibrated proofing monitors, laser cutters, physical material libraries, and virtual preview rigs.
+          </p>
+<div class="pt-space-xs flex items-center gap-space-md">
+<button class="px-space-md py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-surface-variant transition-colors">
+              Reserve Workshop Slot
+            </button>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors">
+              Bay Inventory Specs
+            </button>
+</div>
+</div>
+</div>
+<!-- Asset Repository & Typography Standards -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-secondary">token</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Design Tokens &amp; Spec Standards</h3>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant">Core v2.4</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Official typography scale hierarchy, strict metric margins, and institutional export tokens maintained across all three creative regional divisions.
+          </p>
+<!-- Spec Matrix Box -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-sm">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant pb-1">
+<span>HIERARCHY ROLE</span>
+<span>FONT FAMILY</span>
+<span>TRACKING</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface">
+<span class="font-medium">Headline Master</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Inter Display 600</span>
+<span class="font-data-mono-sm text-data-mono-sm">-0.025em</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface">
+<span class="font-medium">Data Telemetry</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">JetBrains Mono 500</span>
+<span class="font-data-mono-sm text-data-mono-sm">-0.010em</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface">
+<span class="font-medium">Editorial Body</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Inter Regular 400</span>
+<span class="font-data-mono-sm text-data-mono-sm">-0.006em</span>
+</div>
+</div>
+</div>
+<div class="pt-space-md flex items-center justify-between">
+<div class="flex items-center gap-space-xs text-on-tertiary-container font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>Figma Tokens Synced 10m ago</span>
+</div>
+<button class="font-label-md text-label-md text-secondary hover:text-secondary/80 font-medium inline-flex items-center gap-1">
+<span>Download Spec Kit</span>
+<span class="material-symbols-outlined text-[16px]">download</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Section 6: Bottom Utilities (Calculator & Cheat-Sheet) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter-desktop">
+<!-- Minimalist Area & Metric Calculator -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-on-surface">square_foot</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Area &amp; Metric Converter</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fast Estimator</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Instantly calculate architectural footprint dimensions between Imperial and Metric standards.</p>
+</div>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">LENGTH (FT / IN)</label>
+<div class="flex gap-2">
+<input class="w-full h-[34px] px-2.5 rounded-lg bg-surface-container-low text-on-surface font-data-mono-md text-data-mono-md focus:outline-none focus:ring-1 focus:ring-secondary" id="calc-length-ft" type="number" value="25"/>
+<input class="w-16 h-[34px] px-2 rounded-lg bg-surface-container-low text-on-surface font-data-mono-md text-data-mono-md focus:outline-none focus:ring-1 focus:ring-secondary" id="calc-length-in" placeholder="0" type="number" value="0"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">WIDTH (FT / IN)</label>
+<div class="flex gap-2">
+<input class="w-full h-[34px] px-2.5 rounded-lg bg-surface-container-low text-on-surface font-data-mono-md text-data-mono-md focus:outline-none focus:ring-1 focus:ring-secondary" id="calc-width-ft" type="number" value="14"/>
+<input class="w-16 h-[34px] px-2 rounded-lg bg-surface-container-low text-on-surface font-data-mono-md text-data-mono-md focus:outline-none focus:ring-1 focus:ring-secondary" id="calc-width-in" placeholder="0" type="number" value="0"/>
+</div>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">CALCULATED SURFACE</span>
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-semibold" id="calc-result">350.0 SQ FT / 32.5 SQ M</span>
+</div>
+<button class="px-space-md py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-surface-variant transition-colors shadow-sm" id="calc-btn">
+            Calculate
+          </button>
+</div>
+</div>
+<!-- Publishing Guidelines Cheat-Sheet -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-on-surface">description</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Publishing Guidelines Cheat-Sheet</h3>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant">Print &amp; Digital</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Interactive Displays</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">1920×1080 (16:9) · sRGB Color</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Presentation Portfolios</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">300 DPI · Coated Silk CMYK</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Asset Preferred Formats</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Vector SVG / Master PDF (PDF/X-4)</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Updated for Q4 Release Cycle</span>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+<span>Download Format Specs (PDF)</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const btn = document.getElementById('calc-btn');
+    const result = document.getElementById('calc-result');
+    if (btn && result) {
+      btn.addEventListener('click', () => {
+        const lFt = parseFloat(document.getElementById('calc-length-ft').value) || 0;
+        const lIn = parseFloat(document.getElementById('calc-length-in').value) || 0;
+        const wFt = parseFloat(document.getElementById('calc-width-ft').value) || 0;
+        const wIn = parseFloat(document.getElementById('calc-width-in').value) || 0;
+
+        const totalLengthFt = lFt + (lIn / 12);
+        const totalWidthFt = wFt + (wIn / 12);
+
+        const sqFt = (totalLengthFt * totalWidthFt).toFixed(1);
+        const sqM = (sqFt * 0.092903).toFixed(1);
+
+        result.textContent = `${sqFt} SQ FT / ${sqM} SQ M`;
+      });
+    }
+  })();
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/30 py-space-lg mt-auto"><div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="w-2 h-2 rounded-full bg-on-tertiary-container"></span><span>Operational Systems Healthy</span></div><div>© 2025 GVC Executive Workspace. All rights reserved.</div></div></footer></body></html>

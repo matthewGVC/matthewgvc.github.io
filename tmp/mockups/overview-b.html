@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overview B · GVC Workspace (mockup)</title>
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+/* Direction B — the line: each job is one line through time (its weight = its status),
+   stations for the work, grouped by what needs attention, with a Next column. */
+.ov{display:grid;grid-template-columns:minmax(0,1fr) auto;min-height:calc(100vh - 56px)}
+.ov-main{min-width:0;padding:20px 24px 40px}
+.ov-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:16px}
+.ov-head h1{font-size:34px;line-height:1}
+.ov-head .sub{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;background:none;border:1px solid var(--rule);border-radius:999px;padding:6px 11px;color:var(--ink-soft);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);box-shadow:inset 0 -2px 0 var(--sky)}
+.chip:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.chips .sep{width:1px;background:var(--rule);margin:0 6px}
+
+.tl{--label:230px;--next:250px}
+.axis-row{display:grid;grid-template-columns:var(--label) 1fr var(--next);position:sticky;top:56px;z-index:5;background:var(--paper);border-bottom:1px solid var(--ink)}
+.axis-row .h{font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-soft);padding:12px 0 8px}
+.axis-row .h.next{padding-left:16px}
+.axis{position:relative}
+.axis .m{position:absolute;top:0;bottom:0;padding:12px 0 0 6px;font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;border-left:1px solid var(--rule)}
+.axis .m.cut{border-left:0}
+
+.sec{margin-top:26px}
+.sec-h{display:flex;align-items:baseline;gap:12px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.sec-h h2{font-size:21px}
+.sec-h span{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.row{display:grid;grid-template-columns:var(--label) 1fr var(--next);border-bottom:1px solid var(--rule);min-height:74px}
+.row:hover{background:var(--paper-2)}
+.lab{padding:12px 14px 10px 0;min-width:0}
+.lab a{font-family:var(--serif);font-size:17px;line-height:1.15}
+.lab a:hover{text-decoration:underline;text-underline-offset:3px}
+.lab .meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:4px}
+.lab .mk{display:inline-block;font-family:var(--sans-display);font-weight:900;font-size:8.5px;letter-spacing:0.14em;border:1px solid var(--ink);border-radius:3px;padding:1px 4px;margin-right:6px;vertical-align:1px}
+.next{padding:12px 0 10px 16px;border-left:1px solid var(--rule);font-size:13.5px;line-height:1.4}
+.next .act{display:inline-block;margin-top:6px}
+.next .quiet{color:var(--ink-soft)}
+
+.track{position:relative;min-height:74px}
+.gm{position:absolute;top:0;bottom:0;border-left:1px solid var(--rule);opacity:.6}
+.today{position:absolute;top:0;bottom:0;border-left:2px solid var(--sky);z-index:1}
+.ln{position:absolute;top:36px;transform:translateY(-50%)}
+.ln.pitch{border-top:1.5px dashed var(--ink-soft);height:0}
+.ln.won{height:2px;background:var(--ink-soft)}
+.ln.live{height:5px;background:var(--ink);border-radius:1px}
+.ln.contract{height:5px;background:var(--cyan);border-radius:1px}
+.ln.sold{height:5px;background:repeating-linear-gradient(90deg,var(--ink) 0 6px,transparent 6px 9px)}
+.ln.est{-webkit-mask:linear-gradient(90deg,#000 80%,transparent);mask:linear-gradient(90deg,#000 80%,transparent)}
+.ln.before::before{content:"";position:absolute;left:-1px;top:50%;width:8px;height:8px;border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:translate(0,-50%) rotate(45deg)}
+.st{position:absolute;top:36px;width:11px;height:11px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);transform:translate(-50%,-50%);z-index:2}
+.st.est{border-style:dotted}
+.st.de{border-color:var(--cyan);background:var(--cyan)}
+.st.chg{border-radius:1px;width:9px;height:9px;transform:translate(-50%,-50%) rotate(45deg);background:var(--ink)}
+.st.span{border-radius:6px;height:11px;width:auto}
+.tag{position:absolute;transform:translateX(-50%);font-family:var(--sans-display);font-weight:800;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:var(--ink)}
+.tag.up{top:12px}
+.tag.dn{top:46px;color:var(--ink-soft)}
+.tag.gp{font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none;font-size:9.5px;color:var(--ink-soft)}
+.tag.cy{color:var(--ink);background:color-mix(in srgb,var(--cyan) 30%,var(--paper));padding:0 3px;border-radius:2px}
+.hist{position:absolute;left:0;right:0;bottom:4px;height:12px;display:flex;align-items:flex-end;gap:1px}
+.hist i{flex:1;background:var(--ink-soft);opacity:.55;border-radius:1px 1px 0 0}
+.gapb{position:absolute;top:30px;height:12px;border:1px solid var(--ink-soft);border-top:0;border-bottom:0}
+.gapb span{position:absolute;left:50%;transform:translateX(-50%);top:16px;font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);white-space:nowrap}
+
+/* to-do drawer */
+.todo{width:290px;border-left:1px solid var(--rule);padding:20px;position:sticky;top:56px;align-self:start;max-height:calc(100vh - 56px);overflow:auto}
+.todo.closed{width:44px;padding:20px 8px}
+.todo.closed .body{display:none}
+.todo .tg{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.todo.closed .tg h2{writing-mode:vertical-rl;transform:rotate(180deg);font-size:16px}
+.todo h2{font-size:22px}
+.todo .tg button{background:none;border:1px solid var(--rule);border-radius:999px;width:28px;height:28px;cursor:pointer;color:var(--ink)}
+.todo.closed .tg{flex-direction:column-reverse}
+.todo ul{list-style:none;margin-top:12px}
+.todo li{display:grid;grid-template-columns:16px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px;line-height:1.4}
+.todo li .bx{width:14px;height:14px;border:1.5px solid var(--ink);border-radius:3px;margin-top:2px}
+.todo li small{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+.todo .note{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:12px;line-height:1.5}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;padding:16px 0;font-family:var(--mono);font-size:10px;color:var(--ink-soft);align-items:center}
+.legend .k{display:inline-flex;align-items:center;gap:6px}
+
+@media (max-width:1180px){ .tl{--next:200px} }
+@media (max-width:1000px){ .ov{grid-template-columns:1fr} .todo{width:auto;position:static;max-height:none;border-left:0;border-top:1px solid var(--ink)} }
+@media (max-width:720px){
+  .ov-main{padding:16px}
+  .tl-wrap{overflow-x:auto}
+  .tl{min-width:760px;--label:150px;--next:170px}
+  .axis-row{top:0}
+}
+</style>
+</head>
+<body data-nav="overview">
+<main class="ov">
+  <section class="ov-main" aria-labelledby="h1">
+    <div class="ov-head">
+      <div><h1 id="h1">Overview</h1><div class="sub" id="sub"></div></div>
+      <div class="chips" role="group" aria-label="Filter jobs">
+        <button class="chip" data-f="market" data-v="" aria-pressed="true">All markets</button>
+        <button class="chip" data-f="market" data-v="NYC" aria-pressed="false">NYC</button>
+        <button class="chip" data-f="market" data-v="NJ" aria-pressed="false">NJ</button>
+        <button class="chip" data-f="market" data-v="FL" aria-pressed="false">FL</button>
+        <span class="sep"></span>
+        <button class="chip" data-f="type" data-v="" aria-pressed="true">All jobs</button>
+        <button class="chip" data-f="type" data-v="listing" aria-pressed="false">Listings</button>
+        <button class="chip" data-f="type" data-v="pitch" aria-pressed="false">Pitches</button>
+        <button class="chip" data-f="type" data-v="development" aria-pressed="false">Developments</button>
+      </div>
+    </div>
+    <div class="tl-wrap"><div class="tl" id="tl"></div></div>
+    <div class="legend">
+      <span class="k">┄ pitch</span><span class="k">— won</span><span class="k"><b style="display:inline-block;width:22px;height:5px;background:var(--ink)"></b> live</span>
+      <span class="k"><b style="display:inline-block;width:22px;height:5px;background:var(--cyan)"></b> in contract</span>
+      <span class="k"><b style="display:inline-block;width:22px;height:5px;background:repeating-linear-gradient(90deg,var(--ink) 0 6px,transparent 6px 9px)"></b> sold</span>
+      <span class="k">○ piece made</span><span class="k">◆ change logged</span><span class="k">● DE status</span><span class="k">bars underneath = files touched per week</span><span class="k">fading / dotted = date estimated for the mockup</span>
+    </div>
+  </section>
+  <aside class="todo" id="todo" aria-labelledby="todo-h">
+    <div class="tg"><h2 id="todo-h">To-do</h2><button type="button" aria-label="Fold the to-do panel" id="tgb">›</button></div>
+    <div class="body" id="todo-body"></div>
+  </aside>
+</main>
+<script src="data.js"></script>
+<script src="shell.js"></script>
+<script src="timeline.js"></script>
+<script>
+sessionStorage.setItem('mock-overview', 'overview-b.html');
+(function () {
+  var T = TL, M = T.M, esc = T.esc, f = { market: '', type: '' };
+  var NEXT = {
+    'park-1050-13c': ['Showsheet and unbranded floorplan built from floorplan v1; v2 drawn 1 Oct.', 'Rebuild 2'],
+    'e57-435-12b': ['Showsheet built from the Sep 14 floorplan; redrawn 1 Oct.', 'Rebuild 1'],
+    'wbway-347-6': ['On DE as W BROADWAY. Folder is "347 West Broadway".', 'Link folder'],
+    'w59-555-phc': ['On DE, price reduced 8.9%. No folder linked, so no pieces to check.', 'Link folder'],
+    'fifth-1050-2e': ['Nothing waiting.', ''],
+    'e29-229-6g': ['Photos and staging done. Floorplan, showsheet not made.', 'Make kit'],
+    'e74-255-11b': ['Rental. Folder holds paperwork only.', ''],
+    'pheasant-1006-204': ['Not matched to a DE listing yet.', 'Match DE'],
+    'w94-250-11b': ['Pitched 4 Aug. No listing folder.', 'Won / lost?'],
+    'wea-617-4b': ['Pitched 10 Jun. No listing folder.', 'Won / lost?'],
+    'e71-176-phd': ['Sold on DE. Postcard sent 16 Oct. Still in the .lnk shortcut folder.', 'Archive'],
+    'bradley-619': ['Overview only. Floorplans and showing assets 7 Oct.', ''],
+    'casa-avenida': ['Overview only. 5 milestone folders have no dates.', '']
+  };
+  var SECTIONS = [
+    { t: 'Needs you', d: 'stale pieces, unlinked folders, unmatched DE', ids: ['park-1050-13c', 'e57-435-12b', 'w59-555-phc', 'wbway-347-6', 'pheasant-1006-204'] },
+    { t: 'Moving', d: 'live, in contract, in production', ids: ['fifth-1050-2e', 'e29-229-6g', 'e74-255-11b'] },
+    { t: 'Pitches', d: 'not won yet', ids: ['w94-250-11b', 'wea-617-4b'] },
+    { t: 'Developments', d: 'milestones, no marketing kit', ids: ['bradley-619', 'casa-avenida'] },
+    { t: 'Closing out', d: 'sold or rented, to archive', ids: ['e71-176-phd'] }
+  ];
+  var byId = {}; M.jobs.forEach(function (j) { byId[j.id] = j; });
+  var SHORT = { floorplan: 'Floorplan', showsheet: 'Showsheet', photos: 'Photos', brochure: 'Brochure', social: 'Social', postcard: 'Postcard', film: 'Film', staging: 'Staged' };
+
+  function grid() {
+    return T.months().map(function (m) { return m.start ? '<div class="gm" style="left:' + m.left + '%"></div>' : ''; }).join('') + '<div class="today" style="left:' + T.pct(T.today) + '%"></div>';
+  }
+  function hist(j) {
+    var ws = T.weeks(), mx = 1;
+    var v = ws.map(function (w) { var n = T.weekCount(j, w); return n; });
+    return '<div class="hist" aria-hidden="true">' + v.map(function (n, i) {
+      var h = n ? Math.max(15, Math.min(100, Math.log10(n + 1) / 2.6 * 100)) : 0;
+      return '<i style="height:' + h + '%" title="Week of ' + T.fmt(ws[i]) + ': ' + n + ' files"></i>';
+    }).join('') + '</div>';
+  }
+  function placeTags(items) {
+    // alternate up / down when stations sit close together
+    items.sort(function (a, b) { return a.x - b.x; });
+    var upEnd = -99, dnEnd = -99;
+    items.forEach(function (it) {
+      var w = it.t.length * 0.95 + 1.5, a = it.x - w / 2, b = it.x + w / 2;
+      if (a > upEnd) { it.pos = 'up'; upEnd = b; }
+      else if (a > dnEnd) { it.pos = 'dn'; dnEnd = b; }
+      else it.pos = '';
+    });
+    return items;
+  }
+  function track(j) {
+    var h = grid(), tags = [];
+    if (j.type === 'development') {
+      (j.milestones || []).forEach(function (m) {
+        if (m.from) { var l = T.pct(m.from), r = T.pct(m.to); h += '<div class="ln won" style="left:' + l + '%;width:' + (r - l) + '%"></div>'; tags.push({ x: l, t: m.m }); }
+        else { h += '<div class="st" style="left:' + T.pct(m.d) + '%" title="' + m.m + ', ' + T.fmt(m.d) + '"></div>'; tags.push({ x: T.pct(m.d), t: m.m }); }
+      });
+    } else {
+      j.status.forEach(function (s) {
+        var l = T.pct(s.from), r = s.to ? T.pct(s.to) : T.pct(T.today);
+        h += '<div class="ln ' + s.s + (s.est && !s.to ? ' est' : '') + (s.before ? ' before' : '') + '" style="left:' + l + '%;width:' + (r - l) + '%" title="' + T.STAGE[s.s] + ' from ' + T.fmt(s.from) + '"></div>';
+      });
+      (j.work || []).forEach(function (w) {
+        var x = T.pct(w.from || w.d);
+        if (w.from) { var r = T.pct(w.to); h += '<div class="st span' + (w.est ? ' est' : '') + '" style="left:' + x + '%;width:' + Math.max(0.8, r - x) + '%;transform:translate(0,-50%)" title="' + esc(w.label) + '"></div>'; }
+        else h += '<div class="st' + (w.est ? ' est' : '') + '" style="left:' + x + '%" title="' + esc(w.label) + ', ' + T.fmt(w.d) + '"></div>';
+        tags.push({ x: x, t: SHORT[w.k] });
+      });
+      (j.changes || []).forEach(function (c) { var x = T.pct(c.d); h += '<div class="st chg" style="left:' + x + '%" title="' + esc(c.text) + ', ' + T.fmt(c.d) + '"></div>'; tags.push({ x: x, t: 'Change' }); });
+      (j.deMarks || []).forEach(function (c) { var x = T.pct(c.d); h += '<div class="st de" style="left:' + x + '%" title="' + esc(c.text) + '"></div>'; tags.push({ x: x, t: c.text.replace('DE: ', 'DE '), cy: true }); });
+      if (j.gap) { var gl = T.pct(j.gap.from), gr = T.pct(j.gap.to); h += '<div class="gapb" style="left:' + gl + '%;width:' + (gr - gl) + '%"></div>'; tags.push({ x: (gl + gr) / 2, t: j.gap.text, gap: true }); }
+    }
+    placeTags(tags).forEach(function (t) { if (t.pos) h += '<span class="tag ' + t.pos + (t.cy ? ' cy' : '') + (t.gap ? ' gp' : '') + '" style="left:' + t.x + '%">' + esc(t.t) + '</span>'; });
+    return h + hist(j);
+  }
+  function render() {
+    var h = '<div class="axis-row"><div class="h">Job</div><div class="axis">' + T.months().map(function (m) {
+      return '<div class="m' + (m.start ? '' : ' cut') + '" style="left:' + m.left + '%;width:' + m.width + '%">' + m.label + '</div>';
+    }).join('') + '</div><div class="h next">Next</div></div>';
+    var shown = 0;
+    SECTIONS.forEach(function (s) {
+      var js = s.ids.map(function (i) { return byId[i]; }).filter(function (j) {
+        return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental'));
+      });
+      if (!js.length) return;
+      h += '<div class="sec"><div class="sec-h"><h2>' + s.t + '</h2><span>' + js.length + ' · ' + s.d + '</span></div>';
+      js.forEach(function (j) {
+        shown++;
+        var meta = [j.stage];
+        if (j.de && j.de.price) meta.push(j.de.price);
+        if (j.type === 'rental') meta.push('Rental');
+        if (j.place) meta.push(j.place);
+        var n = NEXT[j.id] || ['', ''];
+        h += '<div class="row"><div class="lab"><span class="mk">' + j.market + '</span><a href="job.html#' + j.id + '">' + esc(j.name) + '</a><div class="meta">' + esc(meta.join(' · ')) + '</div></div>' +
+          '<div class="track">' + track(j) + '</div>' +
+          '<div class="next"><span' + (n[1] ? '' : ' class="quiet"') + '>' + esc(n[0]) + '</span>' + (n[1] ? '<br><button class="btn-line act" type="button">' + esc(n[1]) + '</button>' : '') + '</div></div>';
+      });
+      h += '</div>';
+    });
+    document.getElementById('tl').innerHTML = h;
+    document.getElementById('sub').textContent = shown + ' jobs · 13 Apr – 23 Nov · today 19 Oct';
+  }
+  document.querySelectorAll('.chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.chip[data-f="' + c.dataset.f + '"]').forEach(function (x) { x.setAttribute('aria-pressed', x === c); });
+      f[c.dataset.f] = c.dataset.v; render();
+    });
+  });
+  render();
+
+  document.getElementById('todo-body').innerHTML = '<ul>' + M.todo.map(function (t) {
+    return '<li><span class="bx"></span><div>' + esc(t.t) + (t.src === 'Waiting' ? '<small>Waiting on others</small>' : '') + '</div></li>';
+  }).join('') + '</ul><p class="note">Job flags live in "Needs you", so this panel holds only your own list.</p>';
+  var td = document.getElementById('todo'), b = document.getElementById('tgb');
+  b.addEventListener('click', function () { var c = td.classList.toggle('closed'); b.textContent = c ? '‹' : '›'; b.setAttribute('aria-label', c ? 'Open the to-do panel' : 'Fold the to-do panel'); });
+})();
+</script>
+</body>
+</html>

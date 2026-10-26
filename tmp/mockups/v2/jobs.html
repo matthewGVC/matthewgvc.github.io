@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jobs · GVC Workspace</title>
+<link rel="stylesheet" href="../../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../../assets/css/base.css">
+<link rel="stylesheet" href="app.css">
+<style>
+.bar-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin:24px 0 14px}
+.bar-row .r{display:flex;align-items:center;gap:10px}
+.idx{width:34px;height:34px;border-radius:6px;background:var(--paper-2);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.nm{display:flex;align-items:center;gap:14px}
+.nm a{font-family:var(--serif);font-size:18px}
+.nm a:hover{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:4px}
+.nm small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+.stg{font-size:13px}
+.stg .track{height:4px;border-radius:2px;background:var(--paper-2);margin-top:6px;width:150px;overflow:hidden}
+.stg .track i{display:block;height:100%;background:var(--ink)}
+.stg .track i.c{background:var(--cyan)}
+.ag{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.ag img{width:26px;height:26px;border-radius:50%;background:var(--paper-2);object-fit:cover}
+.ag .none{color:var(--ink-soft)}
+.price{font-family:var(--mono);font-size:13.5px}
+.tbl-card{padding:0;overflow:hidden}
+.tbl-foot{display:flex;justify-content:space-between;padding:14px 18px;font-size:13.5px;color:var(--ink-soft)}
+.need h3{font-size:19px;margin:4px 0 8px}
+.need ul{list-style:none}
+.need li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.need li:last-child{border-bottom:0}
+.need li a{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+.need li span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+</style>
+</head>
+<body data-nav="jobs">
+<main class="wrap">
+  <div class="page-h">
+    <div>
+      <div class="eyebrow">Jobs</div>
+      <h1>All jobs</h1>
+      <p>Listings, rentals, pitches and new developments. Each links to its Drive folder and, once listed, its DE listing.</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <label class="search"><span id="si"></span><input placeholder="Search address, unit, agent" aria-label="Search jobs"><span class="kbd">/</span></label>
+      <button class="b primary" type="button" id="nj"></button>
+    </div>
+  </div>
+
+  <div class="grid4" id="stats"></div>
+
+  <div class="bar-row">
+    <div class="seg" role="group" aria-label="Type" id="typ"></div>
+    <div class="r"><span class="lbl">Market</span><div class="seg" role="group" aria-label="Market" id="mkt"><button aria-pressed="true" data-v="">All</button><button aria-pressed="false" data-v="NYC">NYC</button><button aria-pressed="false" data-v="NJ">NJ</button><button aria-pressed="false" data-v="FL">FL</button></div></div>
+  </div>
+
+  <div class="card tbl-card"><div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Job</th><th>Type</th><th>Market</th><th>Stage</th><th class="r">Price</th><th>Agents</th><th>Kit</th><th class="r">DE status</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <div class="tbl-foot"><span id="count"></span><span>Sorted by last activity</span></div>
+  </div>
+
+  <div class="grid3" style="margin-top:20px">
+    <section class="card need"><div class="eyebrow">Kit</div><h3>Stale pieces</h3><ul id="n1"></ul></section>
+    <section class="card need"><div class="eyebrow">Drive and DE</div><h3>To link</h3><ul id="n2"></ul></section>
+    <section class="card need"><div class="eyebrow">Pitches</div><h3>Still open</h3><ul id="n3"></ul></section>
+  </div>
+</main>
+<script src="../data.js"></script>
+<script src="jobs.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  var V = V2, M = V.M, I = ICON, f = { market: '', type: '' };
+  document.getElementById('si').innerHTML = I('search');
+  document.getElementById('nj').innerHTML = I('plus') + 'New job';
+  var TYPES = [['', 'All'], ['listing', 'Listings'], ['pitch', 'Pitches'], ['development', 'Developments']];
+  var is = function (j, t) { return !t || j.type === t || (t === 'listing' && j.type === 'rental'); };
+  var AG = { 'Elyse Gutman': 'elyse-gutman' };
+
+  function render() {
+    document.getElementById('typ').innerHTML = TYPES.map(function (t) {
+      var n = M.jobs.filter(function (j) { return is(j, t[0]) && (!f.market || j.market === f.market); }).length;
+      return '<button aria-pressed="' + (f.type === t[0]) + '" data-v="' + t[0] + '">' + t[1] + '<span class="n">' + n + '</span></button>';
+    }).join('');
+    var js = M.jobs.filter(function (j) { return is(j, f.type) && (!f.market || j.market === f.market); })
+      .sort(function (a, b) { return (b.last || '') > (a.last || '') ? 1 : -1; });
+    document.getElementById('rows').innerHTML = js.map(function (j, i) {
+      var typ = { listing: 'Listing', rental: 'Rental', pitch: 'Pitch', development: 'Development' }[j.type];
+      var pct = (j.stageIdx + 1) / j.steps.length * 100;
+      var ag = j.agents && j.agents.length ? j.agents.map(function (a) { return '<img src="../../../assets/agents/' + AG[a] + '.png" alt="">' + esc(a); }).join('') : '<span class="none">Not picked</span>';
+      var kit = j.type === 'development' ? '<span class="soft">Overview only</span>' : j.stale ? '<span class="chip stale">' + j.stale + ' stale</span>' : (j.work && j.work.length ? '<span class="chip made">' + j.work.length + ' made</span>' : '<span class="soft">Nothing made</span>');
+      var de = j.de ? '<span class="chip ' + j.chip + '">' + esc(j.de.status) + '</span>' : (j.type === 'development' ? '<span class="soft">n/a</span>' : '<span class="chip">Not on DE</span>');
+      return '<tr><td><div class="nm"><span class="idx">' + String(i + 1).padStart(2, '0') + '</span><div><a href="job.html#' + j.id + '">' + esc(j.name) + '</a><small>' + (j.place ? esc(j.place) + ' · ' : '') + (j.last ? 'last ' + V.fmt(j.last) : 'no dates') + '</small></div></div></td>' +
+        '<td>' + typ + '</td><td><span class="chip">' + j.market + '</span></td>' +
+        '<td class="stg">' + esc(j.stage) + '<div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pct + '%"></i></div></td>' +
+        '<td class="r price">' + (j.de && j.de.price ? j.de.price : '<span class="soft">—</span>') + '</td>' +
+        '<td><div class="ag">' + ag + '</div></td><td>' + kit + '</td><td class="r">' + de + '</td></tr>';
+    }).join('');
+    document.getElementById('count').textContent = 'Showing ' + js.length + ' of ' + M.jobs.length + ' jobs';
+
+    var all = M.jobs.filter(function (j) { return !f.market || j.market === f.market; });
+    var card = function (t, ic, v, s, w) { return '<div class="card stat"><div class="top-l">' + t + I(ic) + '</div><div class="v">' + v + '<small>' + s + '</small></div><div class="bar"><i style="width:' + w + '%"></i></div></div>'; };
+    var c = function (t) { return all.filter(function (j) { return is(j, t); }).length; };
+    var tot = Math.max(1, all.length);
+    document.getElementById('stats').innerHTML = card('Listings', 'file', c('listing'), 'sales and rentals', c('listing') / tot * 100) +
+      card('Pitches', 'pitch', c('pitch'), 'not won yet', c('pitch') / tot * 100) +
+      card('Developments', 'plan', c('development'), 'overview only', c('development') / tot * 100) +
+      card('Not on DE', 'link', all.filter(function (j) { return !j.de && j.type !== 'development'; }).length, 'pre-listing or unmatched', all.filter(function (j) { return !j.de && j.type !== 'development'; }).length / tot * 100);
+
+    var li = function (j, t) { return '<li><a href="job.html#' + j.id + '">' + esc(j.name) + '</a><span>' + t + '</span></li>'; };
+    document.getElementById('n1').innerHTML = all.filter(function (j) { return j.stale; }).map(function (j) { return li(j, j.stale + ' stale'); }).join('') || '<li>None</li>';
+    document.getElementById('n2').innerHTML = all.filter(function (j) { return j.folderMissing || (j.note && /not matched/.test(j.note)); }).map(function (j) { return li(j, j.folderMissing ? 'folder' : 'DE match'); }).join('') || '<li>None</li>';
+    document.getElementById('n3').innerHTML = all.filter(function (j) { return j.type === 'pitch'; }).map(function (j) { return li(j, 'since ' + V.fmt(j.status[0].from)); }).join('') || '<li>None</li>';
+  }
+  document.getElementById('typ').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { f.type = b.dataset.v; render(); } });
+  document.getElementById('mkt').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); f.market = b.dataset.v; render(); });
+  render();
+})();
+</script>
+</body>
+</html>

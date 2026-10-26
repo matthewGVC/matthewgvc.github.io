@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overview · GVC Workspace</title>
+<link rel="stylesheet" href="../../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../../assets/css/base.css">
+<link rel="stylesheet" href="app.css">
+<style>
+.recent{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;padding:14px}
+.recent .when{height:84px;border-radius:6px;background:var(--ink);color:var(--bone);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.recent .when b{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1}
+.recent .when span{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--sky)}
+.recent .when.c{background:var(--cyan);color:var(--ink)}
+.recent .when.c span{color:var(--ink)}
+.recent .when.p{background:var(--paper-2);color:var(--ink)}
+.recent .when.p span{color:var(--ink-soft)}
+.recent h3{font-size:19px;margin:3px 0}
+.recent:hover{border-color:var(--ink)}
+
+.pipe{display:flex;flex-direction:column;gap:12px}
+.pj{background:color-mix(in srgb,var(--paper-2) 45%,var(--paper));border-radius:8px;padding:16px 18px;display:block}
+.pj:hover{outline:1px solid var(--ink)}
+.pj-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.pj-h h3{font-size:19px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pj-h .sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
+.pj-h .r{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.pj-h .r.warn{color:var(--danger)}
+.prog{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:14px 0 6px}
+.track{height:6px;border-radius:3px;background:var(--paper-2);display:flex;gap:2px;overflow:hidden}
+.track i{flex:1;background:var(--rule)}
+.track i.d{background:var(--ink)}
+.track i.c{background:var(--cyan)}
+
+/* timeline view */
+.tl{position:relative}
+.tl-row{display:grid;grid-template-columns:180px 1fr;align-items:center;min-height:40px;border-bottom:1px solid var(--rule)}
+.tl-row .n{font-size:13.5px;font-weight:600;padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-row .n:hover{text-decoration:underline}
+.tl-t{position:relative;height:40px}
+.tl-ax{display:grid;grid-template-columns:180px 1fr;border-bottom:1px solid var(--ink)}
+.tl-ax .m{position:absolute;top:0;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;color:var(--ink-soft);padding:6px 0 6px 5px;border-left:1px solid var(--rule);height:100%}
+.tl-g{position:absolute;top:0;bottom:0;border-left:1px solid var(--rule)}
+.tl-today{position:absolute;top:0;bottom:0;border-left:2px solid var(--sky);z-index:2}
+.bar{position:absolute;top:13px;height:14px;border-radius:3px}
+.bar.pitch{border:1px dashed var(--ink-soft);background:var(--paper)}
+.bar.won{background:var(--bone)}
+.bar.live{background:var(--ink)}
+.bar.contract{background:var(--cyan)}
+.bar.sold{background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)}
+.bar.ms{background:var(--bone)}
+.tk{position:absolute;top:30px;width:2px;height:6px;background:var(--ink)}
+.heat{position:absolute;left:0;right:0;bottom:2px;height:3px;display:flex;gap:1px}
+.heat i{flex:1}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend b{display:inline-block;width:18px;height:9px;border-radius:2px}
+
+.dep{display:flex;gap:12px;background:color-mix(in srgb,var(--paper-2) 45%,var(--paper));border-radius:6px;padding:12px;margin-top:8px;font-size:14px}
+.dep small{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:3px}
+.health{display:flex;gap:12px;align-items:center}
+.health .ic{width:34px;height:34px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center}
+.chart{margin-top:6px}
+.chart svg{width:100%;height:120px;display:block}
+@media (max-width:720px){ .tl-row,.tl-ax{grid-template-columns:110px 1fr} .tl-wrap{overflow-x:auto} .tl{min-width:640px} .recent{grid-template-columns:72px 1fr} .recent .when{height:72px} }
+</style>
+</head>
+<body data-nav="overview">
+<main class="wrap">
+  <div class="page-h">
+    <div>
+      <div class="eyebrow">Monday 19 October 2026</div>
+      <h1>Overview</h1>
+      <p id="lead"></p>
+    </div>
+    <div class="seg" role="group" aria-label="Market" id="mkt">
+      <button aria-pressed="true" data-v="">All</button><button aria-pressed="false" data-v="NYC">NYC</button><button aria-pressed="false" data-v="NJ">NJ</button><button aria-pressed="false" data-v="FL">FL</button>
+    </div>
+  </div>
+
+  <div class="grid4" id="stats"></div>
+  <div class="grid3" id="recent" style="margin-top:20px"></div>
+
+  <div class="split" style="margin-top:24px">
+    <section class="card" aria-labelledby="pipe-h">
+      <div class="card-h">
+        <div><h2 id="pipe-h">Jobs</h2><p>Every listing, pitch and development, newest activity first</p></div>
+        <div class="seg" role="group" aria-label="View" id="view"><button aria-pressed="true" data-v="list">List</button><button aria-pressed="false" data-v="time">Timeline</button></div>
+      </div>
+      <div class="seg" role="group" aria-label="Type" id="typ" style="margin-bottom:14px">
+        <button aria-pressed="true" data-v="">All</button><button aria-pressed="false" data-v="listing">Listings</button><button aria-pressed="false" data-v="pitch">Pitches</button><button aria-pressed="false" data-v="development">Developments</button>
+      </div>
+      <div id="jobs"></div>
+      <div class="chart">
+        <div class="card-h" style="margin:22px 0 4px"><div><h2 style="font-size:18px">Folder activity</h2><p>Files touched per week, all jobs</p></div><span class="mono soft" style="font-size:11px">13 Apr – 19 Oct</span></div>
+        <div id="chart"></div>
+      </div>
+    </section>
+
+    <aside class="stack">
+      <section class="card" id="tasks" aria-labelledby="tasks-h">
+        <div class="card-h"><div><h2 id="tasks-h">Tasks</h2><p>Flagged by the workspace, then yours</p></div><span class="chip made" id="tcount"></span></div>
+        <div id="tlist"></div>
+        <button class="b ghost" style="width:100%;justify-content:center;margin-top:12px" type="button">${PLUS} Add task</button>
+      </section>
+      <section class="card" aria-labelledby="wait-h">
+        <div class="card-h"><div><h2 id="wait-h">Waiting on others</h2><p>Needed before a piece can be finished</p></div></div>
+        <div class="dep"><span id="i1"></span><div>Marli's referral partners, NJ buyer package<small>Marli Silver · page prints a "List needed" stamp</small></div></div>
+        <div class="dep"><span id="i2"></span><div>Real headshot for Karl Brisard<small>Only a 225px temporary photo</small></div></div>
+        <div class="dep"><span id="i3"></span><div>Testimonials for Katie, Nicole, Gary, Ayuen<small>None exist yet</small></div></div>
+      </section>
+      <section class="card health">
+        <span class="ic" id="i4"></span>
+        <div style="flex:1"><div style="font-weight:600">DE sync ran</div><div class="mono soft" style="font-size:11px">Mon 19 Oct, 6:02 · statuses and prices updated</div></div>
+        <button class="b sm" type="button">Refresh</button>
+      </section>
+    </aside>
+  </div>
+</main>
+<script src="../data.js"></script>
+<script src="jobs.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  var V = V2, M = V.M, I = ICON, f = { market: '', type: '', view: 'list' };
+  document.querySelectorAll('button').forEach(function (b) { b.innerHTML = b.innerHTML.replace('${PLUS}', I('plus')); });
+  document.getElementById('i1').innerHTML = I('people'); document.getElementById('i2').innerHTML = I('photo');
+  document.getElementById('i3').innerHTML = I('file'); document.getElementById('i4').innerHTML = I('sync');
+
+  var D = function (s) { return new Date(s + 'T12:00:00'); };
+  var R0 = D(M.range.from), R1 = D(M.range.to), span = R1 - R0;
+  var pct = function (s) { return Math.max(0, Math.min(100, (D(s) - R0) / span * 100)); };
+  var weeks = []; for (var d = new Date(R0); d < R1; d = new Date(d.getTime() + 6048e5)) weeks.push(d.toISOString().slice(0, 10));
+  var wcount = function (j, w) { var a = j.activity || {}, s = D(w), e = new Date(s.getTime() + 6048e5), n = 0; for (var k in a) { var x = D(k); if (x >= s && x < e) n += a[k]; } return n; };
+
+  function pass(j) { return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')); }
+
+  function stats() {
+    var js = M.jobs.filter(pass), n = function (st) { return js.filter(function (j) { return j.stage === st; }).length; };
+    var stale = js.reduce(function (a, j) { return a + (j.stale || 0); }, 0);
+    var staleJobs = js.filter(function (j) { return j.stale; }).length;
+    var fix = js.filter(function (j) { return j.folderMissing || (j.note && /not matched/.test(j.note)); }).length;
+    var card = function (t, ic, v, small, w, c) {
+      return '<div class="card stat"><div class="top-l">' + t + I(ic) + '</div><div class="v">' + v + '<small>' + small + '</small></div><div class="bar"><i class="' + (c || '') + '" style="width:' + w + '%"></i></div></div>';
+    };
+    document.getElementById('stats').innerHTML =
+      card('Live', 'arrow', n('Live'), 'on DE now', js.length ? n('Live') / js.length * 100 : 0) +
+      card('In contract', 'file', n('In contract'), 'contract signed on DE', js.length ? n('In contract') / js.length * 100 : 0, 'c') +
+      card('Stale pieces', 'alert', stale, 'across ' + staleJobs + ' job' + (staleJobs === 1 ? '' : 's'), staleJobs / Math.max(1, js.length) * 100) +
+      card('To link', 'link', fix, 'folder or DE match missing', fix / Math.max(1, js.length) * 100);
+    document.getElementById('lead').textContent = js.length + ' jobs across ' + (f.market || 'NYC, NJ and FL') + '. Statuses from DE, files from Drive.';
+  }
+
+  function recent() {
+    var items = [
+      { id: 'e71-176-phd', d: '2026-10-16', t: 'Just Sold postcard saved', s: 'Sold on DE at $2,100,000', c: '' },
+      { id: 'park-1050-13c', d: '2026-10-12', t: 'Contract signed on DE', s: 'Showsheet and unbranded floorplan stale', c: 'c' },
+      { id: 'bradley-619', d: '2026-10-07', t: 'Floorplans and showing assets', s: 'Development · NJ', c: 'p' }
+    ].filter(function (x) { var j = M.jobs.find(function (y) { return y.id === x.id; }); return pass(j); });
+    document.getElementById('recent').innerHTML = items.map(function (x) {
+      var j = M.jobs.find(function (y) { return y.id === x.id; }), p = V.fmt(x.d).split(' ');
+      return '<a class="card recent" href="job.html#' + j.id + '"><div class="when ' + x.c + '"><b>' + p[0] + '</b><span>' + p[1] + '</span></div><div><div class="eyebrow">' + j.market + ' · ' + j.stage + '</div><h3>' + esc(j.name) + '</h3><div class="soft" style="font-size:13.5px">' + esc(x.t) + '. ' + esc(x.s) + '</div></div></a>';
+    }).join('');
+  }
+
+  function list(js) {
+    return '<div class="pipe">' + js.map(function (j) {
+      var right = j.flags.length ? '<span class="r warn">' + I('alert') + esc(j.flags.map(function (x) { return x.t; }).join(' · ')) + '</span>'
+        : '<span class="r">' + I('clock') + (j.last ? 'Last ' + V.fmt(j.last) : 'No dates') + '</span>';
+      var meta = [j.market];
+      if (j.type === 'rental') meta.push('Rental'); if (j.type === 'pitch') meta.push('Pitch'); if (j.type === 'development') meta.push('Development');
+      if (j.de && j.de.price) meta.push(j.de.price); if (j.de && j.de.beds) meta.push(j.de.beds + ' bd · ' + j.de.baths + ' ba');
+      if (j.place) meta.push(j.place);
+      var cur = j.stageIdx, segs = j.steps.map(function (s, i) {
+        var done = j.type === 'development' ? i <= cur : (j.done[s] || i < cur);
+        return '<i class="' + (i === cur ? 'c' : done ? 'd' : '') + '" title="' + s + (j.done[s] ? ' · ' + V.fmt(j.done[s]) : '') + '"></i>';
+      }).join('');
+      return '<a class="pj" href="job.html#' + j.id + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + j.stage + '</span></h3><div class="sub">' + esc(meta.join(' · ')) + '</div></div>' + right + '</div>' +
+        '<div class="prog"><span>' + esc(j.next) + '</span><span>' + (cur + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div></a>';
+    }).join('') + '</div>';
+  }
+
+  function timeline(js) {
+    var months = [], d = new Date(R0.getFullYear(), R0.getMonth(), 1);
+    while (d < R1) { var s = new Date(Math.max(d, R0)); months.push({ l: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()], x: (s - R0) / span * 100 }); d = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+    var grid = months.map(function (m) { return '<div class="tl-g" style="left:' + m.x + '%"></div>'; }).join('') + '<div class="tl-today" style="left:' + pct(M.today) + '%"></div>';
+    var h = '<div class="tl-wrap"><div class="tl"><div class="tl-ax"><div></div><div class="tl-t" style="height:26px">' + months.map(function (m) { return '<div class="m" style="left:' + m.x + '%">' + m.l.toUpperCase() + '</div>'; }).join('') + '</div></div>';
+    js.forEach(function (j) {
+      var b = '';
+      (j.status || []).forEach(function (s) { var l = pct(s.from), r = s.to ? pct(s.to) : pct(M.today); b += '<div class="bar ' + s.s + '" style="left:' + l + '%;width:' + (r - l) + '%" title="' + s.s + ' from ' + V.fmt(s.from) + '"></div>'; });
+      (j.milestones || []).forEach(function (m) { if (m.from) { var l = pct(m.from), r = pct(m.to); b += '<div class="bar ms" style="left:' + l + '%;width:' + (r - l) + '%" title="' + m.m + '"></div>'; } else b += '<div class="tk" style="left:' + pct(m.d) + '%;top:13px;height:14px;width:3px" title="' + m.m + ', ' + V.fmt(m.d) + '"></div>'; });
+      (j.work || []).forEach(function (w) { b += '<div class="tk" style="left:' + pct(w.d || w.from) + '%" title="' + esc(w.label) + '"></div>'; });
+      b += '<div class="heat">' + weeks.map(function (w) { var n = wcount(j, w); return '<i style="background:' + (n ? 'color-mix(in srgb,var(--ink) ' + Math.round(Math.min(100, 20 + Math.log10(n + 1) * 32)) + '%,var(--paper))' : 'transparent') + '"></i>'; }).join('') + '</div>';
+      h += '<div class="tl-row"><a class="n" href="job.html#' + j.id + '">' + esc(j.name) + '</a><div class="tl-t">' + grid + b + '</div></div>';
+    });
+    h += '</div></div><div class="legend"><span><b style="border:1px dashed var(--ink-soft)"></b>Pitch</span><span><b style="background:var(--bone)"></b>Won / milestone</span><span><b style="background:var(--ink)"></b>Live</span><span><b style="background:var(--cyan)"></b>In contract</span><span><b style="background:repeating-linear-gradient(135deg,var(--ink) 0 3px,var(--ink-soft) 3px 6px)"></b>Sold</span><span>| piece made</span><span>bottom line: files touched per week</span></div>';
+    return h;
+  }
+
+  function jobs() {
+    var js = M.jobs.filter(pass).slice().sort(function (a, b) { return (b.flags.length - a.flags.length) || ((b.last || '') > (a.last || '') ? 1 : -1); });
+    document.getElementById('jobs').innerHTML = f.view === 'list' ? list(js) : timeline(js);
+  }
+
+  function chart() {
+    var js = M.jobs.filter(pass), ws = weeks.filter(function (w) { return w <= M.today; });
+    var v = ws.map(function (w) { return js.reduce(function (a, j) { return a + wcount(j, w); }, 0); });
+    var mx = Math.max.apply(null, v.concat([1])), W = 600, H = 110, bw = W / v.length;
+    var bars = v.map(function (n, i) { var h = n ? Math.max(2, Math.log10(n + 1) / Math.log10(mx + 1) * (H - 14)) : 0; return '<rect x="' + (i * bw + 1) + '" y="' + (H - h) + '" width="' + (bw - 2) + '" height="' + h + '" rx="1.5" fill="' + (i === v.length - 1 ? 'var(--cyan)' : 'var(--ink)') + '"><title>Week of ' + V.fmt(ws[i]) + ': ' + n + ' files</title></rect>'; }).join('');
+    document.getElementById('chart').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Files touched per week">' + bars + '<line x1="0" x2="' + W + '" y1="' + H + '" y2="' + H + '" stroke="var(--rule)"/></svg>';
+  }
+
+  function tasks() {
+    var flags = M.jobs.filter(function (j) { return j.flags.length || j.stage === 'Sold' || j.type === 'pitch'; }).map(function (j) {
+      var t = j.stale ? j.stale + ' piece' + (j.stale > 1 ? 's' : '') + ' stale' : j.folderMissing ? 'Link the Drive folder' : j.stage === 'Sold' ? 'Sold on DE. Archive the job' : j.type === 'pitch' ? 'Pitch still open. Won or lost?' : 'Match to a DE listing';
+      return '<div class="todo-i"><span class="dm"></span><div><a href="job.html#' + j.id + '">' + esc(j.name) + '</a>: ' + t + '<div class="meta"><span class="chip">' + j.market + '</span>Flagged by the workspace</div></div></div>';
+    });
+    var mine = M.todo.filter(function (t) { return t.src === 'Matt'; }).map(function (t) { return '<div class="todo-i"><span class="bx"></span><div>' + esc(t.t) + '<div class="meta"><span class="chip">Matt</span></div></div></div>'; });
+    document.getElementById('tlist').innerHTML = flags.join('') + mine.join('');
+    document.getElementById('tcount').textContent = (flags.length + mine.length) + ' open';
+  }
+
+  function seg(id, key) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      f[key] = b.dataset.v; render();
+    });
+  }
+  function render() { stats(); recent(); jobs(); chart(); }
+  seg('mkt', 'market'); seg('typ', 'type'); seg('view', 'view');
+  render(); tasks();
+})();
+</script>
+</body>
+</html>

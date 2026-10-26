@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>GVC Workspace</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-surface-variant": "#45464d", "on-tertiary-fixed": "#002114", "primary": "#000000", "primary-fixed": "#dae2fd", "on-secondary": "#ffffff", "tertiary-fixed": "#85f8c4", "on-primary": "#ffffff", "on-background": "#0b1c30", "on-surface": "#0b1c30", "inverse-surface": "#213145", "surface": "#f8f9ff", "on-tertiary-container": "#069669", "surface-variant": "#d3e4fe", "surface-bright": "#f8f9ff", "surface-container-low": "#eff4ff", "inverse-on-surface": "#eaf1ff", "error-container": "#ffdad6", "on-error-container": "#93000a", "surface-container-highest": "#d3e4fe", "primary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#3f465c", "surface-container-high": "#dce9ff", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#b4c5ff", "error": "#ba1a1a", "on-secondary-fixed": "#00174b", "secondary-container": "#316bf3", "tertiary-container": "#002114", "surface-tint": "#565e74", "surface-container": "#e5eeff", "on-primary-fixed": "#131b2e", "outline": "#76777d", "on-primary-container": "#7c839b", "tertiary": "#000000", "on-tertiary-fixed-variant": "#005137", "on-error": "#ffffff", "background": "#f8f9ff", "on-secondary-fixed-variant": "#003ea8", "tertiary-fixed-dim": "#68dba9", "secondary": "#0051d5", "inverse-primary": "#bec6e0", "surface-dim": "#cbdbf5", "on-secondary-container": "#fefcff", "on-tertiary": "#ffffff", "secondary-fixed": "#dbe1ff", "outline-variant": "#c6c6cd", "primary-container": "#131b2e" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-tablet": "1.5rem", "space-sm": "0.5rem", "margin-desktop": "2rem", "space-md": "0.75rem", "gutter-desktop": "1.5rem", "space-xl": "2rem", "margin": "1rem", "space-lg": "1.25rem", "gutter": "1rem", "space-xs": "0.25rem" }, "fontFamily": { "headline-lg": ["Inter"], "headline-xl-mobile": ["Inter"], "label-sm": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "body-sm": ["Inter"], "data-mono-sm": ["JetBrains Mono"], "data-mono-lg": ["JetBrains Mono"], "data-mono-md": ["JetBrains Mono"], "headline-sm": ["Inter"], "headline-xl": ["Inter"], "body-lg": ["Inter"] }, "fontSize": { "headline-lg": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-xl-mobile": ["1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "-0.006em", "fontWeight": "400" }], "label-md": ["0.8125rem", { "lineHeight": "1.125rem", "letterSpacing": "-0.005em", "fontWeight": "500" }], "body-sm": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0", "fontWeight": "400" }], "data-mono-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0", "fontWeight": "400" }], "data-mono-lg": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.02em", "fontWeight": "500" }], "data-mono-md": ["0.8125rem", { "lineHeight": "1.125rem", "letterSpacing": "-0.01em", "fontWeight": "400" }], "headline-sm": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-xl": ["2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" }], "body-lg": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.011em", "fontWeight": "400" }] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen flex flex-col antialiased selection:bg-surface-variant selection:text-on-surface"><header class="fixed top-0 inset-x-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/30"><div class="h-14 w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-sm select-none cursor-pointer"><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-surface">GVC Workspace</span><span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">v2.4</span></div><nav class="hidden md:flex items-center gap-1" data-active-classes="text-on-surface font-semibold bg-surface-container-low"><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="overview" href="#">Overview</a><a aria-current="page" class="px-space-md py-1.5 rounded-lg transition-colors text-on-surface font-semibold bg-surface-container-low" data-path="jobs" href="#">Jobs</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="team" href="#">Team</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="reference" href="#">Reference</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="tasks" href="#">Tasks</a></nav></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-low border border-outline-variant/30"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Drive Connected</span></div><button aria-label="Sync status" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">sync</span></button><button aria-label="Search workspace" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">search</span></button><div class="h-4 w-px bg-outline-variant/40 mx-space-xs"></div><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center select-none ring-1 ring-outline-variant/20 shadow-sm"><span class="font-label-sm text-label-sm text-on-primary font-medium tracking-tight">MB</span></div></div></div></div></header><main class="flex-1 w-full pt-14 bg-surface"><div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl"><div class="flex flex-col w-full">
+<!-- BREADCRUMB & HEADER STAGE -->
+<div class="flex flex-col gap-space-md mb-space-xl">
+<!-- Quiet Breadcrumb -->
+<div class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant">
+<span class="hover:text-on-surface cursor-pointer transition-colors">Projects</span>
+<span class="text-outline-variant font-data-mono-sm">/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">Active Engagements</span>
+<span class="text-outline-variant font-data-mono-sm">/</span>
+<span class="text-on-surface font-label-md">Project 01 — Unit 14B</span>
+</div>
+<!-- Title Hero & Action Strip -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-md flex-wrap">
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Project 01 — Unit 14B</h1>
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-low text-secondary font-data-mono-sm text-data-mono-sm font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+            In Progress
+          </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-space-xs">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">ID: #PRJ-88219</span>
+<span class="text-outline-variant">·</span>
+<span>Metro Area</span>
+<span class="text-outline-variant">·</span>
+<span>Residential Sector</span>
+</p>
+</div>
+<!-- Action Button Group -->
+<div class="flex items-center gap-space-sm">
+<button class="h-9 px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-all flex items-center gap-space-xs" type="button">
+<span class="material-symbols-outlined text-[16px]">folder_open</span>
+<span>Open Cloud Folder</span>
+</button>
+<button class="h-9 px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-all flex items-center gap-space-xs" id="copyLinkBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">link</span>
+<span id="copyLinkText">Copy Link</span>
+</button>
+<button class="h-9 px-space-lg rounded-lg bg-primary hover:bg-inverse-surface text-on-primary font-label-md text-label-md shadow-sm transition-all flex items-center gap-space-xs" type="button">
+<span class="material-symbols-outlined text-[16px]">update</span>
+<span>Update Collateral</span>
+</button>
+</div>
+</div>
+</div>
+<!-- KEY INDICATORS RIBBON -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-space-md p-space-md rounded-xl bg-surface-container-lowest shadow-sm mb-space-xl">
+<div class="flex flex-col gap-1 p-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Target Value</span>
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-medium">$3,400,000</span>
+<span class="font-body-sm text-body-sm text-on-tertiary-container flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">trending_up</span> Baseline Confirmed
+      </span>
+</div>
+<div class="flex flex-col gap-1 p-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Layout Specs</span>
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-medium">3 Beds · 3.5 Baths</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Dual Balconies</span>
+</div>
+<div class="flex flex-col gap-1 p-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Area</span>
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-medium">2,450 sq ft</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Interior Conditioned</span>
+</div>
+<div class="flex flex-col gap-1 p-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Current Milestone</span>
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-medium">Review Phase</span>
+<span class="font-body-sm text-body-sm text-secondary font-medium">Stage 4 of 6</span>
+</div>
+<div class="col-span-2 md:col-span-1 flex flex-col gap-1 p-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Asset Health</span>
+<span class="font-data-mono-lg text-data-mono-lg text-on-surface font-medium">All Synced</span>
+<span class="font-body-sm text-body-sm text-on-tertiary-container flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span> Cloud Verified
+      </span>
+</div>
+</div>
+<!-- MINIMALIST STEPPER / PROGRESS RIBBON -->
+<div class="w-full bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-xl">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Lifecycle Tracking</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">66% Completed</span>
+</div>
+<div class="relative py-space-sm">
+<!-- Background Line -->
+<div class="absolute top-1/2 left-0 right-0 h-0.5 bg-surface-container -translate-y-1/2 z-0"></div>
+<!-- Progress Bar Active Filler (approx 66%) -->
+<div class="absolute top-1/2 left-0 w-3/5 h-0.5 bg-secondary -translate-y-1/2 z-0"></div>
+<!-- Steps Nodes -->
+<div class="relative z-10 flex justify-between items-center w-full">
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-data-mono-sm text-data-mono-sm shadow-sm transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined text-[13px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">1. Intake</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-data-mono-sm text-data-mono-sm shadow-sm transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined text-[13px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">2. Planning</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-data-mono-sm text-data-mono-sm shadow-sm transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined text-[13px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">3. Collateral</span>
+</div>
+<!-- Step 4 (Active) -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-6 h-6 rounded-full bg-surface-container-lowest text-secondary ring-2 ring-secondary flex items-center justify-center font-data-mono-sm text-data-mono-sm font-semibold shadow-sm transition-transform group-hover:scale-110">
+            4
+          </div>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">4. Review</span>
+</div>
+<!-- Step 5 (Upcoming) -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-6 h-6 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-data-mono-sm text-data-mono-sm transition-transform group-hover:scale-110">
+            5
+          </div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">5. Approval</span>
+</div>
+<!-- Step 6 (Upcoming) -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-6 h-6 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-data-mono-sm text-data-mono-sm transition-transform group-hover:scale-110">
+            6
+          </div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">6. Delivery</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 2-COLUMN CONTENT LAYOUT (65/35 RATIO) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- LEFT COLUMN: Deliverable Assets & Media (65%) -->
+<div class="lg:col-span-8 flex flex-col gap-space-xl">
+<!-- Section Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Deliverable Collateral</h2>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">4 Items Active</span>
+</div>
+<button class="font-label-md text-label-md text-secondary hover:text-on-secondary-fixed-variant transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Upload File</span>
+</button>
+</div>
+<!-- Deliverable Cards List -->
+<div class="flex flex-col gap-space-sm">
+<!-- Deliverable Item 1 -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Master Presentation Kit</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">PDF · 38 MB</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-low text-on-tertiary-container font-data-mono-sm text-data-mono-sm font-medium">Current</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Updated 2 days ago by Lead Analyst</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-end sm:self-center shrink-0">
+<button class="h-8 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors" type="button">Preview</button>
+<button class="h-8 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>Download</span>
+</button>
+</div>
+</div>
+<!-- Deliverable Item 2 -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface shrink-0">
+<span class="material-symbols-outlined text-[20px]">architecture</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Vector Schematic &amp; Plan</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">SVG/PDF · 12 MB</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-low text-secondary font-data-mono-sm text-data-mono-sm font-medium">Revision v2</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Updated Oct 14 · Scale calibrated</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-end sm:self-center shrink-0">
+<button class="h-8 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors" type="button">Preview</button>
+<button class="h-8 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">ios_share</span>
+<span>Export</span>
+</button>
+</div>
+</div>
+<!-- Deliverable Item 3 -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface shrink-0">
+<span class="material-symbols-outlined text-[20px]">slideshow</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Digital Display Carousel</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">16:9 Assets · 64 MB</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-low text-on-tertiary-container font-data-mono-sm text-data-mono-sm font-medium">Current</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Updated Oct 12 · 9 Key Frames</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-end sm:self-center shrink-0">
+<button class="h-8 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span>View Slides</span>
+</button>
+</div>
+</div>
+<!-- Deliverable Item 4 -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-outline shrink-0">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Summary Print Flyer</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">Letter Format</span>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container text-on-surface-variant font-data-mono-sm text-data-mono-sm font-medium">Draft Pending</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Awaiting copy review from legal</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-end sm:self-center shrink-0">
+<button class="h-8 px-space-sm rounded-lg bg-primary text-on-primary hover:bg-inverse-surface font-label-sm text-label-sm transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">auto_fix_high</span>
+<span>Generate Draft</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Media Preview Cards Bento -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Spatial &amp; Environmental Previews</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Resolution: 300 DPI</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Architectural Blueprint Visualizer -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm group">
+<div class="relative w-full h-52 rounded-lg bg-surface-container overflow-hidden flex items-center justify-center">
+<!-- Inline Vector Blueprint Schema -->
+<svg class="w-full h-full text-secondary opacity-60 p-4 transition-transform group-hover:scale-105 duration-300" fill="none" stroke="currentColor" stroke-width="1.2" viewbox="0 0 320 200">
+<rect height="160" stroke-dasharray="3 3" width="280" x="20" y="20"></rect>
+<rect height="120" width="100" x="40" y="40"></rect>
+<rect height="70" width="120" x="160" y="40"></rect>
+<rect height="40" width="60" x="160" y="120"></rect>
+<line x1="140" x2="160" y1="80" y2="80"></line>
+<line x1="80" x2="80" y1="40" y2="20"></line>
+<circle cx="90" cy="100" r="16" stroke-dasharray="2 2"></circle>
+<text fill="currentColor" font-family="JetBrains Mono" font-size="8" stroke="none" x="50" y="70">PRIMARY SUITE</text>
+<text fill="currentColor" font-family="JetBrains Mono" font-size="8" stroke="none" x="170" y="70">LIVING GALLERY</text>
+<text fill="currentColor" font-family="JetBrains Mono" font-size="8" stroke="none" x="170" y="145">TERRACE</text>
+</svg>
+<div class="absolute bottom-2 left-2 px-space-xs py-0.5 rounded bg-surface-container-lowest/80 backdrop-blur-sm font-data-mono-sm text-data-mono-sm text-on-surface">
+                CAD-REF-V2.0
+              </div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Primary Architectural Reference (v2.0)</span>
+<span class="font-data-mono-sm">Scale 1/4" = 1'</span>
+</div>
+</div>
+<!-- Hero Render Preview -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm group">
+<div class="relative w-full h-52 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Modern architectural living room interior with floor-to-ceiling glass windows overlooking a soft urban skyline at dawn. Minimalist warm wood accents, pure white walls, Scandinavian furniture, neutral color grading, diffuse morning sunlight casting long gentle shadows, architectural visualization rendering, 8k resolution, elegant, serene." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMiUPgglZA4FbMa_tKQ1G4uYWVtqkjK0w0HnVc8eJXF4KrSLqUghHiXGTItQxSbR44d3tzd6H0QFB7M8On7BsZLKGksDq8ikTkS2ZqAu-1qgMYW4X4LEg2y5d5-sExmYq3727CdQ2vMD3CtODJ-pjCCRPjYmxskHA0hqcIIYWgFvtYKg4YFpSExr-DhPsVEQ7F0F76Lv33V2J-p3PAavAVSdJcV7BjeuYRFADzIg5YdKFlF6d7MpERrw"/>
+<div class="absolute bottom-2 left-2 px-space-xs py-0.5 rounded bg-surface-container-lowest/80 backdrop-blur-sm font-data-mono-sm text-data-mono-sm text-on-surface">
+                DCI-P3 · 4096×2304
+              </div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Hero Interior Vignette · Render 04</span>
+<span class="font-data-mono-sm">Color Grade: Rec.709</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Audit Log & Repository Integrity (35%) -->
+<div class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Card 1: Repository Health -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-on-tertiary-container">verified</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Repository Health</h3>
+</div>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container text-on-surface-variant font-data-mono-sm text-data-mono-sm">99.8%</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Documentation Root</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Synced</span>
+</div>
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">High-Res Media</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">18 Files</span>
+</div>
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Vector Schematics</span>
+</div>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Verified</span>
+</div>
+</div>
+<!-- Inline Sparkline / Sync metric -->
+<div class="pt-space-xs flex items-center justify-between border-t-0 text-on-surface-variant font-body-sm text-body-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+<span>Local mirror active</span>
+</div>
+<button class="text-secondary font-label-sm text-label-sm hover:underline" type="button">Run Self-Check</button>
+</div>
+</div>
+<!-- Card 2: Activity & Audit Log -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Audit Trail</h3>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors">history</span>
+</div>
+<div class="relative pl-4 space-y-4">
+<!-- Timeline line -->
+<div class="absolute left-1.5 top-1.5 bottom-2 w-0.5 bg-surface-container"></div>
+<!-- Timeline item 1 -->
+<div class="relative flex flex-col gap-0.5">
+<div class="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full bg-secondary"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Today, 10:15 AM</span>
+<span class="font-data-mono-sm text-data-mono-sm text-outline">v2.0</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Design revision v2.0 published by Lead Designer</p>
+</div>
+<!-- Timeline item 2 -->
+<div class="relative flex flex-col gap-0.5">
+<div class="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full bg-outline-variant"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Yesterday, 3:30 PM</span>
+<span class="font-data-mono-sm text-data-mono-sm text-outline">INFO</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Asset specifications and layout boundary updated</p>
+</div>
+<!-- Timeline item 3 -->
+<div class="relative flex flex-col gap-0.5">
+<div class="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full bg-outline-variant"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Oct 12, 11:00 AM</span>
+<span class="font-data-mono-sm text-data-mono-sm text-outline">INIT</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Project initialized from Executive Residential Template</p>
+</div>
+</div>
+<button class="w-full py-1.5 text-center text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm rounded-lg bg-surface-container-low transition-colors" type="button">
+          View Full Event History
+        </button>
+</div>
+<!-- Card 3: Guideline Notes -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-secondary font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span>Delivery Standard</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          All digital collateral requires standard 16:9 ratio and high-res vector assets before final client handoff. Ensure compliance with typography license parameters.
+        </p>
+<div class="mt-space-xs flex items-center justify-between text-on-surface-variant font-data-mono-sm text-data-mono-sm">
+<span>SPEC-REV-4</span>
+<span class="text-secondary cursor-pointer hover:underline">Guidelines PDF</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple copy link interaction
+  const copyBtn = document.getElementById('copyLinkBtn');
+  const copyText = document.getElementById('copyLinkText');
+  
+  if (copyBtn && copyText) {
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(window.location.href).catch(() => {});
+      const original = copyText.textContent;
+      copyText.textContent = 'Copied!';
+      setTimeout(() => {
+        copyText.textContent = original;
+      }, 1800);
+    });
+  }
+</script></div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/30 py-space-lg mt-auto"><div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="w-2 h-2 rounded-full bg-on-tertiary-container"></span><span>Operational Systems Healthy</span></div><div>© 2025 GVC Executive Workspace. All rights reserved.</div></div></footer></body></html>

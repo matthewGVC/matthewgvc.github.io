@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1050 Park 13C · GVC Workspace</title>
+<link rel="stylesheet" href="../../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../../assets/css/base.css">
+<link rel="stylesheet" href="app.css">
+<style>
+.jh{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin:10px 0 26px}
+.jh h1{font-size:44px;line-height:1.05;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.jh .meta{margin-top:8px;font-size:14.5px;color:var(--ink-soft);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.jh .acts{display:flex;gap:8px;flex-wrap:wrap}
+.notice{background:var(--paper);border:1px dashed var(--ink-soft);border-radius:6px;padding:8px 12px;font-size:13px;margin-top:12px}
+.facts5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px}
+.facts5 .v{font-family:var(--mono);font-size:22px;margin-top:8px;display:flex;align-items:center;gap:8px}
+.facts5 .s{font-size:13px;color:var(--ink-soft);margin-top:4px}
+.facts5 .s.w{color:var(--danger)}
+.kit{display:flex;flex-direction:column;gap:10px}
+.kr{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px}
+.kr .ic{width:44px;height:44px;border-radius:6px;background:var(--paper-2);display:flex;align-items:center;justify-content:center}
+.kr .ic svg{width:20px;height:20px}
+.kr.stale{border-color:var(--danger)}
+.kr.stale .ic{background:var(--ink);color:var(--bone)}
+.kr.none{background:transparent;border-style:dashed}
+.kr .t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600;font-size:15px}
+.kr .d{font-size:13px;color:var(--ink-soft);margin-top:3px}
+.kr .a{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:30px 0 12px}
+.sec-h h2{font-size:24px;display:flex;align-items:center;gap:10px}
+.fpm{display:grid;grid-template-columns:120px repeat(3,minmax(0,1fr));gap:10px;align-items:center}
+.fpm .h{font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+.fpm .ver{font-family:var(--serif);font-size:17px}
+.fpm .ver small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.th{aspect-ratio:11.25/8.75;border-radius:6px;background:var(--paper-2);position:relative;overflow:hidden;color:var(--ink)}
+.th.brand::before{content:"";position:absolute;left:0;right:0;top:0;height:15%;background:var(--ink)}
+.th svg{position:absolute;left:18%;top:24%;width:64%;height:64%}
+.th .tg{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10px;background:var(--paper);border-radius:3px;padding:1px 5px}
+.th .st{position:absolute;right:6px;top:20%;font-family:var(--mono);font-size:10px;border:1px solid var(--danger);color:var(--danger);background:var(--paper);border-radius:999px;padding:1px 7px}
+.th.empty{background:transparent;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--ink-soft)}
+.old{opacity:.6}
+.phs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.phg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.phg div{aspect-ratio:3/2;border-radius:5px;background:var(--paper-2);display:flex;align-items:flex-end;padding:5px;font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+.phg .more{background:transparent;border:1px dashed var(--rule);justify-content:center;align-items:center}
+.stamp{display:inline-block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;border:1px dashed var(--ink);border-radius:3px;padding:2px 7px;margin-top:10px}
+.hl{display:flex;justify-content:space-between;align-items:center;gap:10px;background:color-mix(in srgb,var(--paper-2) 50%,var(--paper));border-radius:6px;padding:10px 12px;margin-top:8px;font-size:14px}
+.hl .x{display:flex;align-items:center;gap:10px}
+.hl .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.hl.warn .x svg{color:var(--danger)}
+.ft{width:100%;border-collapse:collapse}
+.ft th{text-align:left;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft);padding:9px 8px 9px 0;border-bottom:1px solid var(--rule);width:46%}
+.ft td{padding:9px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.ft td.e{color:var(--ink-soft)}
+details.x summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:10px 0 0}
+details.x p{font-size:13px;color:var(--ink-soft);margin-top:6px}
+.log{position:relative;padding-left:18px}
+.log::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--rule)}
+.le{position:relative;padding:0 0 14px}
+.le::before{content:"";position:absolute;left:-17px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--rule)}
+.le.de::before{background:var(--cyan)}
+.le.m::before{background:var(--ink)}
+.le .w{display:flex;justify-content:space-between;font-weight:600;font-size:13.5px}
+.le .w span{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);font-weight:400}
+.le p{font-size:13.5px;color:var(--ink-soft);margin-top:2px}
+.logf{display:flex;gap:6px;margin-bottom:14px}
+.logf .inp{flex:1}
+.agent{display:flex;align-items:center;gap:12px;padding:8px 0}
+.agent .ph{width:40px;height:40px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
+.std{background:var(--ink);color:var(--bone);border-color:var(--ink)}
+.std h2{color:var(--bone)}
+.std p{font-size:13.5px;color:var(--bone);opacity:.9;margin-top:6px}
+.std code{display:block;font-family:var(--mono);font-size:11.5px;color:var(--sky);margin-top:10px;word-break:break-all}
+@media (max-width:1100px){ .facts5{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:720px){
+  .jh h1{font-size:32px}
+  .facts5{grid-template-columns:1fr 1fr}
+  .kr{grid-template-columns:36px 1fr}
+  .kr .ic{width:36px;height:36px}
+  .kr .a{grid-column:1 / -1;justify-content:flex-start}
+  .fpm{grid-template-columns:70px repeat(3,minmax(0,1fr))}
+  .phg{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .steps-wrap{overflow-x:auto}
+  .steps{min-width:720px}
+}
+</style>
+</head>
+<body data-nav="jobs">
+<main class="wrap">
+  <div class="crumb"><a href="jobs.html">Jobs</a><span>/</span><a href="jobs.html">Listings</a><span>/</span><span>1050 Park 13C</span></div>
+  <div id="note"></div>
+  <div class="jh">
+    <div>
+      <h1>1050 Park Avenue, 13C <span class="chip contract" style="font-size:12px">In contract</span></h1>
+      <div class="meta"><span class="chip">NYC</span><span>Carnegie Hill</span><span>·</span><span>Pitched 8 Jun</span><span>·</span><span>Folder opened 8 Sep</span></div>
+    </div>
+    <div class="acts">
+      <button class="b ghost" type="button" data-i="folder">Open folder</button>
+      <button class="b ghost" type="button" data-i="link">Copy link</button>
+      <a class="b ghost" href="https://www.elliman.com/team/gvc-real-estate-team/226645" data-i="arrow">DE listing</a>
+      <button class="b primary" type="button" data-i="sync">Rebuild 2 stale</button>
+    </div>
+  </div>
+
+  <section class="card facts5">
+    <div><div class="lbl">Price</div><div class="v">$4,500,000 <span class="chip de">DE</span></div><div class="s">List price, contract signed</div></div>
+    <div><div class="lbl">Beds · baths</div><div class="v">4 · 4 <span class="chip de">DE</span></div><div class="s">0 half baths · sq ft not on DE</div></div>
+    <div><div class="lbl">Neighborhood</div><div class="v" style="font-family:var(--sans-body);font-size:20px">Carnegie Hill</div><div class="s">Manhattan</div></div>
+    <div><div class="lbl">Stage</div><div class="v">In contract</div><div class="s">8 of 10 · DE, ~12 Oct</div></div>
+    <div><div class="lbl">Kit</div><div class="v">5 / 11</div><div class="s w">2 stale since floorplan v2</div></div>
+  </section>
+
+  <section class="card" style="margin-top:20px">
+    <div class="card-h"><span class="lbl">Stages</span><span class="mono soft" style="font-size:11px">Any stage can be skipped</span></div>
+    <div class="steps-wrap"><div class="steps" id="steps"></div></div>
+  </section>
+
+  <div class="split" style="margin-top:4px">
+    <div>
+      <div class="sec-h"><h2>Kit <span class="chip">11 pieces</span></h2><span class="mono soft" style="font-size:11px">Saved into the job folder</span></div>
+      <div class="kit" id="kit"></div>
+
+      <div class="sec-h"><h2>Floorplans</h2><span class="mono soft" style="font-size:11px">versions × renders · 1 layout</span></div>
+      <section class="card">
+        <div class="fpm" id="fpm"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="b sm" type="button">New version</button><button class="b sm" type="button">Add alternate layout</button><span class="soft" style="font-size:13px;align-self:center">One layout, so CURRENT is not printed.</span></div>
+      </section>
+
+      <div class="sec-h"><h2>Photos</h2><span class="mono soft" style="font-size:11px">read from Photos\ on Drive</span></div>
+      <section class="card">
+        <div class="phs seg" role="group" aria-label="Photo set"><button aria-pressed="false">Raws<span class="n">25</span></button><button aria-pressed="true">Edits<span class="n">25</span></button><button aria-pressed="false">Staged<span class="n">0</span></button><button aria-pressed="false">Print / Web<span class="n">0</span></button></div>
+        <div class="phg" id="phg"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px"><span class="soft" style="font-size:13.5px">No hero picked. Every piece uses the hero and the order set here.</span><button class="b sm" type="button">Pick hero</button></div>
+        <span class="stamp">Mockup: thumbnails load from the folder</span>
+      </section>
+    </div>
+
+    <aside class="stack" style="margin-top:30px">
+      <section class="card">
+        <div class="card-h"><h2>Facts</h2><span class="mono soft" style="font-size:11px">DE wins</span></div>
+        <table class="ft">
+          <tr><th>Address</th><td>1050 Park Ave <span class="chip de">DE</span></td></tr>
+          <tr><th>Unit</th><td>13C <span class="chip de">DE</span></td></tr>
+          <tr><th>Property type</th><td class="e">Not set</td></tr>
+          <tr><th>Maintenance</th><td class="e">From details doc</td></tr>
+          <tr><th>Taxes / month</th><td class="e">From details doc</td></tr>
+          <tr><th>Max financing</th><td class="e">From details doc</td></tr>
+          <tr><th>Flip tax</th><td class="e">From details doc</td></tr>
+          <tr><th>Short description</th><td class="e">None · <a class="link" href="#">Draft with AI</a></td></tr>
+        </table>
+        <details class="x"><summary>Extras · 0 of ~150 filled</summary><p>Layout, exposures, views, ceiling, outdoor space, building, amenities, policies. Printed only when filled.</p></details>
+        <span class="stamp">Mockup: details doc not read</span>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2>Agents</h2><span class="mono soft" style="font-size:11px">picked once</span></div>
+        <div class="agent"><span class="ph" id="ag-i"></span><div style="flex:1"><div style="font-weight:600">No agents yet</div><div class="soft" style="font-size:13px">Every piece prints the agents picked here</div></div><button class="b sm" type="button">Add</button></div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2>Folder health</h2><span class="chip">1 note</span></div>
+        <div class="mono soft" style="font-size:11px;word-break:break-all">GVC - New York\Building Information\1050 Park Ave\13C</div>
+        <div class="hl"><span class="x" data-i="photo">Photos\</span><span class="k">raws 25 · edits 25 · 1 PSD</span></div>
+        <div class="hl"><span class="x" data-i="plan">Floorplan\</span><span class="k">v1 · unbranded · v2</span></div>
+        <div class="hl warn"><span class="x" data-i="alert">ShowSheet\</span><span class="k">2 PDFs at the top</span></div>
+        <div class="hl"><span class="x" data-i="film">Film</span><span class="k">1.4 GB</span></div>
+        <div class="hl"><span class="x" data-i="file">Details doc</span><span class="k">found</span></div>
+        <p class="soft" style="font-size:13px;margin-top:12px">The 14 Sep showsheet belongs in Archive\. Offers\ is deal paperwork and is never read. The pitch lives on the Marketing drive, linked. Nothing is moved.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2>Change log</h2><span class="mono soft" style="font-size:11px">newest first</span></div>
+        <div class="logf"><input class="inp" placeholder="What changed, who asked" aria-label="Log a change"><button class="b primary sm" type="button">Log</button></div>
+        <div class="log">
+          <div class="le de"><div class="w">Contract signed<span>~12 Oct · DE</span></div><p>Stage moved to In contract.</p></div>
+          <div class="le m"><div class="w">Floorplan v2, new GVC style<span>1 Oct · Matt</span></div><p>Marked stale: showsheet, unbranded floorplan.</p></div>
+          <div class="le"><div class="w">Unbranded floorplan saved<span>23 Sep · folder</span></div></div>
+          <div class="le"><div class="w">Second showsheet PDF<span>17 Sep · folder</span></div><p>The 14 Sep PDF is still beside it.</p></div>
+          <div class="le"><div class="w">Floorplan v1<span>15 Sep · folder</span></div></div>
+          <div class="le"><div class="w">Showsheet PDF<span>14 Sep · folder</span></div></div>
+          <div class="le"><div class="w">Folder opened<span>8 Sep · folder</span></div><p>Photos, film, details doc.</p></div>
+          <div class="le"><div class="w">Pitch<span>8 Jun · Marketing drive</span></div></div>
+        </div>
+      </section>
+
+      <section class="card std">
+        <h2 style="font-size:19px">File names</h2>
+        <p>Each piece saves as one PDF in the job folder. The older version moves into that piece's Archive\.</p>
+        <code>Showsheet - 1050 Park Ave 13C - 2026-10-19.pdf</code>
+      </section>
+    </aside>
+  </div>
+</main>
+<script src="../data.js"></script>
+<script src="jobs.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  var I = ICON;
+  document.querySelectorAll('[data-i]').forEach(function (e) { e.innerHTML = I(e.dataset.i) + e.innerHTML; });
+  document.getElementById('ag-i').innerHTML = I('people');
+  var h = location.hash.slice(1);
+  if (h && h !== 'park-1050-13c') {
+    var j = V2.M.jobs.find(function (x) { return x.id === h; });
+    document.getElementById('note').innerHTML = '<div class="notice">Mockup: every job opens this 1050 Park 13C page. You clicked ' + esc(j ? j.name : h) + '.</div>';
+  }
+  var ST = [['Pitch', '8 Jun', 'done'], ['Won', '8 Sep', 'done'], ['Floorplan', '15 Sep', 'done'], ['Showsheet', '14 Sep', 'done'], ['Photos', 'Sep', 'done'],
+    ['Brochure', 'not made', 'skip'], ['Live', '~17 Sep', 'done'], ['In contract', '~12 Oct', 'cur'], ['Sold', '', ''], ['Archived', '', '']];
+  document.getElementById('steps').innerHTML = ST.map(function (s, i) {
+    return '<div class="step ' + s[2] + '"><span class="dot">' + (s[2] === 'done' ? I('check') : i + 1) + '</span><span>' + s[0] + '</span><span class="d">' + s[1] + '</span></div>';
+  }).join('');
+  var K = [
+    ['pitch', 'Seller pitch', 'made', 'PDF · InDesign', 'Made 8 Jun · Marketing drive, Pitches\\', ['Open', 'Copy link']],
+    ['file', 'Showsheet', 'stale', 'PDF · A5 / Letter', 'Built from floorplan v1 on 17 Sep. Floorplan v2 drawn 1 Oct.', ['Rebuild', 'Copy link']],
+    ['plan', 'Floorplan, branded', 'made', 'v2', 'Made 1 Oct', ['Open', 'Copy link']],
+    ['plan', 'Floorplan, unbranded', 'stale', 'v1', 'For listing sites. Built from v1 on 23 Sep.', ['Rebuild', 'Copy link']],
+    ['plan', 'Floorplan, blank sheet', 'none', '', 'For the showsheet. v2 is ready.', ['Make']],
+    ['book', 'Brochure', 'none', '', 'Facts, edits, floorplan v2', ['Make']],
+    ['file', 'Open house flyer', 'none', '', 'No open house dates on the job', ['Make']],
+    ['slides', 'Social carousel', 'none', 'In contract', 'Edits, facts, agents', ['Make']],
+    ['mail', 'Postcard, Just Sold', 'wait', '', 'Waits for DE to show sold and the close price', []],
+    ['sign', 'Signage', 'na', '', 'NJ and FL only', []],
+    ['film', 'Film', 'made', '1.4 GB', 'Tracked only, not made here', ['Copy link']]
+  ];
+  var CH = { made: '<span class="chip made dot">Made</span>', stale: '<span class="chip stale dot">Stale</span>', none: '<span class="chip">Not made</span>', wait: '<span class="chip">Waiting on DE</span>', na: '<span class="chip">Not used</span>' };
+  document.getElementById('kit').innerHTML = K.map(function (k) {
+    var cls = k[2] === 'stale' ? 'stale' : (k[2] === 'none' || k[2] === 'na' || k[2] === 'wait') ? 'none' : '';
+    var acts = k[5].map(function (a) { return '<button class="b sm ' + (a === 'Rebuild' ? 'primary' : a === 'Make' ? '' : 'ghost') + '" type="button">' + (a === 'Copy link' ? I('copy') : '') + a + '</button>'; }).join('');
+    return '<div class="kr ' + cls + '"><span class="ic">' + I(k[0]) + '</span><div><div class="t">' + k[1] + ' ' + CH[k[2]] + (k[3] ? ' <span class="chip">' + k[3] + '</span>' : '') + '</div><div class="d">' + esc(k[4]) + '</div></div><div class="a">' + acts + '</div></div>';
+  }).join('');
+  var plan = '<svg viewBox="0 0 100 70" aria-hidden="true"><path d="M2 2h60v28h36v38H2z M2 34h40 M42 2v66 M62 30v38" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
+  var th = function (c, t, st) { return '<div class="th ' + c + '">' + (c === 'empty' ? t : plan + '<span class="tg">' + t + '</span>' + (st ? '<span class="st">Stale</span>' : '')) + '</div>'; };
+  document.getElementById('fpm').innerHTML = '<span class="h">Version</span><span class="h">Branded</span><span class="h">Unbranded</span><span class="h">Blank sheet</span>' +
+    '<div class="ver">v2 · current<small>1 Oct · new style</small></div>' + th('brand', '1 Oct') + th('empty', 'Rebuild from v2') + th('empty', 'Not made') +
+    '<div class="ver old">v1<small>15 Sep · first draw</small></div><div class="old">' + th('brand', '15 Sep') + '</div><div>' + th('', '23 Sep', 1) + '</div>' + th('empty', '—');
+  var g = ''; for (var i = 1; i <= 11; i++) g += '<div>edit ' + String(i).padStart(2, '0') + '</div>';
+  document.getElementById('phg').innerHTML = g + '<div class="more">+14 more</div>';
+})();
+</script>
+</body>
+</html>

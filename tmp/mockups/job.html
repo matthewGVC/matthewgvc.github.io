@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1050 Park 13C · GVC Workspace (mockup)</title>
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.job{max-width:1440px;margin:0 auto;padding:0 24px 64px;width:100%}
+.crumb{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);padding-top:18px;letter-spacing:0.04em}
+.crumb a:hover{color:var(--ink);text-decoration:underline}
+.jh{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:10px 0 18px;border-bottom:1px solid var(--ink)}
+.jh h1{font-size:clamp(34px,4.2vw,56px);line-height:1;letter-spacing:-0.025em}
+.jh .facts-line{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14.5px}
+.jh .facts-line b{font-weight:600}
+.status-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;background:var(--cyan);color:var(--ink);padding:4px 9px;border-radius:3px}
+.de{display:inline-block;font-family:var(--sans-display);font-weight:900;font-size:8px;letter-spacing:0.12em;color:var(--ink);background:color-mix(in srgb,var(--cyan) 28%,var(--paper));border-radius:2px;padding:1px 4px;margin-left:5px;vertical-align:2px}
+.jh .path{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:10px;word-break:break-all}
+.jh .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+/* mini timeline */
+.strip{position:relative;height:46px;margin:14px 0 4px}
+.strip .ln{position:absolute;top:18px;transform:translateY(-50%)}
+.strip .ln.pitch{border-top:1.5px dashed var(--ink-soft)}
+.strip .ln.won{height:2px;background:var(--ink-soft)}
+.strip .ln.live{height:5px;background:var(--ink)}
+.strip .ln.contract{height:5px;background:var(--cyan)}
+.strip .st{position:absolute;top:18px;width:10px;height:10px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);transform:translate(-50%,-50%)}
+.strip .st.chg{border-radius:1px;transform:translate(-50%,-50%) rotate(45deg);background:var(--ink)}
+.strip .m{position:absolute;bottom:0;font-family:var(--sans-display);font-weight:800;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-soft);border-left:1px solid var(--rule);padding-left:5px;height:46px;display:flex;align-items:flex-end}
+.strip .today{position:absolute;top:0;bottom:0;border-left:2px solid var(--sky)}
+
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:40px;margin-top:22px}
+.blk{margin-bottom:38px}
+.blk-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--rule);padding-bottom:8px;margin-bottom:4px}
+.blk-h h2{font-size:24px}
+.blk-h .aside{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+
+/* kit table */
+.kit{width:100%;border-collapse:collapse}
+.kit th{text-align:left;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-soft);padding:10px 8px 6px 0;border-bottom:1px solid var(--rule)}
+.kit td{padding:11px 8px 11px 0;border-bottom:1px solid var(--rule);vertical-align:top;font-size:14px}
+.kit td.pc{font-family:var(--serif);font-size:16px;white-space:nowrap}
+.kit td.pc small{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-soft);margin-top:2px}
+.kit .fn{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);display:block;margin-top:3px;word-break:break-all}
+.kit td.ac{text-align:right;white-space:nowrap}
+.kit tr.na td{color:var(--ink-soft)}
+.kit tr.na td.pc{color:var(--ink-soft)}
+.st-made,.st-stale,.st-none,.st-track{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap}
+.st-made::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.st-stale{color:var(--bone);background:var(--ink);padding:3px 7px;border-radius:3px}
+.st-none::before{content:"";width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink-soft)}
+.st-none{color:var(--ink-soft)}
+.st-track{color:var(--ink-soft)}
+.icon-btn{background:none;border:1px solid var(--rule);border-radius:999px;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;padding:6px 10px;cursor:pointer;color:var(--ink);margin-left:4px}
+.icon-btn:hover{border-color:var(--ink)}
+.icon-btn:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.kit-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:12px;font-size:13.5px;flex-wrap:wrap}
+
+/* floorplans */
+.fp{display:grid;grid-template-columns:150px repeat(3,minmax(0,190px));border-top:1px solid var(--rule)}
+.fp > div{padding:10px 10px 10px 0;border-bottom:1px solid var(--rule)}
+.fp .hd{font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-soft)}
+.fp .ver{font-family:var(--serif);font-size:16px}
+.fp .ver small{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+.fp .old{opacity:.55}
+.thumb{aspect-ratio:11.25/8.75;background:var(--paper-2);border:1px solid var(--rule);border-radius:3px;position:relative;display:flex;align-items:flex-end;padding:6px}
+.thumb.brand::before{content:"";position:absolute;left:0;right:0;top:0;height:16%;background:var(--ink);border-radius:2px 2px 0 0}
+.thumb.blank::before{content:"";position:absolute;left:0;right:0;top:0;height:16%;border-bottom:1px solid var(--rule)}
+.thumb svg{position:absolute;left:18%;top:26%;width:64%;height:62%}
+.thumb .lbl{position:relative;font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);background:var(--paper);padding:0 3px}
+.thumb.empty{border-style:dashed;justify-content:center;align-items:center;background:transparent}
+.thumb.empty .lbl{background:none}
+.thumb .tagx{position:absolute;right:6px;top:22%;font-family:var(--sans-display);font-weight:800;font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;background:var(--ink);color:var(--bone);padding:2px 5px;border-radius:2px}
+.fp-note{font-size:13.5px;color:var(--ink-soft);margin-top:10px}
+
+/* photos */
+.sets{display:flex;gap:0;border-bottom:1px solid var(--rule);margin-bottom:12px;flex-wrap:wrap}
+.sets button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 14px 8px 0;margin-right:14px;font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer}
+.sets button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--sky)}
+.sets button span{font-family:var(--mono);font-weight:400;letter-spacing:0;margin-left:4px}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.ph div{aspect-ratio:3/2;background:var(--paper-2);border:1px solid var(--rule);border-radius:3px;display:flex;align-items:flex-end;padding:5px;position:relative}
+.ph div span{font-family:var(--mono);font-size:9.5px;color:var(--ink-soft)}
+.ph div.hero{outline:2px solid var(--ink);outline-offset:1px}
+.ph div.hero::after{content:"Hero";position:absolute;top:5px;left:5px;font-family:var(--sans-display);font-weight:800;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;background:var(--ink);color:var(--bone);padding:2px 5px;border-radius:2px}
+.ph div.more{background:transparent;border-style:dashed;justify-content:center;align-items:center}
+.stamp{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink);border:1px dashed var(--ink);padding:3px 7px;border-radius:3px;margin-top:10px}
+
+/* change log */
+.logform{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:8px;margin:12px 0 6px}
+.logform input,.logform select{font:inherit;font-size:14px;border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:var(--paper);color:var(--ink);min-width:0}
+.logform input:focus-visible,.logform select:focus-visible{outline:2px solid var(--sky);outline-offset:1px}
+.log{list-style:none}
+.log li{display:grid;grid-template-columns:62px 70px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:14px;align-items:baseline}
+.log .d{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.log .who{font-family:var(--sans-display);font-weight:800;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft)}
+.log .who.de{color:var(--ink)}
+.log .eff{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+
+/* right rail */
+.rail .blk-h h2{font-size:21px}
+.facts{width:100%;border-collapse:collapse}
+.facts th{text-align:left;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);padding:8px 8px 8px 0;border-bottom:1px solid var(--rule);width:44%;vertical-align:top}
+.facts td{padding:7px 0;border-bottom:1px solid var(--rule);font-size:14.5px}
+.facts td.empty{color:var(--ink-soft)}
+.facts td button{float:right;background:none;border:0;font-family:var(--mono);font-size:10px;color:var(--ink-soft);cursor:pointer;text-decoration:underline}
+details.extras{margin-top:10px}
+details.extras summary{cursor:pointer;font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;padding:8px 0}
+details.extras p{font-size:13.5px;color:var(--ink-soft)}
+.agents-empty{font-size:14px;padding:10px 0}
+.agents-empty select{font:inherit;font-size:14px;border:1px solid var(--rule);border-radius:6px;padding:7px 9px;background:var(--paper);margin-top:8px;width:100%}
+.tree{font-family:var(--mono);font-size:11.5px;line-height:1.75;list-style:none}
+.tree ul{list-style:none;padding-left:16px;border-left:1px solid var(--rule);margin-left:4px}
+.tree .c{color:var(--ink-soft)}
+.tree .off{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--rule)}
+.health{margin-top:12px;border-left:3px solid var(--cyan);padding:8px 0 8px 12px;font-size:13.5px;line-height:1.45}
+.health li{margin-left:16px;margin-top:4px}
+.health strong{font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;display:block}
+
+@media (max-width:1100px){ .cols{grid-template-columns:1fr} }
+@media (max-width:720px){
+  .job{padding:0 16px 64px}
+  .jh{grid-template-columns:1fr}
+  .jh .acts{justify-content:flex-start}
+  .kit thead{display:none}
+  .kit tr{display:grid;grid-template-columns:1fr auto;border-bottom:1px solid var(--rule);padding:8px 0}
+  .kit td{border:0;padding:3px 0}
+  .kit td.bf{grid-column:1 / -1}
+  .kit td.ac{grid-column:1 / -1;text-align:left}
+  .fp{grid-template-columns:90px repeat(3,minmax(0,1fr))}
+  .logform{grid-template-columns:1fr}
+  .log li{grid-template-columns:54px 1fr}
+  .log .who{grid-column:2}
+  .log li > span:last-child{grid-column:1 / -1}
+  .icon-btn{min-height:40px}
+}
+</style>
+</head>
+<body data-nav="jobs">
+<main class="job">
+  <div class="crumb"><a href="jobs.html">Jobs</a> / <a href="jobs.html#listings">Listings</a> / NYC</div>
+  <header class="jh">
+    <div>
+      <h1>1050 Park Avenue, 13C</h1>
+      <div class="facts-line">
+        <span class="status-pill">In contract</span>
+        <span><b>$4,500,000</b><span class="de" title="From Douglas Elliman">DE</span></span>
+        <span>4 bd · 4 ba<span class="de">DE</span></span>
+        <span>Carnegie Hill<span class="de">DE</span></span>
+        <span>Pitched 8 Jun · folder opened 8 Sep</span>
+      </div>
+      <div class="path">G:\Shared drives\GVC - New York\Building Information\1050 Park Ave\13C</div>
+    </div>
+    <div class="acts">
+      <button class="btn-line" type="button">Open folder</button>
+      <button class="btn-line" type="button">Copy folder link</button>
+      <a class="btn-line" href="https://www.elliman.com/team/gvc-real-estate-team/226645">DE listing</a>
+    </div>
+  </header>
+  <div class="strip" id="strip" aria-label="Job timeline"></div>
+
+  <div class="cols">
+    <div>
+      <section class="blk" aria-labelledby="kit-h">
+        <div class="blk-h"><h2 id="kit-h">Kit</h2><span class="aside">2 stale · 5 made · 4 not made</span></div>
+        <table class="kit">
+          <thead><tr><th>Piece</th><th>State</th><th>Built from</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="pc">Pitch<small>Seller package</small></td><td><span class="st-made">Made 8 Jun</span></td>
+              <td class="bf">InDesign PDF on the Marketing drive<span class="fn">GVC - Marketing\02 - Assets\Pitches\ (8 Jun folder)</span></td>
+              <td class="ac"><button class="icon-btn">Open</button><button class="icon-btn">Copy link</button></td></tr>
+            <tr><td class="pc">Showsheet<small>NYC · A5 / Letter</small></td><td><span class="st-stale">Stale</span></td>
+              <td class="bf">Floorplan v1. v2 drawn 1 Oct.<span class="fn">Two PDFs at the top of ShowSheet\ (14 Sep, 17 Sep)</span></td>
+              <td class="ac"><button class="btn-solid">Rebuild</button><button class="icon-btn">Copy link</button></td></tr>
+            <tr><td class="pc">Floorplan<small>Branded</small></td><td><span class="st-made">Made 1 Oct</span></td>
+              <td class="bf">Floorplan v2</td>
+              <td class="ac"><button class="icon-btn">Open</button><button class="icon-btn">Copy link</button></td></tr>
+            <tr><td class="pc">Floorplan<small>Unbranded, for listing sites</small></td><td><span class="st-stale">Stale</span></td>
+              <td class="bf">Floorplan v1 (23 Sep). v2 drawn 1 Oct.</td>
+              <td class="ac"><button class="btn-solid">Rebuild</button><button class="icon-btn">Copy link</button></td></tr>
+            <tr><td class="pc">Floorplan<small>Blank sheet</small></td><td><span class="st-none">Not made</span></td>
+              <td class="bf">Floorplan v2 is ready</td>
+              <td class="ac"><button class="btn-line">Make</button></td></tr>
+            <tr><td class="pc">Brochure</td><td><span class="st-none">Not made</span></td>
+              <td class="bf">Facts, edits, floorplan v2</td>
+              <td class="ac"><button class="btn-line">Make</button></td></tr>
+            <tr><td class="pc">Open house flyer</td><td><span class="st-none">Not made</span></td>
+              <td class="bf">No open house dates on the job</td>
+              <td class="ac"><button class="btn-line">Make</button></td></tr>
+            <tr><td class="pc">Social carousel<small>In contract</small></td><td><span class="st-none">Not made</span></td>
+              <td class="bf">Edits, facts, agents</td>
+              <td class="ac"><button class="btn-line">Make</button></td></tr>
+            <tr><td class="pc">Postcard<small>Just Sold</small></td><td><span class="st-track">Waits for DE: sold</span></td>
+              <td class="bf">Close price comes from DE</td>
+              <td class="ac"></td></tr>
+            <tr class="na"><td class="pc">Signage</td><td><span class="st-track">NJ / FL only</span></td><td class="bf"></td><td class="ac"></td></tr>
+            <tr><td class="pc">Film<small>Tracked only</small></td><td><span class="st-made">In folder</span></td>
+              <td class="bf">1.4 GB, not made here</td><td class="ac"><button class="icon-btn">Copy link</button></td></tr>
+          </tbody>
+        </table>
+        <div class="kit-foot"><span>Rebuilding saves the new PDF to the job folder and moves the old one into that piece's Archive\.</span><button class="btn-solid">Rebuild 2 stale</button></div>
+      </section>
+
+      <section class="blk" aria-labelledby="fp-h">
+        <div class="blk-h"><h2 id="fp-h">Floorplans</h2><span class="aside">versions × renders · one layout</span></div>
+        <div class="fp" id="fp"></div>
+        <p class="fp-note">One layout, so CURRENT is not printed. <button class="icon-btn">Add alternate layout</button> <button class="icon-btn">New version</button></p>
+      </section>
+
+      <section class="blk" aria-labelledby="ph-h">
+        <div class="blk-h"><h2 id="ph-h">Photos</h2><span class="aside">read from Photos\ on Drive, never copied</span></div>
+        <div class="sets" role="group" aria-label="Photo set">
+          <button aria-pressed="false">Raws<span>25</span></button>
+          <button aria-pressed="true">Edits<span>25</span></button>
+          <button aria-pressed="false">Staged<span>0</span></button>
+          <button aria-pressed="false">Print / Web<span>none</span></button>
+        </div>
+        <div class="ph" id="ph"></div>
+        <span class="stamp">Mockup: thumbnails load from the folder</span>
+      </section>
+
+      <section class="blk" aria-labelledby="log-h">
+        <div class="blk-h"><h2 id="log-h">Change log</h2><span class="aside">newest first</span></div>
+        <form class="logform" onsubmit="return false">
+          <input aria-label="What changed" placeholder="What changed? Price, a stat, a floorplan fix…">
+          <select aria-label="Who asked"><option>Who asked</option><option>Elyse Gutman</option><option>Nicole Sobol</option><option>Matt</option></select>
+          <button class="btn-solid" type="submit">Log</button>
+        </form>
+        <ul class="log">
+          <li><span class="d">~12 Oct</span><span class="who de">DE</span><span>Status: contract signed<span class="eff">Stage moved to In contract</span></span></li>
+          <li><span class="d">1 Oct</span><span class="who">Matt</span><span>Floorplan v2: new GVC floorplan style<span class="eff">Marked stale: Showsheet, Unbranded floorplan</span></span></li>
+          <li><span class="d">23 Sep</span><span class="who">Folder</span><span>Unbranded floorplan saved</span></li>
+          <li><span class="d">17 Sep</span><span class="who">Folder</span><span>Second showsheet PDF saved<span class="eff">The 14 Sep PDF is still beside it</span></span></li>
+          <li><span class="d">15 Sep</span><span class="who">Folder</span><span>Floorplan v1</span></li>
+          <li><span class="d">14 Sep</span><span class="who">Folder</span><span>Showsheet PDF saved</span></li>
+          <li><span class="d">8 Sep</span><span class="who">Folder</span><span>Job folder opened: photos, film, details doc</span></li>
+          <li><span class="d">8 Jun</span><span class="who">Folder</span><span>Pitch on the Marketing drive</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="rail">
+      <section class="blk" aria-labelledby="facts-h">
+        <div class="blk-h"><h2 id="facts-h">Facts</h2><span class="aside"><span class="de">DE</span> = synced, DE wins</span></div>
+        <table class="facts">
+          <tr><th>Address</th><td>1050 Park Ave<span class="de">DE</span></td></tr>
+          <tr><th>Unit</th><td>13C<span class="de">DE</span></td></tr>
+          <tr><th>Neighborhood</th><td>Carnegie Hill<span class="de">DE</span></td></tr>
+          <tr><th>Type</th><td class="empty">Not set <button>Set</button></td></tr>
+          <tr><th>Price</th><td>$4,500,000<span class="de">DE</span></td></tr>
+          <tr><th>Beds / baths</th><td>4 / 4, 0 half<span class="de">DE</span></td></tr>
+          <tr><th>Sq ft</th><td class="empty">None on DE</td></tr>
+          <tr><th>Maintenance / CC</th><td class="empty">From details doc</td></tr>
+          <tr><th>Taxes / mo</th><td class="empty">From details doc</td></tr>
+          <tr><th>Max financing</th><td class="empty">From details doc</td></tr>
+          <tr><th>Flip tax</th><td class="empty">From details doc</td></tr>
+          <tr><th>Short description</th><td class="empty">None <button>Draft with AI</button></td></tr>
+        </table>
+        <span class="stamp">Mockup: details doc not read</span>
+        <details class="extras"><summary>Extras · 0 of ~150 filled</summary><p>Layout, exposures, views, ceiling, outdoor space, building block, amenities, policies. Shown on pieces only when filled.</p></details>
+      </section>
+
+      <section class="blk" aria-labelledby="ag-h">
+        <div class="blk-h"><h2 id="ag-h">Agents</h2><span class="aside">picked once, every piece uses them</span></div>
+        <div class="agents-empty">No agents on this job yet.
+          <select aria-label="Add an agent"><option>Add from the roster…</option><option>Elyse Gutman</option><option>Nicole Sobol</option><option>John Gasdaska</option><option>Jonathan Conlon</option></select>
+        </div>
+      </section>
+
+      <section class="blk" aria-labelledby="dr-h">
+        <div class="blk-h"><h2 id="dr-h">Drive folder</h2><span class="aside">read as it is</span></div>
+        <ul class="tree">
+          <li>13C\
+            <ul>
+              <li>Photos\ <span class="c">raws 25 · edits 25 · 1 PSD 77 MB</span></li>
+              <li>Floorplan\ <span class="c">v1, unbranded, v2</span></li>
+              <li>ShowSheet\ <span class="c">2 PDFs</span></li>
+              <li>film <span class="c">1.4 GB</span></li>
+              <li>Showsheet details.docx</li>
+              <li class="off">Offers\ <span class="c">8 files, deal paperwork, not read</span></li>
+            </ul>
+          </li>
+        </ul>
+        <div class="health"><strong>Folder health</strong>
+          <ul>
+            <li>Two showsheet PDFs at the top. The 14 Sep one belongs in Archive\.</li>
+            <li>Pitch lives on the Marketing drive. Linked, not moved.</li>
+            <li>Made before the folder standard. Nothing will be moved.</li>
+          </ul>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+<script src="data.js"></script>
+<script src="shell.js"></script>
+<script src="timeline.js"></script>
+<script>
+(function () {
+  var T = TL, j = T.M.jobs[0];
+  // strip: Jun → Nov only for this job
+  var s = document.getElementById('strip'), h = '';
+  T.months().forEach(function (m) { if (m.start) h += '<div class="m" style="left:' + m.left + '%">' + m.label + '</div>'; });
+  h += '<div class="today" style="left:' + T.pct(T.today) + '%"></div>';
+  j.status.forEach(function (x) { var l = T.pct(x.from), r = x.to ? T.pct(x.to) : T.pct(T.today); h += '<div class="ln ' + x.s + '" style="left:' + l + '%;width:' + (r - l) + '%"></div>'; });
+  j.work.forEach(function (w) { h += '<div class="st" style="left:' + T.pct(w.d || w.from) + '%" title="' + w.label + '"></div>'; });
+  j.changes.forEach(function (c) { h += '<div class="st chg" style="left:' + T.pct(c.d) + '%" title="' + c.text + '"></div>'; });
+  s.innerHTML = h;
+
+  // floorplan matrix: rows = versions, columns = renders
+  var plan = '<svg viewBox="0 0 100 70" aria-hidden="true"><path d="M2 2h60v28h36v38H2z M2 34h40 M42 2v66 M62 30v38" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
+  var cell = function (cls, lbl, tag) { return '<div><div class="thumb ' + cls + '" style="color:var(--ink)">' + (cls === 'empty' ? '' : plan) + (tag ? '<span class="tagx">' + tag + '</span>' : '') + '<span class="lbl">' + lbl + '</span></div></div>'; };
+  document.getElementById('fp').innerHTML =
+    '<div class="hd">Version</div><div class="hd">Branded</div><div class="hd">Unbranded</div><div class="hd">Blank sheet</div>' +
+    '<div class="ver">v2 · current<small>1 Oct · new GVC style</small></div>' + cell('brand', '1 Oct') + cell('empty', 'Rebuild from v2') + cell('empty', 'Not made') +
+    '<div class="ver old">v1<small>15 Sep · first draw</small></div><div class="old">' + cell('brand', '15 Sep').slice(5, -6) + '</div><div class="old">' + cell('', '23 Sep', 'Stale').slice(5, -6) + '</div>' + cell('empty', '—');
+
+  var ph = '';
+  for (var i = 1; i <= 11; i++) ph += '<div' + (i === 1 ? '' : '') + '><span>edit ' + String(i).padStart(2, '0') + '</span></div>';
+  ph += '<div class="more"><span>+14 more · pick hero</span></div>';
+  document.getElementById('ph').innerHTML = ph;
+})();
+</script>
+</body>
+</html>

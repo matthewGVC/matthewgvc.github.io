@@ -109,7 +109,9 @@
     var acts = ctx.canEdit ? (recording ? formHtml(ctx) : '<div class="fbtn"><button class="b sm" type="button" id="fpNew">Record new version</button>' +
       '<span class="soft" style="font-size:13px;align-self:center">When an agent asks for a change. Nothing is drawn here.</span></div>') : '';
     return '<div class="card" id="fpCard"><div class="card-h"><div><h2>Floorplans</h2></div></div>' +
-      '<div id="fpBody">' + body + '</div>' + acts + '</div>';
+      '<div id="fpBody">' + body + '</div>' +
+      '<div class="fbtn" style="margin-top:14px"><button class="b primary sm" type="button" id="fpMake">Make Floorplan</button></div>' +
+      '<div id="fpPrompt" aria-live="polite"></div>' + acts + '</div>';
   }
 
   function wire(host, ctx) {
@@ -134,6 +136,23 @@
         if (b) b.innerHTML = '<p class="fmsg" role="alert">' + ctx.esc(e.timeout ? JP.drive.FAIL : e.message) + '</p>';
       });
     }
+    var mk = host.querySelector('#fpMake');
+    if (mk) mk.addEventListener('click', function () {
+      var box = host.querySelector('#fpPrompt'), esc = ctx.esc;
+      var live = JP.drive.mode(ctx) === 'live';
+      if (live && files === null) { box.innerHTML = '<p class="soft">Reading the folder…</p>'; return; }
+      var known = live ? files : (((r.scan || {}).pieces || {}).floorplan || []);
+      var res = global.GVC_FPPROMPT.build(r, known, recorded[r.id] || []);
+      if (!res.ok) { box.innerHTML = '<p class="fmsg" id="fpReason" role="alert">' + esc(res.reason) + '</p>'; return; }
+      box.innerHTML = '<textarea class="inp" id="fpText" readonly rows="11" style="width:100%;margin-top:10px" aria-label="Floorplan prompt">' + esc(res.text) + '</textarea>' +
+        '<div class="fbtn"><button class="b sm" type="button" id="fpCopy">Copy prompt</button></div>';
+      var cb = box.querySelector('#fpCopy');
+      cb.addEventListener('click', function () {
+        var done = function () { cb.textContent = 'Copied'; };
+        try { global.navigator.clipboard.writeText(res.text).then(done, function () { box.querySelector('#fpText').select(); }); }
+        catch (e) { box.querySelector('#fpText').select(); }
+      });
+    });
     var nb = host.querySelector('#fpNew');
     if (nb) nb.addEventListener('click', function () { recording = { note: '', asked: '', msg: '' }; redraw(); });
     var save = host.querySelector('#fpSave');

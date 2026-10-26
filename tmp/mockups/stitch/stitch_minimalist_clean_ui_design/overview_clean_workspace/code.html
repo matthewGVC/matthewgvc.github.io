@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>GVC Workspace</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-surface-variant": "#45464d", "on-tertiary-fixed": "#002114", "primary": "#000000", "primary-fixed": "#dae2fd", "on-secondary": "#ffffff", "tertiary-fixed": "#85f8c4", "on-primary": "#ffffff", "on-background": "#0b1c30", "on-surface": "#0b1c30", "inverse-surface": "#213145", "surface": "#f8f9ff", "on-tertiary-container": "#069669", "surface-variant": "#d3e4fe", "surface-bright": "#f8f9ff", "surface-container-low": "#eff4ff", "inverse-on-surface": "#eaf1ff", "error-container": "#ffdad6", "on-error-container": "#93000a", "surface-container-highest": "#d3e4fe", "primary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#3f465c", "surface-container-high": "#dce9ff", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#b4c5ff", "error": "#ba1a1a", "on-secondary-fixed": "#00174b", "secondary-container": "#316bf3", "tertiary-container": "#002114", "surface-tint": "#565e74", "surface-container": "#e5eeff", "on-primary-fixed": "#131b2e", "outline": "#76777d", "on-primary-container": "#7c839b", "tertiary": "#000000", "on-tertiary-fixed-variant": "#005137", "on-error": "#ffffff", "background": "#f8f9ff", "on-secondary-fixed-variant": "#003ea8", "tertiary-fixed-dim": "#68dba9", "secondary": "#0051d5", "inverse-primary": "#bec6e0", "surface-dim": "#cbdbf5", "on-secondary-container": "#fefcff", "on-tertiary": "#ffffff", "secondary-fixed": "#dbe1ff", "outline-variant": "#c6c6cd", "primary-container": "#131b2e" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-tablet": "1.5rem", "space-sm": "0.5rem", "margin-desktop": "2rem", "space-md": "0.75rem", "gutter-desktop": "1.5rem", "space-xl": "2rem", "margin": "1rem", "space-lg": "1.25rem", "gutter": "1rem", "space-xs": "0.25rem" }, "fontFamily": { "headline-lg": ["Inter"], "headline-xl-mobile": ["Inter"], "label-sm": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "body-sm": ["Inter"], "data-mono-sm": ["JetBrains Mono"], "data-mono-lg": ["JetBrains Mono"], "data-mono-md": ["JetBrains Mono"], "headline-sm": ["Inter"], "headline-xl": ["Inter"], "body-lg": ["Inter"] }, "fontSize": { "headline-lg": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-xl-mobile": ["1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "-0.006em", "fontWeight": "400" }], "label-md": ["0.8125rem", { "lineHeight": "1.125rem", "letterSpacing": "-0.005em", "fontWeight": "500" }], "body-sm": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0", "fontWeight": "400" }], "data-mono-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0", "fontWeight": "400" }], "data-mono-lg": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.02em", "fontWeight": "500" }], "data-mono-md": ["0.8125rem", { "lineHeight": "1.125rem", "letterSpacing": "-0.01em", "fontWeight": "400" }], "headline-sm": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-xl": ["2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" }], "body-lg": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.011em", "fontWeight": "400" }] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen flex flex-col antialiased selection:bg-surface-variant selection:text-on-surface"><header class="fixed top-0 inset-x-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/30"><div class="h-14 w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-sm select-none cursor-pointer"><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-surface">GVC Workspace</span><span class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-data-mono-sm text-data-mono-sm">v2.4</span></div><nav class="hidden md:flex items-center gap-1" data-active-classes="text-on-surface font-semibold bg-surface-container-low"><a aria-current="page" class="px-space-md py-1.5 rounded-lg transition-colors text-on-surface font-semibold bg-surface-container-low" data-path="overview" href="#">Overview</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="jobs" href="#">Jobs</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="team" href="#">Team</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="reference" href="#">Reference</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-body-md text-body-md" data-path="tasks" href="#">Tasks</a></nav></div><div class="flex items-center gap-space-md"><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-low border border-outline-variant/30"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Drive Connected</span></div><button aria-label="Sync status" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">sync</span></button><button aria-label="Search workspace" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">search</span></button><div class="h-4 w-px bg-outline-variant/40 mx-space-xs"></div><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center select-none ring-1 ring-outline-variant/20 shadow-sm"><span class="font-label-sm text-label-sm text-on-primary font-medium tracking-tight">MB</span></div></div></div></div></header><main class="flex-1 w-full pt-14 bg-surface"><div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl"><div class="flex flex-col w-full">
+<!-- Minimalist Executive Header with Generous Negative Space -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-space-lg mb-space-xl">
+<div class="space-y-space-xs">
+<div class="inline-flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">
+<span>Portfolio Operations</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-data-mono-sm text-data-mono-sm">Cycle 2025.Q4</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-semibold tracking-tight">Workspace Overview</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">
+        Production pipeline, automated milestones, and pending actions across institutional property assets.
+      </p>
+</div>
+<!-- Quiet Filter Segment Controls -->
+<div class="flex flex-wrap items-center gap-space-md">
+<div class="inline-flex p-1 rounded-full bg-surface-container-low shadow-sm">
+<button class="filter-pill px-space-md py-1 rounded-full font-label-md text-label-md transition-all duration-150 bg-surface-container-lowest text-on-surface shadow-xs font-semibold" data-filter="all" type="button">All</button>
+<button class="filter-pill px-space-md py-1 rounded-full font-label-md text-label-md transition-all duration-150 text-on-surface-variant hover:text-on-surface" data-filter="a" type="button">Region A</button>
+<button class="filter-pill px-space-md py-1 rounded-full font-label-md text-label-md transition-all duration-150 text-on-surface-variant hover:text-on-surface" data-filter="b" type="button">Region B</button>
+<button class="filter-pill px-space-md py-1 rounded-full font-label-md text-label-md transition-all duration-150 text-on-surface-variant hover:text-on-surface" data-filter="c" type="button">Region C</button>
+</div>
+<div class="hidden sm:flex items-center gap-space-xs px-space-md py-1.5 rounded-full bg-surface-container-lowest shadow-sm font-data-mono-sm text-data-mono-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>Current Cycle: Q4</span>
+</div>
+</div>
+</section>
+<!-- Metric Summary Row: Quiet, High-Clarity Cards with Fine Air -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-lg mb-space-xl">
+<!-- Active Projects -->
+<div class="group relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex items-center justify-between mb-space-md text-on-surface-variant">
+<span class="font-label-md text-label-md font-medium">Active Projects</span>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-secondary transition-colors">folder_open</span>
+</div>
+<div class="flex items-baseline gap-space-xs mb-space-xs">
+<span class="font-data-mono-lg text-[2rem] leading-none font-semibold text-on-surface tracking-tight">24</span>
+<span class="font-body-sm text-body-sm text-on-tertiary-container font-medium">+3 this cycle</span>
+</div>
+<div class="w-full bg-surface-container-low h-1 rounded-full overflow-hidden mt-space-sm">
+<div class="bg-secondary h-full rounded-full w-3/4 transition-all duration-500"></div>
+</div>
+</div>
+<!-- Items in Review -->
+<div class="group relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex items-center justify-between mb-space-md text-on-surface-variant">
+<span class="font-label-md text-label-md font-medium">Items in Review</span>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-secondary transition-colors">rate_review</span>
+</div>
+<div class="flex items-baseline gap-space-xs mb-space-xs">
+<span class="font-data-mono-lg text-[2rem] leading-none font-semibold text-on-surface tracking-tight">06</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">All assets on schedule</span>
+</div>
+<div class="w-full bg-surface-container-low h-1 rounded-full overflow-hidden mt-space-sm">
+<div class="bg-on-surface-variant h-full rounded-full w-2/5 transition-all duration-500"></div>
+</div>
+</div>
+<!-- Sync Status -->
+<div class="group relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex items-center justify-between mb-space-md text-on-surface-variant">
+<span class="font-label-md text-label-md font-medium">Sync Status</span>
+<span class="w-2.5 h-2.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+</div>
+<div class="flex items-baseline gap-space-xs mb-space-xs">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Operational</span>
+</div>
+<div class="flex items-center gap-space-xs font-data-mono-sm text-data-mono-sm text-on-surface-variant mt-space-xs">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+<span>Latency 12ms · Real-time pipeline</span>
+</div>
+</div>
+<!-- Milestones Due -->
+<div class="group relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all duration-200">
+<div class="flex items-center justify-between mb-space-md text-on-surface-variant">
+<span class="font-label-md text-label-md font-medium">Milestones Due</span>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-error transition-colors">event_upcoming</span>
+</div>
+<div class="flex items-baseline gap-space-xs mb-space-xs">
+<span class="font-data-mono-lg text-[2rem] leading-none font-semibold text-on-surface tracking-tight">04</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Next 48 hours</span>
+</div>
+<div class="w-full bg-surface-container-low h-1 rounded-full overflow-hidden mt-space-sm">
+<div class="bg-primary h-full rounded-full w-4/6 transition-all duration-500"></div>
+</div>
+</div>
+</section>
+<!-- Editorial Architectural Vignette (Subtle Image Placeholders) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-space-lg mb-space-xl">
+<div class="relative bg-surface-container-lowest rounded-xl p-space-md shadow-sm overflow-hidden flex items-center gap-space-md group">
+<div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Architectural detail of minimalist floor-to-ceiling glass interior with soft diffused morning light, high contrast clean structural lines, Scandinavian restraint, monochrome neutral palette with hints of stone slate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcWRW0DJznDgjRVAUXCuYKhOoNVCEGPVt5RSBebGDeyUxboEZ-34rYD4fc3MpvEkhlO3ysRRCddWczh4NbZVicWSaCdimlwWknttpYFD9WLyGpwGjUnz3EvSm4M-XoeRJYjBuAeVCRPbV8JcfBY0GCa56zTto_sKtxiejPMnQa13QI2dSkFoDjHKFRRwz-6XXjChcumahI6SiDuRt7PgzEYfNvYt0QtODlHzGUgplltbIQg3zjsciWuQ"/>
+</div>
+<div class="min-w-0 flex-1">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant block">SERIES 10A</span>
+<p class="font-headline-sm text-headline-sm text-on-surface truncate">Highline Residence</p>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Production Stage IV</span>
+</div>
+</div>
+<div class="relative bg-surface-container-lowest rounded-xl p-space-md shadow-sm overflow-hidden flex items-center gap-space-md group">
+<div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Warm modern architectural render featuring raw concrete wall, matte travertine flooring, quiet diffused soft daylight, subtle plant shadow casting across minimalist interior space." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFzb7RwikE5-V2J7qmLTvKj2TMa9XuYqyxsakHjd5ReYR8kUiUEF9nOIOJt7FBcunyM7GlEUrA1GkEm_YGPRl-t86UR7Yf8PtCEjR0WAAyT5Lj1WuHzx6A6zGc-S8Jgi10tWAUOoXalbm12Y9o45IM8umy95fpbvbhyOnDqbDHbinQYYYIXq_hrreXMwrPU_VSlKdlXyJgj9HkX1PrVFfDyvJpoOQrNNsittB1ziXu9JIG97PxE03MYg"/>
+</div>
+<div class="min-w-0 flex-1">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant block">SERIES 04B</span>
+<p class="font-headline-sm text-headline-sm text-on-surface truncate">West Gallery Pavilion</p>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Staging Complete</span>
+</div>
+</div>
+<div class="relative bg-surface-container-lowest rounded-xl p-space-md shadow-sm overflow-hidden flex items-center gap-space-md group">
+<div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Ultra clean structural perspective of double-height executive atrium, minimalist black mullion glazing, soft morning fog exterior, serene neutral tones, museum grade architectural balance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAb4HsF4IsZoMWHxovHZID0fggg2qvEPYKFz4Z_SO1KpT8uNdFQZQbNlmLwFY7shmFz35CTukMwmVFsNM0NVPSkqoCWkxreY6no1XIvc1I-wOMamjHkztAEJ1ZDaShnsWi0NXLZWmo20Om6dhsKFCeJ2J2wL4RseLKZQzt9vHm7LtlY-YyMWRUltSnTxJifhUryoVKBRnMVzD7dkPRkQmMPWXbXolnnQRbTSSQamm_9Fon6sHRxkRkiqg"/>
+</div>
+<div class="min-w-0 flex-1">
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant block">SERIES PH1</span>
+<p class="font-headline-sm text-headline-sm text-on-surface truncate">Crown Penthouse</p>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Asset Verification</span>
+</div>
+</div>
+</section>
+<!-- Main Asymmetric 2-Column Split: 70/30 Composition -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- Left Column: Pipeline Milestones & Visual Flows (8 Cols) -->
+<section class="lg:col-span-8 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<!-- Panel Head -->
+<div class="flex items-center justify-between pb-space-lg">
+<div>
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Pipeline Milestones</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Automated asset velocity across active production batches</p>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container-low p-1 rounded-full">
+<button class="view-toggle px-space-md py-1 rounded-full font-label-md text-label-md transition-all duration-150 bg-surface-container-lowest text-on-surface font-semibold shadow-xs" data-mode="list" type="button">Timeline</button>
+<button class="view-toggle px-space-md py-1 rounded-full font-label-md text-label-md transition-all duration-150 text-on-surface-variant hover:text-on-surface" data-mode="gantt" type="button">Gantt</button>
+</div>
+</div>
+<!-- Project Pipeline Flow Rows -->
+<div class="divide-y-0 space-y-space-md">
+<!-- Item 1: Project Alpha -->
+<div class="p-space-md rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors duration-150">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-body-lg font-semibold text-on-surface">Project Alpha — Unit 10A</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-data-mono-sm text-data-mono-sm">Production</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Core Collateral &amp; Digital Assets</span>
+</div>
+<div class="font-data-mono-sm text-data-mono-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>Due in 3d</span>
+</div>
+</div>
+<!-- Minimal Stepper Indicator -->
+<div class="relative pt-space-xs pb-space-xs">
+<div class="grid grid-cols-4 gap-2 text-center relative z-10">
+<div class="flex flex-col items-center gap-1.5">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-data-mono-sm text-data-mono-sm shadow-xs">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">Planning</span>
+</div>
+<div class="flex flex-col items-center gap-1.5">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-data-mono-sm text-data-mono-sm shadow-xs">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">Creative</span>
+</div>
+<div class="flex flex-col items-center gap-1.5">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-data-mono-sm text-data-mono-sm shadow-xs animate-pulse">
+                    3
+                  </div>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Review</span>
+</div>
+<div class="flex flex-col items-center gap-1.5">
+<div class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center font-data-mono-sm text-data-mono-sm">
+                    4
+                  </div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Complete</span>
+</div>
+</div>
+<!-- Connector bar -->
+<div class="absolute top-4 left-1/8 right-1/8 h-0.5 bg-surface-container-highest -z-0">
+<div class="h-full bg-primary w-3/5 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Item 2: Project Beta -->
+<div class="p-space-md rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors duration-150">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-body-lg font-semibold text-on-surface">Project Beta — Residence 4B</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-data-mono-sm text-data-mono-sm">Intake</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Spatial Scan &amp; Virtual Tour Setup</span>
+</div>
+<div class="font-data-mono-sm text-data-mono-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>Due in 5d</span>
+</div>
+</div>
+<!-- Timeline Progress Bar -->
+<div class="space-y-1">
+<div class="flex justify-between font-data-mono-sm text-data-mono-sm text-on-surface-variant">
+<span>Staging Sequence</span>
+<span>35% Completed</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary-container h-full rounded-full w-[35%]"></div>
+</div>
+</div>
+</div>
+<!-- Item 3: Project Gamma -->
+<div class="p-space-md rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors duration-150">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-body-lg font-semibold text-on-surface">Project Gamma — Penthouse Suite</span>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-data-mono-sm text-data-mono-sm">Update Pending</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Title Clearance &amp; Asset Verification</span>
+</div>
+<div class="font-data-mono-sm text-data-mono-sm text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">priority_high</span>
+<span>Attention Required</span>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-data-mono-sm text-data-mono-sm text-on-surface-variant">
+<span>Verification Check</span>
+<span>80% Completed</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-on-tertiary-container h-full rounded-full w-[80%]"></div>
+</div>
+</div>
+</div>
+<!-- Item 4: Project Delta -->
+<div class="p-space-md rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors duration-150">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-body-lg font-semibold text-on-surface">Project Delta — Development Phase I</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-data-mono-sm text-data-mono-sm">Architecture Review</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">CAD Extraction &amp; Material Renderings</span>
+</div>
+<div class="font-data-mono-sm text-data-mono-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>Due in 8d</span>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-data-mono-sm text-data-mono-sm text-on-surface-variant">
+<span>Architectural Signoff</span>
+<span>55% Completed</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full w-[55%]"></div>
+</div>
+</div>
+</div>
+<!-- Item 5: Project Epsilon -->
+<div class="p-space-md rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors duration-150">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-body-lg font-semibold text-on-surface">Project Epsilon — Suite 1202</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-data-mono-sm text-data-mono-sm">In Contract</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Escrow Verification &amp; Closing Packet</span>
+</div>
+<div class="font-data-mono-sm text-data-mono-sm text-on-tertiary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Final Clearance</span>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-data-mono-sm text-data-mono-sm text-on-surface-variant">
+<span>Closing Pipeline</span>
+<span>95% Completed</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-on-tertiary-container h-full rounded-full w-[95%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Inline Velocity SVG Visualization -->
+<div class="mt-space-lg pt-space-md bg-surface-container-low/20 rounded-lg p-space-md">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Weekly Milestone Throughput</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Target: 18 units/mo</span>
+</div>
+<svg class="w-full h-14 text-secondary overflow-visible" fill="none" preserveaspectratio="none" viewbox="0 0 600 60">
+<path d="M0,45 C80,48 120,20 200,28 C280,36 340,10 420,18 C500,26 540,5 600,12" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+<path d="M0,45 C80,48 120,20 200,28 C280,36 340,10 420,18 C500,26 540,5 600,12 L600,60 L0,60 Z" fill="currentColor" fill-opacity="0.06"></path>
+<circle cx="420" cy="18" fill="currentColor" r="4"></circle>
+<circle cx="600" cy="12" fill="currentColor" r="4"></circle>
+</svg>
+</div>
+</div>
+</section>
+<!-- Right Column: Action Stack & To-Do Queue (4 Cols) -->
+<section class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Primary Action Queue Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-md">
+<div>
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Action Queue</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Immediate operational triggers</p>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-data-mono-sm text-data-mono-sm font-semibold">3 pending</span>
+</div>
+<!-- Task Checklist with Minimal Checkboxes -->
+<div class="space-y-space-sm pt-space-xs" id="task-list">
+<!-- Task 1 -->
+<label class="group flex items-start gap-space-md p-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 cursor-pointer">
+<input class="task-checkbox mt-1 w-4 h-4 rounded-full border-0 bg-surface-container-high checked:bg-primary accent-primary transition-all cursor-pointer shrink-0" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight group-hover:text-primary transition-colors">Review draft specifications for Project Alpha</p>
+<div class="flex items-center gap-space-xs mt-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-data-mono-sm text-data-mono-sm">Priority</span>
+<span class="font-body-sm text-body-sm text-error">Due Today</span>
+</div>
+</div>
+</label>
+<!-- Task 2 -->
+<label class="group flex items-start gap-space-md p-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 cursor-pointer">
+<input class="task-checkbox mt-1 w-4 h-4 rounded-full border-0 bg-surface-container-high checked:bg-primary accent-primary transition-all cursor-pointer shrink-0" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight group-hover:text-primary transition-colors">Approve architectural render pack</p>
+<div class="flex items-center gap-space-xs mt-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-data-mono-sm text-data-mono-sm">Asset Review</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Tomorrow</span>
+</div>
+</div>
+</label>
+<!-- Task 3 -->
+<label class="group flex items-start gap-space-md p-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 cursor-pointer">
+<input class="task-checkbox mt-1 w-4 h-4 rounded-full border-0 bg-surface-container-high checked:bg-primary accent-primary transition-all cursor-pointer shrink-0" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight group-hover:text-primary transition-colors">Sync repository metadata updates</p>
+<div class="flex items-center gap-space-xs mt-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-data-mono-sm text-data-mono-sm">System</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Automated</span>
+</div>
+</div>
+</label>
+</div>
+<button class="w-full mt-space-md py-2 px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-medium transition-colors duration-150 flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Add Quick Trigger</span>
+</button>
+</div>
+<!-- Quiet 'Waiting on Others' Drawer -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm">
+<span class="font-headline-sm text-body-lg font-semibold text-on-surface">External Dependencies</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">hourglass_empty</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Awaiting third-party responses and document clearance</p>
+<div class="space-y-space-md">
+<div class="p-space-sm rounded-lg bg-surface-container-low/60 flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] mt-0.5">pending_actions</span>
+<div class="min-w-0 flex-1">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight">Floorplan approval pending external partner</p>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant block mt-1">Studio Arch · 48h elapsed</span>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low/60 flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] mt-0.5">cloud_sync</span>
+<div class="min-w-0 flex-1">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight">High-res photography batch ingestion</p>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant block mt-1">Creative Cloud · In progress</span>
+</div>
+</div>
+</div>
+</div>
+<!-- System Health Quick Diagnostic -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-on-surface">verified_user</span>
+</div>
+<div>
+<span class="font-label-md text-label-md font-medium text-on-surface block">Automations Healthy</span>
+<span class="font-data-mono-sm text-data-mono-sm text-on-surface-variant">All 14 workers online</span>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+</button>
+</div>
+</section>
+</div>
+</div>
+<script>
+  // Simple micro-interactions for filters and quiet task strike-throughs
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(b => {
+        b.classList.remove('bg-surface-container-lowest', 'text-on-surface', 'shadow-xs', 'font-semibold');
+        b.classList.add('text-on-surface-variant');
+      });
+      btn.classList.add('bg-surface-container-lowest', 'text-on-surface', 'shadow-xs', 'font-semibold');
+      btn.classList.remove('text-on-surface-variant');
+    });
+  });
+
+  document.querySelectorAll('.view-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-toggle').forEach(b => {
+        b.classList.remove('bg-surface-container-lowest', 'text-on-surface', 'shadow-xs', 'font-semibold');
+        b.classList.add('text-on-surface-variant');
+      });
+      btn.classList.add('bg-surface-container-lowest', 'text-on-surface', 'shadow-xs', 'font-semibold');
+      btn.classList.remove('text-on-surface-variant');
+    });
+  });
+
+  document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const labelText = this.closest('label').querySelector('p');
+      if (this.checked) {
+        labelText.classList.add('line-through', 'text-on-surface-variant');
+      } else {
+        labelText.classList.remove('line-through', 'text-on-surface-variant');
+      }
+    });
+  });
+</script></div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/30 py-space-lg mt-auto"><div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="w-2 h-2 rounded-full bg-on-tertiary-container"></span><span>Operational Systems Healthy</span></div><div>© 2025 GVC Executive Workspace. All rights reserved.</div></div></footer></body></html>

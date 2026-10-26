@@ -246,6 +246,7 @@
     var lists = saved && saved.listsFrom && typeof saved.listsFrom === 'object' ? saved.listsFrom : null;
     if (saved) delete saved.listsFrom;
     M.crops = {};
+    M.savedPlanFrom = saved && saved.floorplanFrom && typeof saved.floorplanFrom === 'object' ? saved.floorplanFrom : null;
     if (saved) {
       (Array.isArray(saved.photos) ? saved.photos : []).forEach(function (p) { if (p && p.path) M.crops[p.path] = { fx: p.fx, fy: p.fy }; });
       ['photos', 'heroIndex', 'secondaryIndex', 'secondaryPhoto', 'floorplan', 'floorplan2', 'floorplanFrom'].forEach(function (k) { delete saved[k]; });
@@ -324,12 +325,14 @@
         var h = window.GVC_HEALTH.health(tree, { market: row.market, driveRoot: root, isNew: false });
         var ok = function (f) { return !f.archived && R.allowedInJob(f.path) && !R.isJunk(f.name); };
         var photos = (h.pieces.photos || []).filter(ok).filter(function (f) { return IMG.test(f.name); });
-        var plans = (h.pieces.floorplan || []).filter(ok);
+        // Floorplan/Design/ holds references and run notes, never a plan (not even for the note below)
+        var plans = (h.pieces.floorplan || []).filter(ok).filter(function (f) { return SJ.planPlace(f.path) !== 'design'; });
         M.fileFound = (h.pieces.showsheet || []).length > 0;
         M.files = {};
         photos.concat(plans).forEach(function (f) { M.files[f.path] = { modified: f.modified }; });
         M.editedPaths = photos.map(function (f) { return f.path; });
         M.floorplan = SJ.pickFloorplan(plans);
+        resetPlanCrop();
         planNote(plans);
         return readFiles(SJ.photosOf(row, M.editedPaths) || { front: null, back: null, tray: [] });
       }, function (e) {
@@ -341,6 +344,15 @@
       // the job and sheet are loaded: a Drive problem is said on the panel, the bar stays
       setPhotoHtml(esc((e && e.message) || 'Drive could not be read.'));
     });
+  }
+  /* the saved crop belonged to the saved plan: when the job now gives another file (a new
+     standard Unbranded/ plan, a new version), both plan views start again from the whole plan */
+  function resetPlanCrop() {
+    var was = M.savedPlanFrom, now = M.floorplan;
+    if (!was || !was.path || (now && now.path === was.path)) return;
+    SH.state.floorplanView = { zoom: 1, x: 50, y: 50 };
+    SH.state.floorplan2View = { zoom: 1, x: 50, y: 50 };
+    M.savedPlanFrom = now;   // once: a later read of the same folder keeps the crop made since
   }
   function planNote(plans) {
     document.body.classList.remove('job-plan-drop');
@@ -374,7 +386,7 @@
     });
     if (plan) tasks.push(function () {
       return readFile(plan.path).then(SH.fileToImage).then(function (img) {
-        var y = SH.floorplanHeaderY(img);
+        var y = SJ.planPlace(plan.path) === 'unbranded' ? 0 : SH.floorplanHeaderY(img);   // the standard plan has no title band
         return SH.reencode(img, 2400, 0.9, SH.trimRect(img, y));
       });
     });

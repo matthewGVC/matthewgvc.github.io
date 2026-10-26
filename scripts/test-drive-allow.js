@@ -19,6 +19,8 @@ function check(name, got, want) {
 }
 
 check('floorplan', R.allowedInJob('Floorplan/v2/plan.svg'), true);
+check('floor plan (singular)', [R.allowedInJob('Floor Plan/Unbranded/x v1.svg'), R.allowedInJob('Floor Plan')], [true, true]);
+check('planPlace: / or \\', [R.planPlace('Floor Plan/Unbranded/x v1.svg'), R.planPlace('Floorplan\\Branded\\x v1.png'), R.planPlace('Floorplan/x v1.png')], ['unbranded', 'branded', null]);
 check('photos', R.allowedInJob('Photos/Edited/edit 01.jpg'), true);
 check('marketing', R.allowedInJob('Marketing/Showsheet/Showsheet - 1050 Park Ave 13C - 2026-10-19.pdf'), true);
 check('old names', ['Floor Plans/a.png', 'ShowSheet/a.pdf', 'Showsheets/a.pdf', 'Brochure/a.pdf', 'Copy/Description.docx', 'Video/a.mp4'].every(R.allowedInJob), true);

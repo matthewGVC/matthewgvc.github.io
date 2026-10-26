@@ -9,6 +9,10 @@
    render from the name. Versions recorded in the floorplans table show even
    before a file exists ("v3 recorded 21 Oct, no file yet"). Alternate
    layouts are listed when names say "alt", "alternate" or "option".
+   The floorplan process's folders: Floorplan/Branded/ fills the Branded
+   column and Floorplan/Unbranded/ the Unbranded one, one entry per version
+   (the .svg before the .png); Floorplan/Design/ is never a plan
+   (GVC_SHEETJOB.planPlace).
 
    Record new version (owner): note + who asked → a floorplans row (REST, as
    members may insert), then a change-log row through save_job.
@@ -33,15 +37,23 @@
     if (/blank/i.test(name)) return 'blank';
     return 'branded';
   }
+  function placeOf(f) { return global.GVC_SHEETJOB.planPlace(f.path || ''); }
+  function svg(f) { return /\.svg$/i.test(f.name) ? 1 : 0; }
+  /* the file a cell shows: in Branded/ or Unbranded/ the .svg first, else the newest */
+  function better(f, cur) {
+    if (placeOf(f) && placeOf(cur) && svg(f) !== svg(cur)) return svg(f) > svg(cur);
+    return ms(f.modified) > ms(cur.modified);
+  }
 
   /* files → { versions: { n: { branded: file, … , newest } }, alternates: [file] } */
   function group(files) {
     var out = { versions: {}, alternates: [] };
     (files || []).forEach(function (f) {
-      if (!OUTPUT.test(f.name) || /(^|\/)source\//i.test(f.path || '')) return;
+      var place = placeOf(f);
+      if (!OUTPUT.test(f.name) || /(^|\/)source\//i.test(f.path || '') || place === 'design') return;
       if (/\b(alt|alternate|option)\b/i.test(f.name)) { out.alternates.push(f); return; }
-      var v = versionOf(f), r = renderOf(f.name), slot = out.versions[v] = out.versions[v] || {};
-      if (!slot[r] || ms(f.modified) > ms(slot[r].modified)) slot[r] = f;
+      var v = versionOf(f), r = place || renderOf(f.name), slot = out.versions[v] = out.versions[v] || {};
+      if (!slot[r] || better(f, slot[r])) slot[r] = f;
       if (!slot.newest || ms(f.modified) > ms(slot.newest)) slot.newest = f.modified;
     });
     return out;
@@ -74,7 +86,7 @@
 
   function nextVersion(files, ctx) {
     var top = 0;
-    (files || []).forEach(function (f) { top = Math.max(top, versionOf(f)); });
+    (files || []).forEach(function (f) { if (placeOf(f) !== 'design') top = Math.max(top, versionOf(f)); });
     (recorded[ctx.row.id] || []).forEach(function (x) { top = Math.max(top, +x.version || 0); });
     return top + 1;
   }
@@ -97,7 +109,9 @@
     var acts = ctx.canEdit ? (recording ? formHtml(ctx) : '<div class="fbtn"><button class="b sm" type="button" id="fpNew">Record new version</button>' +
       '<span class="soft" style="font-size:13px;align-self:center">When an agent asks for a change. Nothing is drawn here.</span></div>') : '';
     return '<div class="card" id="fpCard"><div class="card-h"><div><h2>Floorplans</h2></div></div>' +
-      '<div id="fpBody">' + body + '</div>' + acts + '</div>';
+      '<div id="fpBody">' + body + '</div>' +
+      '<div class="fbtn" style="margin-top:14px"><button class="b primary sm" type="button" id="fpMake">Make Floorplan</button></div>' +
+      '<div id="fpPrompt" aria-live="polite"></div>' + acts + '</div>';
   }
 
   function wire(host, ctx) {
@@ -122,6 +136,23 @@
         if (b) b.innerHTML = '<p class="fmsg" role="alert">' + ctx.esc(e.timeout ? JP.drive.FAIL : e.message) + '</p>';
       });
     }
+    var mk = host.querySelector('#fpMake');
+    if (mk) mk.addEventListener('click', function () {
+      var box = host.querySelector('#fpPrompt'), esc = ctx.esc;
+      var live = JP.drive.mode(ctx) === 'live';
+      if (live && files === null) { box.innerHTML = '<p class="soft">Reading the folder…</p>'; return; }
+      var known = live ? files : (((r.scan || {}).pieces || {}).floorplan || []);
+      var res = global.GVC_FPPROMPT.build(r, known, recorded[r.id] || []);
+      if (!res.ok) { box.innerHTML = '<p class="fmsg" id="fpReason" role="alert">' + esc(res.reason) + '</p>'; return; }
+      box.innerHTML = '<textarea class="inp" id="fpText" readonly rows="11" style="width:100%;margin-top:10px" aria-label="Floorplan prompt">' + esc(res.text) + '</textarea>' +
+        '<div class="fbtn"><button class="b sm" type="button" id="fpCopy">Copy prompt</button></div>';
+      var cb = box.querySelector('#fpCopy');
+      cb.addEventListener('click', function () {
+        var done = function () { cb.textContent = 'Copied'; };
+        try { global.navigator.clipboard.writeText(res.text).then(done, function () { box.querySelector('#fpText').select(); }); }
+        catch (e) { box.querySelector('#fpText').select(); }
+      });
+    });
     var nb = host.querySelector('#fpNew');
     if (nb) nb.addEventListener('click', function () { recording = { note: '', asked: '', msg: '' }; redraw(); });
     var save = host.querySelector('#fpSave');

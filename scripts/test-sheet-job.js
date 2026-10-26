@@ -116,6 +116,26 @@ check('pickFloorplan: newest version with an image, branded first', S.pickFloorp
 check('pickFloorplan: unbranded when no branded', S.pickFloorplan(fp.slice(2, 3)), { version: 2, render: 'unbranded', path: 'Floorplan/v2/Unit 4A v2 unbranded.png', modified: '2026-10-02' });
 check('pickFloorplan: PDF only gives nothing', S.pickFloorplan(fp.slice(3, 5)), null);
 check('pickFloorplan: nothing', S.pickFloorplan([]), null);
+/* the standard Unbranded/ plan (floorplan process): it wins over any hand-made version */
+const std = [
+  { path: 'Floorplan/v4/x v4.jpg', name: 'x v4.jpg', modified: '2026-10-20' },
+  { path: 'Floorplan/Unbranded/333 E43 417 v5.png', name: '333 E43 417 v5.png', modified: '2026-10-26' },
+  { path: 'Floorplan/Unbranded/333 E43 417 v5.svg', name: '333 E43 417 v5.svg', modified: '2026-10-25' },
+  { path: 'Floorplan/Branded/333 E43 417 v5.svg', name: '333 E43 417 v5.svg', modified: '2026-10-26' },
+  { path: 'Floorplan/Design/333 E43 417 v9.png', name: '333 E43 417 v9.png', modified: '2026-10-26' }
+];
+const stdPick = S.pickFloorplan(std);
+check('standard plan wins over a higher hand-made version', stdPick && [stdPick.path, stdPick.render, stdPick.version], ['Floorplan/Unbranded/333 E43 417 v5.svg', 'unbranded', 5]);
+check('standard plan wins even when the hand-made one is newer', (S.pickFloorplan([{ path: 'Floorplan/v7/x v7.jpg', name: 'x v7.jpg' }].concat(std.slice(1, 3))) || {}).path, 'Floorplan/Unbranded/333 E43 417 v5.svg');
+check('Design files are never picked', S.pickFloorplan([{ path: 'Floorplan/Design/cubicasa.png', name: 'cubicasa.png', modified: '2026-10-26' }]), null);
+check('Design files never beat an old version', (S.pickFloorplan(fp.concat([{ path: 'Floorplan/Design/ref v9.jpg', name: 'ref v9.jpg' }])) || {}).path, 'Floorplan/v2/Unit 4A v2.jpg');
+check('standard: the highest Unbranded version', (S.pickFloorplan([{ path: 'Floorplan/Unbranded/x v2.svg', name: 'x v2.svg' }, { path: 'Floorplan/Unbranded/x v3.png', name: 'x v3.png' }]) || {}).path, 'Floorplan/Unbranded/x v3.png');
+check('svg is an image the picker takes', (S.pickFloorplan([{ path: 'Floorplan/v2/x v2.svg', name: 'x v2.svg' }]) || {}).path, 'Floorplan/v2/x v2.svg');
+check('planPlace: the subfolder under the floorplan folder',
+  ['Floorplan/Unbranded/x v5.svg', 'Floor plans/BRANDED/x.png', 'Floorplan/Design/plan.json', 'Floorplan/Design/archive/x v1.svg', 'Floorplan/v2/x.jpg', 'Floorplan/Unbranded', 'Floorplan/x Unbranded.jpg', '', null, 'Floorplan/v2/Unbranded/x.jpg'].map(p => S.planPlace && S.planPlace(p)),
+  ['unbranded', 'branded', 'design', 'design', null, null, null, null, null, null]);
+check('planPlace: a backslash path too', ['Floorplan\\Unbranded\\x v5.svg', 'Floor Plan\\Design\\plan.json'].map(S.planPlace), ['unbranded', 'design']);
+check('a "Floor Plan" folder: its standard plan is picked', (S.pickFloorplan([{ path: 'Floor Plan/v2/x v2.jpg', name: 'x v2.jpg' }, { path: 'Floor Plan/Unbranded/x v1.svg', name: 'x v1.svg' }]) || {}).path, 'Floor Plan/Unbranded/x v1.svg');
 
 /* ---------- edits back to the job ---------- */
 const filled = S.fill(blank(), coop, {}).state;

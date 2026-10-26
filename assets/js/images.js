@@ -7,18 +7,25 @@
    Showsheet had even grown a second margin trim of its own, without the
    Brochure's guard against a crop that comes back implausibly tight.
 
-     GVC_IMAGES.fileToImage(file)            → Promise<HTMLImageElement>
-     GVC_IMAGES.reencode(img, maxEdge, q, rect) → JPEG data URL
+     GVC_IMAGES.fileToImage(file)            → Promise<HTMLImageElement> (an .svg is read as
+                                               image/svg+xml whatever type the file says)
+     GVC_IMAGES.reencode(img, maxEdge, q, rect) → JPEG data URL (an SVG is drawn up to maxEdge,
+                                               a photo is only ever scaled down)
      GVC_IMAGES.floorplanHeaderY(img)        → rows to cut off the top (0 = none)
      GVC_IMAGES.trimRect(img, startY)        → {x, y, w, h} to keep
    ============================================================ */
 (function (global) {
   'use strict';
 
+  /* an SVG only draws from a blob URL typed image/svg+xml; a file from disk may come untyped */
+  function isSvg(file) { return /\.svg$/i.test((file && file.name) || '') || /^image\/svg\+xml$/i.test((file && file.type) || ''); }
   function fileToImage(file) {
     return new Promise(function (res, rej) {
+      var svg = isSvg(file);
+      if (svg && !/^image\/svg\+xml$/i.test(file.type || '')) file = new Blob([file], { type: 'image/svg+xml' });
       var url = URL.createObjectURL(file);
       var img = new Image();
+      if (svg) img.dataset.vector = '1';
       img.onload = function () { URL.revokeObjectURL(url); res(img); };
       img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Could not read image')); };
       img.src = url;
@@ -31,7 +38,9 @@
   function reencode(img, maxEdge, quality, rect) {
     var sx = rect ? rect.x : 0, sy = rect ? rect.y : 0;
     var sw = rect ? rect.w : img.naturalWidth, sh = rect ? rect.h : img.naturalHeight;
-    var r = Math.min(1, maxEdge / Math.max(sw, sh));
+    var vector = !!(img.dataset && img.dataset.vector);   // no pixels to lose: draw it at full size
+    var long = Math.max(sw, sh);   // 0 for an SVG with no size of its own: drawn as it is
+    var r = !(long > 0) ? 1 : vector ? maxEdge / long : Math.min(1, maxEdge / long);
     var w = Math.round(sw * r), h = Math.round(sh * r);
     var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     var cx = cv.getContext('2d');

@@ -16,7 +16,9 @@
      GVC_PIECEJOB.applyEdits(tool, row, edits, { noRebuild }) → { set: { core }, changes }
      GVC_PIECEJOB.builtFrom(tool, state, row, ctx) → the v2 snapshot (plan §10)
      GVC_PIECEJOB.photosFor(tool, row, editedPaths) → [paths] | null (unknown)
-     GVC_PIECEJOB.pickFloorplans(files)  every image of the newest version, one per level
+     GVC_PIECEJOB.pickFloorplans(files)  every image of the newest version, one per level (the files
+                                         GVC_SHEETJOB.planFiles keeps: never Design/, only Unbranded/
+                                         when it has any; .svg before .png)
      GVC_PIECEJOB.pitchPhotos(files)     a pitch folder's photos (its Photos/ folder), maps left out
      GVC_PIECEJOB.mapAddresses(row)      the subject, then each comp's address
      GVC_PIECEJOB.label(tool), note(tool), maxAgents(tool), joinUnit(a, u)
@@ -307,31 +309,25 @@
     return [];
   }
 
-  function versionOf(f) {
-    var segs = String(f.path || f.name).split('/');
-    for (var i = segs.length - 2; i >= 0; i--) { var m = /^v(\d+)$/i.exec(segs[i]); if (m) return +m[1]; }
-    var n = /\bv(\d+)\b/i.exec(f.name || '');
-    return n ? +n[1] : 0;
-  }
-  function renderOf(name) { return /unbranded|\bmls\b/i.test(name) ? 'unbranded' : /blank/i.test(name) ? 'blank' : 'branded'; }
   var RANK = { branded: 0, unbranded: 1, blank: 2 };
+  function svgFirst(path) { return /\.svg$/i.test(path || '') ? 0 : 1; }
   /* a level's name: the file name without the render, version and extension words */
   function levelOf(name) {
     return name.replace(/\.[a-z0-9]+$/i, '').replace(/\b(unbranded|branded|mls|blank|v\d+)\b/gi, ' ').replace(/[\s_-]+/g, ' ').trim().toLowerCase();
   }
   function ms(x) { var t = Date.parse(x); return isNaN(t) ? 0 : t; }
   function pickFloorplans(files) {
-    var ok = (files || []).map(function (f) {
+    var ok = S.planFiles(files).map(function (f) {
       var name = f.name || String(f.path || '').split('/').pop();
-      if (!IMG.test(name) || /(^|\/)source\//i.test(f.path || '') || /\b(alt|alternate|option)\b/i.test(name)) return null;
-      return { version: versionOf(f), render: renderOf(name), path: f.path, modified: f.modified || null, level: levelOf(name) };
-    }).filter(Boolean);
+      return { version: S.versionOf(f), render: S.renderOfFile(f), path: f.path, modified: f.modified || null, level: levelOf(name) };
+    });
     if (!ok.length) return [];
     var top = Math.max.apply(null, ok.map(function (x) { return x.version; }));
     var best = {};
     ok.filter(function (x) { return x.version === top; }).forEach(function (x) {
       var b = best[x.level];
-      if (!b || RANK[x.render] < RANK[b.render] || (x.render === b.render && ms(x.modified) > ms(b.modified))) best[x.level] = x;
+      if (!b || RANK[x.render] < RANK[b.render] || (x.render === b.render && (svgFirst(x.path) < svgFirst(b.path) ||
+          (svgFirst(x.path) === svgFirst(b.path) && ms(x.modified) > ms(b.modified))))) best[x.level] = x;
     });
     return Object.keys(best).sort().map(function (k) { var x = best[k]; return { version: x.version, render: x.render, path: x.path, modified: x.modified }; }).slice(0, 4);
   }

@@ -91,6 +91,7 @@ const FAKE_DRIVE = `(function () {
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
   if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
+  if (cfg.design) tree.children.filter(function (c) { return c.name === 'Floorplan'; })[0].children.push(d('Design', [f('cubicasa.png', '20'), f('architect.pdf', '22'), f('Signed contract plan.pdf', '22')]));
   if (cfg.html) tree.children.push(d('Signage', [f('Signage - 100 Example St 4A.html', '11')]));
   var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
   function find(path) {
@@ -402,6 +403,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     return cells.slice(i + 1, i + 4).map(c => c.classList.contains('empty') ? 'none' : c.title);
   }), ['Floorplan - 100 Example St 4A v2.pdf', 'Floorplan unbranded v2.pdf', 'none']);
   check('floorplans: MLS-safe label', (await text(p, '#fpCard .fpm')).includes('Unbranded (MLS-safe)'), true);
+  check('floorplans: Unbranded and Branded folders fill their columns, Design skipped', await p.evaluate(() => {
+    const F = (path, modified) => ({ path, name: path.split('/').pop(), modified });
+    const g = window.GVC_JP.floorplans.group([
+      F('Floorplan/v4/x v4.jpg', '2026-10-20'),
+      F('Floorplan/Unbranded/x v5.png', '2026-10-26'), F('Floorplan/Unbranded/x v5.svg', '2026-10-25'),
+      F('Floorplan/Unbranded/x v5 - Second Floor.png', '2026-10-27'),
+      F('Floorplan/Branded/x v5.svg', '2026-10-25'), F('Floorplan/Branded/x v5.png', '2026-10-26'),
+      F('Floorplan/Design/plan.json', '2026-10-26'), F('Floorplan/Design/cubicasa v9.png', '2026-10-26'), F('Floorplan/Design/alt option v8.jpg', '2026-10-26')
+    ]);
+    const v5 = g.versions[5] || {};
+    return [Object.keys(g.versions), (v5.branded || {}).path, (v5.unbranded || {}).path, !!v5.blank, g.alternates.length, (g.versions[4] || {}).branded && g.versions[4].branded.path];
+  }), [['4', '5'], 'Floorplan/Branded/x v5.svg', 'Floorplan/Unbranded/x v5.svg', false, 0, 'Floorplan/v4/x v4.jpg']);
   await p.click('#fpNew');
   await p.fill('#fpNote', 'Swap the bedroom labels');
   await p.selectOption('#fpWho', 'Katie Cook');
@@ -412,6 +425,25 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     { property_id: 'p1', version: 4, layout: 'current', note: 'Swap the bedroom labels', asked_by: 'Katie Cook' });
   s = t.saves.find(x => (x.p_changes || []).some(c => c.field === 'floorplan')) || {};
   check('floorplans: and a change-log row through save_job', [s.p_table, JSON.stringify(s.p_set), s.p_changes], ['properties', '{}', [{ field: 'floorplan', new_value: { version: 4, note: 'Swap the bedroom labels' }, asked_by: 'Katie Cook' }]]);
+  /* Make Floorplan: the reason with no Design files, then the exact prompt with some */
+  check('prompt: button present', await p.$$eval('#fpMake', e => e.length), 1);
+  await p.click('#fpMake');
+  check('prompt: no Design files shows the reason', await text(p, '#fpReason'), 'There is nothing in Floorplan\\Design yet. Drop the reference (Cubicasa file, screenshot, architect\'s PDF or DWG) there.');
+  const t2 = await open(browser, { path: LISTING, drive: { design: true } });
+  const p2 = t2.page;
+  await p2.waitForSelector('#fpCard .ver');
+  await p2.click('#fpMake');
+  const dd = d => { const x = new Date(d), q = n => String(n).padStart(2, '0'); return x.getFullYear() + '-' + q(x.getMonth() + 1) + '-' + q(x.getDate()); };
+  check('prompt: the textarea holds the exact text', await p2.$eval('#fpText', e => e.value), [
+    'Make the floorplan for x (NYC, sale, 4 bed).', '',
+    'Floorplan folder: G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A\\Floorplan',
+    'References in Design\\:',
+    '- cubicasa.png (modified ' + dd('2026-10-20T10:00:00.000Z') + ')', '- architect.pdf (modified ' + dd('2026-10-22T10:00:00.000Z') + ')',
+    'Save as version v4.', '', 'Use the making-gvc-floorplans skill.'].join('\n'));
+  await p2.click('#fpCopy');
+  await p2.waitForFunction(() => document.querySelector('#fpCopy').textContent === 'Copied', null, { timeout: 3000 }).catch(() => {});
+  check('prompt: Copy reads Copied and the clipboard has the text', [await text(p2, '#fpCopy'), (await p2.evaluate(() => navigator.clipboard.readText())).startsWith('Make the floorplan for x')], ['Copied', true]);
+  await t2.ctx.close();
   /* photos */
   await p.$eval('#photosCard', e => e.scrollIntoView());
   await p.waitForFunction(() => document.querySelectorAll('#phGrid img').length >= 5 && /downloaded/.test(document.querySelector('#phGrid').textContent), null, { timeout: 5000 }).catch(() => {});

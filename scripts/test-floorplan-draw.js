@@ -1,0 +1,147 @@
+/* ============================================================
+   Tests for scripts/floorplan/draw.js — the floorplan drawer (SVG, text outlined).
+   Plain Node:  node scripts/test-floorplan-draw.js
+   ============================================================ */
+'use strict';
+
+const path = require('path');
+const fontkit = require('fontkit');
+const { draw } = require('./floorplan/draw.js');
+const STYLE = require('./floorplan/style.js');
+const studio = require('./floorplan/fixtures/studio.json');
+
+let pass = 0;
+const failures = [];
+function check(name, got, want) {
+  const g = JSON.stringify(got), w = JSON.stringify(want);
+  if (g === w) { pass++; return; }
+  failures.push(name + '\n      expected ' + w + '\n      got      ' + g);
+}
+function near(name, got, want, tol) {
+  if (Number.isFinite(got) && Math.abs(got - want) <= tol + 1e-9) { pass++; return; }
+  failures.push(name + '\n      expected ' + want + ' (±' + tol + ')\n      got      ' + got);
+}
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+/* ---- helpers: find a label group and measure its paths ---- */
+function group(svg, attr, value) {
+  const esc = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = svg.match(new RegExp('<g[^>]*' + attr + '="' + esc + '"[^>]*>([\\s\\S]*?)</g>'));
+  return m ? m[1] : null;
+}
+const pathsIn = (inner) => (inner.match(/<path[^>]*\sd="([^"]*)"/g) || []).map((p) => p.match(/\sd="([^"]*)"/)[1]);
+
+/* exact bbox of an absolute M/L/Q/C/Z path (quadratic and cubic extremes included) */
+function bbox(d) {
+  const toks = d.match(/[MLQCZ]|-?\d*\.?\d+(?:e-?\d+)?/g);
+  let i = 0, cx = 0, cy = 0, sx = 0, sy = 0;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  const num = () => parseFloat(toks[i++]);
+  const quadExt = (p0, p1, p2) => { const den = p0 - 2 * p1 + p2; if (!den) return []; const t = (p0 - p1) / den; return t > 0 && t < 1 ? [t] : []; };
+  const cubicExt = (p0, p1, p2, p3) => {
+    const a = -p0 + 3 * p1 - 3 * p2 + p3, b = 2 * (p0 - 2 * p1 + p2), c = p1 - p0, out = [];
+    if (Math.abs(a) < 1e-12) { if (b) out.push(-c / b); } else {
+      const disc = b * b - 4 * a * c;
+      if (disc >= 0) { out.push((-b + Math.sqrt(disc)) / (2 * a), (-b - Math.sqrt(disc)) / (2 * a)); }
+    }
+    return out.filter((t) => t > 0 && t < 1);
+  };
+  let cmd = null;
+  while (i < toks.length) {
+    if (/[MLQCZ]/.test(toks[i])) cmd = toks[i++];
+    if (cmd === 'Z') { cx = sx; cy = sy; continue; }
+    if (cmd === 'M') { cx = sx = num(); cy = sy = num(); add(cx, cy); cmd = 'L'; continue; }
+    if (cmd === 'L') { cx = num(); cy = num(); add(cx, cy); continue; }
+    if (cmd === 'Q') {
+      const qx = num(), qy = num(), x = num(), y = num();
+      add(x, y);
+      quadExt(cx, qx, x).forEach((t) => add((1 - t) * (1 - t) * cx + 2 * (1 - t) * t * qx + t * t * x, cy));
+      quadExt(cy, qy, y).forEach((t) => add(cx, (1 - t) * (1 - t) * cy + 2 * (1 - t) * t * qy + t * t * y));
+      cx = x; cy = y; continue;
+    }
+    if (cmd === 'C') {
+      const ax = num(), ay = num(), bx = num(), by = num(), x = num(), y = num();
+      add(x, y);
+      const B = (p0, p1, p2, p3, t) => (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t * t * p2 + t ** 3 * p3;
+      cubicExt(cx, ax, bx, x).forEach((t) => add(B(cx, ax, bx, x, t), cy));
+      cubicExt(cy, ay, by, y).forEach((t) => add(cx, B(cy, ay, by, y, t)));
+      cx = x; cy = y; continue;
+    }
+    i++;
+  }
+  return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
+}
+
+/* the height a string should have at a given size, straight from the font (independent of draw.js) */
+const fonts = {};
+function expectedHeight(text, weight, sizePt) {
+  const file = path.join(__dirname, '..', 'assets', 'fonts', 'nunito-sans-' + weight + '-latin.woff2');
+  const font = fonts[weight] || (fonts[weight] = fontkit.openSync(file));
+  let lo = Infinity, hi = -Infinity;
+  font.layout(text).glyphs.forEach((g) => { const b = g.path.bbox; if (b.maxY > b.minY) { lo = Math.min(lo, b.minY); hi = Math.max(hi, b.maxY); } });
+  return (hi - lo) * sizePt / font.unitsPerEm;
+}
+const nameHeight = (svg, name) => bbox(pathsIn(group(svg, 'data-label', name))[0]).h;
+
+/* ---- the tests ---- */
+const unbranded = draw(studio, 0, { branded: false });
+const branded = draw(studio, 0, { branded: true, facts: { beds: 0, baths: 1 } });
+
+check('output is an SVG document', /^<svg[^>]*viewBox="0 0 810 630"/.test(unbranded), true);
+
+check('no text elements (unbranded)', /<text/.test(unbranded), false);
+check('no text elements (branded)', /<text/.test(branded), false);
+
+check('no external references (unbranded)', /href="(http|\.\.|\/)/.test(unbranded), false);
+check('no external references (branded)', /href="(http|\.\.|\/)/.test(branded), false);
+check('no <image> in branded', /<image/.test(branded), false);
+
+const allowed = ['#00273a', '#ffffff', '#eef3f5', 'none'];
+const colours = [...unbranded.matchAll(/\b(?:fill|stroke)="([^"]*)"/g)].map((m) => m[1].toLowerCase());
+check('only navy and white in unbranded', colours.filter((c) => !allowed.includes(c)), []);
+check('unbranded uses navy', colours.includes('#00273a'), true);
+
+/* fixed room name size: every name is drawn at exactly ROOM_NAME_PT, whatever its letters.
+   (Round letters overshoot the cap height, so LIVING ROOM and BATH differ in raw bbox by the
+   font's overshoot; we compare each against the font's own height for that string at the fixed size.) */
+const liv = nameHeight(unbranded, 'LIVING ROOM'), bath = nameHeight(unbranded, 'BATH');
+const livWant = expectedHeight('LIVING ROOM', STYLE.ROOM_NAME.weight, STYLE.ROOM_NAME_PT);
+const bathWant = expectedHeight('BATH', STYLE.ROOM_NAME.weight, STYLE.ROOM_NAME_PT);
+near('fixed room name size: LIVING ROOM', liv, livWant, 0.01);
+near('fixed room name size: BATH', bath, bathWant, 0.01);
+near('fixed room name size: same scale for LIVING ROOM and BATH', liv / livWant, bath / bathWant, 0.004);
+/* coordinates are rounded to 2 decimals, so each drawn height is within ±0.01 of exact:
+   drawn-vs-font compares at ±0.01, drawn-vs-drawn at ±0.02, scale ratios at ±0.004 */
+near('fixed room name size: LIVING ROOM equals KITCHEN', liv, nameHeight(unbranded, 'KITCHEN'), 0.02);
+
+check('room without size draws name only', pathsIn(group(unbranded, 'data-label', 'WIC')).length, 1);
+check('room with size draws name and size', pathsIn(group(unbranded, 'data-label', 'LIVING ROOM')).length, 2);
+
+let p = clone(studio);
+p.levels[0].rooms[1].name = 'PRIMARY BEDROOM / LIBRARY';
+const longSvg = draw(p, 0, { branded: false });
+const longH = nameHeight(longSvg, 'PRIMARY BEDROOM / LIBRARY');
+const longWant = expectedHeight('PRIMARY BEDROOM / LIBRARY', STYLE.ROOM_NAME.weight, STYLE.ROOM_NAME_PT);
+near('long name keeps the fixed size', longH, longWant, 0.01);
+near('long name keeps the same scale as LIVING ROOM', longH / longWant, liv / livWant, 0.004);
+
+check('unbranded has no frame', /data-frame=/.test(unbranded), false);
+check('branded has a header', /data-frame="header"/.test(branded), true);
+check('branded has a footer', /data-frame="footer"/.test(branded), true);
+
+check('compass only with north (null)', /data-frame="compass"/.test(branded), false);
+p = clone(studio); p.north = 0;
+check('compass only with north (0)', /data-frame="compass"/.test(draw(p, 0, { branded: true })), true);
+check('no compass when unbranded', /data-frame="compass"/.test(draw(p, 0, { branded: false })), false);
+
+check('same plan, same output (unbranded)', draw(studio, 0, { branded: false }) === unbranded, true);
+check('same plan, same output (branded)', draw(studio, 0, { branded: true, facts: { beds: 0, baths: 1 } }) === branded, true);
+
+/* ---- report ---- */
+if (failures.length) {
+  console.log(failures.length + ' failed, ' + pass + ' passed\n');
+  failures.forEach((f) => console.log('  FAIL ' + f));
+  process.exit(1);
+}
+console.log(pass + ' passed');

@@ -53,7 +53,13 @@ const FAKE_DRIVE = `(function () {
   function f(name, day) { return { name: name, kind: 'file', size: 1000, modified: '2026-10-' + day + 'T10:00:00.000Z' }; }
   function d(name, children) { return { name: name, kind: 'directory', children: children }; }
   var plans = cfg.pdfOnly ? [d('v2', [f('Plan v2.pdf', '09'), f('Plan v2.ai', '09')])]
+    : cfg.plans === 'standard' ? [d('v2', [f('x v2.jpg', '09')]), d('Unbranded', [f('x v3.svg', '20'), f('x v3.png', '20')]),
+        d('Branded', [f('x v3.svg', '20')]), d('Design', [f('cubicasa v9.png', '21')])]
+    : cfg.plans === 'old' ? [d('v2', [f('x v2.jpg', '09')])]
+    : cfg.plans === 'design' ? [d('Design', [f('cubicasa.png', '21'), f('plan.json', '21')])]
     : [d('v1', [f('Plan v1.jpg', '04')]), d('v2', [f('Plan v2.jpg', '09'), f('Plan v2 unbranded.png', '09')])];
+  // an SVG plan arrives with no type, as a file from disk may: the reader must still draw it
+  var SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 630" width="810" height="630"><rect width="810" height="630" fill="#fff"/><path d="M100 100H700V530H100Z" fill="none" stroke="#0a2240" stroke-width="6"/></svg>';
   var tree = d('4A', [
     f('Exclusive - Jane Client.pdf', '02'),
     d('Marketing', [d('Showsheet', [f('Showsheet - 100 Example St 4A - 2026-10-12.pdf', '12')])]),
@@ -72,7 +78,8 @@ const FAKE_DRIVE = `(function () {
     readJobFile: function (folder, path) {
       log.read.push(path);
       if (path === cfg.slow) return new Promise(function () {});
-      return new Promise(function (res) { setTimeout(function () { res(new File([PNG], path.split('/').pop(), { type: 'image/png' })); }, 30); });
+      var svg = /\.svg$/i.test(path);
+      return new Promise(function (res) { setTimeout(function () { res(new File([svg ? SVG : PNG], path.split('/').pop(), { type: svg ? '' : 'image/png' })); }, 30); });
     }
   };
 })();`;
@@ -411,6 +418,32 @@ const typeIn = async (page, field, value) => {
     state: { building: { amenities: ['Roof deck'] }, residence: { features: ['Mine'] }, listsFrom: savedLists } };
   t = await open(browser, { documents: [DRAFT], path: '/tools/showsheet/?listing=100-example-st-4a' });
   check('draft: its own wording kept on reopen', [(await st(t.page)).building.amenities, (await st(t.page)).residence.features], [['Roof deck'], ['Mine']]);
+  await t.ctx.close();
+
+  // the standard Unbranded/ plan replaces a saved hand-made one: the old crop belonged to the old picture
+  const CROPPED = { property_id: 'p1', tool: 'showsheet', version: 3, built_from: null,
+    state: { floorplanFrom: { version: 2, render: 'branded', path: 'Floorplan/v2/x v2.jpg', modified: '2026-10-09T10:00:00.000Z' },
+      floorplanView: { zoom: 1.6, x: 30, y: 70 }, floorplan2View: { zoom: 2, x: 10, y: 90 } } };
+  t = await open(browser, { documents: [JSON.parse(JSON.stringify(CROPPED))], drive: { plans: 'standard' } });
+  await t.page.waitForTimeout(400);
+  check('a new plan: the standard Unbranded SVG is picked', ((await t.page.evaluate(() => window.GVC_SHEETMODE.floorplan)) || {}).path, 'Floorplan/Unbranded/x v3.svg');
+  check('a new plan: the SVG is drawn onto the sheet', /^data:image\/jpeg/.test((await st(t.page)).floorplan || ''), true);
+  check('a new plan resets the saved floorplan crop', [(await st(t.page)).floorplanView, (await st(t.page)).floorplan2View], [{ zoom: 1, x: 50, y: 50 }, { zoom: 1, x: 50, y: 50 }]);
+  check('a new plan: Design files never read', (await t.page.evaluate(() => window.__driveLog.read)).some(x => /Design/.test(x)), false);
+  check('a new plan: the sheet draws the plan uncropped', await t.page.$$eval('.fp-wrap', els => els.length > 0 && els.every(e => !e.classList.contains('is-zoomed'))), true);
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(600);
+  const resetSaved = (t.pieces[0] || {}).p_state || {};
+  check('a new plan: the next save keeps the reset crop and the new plan', [resetSaved.floorplanView, resetSaved.floorplan2View, (resetSaved.floorplanFrom || {}).path],
+    [{ zoom: 1, x: 50, y: 50 }, { zoom: 1, x: 50, y: 50 }, 'Floorplan/Unbranded/x v3.svg']);
+  await t.ctx.close();
+  // only Design/ files: the plain no-floorplan note, never "No floorplan image in Floorplan\Design\"
+  t = await open(browser, { drive: { plans: 'design' } });
+  check('only Design/ files: says there is no floorplan yet', await text(t.page, '#jobPlanMsg'), 'No floorplan in the job\'s folder yet. Drop one here for this sheet, or leave it blank.');
+  await t.ctx.close();
+  t = await open(browser, { documents: [JSON.parse(JSON.stringify(CROPPED))], drive: { plans: 'old' } });
+  await t.page.waitForTimeout(400);
+  check('the same plan as saved: the crop is kept', [(await st(t.page)).floorplanView, (await st(t.page)).floorplan2View], [{ zoom: 1.6, x: 30, y: 70 }, { zoom: 2, x: 10, y: 90 }]);
   await t.ctx.close();
 
   console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));

@@ -80,10 +80,13 @@ async function make(folder, opts) {
         const rel = j.dir + '/' + j.base + '.' + ext;
         const abs = path.join(folder, rel);
         if (fs.existsSync(abs)) {
-          const arel = 'Design/archive/' + today + '/' + rel;
+          let arel = 'Design/archive/' + today + '/' + rel;
+          for (let k = 2; fs.existsSync(path.join(folder, arel)); k++) {
+            const dot = rel.lastIndexOf('.');
+            arel = 'Design/archive/' + today + '/' + rel.slice(0, dot) + ' (' + k + ')' + rel.slice(dot);
+          }
           const aabs = path.join(folder, arel);
           fs.mkdirSync(path.dirname(aabs), { recursive: true });
-          if (fs.existsSync(aabs)) throw new Error('Archive already has ' + arel + '; not overwriting it');
           fs.renameSync(abs, aabs);
           archived.push(arel);
         }

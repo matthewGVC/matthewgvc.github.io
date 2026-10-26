@@ -89,6 +89,20 @@ function listAll(dir) {
     }
   });
 
+  await t('third run keeps every archived copy', async () => {
+    const dir = folder(planWith());
+    const r1 = await make(dir, { version: 3, today: '2026-10-27' });
+    const r2 = await make(dir, { version: 3, today: '2026-10-27' });
+    const r3 = await make(dir, { version: 3, today: '2026-10-27' });
+    eq(r1.archived.length, 0);
+    eq(r2.archived.length, 4);
+    eq(r3.archived.length, 4);
+    const all = listAll(dir).filter(f => f.startsWith('Design/archive/2026-10-27/'));
+    eq(all.length, 8);
+    ok(r3.archived.every(a => / \(2\)\.(svg|png)$/.test(a)), r3.archived.join('|'));
+    eq(r2.archived.concat(r3.archived).filter(a => !all.includes(a)), []);
+  });
+
   await t('png size', async () => {
     const dir = folder(planWith());
     const r = await make(dir, { version: 3 });

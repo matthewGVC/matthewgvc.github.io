@@ -18,6 +18,7 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const has = (r, msg) => r.errors.includes(msg);
 
 check('fixture is valid', validate(studio).errors, []);
+check('the skill\'s worked example (555 W59 PHC) is valid', validate(require('./floorplan/fixtures/555-w59-phc.json')), { errors: [], warnings: [] });
 check('fixture has no warnings', validate(studio).warnings, []);
 
 check('schema must be 1', has(validate({ ...clone(studio), schema: 2 }), 'schema must be 1'), true);

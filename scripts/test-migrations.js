@@ -533,14 +533,14 @@ const USERS = {
     const fp = (await db.query(`insert into public.properties (slug, label, drive_folder) values ('12-folder-st', '12 Folder St', 'GVC/NYC/12 Folder St') returning id`)).rows[0].id;
     check('0012: SQL with no sign-in still sets a folder', (await db.query('select drive_folder from public.properties where id = $1', [fp])).rows[0].drive_folder, 'GVC/NYC/12 Folder St');
     const folderErr = async (who, sql, params) => { try { await as(who, sql, params); return null; } catch (e) { return e.message; } };
-    check('0012: the shared team account can\'t repoint a job\'s folder', await folderErr('team', `update public.properties set drive_folder = 'GVC/Other' where id = $1`, [fp]), 'Only Matt can link a Drive folder.');
-    check('0012: a plain team member can\'t either', await folderErr('teamrole', `update public.properties set drive_folder = 'GVC/Other' where id = $1`, [fp]), 'Only Matt can link a Drive folder.');
-    check('0012: nor clear it', await folderErr('team', `update public.properties set drive_folder = null where id = $1`, [fp]), 'Only Matt can link a Drive folder.');
-    check('0012: nor make a job with one', await folderErr('team', `insert into public.properties (slug, label, drive_folder) values ('13-folder-st', '13 Folder St', 'GVC/Other')`), 'Only Matt can link a Drive folder.');
+    check('0012: the shared team account can\'t repoint a job\'s folder', await folderErr('team', `update public.properties set drive_folder = 'GVC/Other' where id = $1`, [fp]), (UPTO >= '0013' ? 'Only Marketing can link a Drive Folder.' : 'Only Matt can link a Drive folder.'));
+    check('0012: a plain team member can\'t either', await folderErr('teamrole', `update public.properties set drive_folder = 'GVC/Other' where id = $1`, [fp]), (UPTO >= '0013' ? 'Only Marketing can link a Drive Folder.' : 'Only Matt can link a Drive folder.'));
+    check('0012: nor clear it', await folderErr('team', `update public.properties set drive_folder = null where id = $1`, [fp]), (UPTO >= '0013' ? 'Only Marketing can link a Drive Folder.' : 'Only Matt can link a Drive folder.'));
+    check('0012: nor make a job with one', await folderErr('team', `insert into public.properties (slug, label, drive_folder) values ('13-folder-st', '13 Folder St', 'GVC/Other')`), (UPTO >= '0013' ? 'Only Marketing can link a Drive Folder.' : 'Only Matt can link a Drive folder.'));
     check('0012: nor on a pitch or a development', [
       await folderErr('team', `insert into public.pitches (slug, label, drive_folder) values ('p-12', 'P 12', 'GVC/Other')`),
       await folderErr('team', `insert into public.dev_projects (slug, label, drive_folder) values ('d-12', 'D 12', 'GVC/Other')`)],
-      ['Only Matt can link a Drive folder.', 'Only Matt can link a Drive folder.']);
+      [(UPTO >= '0013' ? 'Only Marketing can link a Drive Folder.' : 'Only Matt can link a Drive folder.'), (UPTO >= '0013' ? 'Only Marketing can link a Drive Folder.' : 'Only Matt can link a Drive folder.')]);
     check('0012: the team still saves the rest of the row', await folderErr('team', `update public.properties set folder_state = 'broken' where id = $1`, [fp]), null);
     check('0012: Matt links it', await folderErr('matt', `update public.properties set drive_folder = 'GVC/NYC/12 Folder St B', folder_state = 'linked' where id = $1`, [fp]), null);
     check('0012: the helper links it (scan)', await folderErr('helper', `update public.properties set drive_folder = 'GVC/NYC/12 Folder St' where id = $1`, [fp]), null);
@@ -548,6 +548,11 @@ const USERS = {
     await db.query(`update public.members set role = 'admin' where role = 'team' and name = 'Team Member'`);
     check('0012: an admin links it', await folderErr('teamrole', `update public.properties set drive_folder = 'GVC/NYC/12 Folder St C' where id = $1`, [fp]), null);
     await db.query(`update public.members set role = 'team' where role = 'admin' and name = 'Team Member'`);
+    if (UPTO >= '0013') {
+      await db.query(`update public.members set role = 'marketing' where role = 'team' and name = 'Team Member'`);
+      check('0013: a marketing member links it', await folderErr('teamrole', `update public.properties set drive_folder = 'GVC/NYC/12 Folder St D' where id = $1`, [fp]), null);
+      await db.query(`update public.members set role = 'team' where role = 'marketing' and name = 'Team Member'`);
+    }
     check('0012: a post goes in the cache', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind, property_id) values ('post1', 'social', 'post', $1)`, [fp]), false);
     check('0012: a made-up kind still refused', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind) values ('post2', 'social', 'tweet')`), true);
   }

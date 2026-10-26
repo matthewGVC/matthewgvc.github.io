@@ -109,6 +109,32 @@ def straighten(ring, slack=math.tan(math.radians(4))):
     return out
 
 
+def trim(comp, dt, size):
+    """a mass less the short, compact bumps stuck to its faces: a marker triangle (Cubicasa), the letters
+    of a label that touches a wall. Opened at most of its own wall thickness, what drops away is either a
+    thin wall, a solid bar, kept, or a bump, which fills little of its box, dropped."""
+    th = 2 * dt[skeletonize(comp)]
+    if not len(th):
+        return comp
+    S = int(round(0.6 * float(np.median(th))))
+    if S <= size + 1:
+        return comp
+    big = opening(comp, np.ones((S, S), bool))
+    rest = label(comp & ~big, connectivity=2)
+    keep = big.copy()
+    for j in range(1, rest.max() + 1):
+        piece = rest == j
+        ys, xs = np.nonzero(piece)
+        bw, bh = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
+        L = max(bw, bh)
+        fill = piece.sum() / float(bw * bh)
+        # a wall: solid (a thin partition, a short wall end beside a door; a letter or a marker triangle
+        # fills little of its box), or a long run at any angle (a thin diagonal fills little of its box)
+        if fill >= 0.75 or L >= 4 * S:
+            keep |= piece
+    return keep
+
+
 def main(argv):
     a = args(argv)
     img = Image.open(a['src']).convert('RGB')
@@ -169,6 +195,9 @@ def main(argv):
                 continue
         if any(ex0 <= x0 and ey0 <= y0 and x1 <= ex1 and y1 <= ey1 for ex0, ey0, ex1, ey1 in a['erase']):
             continue
+        comp = trim(comp, dt, size)
+        ys, xs = np.nonzero(comp)
+        y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
         sub = np.pad(comp[y0:y1 + 1, x0:x1 + 1], 1)
         rings = []
         for c in find_contours(sub.astype(float), 0.5):

@@ -39,6 +39,8 @@ d.rectangle([301, 70, 310, 329], fill=N)                                        
 d.rectangle([400, 150, 429, 179], fill=N)                                                # a column
 for i in range(8): d.line([100 + i * 12, 200, 106 + i * 12, 215], fill=N, width=3)       # text-like strokes
 d.arc([120, 260, 200, 340], 180, 270, fill=N, width=2)                                   # a door swing
+d.polygon([(440, 329), (460, 329), (450, 319)], fill=N)                                    # a marker triangle on a wall face (Cubicasa)
+d.line([529, 118, 506, 135, 529, 152], fill=N, width=5); d.line([518, 127, 518, 143], fill=N, width=5)   # a bold A, its feet on the right wall
 im.save(r'${path.join(dir, 'plan.png')}')`;
   cp.execFileSync(py, ['-c', draw]);
   const out = cp.execFileSync(py, ['-I', path.join(__dirname, 'floorplan', 'trace-walls.py'), path.join(dir, 'plan.png'), path.join(dir, 'walls.json')], { encoding: 'utf8' });
@@ -48,7 +50,10 @@ im.save(r'${path.join(dir, 'plan.png')}')`;
      the closed right room is its hole), and the column on its own */
   check('two masses: the walls (with the partition) and the column; no text, swing or glazing', res.solids.length, 2);
   const big = res.solids.find((s) => s.length > 1) || [];
-  check('the walls: their outline, gapped at the window, and one hole (the closed room)', big.map((r) => r.length), [10, 4]);
+  check('the walls: their outline, gapped at the window, and one hole (the closed room)', [big.length, big[0].length], [2, 10]);
+const hole = big[1] || [];
+check('a marker or a label touching a wall is no part of it (the triangle cut to a sliver, the strokes gone)',
+  [hole.filter(([x, y]) => x > 430 && x < 470).every(([, y]) => y > 324), hole.filter(([x, y]) => y > 110 && y < 160).every(([x]) => x > 527)], [true, true]);
   const col = res.solids.find((s) => s.length === 1) || [[]];
   check('the column is a square, where it was drawn', col[0].length === 4 && col[0].every(([x, y]) => x > 395 && x < 435 && y > 145 && y < 185), true);
   const xs = big[0].map((p) => p[0]), ys = big[0].map((p) => p[1]);

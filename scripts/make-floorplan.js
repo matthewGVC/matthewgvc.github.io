@@ -1,8 +1,8 @@
 /* ============================================================
    The floorplan maker. Reads <Floorplan folder>/Design/plan.json, checks it, draws every level
    unbranded and branded, and saves an SVG master plus a PNG copy of each into
-   <Floorplan folder>/Unbranded/ and /Branded/. Anything it would overwrite is moved first to
-   Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md.
+   <Floorplan folder>/Unbranded/ and /Branded/. Anything it would overwrite, and the same layout's
+   files from other versions, are moved first to Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md.
 
      node scripts/make-floorplan.js "<Floorplan folder>" --version 3 [--facts '{"beds":2,"baths":2}']
    ============================================================ */
@@ -84,6 +84,17 @@ async function make(folder, opts) {
       jobs.push({ dir, base, svg: draw(plan, i, { branded, facts: opts.facts }) });
     }
   });
+
+  /* Unbranded/ and Branded/ hold only the current plan: this layout's files from any other version
+     move to the archive. Only names the maker itself writes are matched; anything else stays. */
+  const ours = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' v(\\d+)( Alternate)?( - .+)?\\.(svg|png)$');
+  for (const dir of ['Unbranded', 'Branded']) {
+    if (!fs.existsSync(path.join(folder, dir))) continue;
+    fs.readdirSync(path.join(folder, dir)).sort().forEach((name) => {
+      const m = ours.exec(name);
+      if (m && +m[1] !== version && !!m[2] === !!alt) archived.push(archive(dir + '/' + name));
+    });
+  }
 
   const { chromium } = require('playwright');
   const browser = await chromium.launch();

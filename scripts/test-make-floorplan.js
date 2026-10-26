@@ -103,6 +103,21 @@ function listAll(dir) {
     eq(r2.archived.concat(r3.archived).filter(a => !all.includes(a)), []);
   });
 
+  await t('a new version archives the older versions, leaves other files alone', async () => {
+    const dir = folder(planWith());
+    await make(dir, { version: 2, today: '2026-10-27' });
+    const alt = planWith({ layout: 'alternate' });
+    fs.writeFileSync(path.join(dir, 'Design', 'plan.json'), JSON.stringify(alt));
+    await make(dir, { version: 2, today: '2026-10-27' });
+    fs.writeFileSync(path.join(dir, 'Unbranded', 'Matt hand drawn.png'), 'x');
+    fs.writeFileSync(path.join(dir, 'Design', 'plan.json'), JSON.stringify(planWith()));
+    const r = await make(dir, { version: 3, today: '2026-10-28' });
+    eq(r.archived.slice().sort(), ['Design/archive/2026-10-28/Branded/333 E43 417 v2.png', 'Design/archive/2026-10-28/Branded/333 E43 417 v2.svg',
+      'Design/archive/2026-10-28/Unbranded/333 E43 417 v2.png', 'Design/archive/2026-10-28/Unbranded/333 E43 417 v2.svg']);
+    eq(listAll(dir).filter(f => f.startsWith('Unbranded/')), ['Unbranded/333 E43 417 v2 Alternate.png', 'Unbranded/333 E43 417 v2 Alternate.svg',
+      'Unbranded/333 E43 417 v3.png', 'Unbranded/333 E43 417 v3.svg', 'Unbranded/Matt hand drawn.png']);
+  });
+
   await t('png size', async () => {
     const dir = folder(planWith());
     const r = await make(dir, { version: 3 });

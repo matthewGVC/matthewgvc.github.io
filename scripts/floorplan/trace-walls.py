@@ -139,7 +139,7 @@ def main(argv):
         while stroke + 1 < len(near) and near[int(stroke) + 1] > near[int(stroke)]:
             stroke += 1   # up to that population's peak
         if (th > 2.5 * stroke).mean() >= 0.1:
-            k = 2.2 * stroke
+            k = 1.4 * stroke   # walls are a good deal thicker than the stroke; the small-piece filter takes the bold text
         else:   # no thin linework to speak of: the commonest run is the wall itself
             k = 0.8 * stroke
     walls = th[th >= k * 0.9]

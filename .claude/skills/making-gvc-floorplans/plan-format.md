@@ -37,8 +37,10 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 
 ## A level
 
-`name` is `null` for a single-floor plan. With several levels every one needs a name, in capitals as
-the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet and in the file name.
+`name` is `null` for a home on one floor. With several levels every one needs a name, in capitals as
+the source has it ("FIRST FLOOR", "LOWER LEVEL"); it prints in the file name. A source that shows one
+floor of several and names it ("MAIN LEVEL", "FLOOR 1") keeps that name too. The branded sheet prints
+the name bottom right, before ALTERNATE or CURRENT ("FLOOR 1 ALTERNATE"), as Matt's do.
 
 ### walls
 

@@ -270,8 +270,9 @@ function drawLines(level, T) {
    (a wall mass traced round a room), filled even-odd */
 const ringsOfSolid = (s) => (Array.isArray(s) && s.length && Array.isArray(s[0]) && isPt(s[0][0]) ? s : [s]);
 function drawSolids(level, T) {
-  const d = (level.solids || []).map(ringsOfSolid).map((rs) => rs.filter((r) => Array.isArray(r) && r.length >= 3 && r.every(isPt)).map((r) => poly(r.map(T))).join('')).join('');
-  return d ? '<path fill="' + STYLE.NAVY + '" fill-rule="evenodd" d="' + d + '"/>' : '';
+  /* each solid its own path, so a solid laid over another adds to it rather than cutting a hole */
+  return (level.solids || []).map(ringsOfSolid).map((rs) => rs.filter((r) => Array.isArray(r) && r.length >= 3 && r.every(isPt)).map((r) => poly(r.map(T))).join(''))
+    .filter(Boolean).map((d) => '<path fill="' + STYLE.NAVY + '" fill-rule="evenodd" d="' + d + '"/>').join('');
 }
 
 function drawAreas(level, T) {
@@ -597,12 +598,12 @@ function factsLines(facts) {
   return [first.join(' · '), second.join(' · ')].filter(Boolean);
 }
 
-/* the address on one line when it fits left of the bar, else split at its last comma: street over unit */
+/* the address on one line when it fits left of the bar, else split at its first comma: street over unit */
 function addressLines(address) {
   const A = STYLE.HEADER.address, text = address.toUpperCase();
   const room = A.right - A.minX;   // it may start left of x, back to minX, to stay on one line (435 E57)
   if (measure(text, A) <= room || !text.includes(',')) return [text];
-  const i = text.lastIndexOf(',');
+  const i = text.indexOf(',');   // street over the rest: 401 EAST 89TH STREET / FLOORS 18, 19E
   return [text.slice(0, i).trim(), text.slice(i + 1).trim()];
 }
 
@@ -673,8 +674,9 @@ function drawStatus(text) {
 /* one level's drawing, every layer in order, through T (plan units -> page points, scale s);
    also used by style-sheet.js to draw single elements at a fixed scale */
 function drawLevel(level, T, s) {
-  return [drawAreas(level, T), drawSolids(level, T), drawLines(level, T), drawWalls(level, T),
-    drawFixtures(level, T, s), drawOpenings(level, T, s), drawRooms(level, T)].filter(Boolean).join('\n');
+  /* fixtures and linework under the walls, as Matt's are: a counter stops at the wall, it never covers it */
+  return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawSolids(level, T), drawWalls(level, T),
+    drawOpenings(level, T, s), drawRooms(level, T)].filter(Boolean).join('\n');
 }
 
 function draw(plan, levelIndex = 0, opts = {}) {
@@ -714,7 +716,8 @@ function draw(plan, levelIndex = 0, opts = {}) {
   }
   if (branded) {
     if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north, F.extent));
-    const status = [plan.levels.length > 1 && level.name ? level.name : '', plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : ''].filter(Boolean).join(' ');
+    /* the floor's name (also on a sheet of one floor of several: FLOOR 1 ALTERNATE), then the layout */
+    const status = [level.name || '', plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : ''].filter(Boolean).join(' ');
     if (status) parts.push(drawStatus(status));
     parts.push(drawFooter());
   }

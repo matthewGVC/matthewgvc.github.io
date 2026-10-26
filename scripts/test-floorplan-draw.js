@@ -268,6 +268,12 @@ const hdr = (svg) => svg.slice(svg.indexOf('data-frame="header"'), svg.indexOf('
 p = clone(studio); p.job.address = '225 East 79th Street, Penthouse A';
 const two = br(p, { beds: 3, baths: 3 });
 check('a long address breaks at its last comma: street over unit, white, with the bar before the facts', [(hdr(two).match(/<path d=/g) || []).length, /<rect x="404.15"/.test(hdr(two))], [3, true]);
+p.job.address = '401 East 89th Street, Floors 18, 19E';
+const e89 = br(p, { beds: 4, baths: 3 }), e89h = hdr(e89);
+check('it breaks at the first comma: 401 EAST 89TH STREET over FLOORS 18, 19E', [(e89h.match(/<path d=/g) || []).length, (() => {
+  const ds = [...e89h.matchAll(/<path d="([^"]*)"/g)].map((m) => Math.max(...(m[1].match(/-?[\d.]+/g) || []).filter((_, i) => i % 2 === 0).map(Number)));
+  return ds[1] < 389.5;   // the second address line ends left of the bar, clear of the facts
+})()], [3, true]);
 p.job.address = '929 Park Avenue, 4C';
 check('a short address stays on one line', (hdr(br(p, { beds: 2, baths: 2 })).match(/<path d=/g) || []).length, 2);
 p.job.address = '435 East 57th Street, 12B';
@@ -302,6 +308,14 @@ check('a terrace is white; pavers lay the faint grid over it', [/fill="#ffffff" 
 p = clone(box4); p.levels[0].lines = [{ pts: [[10, 10], [40, 10]], dash: true }, { pts: [[10, 30], [10, 60]], arrow: true }];
 const dl2 = draw(p, 0, {});
 check('a line can be dashed, and end in an arrowhead', [/stroke-dasharray="1.5 1" d="M/.test(dl2), /<path fill="#00273a" d="M[^"]*L[^"]*L[^"]*Z"\/>/.test(dl2), validate(p).errors], [true, true, []]);
+
+p = clone(studio); p.layout = 'alternate'; p.levels[0].name = 'FLOOR 1';
+check('one named floor of several: its name prints before ALTERNATE', /data-frame="status"/.test(br(p)) && validate(p).errors.length === 0, true);
+p = clone(box4); p.levels[0].solids = [[[0, 0], [20, 0], [20, 20], [0, 20]], [[10, 10], [30, 10], [30, 30], [10, 30]]];
+check('two overlapping solids add up: each is its own path', (draw(p, 0, {}).match(/fill-rule="evenodd"/g) || []).length, 2);
+p = clone(box4); p.levels[0].fixtures = [{ type: 'counter', at: [50, 5], w: 60, h: 10, rot: 0 }];
+const order = draw(p, 0, {});
+check('fixtures lie under the walls, so a counter never hides one', order.indexOf('<g transform="translate') >= 0 && order.indexOf('stroke-width="4"') > order.indexOf('<g transform="translate'), true);
 
 /* ---- report ---- */
 if (failures.length) {

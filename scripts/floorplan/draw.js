@@ -253,8 +253,14 @@ function drawLines(level, T) {
   (level.lines || []).forEach((l) => {
     if (!l || !Array.isArray(l.pts) || l.pts.length < 2 || !l.pts.every(isPt)) return;
     const P = l.pts.map(T);
-    out.push(l.closed ? '<path ' + thin() + ' d="' + poly(P) + '"/>'
-      : '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '" d="M' + P.map(pt).join('L') + '"/>');
+    /* dash: a dashed line (overhead cabinets, a track); arrow: an arrowhead at the last point (UP, DN) */
+    const dash = l.dash ? ' stroke-dasharray="' + STYLE.LINE_DASH + '"' : '';
+    out.push(l.closed ? '<path ' + thin(dash) + ' d="' + poly(P) + '"/>'
+      : '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"' + dash + ' d="M' + P.map(pt).join('L') + '"/>');
+    if (l.arrow && !l.closed) {
+      const e = P[P.length - 1], d = sub(e, P[P.length - 2]), L = len(d) || 1, u = mul(d, 1 / L), n = [-u[1], u[0]], a = STYLE.STAIR_ARROW;
+      out.push('<path fill="' + STYLE.NAVY + '" d="' + poly([e, addv(addv(e, mul(u, -a)), mul(n, a * 0.45)), addv(addv(e, mul(u, -a)), mul(n, -a * 0.45))]) + '"/>');
+    }
   });
   return out.join('');
 }
@@ -461,10 +467,10 @@ const FIXTURE_DRAW = {
   counter: (w, h) => [rect(-w / 2, -h / 2, w, h)],
   /* a closet rod along its length with hangers across it */
   /* ---- laundry and utility (labels W, D, W/D, WH, DW go in `labels`) ---- */
-  washer: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, h * 0.06, Math.min(w, h) * 0.34, Math.min(w, h) * 0.34)],
-  dryer: (w, h) => [rect(-w / 2, -h / 2, w, h), rrect(-w * 0.32, -h * 0.26, w * 0.64, h * 0.64, Math.min(w, h) * 0.08)],
-  /* one stacked unit: the washer's drum and the dryer's line across */
-  'washer-dryer': (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2 + h * 0.18], [w / 2, -h / 2 + h * 0.18]), ell(0, h * 0.09, Math.min(w, h) * 0.3, Math.min(w, h) * 0.3)],
+  /* Matt draws laundry as plain boxes, labelled W, D or W/D (in labels), like DW and REF */
+  washer: (w, h) => [rect(-w / 2, -h / 2, w, h)],
+  dryer: (w, h) => [rect(-w / 2, -h / 2, w, h)],
+  'washer-dryer': (w, h) => [rect(-w / 2, -h / 2, w, h)],
   'water-heater': (w, h) => [ell(0, 0, w / 2, h / 2), ell(0, 0, w * 0.3, h * 0.3)],
   /* under the counter: its box, labelled DW (in labels), as Matt draws it */
   dishwasher: (w, h) => [rect(-w / 2, -h / 2, w, h)],
@@ -594,7 +600,7 @@ function factsLines(facts) {
 /* the address on one line when it fits left of the bar, else split at its last comma: street over unit */
 function addressLines(address) {
   const A = STYLE.HEADER.address, text = address.toUpperCase();
-  const room = A.right - (2 * A.x - STYLE.BOX_BRANDED.x0);   // it may start a little left of x to stay on one line
+  const room = A.right - A.minX;   // it may start left of x, back to minX, to stay on one line (435 E57)
   if (measure(text, A) <= room || !text.includes(',')) return [text];
   const i = text.lastIndexOf(',');
   return [text.slice(0, i).trim(), text.slice(i + 1).trim()];
@@ -610,7 +616,7 @@ function drawHeader(plan, facts) {
   const paths = [];
   if (address) {
     const lines = addressLines(address);
-    const x = Math.min(A.x, A.right - Math.max(...lines.map((t) => measure(t, A))));
+    const x = Math.max(A.minX, Math.min(A.x, A.right - Math.max(...lines.map((t) => measure(t, A)))));
     block(lines, A).forEach(([t, y]) => paths.push(outline(t, { ...A, x, y, anchor: 'start' })));
   }
   const fl = factsLines(facts);
@@ -637,6 +643,10 @@ function compassAt(plan) {
   const room = [[plan.x0 - B.x0, left], [B.x1 - plan.x1, right]].sort((p, q) => q[0] - p[0]);
   return room[0][0] >= C.h + 2 * gap ? [room[0][1], C.at[1]] : C.at;
 }
+const compassBlocked = (plan) => {
+  const C = STYLE.COMPASS, at = compassAt(plan), r = C.h / 2, g = STYLE.COMPASS_CLEAR;
+  return !(at[0] + r + g <= plan.x0 || at[0] - r - g >= plan.x1 || at[1] - r - g >= plan.y1);
+};
 function drawCompass(north, plan) {
   const C = STYLE.COMPASS, at = compassAt(plan);
   if (SYMBOLS.compass) {
@@ -671,10 +681,20 @@ function draw(plan, levelIndex = 0, opts = {}) {
   const branded = !!opts.branded;
   const level = plan.levels[levelIndex];
   if (!level) throw new Error('no level ' + levelIndex);
-  const box = branded ? STYLE.BOX_BRANDED : STYLE.BOX_UNBRANDED;
-  const s = fitScale(level, box), b = bounds(level);
-  const ox = box.x0 + ((box.x1 - box.x0) - (b.x1 - b.x0) * s) / 2;
-  const oy = box.y0 + ((box.y1 - box.y0) - (b.y1 - b.y0) * s) / 2;
+  let box = branded ? STYLE.BOX_BRANDED : STYLE.BOX_UNBRANDED;
+  const b = bounds(level);
+  const fit = (bx) => {
+    const k = fitScale(level, bx);
+    const x = bx.x0 + ((bx.x1 - bx.x0) - (b.x1 - b.x0) * k) / 2, y = bx.y0 + ((bx.y1 - bx.y0) - (b.y1 - b.y0) * k) / 2;
+    return { s: k, ox: x, oy: y, extent: { x0: x, y0: y, x1: x + (b.x1 - b.x0) * k, y1: y + (b.y1 - b.y0) * k } };
+  };
+  let F = fit(box);
+  /* the compass needs its corner at the bottom: when the plan leaves no room for it, the plan stops above it */
+  if (branded && Number.isFinite(plan.north) && compassBlocked(F.extent)) {
+    box = Object.assign({}, box, { y1: STYLE.COMPASS.at[1] - STYLE.COMPASS.h / 2 - STYLE.COMPASS_CLEAR });
+    F = fit(box);
+  }
+  const { s, ox, oy } = F;
   const T = (p) => [ox + (p[0] - b.x0) * s, oy + (p[1] - b.y0) * s];
 
   const W = STYLE.PAGE.w, H = STYLE.PAGE.h;
@@ -693,8 +713,7 @@ function draw(plan, levelIndex = 0, opts = {}) {
       'transform="matrix(' + r6(s) + ' 0 0 ' + r6(s) + ' ' + r6(ox - b.x0 * s) + ' ' + r6(oy - b.y0 * s) + ')"/>');
   }
   if (branded) {
-    const extent = { x0: ox, y0: oy, x1: ox + (b.x1 - b.x0) * s, y1: oy + (b.y1 - b.y0) * s };
-    if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north, extent));
+    if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north, F.extent));
     const status = [plan.levels.length > 1 && level.name ? level.name : '', plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : ''].filter(Boolean).join(' ');
     if (status) parts.push(drawStatus(status));
     parts.push(drawFooter());

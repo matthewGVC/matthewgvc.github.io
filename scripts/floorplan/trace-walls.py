@@ -161,8 +161,12 @@ def main(argv):
         bw, bh = x1 - x0 + 1, y1 - y0 + 1
         # a small piece that is not a solid block (a bold letter, a faucet bar's stroke) is not wall;
         # a column or a chimney is small too, but as thick as it is wide
-        if max(bw, bh) < 0.04 * max(img.size) and 2 * dt[comp].max() < 0.6 * min(bw, bh):
-            continue
+        if max(bw, bh) < 0.04 * max(img.size):
+            # small: keep it only if it is a solid block, near square (a column, a chimney); a bold letter,
+            # a fixture's bar or a stroke of linework is not wall
+            fill = comp.sum() / float(bw * bh)
+            if fill < 0.85 or max(bw, bh) > 2.0 * min(bw, bh) or 2 * dt[comp].max() < 0.6 * min(bw, bh):
+                continue
         if any(ex0 <= x0 and ey0 <= y0 and x1 <= ex1 and y1 <= ey1 for ex0, ey0, ex1, ey1 in a['erase']):
             continue
         sub = np.pad(comp[y0:y1 + 1, x0:x1 + 1], 1)

@@ -104,8 +104,8 @@ Files beside this one:
    something that isn't in the source.** Zoom into each part of the overlay and fix every one. Thin red
    edges along walls are fine: they are only the house style's wall weight against the source's.
    The overlay needs a picture traced in its own pixels. For a PDF or SVG, overlay the PNG you
-   rendered and traced. It is drawn at the page's scale; it prints how its pixels map back to the
-   source's. Write it outside the Floorplan folder (the repo's `tmp/`).
+   rendered and traced. It is cut to the source and drawn in the source's own pixels (times the zoom it
+   prints, so source px = overlay px / zoom): grid crops of it read in plan.json's coordinates. Write it outside the Floorplan folder (the repo's `tmp/`).
 
    **b. By eye.** Open the Unbranded PNG and the source and compare them:
    - every room in the source is in the drawing, with the same name and the same size;

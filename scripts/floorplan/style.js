@@ -13,7 +13,7 @@ module.exports = {
   PAGE: { w: 810, h: 630 },
   PNG: { w: 3375, h: 2625 },   // px, the PNG copy of each plan (810 x 630 pt at 300 dpi)
   BOX_UNBRANDED: { x0: 36, y0: 36, x1: 774, y1: 594 },
-  BOX_BRANDED: { x0: 72, y0: 100, x1: 738, y1: 578 },
+  BOX_BRANDED: { x0: 36, y0: 134, x1: 774, y1: 586 },   // Matt's: the page's width, from under the fade to the note
 
   /* colours */
   NAVY,
@@ -30,6 +30,7 @@ module.exports = {
   WALL_GLASS: 0.8,           // pt, glass partitions and shower screens
   THIN: 0.5,                 // fixtures, door leaves and arcs, windows, areas
   CLOSET_DASH: '2 2',
+  LINE_DASH: '1.5 1',         // a dashed line: overhead cabinets, a sliding door's track (Matt's 347 W Broadway)
   FINE: 0.25,                // pt, the inner detail of Matt's symbols
   STAIR_DOTTED: '1 1',       // a stair past its break line
   PATTERN_LINE: 0.25,        // pt, swatch lines (tile, brick)
@@ -50,8 +51,8 @@ module.exports = {
   LABEL_EM: 0.62,            // average capital width in em, for the "label wider than its room" warning
   ROOM_NAME_PT,
   ROOM_NAME: { weight: 900, sizePt: ROOM_NAME_PT, tracking: 0, lineGap: ROOM_NAME_PT * 1.24 },   // lineGap: baseline to baseline of a two-line name
-  ROOM_SIZE: { weight: 400, sizePt: 7, tracking: 0, gap: 4.5 },  // gap: pt from name baseline to size cap top
-  SMALL_LABEL: { weight: 800, sizePt: 6, tracking: 0 },
+  ROOM_SIZE: { weight: 400, sizePt: 5.1, tracking: 0, gap: 3.8 },  // gap: pt from name baseline to size cap top (Matt's: cap 3.6 pt)
+  SMALL_LABEL: { weight: 800, sizePt: 7.2, tracking: 0 },  // CL, REF, W/D, DW: as tall as a room name in Matt's (cap about 5.2 pt)
 
   /* branded frame: measured off Matt's own sheets (435 E57, 225 E79, 347 W Broadway, 929 Park and others,
      all laid out the same), in pt on the 810 x 630 page */
@@ -59,7 +60,7 @@ module.exports = {
     fade: 132,                 // the cyan holds at the top, then eases to white by here
     stops: [[0, '#03A1C4'], [0.18, '#0CA5C5'], [0.27, '#1CABCB'], [0.45, '#4DBDD5'], [0.64, '#91D6E5'], [0.82, '#D7F0F5'], [1, '#FFFFFF']],
     middle: 55.5,              // the address block, the bar and the facts are centred on this line
-    address: { weight: 800, sizePt: 22.4, tracking: 0, x: 90.4, right: 389, lineGap: 26.4 },   // lineGap: baseline to baseline
+    address: { weight: 800, sizePt: 22.4, tracking: 0, x: 90.4, minX: 72, right: 389, lineGap: 26.4 },   // lineGap: baseline to baseline
     bar: { x: 405, w: 1.7, h: 15 },
     facts: { weight: 600, sizePt: 13.9, tracking: 0.265, right: 720, lineGap: 16.8 }
   },

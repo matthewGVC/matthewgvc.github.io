@@ -173,7 +173,8 @@ BUILT-IN and LAUNDRY. Place each one inside its space, clear of walls and fixtur
 
 ### lines
 
-`{ "pts": [[x, y], …], "closed": true | false }`: thin (0.5 pt) linework for what the fixed set doesn't
+`{ "pts": [[x, y], …], "closed": true | false, "dash": true, "arrow": true }`: thin (0.5 pt) linework for what the fixed set doesn't
 cover. Use it for a built-in's outline, a DW bay's dividers, a stair's turn and break line, an entry
-arrow, or a planter edge. A closed line is filled white. Never use it for a wall, a door or a
+arrow, or a planter edge. `"dash": true` for a line the source dashes (overhead cabinets, a sliding
+door's track); `"arrow": true` puts an arrowhead at its last point (an UP or entry arrow). A closed line is filled white. Never use it for a wall, a door or a
 fixture that has a type.

@@ -28,7 +28,7 @@
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
        "labels":   [{ "text", "at": [x,y] }],
-       "lines":    [{ "pts": [[x,y], ...], "closed": bool }]   thin linework the fixed set doesn't cover:
+       "lines":    [{ "pts": [[x,y], ...], "closed": bool, "dash": bool, "arrow": bool }]   thin linework the fixed set doesn't cover:
                                                                cabinet and built-in outlines, stair winders
      }],
      "missing": [], "uncertain": []
@@ -189,7 +189,9 @@ function validate(plan) {
         if (!Array.isArray(r.box) || r.box.length !== 4 || !r.box.every(Number.isFinite)) {
           errors.push(R + ': box must be [x0, y0, x1, y1]');
         } else {
-          const labelPt = Math.max(...r.name.split("\n").map((t) => t.trim().length)) * STYLE.LABEL_EM * STYLE.ROOM_NAME_PT;
+          /* the widest line of the block: the name's lines, or its size line (digits run narrower) */
+          const sizePt = typeof r.size === 'string' ? r.size.length * STYLE.LABEL_EM * 0.85 * STYLE.ROOM_SIZE.sizePt : 0;
+          const labelPt = Math.max(sizePt, ...r.name.split("\n").map((t) => t.trim().length * STYLE.LABEL_EM * STYLE.ROOM_NAME_PT));
           const roomPt = (r.box[2] - r.box[0]) * scale;
           if (labelPt > roomPt) warnings.push(R + ': label is wider than its room');
         }

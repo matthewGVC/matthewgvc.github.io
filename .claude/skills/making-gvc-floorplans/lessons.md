@@ -3,6 +3,28 @@
 What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-26: Matt's review of his symbols, round 4
+
+- **Filled outlines traced point by point look wrong.** The first centre lines followed the skeleton
+  pixel by pixel: hundreds of points, gaps at every junction, shortcuts across corners. `centreline.py`
+  now joins junctions where their lines meet, drops spurs, carries a line that stops short onto its
+  neighbour, chains lines straight through junctions, keeps sharp corners and fits the rest with a
+  few smooth curves. Check the result at large size before handing it back. `mirror` (exactly
+  symmetrical: the toilet, the lounge chair) and `merge` (cushions drawn edge to edge) are map options.
+- **Best of all is stroked art.** Ask Matt to send strokes, not "Outline Stroke" shapes: those import
+  exactly, with no tracing.
+- **One weight rule for his symbols:** the symbol's own outline is THIN, every detail inside it FINE.
+  A thin filled frame or ring counts as a line, and a solid bar becomes its outline. The range
+  handle was a solid bar, so its ends didn't match.
+- **Symbols keep Matt's proportions.** They are scaled to the box's width, along the wall, with their
+  back on the wall. A range measured shallower than his drawing is no longer squashed.
+- The dining chair was redrawn clean by hand: its seat lines crossed the cushion roll. Dining chairs
+  tuck a third under the table, which is drawn over them.
+- Sofa and sectional seat edges are one line, so their inside corners join.
+- A straight wall's free end no longer carries an extra point.
+- **The car is gone** until Matt sends a new one: a car fixture draws its rounded footprint. The old
+  rod-and-hangers cell is gone too: `rod` draws Matt's clothes 1.
+
 ## 2026-10-26: Matt's style sheet, round 3
 
 - Matt returned the sheet with his own car, closet clothes (3 variations), three pro ranges (2 × 2,

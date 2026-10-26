@@ -71,7 +71,6 @@ const SECTIONS = [
     ['fixture-kitchen-sink-2', 'Kitchen sink, two bowls 33 × 22 in', fixture('kitchen-sink', 33, 22)],
     ['fixture-refrigerator', 'Refrigerator 36 × 30 in', onWall('refrigerator', 36, 30)],
     ['fixture-counter', 'Counter / cabinet / island', fixture('counter', 72, 25)],
-    ['fixture-rod', 'Closet rod and hangers', fixture('rod', 72, 20)],
     ['line-built-in', 'Thin linework (lines)', { lines: [{ pts: box(100, 20), closed: true }] }],
     ['fixture-dishwasher', 'Dishwasher 24 × 24 in (label DW)', { labels: [{ text: 'DW', at: [0, 26] }], ...onWall('dishwasher', 24, 24) }],
     ['fixture-fireplace', 'Fireplace: EXAMPLE ONLY, each is traced from its source', { walls: [ext([-60, -22], [60, -22])],
@@ -129,7 +128,7 @@ const SECTIONS = [
     ['label-rotated', 'Room name in a narrow room (rot 90)', { rooms: [{ name: 'HALL', at: [0, 0], rot: -90 }] }]
   ]],
   ['Matt\'s artwork', [
-    ['symbol-car', 'Car (Matt\'s) 190 in', mine('car')],
+    ['draw-car', 'Car (about 190 × 75 in), to come from Matt', null],
     ['symbol-compass', 'Compass (Matt\'s): the branded frame uses it', mine('compass', 'compass')],
     ['symbol-clothes-1', 'Clothes in a closet, 1 (Matt\'s)', mine('clothes-1', 'clothes', { variant: 1 })],
     ['symbol-clothes-2', 'Clothes in a closet, 2 (Matt\'s)', mine('clothes-2', 'clothes', { variant: 2 })],

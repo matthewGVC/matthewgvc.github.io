@@ -7,12 +7,16 @@
    true size, wall side up, 8 pt to the foot) becomes symbol <name>, keeping that symbol's mode.
    A map imports artwork that is not yet in its cell: a list of
      { "name", "select": "#id" | "Layer_1>9", "within": [x0, y0, x1, y1], "rotate": 0|90|180|270,
-       "w": inches | "h": inches, "mode": "line" | "fill-line" | "art" }
+       "w": inches | "h": inches, "mode": "line" | "fill-line" | "art", "mirror": true, "merge": inches }
    rotate turns the art so its wall (or front-of-table) side is at the top; w or h is its true size.
+   fill-line only: mirror makes a symmetrical symbol exactly so, from its left half; merge draws lines
+   closer than that as one (pieces drawn edge to edge, as the lounge chair's cushions are).
 
    Every shape is flattened to absolute M / L / C / Q / Z in its own inches, centred on 0,0.
    Modes set how weights are kept:
-     line       strokes become the house weights: the outer shapes THIN, the small or inner ones FINE
+     line       strokes become the house weights: his heaviest THIN and the rest FINE (all one weight:
+                the outer shapes THIN, the small or inner ones FINE). A thin filled shape (an
+                outlined frame) becomes its centre line, weighted by its thickness; a solid one its outline
      fill-line  line art drawn as filled outlines: turned into its centre lines (centreline.py, needs
                 scikit-image), then drawn at THIN like line art
      art        an emblem (car, compass): fills kept, strokes scaled with the symbol
@@ -154,12 +158,19 @@ function thickness(paths) {
       const ring = points(seg);
       if (ring.length > 2) rings.push(ring);
     }
+    let nested = 0, signed = 0;
     rings.forEach((ring, ri) => {
       let a = 0;
       for (let k = 0; k < ring.length; k++) { const [x0, y0] = ring[k], [x1, y1] = ring[(k + 1) % ring.length]; a += x0 * y1 - x1 * y0; length += Math.hypot(x1 - x0, y1 - y0); }
-      const depth = rings.filter((o, oi) => oi !== ri && inPoly(ring[0], o)).length;
-      area += (depth % 2 ? -1 : 1) * Math.abs(a) / 2;
+      /* nudged off its vertex, so a ray along a run of points level with it still counts true */
+      const at = [ring[0][0] + 1.3e-6, ring[0][1] + 0.7e-6];
+      const depth = rings.filter((o, oi) => oi !== ri && inPoly(at, o)).length;
+      nested += (depth % 2 ? -1 : 1) * Math.abs(a) / 2;
+      signed += a / 2;
     });
+    /* a ring thinner than its points are precise can seem to cross itself; then its contours' own
+       directions (a hole runs the other way) give the area */
+    area += nested > 0 ? nested : Math.abs(signed);
   });
   return length ? (2 * Math.max(area, 0)) / length : 0;
 }
@@ -223,21 +234,30 @@ function dropSpecks(cmds, min) {
   return out;
 }
 
-/* run centreline.py on one symbol's filled contours */
-function centrelines(rings, line) {
+/* run centreline.py on groups of filled contours: [{ rings, line, mirror }] -> [[path data]] */
+function centrelines(groups) {
   const os = require('os'), cp = require('child_process');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-centre-'));
   try {
-    fs.writeFileSync(path.join(dir, 'rings.json'), JSON.stringify({ rings, line }));
+    fs.writeFileSync(path.join(dir, 'rings.json'), JSON.stringify({ groups }));
     if (process.env.GVC_KEEP) fs.copyFileSync(path.join(dir, 'rings.json'), process.env.GVC_KEEP);
     const py = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
-    const r = cp.spawnSync(py, ['-I', path.join(__dirname, 'centreline.py'), path.join(dir, 'rings.json'), path.join(dir, 'lines.json')], { encoding: 'utf8' });
+    const r = cp.spawnSync(py, ['-I', path.join(__dirname, 'centreline.py'), path.join(dir, 'rings.json'), path.join(dir, 'paths.json')], { encoding: 'utf8' });
     if (r.status !== 0) throw new Error('centreline.py failed (it needs: pip install scikit-image): ' + [r.status, r.signal, r.error, r.stderr].filter(Boolean).join(' '));
-    return JSON.parse(fs.readFileSync(path.join(dir, 'lines.json'), 'utf8')).lines;
+    return JSON.parse(fs.readFileSync(path.join(dir, 'paths.json'), 'utf8')).groups;
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 }
+/* path data (absolute M L C Q Z, as symbols.json holds it) -> commands */
+const cmdsOf = (d) => d.match(/[MLCQZ][^MLCQZ]*/g).map((t) => [t[0], ...(t.slice(1).trim() ? t.slice(1).trim().split(/\s+/).map(Number) : [])]);
+/* a path's contours, each as its sampled points */
+const ringsOf = (cmds) => {
+  const rings = [];
+  let i = 0;
+  while (i < cmds.length) { const seg = [cmds[i++]]; while (i < cmds.length && cmds[i][0] !== 'M') seg.push(cmds[i++]); rings.push(points(seg)); }
+  return rings;
+};
 
 function colour(c) {
   const m = /rgba?\(([^)]+)\)/.exec(c || '');
@@ -273,43 +293,58 @@ function build(name, shapes, opt) {
   const W = round(tw * k), H = round(th * k), big = Math.max(W, H);
 
   const boxes = paths.map((p) => bboxOf(points(p.cmds)));
-  /* when Matt drew strokes at more than one weight, his heaviest become THIN and the rest FINE */
-  const weights = [...new Set(paths.filter((p) => p.s.sw > 0 && colour(p.s.stroke)).map((p) => Math.round(p.s.sw * 100) / 100))].sort((a, b) => b - a);
+  /* in line art, a thin filled shape (an outlined frame or burner ring) is a line too: it becomes its centre
+     line, weighted by its own thickness; a solid navy shape (a bar) becomes its outline */
+  if (opt.mode === 'line') paths.forEach((p, i) => {
+    if (colour(p.s.fill) !== 'navy' || (p.s.sw > 0 && colour(p.s.stroke))) return;
+    const b = boxes[i], t = thickness([p]);
+    if (t > 0 && t < 0.25 * Math.min(b[2] - b[0], b[3] - b[1])) p.lineFill = t / k;   // in sheet units, like sw
+    else p.solid = true;
+  });
+  const weightOf = (p) => (p.lineFill ? p.lineFill : p.s.sw > 0 && colour(p.s.stroke) ? p.s.sw : 0);
+  /* when Matt drew lines at more than one weight, his heaviest become THIN and the rest FINE */
+  const weights = [...new Set(paths.map(weightOf).filter((w) => w > 0).map((w) => Math.round(w * 100) / 100))].sort((x, y) => y - x);
+  const heavy = (w) => w >= weights[0] * 0.75;
   const inside = (a, b) => a !== b && a[0] >= b[0] - 1e-6 && a[1] >= b[1] - 1e-6 && a[2] <= b[2] + 1e-6 && a[3] <= b[3] + 1e-6 && (b[2] - b[0]) * (b[3] - b[1]) > (a[2] - a[0]) * (a[3] - a[1]);
-  const out = paths.map((p, i) => {
-    const s = p.s, fill = colour(s.fill), stroke = s.sw > 0 ? colour(s.stroke) : null, b = boxes[i];
+  const several = weights.length > 1 && !heavy(weights[weights.length - 1]);
+  /* all drawn at one weight: the symbol's own outline (a shape spanning it) is THIN and every detail FINE;
+     with no such outline, the outer shapes THIN and the small or inner ones FINE */
+  const spans = (b) => b[2] - b[0] >= W * 0.85 && b[3] - b[1] >= H * 0.85;
+  const lineFills = paths.filter((p) => p.lineFill);
+  const centres = lineFills.length ? centrelines(lineFills.map((p) => ({ rings: ringsOf(p.cmds), line: p.lineFill * k }))) : [];
+  const drawn = paths.map((p, i) => (p.lineFill ? centres[lineFills.indexOf(p)].map((d) => bboxOf(points(cmdsOf(d)))) : [boxes[i]]));
+  const outlined = drawn.flat().some(spans);
+  const oneWeight = (b) => (outlined ? (spans(b) ? 'thin' : 'fine') : Math.max(b[2] - b[0], b[3] - b[1]) < big * 0.15 || boxes.some((c) => inside(b, c)) ? 'fine' : 'thin');
+  const out = paths.flatMap((p, i) => {
+    const s = p.s, b = boxes[i];
+    if (p.lineFill) return centres[lineFills.indexOf(p)].map((d, j) => ({ d, stroke: 'navy', weight: several ? (heavy(p.lineFill) ? 'thin' : 'fine') : oneWeight(drawn[i][j]) }));
+    const fill = p.solid ? null : colour(s.fill), stroke = p.solid ? 'navy' : s.sw > 0 ? colour(s.stroke) : null;
     const o = { d: p.cmds.map((c) => c[0] + c.slice(1).join(' ')).join('') };
     if (fill) o.fill = fill;
     if (stroke) {
       o.stroke = stroke;
       if (opt.mode === 'art') o.sw = round(s.sw * k);
-      else if (weights.length > 1) o.weight = s.sw >= weights[0] - 1e-6 ? 'thin' : 'fine';
+      else if (p.solid) o.weight = several ? 'fine' : oneWeight(b);
+      else if (several) o.weight = heavy(s.sw) ? 'thin' : 'fine';
       else if (Math.abs(s.sw - STYLE.THIN) < 0.01 || Math.abs(s.sw - STYLE.FINE) < 0.01) o.weight = Math.abs(s.sw - STYLE.THIN) < 0.01 ? 'thin' : 'fine';   // already at a house weight (a sheet coming back)
-      else o.weight = Math.max(b[2] - b[0], b[3] - b[1]) < big * 0.15 || boxes.some((c) => inside(b, c)) ? 'fine' : 'thin';
+      else o.weight = oneWeight(b);
     }
     const op = stroke && !fill ? s.sopacity : s.opacity;
     if (op < 0.999) o.opacity = round(op);
-    return o;
+    return [o];
   }).filter((o) => o.fill || o.stroke);
   const sym = { mode: opt.mode, size: [W, H], paths: out };
   if (opt.mode === 'fill-line') {
     /* filled outlines can't take a stroke weight, so they become their own centre lines (centreline.py),
        drawn at the house weight like any other line art */
     const filled = paths.filter((p) => colour(p.s.fill));
-    const line = thickness(filled);
-    const rings = [];
-    filled.forEach((p) => { let i = 0; while (i < p.cmds.length) { const seg = [p.cmds[i++]]; while (i < p.cmds.length && p.cmds[i][0] !== 'M') seg.push(p.cmds[i++]); rings.push(points(seg)); } });
-    const lines = centrelines(rings, line);
     sym.mode = 'line';
     sym.from = 'fill-line';
-    sym.paths = lines.map((pts) => {
-      const closed = pts.length > 2 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1];
-      return { d: 'M' + pts.slice(0, closed ? -1 : undefined).map((q) => q.join(' ')).join('L') + (closed ? 'Z' : ''), stroke: 'navy', weight: 'thin' };
-    });
+    sym.paths = centrelines([{ rings: filled.flatMap((p) => ringsOf(p.cmds)), line: thickness(filled), mirror: !!opt.mirror, merge: opt.merge || 0 }])[0].map((d) => ({ d, stroke: 'navy', weight: 'thin' }));
   }
   if (opt.note) sym.note = opt.note;
   /* the size is what is finally drawn (centre lines, specks dropped), centred on 0,0 */
-  const fb = bboxOf(sym.paths.flatMap((p) => points(p.d.match(/[MLCQZ][^MLCQZ]*/g).map((t) => [t[0], ...(t.slice(1).trim() ? t.slice(1).trim().split(/\s+/).map(Number) : [])]))));
+  const fb = bboxOf(sym.paths.flatMap((p) => points(cmdsOf(p.d))));
   const mx = (fb[0] + fb[2]) / 2, my = (fb[1] + fb[3]) / 2;
   if (Math.abs(mx) > 0.005 || Math.abs(my) > 0.005) {
     sym.paths.forEach((p) => { p.d = p.d.replace(/([MLCQZ])([^MLCQZ]*)/g, (m, c, nums) => c + (nums.trim() ? nums.trim().split(/\s+/).map((v, i) => round(+v - (i % 2 ? my : mx))).join(' ') : '')); });
@@ -340,7 +375,7 @@ async function main(file, mapFile) {
   console.log('Saved ' + Object.keys(sorted).length + ' symbols to ' + OUT);
 }
 
-module.exports = { build, commands, thickness, simplify };
+module.exports = { build, commands, thickness, simplify, points };
 
 if (require.main === module) {
   const file = process.argv[2], mi = process.argv.indexOf('--map'), oi = process.argv.indexOf('--out');

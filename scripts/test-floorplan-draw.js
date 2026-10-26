@@ -205,13 +205,32 @@ check('range: 4 burners by default, 6 on request, 6 with a griddle, each Matt\'s
 const bigPlan = clone(box4); bigPlan.levels[0].walls = [{ a: [0, 0], b: [960, 0], type: 'exterior' }, { a: [960, 0], b: [960, 600], type: 'exterior' }];
 bigPlan.levels[0].fixtures = [{ type: 'toilet', at: [100, 100], w: 19, h: 30, rot: 0 }];
 check('the toilet is Matt\'s, thickened to the house weight', /stroke-linejoin="round"/.test(draw(bigPlan, 0, {})), true);
-['lounge-chair', 'car'].forEach((t) => check(t + ' draws Matt\'s symbol', (fx(t).match(/<path/g) || []).length > SYM[t].paths.length - 1, true));
+check('lounge-chair draws Matt\'s symbol', (fx('lounge-chair').match(/<path/g) || []).length > SYM['lounge-chair'].paths.length - 1, true);
+check('until Matt\'s car comes, a car is its rounded footprint', [!SYM.car, /<g transform="translate[^>]*><path [^>]*d="M[^"]*A/.test(fx('car', { w: 190, h: 75 }))], [true, true]);
+check('a closet rod is drawn as Matt\'s clothes', (fx('rod', { w: 72, h: 20 }).match(/stroke="#00A1C4"/g) || []).length > 0, true);
+/* Matt's symbols keep his proportions: scaled to the box's width, set against its wall side */
+const symBox = (svg) => {
+  const g = [...svg.matchAll(/<g transform="translate\(([\d.-]+) ([\d.-]+)\)">(.*?)<\/g>/g)].pop()[3];
+  const v = [...g.matchAll(/d="([^"]*)"/g)].flatMap((m) => (m[1].match(/-?[\d.]+/g) || []).map(Number));
+  const xs = v.filter((_, i) => i % 2 === 0), ys = v.filter((_, i) => i % 2);
+  return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+};
+const rq = symBox(fx('range', { w: 30, h: 24 })), rw = SYM['range-4'].size, rk = (rq.x1 - rq.x0) / 30;
+check('a range in a shallower box is not squashed: its depth is Matt\'s, its back on the wall',
+  [Math.abs((rq.y1 - rq.y0) / (rq.x1 - rq.x0) - rw[1] / rw[0]) < 0.02, Math.abs(rq.y0 + 24 * rk / 2) < 0.2], [true, true]);
 check('clothes variants 1-3 draw Matt\'s three', [1, 2, 3].map((v) => (fx('clothes', { variant: v }).match(/stroke="#00A1C4"/g) || []).length > 0), [true, true, true]);
 ['washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher', 'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'].forEach((t) =>
   check('furniture ' + t + ' draws', /<g transform="translate/.test(fx(t)), true));
 check('a twin bed has one pillow, a queen two', [fpaths('bed', { w: 38, h: 75 }), fpaths('bed', { w: 60, h: 80 })], [4, 5]);
 check('a dining table for 6 has six of Matt\'s chairs', (fx('dining-table', { w: 72, h: 36, seats: 6 }).match(/<g transform="translate/g) || []).length - 1, 6);
 check('a round table for 4 has four', (fx('dining-table', { w: 42, h: 42, shape: 'round' }).match(/<g transform="translate/g) || []).length - 1, 4);
+/* chairs pull in under the table: each chair's centre is closer to the table's than its edge plus half a chair */
+const chairAt = (svg) => [...svg.matchAll(/<g transform="translate\(([\d.-]+) ([\d.-]+)\) rotate/g)].map((m) => Math.hypot(+m[1], +m[2]));
+const rt = fx('dining-table', { w: 42, h: 42, shape: 'round' }), half = +rt.match(/<\/g><path [^>]*d="M[^"]*A([\d.]+)/)[1], cdepth = half * SYM.chair.size[1] / SYM.chair.size[0];
+check('…tucked under the round table, which is drawn over them', [chairAt(rt).length, chairAt(rt).every((d) => d < half + cdepth / 2 - cdepth * 0.25), /<\/g><path fill="#ffffff"[^>]*d="M[^"]*A/i.test(rt)], [4, true, true]);
+/* a sofa's seat edge runs down one arm, along the back and down the other as one line, so its corners join */
+check('a sofa\'s inner corners are joined', /d="M[\d. -]+L[\d. -]+L[\d. -]+L[\d. -]+"/.test(fx('sofa', { w: 84, h: 36 })), true);
+check('a sectional\'s inner corner is joined', /d="M[\d. -]+L[\d. -]+L[\d. -]+"/.test(fx('sectional', { w: 110, h: 90 })), true);
 p = clone(box4); p.levels[0].areas = [{ type: 'floor', pattern: 'tile', poly: [[0, 0], [50, 0], [50, 50], [0, 50]] }];
 const tl = draw(p, 0, {});
 check('a tiled floor uses the tile swatch, defined once', [tl.includes('fill="url(#fp-pat-tile)"'), tl.split('id="fp-pat-tile"').length - 1], [true, 1]);
@@ -224,6 +243,11 @@ check('…past it is the way the arrow points', (() => { const q = clone(p); q.l
 
 p = clone(box4); p.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'bifold', side: 'right' }];
 check('a bi-fold door draws its folded panels', /stroke-width="0.5" d="M[^"]*L[^"]*L[^"]*M/.test(draw(p, 0, {})), true);
+
+/* a straight run's free end is run on half a wall at its own end point, with no extra point beside it */
+p = clone(box4); p.levels[0].walls = [{ a: [0, 0], b: [100, 0], type: 'exterior' }, { a: [100, 0], b: [100, 60], type: 'exterior' }]; p.levels[0].openings = [];
+const wallD = draw(p, 0, {}).match(/stroke-width="4"[^>]*d="([^"]*)"/)[1];
+check('a corner of two walls is three points, its free ends run on', (wallD.match(/[ML]/g) || []).length, 3);
 
 /* ---- report ---- */
 if (failures.length) {

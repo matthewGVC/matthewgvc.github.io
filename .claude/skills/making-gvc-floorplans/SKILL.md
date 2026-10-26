@@ -156,8 +156,11 @@ back. To apply it:
   New artwork drawn anywhere else on the sheet needs a map (see the script's header): where it is,
   which way to turn it so its wall side is at the top, and its true size. The importer:
   - flattens Illustrator's transforms;
-  - sets the house weights (his heaviest strokes become THIN, the rest FINE) and colours;
-  - turns art drawn as filled outlines into centre lines (that step needs `pip install scikit-image`);
+  - sets the house weights and colours: his heaviest lines THIN and the rest FINE, or, when he drew
+    them all at one weight, the symbol's own outline THIN and every detail FINE;
+  - turns art drawn as filled outlines into smooth, joined centre lines (that step needs
+    `pip install scikit-image`; map options `mirror` and `merge`). Look at the result at large size;
+    stroked art imports exactly, so ask Matt for strokes rather than outlined shapes;
   - thins out traced artwork.
 
   After importing, regenerate the sheet, check his symbols look like his drawing, and run

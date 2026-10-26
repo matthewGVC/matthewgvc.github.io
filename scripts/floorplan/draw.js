@@ -105,7 +105,7 @@ function course(w, T) {
   }
   const L = len(sub(b, a)), d = L ? mul(sub(b, a), 1 / L) : [1, 0], left = [d[1], -d[0]];
   const at = (t, k = 0) => addv(lerp(a, b, t), mul(left, k));
-  return { len: L, at, dir: () => d, seg: (t0, t1, k = 0) => 'L' + pt(at(t1, k)) };
+  return { len: L, at, dir: () => d, straight: true, seg: (t0, t1, k = 0) => 'L' + pt(at(t1, k)) };
 }
 const leftOf = (d) => [d[1], -d[0]];
 const wallWidth = (type) => (type === 'exterior' ? STYLE.WALL_EXTERIOR : type === 'glass' ? STYLE.WALL_GLASS : STYLE.WALL_INTERIOR);
@@ -157,11 +157,16 @@ function drawWalls(level, T) {
       const travel = (c, t) => mul(c.sp.C.dir(t), c.fwd ? 1 : -1);
       const first = chain[0], last = chain[chain.length - 1];
       const [f0] = piece(first), [, l1] = piece(last);
-      let path = 'M' + pt(startOf(first) && !closed ? addv(first.sp.C.at(f0), mul(travel(first, f0), -hw)) : first.sp.C.at(f0));
-      if (startOf(first) && !closed) path += 'L' + pt(first.sp.C.at(f0));
-      chain.forEach((c) => { const [t0, t1] = piece(c); path += c.sp.C.seg(t0, t1); });
+      /* a free end runs on half a wall; on a straight run that is the run's own end point, not an extra one */
+      const runOn = startOf(first) && !closed, runOff = endOf(last) && !closed;
+      let path = 'M' + pt(runOn ? addv(first.sp.C.at(f0), mul(travel(first, f0), -hw)) : first.sp.C.at(f0));
+      if (runOn && !first.sp.C.straight) path += 'L' + pt(first.sp.C.at(f0));
+      chain.forEach((c, i) => {
+        const [t0, t1] = piece(c);
+        path += i === chain.length - 1 && runOff && c.sp.C.straight ? 'L' + pt(addv(c.sp.C.at(t1), mul(travel(c, t1), hw))) : c.sp.C.seg(t0, t1);
+      });
       if (closed) path += 'Z';
-      else if (endOf(last)) path += 'L' + pt(addv(last.sp.C.at(l1), mul(travel(last, l1), hw)));
+      else if (runOff && !last.sp.C.straight) path += 'L' + pt(addv(last.sp.C.at(l1), mul(travel(last, l1), hw)));
       d.push(path);
     });
     if (d.length) out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + width + '" stroke-linejoin="miter" stroke-miterlimit="8" d="' + d.join('') + '"/>');
@@ -343,14 +348,18 @@ function patternDefs(names) {
 /* ---------- Matt's symbols (symbols.json, from import-symbols.js): his artwork is the symbol ---------- */
 const SYMBOLS = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'symbols.json'), 'utf8')); } catch (e) { return {}; } })();
 const PAINT = { navy: STYLE.NAVY, white: STYLE.WHITE, cyan: STYLE.CYAN };
-/* symbol `name` stretched into a w x h pt box centred on 0,0 (wall side at the top, as drawn) */
+/* symbol `name` in a w x h pt box centred on 0,0, wall side at the top as drawn. It keeps Matt's
+   proportions: scaled to the box's width (its run along the wall) and set against the wall side, so a
+   range or toilet is never squashed. Clothes are the exception: they stretch to fill the closet. */
 function drawSymbol(name, w, h) {
   const sym = SYMBOLS[name];
-  const sx = w / sym.size[0], sy = h / sym.size[1], sk = (sx + sy) / 2;
+  const stretch = /^clothes-/.test(name);
+  const sx = w / sym.size[0], sy = stretch ? h / sym.size[1] : sx, sk = (sx + sy) / 2;
+  const dy = stretch ? 0 : -h / 2 + sym.size[1] * sy / 2;   // the wall side stays on the box's top edge
   return sym.paths.map((p) => {
     const d = p.d.replace(/([MLCQZ])([^MLCQZ]*)/g, (m, c, nums) => {
       const v = nums.trim() ? nums.trim().split(/\s+/).map(Number) : [];
-      return c + v.map((x, i) => r2(i % 2 ? x * sy : x * sx)).join(' ');
+      return c + v.map((x, i) => r2(i % 2 ? x * sy + dy : x * sx)).join(' ');
     });
     const a = ['fill="' + (p.fill ? PAINT[p.fill] || p.fill : 'none') + '"'];
     let sw = 0, stroke = p.stroke ? PAINT[p.stroke] || p.stroke : null;
@@ -364,7 +373,8 @@ function drawSymbol(name, w, h) {
 function symbolFor(f) {
   const name = f.type === 'range' ? (f.griddle ? 'range-6-griddle' : f.burners === 6 ? 'range-6' : 'range-4')
     : f.type === 'clothes' ? 'clothes-' + (f.variant || 1) : f.type;
-  return SYMBOLS[name] ? name : null;
+  /* a plain rod is drawn as Matt's first clothes symbol */
+  return SYMBOLS[name] ? name : f.type === 'rod' && SYMBOLS['clothes-1'] ? 'clothes-1' : null;
 }
 
 /* ---------- fixtures: drawn in a local box centred on 0,0, w x h pt ---------- */
@@ -444,8 +454,9 @@ const FIXTURE_DRAW = {
   'side-table': (w, h, f) => [f.shape === 'round' ? ell(0, 0, w / 2, h / 2) : rect(-w / 2, -h / 2, w, h)],
   /* back along the wall, arms at the ends, f.seats cushions (3 by default) */
   sofa: (w, h, f) => {
-    const n = f.seats || 3, back = h * 0.25, arm = Math.min(w * 0.12, h * 0.3), cw = (w - 2 * arm) / n, out = [rrect(-w / 2, -h / 2, w, h, h * 0.08), line([-w / 2 + arm, -h / 2 + back], [w / 2 - arm, -h / 2 + back])];
-    out.push(line([-w / 2 + arm, -h / 2 + back], [-w / 2 + arm, h / 2]), line([w / 2 - arm, -h / 2 + back], [w / 2 - arm, h / 2]));
+    const n = f.seats || 3, back = h * 0.25, arm = Math.min(w * 0.12, h * 0.3), cw = (w - 2 * arm) / n, out = [rrect(-w / 2, -h / 2, w, h, h * 0.08)];
+    /* the seat's edge: down each arm and along the back as one line, so its corners join */
+    out.push('M' + pt([-w / 2 + arm, h / 2]) + 'L' + pt([-w / 2 + arm, -h / 2 + back]) + 'L' + pt([w / 2 - arm, -h / 2 + back]) + 'L' + pt([w / 2 - arm, h / 2]));
     for (let i = 1; i < n; i++) out.push(line([-w / 2 + arm + cw * i, -h / 2 + back], [-w / 2 + arm + cw * i, h / 2]));
     return out;
   },
@@ -455,7 +466,7 @@ const FIXTURE_DRAW = {
     const dep = Math.min(w, h) * 0.42, back = dep * 0.3, sx = f.side === 'right' ? -1 : 1;
     const X = (x) => x * sx;
     const outline = poly([[X(-w / 2), -h / 2], [X(w / 2), -h / 2], [X(w / 2), -h / 2 + dep], [X(-w / 2 + dep), -h / 2 + dep], [X(-w / 2 + dep), h / 2], [X(-w / 2), h / 2]]);
-    return [outline, line([X(-w / 2 + back), -h / 2 + back], [X(w / 2), -h / 2 + back]) + line([X(-w / 2 + back), -h / 2 + back], [X(-w / 2 + back), h / 2]),
+    return [outline, 'M' + pt([X(w / 2), -h / 2 + back]) + 'L' + pt([X(-w / 2 + back), -h / 2 + back]) + 'L' + pt([X(-w / 2 + back), h / 2]),
       line([X(-w / 2 + dep), -h / 2 + back], [X(-w / 2 + dep), -h / 2 + dep]) + line([X((-w / 2 + dep + w / 2) / 2), -h / 2 + back], [X((-w / 2 + dep + w / 2) / 2), -h / 2 + dep]) +
       line([X(-w / 2 + back), (-h / 2 + dep + h / 2) / 2], [X(-w / 2 + dep), (-h / 2 + dep + h / 2) / 2])];
   },
@@ -464,12 +475,14 @@ const FIXTURE_DRAW = {
   /* the table (w x h) with f.seats chairs round it (4 by default): along the long sides, then the ends */
   'dining-table': (w, h, f) => {
     const n = f.seats || 4, c = Math.min(w, h) * 0.36;
-    /* each chair at the table's edge, its back away from the table: Matt's chair when there is one */
+    /* each chair pulled in to the table, its back away from it: Matt's chair when there is one. Its front
+       third tucks under the table, which is drawn over it, so chair and table read as one set */
     const out = [], chair = SYMBOLS.chair, ch = (x, y, rot) => {
       const q = rot * Math.PI / 180;
       if (chair) {
-        const cw = Math.min(w, h) * 0.6, cd = cw * chair.size[1] / chair.size[0];
-        const at = [x - Math.sin(q) * cd / 2, y + Math.cos(q) * cd / 2];
+        const cw = Math.min(w, h) * 0.5, cd = cw * chair.size[1] / chair.size[0];
+        const tuck = f.shape === 'round' ? Math.max(cd * 0.3, Math.min(w, h) / 2 - Math.sqrt(Math.max(0, (Math.min(w, h) / 2) ** 2 - (cw / 2) ** 2)) + cd * 0.08) : cd * 0.3;
+        const at = [x - Math.sin(q) * (cd / 2 - tuck), y + Math.cos(q) * (cd / 2 - tuck)];
         out.push({ raw: '<g transform="translate(' + pt(at) + ') rotate(' + r2(rot) + ')">' + drawSymbol('chair', cw, cd) + '</g>' });
         return;
       }
@@ -487,6 +500,8 @@ const FIXTURE_DRAW = {
     }
     return out;
   },
+  /* until Matt's car comes: its footprint, rounded */
+  car: (w, h) => [rrect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.25)],
   rod: (w, h) => {
     const n = Math.max(3, Math.round(w / (h * 0.35)));
     let d = line([-w / 2, 0], [w / 2, 0]);

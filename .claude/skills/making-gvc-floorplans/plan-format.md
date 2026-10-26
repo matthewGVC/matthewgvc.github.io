@@ -94,10 +94,11 @@ in plan units, measured on the source.
   or built-in box), `rod` (a closet rod, `w` along the rod).
 - **Matt's own symbols** (`scripts/floorplan/symbols.json`) are what these draw, whenever he has
   drawn one: `toilet`, `range` (4 burners; `"burners": 6`; `"burners": 6, "griddle": true`), the
-  dining chairs, `lounge-chair` (terrace), `car`, `clothes` (`"variant": 1`, `2` or `3`: clothes on a
-  closet rod; use them where the source shows clothes, `rod` where it shows only a rod) and the
-  compass. They have a real front and back, so **`rot` matters**: a range's knobs, a toilet's bowl and
-  a chair's seat face away from the wall.
+  dining chairs, `lounge-chair` (terrace), `clothes` (`"variant": 1`, `2` or `3`: clothes on a closet
+  rod; `rod` draws variant 1) and the compass. `car` draws a rounded footprint until Matt's car comes.
+  They have a real front and back, so **`rot` matters**: a range's knobs, a toilet's bowl and a chair's
+  seat face away from the wall. They keep Matt's proportions: `w` (along the wall) sets their size and
+  their back sits on the wall, so a box measured a little shallow never squashes them.
 - **Laundry and utility:** `washer`, `dryer`, `washer-dryer` (one stacked unit), `water-heater`,
   `dishwasher`. Put their labels (W, D, W/D, WH, DW) in `labels`.
 - **Fireplaces are not a fixed symbol.** Every fireplace is traced from its own source: the chimney

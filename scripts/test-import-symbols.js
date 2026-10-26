@@ -1,7 +1,8 @@
 /* ============================================================
    Tests for scripts/floorplan/import-symbols.js: a style sheet round-trips. The sheet's symbol-<name>
    cells, read straight back, give the same symbols (same size, same weights, same colours).
-   Needs Playwright, and scikit-image only for fill-line art (none on the sheet: it is stored as lines).
+   Then centreline.py (fill-line art) on simple shapes: a frame, a T, a ring.
+   Needs Playwright; the centreline checks need scikit-image and are skipped without it.
    Plain Node:  node scripts/test-import-symbols.js
    ============================================================ */
 'use strict';
@@ -40,6 +41,32 @@ try {
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
 }
+
+/* centreline.py: filled outlines -> clean centre lines (skipped where scikit-image isn't installed) */
+const py = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+if (cp.spawnSync(py, ['-c', 'import skimage'], { stdio: 'ignore' }).status === 0) {
+  const sq = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const ring = (r, n = 64) => Array.from({ length: n }, (_, i) => [r * Math.cos((2 * Math.PI * i) / n), r * Math.sin((2 * Math.PI * i) / n)]);
+  const groups = [
+    { rings: [sq(-10, -10, 10, 10), sq(-9.5, -9.5, 9.5, 9.5)], line: 0.5 },                          // an outlined frame
+    { rings: [[[-10, -0.25], [10, -0.25], [10, 0.25], [0.25, 0.25], [0.25, 8], [-0.25, 8], [-0.25, 0.25], [-10, 0.25]]], line: 0.5 },   // a T
+    { rings: [ring(6), ring(5.5)], line: 0.5 }                                                       // a ring
+  ];
+  const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-centre-test-'));
+  try {
+    fs.writeFileSync(path.join(d2, 'in.json'), JSON.stringify({ groups }));
+    cp.execFileSync(py, ['-I', path.join(__dirname, 'floorplan', 'centreline.py'), path.join(d2, 'in.json'), path.join(d2, 'out.json')]);
+    const [frame, tee, circle] = JSON.parse(fs.readFileSync(path.join(d2, 'out.json'), 'utf8')).groups;
+    const nums = (d) => (d.match(/-?[\d.]+/g) || []).map(Number);
+    check('centreline: an outlined frame is one closed line with four straight sides', [frame.length, /^M[^C]*Z$/.test(frame[0]), (frame[0].match(/L/g) || []).length], [1, true, 4]);
+    check('…on its centre line', nums(frame[0]).every((v) => Math.abs(Math.abs(v) - 9.75) < 0.15), true);
+    const stemEnd = tee.map(nums).find((v) => Math.max(...v.filter((_, i) => i % 2)) > 7);
+    check('centreline: a T is its bar and its stem, the stem meeting the bar', [tee.length, !!stemEnd && Math.min(...stemEnd.filter((_, i) => i % 2)) < 0.15], [2, true]);
+    check('centreline: a ring is one smooth closed curve, a few points round', [circle.length, /^M[^L]*Z$/.test(circle[0]), (circle[0].match(/C/g) || []).length <= 8], [1, true, true]);
+  } finally {
+    fs.rmSync(d2, { recursive: true, force: true });
+  }
+} else console.log('(scikit-image not installed: centreline checks skipped)');
 
 if (failures.length) { console.log(failures.join('\n')); console.log(pass + ' passed, ' + failures.length + ' FAILED'); process.exit(1); }
 console.log(pass + ' passed');

@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const fontkit = require('fontkit');
 const STYLE = require('./style.js');
-const { fitScale } = require('./plan.js');
+const { fitScale, arcOf, levelPoints } = require('./plan.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 
@@ -69,12 +69,9 @@ const mul = (a, s) => [a[0] * s, a[1] * s];
 const len = (a) => Math.hypot(a[0], a[1]);
 const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 
-/* the same points fitScale measures: wall ends, solid corners, area corners */
+/* the same points fitScale measures: wall ends and curves, solid corners, area corners */
 function bounds(level) {
-  const pts = [];
-  (level.walls || []).forEach((w) => { if (isPt(w.a)) pts.push(w.a); if (isPt(w.b)) pts.push(w.b); });
-  (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
-  (level.areas || []).forEach((a) => ((a && a.poly) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
+  const pts = levelPoints(level);
   if (!pts.length) return { x0: 0, y0: 0, x1: 0, y1: 0 };
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
@@ -84,52 +81,123 @@ const poly = (pts) => 'M' + pts.map(pt).join('L') + 'Z';
 const thin = (extra = '') => 'fill="' + STYLE.WHITE + '" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"' + extra;
 const line = (a, b) => 'M' + pt(a) + 'L' + pt(b);
 
-/* ---------- walls with openings cut out ---------- */
+/* ---------- a wall's centre line on the page, straight or curved ---------- */
+/* at(t) and dir(t) for t in 0-1 (dir is the unit direction of travel from a to b); len in pt;
+   seg(t0, t1, k): the path from at(t0) to at(t1) shifted k pt to the left, without its M. */
+function course(w, T) {
+  const a = T(w.a), b = T(w.b);
+  const arc = isPt(w.via) ? arcOf(a, b, T(w.via)) : null;
+  if (arc) {
+    const sg = arc.sweep > 0 ? 1 : -1;
+    const at = (t, k = 0) => {
+      const q = arc.a0 + arc.sweep * t, r = arc.r + sg * k;
+      return [arc.c[0] + r * Math.cos(q), arc.c[1] + r * Math.sin(q)];
+    };
+    return {
+      len: Math.abs(arc.sweep) * arc.r, at,
+      dir: (t) => { const q = arc.a0 + arc.sweep * t; return [-Math.sin(q) * sg, Math.cos(q) * sg]; },
+      seg: (t0, t1, k = 0) => {
+        const r = arc.r + sg * k;
+        return 'A' + r2(r) + ' ' + r2(r) + ' 0 ' + (Math.abs(arc.sweep * (t1 - t0)) > Math.PI ? 1 : 0) + ' ' +
+          ((t1 > t0) === (arc.sweep > 0) ? 1 : 0) + ' ' + pt(at(t1, k));
+      }
+    };
+  }
+  const L = len(sub(b, a)), d = L ? mul(sub(b, a), 1 / L) : [1, 0], left = [d[1], -d[0]];
+  const at = (t, k = 0) => addv(lerp(a, b, t), mul(left, k));
+  return { len: L, at, dir: () => d, seg: (t0, t1, k = 0) => 'L' + pt(at(t1, k)) };
+}
+const leftOf = (d) => [d[1], -d[0]];
+const wallWidth = (type) => (type === 'exterior' ? STYLE.WALL_EXTERIOR : type === 'glass' ? STYLE.WALL_GLASS : STYLE.WALL_INTERIOR);
+const keyOf = (p) => r2(p[0]) + ',' + r2(p[1]);
+
+/* ---------- walls: openings cut out, connected runs drawn as one line ---------- */
+/* Runs that meet end to end (same type, same point in plan.json) join into one stroked path with mitred
+   corners, so corners and curves have no notches or gaps. A run's free end is squared off half a wall
+   past its point; an end cut by an opening stops flush. */
 function drawWalls(level, T) {
   const walls = level.walls || [], out = [];
-  ['exterior', 'interior'].forEach((type) => {
-    const width = type === 'exterior' ? STYLE.WALL_EXTERIOR : STYLE.WALL_INTERIOR;
+  ['exterior', 'interior', 'glass'].forEach((type) => {
+    const width = wallWidth(type), hw = width / 2;
+    const spans = [];
     walls.forEach((w, wi) => {
       if (w.type !== type || !isPt(w.a) || !isPt(w.b)) return;
-      const a = T(w.a), b = T(w.b), L = len(sub(b, a));
-      if (!L) return;
+      const C = course(w, T);
+      if (!C.len) return;
       const cuts = (level.openings || []).filter((o) => o.wall === wi).map((o) => [o.from, o.to]).sort((p, q) => p[0] - q[0]);
-      const spans = [];
       let t = 0;
-      cuts.forEach(([f, to]) => { if (f > t) spans.push([t, f]); t = Math.max(t, to); });
-      if (t < 1) spans.push([t, 1]);
-      const d = mul(sub(b, a), 1 / L), n = [d[1], -d[0]], hw = width / 2;
-      spans.forEach(([s, e]) => {
-        /* square ends only at the wall's real ends; a cut into an opening ends flush */
-        const p = addv(lerp(a, b, s), mul(d, s === 0 ? -hw : 0));
-        const q = addv(lerp(a, b, e), mul(d, e === 1 ? hw : 0));
-        out.push(poly([addv(p, mul(n, hw)), addv(q, mul(n, hw)), addv(q, mul(n, -hw)), addv(p, mul(n, -hw))]));
-      });
+      const add = (s, e) => spans.push({ C, s, e, A: s === 0 ? keyOf(w.a) : null, B: e === 1 ? keyOf(w.b) : null });
+      cuts.forEach(([f, to]) => { if (f > t) add(t, f); t = Math.max(t, to); });
+      if (t < 1) add(t, 1);
     });
+
+    const used = new Set();
+    const endOf = (c) => (c.fwd ? c.sp.B : c.sp.A), startOf = (c) => (c.fwd ? c.sp.A : c.sp.B);
+    const take = (key, wantStart) => {
+      if (!key) return null;
+      for (const sp of spans) {
+        if (used.has(sp)) continue;
+        /* forwards a span starting here; backwards a span ending here (either way it then runs a to b) */
+        if ((wantStart ? sp.A : sp.B) === key) { used.add(sp); return { sp, fwd: true }; }
+        if ((wantStart ? sp.B : sp.A) === key) { used.add(sp); return { sp, fwd: false }; }
+      }
+      return null;
+    };
+    const d = [];
+    spans.forEach((sp) => {
+      if (used.has(sp)) return;
+      used.add(sp);
+      const chain = [{ sp, fwd: true }];
+      let next;
+      while ((!startOf(chain[0]) || endOf(chain[chain.length - 1]) !== startOf(chain[0])) && (next = take(endOf(chain[chain.length - 1]), true))) chain.push(next);
+      const closed = chain.length > 1 && !!startOf(chain[0]) && endOf(chain[chain.length - 1]) === startOf(chain[0]);
+      if (!closed) while ((next = take(startOf(chain[0]), false))) chain.unshift(next);
+
+      const piece = (c) => (c.fwd ? [c.sp.s, c.sp.e] : [c.sp.e, c.sp.s]);
+      const travel = (c, t) => mul(c.sp.C.dir(t), c.fwd ? 1 : -1);
+      const first = chain[0], last = chain[chain.length - 1];
+      const [f0] = piece(first), [, l1] = piece(last);
+      let path = 'M' + pt(startOf(first) && !closed ? addv(first.sp.C.at(f0), mul(travel(first, f0), -hw)) : first.sp.C.at(f0));
+      if (startOf(first) && !closed) path += 'L' + pt(first.sp.C.at(f0));
+      chain.forEach((c) => { const [t0, t1] = piece(c); path += c.sp.C.seg(t0, t1); });
+      if (closed) path += 'Z';
+      else if (endOf(last)) path += 'L' + pt(addv(last.sp.C.at(l1), mul(travel(last, l1), hw)));
+      d.push(path);
+    });
+    if (d.length) out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + width + '" stroke-linejoin="miter" stroke-miterlimit="8" d="' + d.join('') + '"/>');
   });
-  return out.length ? '<path fill="' + STYLE.NAVY + '" d="' + out.join('') + '"/>' : '';
+  return out.join('');
 }
 
 /* ---------- openings: doors, windows, sliders ---------- */
 function drawOpenings(level, T) {
   const walls = level.walls || [], out = [];
+  const stroke = 'fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"';
   (level.openings || []).forEach((o) => {
     const w = walls[o.wall];
     if (!w || !isPt(w.a) || !isPt(w.b)) return;
-    const a = T(w.a), b = T(w.b), L = len(sub(b, a));
-    if (!L) return;
-    const width = w.type === 'exterior' ? STYLE.WALL_EXTERIOR : STYLE.WALL_INTERIOR;
-    const d = mul(sub(b, a), 1 / L), left = [d[1], -d[0]];
-    const n = o.side === 'right' ? mul(left, -1) : left;
-    const p0 = lerp(a, b, o.from), p1 = lerp(a, b, o.to), span = L * (o.to - o.from);
-    const hw = width / 2 - STYLE.THIN / 2;
+    const C = course(w, T);
+    if (!C.len) return;
+    const hw = Math.max(wallWidth(w.type) / 2 - STYLE.THIN / 2, 0);
 
+    if (o.type === 'window') {
+      /* two lines along the wall, closed at each end: neighbouring windows show their mullion */
+      const along = (k) => 'M' + pt(C.at(o.from, k)) + C.seg(o.from, o.to, k);
+      const across = (t) => line(C.at(t, hw), C.at(t, -hw));
+      out.push('<path ' + stroke + ' d="' + along(hw) + along(-hw) + across(o.from) + across(o.to) + '"/>');
+      return;
+    }
+    if (o.type === 'opening' || isPt(w.via)) return;   /* a plain gap; the validator keeps doors off curves */
+
+    const d = C.dir(0), left = leftOf(d);
+    const n = o.side === 'right' ? mul(left, -1) : left;
+    const p0 = C.at(o.from), p1 = C.at(o.to), span = C.len * (o.to - o.from);
     const swing = (hinge, free, r) => {
       const tip = addv(hinge, mul(n, r));
       const u = sub(tip, hinge), v = sub(free, hinge);
       const sweep = u[0] * v[1] - u[1] * v[0] > 0 ? 1 : 0;
       out.push('<path ' + thin() + ' d="' + line(hinge, tip) + '"/>');
-      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '" d="M' + pt(tip) + 'A' + r2(r) + ' ' + r2(r) + ' 0 0 ' + sweep + ' ' + pt(free) + '"/>');
+      out.push('<path ' + stroke + ' d="M' + pt(tip) + 'A' + r2(r) + ' ' + r2(r) + ' 0 0 ' + sweep + ' ' + pt(free) + '"/>');
     };
 
     if (o.type === 'door') {
@@ -139,19 +207,30 @@ function drawOpenings(level, T) {
       const mid = lerp(p0, p1, 0.5);
       swing(p0, mid, span / 2);
       swing(p1, mid, span / 2);
-    } else if (o.type === 'window') {
-      const lines = [line(addv(p0, mul(left, hw)), addv(p1, mul(left, hw))), line(addv(p0, mul(left, -hw)), addv(p1, mul(left, -hw)))];
-      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '" d="' + lines.join('') + '"/>');
     } else if (o.type === 'sliding' || o.type === 'pocket') {
       const t = STYLE.SLIDING_PANEL;
       const panel = (s, e, off) => {
         const q0 = addv(lerp(p0, p1, s), mul(left, off)), q1 = addv(lerp(p0, p1, e), mul(left, off));
         return poly([addv(q0, mul(left, t / 2)), addv(q1, mul(left, t / 2)), addv(q1, mul(left, -t / 2)), addv(q0, mul(left, -t / 2))]);
       };
-      const d2 = o.type === 'sliding' ? panel(0, 0.55, t / 2) + panel(0.45, 1, -t / 2) : panel(0, 1, 0);
+      /* a pocket door's panel stands part-way out of its pocket (at the hinge end, in the wall) */
+      const pocketTo = o.hinge !== 'from';
+      const d2 = o.type === 'sliding' ? panel(0, 0.55, t / 2) + panel(0.45, 1, -t / 2)
+        : pocketTo ? panel(0.45, 1 + 0.45, 0) : panel(-0.45, 0.55, 0);
       out.push('<path ' + thin() + ' d="' + d2 + '"/>');
     }
-    /* 'opening' is just the gap */
+  });
+  return out.join('');
+}
+
+/* ---------- thin linework: cabinet and built-in outlines, stair winders ---------- */
+function drawLines(level, T) {
+  const out = [];
+  (level.lines || []).forEach((l) => {
+    if (!l || !Array.isArray(l.pts) || l.pts.length < 2 || !l.pts.every(isPt)) return;
+    const P = l.pts.map(T);
+    out.push(l.closed ? '<path ' + thin() + ' d="' + poly(P) + '"/>'
+      : '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '" d="M' + P.map(pt).join('L') + '"/>');
   });
   return out.join('');
 }
@@ -182,8 +261,10 @@ function drawAreas(level, T) {
       const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
       const alongX = x1 - x0 >= y1 - y0;
       let tr = '';
-      if (alongX) for (let x = x0 + STYLE.STAIR_TREAD; x < x1 - 0.01; x += STYLE.STAIR_TREAD) tr += line([x, y0], [x, y1]);
-      else for (let y = y0 + STYLE.STAIR_TREAD; y < y1 - 0.01; y += STYLE.STAIR_TREAD) tr += line([x0, y], [x1, y]);
+      /* a.treads: the source's own count, spread evenly; otherwise one every STAIR_TREAD pt */
+      const run = alongX ? x1 - x0 : y1 - y0, step = Number.isInteger(a.treads) && a.treads > 0 ? run / (a.treads + 1) : STYLE.STAIR_TREAD;
+      if (alongX) for (let x = x0 + step; x < x1 - 0.01; x += step) tr += line([x, y0], [x, y1]);
+      else for (let y = y0 + step; y < y1 - 0.01; y += step) tr += line([x0, y], [x1, y]);
       const back = Array.isArray(a.dir) && (alongX ? a.dir[0] < 0 : a.dir[1] < 0);
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, h = STYLE.STAIR_ARROW;
       let s0, s1;
@@ -191,7 +272,7 @@ function drawAreas(level, T) {
       const dv = mul(sub(s1, s0), 1 / (len(sub(s1, s0)) || 1)), nv = [dv[1], -dv[0]];
       const head = line(addv(s1, addv(mul(dv, -h), mul(nv, h * 0.6))), s1) + 'L' + pt(addv(s1, addv(mul(dv, -h), mul(nv, -h * 0.6))));
       out.push('<path ' + thin() + ' d="' + d + '"/>');
-      out.push('<path fill="none" ' + stroke + ' d="' + tr + line(s0, s1) + head + '"/>');
+      out.push('<path fill="none" ' + stroke + ' d="' + tr + (a.arrow === false ? '' : line(s0, s1) + head) + '"/>');
     }
   });
   return out.join('');
@@ -208,16 +289,52 @@ const rrect = (x, y, w, h, r) => {
     'L' + r2(x) + ' ' + r2(y + r) + 'A' + r2(r) + ' ' + r2(r) + ' 0 0 1 ' + r2(x + r) + ' ' + r2(y) + 'Z';
 };
 
+/* rot 0: the wall the fixture backs onto is at the top (-h/2); it faces down the page */
+const uShape = (bw, yt, yb, ry) => 'M' + r2(-bw) + ' ' + r2(yt) + 'L' + r2(-bw) + ' ' + r2(yb - ry) +
+  'A' + r2(bw) + ' ' + r2(ry) + ' 0 0 0 ' + r2(bw) + ' ' + r2(yb - ry) + 'L' + r2(bw) + ' ' + r2(yt) + 'Z';
 const FIXTURE_DRAW = {
-  toilet: (w, h) => [rect(-w / 2, -h / 2, w, h * 0.3), ell(0, -h / 2 + h * 0.3 + h * 0.35, w * 0.4, h * 0.35)],
-  sink: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, 0, w * 0.32, h * 0.3)],
-  'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ell(-w / 4, 0, w * 0.15, h * 0.3), ell(w / 4, 0, w * 0.15, h * 0.3)],
+  /* tank against the wall, elongated bowl with its seat opening */
+  toilet: (w, h) => {
+    const tank = h * 0.3, yt = -h / 2 + tank, yb = h / 2, bw = w * 0.38, ry = Math.min(bw * 1.25, (yb - yt) * 0.7);
+    const iw = bw * 0.62, iyt = yt + (yb - yt) * 0.18, iyb = yb - (yb - yt) * 0.14;
+    return [rrect(-w / 2, -h / 2, w, tank, Math.min(w, tank) * 0.15), uShape(bw, yt, yb, ry), uShape(iw, iyt, iyb, Math.min(iw * 1.25, (iyb - iyt) * 0.7))];
+  },
+  /* vanity: counter, oval basin, faucet at the wall */
+  sink: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, h * 0.06, w * 0.33, h * 0.3), ell(0, -h / 2 + h * 0.13, Math.min(w, h) * 0.05, Math.min(w, h) * 0.05)],
+  /* pedestal or vessel basin: a round bowl, the faucet reaching in from the wall, the drain */
+  'round-sink': (w, h) => {
+    const r = Math.min(w, h) / 2;
+    return [ell(0, 0, r, r), line([0, -r], [0, -r * 0.45]), ell(0, r * 0.15, r * 0.08, r * 0.08)];
+  },
+  'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ell(-w / 4, h * 0.06, w * 0.15, h * 0.3), ell(w / 4, h * 0.06, w * 0.15, h * 0.3)],
   tub: (w, h) => [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.06, -h / 2 + h * 0.12, w * 0.88, h * 0.76, h * 0.35)],
-  shower: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])],
-  range: (w, h) => [rect(-w / 2, -h / 2, w, h), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([i, j]) => ell(i * w / 4, j * h / 4, Math.min(w, h) * 0.15, Math.min(w, h) * 0.15))],
-  'kitchen-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.08, -h / 2 + h * 0.15, w * 0.38, h * 0.7, 1), rrect(w * 0.04, -h / 2 + h * 0.15, w * 0.38, h * 0.7, 1)],
-  fireplace: (w, h) => [rect(-w / 2, -h / 2, w, h), rect(-w / 2 + w * 0.15, -h / 2, w * 0.7, h * 0.6)],
-  counter: (w, h) => [rect(-w / 2, -h / 2, w, h)]
+  /* the pan with its fall lines to a square drain */
+  shower: (w, h) => {
+    const k = Math.min(w, h) * 0.05;
+    return [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2]), rect(-k, -k, 2 * k, 2 * k)];
+  },
+  /* four burners, each a ring round a grate */
+  range: (w, h) => [rect(-w / 2, -h / 2, w, h), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].flatMap(([i, j]) => {
+    const r = Math.min(w, h) * 0.16;
+    return [ell(i * w / 4, j * h / 4, r, r), ell(i * w / 4, j * h / 4, r * 0.5, r * 0.5)];
+  })],
+  'kitchen-sink': (w, h, f) => {
+    const dot = (x) => ell(x, h * 0.12, Math.min(w, h) * 0.04, Math.min(w, h) * 0.04);
+    if (f.bowls === 1) return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.1, -h / 2 + h * 0.15, w * 0.8, h * 0.7, Math.min(w, h) * 0.12), dot(0)];
+    return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.08, -h / 2 + h * 0.15, w * 0.38, h * 0.7, Math.min(w, h) * 0.1), rrect(w * 0.04, -h / 2 + h * 0.15, w * 0.38, h * 0.7, Math.min(w, h) * 0.1), dot(-w * 0.23), dot(w * 0.23)];
+  },
+  /* the box, its door line at the front */
+  refrigerator: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, h / 2 - h * 0.12], [w / 2, h / 2 - h * 0.12])],
+  /* the firebox: narrow at the back wall, opening wide into the room */
+  fireplace: (w, h) => [poly([[-w * 0.32, -h / 2], [w * 0.32, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]])],
+  counter: (w, h) => [rect(-w / 2, -h / 2, w, h)],
+  /* a closet rod along its length with hangers across it */
+  rod: (w, h) => {
+    const n = Math.max(3, Math.round(w / (h * 0.35)));
+    let d = line([-w / 2, 0], [w / 2, 0]);
+    for (let i = 0; i < n; i++) { const x = -w / 2 + w * (i + 0.5) / n; d += line([x, -h / 2], [x, h / 2]); }
+    return [d];
+  }
 };
 
 function drawFixtures(level, T, s) {
@@ -227,7 +344,7 @@ function drawFixtures(level, T, s) {
     if (!fn || !isPt(f.at) || !(f.w > 0) || !(f.h > 0)) return;
     const c = T(f.at), w = f.w * s, h = f.h * s;
     const rot = Number.isFinite(f.rot) && f.rot ? ' rotate(' + r2(f.rot) + ')' : '';
-    out.push('<g transform="translate(' + pt(c) + ')' + rot + '">' + fn(w, h).map((d) => '<path ' + thin() + ' d="' + d + '"/>').join('') + '</g>');
+    out.push('<g transform="translate(' + pt(c) + ')' + rot + '">' + fn(w, h, f).map((d) => '<path ' + thin() + ' d="' + d + '"/>').join('') + '</g>');
   });
   return out.join('');
 }
@@ -337,15 +454,24 @@ function draw(plan, levelIndex = 0, opts = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">',
     '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="' + STYLE.WHITE + '"/>'
   ];
+  /* opts.underlay { href, width, height }: the source picture, in plan units, drawn red and multiplied over
+     the plan so every mismatch shows (scripts/floorplan/overlay.js). Never in a saved plan. */
+  const U = opts.underlay, r6 = (v) => Math.round(v * 1e6) / 1e6;
   if (branded) parts.push(drawHeader(plan, opts.facts));
   parts.push(
     drawAreas(level, T),
     drawSolids(level, T),
+    drawLines(level, T),
     drawWalls(level, T),
     drawFixtures(level, T, s),
     drawOpenings(level, T),
     drawRooms(level, T)
   );
+  if (U) {
+    parts.push('<filter id="fp-red"><feColorMatrix type="matrix" values="0 0 0 0 1 0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0 0 0 1 0"/></filter>' +
+      '<image href="' + esc(U.href) + '" x="0" y="0" width="' + U.width + '" height="' + U.height + '" filter="url(#fp-red)" style="mix-blend-mode:multiply" ' +
+      'transform="matrix(' + r6(s) + ' 0 0 ' + r6(s) + ' ' + r6(ox - b.x0 * s) + ' ' + r6(oy - b.y0 * s) + ')"/>');
+  }
   if (branded) {
     if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north));
     if (plan.levels.length > 1 && level.name) parts.push(drawLevelName(level.name));

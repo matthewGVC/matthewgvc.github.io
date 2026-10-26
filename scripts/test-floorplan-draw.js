@@ -138,6 +138,42 @@ check('no compass when unbranded', /data-frame="compass"/.test(draw(p, 0, { bran
 check('same plan, same output (unbranded)', draw(studio, 0, { branded: false }) === unbranded, true);
 check('same plan, same output (branded)', draw(studio, 0, { branded: true, facts: { beds: 0, baths: 1 } }) === branded, true);
 
+/* ---- walls: connected runs are one line, curves are real arcs ---- */
+const wallPaths = (svg, width) => (svg.match(new RegExp('<path fill="none" stroke="#00273a" stroke-width="' + width + '" stroke-linejoin="miter"[^>]*d="([^"]*)"')) || [, ''])[1];
+const box4 = { schema: 1, job: { label: 'x', address: 'x' }, sources: [], north: null, levels: [{ name: null,
+  walls: [{ a: [0, 0], b: [100, 0], type: 'exterior' }, { a: [100, 0], b: [100, 80], type: 'exterior' },
+    { a: [100, 80], b: [0, 80], type: 'exterior' }, { a: [0, 80], b: [0, 0], type: 'exterior' }] }] };
+let ext = wallPaths(draw(box4, 0, {}), STYLE.WALL_EXTERIOR);
+check('four walls meeting end to end are one closed line', [(ext.match(/M/g) || []).length, (ext.match(/Z/g) || []).length], [1, 1]);
+p = clone(box4); { const w = p.levels[0].walls; p.levels[0].walls = [w[2], w[0], { a: [100, 80], b: [100, 0], type: 'exterior' }, w[3]]; }   /* shuffled, one reversed */
+ext = wallPaths(draw(p, 0, {}), STYLE.WALL_EXTERIOR);
+check('walls drawn in any direction still join', [(ext.match(/M/g) || []).length, (ext.match(/Z/g) || []).length], [1, 1]);
+p = clone(box4); p.levels[0].openings = [{ wall: 0, from: 0.4, to: 0.6, type: 'opening' }];
+ext = wallPaths(draw(p, 0, {}), STYLE.WALL_EXTERIOR);
+check('an opening breaks the loop into one open line', [(ext.match(/M/g) || []).length, (ext.match(/Z/g) || []).length], [1, 0]);
+p = clone(box4); p.levels[0].walls[0].via = [50, -20];
+check('a wall with via is drawn as an arc', /A/.test(wallPaths(draw(p, 0, {}), STYLE.WALL_EXTERIOR)), true);
+p.levels[0].openings = [{ wall: 0, from: 0, to: 1, type: 'window' }];
+check('a window on a curved wall follows the curve', (draw(p, 0, {}).match(/stroke-width="0.5" d="M[^"]*A[^"]*A/) || []).length, 1);
+p = clone(box4); p.levels[0].walls.push({ a: [50, 0], b: [50, 80], type: 'glass' });
+check('glass walls are drawn at their own weight', wallPaths(draw(p, 0, {}), STYLE.WALL_GLASS) !== '', true);
+
+/* ---- fixtures, linework, stairs ---- */
+const fx = (type, extra) => { const q = clone(box4); q.levels[0].fixtures = [Object.assign({ type, at: [50, 40], w: 20, h: 24, rot: 0 }, extra)]; return draw(q, 0, {}); };
+const paths = (svg) => (svg.match(/<g transform="translate[^>]*>([\s\S]*?)<\/g>/) || [, ''])[1].match(/<path/g).length;
+['toilet', 'sink', 'round-sink', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod'].forEach((t) =>
+  check('fixture ' + t + ' draws', /<g transform="translate/.test(fx(t)), true));
+check('a one-bowl kitchen sink has one bowl', paths(fx('kitchen-sink', { bowls: 1 })), 3);
+check('a two-bowl kitchen sink has two', paths(fx('kitchen-sink')), 5);
+p = clone(box4); p.levels[0].lines = [{ pts: [[10, 10], [30, 10], [30, 20]], closed: true }, { pts: [[40, 40], [60, 60]] }];
+const ln = draw(p, 0, {});
+check('lines: a closed one is filled white, an open one is not', [/fill="#ffffff"[^>]*d="M[^"]*Z"/.test(ln), /fill="none" stroke="#00273a" stroke-width="0.5" d="M[\d. L]*"\/>/.test(ln)], [true, true]);
+p = clone(box4); p.levels[0].areas = [{ type: 'stair', poly: [[0, 0], [20, 0], [20, 80], [0, 80]], treads: 9, arrow: false }];
+const st = draw(p, 0, {}).match(/<path fill="none" stroke="#00273a" stroke-width="0.5" d="([^"]*)"\/>/)[1];
+check('a stair with treads: 9 draws nine treads and no arrow', (st.match(/M/g) || []).length, 9);
+check('the worked example draws', /<svg/.test(draw(require('./floorplan/fixtures/555-w59-phc.json'), 0, { branded: true })), true);
+check('underlay is only drawn when asked', /<image/.test(draw(box4, 0, {})), false);
+
 /* ---- report ---- */
 if (failures.length) {
   console.log(failures.length + ' failed, ' + pass + ' passed\n');

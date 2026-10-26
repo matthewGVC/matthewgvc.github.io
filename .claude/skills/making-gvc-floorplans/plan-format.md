@@ -4,16 +4,18 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 `validate()`). This page explains how to fill the fields in. Worked examples:
 - `scripts/floorplan/fixtures/studio.json`: the smallest valid plan.
 - `scripts/floorplan/fixtures/555-w59-phc.json`: a real plan traced from
-  `tools/showsheet/sample/floorplan.jpg`, with curved corners, a wraparound terrace, a stair, a
-  fireplace and a kitchen run.
+  `tools/showsheet/sample/floorplan.jpg`, with curved window walls, a wraparound terrace, pocket
+  doors, a turning stair, a fireplace, closets, a kitchen run and a bath. `555-w59-phc.gen.py` is the
+  generator script that wrote it. Copy its pattern.
 
 ## Coordinates
 
 - Use **any one unit** for the whole file. The drawer fits each level to the page, keeping its shape,
   so the scale doesn't matter. Only the proportions do.
 - **y runs down the page**, like an image. For a picture source, use the picture's own pixel
-  coordinates: read a corner off the picture and write that number. This is the easiest, least
-  error-prone choice.
+  coordinates, **at its real size** (open the file and check its width and height). A viewer may
+  show the picture scaled down, so never read coordinates off a scaled view. Trace in those pixels
+  and `scripts/floorplan/overlay.js` can lay the source over your plan to check it (SKILL step 7).
 - Each level is fitted on its own. Floors of a multi-level plan are therefore not drawn to one shared
   scale.
 
@@ -39,11 +41,19 @@ the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet
 
 ### walls
 
-`{ "a": [x, y], "b": [x, y], "type": "exterior" | "interior" }`, one straight run each.
-- **exterior** is the unit's outside wall and its demising walls (4 pt). **interior** is a wall between
-  rooms (2.5 pt).
-- Put corners on exactly the same point so the walls meet cleanly.
-- **Curves:** split each quarter-circle into 4 short walls, and say so in `uncertain`.
+`{ "a": [x, y], "b": [x, y], "type": "exterior" | "interior" | "glass", "via": [x, y] }`, one run each.
+- **exterior** (4 pt): the unit's outside walls, demising walls, and any wall the source draws thick
+  (about as thick as its outside walls). **interior** (2.5 pt): the thinner walls between rooms and
+  closets. **glass** (0.8 pt): shower screens and glass partitions. Use the source's thickness to
+  decide, never your guess about the building.
+- Trace the **centre line** of each wall.
+- Walls that meet **end to end on exactly the same point** are drawn as one continuous line, with
+  clean corners and no gaps. Make every corner share its point exactly. A wall that butts into the
+  middle of another (a T) ends on that wall's centre line.
+- **Curves:** give `via`, any point on the curve between `a` and `b` (the middle is best). The wall is
+  then the true circular arc through the three points. For a quarter-circle corner of radius r
+  centred at c, the middle point is c plus r·0.7071 toward the corner. Only windows and plain
+  openings can sit on a curve.
 - Walls are referenced by their **index** (0 = first) from `openings`, so write all the walls first
   and add openings after. A generator script in your scratch folder (Python or Node) that appends
   walls and openings as it goes makes the index bookkeeping safe. The 555 W59 example was made that
@@ -57,7 +67,12 @@ the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet
 - `type`: `door`, `double-door`, `sliding`, `pocket`, `window`, `opening` (a plain gap).
 - Doors only: `hinge` is the end the leaf turns on. `side` is the side the door opens into, as seen
   walking along the wall from `a` to `b` on the page: on a wall running left to right across the
-  page, `left` is up the page.
+  page, `left` is up the page; on a wall running down the page, `left` is to the right.
+- **pocket:** `hinge` is the end with the pocket (the panel slides into the wall there).
+- **Windows:** one opening per pane, edge to edge. Where two windows meet, the drawing shows the
+  mullion, so split them where the source shows a divider.
+- **Look for every pocket and sliding door.** They're easy to miss: a thin rectangle sticking out
+  of a wall end, or a white slot inside a wall.
 - Check every door in the rendered PNG. A swing drawn the wrong way is the most common mistake.
 
 ### solids
@@ -69,12 +84,17 @@ thick wall masses the source fills in.
 
 `{ "type": …, "at": [x, y], "w": …, "h": …, "rot": degrees }`. `at` is the **centre**. `w` and `h` are
 in plan units, measured on the source.
-- Types: `toilet`, `sink`, `double-sink`, `tub`, `shower`, `range`, `kitchen-sink`, `fireplace`,
-  `counter`.
+- Types: `toilet`, `sink` (a vanity basin), `round-sink`, `double-sink`, `tub`, `shower`, `range`,
+  `kitchen-sink` (`"bowls": 1` or `2`, default 2), `refrigerator`, `fireplace`, `counter` (any
+  cabinet, island, desk or built-in box), `rod` (a closet rod, `w` along the rod).
+- **`rot` 0 means the wall the fixture backs onto is at the top.** Turn each fixture so its back
+  (toilet tank, faucet, firebox back, fridge back) **sits flush against its wall**: 90 for a wall to
+  its right, 180 below, 270 to its left. Measure `at`, `w` and `h` so the fixture's edge lands on
+  the wall face, not short of it or into it.
 - They draw in list order, so put a `counter` before the sink and range that sit on it.
-- A toilet's tank is at the top when `rot` is 0. Turn it so the tank sits against its wall.
-- Nothing outside this list gets drawn, so no furniture, refrigerators or washers. Use a small label
-  (REF, W/D, DW) for those.
+- **Draw every cabinet, closet and appliance box the source draws.** Furniture is the one thing to
+  leave out. A box the list has no symbol for (a DW bay, a washer) is a `counter` or `lines` box
+  with its small label.
 
 ### areas
 
@@ -83,8 +103,11 @@ in plan units, measured on the source.
   and come back **along the unit's outside wall, using the same points** (curve points included).
   Otherwise the shading cuts across the corners.
 - `closet`: a dashed outline (built-ins and shallow closets drawn without walls).
-- `stair`: treads across the long side. Add `"dir": [dx, dy]` to point the arrow the way the source's
-  arrow points.
+- `stair`: treads across the long side. Add `"treads": n` with the source's own count of treads, and
+  `"dir": [dx, dy]` to point the arrow the way the source's arrow points. When the source's arrow
+  isn't a straight run along the flight, use `"arrow": false` and draw it with `lines`. A stair that
+  turns: the straight flight is the `stair` area, and the turn is drawn with `lines`, as the source
+  draws it.
 - `void`: a crossed box (open to below, shafts).
 
 ### rooms
@@ -105,3 +128,10 @@ in plan units, measured on the source.
 
 `{ "text": "CL", "at": [x, y] }`: the small 6 pt words, such as CL, W/D, REF, DW, FP, UP, DN,
 BUILT-IN and LAUNDRY. Place each one inside its space, clear of walls and fixtures.
+
+### lines
+
+`{ "pts": [[x, y], …], "closed": true | false }`: thin (0.5 pt) linework for what the fixed set doesn't
+cover. Use it for a built-in's outline, a DW bay's dividers, a stair's turn and break line, an entry
+arrow, or a planter edge. A closed line is filled white. Never use it for a wall, a door or a
+fixture that has a type.

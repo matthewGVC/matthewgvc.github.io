@@ -7,15 +7,50 @@ cars, an old header or compass. Read the plan and leave all of that behind.
 Work in a scratch folder (the repo's `tmp/`, which git ignores) for renders and helper scripts.
 Never write those into the job's folder.
 
+## Measuring a picture
+
+Never read coordinates off a picture by eye at normal size. Cut it into zoomed views with a grid,
+then read the numbers off the gridlines. Save this as `tmp/grid.py` and run it with `python -I`:
+
+```python
+# grid.py <image> <out> x0 y0 x1 y1 [zoom]: a zoomed crop with a 10 px grid, labelled every 50 px
+import sys
+from PIL import Image, ImageDraw
+src, out = sys.argv[1], sys.argv[2]
+x0, y0, x1, y1 = map(int, sys.argv[3:7]); k = float(sys.argv[7]) if len(sys.argv) > 7 else 3
+im = Image.open(src).convert('RGB').crop((x0, y0, x1, y1))
+im = im.resize((int((x1 - x0) * k), int((y1 - y0) * k)), Image.NEAREST)
+d = ImageDraw.Draw(im, 'RGBA')
+for x in range((x0 // 10 + 1) * 10, x1, 10):
+    X = (x - x0) * k; major = x % 50 == 0
+    d.line([(X, 0), (X, im.height)], fill=(255, 0, 0, 110 if major else 40))
+    if major: d.text((X + 2, 2), str(x), fill=(220, 0, 0, 255))
+for y in range((y0 // 10 + 1) * 10, y1, 10):
+    Y = (y - y0) * k; major = y % 50 == 0
+    d.line([(0, Y), (im.width, Y)], fill=(255, 0, 0, 110 if major else 40))
+    if major: d.text((2, Y + 2), str(y), fill=(220, 0, 0, 255))
+im.save(out)
+```
+
+1. One overview of the whole plan (zoom 0.75 to 1) to find where everything is.
+2. Then views of about 350 × 300 px at zoom 2.5 to 3, covering the whole plan: every corner, every
+   wall run, the kitchen, each bath, the closets and the stair. For each wall, read both faces and
+   take the middle as its centre line. Read where each window, door, closet and fixture starts and
+   ends.
+3. Write the plan with a generator script (the `555-w59-phc.gen.py` pattern). Then run the overlay
+   (SKILL step 7) and zoom into it the same way.
+
 ## Pictures: Cubicasa PNG, other brokerages (Compass, outside agencies), old plans, screenshots, scans
 
-1. View the picture at full size. Note its pixel size, and use its pixel coordinates as plan units.
+1. Check the picture's real pixel size, and use its pixel coordinates as plan units.
 2. Trace the outline, then the walls. Exterior walls are the thick outer and demising walls; interior
    walls are the thinner ones. Long straight dark runs are walls. If the picture is large or busy, a
    short script (Python with PIL, run with `-I`) can find them: scan rows and columns for runs of
    dark pixels. Its numbers are a check on your reading, not a replacement for it.
-3. Add the openings (gaps in the walls, door leaves and arcs, the double lines of windows), then the
-   fixtures, terraces and stairs.
+3. Add the openings (gaps in the walls, door leaves and arcs, the double lines of windows, the thin
+   panels of pocket and sliding doors), then the closets and cabinets, the fixtures, the terraces and
+   the stairs. Go room by room, and in each room list everything the source draws before you write
+   it, so nothing is skipped.
 4. Read every label and size exactly as printed. When a size can't be read, leave it out and say so
    in `uncertain`. Never estimate it from the drawing.
 5. A **screenshot or phone capture** may be cropped or skewed. If part of the plan is off the edge,

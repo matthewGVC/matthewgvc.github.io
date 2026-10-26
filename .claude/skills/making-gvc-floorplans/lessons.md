@@ -3,7 +3,34 @@
 What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
-## 2026-10-26: pilot on the sample plan (555 W59 PHC, `tools/showsheet/sample/floorplan.jpg`)
+## 2026-10-26: Matt's review of the pilot (v3 → v4)
+
+Matt: "Across the board accuracy is 100000% the most important thing here, detail specific." v3 had
+many errors. Each one, and the fix:
+
+- **Closets, cabinets and the REF box had no outlines.** Always draw every closet, cabinet, counter,
+  built-in and appliance box the source draws. Only furniture is left out.
+- **Curved walls were choppy** (straight pieces). Walls now take `via` and draw as true arcs. The
+  curved corners on this plan are curved windows.
+- **Walls had odd gaps.** Some walls didn't reach each other, and corners were drawn as separate
+  blocks. Walls meeting end to end on the same point now draw as one line with clean corners, so
+  make every corner share its point exactly.
+- **The bath looked wrong.** The toilet, sink and shower were guessed from a busy corner and didn't
+  sit against their walls. Measure every fixture off the grid and set `rot` so its back is flush on
+  its wall. There are now better toilet, vanity and round-sink symbols, and a drain in the shower.
+- **The fireplace didn't match.** It is now the source's shape: a firebox narrow at the back, opening
+  wide into the room.
+- **Sliding and pocket doors were missing.** Look for the thin panel at a wall end, or the white slot
+  in a wall. This plan has two, at the bedroom and at the bath.
+- **The trace was read off a scaled-down view.** That put every coordinate about 12% off. Always
+  trace in the picture's real pixels, and prove it with the overlay.
+- **What made v4 right:** zoomed views with a coordinate grid (`sources.md`), a generator script, and
+  the red/navy overlay, repeated until nothing red was left. The overlay caught a missing wall mass
+  over the shower, which a by-eye check had missed.
+- **Questions you can answer yourself, don't ask:** a bare `15'` is written `15'0"`; a curve is a
+  curve; a busy area means measure closer.
+
+## 2026-10-26: pilot on the sample plan, v1 to v3 (555 W59 PHC, `tools/showsheet/sample/floorplan.jpg`)
 
 The worked result is `scripts/floorplan/fixtures/555-w59-phc.json`.
 
@@ -15,8 +42,7 @@ The worked result is `scripts/floorplan/fixtures/555-w59-phc.json`.
 - **A wraparound terrace:** trace the terrace's outer edge, then come back along the unit's outside
   wall through the same points as the walls (curve points included). The first pass took a shortcut
   across the curved corners, and the shading left a stray diagonal line.
-- **Curved corners:** 4 short walls per quarter-circle look right at this size. Note them in
-  `uncertain`.
+- ~~Curved corners as 4 short walls~~: replaced by true arcs (`via`), see Matt's review above.
 - **A size printed as `15'`** has to be written `15'0"` for the validator. Note it in `uncertain`.
 - **Small labels next to walls** (a CL beside a closet door) were placed on top of the wall on the
   first pass. Always check the PNG for labels touching linework, and nudge them into the space.

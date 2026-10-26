@@ -38,6 +38,10 @@ Files beside this one:
 
 ## Hard rules
 
+- **Accuracy is the job, down to the detail.** Every wall, jog, column, chimney mass, window pane,
+  door and its swing, pocket or sliding door, closet, cabinet, counter, appliance box, fixture, stair
+  tread and label in the source is in the plan, in the same place. "Close enough" is a failure. Matt
+  checks the result against the source, and so must you, with the overlay (step 7).
 - **Never invent.** Draw no wall, room, size, fixture or label that isn't in the source. If the
   source gives no sizes (the NJ architect PDFs), the plan shows names only. If the source is cut off,
   draw what is there and list the rest in `missing`, or stop and tell Matt when too little is there
@@ -63,8 +67,10 @@ Files beside this one:
    paperwork. If a reference named in the prompt is gone, say so and use the ones that are there.
 3. **Identify each reference** and read it, following `sources.md`: a Cubicasa SVG (read its
    geometry), a DWG or DXF (convert it first), an architect PDF (vector or picture, floor-plan pages
-   only), or a picture (read it by eye, in its own pixel coordinates). Look at every reference
-   yourself. For a PDF or SVG, render it to a PNG and view that.
+   only), or a picture. Look at every reference yourself. For a PDF or SVG, render it to a PNG and
+   view that. **Measure; don't eyeball.** Make zoomed views of each part with a coordinate grid
+   (`sources.md`, "Measuring a picture"), and read every coordinate off the grid, in the picture's
+   real pixels.
 4. **Several references:**
    - One file per floor becomes one level each, named the way the source names them ("FIRST FLOOR").
    - Two files of the same floor: use the newest and name the other in the report. Never merge them.
@@ -84,8 +90,24 @@ Files beside this one:
    (Leave out `--facts` when the prompt gives no beds or baths. Use `0` beds for a studio.) It
    writes `<label> v<N>.svg` and `.png` (and `… - <Level>` for each level) into `Unbranded/` and
    `Branded/`, and archives older versions of the same layout. It also writes `Design/run-v<N>.md`.
-7. **Check the result against the source.** Open the Unbranded PNG and the source and compare them:
+7. **Check the result against the source**, in two passes.
+
+   **a. The overlay. Required, and repeated until it is clean.**
+   ```
+   node scripts/floorplan/overlay.js "<Floorplan folder>\Design\plan.json" "<the picture you traced>" "tmp\overlay.png"
+   ```
+   The overlay draws your plan in navy with the source over it in red. Where they agree the lines
+   go black. **Red with nothing under it is something you missed or misplaced. Navy on its own is
+   something that isn't in the source.** Zoom into each part of the overlay and fix every one. Thin red
+   edges along walls are fine: they are only the house style's wall weight against the source's.
+   The overlay needs a picture traced in its own pixels. For a PDF or SVG, overlay the PNG you
+   rendered and traced.
+
+   **b. By eye.** Open the Unbranded PNG and the source and compare them:
    - every room in the source is in the drawing, with the same name and the same size;
+   - every closet, cabinet, counter and appliance box is outlined;
+   - curved walls are smooth curves;
+   - corners join cleanly, with no gaps;
    - every door, window and opening is on the right wall and swings the right way;
    - the outline and the terraces match;
    - no label sits on a wall or on another label;

@@ -9,15 +9,20 @@
      "north": null | degrees clockwise from page-up,
      "levels": [{
        "name": null | "LOWER LEVEL"   (every level must be named when there are several)
-       "walls":    [{ "a": [x,y], "b": [x,y], "type": "exterior|interior" }],
+       "walls":    [{ "a": [x,y], "b": [x,y], "type": "exterior|interior|glass", "via": [x,y] optional }],
+                     via: a point the wall passes through between a and b; the wall is then the circular
+                     arc through a, via and b (only windows and plain openings may sit on an arc)
        "solids":   [ [[x,y], ...] ]                       filled polygons (columns, chimneys)
        "openings": [{ "wall": index, "from": 0-1, "to": 0-1, "type", "hinge": "from|to", "side": "left|right" }],
-       "fixtures": [{ "type", "at": [x,y], "w", "h", "rot" }],
+       "fixtures": [{ "type", "at": [x,y], "w", "h", "rot", "bowls": 1|2 (kitchen-sink) }],
+                     rot 0: the wall the fixture backs onto is at the top
        "areas":    [{ "type", "poly": [[x,y], ...] }],
        "rooms":    [{ "name": "CAPITALS", "size": null | "12'0\" x 20'3\"", "at": [x,y], "rot",
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
-       "labels":   [{ "text", "at": [x,y] }]
+       "labels":   [{ "text", "at": [x,y] }],
+       "lines":    [{ "pts": [[x,y], ...], "closed": bool }]   thin linework the fixed set doesn't cover:
+                                                               cabinet and built-in outlines, stair winders
      }],
      "missing": [], "uncertain": []
    }
@@ -27,18 +32,39 @@
 const STYLE = require('./style.js');
 
 const SCHEMA = 1;
-const WALLS = ['exterior', 'interior'];
+const WALLS = ['exterior', 'interior', 'glass'];
 const OPENINGS = ['door', 'double-door', 'sliding', 'pocket', 'window', 'opening'];
-const FIXTURES = ['toilet', 'sink', 'double-sink', 'tub', 'shower', 'range', 'kitchen-sink', 'fireplace', 'counter'];
+const FIXTURES = ['toilet', 'sink', 'round-sink', 'double-sink', 'tub', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod'];
 const AREAS = ['terrace', 'balcony', 'closet', 'stair', 'void'];
 
 const SIZE_RE = /^\d+'\d+(\.\d+)?" x \d+'\d+(\.\d+)?"$/;
 const isPt = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
 
+/* The circular arc through a, via and b: { c, r, a0, sweep } with angles in radians (y down, so a positive
+   sweep turns clockwise on the page). null when the three points are in a line. */
+function arcOf(a, b, via) {
+  const d = 2 * (a[0] * (via[1] - b[1]) + via[0] * (b[1] - a[1]) + b[0] * (a[1] - via[1]));
+  if (Math.abs(d) < 1e-9) return null;
+  const sq = (p) => p[0] * p[0] + p[1] * p[1];
+  const c = [(sq(a) * (via[1] - b[1]) + sq(via) * (b[1] - a[1]) + sq(b) * (a[1] - via[1])) / d,
+    (sq(a) * (b[0] - via[0]) + sq(via) * (a[0] - b[0]) + sq(b) * (via[0] - a[0])) / d];
+  const ang = (p) => Math.atan2(p[1] - c[1], p[0] - c[0]);
+  const TAU = 2 * Math.PI, norm = (x) => ((x % TAU) + TAU) % TAU;
+  const a0 = ang(a), toB = norm(ang(b) - a0), toV = norm(ang(via) - a0);
+  const sweep = toV < toB ? toB : toB - TAU;   // turn the way that passes through via
+  return { c, r: Math.hypot(a[0] - c[0], a[1] - c[1]), a0, sweep };
+}
+const arcPoint = (arc, t) => [arc.c[0] + arc.r * Math.cos(arc.a0 + arc.sweep * t), arc.c[1] + arc.r * Math.sin(arc.a0 + arc.sweep * t)];
+
 /* every point a level draws: wall ends, solid corners, area corners */
 function levelPoints(level) {
   const pts = [];
-  (level.walls || []).forEach((w) => { if (isPt(w.a)) pts.push(w.a); if (isPt(w.b)) pts.push(w.b); });
+  (level.walls || []).forEach((w) => {
+    if (isPt(w.a)) pts.push(w.a);
+    if (isPt(w.b)) pts.push(w.b);
+    const arc = isPt(w.a) && isPt(w.b) && isPt(w.via) ? arcOf(w.a, w.b, w.via) : null;
+    if (arc) for (let i = 1; i < 16; i++) pts.push(arcPoint(arc, i / 16));
+  });
   (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
   (level.areas || []).forEach((a) => ((a && a.poly) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
   return pts;
@@ -75,6 +101,7 @@ function validate(plan) {
       const W = L + ' wall ' + (i + 1);
       if (!isPt(w.a) || !isPt(w.b)) errors.push(W + ': a and b must each be [x, y]');
       if (!WALLS.includes(w.type)) errors.push(W + ': unknown type "' + w.type + '"');
+      if (w.via !== undefined && (!isPt(w.via) || (isPt(w.a) && isPt(w.b) && !arcOf(w.a, w.b, w.via)))) errors.push(W + ': via must be [x, y], off the line from a to b');
     });
 
     (level.solids || []).forEach((s, i) => {
@@ -85,6 +112,7 @@ function validate(plan) {
       const O = L + ' opening ' + (i + 1);
       if (!Number.isInteger(o.wall) || o.wall < 0 || o.wall >= walls.length) errors.push(O + ': no wall ' + o.wall);
       if (!OPENINGS.includes(o.type)) errors.push(O + ': unknown type "' + o.type + '"');
+      else if (walls[o.wall] && walls[o.wall].via !== undefined && !['window', 'opening'].includes(o.type)) errors.push(O + ': only a window or an opening can sit on a curved wall');
       if (!(Number.isFinite(o.from) && Number.isFinite(o.to) && o.from >= 0 && o.to <= 1 && o.from < o.to)) errors.push(O + ': from and to must satisfy 0 <= from < to <= 1');
     });
 
@@ -92,6 +120,8 @@ function validate(plan) {
       const F = L + ' fixture ' + (i + 1);
       if (!FIXTURES.includes(f.type)) errors.push(F + ': unknown type "' + f.type + '"');
       if (!isPt(f.at)) errors.push(F + ': at must be [x, y]');
+      if (!(f.w > 0) || !(f.h > 0)) errors.push(F + ': w and h must be more than 0');
+      if (f.bowls !== undefined && f.bowls !== 1 && f.bowls !== 2) errors.push(F + ': bowls must be 1 or 2');
     });
 
     (level.areas || []).forEach((a, i) => {
@@ -123,9 +153,13 @@ function validate(plan) {
       if (typeof t.text !== 'string' || !t.text) errors.push(T + ': needs text');
       if (!isPt(t.at)) errors.push(T + ': at must be [x, y]');
     });
+
+    (level.lines || []).forEach((l, i) => {
+      if (!l || !Array.isArray(l.pts) || l.pts.length < 2 || !l.pts.every(isPt)) errors.push(L + ' line ' + (i + 1) + ': pts needs at least 2 [x, y] points');
+    });
   });
 
   return { errors, warnings };
 }
 
-module.exports = { SCHEMA, FIXTURES, OPENINGS, AREAS, WALLS, validate, fitScale };
+module.exports = { SCHEMA, FIXTURES, OPENINGS, AREAS, WALLS, validate, fitScale, levelPoints, arcOf, arcPoint };

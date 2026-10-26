@@ -45,6 +45,18 @@ check('label wider than its room warns', [r.warnings.length, r.errors], [1, []])
 p = clone(studio); p.levels.push(clone(p.levels[0])); p.levels[0].name = 'LOWER LEVEL';
 check('multi-level needs names', has(validate(p), 'level 2: a plan with several levels needs every level named'), true);
 
+/* curves, glass, lines */
+const arcPlan = (wall, opening) => { const q = clone(studio); q.levels[0].walls[0] = Object.assign({}, q.levels[0].walls[0], wall); if (opening) q.levels[0].openings = [opening]; return validate(q); };
+check('a curved wall is valid', arcPlan({ via: [120, -30] }).errors, []);
+check('via on the line is refused', has(arcPlan({ via: [120, 0] }), 'level 1 wall 1: via must be [x, y], off the line from a to b'), true);
+check('a door on a curved wall is refused', has(arcPlan({ via: [120, -30] }, { wall: 0, from: 0.2, to: 0.4, type: 'door', hinge: 'from', side: 'left' }), 'level 1 opening 1: only a window or an opening can sit on a curved wall'), true);
+check('a window on a curved wall is fine', arcPlan({ via: [120, -30] }, { wall: 0, from: 0, to: 1, type: 'window' }).errors, []);
+check('glass is a wall type', arcPlan({ type: 'glass' }).errors, []);
+let lp = clone(studio); lp.levels[0].lines = [{ pts: [[0, 0]] }];
+check('a line needs two points', has(validate(lp), 'level 1 line 1: pts needs at least 2 [x, y] points'), true);
+lp = clone(studio); lp.levels[0].fixtures[0].bowls = 3;
+check('bowls is 1 or 2', has(validate(lp), 'level 1 fixture 1: bowls must be 1 or 2'), true);
+
 if (failures.length) {
   console.log(failures.join('\n'));
   console.log(pass + ' passed, ' + failures.length + ' FAILED');

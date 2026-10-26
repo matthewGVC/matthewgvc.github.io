@@ -25,6 +25,7 @@ module.exports = {
   /* linework */
   WALL_EXTERIOR: 4,          // pt, square ends (106 CPS 8A: ~16 px at 4.17 px/pt)
   WALL_INTERIOR: 2.5,        // pt (106 CPS 8A: ~10-11 px)
+  WALL_GLASS: 0.8,           // pt, glass partitions and shower screens
   THIN: 0.5,                 // fixtures, door leaves and arcs, windows, areas
   CLOSET_DASH: '2 2',
   STAIR_TREAD: 6,            // pt between treads

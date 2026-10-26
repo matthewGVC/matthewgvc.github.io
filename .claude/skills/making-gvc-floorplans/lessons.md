@@ -3,6 +3,23 @@
 What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-26: Matt's style sheet, round 3
+
+- Matt returned the sheet with his own car, closet clothes (3 variations), three pro ranges (2 × 2,
+  2 × 3, 2 × 3 with a griddle), an elongated toilet, a compass, a dining table with his chair, and a
+  terrace lounge chair. None was to scale or at house weights. They are now `symbols.json`, at true
+  size and house weights, and the drawer uses them.
+- **Swapped:** patio brick is now the basket weave, roof brick the running bond.
+- **Stairs past the break line are dotted.**
+- His toilet and lounge chair were filled outlines (Illustrator "Outline Stroke"), which no stroke
+  weight can fix. The importer turns such art into centre lines. His car was an image trace with
+  18,000 points, thinned to about 1/10 of a point at plan size, and its filled area was checked
+  against his original (19.1% against 19.2%).
+- The compass "N" was live Avenir LT Pro Black text. Avenir isn't on file, so it was outlined in
+  Nunito Sans Black. If Matt wants Avenir, he outlines the N in Illustrator (Type > Create Outlines).
+- His symbols have a front, so `rot` matters. The 555 W59 range was drawn facing the wall until his
+  symbol showed it.
+
 ## 2026-10-26: house-style decisions from Matt
 
 - **Doors:** 90° for any door leading outside (terrace, balcony, the front door to the hall), and 45°

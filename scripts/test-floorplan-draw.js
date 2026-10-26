@@ -185,27 +185,42 @@ check('an inside door stands at ' + STYLE.DOOR_OPEN_INSIDE + '°', leafAngle(und
 
 /* ---- the style sheet: every element in its own named group ---- */
 const { sheet, ELEMENTS } = require('./floorplan/style-sheet.js');
+const SYM = require('./floorplan/symbols.json');
 const sh = sheet();
 check('style sheet: one group per element, plus the branded frame', ELEMENTS.map(([id]) => sh.includes('<g id="' + id + '">')).filter((x) => !x).length, 0);
 const emptyGroup = (id) => sh.includes('<g id="' + id + '"></g>');
 check('style sheet: every element draws something', ELEMENTS.filter(([id, , level]) => level && emptyGroup(id)).map(([id]) => id), []);
-check('style sheet: the boxes for Matt to draw in are empty', ELEMENTS.filter(([, , level]) => !level).map(([id]) => emptyGroup(id)), [true, true, true, true, true]);
+const symbolCells = ELEMENTS.filter(([id]) => id.startsWith('symbol-')).map(([id]) => id.slice(7)).sort();
+check('style sheet: a symbol-<name> cell for every one of Matt\'s symbols', symbolCells, Object.keys(SYM).sort());
 check('style sheet: the swatch patterns are defined once each', ['tile', 'brick-patio', 'brick-roof'].map((n) => sh.split('id="fp-pat-' + n + '"').length - 1), [1, 1, 1]);
 check('style sheet: has the frame and the four layers', ['frame-branded-page', 'GUIDES', 'ELEMENTS', 'CAPTIONS', 'NOTES'].every((id) => sh.includes('id="' + id + '"')), true);
 
 /* ---- ranges, furniture, swatches, stair break ---- */
 const fpaths = (type, extra) => paths(fx(type, extra));
-check('range: 4 burners by default, 6 on request', [fpaths('range'), fpaths('range', { burners: 6 })], [1 + 8, 1 + 12]);
+/* Matt's symbols (symbols.json) are what the fixtures draw */
+check('range: 4 burners by default, 6 on request, 6 with a griddle, each Matt\'s own',
+  [(fx('range').match(/<path/g) || []).length, (fx('range', { burners: 6 }).match(/<path/g) || []).length, (fx('range', { burners: 6, griddle: true }).match(/<path/g) || []).length],
+  [SYM['range-4'].paths.length + 4, SYM['range-6'].paths.length + 4, SYM['range-6-griddle'].paths.length + 4].map((n) => n - 4 + (fx('box').match(/<path/g) || []).length));
+/* at a real plan's scale (an 80 ft wide unit) Matt's thin filled outlines are thickened to the house weight */
+const bigPlan = clone(box4); bigPlan.levels[0].walls = [{ a: [0, 0], b: [960, 0], type: 'exterior' }, { a: [960, 0], b: [960, 600], type: 'exterior' }];
+bigPlan.levels[0].fixtures = [{ type: 'toilet', at: [100, 100], w: 19, h: 30, rot: 0 }];
+check('the toilet is Matt\'s, thickened to the house weight', /stroke-linejoin="round"/.test(draw(bigPlan, 0, {})), true);
+['lounge-chair', 'car'].forEach((t) => check(t + ' draws Matt\'s symbol', (fx(t).match(/<path/g) || []).length > SYM[t].paths.length - 1, true));
+check('clothes variants 1-3 draw Matt\'s three', [1, 2, 3].map((v) => (fx('clothes', { variant: v }).match(/stroke="#00A1C4"/g) || []).length > 0), [true, true, true]);
 ['washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher', 'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'].forEach((t) =>
   check('furniture ' + t + ' draws', /<g transform="translate/.test(fx(t)), true));
 check('a twin bed has one pillow, a queen two', [fpaths('bed', { w: 38, h: 75 }), fpaths('bed', { w: 60, h: 80 })], [4, 5]);
-check('a dining table for 6 has six chairs', fpaths('dining-table', { w: 72, h: 36, seats: 6 }), 7);
+check('a dining table for 6 has six of Matt\'s chairs', (fx('dining-table', { w: 72, h: 36, seats: 6 }).match(/<g transform="translate/g) || []).length - 1, 6);
+check('a round table for 4 has four', (fx('dining-table', { w: 42, h: 42, shape: 'round' }).match(/<g transform="translate/g) || []).length - 1, 4);
 p = clone(box4); p.levels[0].areas = [{ type: 'floor', pattern: 'tile', poly: [[0, 0], [50, 0], [50, 50], [0, 50]] }];
 const tl = draw(p, 0, {});
 check('a tiled floor uses the tile swatch, defined once', [tl.includes('fill="url(#fp-pat-tile)"'), tl.split('id="fp-pat-tile"').length - 1], [true, 1]);
 check('no swatch, no pattern defs', /<pattern/.test(draw(box4, 0, {})), false);
 p = clone(box4); p.levels[0].areas = [{ type: 'stair', poly: [[0, 0], [20, 0], [20, 80], [0, 80]], treads: 9, arrow: false, break: true }];
-check('a stair with break: true adds the break line', (draw(p, 0, {}).match(/<path fill="none" stroke="#00273a" stroke-width="0.5" d="([^"]*)"\/>/)[1].match(/M/g) || []).length, 10);
+const stb = draw(p, 0, {});
+const dottedPart = (stb.match(/stroke-dasharray="1 1" d="([^"]*)"/) || [, ''])[1];
+check('a stair with a break: treads past it are dotted, the rest solid', [(dottedPart.match(/M/g) || []).length > 2, /stroke-width="0.5" d="M[^"]*"\/>/.test(stb)], [true, true]);
+check('…past it is the way the arrow points', (() => { const q = clone(p); q.levels[0].areas[0].dir = [0, -1]; const m = draw(q, 0, {}).match(/stroke-dasharray="1 1" d="M[\d.]+ ([\d.]+)/); const m2 = stb.match(/stroke-dasharray="1 1" d="M[\d.]+ ([\d.]+)/); return +m[1] < +m2[1]; })(), true);
 
 p = clone(box4); p.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'bifold', side: 'right' }];
 check('a bi-fold door draws its folded panels', /stroke-width="0.5" d="M[^"]*L[^"]*L[^"]*M/.test(draw(p, 0, {})), true);

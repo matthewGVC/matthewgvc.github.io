@@ -92,6 +92,12 @@ in plan units, measured on the source.
   rectangular: just its `w` and `h`), `range` (`"burners": 4` or `6`, default 4), `kitchen-sink`
   (`"bowls": 1` or `2`, default 2), `refrigerator`, `fireplace`, `counter` (any cabinet, island, desk
   or built-in box), `rod` (a closet rod, `w` along the rod).
+- **Matt's own symbols** (`scripts/floorplan/symbols.json`) are what these draw, whenever he has
+  drawn one: `toilet`, `range` (4 burners; `"burners": 6`; `"burners": 6, "griddle": true`), the
+  dining chairs, `lounge-chair` (terrace), `car`, `clothes` (`"variant": 1`, `2` or `3`: clothes on a
+  closet rod; use them where the source shows clothes, `rod` where it shows only a rod) and the
+  compass. They have a real front and back, so **`rot` matters**: a range's knobs, a toilet's bowl and
+  a chair's seat face away from the wall.
 - **Laundry and utility:** `washer`, `dryer`, `washer-dryer` (one stacked unit), `water-heater`,
   `dishwasher`. Put their labels (W, D, W/D, WH, DW) in `labels`.
 - **Fireplaces are not a fixed symbol.** Every fireplace is traced from its own source: the chimney
@@ -128,10 +134,11 @@ in plan units, measured on the source.
 - `floor`: no outline, only its swatch, for a tiled bathroom floor. `roof`: a thin outline with its
   swatch.
 - **`"pattern"`** lays a swatch over any area: `tile` (bathroom floors), `brick-patio` (a brick
-  terrace or patio, over the terrace shading) and `brick-roof` (roof pavers). Use one only where the
+  terrace or patio, basket weave, over the terrace shading) and `brick-roof` (running bond). Use one only where the
   source shows that surface.
 - Stairs also take **`"break": true`** (or a number 0-1 along the flight) for the break line with
-  its zig-zag, wherever the source cuts the stair.
+  its zig-zag, wherever the source cuts the stair. Past the break, the way the arrow points, the
+  treads and rails are dotted.
 
 ### rooms
 

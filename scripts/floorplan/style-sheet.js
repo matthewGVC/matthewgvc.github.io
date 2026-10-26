@@ -5,7 +5,8 @@
 
      node scripts/floorplan/style-sheet.js "<out.svg>"
 
-   The last section is empty boxes for Matt's own artwork (car, compass, closet clothes).
+   Cells named symbol-<name> show one of Matt's own symbols (symbols.json) alone, at true size and wall
+   side up; edit one and import-symbols.js reads it straight back.
    Elements are drawn at 8 pt to the foot (about the scale of a one-bedroom plan on the 810 x 630 pt
    sheet), so line weights and text sizes are exactly what a plan prints. Group ids name the element and
    the plan.json field that draws it; the CAPTIONS and GUIDES layers are only for reading the sheet.
@@ -14,7 +15,7 @@
 
 const fs = require('fs');
 const STYLE = require('./style.js');
-const { draw, drawLevel, patternDefs, PATTERNS } = require('./draw.js');
+const { draw, drawLevel, drawSymbol, SYMBOLS, patternDefs, PATTERNS } = require('./draw.js');
 
 const S = 8 / 12;                  // pt per plan unit: plan units are inches, 8 pt to the foot
 const CELL = { w: 150, h: 120 };   // pt
@@ -29,6 +30,9 @@ const int = (a, b) => ({ a, b, type: 'interior' });
 const fixture = (type, w, h, extra) => ({ fixtures: [Object.assign({ type, at: [0, 0], w, h, rot: 0 }, extra || {})] });
 const onWall = (type, w, h, extra) => ({ walls: [int([-Math.max(40, w / 2 + 10), -h / 2], [Math.max(40, w / 2 + 10), -h / 2])], ...fixture(type, w, h, extra) });
 const box = (w, h) => [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]];
+/* a cell showing one of Matt's symbols on its own, at its true size and wall side up: its group is named
+   symbol-<name>, which is how import-symbols.js reads it back */
+const mine = (name, type, extra) => fixture(type || name, SYMBOLS[name].size[0], SYMBOLS[name].size[1], extra);
 const SECTIONS = [
   ['Walls and openings', [
     ['wall-exterior', 'Exterior wall ' + STYLE.WALL_EXTERIOR + ' pt (corner)', { walls: [ext([-60, -40], [60, -40]), ext([60, -40], [60, 50])] }],
@@ -51,7 +55,7 @@ const SECTIONS = [
     ['door-bifold', 'Bi-fold door (closets)', { walls: [int([-80, 0], [80, 0])], openings: [{ wall: 0, from: 0.25, to: 0.75, type: 'bifold', side: 'right' }] }]
   ]],
   ['Bath', [
-    ['fixture-toilet', 'Toilet 20 × 28 in', onWall('toilet', 20, 28)],
+    ['symbol-toilet', 'Toilet (Matt\'s), tank to the wall', mine('toilet')],
     ['fixture-sink', 'Vanity sink 30 × 21 in', onWall('sink', 30, 21)],
     ['fixture-round-sink', 'Round sink 18 in', onWall('round-sink', 18, 18)],
     ['fixture-double-sink', 'Double vanity 60 × 22 in', onWall('double-sink', 60, 22)],
@@ -60,8 +64,9 @@ const SECTIONS = [
     ['fixture-shower-rect', 'Shower, rectangular 60 × 32 in', fixture('shower', 60, 32)]
   ]],
   ['Kitchen and built-ins', [
-    ['fixture-range-4', 'Range, 4 burners (2 × 2) 30 × 26 in', onWall('range', 30, 26)],
-    ['fixture-range-6', 'Range, 6 burners (2 × 3) 36 × 26 in', onWall('range', 36, 26, { burners: 6 })],
+    ['symbol-range-4', 'Range, 4 burners (Matt\'s) 30 in', mine('range-4', 'range')],
+    ['symbol-range-6', 'Range, 6 burners (Matt\'s) 36 in', mine('range-6', 'range', { burners: 6 })],
+    ['symbol-range-6-griddle', 'Range, 6 burners + griddle (Matt\'s) 48 in', mine('range-6-griddle', 'range', { burners: 6, griddle: true })],
     ['fixture-kitchen-sink-1', 'Kitchen sink, one bowl 30 × 22 in', fixture('kitchen-sink', 30, 22, { bowls: 1 })],
     ['fixture-kitchen-sink-2', 'Kitchen sink, two bowls 33 × 22 in', fixture('kitchen-sink', 33, 22)],
     ['fixture-refrigerator', 'Refrigerator 36 × 30 in', onWall('refrigerator', 36, 30)],
@@ -92,10 +97,12 @@ const SECTIONS = [
     ['sofa-3', 'Sofa, three seats 84 × 36 in', fixture('sofa', 84, 36)],
     ['sofa-2', 'Loveseat 60 × 36 in', fixture('sofa', 60, 36, { seats: 2 })],
     ['armchair', 'Armchair 34 × 34 in', fixture('armchair', 34, 34)],
+    ['symbol-lounge-chair', 'Terrace lounge chair (Matt\'s)', mine('lounge-chair')],
     ['sectional-left', 'Sectional, return on the left 110 × 90 in', fixture('sectional', 110, 90)],
     ['sectional-right', 'Sectional, return on the right 110 × 90 in', fixture('sectional', 110, 90, { side: 'right' })]
   ]],
   ['Tables', [
+    ['symbol-chair', 'Dining chair (Matt\'s): every dining table uses it', mine('chair')],
     ['coffee-table', 'Coffee table 48 × 24 in', fixture('coffee-table', 48, 24)],
     ['coffee-table-round', 'Coffee table, round 36 in', fixture('coffee-table', 36, 36, { shape: 'round' })],
     ['table-square', 'Table, square 36 in', fixture('table', 36, 36)],
@@ -121,12 +128,12 @@ const SECTIONS = [
     ['label-small', 'Small labels', { labels: [{ text: 'CL', at: [-45, 0] }, { text: 'W/D', at: [0, 0] }, { text: 'REF', at: [45, 0] }] }],
     ['label-rotated', 'Room name in a narrow room (rot 90)', { rooms: [{ name: 'HALL', at: [0, 0], rot: -90 }] }]
   ]],
-  ['Yours to draw: put your artwork in these boxes', [
-    ['draw-car', 'Car (about 190 × 75 in)', null],
-    ['draw-compass', 'Compass (replaces the one in the frame)', null],
-    ['draw-clothes-1', 'Clothes in a closet, variation 1', null],
-    ['draw-clothes-2', 'Clothes in a closet, variation 2', null],
-    ['draw-clothes-3', 'Clothes in a closet, variation 3', null]
+  ['Matt\'s artwork', [
+    ['symbol-car', 'Car (Matt\'s) 190 in', mine('car')],
+    ['symbol-compass', 'Compass (Matt\'s): the branded frame uses it', mine('compass', 'compass')],
+    ['symbol-clothes-1', 'Clothes in a closet, 1 (Matt\'s)', mine('clothes-1', 'clothes', { variant: 1 })],
+    ['symbol-clothes-2', 'Clothes in a closet, 2 (Matt\'s)', mine('clothes-2', 'clothes', { variant: 2 })],
+    ['symbol-clothes-3', 'Clothes in a closet, 3 (Matt\'s)', mine('clothes-3', 'clothes', { variant: 3 })]
   ]]
 ];
 const ELEMENTS = SECTIONS.flatMap(([, list]) => list);
@@ -140,7 +147,10 @@ function sheet() {
       const x = X0 + (i % COLS) * CELL.w, cy0 = y + Math.floor(i / COLS) * CELL.h;
       const cx = x + CELL.w / 2, cy = cy0 + (CELL.h - 18) / 2;
       const T = (p) => [cx + p[0] * S, cy + p[1] * S];
-      groups.push('<g id="' + id + '">' + (level ? drawLevel(Object.assign({ name: null }, level), T, S) : '') + '</g>');
+      const body = level && level.fixtures && level.fixtures[0].type === 'compass'
+        ? '<g transform="translate(' + cx + ' ' + cy + ')">' + drawSymbol('compass', STYLE.COMPASS.size * 1.3 * level.fixtures[0].w / level.fixtures[0].h, STYLE.COMPASS.size * 1.3) + '</g>'
+        : level ? drawLevel(Object.assign({ name: null }, level), T, S) : '';
+      groups.push('<g id="' + id + '">' + body + '</g>');
       guides.push('<rect x="' + x + '" y="' + cy0 + '" width="' + CELL.w + '" height="' + CELL.h + '" fill="none" stroke="' + (level ? '#c9d1d6' : '#53C7DC') + '" stroke-width="' + (level ? 0.5 : 1) + '" stroke-dasharray="2 2"/>');
       captions.push('<text x="' + (x + 6) + '" y="' + (cy0 + CELL.h - 7) + '">' + esc(caption) + '</text>');
     });

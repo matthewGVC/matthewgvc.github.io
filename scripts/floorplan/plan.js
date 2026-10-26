@@ -38,6 +38,7 @@ const WALLS = ['exterior', 'interior', 'glass'];
 const OPENINGS = ['door', 'double-door', 'sliding', 'pocket', 'bifold', 'window', 'opening'];
 const FIXTURES = ['toilet', 'sink', 'round-sink', 'double-sink', 'tub', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod',
   'washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher',
+  'lounge-chair', 'car', 'clothes',
   'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'];
 const PATTERNS = ['tile', 'brick-patio', 'brick-roof'];
 const AREAS = ['terrace', 'balcony', 'closet', 'stair', 'void', 'floor', 'roof'];
@@ -129,6 +130,8 @@ function validate(plan) {
       if (!(f.w > 0) || !(f.h > 0)) errors.push(F + ': w and h must be more than 0');
       if (f.bowls !== undefined && f.bowls !== 1 && f.bowls !== 2) errors.push(F + ': bowls must be 1 or 2');
       if (f.burners !== undefined && f.burners !== 4 && f.burners !== 6) errors.push(F + ': burners must be 4 or 6');
+      if (f.griddle !== undefined && typeof f.griddle !== 'boolean') errors.push(F + ': griddle must be true or false');
+      if (f.variant !== undefined && ![1, 2, 3].includes(f.variant)) errors.push(F + ': variant must be 1, 2 or 3');
       if (f.seats !== undefined && !(Number.isInteger(f.seats) && f.seats >= 1 && f.seats <= 12)) errors.push(F + ': seats must be a whole number from 1 to 12');
       if (f.shape !== undefined && f.shape !== 'rect' && f.shape !== 'round') errors.push(F + ': shape must be "rect" or "round"');
     });

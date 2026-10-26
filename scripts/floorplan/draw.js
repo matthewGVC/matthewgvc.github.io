@@ -276,9 +276,16 @@ function drawAreas(level, T) {
       let tr = '';
       /* a.treads: the source's own count, spread evenly; otherwise one every STAIR_TREAD pt */
       const run = alongX ? x1 - x0 : y1 - y0, step = Number.isInteger(a.treads) && a.treads > 0 ? run / (a.treads + 1) : STYLE.STAIR_TREAD;
-      if (alongX) for (let x = x0 + step; x < x1 - 0.01; x += step) tr += line([x, y0], [x, y1]);
-      else for (let y = y0 + step; y < y1 - 0.01; y += step) tr += line([x0, y], [x1, y]);
       const back = Array.isArray(a.dir) && (alongX ? a.dir[0] < 0 : a.dir[1] < 0);
+      /* with a break, everything past it (the way the arrow points) is dotted: treads and side rails */
+      const hasBreak = a.break !== undefined && a.break !== false;
+      const ub = hasBreak ? run * (a.break === true ? 0.6 : a.break) : null;
+      const past = (u) => hasBreak && (back ? u < ub : u > ub);
+      let dotted = '';
+      for (let u = step; u < run - 0.01; u += step) {
+        const seg = alongX ? line([x0 + u, y0], [x0 + u, y1]) : line([x0, y0 + u], [x1, y0 + u]);
+        if (past(u)) dotted += seg; else tr += seg;
+      }
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, h = STYLE.STAIR_ARROW;
       let s0, s1;
       if (alongX) { s0 = [back ? x1 - h : x0 + h, cy]; s1 = [back ? x0 + h : x1 - h, cy]; } else { s0 = [cx, back ? y1 - h : y0 + h]; s1 = [cx, back ? y0 + h : y1 - h]; }
@@ -294,7 +301,16 @@ function drawAreas(level, T) {
         const at = (k) => u0 + rise * k;
         brk = 'M' + [P0(at(0), 0), P0(at(0.44), wid * 0.44), P0(at(0.44) + z, wid * 0.47), P0(at(0.56) - z, wid * 0.53), P0(at(0.56), wid * 0.56), P0(at(1), wid)].map(pt).join('L');
       }
-      out.push('<path ' + thin() + ' d="' + d + '"/>');
+      if (hasBreak) {
+        /* the outline, split at the break: solid before it, dotted past it */
+        const A = (u, v) => (alongX ? [x0 + u, v ? y1 : y0] : [v ? x1 : x0, y0 + u]);
+        const [s0u, s1u] = back ? [ub, run] : [0, ub], [p0u, p1u] = back ? [0, ub] : [ub, run];
+        const rails = (u0, u1) => line(A(u0, 0), A(u1, 0)) + line(A(u0, 1), A(u1, 1));
+        out.push('<path fill="' + STYLE.WHITE + '" stroke="none" d="' + d + '"/>');
+        tr += rails(s0u, s1u) + line(A(back ? run : 0, 0), A(back ? run : 0, 1));
+        dotted += rails(p0u, p1u) + line(A(back ? 0 : run, 0), A(back ? 0 : run, 1));
+        out.push('<path fill="none" ' + stroke + ' stroke-dasharray="' + STYLE.STAIR_DOTTED + '" d="' + dotted + '"/>');
+      } else out.push('<path ' + thin() + ' d="' + d + '"/>');
       out.push('<path fill="none" ' + stroke + ' d="' + tr + (a.arrow === false ? '' : line(s0, s1) + head) + brk + '"/>');
     }
   });
@@ -306,15 +322,15 @@ const P_LINE = 'fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.
 const PATTERNS = {
   /* square floor tile */
   tile: { w: STYLE.TILE, h: STYLE.TILE, body: (w, h) => '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 0L0 ' + h + '"/>' },
-  /* patio brick: running bond */
-  'brick-patio': { w: STYLE.BRICK.w, h: STYLE.BRICK.h * 2, body: (w, h) => '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 ' + h / 2 + 'L' + w + ' ' + h / 2 +
-    'M0 0L0 ' + h / 2 + 'M' + w / 2 + ' ' + h / 2 + 'L' + w / 2 + ' ' + h + '"/>' },
-  /* roof pavers: basket weave */
-  'brick-roof': { w: STYLE.BRICK.w * 2, h: STYLE.BRICK.w * 2, body: (w, h) => {
+  /* patio brick: basket weave (Matt, 10-26: swapped with the roof's) */
+  'brick-patio': { w: STYLE.BRICK.w * 2, h: STYLE.BRICK.w * 2, body: (w, h) => {
     const q = w / 2, b = q / 2;
     return '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 0L0 ' + h + 'M' + q + ' 0L' + q + ' ' + h + 'M0 ' + q + 'L' + w + ' ' + q +
       'M0 ' + b + 'L' + q + ' ' + b + 'M' + (q + b) + ' 0L' + (q + b) + ' ' + q + 'M' + b + ' ' + q + 'L' + b + ' ' + h + 'M' + q + ' ' + (q + b) + 'L' + w + ' ' + (q + b) + '"/>';
-  } }
+  } },
+  /* roof brick: running bond */
+  'brick-roof': { w: STYLE.BRICK.w, h: STYLE.BRICK.h * 2, body: (w, h) => '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 ' + h / 2 + 'L' + w + ' ' + h / 2 +
+    'M0 0L0 ' + h / 2 + 'M' + w / 2 + ' ' + h / 2 + 'L' + w / 2 + ' ' + h + '"/>' }
 };
 /* the <defs> for the named patterns (ids fp-pat-<name>) */
 function patternDefs(names) {
@@ -322,6 +338,33 @@ function patternDefs(names) {
   if (!list.length) return '';
   return '<defs>' + list.map((n) => { const P = PATTERNS[n];
     return '<pattern id="fp-pat-' + n + '" patternUnits="userSpaceOnUse" width="' + P.w + '" height="' + P.h + '">' + P.body(P.w, P.h) + '</pattern>'; }).join('') + '</defs>';
+}
+
+/* ---------- Matt's symbols (symbols.json, from import-symbols.js): his artwork is the symbol ---------- */
+const SYMBOLS = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'symbols.json'), 'utf8')); } catch (e) { return {}; } })();
+const PAINT = { navy: STYLE.NAVY, white: STYLE.WHITE, cyan: STYLE.CYAN };
+/* symbol `name` stretched into a w x h pt box centred on 0,0 (wall side at the top, as drawn) */
+function drawSymbol(name, w, h) {
+  const sym = SYMBOLS[name];
+  const sx = w / sym.size[0], sy = h / sym.size[1], sk = (sx + sy) / 2;
+  return sym.paths.map((p) => {
+    const d = p.d.replace(/([MLCQZ])([^MLCQZ]*)/g, (m, c, nums) => {
+      const v = nums.trim() ? nums.trim().split(/\s+/).map(Number) : [];
+      return c + v.map((x, i) => r2(i % 2 ? x * sy : x * sx)).join(' ');
+    });
+    const a = ['fill="' + (p.fill ? PAINT[p.fill] || p.fill : 'none') + '"'];
+    let sw = 0, stroke = p.stroke ? PAINT[p.stroke] || p.stroke : null;
+    if (p.stroke) sw = p.weight === 'fine' ? STYLE.FINE : p.weight === 'thin' ? STYLE.THIN : (p.sw || 0) * sk;
+    if (stroke) a.push('stroke="' + stroke + '"', 'stroke-width="' + r2(sw) + '"', 'stroke-linejoin="round"');
+    if (p.opacity !== undefined) a.push('opacity="' + p.opacity + '"');
+    return '<path ' + a.join(' ') + ' d="' + d + '"/>';
+  }).join('');
+}
+/* the symbol a fixture draws with, when Matt has drawn one */
+function symbolFor(f) {
+  const name = f.type === 'range' ? (f.griddle ? 'range-6-griddle' : f.burners === 6 ? 'range-6' : 'range-4')
+    : f.type === 'clothes' ? 'clothes-' + (f.variant || 1) : f.type;
+  return SYMBOLS[name] ? name : null;
 }
 
 /* ---------- fixtures: drawn in a local box centred on 0,0, w x h pt ---------- */
@@ -421,10 +464,16 @@ const FIXTURE_DRAW = {
   /* the table (w x h) with f.seats chairs round it (4 by default): along the long sides, then the ends */
   'dining-table': (w, h, f) => {
     const n = f.seats || 4, c = Math.min(w, h) * 0.36;
-    const out = [], ch = (x, y, rot) => {
-      const k = c / 2, pts = [[-k, -k * 0.2], [k, -k * 0.2], [k, k * 1.1], [-k, k * 1.1]].map(([a, b]) => {
-        const q = rot * Math.PI / 180; return [x + a * Math.cos(q) - b * Math.sin(q), y + a * Math.sin(q) + b * Math.cos(q)];
-      });
+    /* each chair at the table's edge, its back away from the table: Matt's chair when there is one */
+    const out = [], chair = SYMBOLS.chair, ch = (x, y, rot) => {
+      const q = rot * Math.PI / 180;
+      if (chair) {
+        const cw = Math.min(w, h) * 0.6, cd = cw * chair.size[1] / chair.size[0];
+        const at = [x - Math.sin(q) * cd / 2, y + Math.cos(q) * cd / 2];
+        out.push({ raw: '<g transform="translate(' + pt(at) + ') rotate(' + r2(rot) + ')">' + drawSymbol('chair', cw, cd) + '</g>' });
+        return;
+      }
+      const k = c / 2, pts = [[-k, -k * 0.2], [k, -k * 0.2], [k, k * 1.1], [-k, k * 1.1]].map(([a, b]) => [x + a * Math.cos(q) - b * Math.sin(q), y + a * Math.sin(q) + b * Math.cos(q)]);
       out.push(poly(pts));
     };
     if (f.shape === 'round') {
@@ -449,11 +498,13 @@ const FIXTURE_DRAW = {
 function drawFixtures(level, T, s) {
   const out = [];
   (level.fixtures || []).forEach((f) => {
-    const fn = FIXTURE_DRAW[f.type];
+    const fn = FIXTURE_DRAW[f.type] || (symbolFor(f) ? () => [] : null);
     if (!fn || !isPt(f.at) || !(f.w > 0) || !(f.h > 0)) return;
     const c = T(f.at), w = f.w * s, h = f.h * s;
     const rot = Number.isFinite(f.rot) && f.rot ? ' rotate(' + r2(f.rot) + ')' : '';
-    out.push('<g transform="translate(' + pt(c) + ')' + rot + '">' + fn(w, h, f).map((d) => '<path ' + thin() + ' d="' + d + '"/>').join('') + '</g>');
+    const sym = symbolFor(f);
+    const body = sym ? drawSymbol(sym, w, h) : fn(w, h, f).map((d) => (typeof d === 'object' ? d.raw : '<path ' + thin() + ' d="' + d + '"/>')).join('');
+    out.push('<g transform="translate(' + pt(c) + ')' + rot + '">' + body + '</g>');
   });
   return out.join('');
 }
@@ -530,6 +581,11 @@ function drawFooter() {
 }
 
 function drawCompass(north) {
+  if (SYMBOLS.compass) {
+    const B = STYLE.BOX_BRANDED, C = STYLE.COMPASS, sym = SYMBOLS.compass, h = C.size * 1.3, w = h * sym.size[0] / sym.size[1];
+    const c = [B.x1 - w / 2, B.y1 - h / 2];
+    return '<g data-frame="compass" transform="translate(' + pt(c) + ') rotate(' + r2(north) + ')">' + drawSymbol('compass', w, h) + '</g>';
+  }
   const B = STYLE.BOX_BRANDED, C = STYLE.COMPASS, half = C.size / 2;
   const c = [B.x1 - half, B.y1 - half], R = C.ring;
   const letterCap = capHeight(C.letter);
@@ -589,4 +645,4 @@ function draw(plan, levelIndex = 0, opts = {}) {
   return parts.filter(Boolean).join('\n') + '\n';
 }
 
-module.exports = { draw, drawLevel, patternDefs, PATTERNS, outline, measure };
+module.exports = { draw, drawLevel, drawSymbol, SYMBOLS, patternDefs, PATTERNS, outline, measure };

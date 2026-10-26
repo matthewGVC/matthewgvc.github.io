@@ -28,6 +28,8 @@ module.exports = {
   WALL_GLASS: 0.8,           // pt, glass partitions and shower screens
   THIN: 0.5,                 // fixtures, door leaves and arcs, windows, areas
   CLOSET_DASH: '2 2',
+  FINE: 0.25,                // pt, the inner detail of Matt's symbols
+  STAIR_DOTTED: '1 1',       // a stair past its break line
   PATTERN_LINE: 0.25,        // pt, swatch lines (tile, brick)
   TILE: 4,                   // pt, floor tile square
   BRICK: { w: 6, h: 2 },     // pt, one brick

@@ -150,9 +150,18 @@ back. To apply it:
 - Make the changes in `style.js` (weights, sizes, colours, angles) or in the element's drawing
   function in `draw.js` (shapes).
 - Regenerate the sheet and check it matches his.
-- Where Matt has drawn a symbol himself (his boxes, or a redrawn fixture), his drawing becomes the
-  symbol. Save it as a file the drawer scales into each fixture's box, rather than re-coding it by
-  hand. Build that the first time a sheet comes back.
+- **Matt's drawings are the symbols.** Cells named `symbol-<name>` hold his artwork, drawn from
+  `scripts/floorplan/symbols.json`. Read his edits straight back with
+  `node scripts/floorplan/import-symbols.js "<his sheet.svg>"`, which picks up every `symbol-*` group.
+  New artwork drawn anywhere else on the sheet needs a map (see the script's header): where it is,
+  which way to turn it so its wall side is at the top, and its true size. The importer:
+  - flattens Illustrator's transforms;
+  - sets the house weights (his heaviest strokes become THIN, the rest FINE) and colours;
+  - turns art drawn as filled outlines into centre lines (that step needs `pip install scikit-image`);
+  - thins out traced artwork.
+
+  After importing, regenerate the sheet, check his symbols look like his drawing, and run
+  `node scripts/test-import-symbols.js`, which proves the sheet round-trips.
 - Read his NOTES layer.
 - Run the floorplan tests, then redraw the worked example and check it.
 

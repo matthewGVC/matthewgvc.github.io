@@ -111,7 +111,7 @@ function validate(plan) {
         if (!Array.isArray(r.box) || r.box.length !== 4 || !r.box.every(Number.isFinite)) {
           errors.push(R + ': box must be [x0, y0, x1, y1]');
         } else {
-          const labelPt = r.name.length * 0.62 * STYLE.ROOM_NAME_PT;
+          const labelPt = r.name.length * STYLE.LABEL_EM * STYLE.ROOM_NAME_PT;
           const roomPt = (r.box[2] - r.box[0]) * scale;
           if (labelPt > roomPt) warnings.push(R + ': label is wider than its room');
         }

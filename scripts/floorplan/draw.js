@@ -248,10 +248,12 @@ function drawOpenings(level, T, s = 1) {
 }
 
 /* ---------- thin linework: cabinet and built-in outlines, stair winders ---------- */
-function drawLines(level, T) {
+/* over: false draws the plain lines (under the fixtures), true the dashed ones (over them: an overhead
+   cabinet's dashes run across the counter below it, as Matt's and the sources' do) */
+function drawLines(level, T, over = false) {
   const out = [];
   (level.lines || []).forEach((l) => {
-    if (!l || !Array.isArray(l.pts) || l.pts.length < 2 || !l.pts.every(isPt)) return;
+    if (!l || !Array.isArray(l.pts) || l.pts.length < 2 || !l.pts.every(isPt) || !!l.dash !== over) return;
     const P = l.pts.map(T);
     /* dash: a dashed line (overhead cabinets, a track); arrow: an arrowhead at the last point (UP, DN) */
     const dash = l.dash ? ' stroke-dasharray="' + STYLE.LINE_DASH + '"' : '';
@@ -721,7 +723,7 @@ function drawStatus(text) {
    also used by style-sheet.js to draw single elements at a fixed scale */
 function drawLevel(level, T, s) {
   /* fixtures and linework under the walls, as Matt's are: a counter stops at the wall, it never covers it */
-  return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawSolids(level, T), drawWalls(level, T),
+  return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawLines(level, T, true), drawSolids(level, T), drawWalls(level, T),
     drawOpenings(level, T, s), drawRooms(level, T)].filter(Boolean).join('\n');
 }
 

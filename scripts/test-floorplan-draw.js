@@ -308,6 +308,11 @@ p = clone(studio); p.north = 0; p.levels[0].walls = [{ a: [0, 0], b: [300, 0], t
 p.levels[0].openings = []; p.levels[0].fixtures = []; p.levels[0].rooms = []; p.levels[0].labels = [];
 check('…and when there is no such space, the plan stops above the compass at the bottom centre', roseAt(br(p)), [400, 554]);
 
+/* an overhead cabinet's dashes run across the counter under it; a plain line stays under the fixtures */
+p = clone(box4); p.levels[0].fixtures = [{ type: 'counter', at: [50, 40], w: 40, h: 10, rot: 0 }];
+p.levels[0].lines = [{ pts: [[25, 40], [75, 40]], dash: true }, { pts: [[25, 38], [75, 38]] }];
+check('dashed lines draw over the fixtures, plain ones under them', (() => { const t = draw(p, 0, {}), c = t.indexOf('<g transform="translate'), d = t.indexOf('stroke-dasharray'), l = t.search(/<path fill="none" stroke="#00273a" stroke-width="[\d.]+" d="M/); return [d > c, l > -1 && l < c]; })(), [true, true]);
+
 /* a tub the source draws as a crossed box */
 p = clone(box4); p.levels[0].fixtures = [{ type: 'tub', at: [50, 40], w: 30, h: 15, rot: 0, cross: true }];
 check('a crossed tub validates, and draws its box crossed corner to corner, with no basin', [validate(p).errors, (() => { const t = draw(p, 0, {}).split('\n').find((l) => /^<g transform="translate/.test(l)) || ''; return [/A/.test(t), /d="M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+"/.test(t)]; })()], [[], [false, true]]);

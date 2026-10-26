@@ -28,7 +28,7 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 | `layout` | Leave it out for the current layout. `"alternate"` for an alternate: the branded sheet then says ALTERNATE, bottom right. |
 | `current` | `true` on the current layout of a job that also has an alternate: the sheet then says CURRENT. |
 | `sources` | One entry per reference used: `{ "file": "Design/<name>", "kind": "<cubicasa-svg, cubicasa-png, broker-plan, screenshot, architect-pdf, dwg, dxf, gvc-old-plan-jpg…>", "note": "<what you took from it, e.g. page 2 only>" }`. The maker needs this list. |
-| `north` | Degrees clockwise from page-up that north points, read off the source's compass. `0` when the compass points straight up. **`null` when the source shows no compass.** Never guess it. |
+| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **`null` when the source shows no compass.** Never guess it. |
 | `levels` | One per floor (below). |
 | `missing` | Plain sentences: what the source doesn't show, or what you left out. |
 | `uncertain` | Plain sentences: anything you had to judge (a blurry size, a door swing you couldn't see). |
@@ -178,5 +178,5 @@ BUILT-IN and LAUNDRY. Place each one inside its space, clear of walls and fixtur
 `{ "pts": [[x, y], …], "closed": true | false, "dash": true, "arrow": true }`: thin (0.5 pt) linework for what the fixed set doesn't
 cover. Use it for a built-in's outline, a DW bay's dividers, a stair's turn and break line, an entry
 arrow, or a planter edge. `"dash": true` for a line the source dashes (overhead cabinets, a sliding
-door's track); `"arrow": true` puts an arrowhead at its last point (an UP or entry arrow). A closed line is filled white. Never use it for a wall, a door or a
+door's track), drawn over the fixtures so it shows across a counter; `"arrow": true` puts an arrowhead at its last point (an UP or entry arrow). A closed line is filled white. Never use it for a wall, a door or a
 fixture that has a type.

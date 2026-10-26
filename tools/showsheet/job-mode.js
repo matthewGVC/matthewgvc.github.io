@@ -325,7 +325,8 @@
         var h = window.GVC_HEALTH.health(tree, { market: row.market, driveRoot: root, isNew: false });
         var ok = function (f) { return !f.archived && R.allowedInJob(f.path) && !R.isJunk(f.name); };
         var photos = (h.pieces.photos || []).filter(ok).filter(function (f) { return IMG.test(f.name); });
-        var plans = (h.pieces.floorplan || []).filter(ok);
+        // Floorplan/Design/ holds references and run notes, never a plan (not even for the note below)
+        var plans = (h.pieces.floorplan || []).filter(ok).filter(function (f) { return SJ.planPlace(f.path) !== 'design'; });
         M.fileFound = (h.pieces.showsheet || []).length > 0;
         M.files = {};
         photos.concat(plans).forEach(function (f) { M.files[f.path] = { modified: f.modified }; });

@@ -39,7 +39,7 @@
 
   /* First folder inside a job that may be read: the standard names plus the
      names today's folders already use for the same things. Lower case. */
-  var READABLE = ['floorplan', 'floorplans', 'floor plans', 'photos', 'marketing',
+  var READABLE = ['floorplan', 'floorplans', 'floor plan', 'floor plans', 'photos', 'marketing',
     'showsheet', 'showsheets', 'show sheet', 'brochure', 'copy', 'video',
     'open house', 'postcard', 'postcards', 'signage', 'signs'];
 
@@ -95,7 +95,7 @@
      floorplan file sits directly inside, the floorplan folder being the path's first segment */
   var PLACES = /^(design|unbranded|branded)$/;
   function planPlace(path) {
-    var segs = String(path == null ? '' : path).split(/[\/]/);
+    var segs = String(path == null ? '' : path).split(/[\\/]/);
     if (segs.length < 3) return null;
     var s = segs[1].toLowerCase();
     return PLACES.test(s) ? s : null;

@@ -134,6 +134,8 @@ check('svg is an image the picker takes', (S.pickFloorplan([{ path: 'Floorplan/v
 check('planPlace: the subfolder under the floorplan folder',
   ['Floorplan/Unbranded/x v5.svg', 'Floor plans/BRANDED/x.png', 'Floorplan/Design/plan.json', 'Floorplan/Design/archive/x v1.svg', 'Floorplan/v2/x.jpg', 'Floorplan/Unbranded', 'Floorplan/x Unbranded.jpg', '', null, 'Floorplan/v2/Unbranded/x.jpg'].map(p => S.planPlace && S.planPlace(p)),
   ['unbranded', 'branded', 'design', 'design', null, null, null, null, null, null]);
+check('planPlace: a backslash path too', ['Floorplan\\Unbranded\\x v5.svg', 'Floor Plan\\Design\\plan.json'].map(S.planPlace), ['unbranded', 'design']);
+check('a "Floor Plan" folder: its standard plan is picked', (S.pickFloorplan([{ path: 'Floor Plan/v2/x v2.jpg', name: 'x v2.jpg' }, { path: 'Floor Plan/Unbranded/x v1.svg', name: 'x v1.svg' }]) || {}).path, 'Floor Plan/Unbranded/x v1.svg');
 
 /* ---------- edits back to the job ---------- */
 const filled = S.fill(blank(), coop, {}).state;

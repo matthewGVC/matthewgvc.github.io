@@ -38,7 +38,7 @@
 
   /* piece folder names, old and new (plan §9), tested on the lower-cased name */
   var FOLDER = {
-    floorplan: /^(floorplan|floorplans|floor plans)$/,
+    floorplan: /^(floorplan|floorplans|floor plan|floor plans)$/,
     photos: /^(edited|edits|matt[- ]edits)$/,
     showsheet: /^(showsheet|showsheets|show sheet)$/,
     brochure: /^(brochure|brochures)$/,

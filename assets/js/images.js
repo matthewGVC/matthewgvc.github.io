@@ -39,7 +39,8 @@
     var sx = rect ? rect.x : 0, sy = rect ? rect.y : 0;
     var sw = rect ? rect.w : img.naturalWidth, sh = rect ? rect.h : img.naturalHeight;
     var vector = !!(img.dataset && img.dataset.vector);   // no pixels to lose: draw it at full size
-    var r = vector ? maxEdge / Math.max(sw, sh) : Math.min(1, maxEdge / Math.max(sw, sh));
+    var long = Math.max(sw, sh);   // 0 for an SVG with no size of its own: drawn as it is
+    var r = !(long > 0) ? 1 : vector ? maxEdge / long : Math.min(1, maxEdge / long);
     var w = Math.round(sw * r), h = Math.round(sh * r);
     var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     var cx = cv.getContext('2d');

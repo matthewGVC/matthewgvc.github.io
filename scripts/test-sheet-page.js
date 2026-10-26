@@ -56,6 +56,7 @@ const FAKE_DRIVE = `(function () {
     : cfg.plans === 'standard' ? [d('v2', [f('x v2.jpg', '09')]), d('Unbranded', [f('x v3.svg', '20'), f('x v3.png', '20')]),
         d('Branded', [f('x v3.svg', '20')]), d('Design', [f('cubicasa v9.png', '21')])]
     : cfg.plans === 'old' ? [d('v2', [f('x v2.jpg', '09')])]
+    : cfg.plans === 'design' ? [d('Design', [f('cubicasa.png', '21'), f('plan.json', '21')])]
     : [d('v1', [f('Plan v1.jpg', '04')]), d('v2', [f('Plan v2.jpg', '09'), f('Plan v2 unbranded.png', '09')])];
   // an SVG plan arrives with no type, as a file from disk may: the reader must still draw it
   var SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 630" width="810" height="630"><rect width="810" height="630" fill="#fff"/><path d="M100 100H700V530H100Z" fill="none" stroke="#0a2240" stroke-width="6"/></svg>';
@@ -429,6 +430,16 @@ const typeIn = async (page, field, value) => {
   check('a new plan: the SVG is drawn onto the sheet', /^data:image\/jpeg/.test((await st(t.page)).floorplan || ''), true);
   check('a new plan resets the saved floorplan crop', [(await st(t.page)).floorplanView, (await st(t.page)).floorplan2View], [{ zoom: 1, x: 50, y: 50 }, { zoom: 1, x: 50, y: 50 }]);
   check('a new plan: Design files never read', (await t.page.evaluate(() => window.__driveLog.read)).some(x => /Design/.test(x)), false);
+  check('a new plan: the sheet draws the plan uncropped', await t.page.$$eval('.fp-wrap', els => els.length > 0 && els.every(e => !e.classList.contains('is-zoomed'))), true);
+  await t.page.click('#btnSaveSheet');
+  await t.page.waitForTimeout(600);
+  const resetSaved = (t.pieces[0] || {}).p_state || {};
+  check('a new plan: the next save keeps the reset crop and the new plan', [resetSaved.floorplanView, resetSaved.floorplan2View, (resetSaved.floorplanFrom || {}).path],
+    [{ zoom: 1, x: 50, y: 50 }, { zoom: 1, x: 50, y: 50 }, 'Floorplan/Unbranded/x v3.svg']);
+  await t.ctx.close();
+  // only Design/ files: the plain no-floorplan note, never "No floorplan image in Floorplan\Design\"
+  t = await open(browser, { drive: { plans: 'design' } });
+  check('only Design/ files: says there is no floorplan yet', await text(t.page, '#jobPlanMsg'), 'No floorplan in the job\'s folder yet. Drop one here for this sheet, or leave it blank.');
   await t.ctx.close();
   t = await open(browser, { documents: [JSON.parse(JSON.stringify(CROPPED))], drive: { plans: 'old' } });
   await t.page.waitForTimeout(400);

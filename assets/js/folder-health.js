@@ -19,7 +19,9 @@
 
    Note codes: noDetails noFloorplan noVersions noEdited twoCurrent
    pieceAtTop twoFolders otherDrive broken. noVersions is only checked on a
-   new folder (isNew); old folders are only checked for what is actually wrong.
+   new folder (isNew), and not when the floorplan folder has the standard
+   Unbranded/ plan (GVC_DRIVE_RULES.planPlace); old folders are only checked
+   for what is actually wrong.
    Loads in the browser (window.GVC_HEALTH) and in Node (require).
    ============================================================ */
 (function (global, factory) {
@@ -140,7 +142,7 @@
     if (!out.detailsDoc) note('noDetails', 'There is no details document at the top of the folder.');
 
     if (!out.pieces.floorplan.length) note('noFloorplan', 'There is no floorplan in the folder.');
-    else if (opts.isNew && !hasVersionDir) note('noVersions', 'The Floorplan folder has no version folders. The standard is v1, v2 and so on.');
+    else if (opts.isNew && !hasVersionDir && !out.pieces.floorplan.some(function (p) { return RULES.planPlace(p.path) === 'unbranded'; })) note('noVersions', 'The Floorplan folder has no version folders. The standard is v1, v2 and so on.');
     if (!out.pieces.photos.some(function (p) { return !p.archived; })) note('noEdited', 'There are no edited photos in the folder.');
 
     ONE_CURRENT.forEach(function (key) {

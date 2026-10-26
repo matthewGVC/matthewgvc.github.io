@@ -358,9 +358,11 @@
       return { src: IM.reencode(img, 2000, 0.87), w: img.naturalWidth, h: img.naturalHeight };
     });
   }
+  /* the standard Unbranded/ plan has no title band to cut off */
   function planOf(path) {
     return readFile(path).then(IM.fileToImage).then(function (img) {
-      return { src: IM.reencode(img, 2400, 0.9, IM.trimRect(img, IM.floorplanHeaderY(img))), w: img.naturalWidth, h: img.naturalHeight };
+      var y = SJ.planPlace(path) === 'unbranded' ? 0 : IM.floorplanHeaderY(img);
+      return { src: IM.reencode(img, 2400, 0.9, IM.trimRect(img, y)), w: img.naturalWidth, h: img.naturalHeight };
     });
   }
   function mapOf(path) {

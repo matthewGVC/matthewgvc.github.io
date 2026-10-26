@@ -15,6 +15,11 @@
      GVC_DRIVE_RULES.rel('\\Photos\\Edited\\')            → 'Photos/Edited' ('..' → null)
      GVC_DRIVE_RULES.allowedInJob('Marketing/Offer 2.pdf') → false (paperwork in ANY segment)
      GVC_DRIVE_RULES.jobTree(rawTree)                   → the tree cut down to what may be shown
+     GVC_DRIVE_RULES.planPlace('Floorplan/Unbranded/x v5.svg') → 'unbranded': the standard subfolder
+                                                            directly under the floorplan folder (the
+                                                            first segment): 'design' | 'unbranded' |
+                                                            'branded', any case; else null. Design/ files
+                                                            are never plans. Also GVC_SHEETJOB.planPlace.
      GVC_DRIVE_RULES.isJunk('a.m4v.xmpses.xmp')         → true: a sidecar or system file (*.xmp,
                                                             *.xmpses, desktop.ini, Thumbs.db, .DS_Store,
                                                             ~$ Office temp files, ._ AppleDouble, any
@@ -85,6 +90,16 @@
   function isJunk(name) { return JUNK.test(String(name == null ? '' : name).trim()); }
 
   function isPaperworkFolder(name) { return PAPERWORK.test(String(name || '').trim()); }
+
+  /* the floorplan process's three subfolders (Floorplan/Unbranded, Branded, Design): which one a
+     floorplan file sits directly inside, the floorplan folder being the path's first segment */
+  var PLACES = /^(design|unbranded|branded)$/;
+  function planPlace(path) {
+    var segs = String(path == null ? '' : path).split(/[\/]/);
+    if (segs.length < 3) return null;
+    var s = segs[1].toLowerCase();
+    return PLACES.test(s) ? s : null;
+  }
   function isPaperwork(name) { return isPaperworkFolder(name) || hasPaperworkWord(name); }
 
   /* A job folder's listing cut down to what the workspace may show (plan §9):
@@ -132,5 +147,5 @@
   }
 
   return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
-    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree };
+    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace };
 });

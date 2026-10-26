@@ -402,6 +402,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     return cells.slice(i + 1, i + 4).map(c => c.classList.contains('empty') ? 'none' : c.title);
   }), ['Floorplan - 100 Example St 4A v2.pdf', 'Floorplan unbranded v2.pdf', 'none']);
   check('floorplans: MLS-safe label', (await text(p, '#fpCard .fpm')).includes('Unbranded (MLS-safe)'), true);
+  check('floorplans: Unbranded and Branded folders fill their columns, Design skipped', await p.evaluate(() => {
+    const F = (path, modified) => ({ path, name: path.split('/').pop(), modified });
+    const g = window.GVC_JP.floorplans.group([
+      F('Floorplan/v4/x v4.jpg', '2026-10-20'),
+      F('Floorplan/Unbranded/x v5.png', '2026-10-26'), F('Floorplan/Unbranded/x v5.svg', '2026-10-25'),
+      F('Floorplan/Unbranded/x v5 - Second Floor.png', '2026-10-27'),
+      F('Floorplan/Branded/x v5.svg', '2026-10-25'), F('Floorplan/Branded/x v5.png', '2026-10-26'),
+      F('Floorplan/Design/plan.json', '2026-10-26'), F('Floorplan/Design/cubicasa v9.png', '2026-10-26'), F('Floorplan/Design/alt option v8.jpg', '2026-10-26')
+    ]);
+    const v5 = g.versions[5] || {};
+    return [Object.keys(g.versions), (v5.branded || {}).path, (v5.unbranded || {}).path, !!v5.blank, g.alternates.length, (g.versions[4] || {}).branded && g.versions[4].branded.path];
+  }), [['4', '5'], 'Floorplan/Branded/x v5.svg', 'Floorplan/Unbranded/x v5.svg', false, 0, 'Floorplan/v4/x v4.jpg']);
   await p.click('#fpNew');
   await p.fill('#fpNote', 'Swap the bedroom labels');
   await p.selectOption('#fpWho', 'Katie Cook');

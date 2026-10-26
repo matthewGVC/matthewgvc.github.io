@@ -20,22 +20,29 @@
        the job held it, agents, listing link, market, photos and floorplan.
      GVC_SHEETJOB.FIELDS(row, ownership?) → the job facts the sheet prints.
      Also: marketKey, ownershipOf, valueOf, listingUrlOf, agentsOf,
-     photosOf(row, editedPaths), pickFloorplan(files).
+     photosOf(row, editedPaths), pickFloorplan(files), planFiles(files),
+     planPlace(path) (GVC_DRIVE_RULES.planPlace: 'design' | 'unbranded' | 'branded' | null).
+
+   Floorplans (the floorplan process): a file in Floorplan/Design/ is never a plan; when any
+   image sits in Floorplan/Unbranded/ (the standard plan, "<label> v<N>.svg" + ".png") only
+   those count, highest version, .svg before .png. Otherwise as before: v1\ v2\ folders or
+   "v2" in the name, branded first.
 
    Pure: no DOM, no network. Loads in the browser (window.GVC_SHEETJOB,
-   after job-facts.js and listing.js) and in Node (require).
+   after drive-rules.js, job-facts.js and listing.js) and in Node (require).
    Tested by scripts/test-sheet-job.js.
    ============================================================ */
 (function (global, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./job-facts.js'), require('../../tools/showsheet/listing.js'));
-  } else global.GVC_SHEETJOB = factory(global.GVC_FACTS, global.GVC_LISTING);
-})(typeof window !== 'undefined' ? window : globalThis, function (F, L) {
+    module.exports = factory(require('./job-facts.js'), require('../../tools/showsheet/listing.js'), require('./drive-rules.js'));
+  } else global.GVC_SHEETJOB = factory(global.GVC_FACTS, global.GVC_LISTING, global.GVC_DRIVE_RULES);
+})(typeof window !== 'undefined' ? window : globalThis, function (F, L, R) {
   'use strict';
 
   var HOUSES = ['Townhouse', 'Single family', 'Other'];
-  var IMG = /\.(jpe?g|png|webp)$/i;
+  var IMG = /\.(jpe?g|png|webp|svg)$/i;
+  var planPlace = R.planPlace;
 
   function empty(v) { return v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length); }
   function clone(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
@@ -254,10 +261,11 @@
     return { front: front, back: back, tray: tray };
   }
 
+  function nameOf(f) { return f.name || String(f.path || '').split('/').pop(); }
   function versionOf(f) {
     var segs = String(f.path || f.name).split('/');
     for (var i = segs.length - 2; i >= 0; i--) { var m = /^v(\d+)$/i.exec(segs[i]); if (m) return +m[1]; }
-    var n = /\bv(\d+)\b/i.exec(f.name || '');
+    var n = /\bv(\d+)\b/i.exec(nameOf(f));
     return n ? +n[1] : 0;
   }
   function renderOf(name) {
@@ -265,22 +273,38 @@
     if (/blank/i.test(name)) return 'blank';
     return 'branded';
   }
+  /* the render a plan file is: its Unbranded/ or Branded/ folder, else its name */
+  function renderOfFile(f) {
+    var place = planPlace(f.path);
+    return place === 'unbranded' || place === 'branded' ? place : renderOf(nameOf(f));
+  }
   var RENDER_RANK = { branded: 0, unbranded: 1, blank: 2 };
+  function svgFirst(name) { return /\.svg$/i.test(name) ? 0 : 1; }
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
+  /* the files a picker chooses among: images, not Source/, not alternates, never Design/;
+     only the Unbranded/ ones when there are any (the standard plan wins over hand-made versions) */
+  function planFiles(files) {
+    var ok = (files || []).filter(function (f) {
+      var name = nameOf(f);
+      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && !/\b(alt|alternate|option)\b/i.test(name) && planPlace(f.path) !== 'design';
+    });
+    var std = ok.filter(function (f) { return planPlace(f.path) === 'unbranded'; });
+    return std.length ? std : ok;
+  }
   function pickFloorplan(files) {
     var best = null;
-    (files || []).forEach(function (f) {
-      var name = f.name || String(f.path || '').split('/').pop();
-      if (!IMG.test(name) || /(^|\/)source\//i.test(f.path || '') || /\b(alt|alternate|option)\b/i.test(name)) return;
-      var x = { version: versionOf(f), render: renderOf(name), path: f.path, modified: f.modified || null };
+    planFiles(files).forEach(function (f) {
+      var x = { version: versionOf(f), render: renderOfFile(f), path: f.path, modified: f.modified || null };
+      var ext = svgFirst(nameOf(f)), bext = best && svgFirst(String(best.path || ''));
       if (!best || x.version > best.version ||
           (x.version === best.version && (RENDER_RANK[x.render] < RENDER_RANK[best.render] ||
-            (x.render === best.render && ms(x.modified) > ms(best.modified))))) best = x;
+            (x.render === best.render && (ext < bext || (ext === bext && ms(x.modified) > ms(best.modified))))))) best = x;
     });
     return best;
   }
 
   return { marketKey: marketKey, ownershipOf: ownershipOf, valueOf: valueOf, listingUrlOf: listingUrlOf, agentsOf: agentsOf,
            FIELDS: FIELDS, fill: fill, factEdits: factEdits, applyEdits: applyEdits, builtFrom: builtFrom,
-           photosOf: photosOf, pickFloorplan: pickFloorplan, same: same };
+           photosOf: photosOf, pickFloorplan: pickFloorplan, planFiles: planFiles, planPlace: planPlace, versionOf: versionOf,
+           renderOfFile: renderOfFile, same: same };
 });

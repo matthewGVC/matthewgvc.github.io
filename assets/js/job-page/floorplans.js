@@ -9,6 +9,10 @@
    render from the name. Versions recorded in the floorplans table show even
    before a file exists ("v3 recorded 21 Oct, no file yet"). Alternate
    layouts are listed when names say "alt", "alternate" or "option".
+   The floorplan process's folders: Floorplan/Branded/ fills the Branded
+   column and Floorplan/Unbranded/ the Unbranded one, one entry per version
+   (the .svg before the .png); Floorplan/Design/ is never a plan
+   (GVC_SHEETJOB.planPlace).
 
    Record new version (owner): note + who asked → a floorplans row (REST, as
    members may insert), then a change-log row through save_job.
@@ -33,15 +37,23 @@
     if (/blank/i.test(name)) return 'blank';
     return 'branded';
   }
+  function placeOf(f) { return global.GVC_SHEETJOB.planPlace(f.path || ''); }
+  function svg(f) { return /\.svg$/i.test(f.name) ? 1 : 0; }
+  /* the file a cell shows: in Branded/ or Unbranded/ the .svg first, else the newest */
+  function better(f, cur) {
+    if (placeOf(f) && placeOf(cur) && svg(f) !== svg(cur)) return svg(f) > svg(cur);
+    return ms(f.modified) > ms(cur.modified);
+  }
 
   /* files → { versions: { n: { branded: file, … , newest } }, alternates: [file] } */
   function group(files) {
     var out = { versions: {}, alternates: [] };
     (files || []).forEach(function (f) {
-      if (!OUTPUT.test(f.name) || /(^|\/)source\//i.test(f.path || '')) return;
+      var place = placeOf(f);
+      if (!OUTPUT.test(f.name) || /(^|\/)source\//i.test(f.path || '') || place === 'design') return;
       if (/\b(alt|alternate|option)\b/i.test(f.name)) { out.alternates.push(f); return; }
-      var v = versionOf(f), r = renderOf(f.name), slot = out.versions[v] = out.versions[v] || {};
-      if (!slot[r] || ms(f.modified) > ms(slot[r].modified)) slot[r] = f;
+      var v = versionOf(f), r = place || renderOf(f.name), slot = out.versions[v] = out.versions[v] || {};
+      if (!slot[r] || better(f, slot[r])) slot[r] = f;
       if (!slot.newest || ms(f.modified) > ms(slot.newest)) slot.newest = f.modified;
     });
     return out;
@@ -74,7 +86,7 @@
 
   function nextVersion(files, ctx) {
     var top = 0;
-    (files || []).forEach(function (f) { top = Math.max(top, versionOf(f)); });
+    (files || []).forEach(function (f) { if (placeOf(f) !== 'design') top = Math.max(top, versionOf(f)); });
     (recorded[ctx.row.id] || []).forEach(function (x) { top = Math.max(top, +x.version || 0); });
     return top + 1;
   }

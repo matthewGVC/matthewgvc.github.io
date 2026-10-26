@@ -145,6 +145,19 @@ const plans = [
 ];
 check('pickFloorplans: newest version, one per level, branded first', J.pickFloorplans(plans).map(p => p.path), ['Floorplan/v2/Level 1 v2.jpg', 'Floorplan/v2/Level 2 v2.png']);
 check('pickFloorplans: none', J.pickFloorplans([{ path: 'Floorplan/v1/x.pdf' }]), []);
+const stdLevels = [
+  { path: 'Floorplan/v3/Level 1 v3.jpg', modified: '2026-10-01' },
+  { path: 'Floorplan/Unbranded/12 Elm v2 - First Floor.png', modified: '2026-10-26' },
+  { path: 'Floorplan/Unbranded/12 Elm v2 - First Floor.svg', modified: '2026-10-25' },
+  { path: 'Floorplan/Unbranded/12 Elm v2 - Second Floor.svg', modified: '2026-10-25' },
+  { path: 'Floorplan/Unbranded/12 Elm v2 - Second Floor.png', modified: '2026-10-26' },
+  { path: 'Floorplan/Unbranded/12 Elm v1 - First Floor.svg', modified: '2026-10-20' },
+  { path: 'Floorplan/Branded/12 Elm v2 - First Floor.svg', modified: '2026-10-26' },
+  { path: 'Floorplan/Design/cubicasa v9.png', modified: '2026-10-26' }
+];
+check('standard levels, svg first', J.pickFloorplans(stdLevels).map(p => p.path), ['Floorplan/Unbranded/12 Elm v2 - First Floor.svg', 'Floorplan/Unbranded/12 Elm v2 - Second Floor.svg']);
+check('standard levels: render and version', J.pickFloorplans(stdLevels).map(p => [p.render, p.version]), [['unbranded', 2], ['unbranded', 2]]);
+check('pickFloorplans: Design files are never plans', J.pickFloorplans([{ path: 'Floorplan/Design/cubicasa.png' }]), []);
 check('pitchPhotos', J.pitchPhotos([
   { path: 'img.jpg' }, { path: 'Photos/b.png' }, { path: 'gvc-3d-property-map.png' }, { path: 'Map - 12 Sample Ln - 2026-10-22.png' },
   { path: 'Assets/deep/x.jpg' }, { path: 'Photos/sub/y.jpg' }, { path: 'notes.pdf' }, { path: 'Archive/old.jpg' }

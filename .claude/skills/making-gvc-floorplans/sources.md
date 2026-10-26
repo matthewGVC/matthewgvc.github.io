@@ -56,10 +56,14 @@ im.save(out)
    for a picture traced this way: the solids are the walls.
 3. Add the openings across the gaps the masses leave, each a **free opening** with the two ends of
    its gap and the wall's thickness there: `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`
-   (doors take `hinge`, `side` and `outside` as usual, walking from `a` to `b`). Then the closets and
+   (doors take `hinge`, `side` and `outside` as usual, walking from `a` to `b`). A hole the tracer
+   leaves where a window sits is the window's gap: keep it and draw the window across it; never fill
+   it. A label fused to a wall mass is cut off the mass in your generator. Then the closets and
    cabinets, the fixtures, the terraces and the stairs. Go room by room, and in each room list
    everything the source draws before you write it, so nothing is skipped.
-4. Read every label and size exactly as printed: `13' x 24'` stays `13' x 24'` (the drawer prints it
+4. Draw what the source draws and nothing more: a plain box is a box (a `counter` or `lines`), never a
+   bed or a sofa because of where it sits; a fixture type only where the source draws that fixture.
+   Read every label and size exactly as printed, its punctuation too (`CL.` stays `CL.`): `13' x 24'` stays `13' x 24'` (the drawer prints it
    with curly marks). A name the source sets on two lines is written with a line break,
    `"LIVING\nROOM"`. When a size can't be read, leave it out and say so in `uncertain`. Never
    estimate it from the drawing.

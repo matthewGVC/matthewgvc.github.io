@@ -356,7 +356,7 @@ function drawSymbol(name, w, h) {
   const stretch = /^clothes-/.test(name);
   const sx = w / sym.size[0], sy = stretch ? h / sym.size[1] : sx, sk = (sx + sy) / 2;
   const dy = stretch ? 0 : -h / 2 + sym.size[1] * sy / 2;   // the wall side stays on the box's top edge
-  return sym.paths.map((p) => {
+  const out = sym.paths.map((p) => {
     const d = p.d.replace(/([MLCQZ])([^MLCQZ]*)/g, (m, c, nums) => {
       const v = nums.trim() ? nums.trim().split(/\s+/).map(Number) : [];
       return c + v.map((x, i) => r2(i % 2 ? x * sy + dy : x * sx)).join(' ');
@@ -366,8 +366,12 @@ function drawSymbol(name, w, h) {
     if (p.stroke) sw = p.weight === 'fine' ? STYLE.FINE : p.weight === 'thin' ? STYLE.THIN : (p.sw || 0) * sk;
     if (stroke) a.push('stroke="' + stroke + '"', 'stroke-width="' + r2(sw) + '"', 'stroke-linejoin="round"');
     if (p.opacity !== undefined) a.push('opacity="' + p.opacity + '"');
-    return '<path ' + a.join(' ') + ' d="' + d + '"/>';
-  }).join('');
+    return { d, back: sym.mode === 'line' && p.weight === 'thin' && !p.fill && /Z\s*$/.test(d), el: '<path ' + a.join(' ') + ' d="' + d + '"/>' };
+  });
+  /* line art drawn over a counter or a floor swatch hides what is under it: each closed outline is backed
+     in white, under all of the symbol's lines */
+  const back = out.filter((p) => p.back).map((p) => '<path data-back="1" fill="' + STYLE.WHITE + '" d="' + p.d + '"/>').join('');
+  return back + out.map((p) => p.el).join('');
 }
 /* the symbol a fixture draws with, when Matt has drawn one */
 function symbolFor(f) {

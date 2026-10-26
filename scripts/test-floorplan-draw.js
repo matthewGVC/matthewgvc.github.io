@@ -200,7 +200,8 @@ const fpaths = (type, extra) => paths(fx(type, extra));
 /* Matt's symbols (symbols.json) are what the fixtures draw */
 check('range: 4 burners by default, 6 on request, 6 with a griddle, each Matt\'s own',
   [(fx('range').match(/<path/g) || []).length, (fx('range', { burners: 6 }).match(/<path/g) || []).length, (fx('range', { burners: 6, griddle: true }).match(/<path/g) || []).length],
-  [SYM['range-4'].paths.length + 4, SYM['range-6'].paths.length + 4, SYM['range-6-griddle'].paths.length + 4].map((n) => n - 4 + (fx('box').match(/<path/g) || []).length));
+  ['range-4', 'range-6', 'range-6-griddle'].map((n) => SYM[n].paths.length + SYM[n].paths.filter((q) => q.weight === 'thin' && !q.fill && /Z\s*$/.test(q.d)).length + (fx('box').match(/<path/g) || []).length));
+check('a symbol\'s closed outlines are backed in white, under its lines, so a counter edge does not show through', /<g transform="translate[^>]*"><path data-back="1" fill="#ffffff" d="/i.test(fx('range')), true);
 /* at a real plan's scale (an 80 ft wide unit) Matt's thin filled outlines are thickened to the house weight */
 const bigPlan = clone(box4); bigPlan.levels[0].walls = [{ a: [0, 0], b: [960, 0], type: 'exterior' }, { a: [960, 0], b: [960, 600], type: 'exterior' }];
 bigPlan.levels[0].fixtures = [{ type: 'toilet', at: [100, 100], w: 19, h: 30, rot: 0 }];

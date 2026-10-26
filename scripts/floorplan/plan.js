@@ -73,6 +73,23 @@ function levelPoints(level) {
   });
   (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
   (level.areas || []).forEach((a) => ((a && a.poly) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
+  /* a door to the outside stands fully open, often past the walls: its swing is part of the drawing */
+  (level.openings || []).forEach((o) => {
+    const w = (level.walls || [])[o && o.wall];
+    if (!o || !o.outside || !['door', 'double-door'].includes(o.type) || !w || !isPt(w.a) || !isPt(w.b) || isPt(w.via)) return;
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
+    if (!L) return;
+    const d = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], left = [d[1], -d[0]], k = o.side === 'right' ? -1 : 1;
+    const at = (t) => [w.a[0] + (w.b[0] - w.a[0]) * t, w.a[1] + (w.b[1] - w.a[1]) * t];
+    const leaves = o.type === 'double-door' ? [[o.from, (o.from + o.to) / 2], [o.to, (o.from + o.to) / 2]] : [o.hinge === 'to' ? [o.to, o.from] : [o.from, o.to]];
+    leaves.forEach(([h, f]) => {
+      const hp = at(h), r = Math.abs(f - h) * L, dir = h < f ? 1 : -1;
+      for (let i = 1; i <= 8; i++) {
+        const q = (i / 8) * Math.PI / 2;
+        pts.push([hp[0] + (d[0] * dir * Math.cos(q) + left[0] * k * Math.sin(q)) * r, hp[1] + (d[1] * dir * Math.cos(q) + left[1] * k * Math.sin(q)) * r]);
+      }
+    });
+  });
   return pts;
 }
 

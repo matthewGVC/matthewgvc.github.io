@@ -54,7 +54,8 @@ async function readShapes(file, picks) {
         const root = find(p.select);
         if (!root) { out[p.name] = null; return; }
         const list = SHAPES.includes(root.tagName) ? [root] : [...root.querySelectorAll(SHAPES.join(','))];
-        out[p.name] = list.filter((el) => getComputedStyle(el).display !== 'none' && !el.closest('text tspan')).map((el) => {
+        /* the drawer's own white backings (data-back) are not Matt's artwork */
+        out[p.name] = list.filter((el) => getComputedStyle(el).display !== 'none' && !el.closest('text tspan') && !el.hasAttribute('data-back')).map((el) => {
           const cs = getComputedStyle(el), m = el.getCTM(), b = el.getBoundingClientRect();
           const a = {};
           for (const at of el.attributes) a[at.name] = at.value;

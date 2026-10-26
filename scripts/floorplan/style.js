@@ -31,6 +31,8 @@ module.exports = {
   STAIR_TREAD: 6,            // pt between treads
   STAIR_ARROW: 3,            // pt arrow-head length
   SLIDING_PANEL: 1.6,        // pt thickness of a sliding / pocket panel
+  DOOR_OPEN_OUTSIDE: 90,     // degrees a door leaf stands open: doors to a terrace, balcony or the hall
+  DOOR_OPEN_INSIDE: 45,      // every other door (Matt, 10-26)
 
   /* type (Nunito Sans, outlined); tracking is letter-spacing in em */
   FONT_FILE: 'assets/fonts/nunito-sans-{weight}-latin.woff2',

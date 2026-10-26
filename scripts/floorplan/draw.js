@@ -192,8 +192,11 @@ function drawOpenings(level, T) {
     const d = C.dir(0), left = leftOf(d);
     const n = o.side === 'right' ? mul(left, -1) : left;
     const p0 = C.at(o.from), p1 = C.at(o.to), span = C.len * (o.to - o.from);
+    /* Matt's rule: a door to the outside (o.outside) is drawn fully open, every other door half open */
+    const open = (o.outside ? STYLE.DOOR_OPEN_OUTSIDE : STYLE.DOOR_OPEN_INSIDE) * Math.PI / 180;
     const swing = (hinge, free, r) => {
-      const tip = addv(hinge, mul(n, r));
+      const along = mul(sub(free, hinge), 1 / (len(sub(free, hinge)) || 1));
+      const tip = addv(hinge, addv(mul(along, r * Math.cos(open)), mul(n, r * Math.sin(open))));
       const u = sub(tip, hinge), v = sub(free, hinge);
       const sweep = u[0] * v[1] - u[1] * v[0] > 0 ? 1 : 0;
       out.push('<path ' + thin() + ' d="' + line(hinge, tip) + '"/>');
@@ -439,6 +442,13 @@ function drawLevelName(name) {
 }
 
 /* ---------- the page ---------- */
+/* one level's drawing, every layer in order, through T (plan units -> page points, scale s);
+   also used by style-sheet.js to draw single elements at a fixed scale */
+function drawLevel(level, T, s) {
+  return [drawAreas(level, T), drawSolids(level, T), drawLines(level, T), drawWalls(level, T),
+    drawFixtures(level, T, s), drawOpenings(level, T), drawRooms(level, T)].filter(Boolean).join('\n');
+}
+
 function draw(plan, levelIndex = 0, opts = {}) {
   const branded = !!opts.branded;
   const level = plan.levels[levelIndex];
@@ -458,15 +468,7 @@ function draw(plan, levelIndex = 0, opts = {}) {
      the plan so every mismatch shows (scripts/floorplan/overlay.js). Never in a saved plan. */
   const U = opts.underlay, r6 = (v) => Math.round(v * 1e6) / 1e6;
   if (branded) parts.push(drawHeader(plan, opts.facts));
-  parts.push(
-    drawAreas(level, T),
-    drawSolids(level, T),
-    drawLines(level, T),
-    drawWalls(level, T),
-    drawFixtures(level, T, s),
-    drawOpenings(level, T),
-    drawRooms(level, T)
-  );
+  parts.push(drawLevel(level, T, s));
   if (U) {
     parts.push('<filter id="fp-red"><feColorMatrix type="matrix" values="0 0 0 0 1 0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0 0 0 1 0"/></filter>' +
       '<image href="' + esc(U.href) + '" x="0" y="0" width="' + U.width + '" height="' + U.height + '" filter="url(#fp-red)" style="mix-blend-mode:multiply" ' +
@@ -481,4 +483,4 @@ function draw(plan, levelIndex = 0, opts = {}) {
   return parts.filter(Boolean).join('\n') + '\n';
 }
 
-module.exports = { draw, outline, measure };
+module.exports = { draw, drawLevel, outline, measure };

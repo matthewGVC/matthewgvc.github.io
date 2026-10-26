@@ -13,7 +13,8 @@
                      via: a point the wall passes through between a and b; the wall is then the circular
                      arc through a, via and b (only windows and plain openings may sit on an arc)
        "solids":   [ [[x,y], ...] ]                       filled polygons (columns, chimneys)
-       "openings": [{ "wall": index, "from": 0-1, "to": 0-1, "type", "hinge": "from|to", "side": "left|right" }],
+       "openings": [{ "wall": index, "from": 0-1, "to": 0-1, "type", "hinge": "from|to", "side": "left|right",
+                      "outside": true for a door to a terrace, balcony or the hall (drawn fully open) }],
        "fixtures": [{ "type", "at": [x,y], "w", "h", "rot", "bowls": 1|2 (kitchen-sink) }],
                      rot 0: the wall the fixture backs onto is at the top
        "areas":    [{ "type", "poly": [[x,y], ...] }],
@@ -112,7 +113,8 @@ function validate(plan) {
       const O = L + ' opening ' + (i + 1);
       if (!Number.isInteger(o.wall) || o.wall < 0 || o.wall >= walls.length) errors.push(O + ': no wall ' + o.wall);
       if (!OPENINGS.includes(o.type)) errors.push(O + ': unknown type "' + o.type + '"');
-      else if (walls[o.wall] && walls[o.wall].via !== undefined && !['window', 'opening'].includes(o.type)) errors.push(O + ': only a window or an opening can sit on a curved wall');
+      if (OPENINGS.includes(o.type) && walls[o.wall] && walls[o.wall].via !== undefined && !['window', 'opening'].includes(o.type)) errors.push(O + ': only a window or an opening can sit on a curved wall');
+      if (o.outside !== undefined && typeof o.outside !== 'boolean') errors.push(O + ': outside must be true or false');
       if (!(Number.isFinite(o.from) && Number.isFinite(o.to) && o.from >= 0 && o.to <= 1 && o.from < o.to)) errors.push(O + ': from and to must satisfy 0 <= from < to <= 1');
     });
 

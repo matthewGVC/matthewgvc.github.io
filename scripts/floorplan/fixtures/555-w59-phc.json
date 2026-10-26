@@ -747,7 +747,8 @@
      "to": 0.56,
      "type": "door",
      "hinge": "from",
-     "side": "left"
+     "side": "left",
+     "outside": true
     },
     {
      "wall": 2,
@@ -773,7 +774,8 @@
      "to": 0.4503,
      "type": "door",
      "hinge": "to",
-     "side": "left"
+     "side": "left",
+     "outside": true
     },
     {
      "wall": 8,
@@ -781,7 +783,8 @@
      "to": 0.5109,
      "type": "door",
      "hinge": "to",
-     "side": "right"
+     "side": "right",
+     "outside": true
     },
     {
      "wall": 11,
@@ -847,7 +850,8 @@
      "to": 0.1385,
      "type": "door",
      "hinge": "from",
-     "side": "left"
+     "side": "left",
+     "outside": true
     },
     {
      "wall": 21,

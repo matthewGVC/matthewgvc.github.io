@@ -3,6 +3,13 @@
 What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-26: house-style decisions from Matt
+
+- **Doors:** 90° for any door leading outside (terrace, balcony, the front door to the hall), and 45°
+  for every interior door. Mark outside doors `"outside": true`.
+- Matt is reviewing every element on the style sheet (`scripts/floorplan/style-sheet.js`). Apply his
+  returned sheet as SKILL.md describes.
+
 ## 2026-10-26: Matt's review of the pilot (v3 → v4)
 
 Matt: "Across the board accuracy is 100000% the most important thing here, detail specific." v3 had

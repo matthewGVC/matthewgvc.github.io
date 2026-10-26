@@ -139,6 +139,21 @@ Files beside this one:
     - anything you skipped (a second reference, the database row);
     - what you added to the lessons.
 
+## The style sheet (changing the house style)
+
+`node scripts/floorplan/style-sheet.js "<out.svg>"` writes every element the drawer makes at true
+size, each in a group named after it: walls, windows, doors, fixtures, areas, labels and the branded
+frame. Matt edits that file in Illustrator and hands it back. To apply it:
+- Compare each group in his file with a freshly generated sheet.
+- Make the changes in `style.js` (weights, sizes, colours, angles) or in the element's drawing
+  function in `draw.js` (shapes).
+- Regenerate the sheet and check it matches his.
+- Read his NOTES layer.
+- Run the floorplan tests, then redraw the worked example and check it.
+
+A house-style change affects every plan from then on, so it is only ever made from Matt's sheet or
+his explicit say-so.
+
 ## Corrections in a later chat
 
 When Matt says something like "the W/D is in the wrong closet":

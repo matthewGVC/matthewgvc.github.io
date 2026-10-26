@@ -34,17 +34,17 @@ R, D = 74, 74 / math.sqrt(2)
 arcL = W((574.5, 742), (648.5, 668), via=(648.5 - D, 742 - D)); ops.append({"wall": arcL, "from": 0, "to": 1, "type": "window"})
 top = W((648.5, 668), (1681.5, 668))
 for x0, x1 in [(671, 726), (726, 781), (1238.5, 1297), (1297, 1356), (1530, 1590), (1590, 1650), (1669, 1681.5)]: O(top, x0, x1, 'window')
-O(top, 1180, 1227, 'door', hinge='from', side='left')          # to the terrace, opening out
+O(top, 1180, 1227, 'door', hinge='from', side='left', outside=True)          # to the terrace, opening out
 arcR = W((1681.5, 668), (1755.5, 742), via=(1681.5 + D, 742 - D)); ops.append({"wall": arcR, "from": 0, "to": 1, "type": "window"})
 right = W((1755.5, 742), (1755.5, 1181.75))
 for y0, y1 in [(778.5, 828), (828, 875)]: O(right, y0, y1, 'window')
-O(right, 890, 940, 'door', hinge='to', side='left')            # bedroom to the terrace, opening out
+O(right, 890, 940, 'door', hinge='to', side='left', outside=True)            # bedroom to the terrace, opening out
 bath_bottom = W((1755.5, 1181.75), (1381.75, 1181.75))
 cl3_right = W((1381.75, 1181.75), (1381.75, 1304))
 W((1381.75, 1304), (1197, 1304))                                # CL by the stair, bottom
 W((1197, 1304), (1197, 1242))
 entry = W((1197, 1242), (1048.25, 1241.5))                      # entry wall and CL bottom
-O(entry, 1121, 1166, 'door', hinge='to', side='right')          # the front door, opening in
+O(entry, 1121, 1166, 'door', hinge='to', side='right', outside=True)          # the front door, opening in
 W((1048.25, 1241.5), (1048.25, 1145))                           # CL left
 W((1048.25, 1145), (1093, 1145))                                # CL top
 clr = W((1095.5, 1117.7), (1095.5, 1241.5))                     # CL right wall, door into the gallery
@@ -58,7 +58,7 @@ W((943.25, 1350.8), (943.25, 1532.5))                           # REF and CL bac
 W((943.25, 1532.5), (574.5, 1532.5))                            # kitchen bottom
 left = W((574.5, 1532.5), (574.5, 742))
 for y0, y1 in [(761, 818), (888, 946.5), (946.5, 1006.5), (1006.5, 1063.5), (1275, 1315), (1315, 1355), (1355, 1395)]: O(left, y0, y1, 'window')
-O(left, 1423, 1467, 'door', hinge='from', side='left')         # kitchen to the terrace, opening out (hinge at the bottom)
+O(left, 1423, 1467, 'door', hinge='from', side='left', outside=True)         # kitchen to the terrace, opening out (hinge at the bottom)
 
 # ---- inside ----
 bl = W((1383.5, 713), (1383.5, 1007.5))                         # living room / bedroom (17 px)

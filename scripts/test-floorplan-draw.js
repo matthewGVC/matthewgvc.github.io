@@ -174,6 +174,22 @@ check('a stair with treads: 9 draws nine treads and no arrow', (st.match(/M/g) |
 check('the worked example draws', /<svg/.test(draw(require('./floorplan/fixtures/555-w59-phc.json'), 0, { branded: true })), true);
 check('underlay is only drawn when asked', /<image/.test(draw(box4, 0, {})), false);
 
+/* ---- doors: Matt's rule, fully open to the outside, half open inside ---- */
+const leafAngle = (outside) => {
+  const q = clone(box4); q.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'door', hinge: 'from', side: 'left', outside }];
+  const m = draw(q, 0, {}).match(/fill="#ffffff" stroke="#00273a" stroke-width="0.5" d="M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)"/);
+  return Math.round(Math.atan2(-(+m[4] - +m[2]), +m[3] - +m[1]) * 180 / Math.PI);
+};
+check('a door to the outside stands at ' + STYLE.DOOR_OPEN_OUTSIDE + '°', leafAngle(true), STYLE.DOOR_OPEN_OUTSIDE);
+check('an inside door stands at ' + STYLE.DOOR_OPEN_INSIDE + '°', leafAngle(undefined), STYLE.DOOR_OPEN_INSIDE);
+
+/* ---- the style sheet: every element in its own named group ---- */
+const { sheet, ELEMENTS } = require('./floorplan/style-sheet.js');
+const sh = sheet();
+check('style sheet: one group per element, plus the branded frame', ELEMENTS.map(([id]) => sh.includes('<g id="' + id + '">')).filter((x) => !x).length, 0);
+check('style sheet: every element draws something', ELEMENTS.filter(([id]) => /<g id="[^"]*"><\/g>/.test(sh.slice(sh.indexOf('<g id="' + id + '">'), sh.indexOf('<g id="' + id + '">') + id.length + 20))).length, 0);
+check('style sheet: has the frame and the four layers', ['frame-branded-page', 'GUIDES', 'ELEMENTS', 'CAPTIONS', 'NOTES'].every((id) => sh.includes('id="' + id + '"')), true);
+
 /* ---- report ---- */
 if (failures.length) {
   console.log(failures.length + ' failed, ' + pass + ' passed\n');

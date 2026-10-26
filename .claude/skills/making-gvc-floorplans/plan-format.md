@@ -68,6 +68,9 @@ the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet
 - Doors only: `hinge` is the end the leaf turns on. `side` is the side the door opens into, as seen
   walking along the wall from `a` to `b` on the page: on a wall running left to right across the
   page, `left` is up the page; on a wall running down the page, `left` is to the right.
+- **`"outside": true`** on every door that opens to the outside: to a terrace or balcony, and the front
+  door to the building's hall. Those draw fully open (90°). Every other door draws half open (45°).
+  This is Matt's rule.
 - **pocket:** `hinge` is the end with the pocket (the panel slides into the wall there).
 - **Windows:** one opening per pane, edge to edge. Where two windows meet, the drawing shows the
   mullion, so split them where the source shows a divider.

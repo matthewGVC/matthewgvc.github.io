@@ -62,7 +62,8 @@ function rowsFor(over) {
       { gid: 's1', kind: 'post', property_id: 'p1', name: 'Carousel: the kitchen', due_on: '2026-10-01', completed_at: '2026-10-01T15:00:00Z', fields: { format: 'Carousel', stage: 'Completed', link: 'https://www.instagram.com/p/abc/' } },
       { gid: 's2', kind: 'post', property_id: 'p1', name: 'Reel <b>tour</b>', due_on: '2026-10-08', completed_at: '2026-10-08T15:00:00Z', fields: { format: 'Reel', link: 'javascript:alert(1)' } },
       { gid: 's3', kind: 'post', property_id: 'p1', name: 'Just sold story', due_on: '2026-11-02', completed_at: null, fields: { format: 'Story', stage: 'Production' } },
-      { gid: 's4', kind: 'post', property_id: 'p1', name: 'Dropped idea', due_on: '2026-09-01', completed_at: null, fields: { stage: 'Did Not Post' } }
+      { gid: 's4', kind: 'post', property_id: 'p1', name: 'Dropped idea', due_on: '2026-09-01', completed_at: null, fields: { stage: 'Did Not Post' } },
+      { gid: 's5', kind: 'post', property_id: null, dev_project_id: 'd1', name: 'Construction update reel', due_on: '2026-10-10', completed_at: '2026-10-10T15:00:00Z', fields: { format: 'Reel' } }
     ],
     todos: [{ id: 't1', section: 'Up next', body: 'Florida office signage', done: false, position: 1 },
       { id: 't2', section: 'Waiting on others', body: 'Real headshot for an agent\nOnly a small temporary photo', done: false, position: 2 }]
@@ -580,6 +581,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
   check('development page: D66\'s 18 milestones', await t.page.$$eval('#msList li', els => els.length), 18);
+  check('development page: its social posts', [await text(t.page, '#postsCount'), await t.page.$$eval('#postsCard .pn', els => els.map(e => e.textContent))], ['1 posted', ['Construction update reel']]);
   check('development page: hints listed with ✓ and ✗', [await t.page.$$eval('#hints li', els => els.length), await t.page.$$eval('#hints [data-ok]', els => els.length), await t.page.$$eval('#hints [data-no]', els => els.length)], [2, 2, 2]);
   check('development page: next milestone and slips', [(await text(t.page, '#devNext')).includes('Permits / zoning'), (await text(t.page, '#devNext')).includes('re-dated 2 times')], [true, true]);
   await t.page.click('#hints [data-ok="0"]');
@@ -763,6 +765,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/new-dev/' });
   check('New Dev: only developments', await t.page.$$eval('#rows .nm a', as => as.map(a => a.textContent.trim())), ['619 Example Ave']);
+  check('New Dev: Posts column', await text(t.page, '#rows td.posts'), '1');
   check('New Dev: the tab is current', await t.page.$eval('.nav a[aria-current="page"]', a => a.textContent.trim()), 'New Dev');
   check('New Dev: no page errors', t.errors, []);
   await t.ctx.close();

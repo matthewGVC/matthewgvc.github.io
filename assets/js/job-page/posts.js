@@ -1,11 +1,12 @@
 /* ============================================================
-   JOB PAGE: Social posts, inside the Marketing track (Matt's notes, 10-22).
+   JOB PAGE: Social posts, inside a listing's Marketing track and on a development's
+   page (Matt's notes, 10-22; developments 10-26).
 
      GVC_JP.posts.html(ctx)    ctx.posts: the job's asana_tasks rows of kind 'post'
 
    The 💬 Social Media project in Asana, read by the helper on every Asana sync
    (helper/asana/posts.js): a post counts for this job when its "🏡2026 Properties"
-   tag names it. "4 posted · 1 coming": posted is ticked done in Asana, coming is
+   tag names it (a development: its name in the tag). "4 posted · 1 coming": posted is ticked done in Asana, coming is
    still open (GVC_WS.postsOf). Each post: its date, format and name, the name a
    link to the post when Asana holds one (https only).
    ============================================================ */

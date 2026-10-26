@@ -65,24 +65,31 @@ check('jobFor: two jobs on the street, the tag\'s unit picks', [to('200 E 57th S
 check('jobFor: two jobs on the street and no unit: neither', to('200 E 57th St'), null);
 check('jobFor: a development name names no job', to('Le Reve'), null);
 check('jobFor: a job with no stage is never picked', to('9 Old St'), null);
+const devs = [{ id: 'lr', label: 'Le Reve' }, { id: 'op', label: 'Opus' }, { id: 'ca', label: 'Casa Avenida' }];
+const toDev = tag => { const d = P.devFor(tag, devs); return d ? d.id : null; };
+check('devFor: the name, any case', [toDev('Le Reve'), toDev('casa avenida')], ['lr', 'ca']);
+check('devFor: the name inside a longer tag', toDev('Opus 77 Ridge Road'), 'op');
+check('devFor: never part of a word', toDev('Opusville Lane'), null);
+check('devFor: a street names no development', toDev('555 W 59th PHC'), null);
 
 /* ---------- applyPosts: cached as kind post, gone posts lose their job ---------- */
 (async () => {
   const writes = [];
   const client = {
-    select: async (table, match) => table === 'properties' ? props : [{ gid: 'old', project_gid: 'social' }, { gid: 'p1', project_gid: 'social' }],
+    select: async (table, match) => table === 'properties' ? props : table === 'dev_projects' ? [{ id: 'lr', label: 'Le Reve' }, { id: 'op', label: 'Opus' }]
+      : [{ gid: 'old', project_gid: 'social' }, { gid: 'p1', project_gid: 'social' }],
     upsert: async (table, rows, key) => { writes.push({ table, rows, key }); }
   };
   const posts = [kept, allow.keepPost({ gid: 'p2', name: 'Le Reve reel', memberships: [{ project: { gid: 'social' }, section: { name: 'In Production' } }],
     custom_fields: [{ name: '🏡2026 Properties', enum_value: { name: 'Le Reve' } }] }, 'social')];
   const r = await P.applyPosts({ client, posts, now: new Date('2026-10-23T12:00:00Z') });
-  check('applyPosts: counts', [r.linked, r.unlinked], [1, ['Le Reve']]);
+  check('applyPosts: counts', [r.linked, r.unlinked], [2, []]);
+  check('applyPosts: a post naming a development goes to it', [writes[0].rows[1].property_id, writes[0].rows[1].dev_project_id], [null, 'lr']);
   check('applyPosts: two upserts into asana_tasks on gid', writes.map(w => [w.table, w.key, w.rows.length]), [['asana_tasks', 'gid', 2], ['asana_tasks', 'gid', 1]]);
   check('applyPosts: the post row', writes[0].rows[0], { gid: 'p1', project_gid: 'social', kind: 'post', section: 'Posted/Scheduled', name: '555 W59 PHC carousel',
     fields: { tags: ['555 W 59th PHC', 'Le Reve'], format: 'Carousel', stage: 'Completed', link: 'https://www.instagram.com/p/abc/' },
-    due_on: '2026-10-01', completed_at: '2026-10-01T15:00:00Z', last_seen: '2026-10-23T12:00:00.000Z', property_id: 'phc' });
-  check('applyPosts: an unlinked post is cached with no job', writes[0].rows[1].property_id, null);
-  check('applyPosts: a post gone from the project loses its job', writes[1].rows, [{ gid: 'old', project_gid: 'social', kind: 'post', property_id: null }]);
+    due_on: '2026-10-01', completed_at: '2026-10-01T15:00:00Z', last_seen: '2026-10-23T12:00:00.000Z', property_id: 'phc', dev_project_id: null });
+  check('applyPosts: a post gone from the project loses its job', writes[1].rows, [{ gid: 'old', project_gid: 'social', kind: 'post', property_id: null, dev_project_id: null }]);
 
   let routines = null;
   await P.readPosts({ get: async (path, q) => { routines = q.opt_fields; return [

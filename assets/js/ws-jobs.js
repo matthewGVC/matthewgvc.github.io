@@ -13,8 +13,8 @@
   /* column sorting: no column chosen = last activity, newest first */
   var sort = { key: null, dir: 1 };
   var COLS = [['name', 'Job', ''], ['type', 'Type', ''], ['market', 'Market', ''], ['stage', 'Stage', ''], ['price', 'Price', 'r'], ['agents', 'Agents', ''], ['de', 'DE status', 'r']];
-  // Resell: each listing's social posts from Asana's Social Media project (posted, and how many are coming)
-  if (!DEV) COLS.splice(6, 0, ['posts', 'Posts', 'r']);
+  // each listing's or development's social posts from Asana's Social Media project (posted, and how many are coming)
+  COLS.splice(6, 0, ['posts', 'Posts', 'r']);
   var TYPE_WORD = { listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' };
   var num = function (s) { var n = Number(String(s || '').replace(/[^0-9.]/g, '')); return s && !isNaN(n) ? n : null; };
   var SORT_BY = {
@@ -60,11 +60,11 @@
       rest('/pitches?select=*'), rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
       // unreadable (0012 not run yet) means no counts, never a broken list
-      DEV ? Promise.resolve([]) : rest('/asana_tasks?kind=eq.post&property_id=not.is.null&select=property_id,completed_at,due_on,fields').catch(function () { return []; })
+      rest('/asana_tasks?kind=eq.post&' + (DEV ? 'dev_project_id' : 'property_id') + '=not.is.null&select=property_id,dev_project_id,completed_at,due_on,fields').catch(function () { return []; })
     ]).then(function (r) {
       data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [] };
       var byJob = {};
-      (r[4] || []).forEach(function (x) { (byJob[x.property_id] = byJob[x.property_id] || []).push(x); });
+      (r[4] || []).forEach(function (x) { var id = DEV ? x.dev_project_id : x.property_id; if (id) (byJob[id] = byJob[id] || []).push(x); });
       postsBy = {};
       Object.keys(byJob).forEach(function (id) { postsBy[id] = W.postsOf(byJob[id]); });
       (data.properties).forEach(function (p) {
@@ -109,7 +109,7 @@
         '<td>' + esc({ listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' }[j.type]) + '</td><td>' + esc(j.market) + '</td>' +
         '<td class="stg"><span class="chip ' + j.chip + '">' + esc(j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
         '<td class="r price">' + (j.price ? esc(j.price) : '<span class="soft">Not set</span>') + '</td><td>' + ((j.agentIds || []).length ? window.GVC_FACES(j.agentIds) : ag.length ? '<span class="soft">' + esc(ag.join(', ')) + ' (from Asana)</span>' : '<span class="soft">Not set</span>') + '</td>' +
-        (DEV ? '' : '<td class="r posts">' + (j.type === 'pitch' ? '' : postsCell(postsBy[j.id])) + '</td>') +
+        '<td class="r posts">' + (j.type === 'pitch' ? '' : postsCell(postsBy[j.id])) + '</td>' +
         '<td class="r">' + (W.deLabel(j.deStatus) || (j.type !== 'pitch' && j.type !== 'development') ? '<span class="chip">' + esc(W.deLabel(j.deStatus) || 'not on DE') + '</span>' : '') + '</td></tr>';
     }).join('') : '<tr><td colspan="' + COLS.length + '" class="empty">' + (all.length ? 'Nothing matches these filters.' : (DEV ? 'No developments yet.' : 'No jobs yet.')) + '</td></tr>';
     $('count').textContent = js.length + ' of ' + all.length + ' jobs';

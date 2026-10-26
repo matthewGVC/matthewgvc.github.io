@@ -95,6 +95,33 @@ check('changed: size differs', D.changed(rec, f(older.name, older.modified, 999)
 check('changed: name differs', D.changed(rec, newer), true);
 check('changed: nothing recorded yet', D.changed(null, older), true);
 
+/* addressCheck: a doc never renames a listing (225 E79 PHA read a doc headed
+   "340 East 23rd St 5M"). The listing's own address is its best non-doc value,
+   an earlier tool's value included, else its label. */
+const own = (address, unit, src) => ({ facts: {
+  address: { value: address, source: src || 'legacy', bySource: { [src || 'legacy']: address } },
+  unit: { value: unit, source: src || 'legacy', bySource: { [src || 'legacy']: unit } } } });
+const wrong = { address: '340 East 23rd St', unit: '5M', price: 2195000 };
+check('check: another street is caught', D.addressCheck(wrong, own('225 E79', 'PHA'), '225 E79, PHA'),
+  { doc: '340 East 23rd St 5M', job: '225 E79 PHA' });
+check('check: the same street spelled out is fine',
+  D.addressCheck({ address: '225 East 79th Street', unit: 'PHA' }, own('225 E79', 'PHA')), null);
+check('check: same street, another unit is caught',
+  D.addressCheck({ address: '225 E 79th St', unit: '5M' }, own('225 E79', 'PHA')), { doc: '225 E 79th St 5M', job: '225 E79 PHA' });
+check('check: "Residence PHA" is unit PHA', D.addressCheck({ address: '225 E79', unit: 'Residence PHA' }, own('225 E79', 'PHA')), null);
+check('check: a unit on one side only is fine', D.addressCheck({ address: '225 E79' }, own('225 E79', 'PHA')), null);
+check('check: the doc\'s own earlier value is not the listing\'s',
+  D.addressCheck(wrong, { facts: { address: { value: '340 East 23rd St', source: 'doc', bySource: { doc: '340 East 23rd St', legacy: '225 E79' } },
+    unit: { value: '5M', source: 'doc', bySource: { doc: '5M', legacy: 'PHA' } } } }), { doc: '340 East 23rd St 5M', job: '225 E79 PHA' });
+check('check: Asana outranks an earlier tool',
+  D.addressCheck({ address: '12 Oak St' }, { facts: { address: { value: '9 Elm St', source: 'Asana', bySource: { Asana: '9 Elm St', legacy: '12 Oak St' } } } }),
+  { doc: '12 Oak St', job: '9 Elm St' });
+check('check: an address in core with no record counts', D.addressCheck(wrong, { address: '225 E79', unit: 'PHA' }), { doc: '340 East 23rd St 5M', job: '225 E79 PHA' });
+check('check: no address on file, the label decides', D.addressCheck(wrong, {}, '225 E79 - PHA'), { doc: '340 East 23rd St 5M', job: '225 E79 - PHA' });
+check('check: no address on file, a matching label is fine', D.addressCheck({ address: '225 East 79th St' }, {}, '225 E79 - PHA'), null);
+check('check: nothing to compare with fills the gap', D.addressCheck(wrong, {}, 'Untitled property'), null);
+check('check: a doc with no address is fine', D.addressCheck({ price: 1 }, own('225 E79', 'PHA')), null);
+
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

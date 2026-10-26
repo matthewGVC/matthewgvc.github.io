@@ -17,6 +17,16 @@
                                     { name, size, modified }.
      GVC_DOC.changed(prev, file)  → true when name, size or modified differ
                                     from the details_doc record (null = new).
+     GVC_DOC.addressCheck(found, core, label)
+                                  → null, or { doc, job } when the doc's
+                                    address is another place than the job's.
+                                    A doc never renames a job: a copied doc
+                                    still headed with the last listing's
+                                    address would. The job's own address is
+                                    its best non-doc value (an earlier tool's
+                                    included), else its label. Same street by
+                                    GVC_ADDR.sameStreet; units only differ
+                                    when both sides name one.
 
    Loads in the browser (window.GVC_DOC, after listing.js) and in Node.
    Tested by scripts/test-details-doc.js.
@@ -26,10 +36,11 @@
   var listing = typeof module === 'object' && module.exports
     ? require('../../tools/showsheet/listing.js') : global.GVC_LISTING;
   var rules = typeof module === 'object' && module.exports ? require('./drive-rules.js') : global.GVC_DRIVE_RULES;
-  var api = factory(listing, rules);
+  var addr = typeof module === 'object' && module.exports ? require('./address-aliases.js') : global.GVC_ADDR;
+  var api = factory(listing, rules, addr);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else global.GVC_DOC = api;
-})(typeof window !== 'undefined' ? window : globalThis, function (L, rules) {
+})(typeof window !== 'undefined' ? window : globalThis, function (L, rules, A) {
   'use strict';
 
   var TYPES = { 'co-op': 'Co-op', condo: 'Condo' };
@@ -105,5 +116,32 @@
       new Date(prev.modified).getTime() !== new Date(file.modified).getTime();
   }
 
-  return { toFacts: toFacts, pick: pick, changed: changed };
+  /* the job's own value for a fact: the best-ranked source other than the doc */
+  var OWN = ['DE', 'Matt', 'Asana', 'form', 'legacy'];
+  function ownValue(core, name) {
+    var rec = (core.facts || {})[name];
+    if (!rec) return text(core[name]);
+    var by = rec.bySource || {};
+    for (var i = 0; i < OWN.length; i++) if (text(by[OWN[i]])) return text(by[OWN[i]]);
+    return null;
+  }
+  function both(a, u) { return [a, u].filter(Boolean).join(' '); }
+
+  function addressCheck(found, core, label) {
+    var a = text((found || {}).address);
+    if (!a) return null;
+    core = core || {};
+    var u = text(found.unit), doc = both(a, u);
+    var own = ownValue(core, 'address'), ownUnit = ownValue(core, 'unit');
+    if (own) {
+      if (!A.sameStreet(a, own)) return { doc: doc, job: both(own, ownUnit) };
+      if (u && ownUnit && A.unitKey(u) !== A.unitKey(ownUnit)) return { doc: doc, job: both(own, ownUnit) };
+      return null;
+    }
+    var l = text(label);
+    if (!l || !/^\d/.test(l)) return null;     // "Untitled property": nothing to compare with
+    return A.sameStreet(a, l) ? null : { doc: doc, job: l };
+  }
+
+  return { toFacts: toFacts, pick: pick, changed: changed, addressCheck: addressCheck };
 });

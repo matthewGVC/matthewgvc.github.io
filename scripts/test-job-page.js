@@ -146,7 +146,7 @@ async function open(browser, opts) {
       window.GVC_JP_TIMEOUT_MS = 300;
       window.__mammothCalls = 0;
       window.mammoth = { convertToHtml: () => { window.__mammothCalls++; return Promise.resolve({ value: html }); } };
-    }, [opts.drive, DOC_HTML]);
+    }, [opts.drive, opts.docHtml || DOC_HTML]);
     await page.route('**/assets/js/drive.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FAKE_DRIVE }));
   }
   const T = opts.rows || rowsFor();
@@ -488,6 +488,31 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   s = t.saves.find(x => x.p_set && x.p_set.details_doc) || {};
   check('doc: changed file read on open', [await t.page.evaluate(() => window.__mammothCalls), s.p_set && s.p_set.details_doc.file], [1, '100 Example St 4A details.docx']);
   check('doc: read once, not again after the reload', [await t.page.evaluate(() => window.__driveLog.read.filter(x => /docx$/.test(x)).length), t.saves.filter(x => x.p_set && x.p_set.details_doc).length], [1, 1]);
+  await t.ctx.close();
+
+  /* a doc still headed with another listing's address never renames the job: its
+     address and unit are left out, the one an earlier read gave is dropped, the card warns */
+  const R9 = rowsFor(), c9 = R9.properties[0].core;
+  R9.properties[0].details_doc = null;
+  c9.address = '340 East 23rd St'; c9.unit = '5M';
+  c9.facts.address = { value: '340 East 23rd St', source: 'doc', bySource: { legacy: '100 Example St', doc: '340 East 23rd St' } };
+  c9.facts.unit = { value: '5M', source: 'doc', bySource: { legacy: '4A', doc: '5M' } };
+  t = await open(browser, { rows: R9, path: LISTING, drive: {}, docHtml: DOC_HTML.replace('100 Example St - 4A', '340 East 23rd St - 5M') });
+  await t.page.waitForTimeout(900);
+  s = t.saves.find(x => x.p_set && x.p_set.details_doc) || {};
+  const c9s = (s.p_set && s.p_set.core) || {};
+  check('doc, other address: the job keeps its own', [c9s.address, c9s.unit, c9s.facts && c9s.facts.address, c9s.facts && c9s.facts.unit],
+    ['100 Example St', '4A', { value: '100 Example St', source: 'legacy', bySource: { legacy: '100 Example St' } }, { value: '4A', source: 'legacy', bySource: { legacy: '4A' } }]);
+  check('doc, other address: recorded, its other facts read', s.p_set && [s.p_set.details_doc.mismatch, s.p_set.details_doc.found],
+    [{ doc: '340 East 23rd St 5M', job: '100 Example St 4A' }, ['price', 'maintenance']]);
+  check('doc, other address: logged', (s.p_changes || []).map(c => [c.field, c.new_value]), [['address', '100 Example St'], ['unit', '4A'], ['maintenance', 1900]]);
+  await t.ctx.close();
+  const R10 = rowsFor();
+  R10.properties[0].details_doc.mismatch = { doc: '340 East 23rd St 5M', job: '100 Example St 4A' };
+  t = await open(browser, { rows: R10, path: LISTING });
+  check('doc, other address: the card warns', await text(t.page, '#docWarn'),
+    'This doc names 340 East 23rd St 5M, not 100 Example St 4A, so its address was left out. Check the doc is the right one.');
+  check('doc, other address: no page errors', t.errors, []);
   await t.ctx.close();
 
   /* a doc Drive won't serve: its card says so on its own, the rest keeps working */

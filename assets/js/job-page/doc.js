@@ -11,8 +11,12 @@
    at most once per page visit; Read details doc reads it again regardless.
    Its values come in at source 'doc' (GVC_FACTS.applyFact), so they only
    fill gaps under DE, Matt and Asana. One save_job call writes core, the
-   details_doc record { file, size, modified, readAt, found } and a change
-   row for each fact whose shown value moved. Owner only (D87).
+   details_doc record { file, size, modified, readAt, found, mismatch } and a
+   change row for each fact whose shown value moved. Owner only (D87).
+   A doc never renames the job: when its address is another place
+   (GVC_DOC.addressCheck) its address and unit are left out, an address it
+   gave on an earlier read is dropped, and mismatch { doc, job } puts a
+   warning on the card. Its other facts are read as usual.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -49,6 +53,17 @@
       }).then(function (out) {
         var L = global.GVC_LISTING, found = global.GVC_DOC.toFacts(L.read(L.blocksFromHtml(out.value || ''), own));
         var core = JP.clone(r.core || {}), facts = core.facts || {}, changes = [];
+        var bad = global.GVC_DOC.addressCheck(found, core, r.label);
+        if (bad) {
+          delete found.address; delete found.unit;
+          ['address', 'unit'].forEach(function (name) {
+            var before = core[name] === undefined ? null : core[name];
+            facts = F.forget(facts, name, 'doc');
+            var now = facts[name] ? facts[name].value : null;
+            if (now === null) delete core[name]; else core[name] = now;
+            if (JSON.stringify(before) !== JSON.stringify(now)) changes.push({ field: name, old_value: before, new_value: now, note: 'The details doc names another address.' });
+          });
+        }
         Object.keys(found).forEach(function (name) {
           var before = core[name] === undefined ? null : core[name];
           facts = F.adoptEdit(facts, name, core[name]);
@@ -60,10 +75,10 @@
           if (JSON.stringify(before) !== JSON.stringify(core[name])) changes.push({ field: name, old_value: before, new_value: core[name], note: 'From the details doc.' });
         });
         core.facts = facts;
-        var rec = { file: file.name, size: file.size == null ? null : file.size, modified: file.modified || null, readAt: new Date().toISOString(), found: Object.keys(found) };
+        var rec = { file: file.name, size: file.size == null ? null : file.size, modified: file.modified || null, readAt: new Date().toISOString(), found: Object.keys(found), mismatch: bad };
         return JP.save('properties', r, { core: core, details_doc: rec }, changes).then(function () {
           var n = Object.keys(found).length;
-          return 'Read ' + file.name + ': ' + n + ' fact' + (n === 1 ? '' : 's') + ' found, ' + changes.length + ' shown from it.';
+          return 'Read ' + file.name + ': ' + n + ' fact' + (n === 1 ? '' : 's') + ' found, ' + changes.length + ' shown from it' + (bad ? ', its address left out.' : '.');
         });
       });
   }
@@ -78,6 +93,9 @@
   function html(ctx) {
     var m = JP.drive.mode(ctx), esc = ctx.esc;
     var body = '<p class="docl" id="docRec">' + esc(recLine(ctx)) + '</p>';
+    var bad = (ctx.row.details_doc || {}).mismatch;
+    if (bad) body += '<div class="fw" id="docWarn" role="note">' + ctx.I('alert') + esc('This doc names ' + bad.doc + ', not ' + bad.job +
+      ', so its address was left out. Check the doc is the right one.') + '</div>';
     if (m === 'live') body += '<p class="soft" id="docNow" data-reading>Looking for the details doc…</p>';
     else if (m === 'scan') body += JP.drive.scanLine(ctx.row, esc) + (ctx.row.scan && ctx.row.scan.detailsDoc ? '<p class="soft" style="font-size:13px">The scan found ' + esc(ctx.row.scan.detailsDoc.name || 'a details doc') + '.</p>' : '');
     var btn = ctx.canEdit && m === 'live' ? '<div class="fbtn"><button class="b sm" type="button" id="docRead" disabled>Read details doc</button></div>' : '';

@@ -6,7 +6,8 @@
 
    Works only when the plan was traced in the picture's own pixel coordinates (plan-format.md). For a
    PDF or SVG source, overlay the PNG you traced from. The output is a check for the chat, never a
-   plan: write it to the repo's tmp/, not the job folder.
+   plan: write it to the repo's tmp/ (or your own scratch folder), never into the job's Floorplan folder.
+   It is drawn at the plan's page scale, not the source's; it prints the mapping between the two.
    ============================================================ */
 'use strict';
 
@@ -14,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { draw } = require('./draw.js');
 const { toPng } = require('../make-floorplan.js');
+const STYLE = require('./style.js');
 
 const TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
 
@@ -38,6 +40,10 @@ async function overlay(planPath, picPath, outPath, level = 0) {
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
   const svg = draw(plan, level, { branded: false, underlay: { href: 'data:' + type + ';base64,' + buf.toString('base64'), width, height } });
   await toPng(svg, outPath);
+  /* where the source's pixels land in the overlay PNG, so a mismatch found there can be read back */
+  const m = svg.match(/<image [^>]*transform="matrix\(([^)]+)\)"/)[1].split(/\s+/).map(Number);
+  const k = STYLE.PNG.w / STYLE.PAGE.w, a = m[0] * k, bx = m[4] * k, by = m[5] * k, r = (v) => Math.round(v * 1000) / 1000;
+  return { scale: r(a), offset: [r(bx), r(by)] };
 }
 
 module.exports = { overlay };
@@ -50,6 +56,7 @@ if (require.main === module) {
     console.error('Usage: node scripts/floorplan/overlay.js "<plan.json>" "<source picture>" "<out.png>" [--level 1]');
     process.exit(1);
   }
-  overlay(planPath, picPath, outPath, level).then(() => console.log('Overlay saved to ' + outPath),
+  overlay(planPath, picPath, outPath, level).then((t) => console.log('Overlay saved to ' + outPath + '\n' +
+    'Its pixels: overlay = source x ' + t.scale + ' + (' + t.offset.join(', ') + '); source = (overlay - (' + t.offset.join(', ') + ')) / ' + t.scale),
     (e) => { console.error(e.message); process.exit(1); });
 }

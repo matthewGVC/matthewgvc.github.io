@@ -175,15 +175,19 @@ function drawWalls(level, T) {
 }
 
 /* ---------- openings: doors, windows, sliders ---------- */
-function drawOpenings(level, T) {
+function drawOpenings(level, T, s = 1) {
   const walls = level.walls || [], out = [];
   const stroke = 'fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"';
-  (level.openings || []).forEach((o) => {
-    const w = walls[o.wall];
+  (level.openings || []).forEach((o0) => {
+    /* an opening on a wall (wall, from, to), or a free one across a gap in traced wall masses (a, b, t:
+       its ends, and the wall's thickness in plan units) */
+    const free = isPt(o0.a) && isPt(o0.b);
+    const o = free ? Object.assign({}, o0, { from: 0, to: 1 }) : o0;
+    const w = free ? { a: o0.a, b: o0.b, type: 'interior' } : walls[o.wall];
     if (!w || !isPt(w.a) || !isPt(w.b)) return;
     const C = course(w, T);
     if (!C.len) return;
-    const hw = Math.max(wallWidth(w.type) / 2 - STYLE.THIN / 2, 0);
+    const hw = Math.max((free && o0.t > 0 ? o0.t * s : wallWidth(w.type)) / 2 - STYLE.THIN / 2, 0);
 
     if (o.type === 'window') {
       /* two lines along the wall, closed at each end: neighbouring windows show their mullion */
@@ -248,9 +252,12 @@ function drawLines(level, T) {
 }
 
 /* ---------- solids and areas ---------- */
+/* a solid is one outline [[x, y], ...], or several [[[x, y], ...], ...]: an outline and the holes in it
+   (a wall mass traced round a room), filled even-odd */
+const ringsOfSolid = (s) => (Array.isArray(s) && s.length && Array.isArray(s[0]) && isPt(s[0][0]) ? s : [s]);
 function drawSolids(level, T) {
-  const d = (level.solids || []).filter((s) => Array.isArray(s) && s.length >= 3 && s.every(isPt)).map((s) => poly(s.map(T))).join('');
-  return d ? '<path fill="' + STYLE.NAVY + '" d="' + d + '"/>' : '';
+  const d = (level.solids || []).map(ringsOfSolid).map((rs) => rs.filter((r) => Array.isArray(r) && r.length >= 3 && r.every(isPt)).map((r) => poly(r.map(T))).join('')).join('');
+  return d ? '<path fill="' + STYLE.NAVY + '" fill-rule="evenodd" d="' + d + '"/>' : '';
 }
 
 function drawAreas(level, T) {
@@ -325,8 +332,10 @@ function drawAreas(level, T) {
 /* ---------- swatches: patterns laid over floor, roof and terrace areas (sizes in page pt) ---------- */
 const P_LINE = 'fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.PATTERN_LINE + '"';
 const PATTERNS = {
-  /* square floor tile */
-  tile: { w: STYLE.TILE, h: STYLE.TILE, body: (w, h) => '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 0L0 ' + h + '"/>' },
+  /* square floor tile, light cyan (Matt's baths, e.g. 347 W Broadway) */
+  tile: { w: STYLE.TILE, h: STYLE.TILE, body: (w, h) => '<path fill="none" stroke="' + STYLE.TILE_LINE + '" stroke-width="' + STYLE.PATTERN_LINE + '" d="M0 0L' + w + ' 0M0 0L0 ' + h + '"/>' },
+  /* terrace pavers: the same square grid, fainter (Matt's roof terraces, e.g. 225 E79) */
+  pavers: { w: STYLE.PAVER, h: STYLE.PAVER, body: (w, h) => '<path fill="none" stroke="' + STYLE.PAVER_LINE + '" stroke-width="' + STYLE.PATTERN_LINE + '" d="M0 0L' + w + ' 0M0 0L0 ' + h + '"/>' },
   /* patio brick: basket weave (Matt, 10-26: swapped with the roof's) */
   'brick-patio': { w: STYLE.BRICK.w * 2, h: STYLE.BRICK.w * 2, body: (w, h) => {
     const q = w / 2, b = q / 2;
@@ -535,10 +544,14 @@ function drawRooms(level, T) {
   (level.rooms || []).forEach((r) => {
     if (typeof r.name !== 'string' || !r.name.trim() || !isPt(r.at)) return;
     const c = T(r.at), hasSize = typeof r.size === 'string' && r.size;
-    const block = hasSize ? nameCap + STYLE.ROOM_SIZE.gap + sizeCap : nameCap;
+    /* a name breaks where it has a line break ("LIVING\nROOM"), as the source sets it */
+    const lines = r.name.split('\n').map((t) => t.trim()).filter(Boolean), gap = STYLE.ROOM_NAME.lineGap;
+    const names = nameCap + (lines.length - 1) * gap;
+    const block = hasSize ? names + STYLE.ROOM_SIZE.gap + sizeCap : names;
     const nameBase = c[1] - block / 2 + nameCap;
-    const paths = ['<path d="' + outline(r.name, { ...STYLE.ROOM_NAME, x: c[0], y: nameBase, anchor: 'middle' }) + '"/>'];
-    if (hasSize) paths.push('<path d="' + outline(r.size, { ...STYLE.ROOM_SIZE, x: c[0], y: nameBase + STYLE.ROOM_SIZE.gap + sizeCap, anchor: 'middle' }) + '"/>');
+    const paths = lines.map((t, i) => '<path d="' + outline(t, { ...STYLE.ROOM_NAME, x: c[0], y: nameBase + i * gap, anchor: 'middle' }) + '"/>');
+    /* sizes print with typographic marks, as Matt sets them: 12’ x 19’6” */
+    if (hasSize) paths.push('<path d="' + outline(r.size.replace(/'/g, '\u2019').replace(/"/g, '\u201D'), { ...STYLE.ROOM_SIZE, x: c[0], y: nameBase + (lines.length - 1) * gap + STYLE.ROOM_SIZE.gap + sizeCap, anchor: 'middle' }) + '"/>');
     const rot = Number.isFinite(r.rot) && r.rot ? ' transform="rotate(' + r2(r.rot) + ' ' + pt(c) + ')"' : '';
     out.push('<g data-label="' + esc(r.name) + '" fill="' + STYLE.NAVY + '"' + rot + '>' + paths.join('') + '</g>');
   });
@@ -552,74 +565,84 @@ function drawRooms(level, T) {
 }
 
 /* ---------- branded frame ---------- */
-function factsLine(facts) {
-  if (!facts) return '';
-  const parts = [];
-  if (Number.isFinite(facts.beds)) parts.push(facts.beds === 0 ? 'STUDIO' : facts.beds + (facts.beds === 1 ? ' BEDROOM' : ' BEDROOMS'));
-  if (Number.isFinite(facts.baths)) parts.push(facts.baths + (facts.baths === 1 ? ' BATHROOM' : ' BATHROOMS'));
-  return parts.join(' · ');
+/* the facts, as Matt sets them: beds and baths on the first line; half baths, then the size, below */
+function factsLines(facts) {
+  if (!facts) return [];
+  const n = (v, one, many) => v + ' ' + (v === 1 ? one : many);
+  const first = [], second = [];
+  if (Number.isFinite(facts.beds)) first.push(facts.beds === 0 ? 'STUDIO' : n(facts.beds, 'BEDROOM', 'BEDROOMS'));
+  if (Number.isFinite(facts.baths)) first.push(n(facts.baths, 'BATHROOM', 'BATHROOMS'));
+  if (Number.isFinite(facts.half) && facts.half > 0) second.push(n(facts.half, 'HALF BATHROOM', 'HALF BATHROOMS'));
+  if (Number.isFinite(facts.sqft) && facts.sqft > 0) second.push('APPROX. ' + Math.round(facts.sqft).toLocaleString('en-US') + ' SF');
+  return [first.join(' · '), second.join(' · ')].filter(Boolean);
+}
+
+/* the address on one line when it fits left of the bar, else split at its last comma: street over unit */
+function addressLines(address) {
+  const A = STYLE.HEADER.address, text = address.toUpperCase();
+  const room = A.right - (2 * A.x - STYLE.BOX_BRANDED.x0);   // it may start a little left of x to stay on one line
+  if (measure(text, A) <= room || !text.includes(',')) return [text];
+  const i = text.lastIndexOf(',');
+  return [text.slice(0, i).trim(), text.slice(i + 1).trim()];
 }
 
 function drawHeader(plan, facts) {
-  const H = STYLE.HEADER, address = plan.job && typeof plan.job.address === 'string' ? plan.job.address.trim() : '';
-  const facts1 = factsLine(facts);
-  const addrCap = capHeight(STYLE.HEADER_ADDRESS), factCap = capHeight(STYLE.HEADER_FACTS);
-  const lines = [];
-  if (address) lines.push([address.toUpperCase(), STYLE.HEADER_ADDRESS, addrCap]);
-  if (facts1) lines.push([facts1, STYLE.HEADER_FACTS, factCap]);
-  const block = lines.reduce((s, l) => s + l[2], 0) + Math.max(0, lines.length - 1) * H.lineGap;
-  let y = H.h / 2 - block / 2;
-  const paths = lines.map(([text, style, cap]) => {
-    y += cap;
-    const d = outline(text, { ...style, x: H.x, y, anchor: 'start' });
-    y += H.lineGap;
-    return '<path d="' + d + '"/>';
-  });
-  return '<defs><linearGradient id="fp-header-gradient" x1="0" y1="0" x2="1" y2="0">' +
-    '<stop offset="0" stop-color="' + STYLE.SKY + '"/><stop offset="1" stop-color="' + STYLE.CYAN + '"/></linearGradient></defs>' +
-    '<g data-frame="header"><rect x="0" y="0" width="' + STYLE.PAGE.w + '" height="' + H.h + '" fill="url(#fp-header-gradient)"/>' +
-    '<g fill="' + STYLE.WHITE + '">' + paths.join('') + '</g></g>';
-}
-
-let logoCache = null;
-function logo() {
-  if (logoCache) return logoCache;
-  const src = fs.readFileSync(path.join(ROOT, STYLE.LOGO.file), 'utf8');
-  const vb = src.match(/viewBox="([^"]+)"/)[1].trim().split(/\s+/).map(Number);
-  const paths = [...src.matchAll(/<path\b[^>]*\sd="([^"]+)"/g)].map((m) => '<path d="' + m[1] + '"/>');
-  logoCache = { vb, paths: paths.join('') };
-  return logoCache;
+  const H = STYLE.HEADER, A = H.address, F = H.facts;
+  const address = plan.job && typeof plan.job.address === 'string' ? plan.job.address.trim() : '';
+  const block = (lines, style) => {   /* baselines of lines centred on the header's middle line */
+    const cap = capHeight(style), top = H.middle - (cap + (lines.length - 1) * style.lineGap) / 2;
+    return lines.map((t, i) => [t, top + cap + i * style.lineGap]);
+  };
+  const paths = [];
+  if (address) {
+    const lines = addressLines(address);
+    const x = Math.min(A.x, A.right - Math.max(...lines.map((t) => measure(t, A))));
+    block(lines, A).forEach(([t, y]) => paths.push(outline(t, { ...A, x, y, anchor: 'start' })));
+  }
+  const fl = factsLines(facts);
+  block(fl, F).forEach(([t, y]) => paths.push(outline(t, { ...F, x: F.right, y, anchor: 'end' })));
+  const bar = address && fl.length ? '<rect x="' + r2(H.bar.x - H.bar.w / 2) + '" y="' + r2(H.middle - H.bar.h / 2) + '" width="' + H.bar.w + '" height="' + H.bar.h + '"/>' : '';
+  const stops = H.stops.map(([o, c]) => '<stop offset="' + o + '" stop-color="' + c + '"/>').join('');
+  return '<defs><linearGradient id="fp-header-gradient" x1="0" y1="0" x2="0" y2="1">' + stops + '</linearGradient></defs>' +
+    '<g data-frame="header"><rect x="0" y="0" width="' + STYLE.PAGE.w + '" height="' + H.fade + '" fill="url(#fp-header-gradient)"/>' +
+    '<g fill="' + STYLE.WHITE + '">' + paths.map((d) => '<path d="' + d + '"/>').join('') + bar + '</g></g>';
 }
 
 function drawFooter() {
-  const F = STYLE.FOOTER, cap = capHeight(STYLE.FOOTER_TEXT);
-  const text = outline(STYLE.FOOTER_TEXT.text, { ...STYLE.FOOTER_TEXT, x: STYLE.PAGE.w / 2, y: F.y + cap / 2, anchor: 'middle' });
-  const { vb, paths } = logo(), k = STYLE.LOGO.w / vb[2], lh = vb[3] * k;
-  return '<g data-frame="footer" fill="' + STYLE.NAVY + '"><path d="' + text + '"/>' +
-    '<g transform="translate(' + r2(STYLE.LOGO.x) + ' ' + r2(F.y - lh / 2) + ') scale(' + Math.round(k * 1e6) / 1e6 + ') translate(' + r2(-vb[0]) + ' ' + r2(-vb[1]) + ')">' + paths + '</g></g>';
+  const T = STYLE.FOOTER_TEXT;
+  return '<g data-frame="footer" fill="' + STYLE.NAVY + '"><path d="' + outline(T.text, { ...T, x: T.x, y: T.baseline, anchor: 'middle' }) + '"/></g>';
 }
 
-function drawCompass(north) {
+/* Matt's compass at the bottom centre, turned to north; moved aside when the plan is in the way.
+   plan: the drawing's extent on the page { x0, y0, x1, y1 } */
+function compassAt(plan) {
+  const C = STYLE.COMPASS, B = STYLE.BOX_BRANDED, gap = STYLE.COMPASS_CLEAR, r = C.h / 2;
+  const clear = (x) => x + r + gap <= plan.x0 || x - r - gap >= plan.x1 || C.at[1] - r - gap >= plan.y1;
+  if (clear(C.at[0])) return C.at;
+  const left = (B.x0 + plan.x0) / 2, right = (plan.x1 + B.x1) / 2;
+  const room = [[plan.x0 - B.x0, left], [B.x1 - plan.x1, right]].sort((p, q) => q[0] - p[0]);
+  return room[0][0] >= C.h + 2 * gap ? [room[0][1], C.at[1]] : C.at;
+}
+function drawCompass(north, plan) {
+  const C = STYLE.COMPASS, at = compassAt(plan);
   if (SYMBOLS.compass) {
-    const B = STYLE.BOX_BRANDED, C = STYLE.COMPASS, sym = SYMBOLS.compass, h = C.size * 1.3, w = h * sym.size[0] / sym.size[1];
-    const c = [B.x1 - w / 2, B.y1 - h / 2];
-    return '<g data-frame="compass" transform="translate(' + pt(c) + ') rotate(' + r2(north) + ')">' + drawSymbol('compass', w, h) + '</g>';
+    const sym = SYMBOLS.compass, w = C.h * sym.size[0] / sym.size[1];
+    return '<g data-frame="compass" transform="translate(' + pt(at) + ') rotate(' + r2(north) + ')">' + drawSymbol('compass', w, C.h) + '</g>';
   }
-  const B = STYLE.BOX_BRANDED, C = STYLE.COMPASS, half = C.size / 2;
-  const c = [B.x1 - half, B.y1 - half], R = C.ring;
-  const letterCap = capHeight(C.letter);
-  /* drawn pointing up around 0,0, then turned by north */
+  const R = C.h * 0.3, letterCap = capHeight(C.letter);
   const ring = ell(0, 0, R, R);
   const needle = poly([[0, -R + 1], [R * 0.35, R * 0.45], [0, R * 0.2], [-R * 0.35, R * 0.45]]);
   const letter = outline('N', { ...C.letter, x: 0, y: -R - 1, anchor: 'middle' });
-  return '<g data-frame="compass" transform="translate(' + pt(c) + ') rotate(' + r2(north) + ') translate(0 ' + r2(letterCap / 2) + ')">' +
+  return '<g data-frame="compass" transform="translate(' + pt(at) + ') rotate(' + r2(north) + ') translate(0 ' + r2(letterCap / 2) + ')">' +
     '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '" d="' + ring + '"/>' +
     '<path fill="' + STYLE.NAVY + '" d="' + needle + letter + '"/></g>';
 }
 
-function drawLevelName(name) {
-  const d = outline(name, { ...STYLE.LEVEL_NAME, x: STYLE.BOX_BRANDED.x1, y: STYLE.LEVEL_NAME.baseline, anchor: 'end' });
-  return '<g data-frame="level" fill="' + STYLE.NAVY + '"><path d="' + d + '"/></g>';
+/* bottom right: the level's name on a plan of several levels, then ALTERNATE (an alternate layout) or
+   CURRENT (plan.current: the current layout of a job that also has an alternate) */
+function drawStatus(text) {
+  const S = STYLE.STATUS;
+  return '<g data-frame="status" fill="' + STYLE.NAVY + '"><path d="' + outline(text, { ...S, x: S.right, y: S.baseline, anchor: 'end' }) + '"/></g>';
 }
 
 /* ---------- the page ---------- */
@@ -627,7 +650,7 @@ function drawLevelName(name) {
    also used by style-sheet.js to draw single elements at a fixed scale */
 function drawLevel(level, T, s) {
   return [drawAreas(level, T), drawSolids(level, T), drawLines(level, T), drawWalls(level, T),
-    drawFixtures(level, T, s), drawOpenings(level, T), drawRooms(level, T)].filter(Boolean).join('\n');
+    drawFixtures(level, T, s), drawOpenings(level, T, s), drawRooms(level, T)].filter(Boolean).join('\n');
 }
 
 function draw(plan, levelIndex = 0, opts = {}) {
@@ -656,8 +679,10 @@ function draw(plan, levelIndex = 0, opts = {}) {
       'transform="matrix(' + r6(s) + ' 0 0 ' + r6(s) + ' ' + r6(ox - b.x0 * s) + ' ' + r6(oy - b.y0 * s) + ')"/>');
   }
   if (branded) {
-    if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north));
-    if (plan.levels.length > 1 && level.name) parts.push(drawLevelName(level.name));
+    const extent = { x0: ox, y0: oy, x1: ox + (b.x1 - b.x0) * s, y1: oy + (b.y1 - b.y0) * s };
+    if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north, extent));
+    const status = [plan.levels.length > 1 && level.name ? level.name : '', plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : ''].filter(Boolean).join(' ');
+    if (status) parts.push(drawStatus(status));
     parts.push(drawFooter());
   }
   parts.push('</svg>');

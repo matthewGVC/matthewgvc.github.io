@@ -70,7 +70,8 @@ Files beside this one:
    only), or a picture. Look at every reference yourself. For a PDF or SVG, render it to a PNG and
    view that. **Measure; don't eyeball.** Make zoomed views of each part with a coordinate grid
    (`sources.md`, "Measuring a picture"), and read every coordinate off the grid, in the picture's
-   real pixels.
+   real pixels. For a picture, lift the walls out of it with `trace-walls.py` (sources.md) instead of
+   tracing them: Matt's walls are the source's own masses, exact.
 4. **Several references:**
    - One file per floor becomes one level each, named the way the source names them ("FIRST FLOOR").
    - Two files of the same floor: use the newest and name the other in the report. Never merge them.
@@ -87,7 +88,9 @@ Files beside this one:
    ```
    node scripts/make-floorplan.js "<Floorplan folder>" --version <N> --facts "{\"beds\":2,\"baths\":2}"
    ```
-   (Leave out `--facts` when the prompt gives no beds or baths. Use `0` beds for a studio.) It
+   (Leave out `--facts` when the prompt gives no beds or baths. Use `0` beds for a studio. Half baths
+   and the size go on the header's second line: `"half":1`, `"sqft":3369`, only when the prompt gives
+   them.) It
    writes `<label> v<N>.svg` and `.png` (and `… - <Level>` for each level) into `Unbranded/` and
    `Branded/`, and archives older versions of the same layout. It also writes `Design/run-v<N>.md`.
 7. **Check the result against the source**, in two passes.
@@ -101,7 +104,8 @@ Files beside this one:
    something that isn't in the source.** Zoom into each part of the overlay and fix every one. Thin red
    edges along walls are fine: they are only the house style's wall weight against the source's.
    The overlay needs a picture traced in its own pixels. For a PDF or SVG, overlay the PNG you
-   rendered and traced.
+   rendered and traced. It is drawn at the page's scale; it prints how its pixels map back to the
+   source's. Write it outside the Floorplan folder (the repo's `tmp/`).
 
    **b. By eye.** Open the Unbranded PNG and the source and compare them:
    - every room in the source is in the drawing, with the same name and the same size;

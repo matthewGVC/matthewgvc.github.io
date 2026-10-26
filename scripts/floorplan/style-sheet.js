@@ -113,6 +113,7 @@ const SECTIONS = [
   ]],
   ['Swatches, stairs and areas', [
     ['swatch-tile', 'Swatch: bathroom tile (pattern "tile")', { areas: [{ type: 'floor', pattern: 'tile', poly: box(150, 110) }] }],
+    ['swatch-pavers', 'Swatch: terrace pavers ("pavers")', { areas: [{ type: 'terrace', pattern: 'pavers', poly: box(150, 110) }] }],
     ['swatch-brick-patio', 'Swatch: patio brick ("brick-patio")', { areas: [{ type: 'terrace', pattern: 'brick-patio', poly: box(150, 110) }] }],
     ['swatch-brick-roof', 'Swatch: roof brick ("brick-roof")', { areas: [{ type: 'roof', pattern: 'brick-roof', poly: box(150, 110) }] }],
     ['area-terrace', 'Terrace / balcony', { areas: [{ type: 'terrace', poly: box(160, 90) }] }],
@@ -147,7 +148,7 @@ function sheet() {
       const cx = x + CELL.w / 2, cy = cy0 + (CELL.h - 18) / 2;
       const T = (p) => [cx + p[0] * S, cy + p[1] * S];
       const body = level && level.fixtures && level.fixtures[0].type === 'compass'
-        ? '<g transform="translate(' + cx + ' ' + cy + ')">' + drawSymbol('compass', STYLE.COMPASS.size * 1.3 * level.fixtures[0].w / level.fixtures[0].h, STYLE.COMPASS.size * 1.3) + '</g>'
+        ? '<g transform="translate(' + cx + ' ' + cy + ')">' + drawSymbol('compass', STYLE.COMPASS.h * level.fixtures[0].w / level.fixtures[0].h, STYLE.COMPASS.h) + '</g>'
         : level ? drawLevel(Object.assign({ name: null }, level), T, S) : '';
       groups.push('<g id="' + id + '">' + body + '</g>');
       guides.push('<rect x="' + x + '" y="' + cy0 + '" width="' + CELL.w + '" height="' + CELL.h + '" fill="none" stroke="' + (level ? '#c9d1d6' : '#53C7DC') + '" stroke-width="' + (level ? 0.5 : 1) + '" stroke-dasharray="2 2"/>');
@@ -165,7 +166,7 @@ function sheet() {
   const page = draw(studio, 0, { branded: true, facts: { beds: 0, baths: 1 } }).replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
   groups.push('<g id="frame-branded-page" transform="translate(' + X0 + ' ' + frameY + ')">' + page + '</g>');
   guides.push('<rect x="' + X0 + '" y="' + frameY + '" width="' + STYLE.PAGE.w + '" height="' + STYLE.PAGE.h + '" fill="none" stroke="#c9d1d6" stroke-width="0.5"/>');
-  captions.push('<text x="' + X0 + '" y="' + (frameY - 8) + '">Branded frame (header, logo, footer, compass), on a full 810 × 630 pt plan sheet</text>');
+  captions.push('<text x="' + X0 + '" y="' + (frameY - 8) + '">Branded frame (header, footer note, compass, ALTERNATE / CURRENT label), on a full 810 × 630 pt plan sheet</text>');
 
   const notes = [
     'GVC floorplan style sheet. Every element exactly as the drawing script makes it, at true size (8 pt to the foot).',

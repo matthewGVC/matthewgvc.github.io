@@ -13,12 +13,14 @@ module.exports = {
   PAGE: { w: 810, h: 630 },
   PNG: { w: 3375, h: 2625 },   // px, the PNG copy of each plan (810 x 630 pt at 300 dpi)
   BOX_UNBRANDED: { x0: 36, y0: 36, x1: 774, y1: 594 },
-  BOX_BRANDED: { x0: 36, y0: 96, x1: 774, y1: 560 },
+  BOX_BRANDED: { x0: 72, y0: 100, x1: 738, y1: 578 },
 
   /* colours */
   NAVY,
   WHITE: '#ffffff',
-  TERRACE_FILL: '#EEF3F5',
+  TERRACE_FILL: '#ffffff',   // Matt's terraces and balconies are white, outlined (pavers only when drawn)
+  TILE_LINE: '#A9E2ED',      // bath tile grid
+  PAVER_LINE: '#E1F3F8',     // terrace paver grid
   SKY: '#53C7DC',
   CYAN: '#00A1C4',
 
@@ -31,7 +33,8 @@ module.exports = {
   FINE: 0.25,                // pt, the inner detail of Matt's symbols
   STAIR_DOTTED: '1 1',       // a stair past its break line
   PATTERN_LINE: 0.25,        // pt, swatch lines (tile, brick)
-  TILE: 4,                   // pt, floor tile square
+  TILE: 2.6,                 // pt, floor tile square (Matt's: 2.6)
+  PAVER: 2.64,               // pt, terrace paver square
   BRICK: { w: 6, h: 2 },     // pt, one brick
   STAIR_TREAD: 6,            // pt between treads
   STAIR_ARROW: 3,            // pt arrow-head length
@@ -43,17 +46,22 @@ module.exports = {
   FONT_FILE: 'assets/fonts/nunito-sans-{weight}-latin.woff2',
   LABEL_EM: 0.62,            // average capital width in em, for the "label wider than its room" warning
   ROOM_NAME_PT,
-  ROOM_NAME: { weight: 900, sizePt: ROOM_NAME_PT, tracking: 0 },
+  ROOM_NAME: { weight: 900, sizePt: ROOM_NAME_PT, tracking: 0, lineGap: ROOM_NAME_PT * 1.24 },   // lineGap: baseline to baseline of a two-line name
   ROOM_SIZE: { weight: 400, sizePt: 7, tracking: 0, gap: 4.5 },  // gap: pt from name baseline to size cap top
   SMALL_LABEL: { weight: 800, sizePt: 6, tracking: 0 },
 
-  /* branded frame */
-  HEADER: { h: 80, x: 36, lineGap: 8 },
-  HEADER_ADDRESS: { weight: 900, sizePt: 15, tracking: 0 },
-  HEADER_FACTS: { weight: 800, sizePt: 7, tracking: 0.2 },
-  FOOTER: { y: 610 },
-  FOOTER_TEXT: { weight: 800, sizePt: 5, tracking: 0.2, text: 'ARTIST RENDERING · ALL MEASUREMENTS ARE APPROX.' },
-  LOGO: { file: 'assets/logos/sheet/lockup-navy.svg', w: 70, x: 36 },
-  COMPASS: { size: 28, ring: 9, letter: { weight: 900, sizePt: 6, tracking: 0 } },
-  LEVEL_NAME: { weight: 900, sizePt: 8, tracking: 0, baseline: 586 }
+  /* branded frame: measured off Matt's own sheets (435 E57, 225 E79, 347 W Broadway, 929 Park and others,
+     all laid out the same), in pt on the 810 x 630 page */
+  HEADER: {
+    fade: 132,                 // the cyan holds at the top, then eases to white by here
+    stops: [[0, '#03A1C4'], [0.18, '#0CA5C5'], [0.27, '#1CABCB'], [0.45, '#4DBDD5'], [0.64, '#91D6E5'], [0.82, '#D7F0F5'], [1, '#FFFFFF']],
+    middle: 55.5,              // the address block, the bar and the facts are centred on this line
+    address: { weight: 800, sizePt: 22.4, tracking: 0, x: 90.4, right: 389, lineGap: 26.4 },   // lineGap: baseline to baseline
+    bar: { x: 405, w: 1.7, h: 15 },
+    facts: { weight: 600, sizePt: 13.9, tracking: 0.265, right: 720, lineGap: 16.8 }
+  },
+  FOOTER_TEXT: { weight: 800, sizePt: 6.1, tracking: 0.25, x: 405, baseline: 595.9, text: 'ARTIST RENDERING - ALL MEASUREMENTS ARE APPROX.' },
+  STATUS: { weight: 900, sizePt: 12.77, tracking: 0, right: 761, baseline: 596 },   // CURRENT, ALTERNATE, the level name
+  COMPASS: { h: 60, at: [400, 554], letter: { weight: 900, sizePt: 15, tracking: 0 } },   // Matt's compass, bottom centre
+  COMPASS_CLEAR: 6             // pt kept between the compass and the plan when it moves aside
 };

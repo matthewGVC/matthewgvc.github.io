@@ -33,7 +33,9 @@ p = clone(studio); p.levels[0].rooms[0].name = 'Living room';
 check('room name must be capitals', has(validate(p), 'level 1 room "Living room": name must be in capitals'), true);
 
 p = clone(studio); p.levels[0].rooms[0].size = '12 by 20';
-check('size format', has(validate(p), 'level 1 room "LIVING ROOM": size must look like 12\'0" x 20\'3"'), true);
+check('size format', has(validate(p), 'level 1 room "LIVING ROOM": size must look like 12\'0" x 20\'3" (or 13\' x 24\', as printed)'), true);
+p = clone(studio); p.levels[0].rooms[0].size = '12\' x 19\'6"';
+check('a size printed in feet alone on a side is fine', validate(p).errors, []);
 p = clone(studio); p.levels[0].rooms[0].size = null;
 check('null size is fine', validate(p).errors, []);
 

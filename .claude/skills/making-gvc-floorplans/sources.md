@@ -43,16 +43,26 @@ im.save(out)
 ## Pictures: Cubicasa PNG, other brokerages (Compass, outside agencies), old plans, screenshots, scans
 
 1. Check the picture's real pixel size, and use its pixel coordinates as plan units.
-2. Trace the outline, then the walls. Exterior walls are the thick outer and demising walls; interior
-   walls are the thinner ones. Long straight dark runs are walls. If the picture is large or busy, a
-   short script (Python with PIL, run with `-I`) can find them: scan rows and columns for runs of
-   dark pixels. Its numbers are a check on your reading, not a replacement for it.
-3. Add the openings (gaps in the walls, door leaves and arcs, the double lines of windows, the thin
-   panels of pocket and sliding doors), then the closets and cabinets, the fixtures, the terraces and
-   the stairs. Go room by room, and in each room list everything the source draws before you write
-   it, so nothing is skipped.
-4. Read every label and size exactly as printed. When a size can't be read, leave it out and say so
-   in `uncertain`. Never estimate it from the drawing.
+2. **Lift the walls straight out of the picture; never trace them by hand.** Matt's plans keep each
+   source's own wall masses, thick where it is thick (his walls run from about 6 pt to 18 pt), with
+   the windows and doors set into gaps in them. `trace-walls.py` gives exactly that:
+   ```
+   python -I scripts/floorplan/trace-walls.py "<picture>" tmp/walls.json --preview tmp/walls.png [--crop x0,y0,x1,y1] [--erase x0,y0,x1,y1]
+   ```
+   Every dark part at least a wall thick becomes a solid, in the picture's own pixels, its edges made
+   exactly level and plumb. Look at the preview: navy is what it kept. Use `--crop` to leave out the
+   source's header, logo, compass and footer, and `--erase` for a bold label or a fixture's thick bar
+   that came through as wall. Copy its `solids` into the level as they are. Write no `walls` at all
+   for a picture traced this way: the solids are the walls.
+3. Add the openings across the gaps the masses leave, each a **free opening** with the two ends of
+   its gap and the wall's thickness there: `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`
+   (doors take `hinge`, `side` and `outside` as usual, walking from `a` to `b`). Then the closets and
+   cabinets, the fixtures, the terraces and the stairs. Go room by room, and in each room list
+   everything the source draws before you write it, so nothing is skipped.
+4. Read every label and size exactly as printed: `13' x 24'` stays `13' x 24'` (the drawer prints it
+   with curly marks). A name the source sets on two lines is written with a line break,
+   `"LIVING\nROOM"`. When a size can't be read, leave it out and say so in `uncertain`. Never
+   estimate it from the drawing.
 5. A **screenshot or phone capture** may be cropped or skewed. If part of the plan is off the edge,
    draw what is there and list the rest in `missing`. If the picture is too small to read, stop and
    ask Matt for a better copy.

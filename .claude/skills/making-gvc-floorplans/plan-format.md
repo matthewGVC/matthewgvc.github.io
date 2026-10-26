@@ -25,7 +25,8 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 |---|---|
 | `schema` | `1` |
 | `job` | `{ "label": "<the prompt's label>", "address": "<street address, unit>" }`. The label names the files. The address prints in the branded header (in capitals), so write it the way GVC writes it ("555 West 59th Street, PHC"), never copied from the source's title block. |
-| `layout` | Leave it out for the current layout. `"alternate"` for an alternate. |
+| `layout` | Leave it out for the current layout. `"alternate"` for an alternate: the branded sheet then says ALTERNATE, bottom right. |
+| `current` | `true` on the current layout of a job that also has an alternate: the sheet then says CURRENT. |
 | `sources` | One entry per reference used: `{ "file": "Design/<name>", "kind": "<cubicasa-svg, cubicasa-png, broker-plan, screenshot, architect-pdf, dwg, dxf, gvc-old-plan-jpg…>", "note": "<what you took from it, e.g. page 2 only>" }`. The maker needs this list. |
 | `north` | Degrees clockwise from page-up that north points, read off the source's compass. `0` when the compass points straight up. **`null` when the source shows no compass.** Never guess it. |
 | `levels` | One per floor (below). |
@@ -73,6 +74,10 @@ the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet
   door to the building's hall. Those draw fully open (90°). Every other door draws half open (45°).
   This is Matt's rule.
 - **pocket:** `hinge` is the end with the pocket (the panel slides into the wall there).
+- **Free openings**, across a gap in traced wall masses (no wall to sit on):
+  `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`: the gap's two ends on the wall's centre
+  line, and the wall's thickness there in plan units. Doors add `hinge` (`from` = `a`), `side` (seen
+  walking from `a` to `b`) and `outside`.
 - **Windows:** one opening per pane, edge to edge. Where two windows meet, the drawing shows the
   mullion, so split them where the source shows a divider.
 - **Look for every pocket and sliding door.** They're easy to miss: a thin rectangle sticking out
@@ -82,7 +87,9 @@ the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet
 ### solids
 
 Filled navy polygons, `[[x, y], …]` with at least 3 points: columns, chimney breasts, chases, and the
-thick wall masses the source fills in.
+thick wall masses the source fills in. A solid can also be several rings, `[[[x, y], …], [[x, y], …]]`:
+an outline and the holes in it, filled even-odd. That is what `trace-walls.py` writes for a picture's
+wall masses (sources.md), and then those solids are the walls and the level needs no `walls`.
 
 ### fixtures
 
@@ -122,7 +129,8 @@ in plan units, measured on the source.
 ### areas
 
 `{ "type": …, "poly": [[x, y], …] }`
-- `terrace`, `balcony`: shaded outdoor space. A terrace that wraps the unit must trace its outer edge
+- `terrace`, `balcony`: outdoor space, white with a thin outline (Matt's). Add `"pattern": "pavers"`
+  where the source draws pavers or a grid on it. A terrace that wraps the unit must trace its outer edge
   and come back **along the unit's outside wall, using the same points** (curve points included).
   Otherwise the shading cuts across the corners.
 - `closet`: a dashed outline (built-ins and shallow closets drawn without walls).
@@ -134,7 +142,8 @@ in plan units, measured on the source.
 - `void`: a crossed box (open to below, shafts).
 - `floor`: no outline, only its swatch, for a tiled bathroom floor. `roof`: a thin outline with its
   swatch.
-- **`"pattern"`** lays a swatch over any area: `tile` (bathroom floors), `brick-patio` (a brick
+- **`"pattern"`** lays a swatch over any area: `tile` (bathroom floors, light cyan), `pavers` (a
+  terrace's faint grid), `brick-patio` (a brick
   terrace or patio, basket weave, over the terrace shading) and `brick-roof` (running bond). Use one only where the
   source shows that surface.
 - Stairs also take **`"break": true`** (or a number 0-1 along the flight) for the break line with
@@ -144,10 +153,12 @@ in plan units, measured on the source.
 ### rooms
 
 `{ "name": "CAPITALS", "size": "12'0\" x 20'3\"" | null, "at": [x, y], "rot": 0, "box": [x0, y0, x1, y1] }`
-- `name` in capitals, exactly as the source names the room.
-- `size` exactly as printed, in feet and inches with straight quotes: `12'0" x 20'3"`. Write a bare
-  feet value as `0"` inches (`15'` → `15'0"`) and note that in `uncertain`. Use `null`, or leave it
-  out, when the source gives none.
+- `name` in capitals, exactly as the source names the room. Where the source sets it on two lines,
+  break it there: `"PRIMARY\nBEDROOM"`.
+- `size` exactly as printed, in feet and inches with straight quotes in the file: `12'0" x 20'3"`,
+  or `13' x 24'` and `12' x 19'6"` when the source leaves the inches off. Never pad it. The drawer
+  prints it with typographic marks (12’ x 19’6”), as Matt does. Use `null`, or leave it out, when the
+  source gives none.
 - `at` is the centre of the label block. `rot` of 90 or -90 is for a long, narrow room, as the source
   does.
 - `box` is optional: the room's extent. Give it for small rooms, so the validator can warn when the

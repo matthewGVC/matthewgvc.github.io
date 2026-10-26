@@ -7,19 +7,24 @@
      "job": { "label", "address" },
      "sources": [{ "file", "kind", "note" }],
      "north": null | degrees clockwise from page-up,
+     "layout": "alternate" (left out for the current layout), "current": true (the current layout of a job
+               that also has an alternate: the branded sheet then says CURRENT),
      "levels": [{
        "name": null | "LOWER LEVEL"   (every level must be named when there are several)
        "walls":    [{ "a": [x,y], "b": [x,y], "type": "exterior|interior|glass", "via": [x,y] optional }],
                      via: a point the wall passes through between a and b; the wall is then the circular
                      arc through a, via and b (only windows and plain openings may sit on an arc)
-       "solids":   [ [[x,y], ...] ]                       filled polygons (columns, chimneys)
+       "solids":   [ [[x,y], ...] | [[[x,y], ...], ...] ]  filled navy: columns, chimneys, and wall masses
+                     traced from a picture (trace-walls.py); several rings = an outline and its holes
        "openings": [{ "wall": index, "from": 0-1, "to": 0-1, "type", "hinge": "from|to", "side": "left|right",
                       "outside": true for a door to a terrace, balcony or the hall (drawn fully open) }],
+                     or free, across a gap in traced wall masses: { "a": [x,y], "b": [x,y], "t": thickness,
+                      "type", "hinge", "side", "outside" } (from = a, to = b; side as walking a to b)
        "fixtures": [{ "type", "at": [x,y], "w", "h", "rot", "bowls": 1|2 (kitchen-sink) }],
                      rot 0: the wall the fixture backs onto is at the top
-       "areas":    [{ "type", "poly": [[x,y], ...], "pattern": "tile|brick-patio|brick-roof",
+       "areas":    [{ "type", "poly": [[x,y], ...], "pattern": "tile|pavers|brick-patio|brick-roof",
                       stair only: "treads", "dir", "arrow": false, "break": true | 0-1 }],
-       "rooms":    [{ "name": "CAPITALS", "size": null | "12'0\" x 20'3\"", "at": [x,y], "rot",
+       "rooms":    [{ "name": "CAPITALS", "size": null | "12'0\" x 20'3\"" | "13' x 24'" (exactly as the source prints it), "at": [x,y], "rot",
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
        "labels":   [{ "text", "at": [x,y] }],
@@ -40,10 +45,11 @@ const FIXTURES = ['toilet', 'sink', 'round-sink', 'double-sink', 'tub', 'shower'
   'washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher',
   'lounge-chair', 'car', 'clothes',
   'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'];
-const PATTERNS = ['tile', 'brick-patio', 'brick-roof'];
+const PATTERNS = ['tile', 'pavers', 'brick-patio', 'brick-roof'];
 const AREAS = ['terrace', 'balcony', 'closet', 'stair', 'void', 'floor', 'roof'];
 
-const SIZE_RE = /^\d+'\d+(\.\d+)?" x \d+'\d+(\.\d+)?"$/;
+/* as the source prints it: 12'0" x 20'3", or feet alone on a side (13' x 24', 12' x 19'6") */
+const SIZE_RE = /^\d+'(\d+(\.\d+)?")? x \d+'(\d+(\.\d+)?")?$/;
 const isPt = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
 
 /* The circular arc through a, via and b: { c, r, a0, sweep } with angles in radians (y down, so a positive
@@ -71,17 +77,18 @@ function levelPoints(level) {
     const arc = isPt(w.a) && isPt(w.b) && isPt(w.via) ? arcOf(w.a, w.b, w.via) : null;
     if (arc) for (let i = 1; i < 16; i++) pts.push(arcPoint(arc, i / 16));
   });
-  (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
+  (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); else if (Array.isArray(p)) p.forEach((q) => { if (isPt(q)) pts.push(q); }); }));
   (level.areas || []).forEach((a) => ((a && a.poly) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
   /* a door to the outside stands fully open, often past the walls: its swing is part of the drawing */
   (level.openings || []).forEach((o) => {
-    const w = (level.walls || [])[o && o.wall];
+    const w = o && isPt(o.a) && isPt(o.b) ? { a: o.a, b: o.b } : (level.walls || [])[o && o.wall];
     if (!o || !o.outside || !['door', 'double-door'].includes(o.type) || !w || !isPt(w.a) || !isPt(w.b) || isPt(w.via)) return;
     const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
     if (!L) return;
     const d = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], left = [d[1], -d[0]], k = o.side === 'right' ? -1 : 1;
     const at = (t) => [w.a[0] + (w.b[0] - w.a[0]) * t, w.a[1] + (w.b[1] - w.a[1]) * t];
-    const leaves = o.type === 'double-door' ? [[o.from, (o.from + o.to) / 2], [o.to, (o.from + o.to) / 2]] : [o.hinge === 'to' ? [o.to, o.from] : [o.from, o.to]];
+    const fr = isPt(o.a) ? 0 : o.from, to = isPt(o.a) ? 1 : o.to;
+    const leaves = o.type === 'double-door' ? [[fr, (fr + to) / 2], [to, (fr + to) / 2]] : [o.hinge === 'to' ? [to, fr] : [fr, to]];
     leaves.forEach(([h, f]) => {
       const hp = at(h), r = Math.abs(f - h) * L, dir = h < f ? 1 : -1;
       for (let i = 1; i <= 8; i++) {
@@ -110,6 +117,8 @@ function validate(plan) {
   if (!plan || typeof plan !== 'object') return { errors: ['plan must be an object'], warnings };
   if (plan.schema !== SCHEMA) errors.push('schema must be ' + SCHEMA);
   if (plan.north !== null && plan.north !== undefined && !Number.isFinite(plan.north)) errors.push('north must be a number of degrees or null');
+  if (plan.layout !== undefined && plan.layout !== 'alternate') errors.push('layout must be "alternate" or left out');
+  if (plan.current !== undefined && typeof plan.current !== 'boolean') errors.push('current must be true or false');
   if (!Array.isArray(plan.levels) || !plan.levels.length) {
     errors.push('plan needs at least one level');
     return { errors, warnings };
@@ -128,16 +137,24 @@ function validate(plan) {
     });
 
     (level.solids || []).forEach((s, i) => {
-      if (!Array.isArray(s) || s.length < 3 || !s.every(isPt)) errors.push(L + ' solid ' + (i + 1) + ': needs at least 3 [x, y] points');
+      const rings = Array.isArray(s) && s.length && Array.isArray(s[0]) && isPt(s[0][0]) ? s : [s];
+      if (!rings.every((r) => Array.isArray(r) && r.length >= 3 && r.every(isPt))) errors.push(L + ' solid ' + (i + 1) + ': needs at least 3 [x, y] points (in each ring)');
     });
 
     (level.openings || []).forEach((o, i) => {
       const O = L + ' opening ' + (i + 1);
+      if (isPt(o.a) || isPt(o.b)) {   /* free: across a gap in traced wall masses */
+        if (!isPt(o.a) || !isPt(o.b)) errors.push(O + ': a free opening needs both a and b as [x, y]');
+        if (o.t !== undefined && !(o.t > 0)) errors.push(O + ': t (the wall thickness) must be more than 0');
+        if (!OPENINGS.includes(o.type)) errors.push(O + ': unknown type "' + o.type + '"');
+        if (o.outside !== undefined && typeof o.outside !== 'boolean') errors.push(O + ': outside must be true or false');
+        return;
+      }
       if (!Number.isInteger(o.wall) || o.wall < 0 || o.wall >= walls.length) errors.push(O + ': no wall ' + o.wall);
       if (!OPENINGS.includes(o.type)) errors.push(O + ': unknown type "' + o.type + '"');
       if (OPENINGS.includes(o.type) && walls[o.wall] && walls[o.wall].via !== undefined && !['window', 'opening'].includes(o.type)) errors.push(O + ': only a window or an opening can sit on a curved wall');
       if (o.outside !== undefined && typeof o.outside !== 'boolean') errors.push(O + ': outside must be true or false');
-      if (!(Number.isFinite(o.from) && Number.isFinite(o.to) && o.from >= 0 && o.to <= 1 && o.from < o.to)) errors.push(O + ': from and to must satisfy 0 <= from < to <= 1');
+      if (!(Number.isFinite(o.from) && Number.isFinite(o.to) && o.from >= 0 && o.to <= 1 && o.from < o.to)) errors.push(O + ': from and to must satisfy 0 <= from < to <= 1 (fractions along wall ' + o.wall + '; a gap off its wall is a free opening, with a and b)');
     });
 
     (level.fixtures || []).forEach((f, i) => {
@@ -166,13 +183,13 @@ function validate(plan) {
       const R = L + ' room "' + r.name + '"';
       if (typeof r.name !== 'string' || !r.name.trim()) { errors.push(L + ' room ' + (i + 1) + ': needs a name'); return; }
       if (r.name !== r.name.toUpperCase()) errors.push(R + ': name must be in capitals');
-      if (r.size !== null && r.size !== undefined && !SIZE_RE.test(r.size)) errors.push(R + ': size must look like 12\'0" x 20\'3"');
+      if (r.size !== null && r.size !== undefined && !SIZE_RE.test(r.size)) errors.push(R + ': size must look like 12\'0" x 20\'3" (or 13\' x 24\', as printed)');
       if (!isPt(r.at)) errors.push(R + ': at must be [x, y]');
       if (r.box !== undefined) {
         if (!Array.isArray(r.box) || r.box.length !== 4 || !r.box.every(Number.isFinite)) {
           errors.push(R + ': box must be [x0, y0, x1, y1]');
         } else {
-          const labelPt = r.name.length * STYLE.LABEL_EM * STYLE.ROOM_NAME_PT;
+          const labelPt = Math.max(...r.name.split("\n").map((t) => t.trim().length)) * STYLE.LABEL_EM * STYLE.ROOM_NAME_PT;
           const roomPt = (r.box[2] - r.box[0]) * scale;
           if (labelPt > roomPt) warnings.push(R + ': label is wider than its room');
         }

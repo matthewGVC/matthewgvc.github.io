@@ -3,6 +3,24 @@
 What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-26: real-plan test, round 1 (six of Matt's jobs, two element audits)
+
+Six of Matt's real jobs were run from the source he was given and compared with what he made:
+435 E57, 347 W Broadway, 225 E79 PHA, 241 E76, 401 E89 (picture sources) and 929 Park (Cubicasa).
+- **Walls traced by hand were the biggest failure:** missed walls, centre lines 10-30 px off, one weight
+  where Matt keeps the source's (6-18 pt). Walls now come straight from the picture (`trace-walls.py`).
+- **The branded frame was wrong on every sheet.** It is now measured off seven of Matt's: the cyan fading
+  down to white, the address street over unit when long, the bar, the letter-spaced facts (half baths and
+  size on a second line), the approx. note centred with a hyphen, no logo, the compass at the bottom
+  centre, ALTERNATE or CURRENT bottom right.
+- Sizes print exactly as the source gives them (13' x 24', never padded to 13'0" x 24'0"), with curly
+  marks. Names break where the source breaks them. Terraces are white; bath tile is light cyan.
+- **What Matt adds that the source lacks** (fixtures in a Cubicasa plan, renamed rooms, a second level,
+  CL labels, sizes) comes from sales agents' requests (Matt, 10-26). Never learn it as house style, and
+  never add it unless the prompt asks.
+- Matt's older sheets draw interior doors fully open; his rule now is 45° inside, 90° to the outside.
+  Follow the rule.
+
 ## 2026-10-26: Matt's review of his symbols, round 4
 
 - **Filled outlines traced point by point look wrong.** The first centre lines followed the skeleton

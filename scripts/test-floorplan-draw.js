@@ -7,6 +7,7 @@
 const path = require('path');
 const fontkit = require('fontkit');
 const { draw } = require('./floorplan/draw.js');
+const { validate } = require('./floorplan/plan.js');
 const STYLE = require('./floorplan/style.js');
 const studio = require('./floorplan/fixtures/studio.json');
 
@@ -249,6 +250,40 @@ check('a bi-fold door draws its folded panels', /stroke-width="0.5" d="M[^"]*L[^
 p = clone(box4); p.levels[0].walls = [{ a: [0, 0], b: [100, 0], type: 'exterior' }, { a: [100, 0], b: [100, 60], type: 'exterior' }]; p.levels[0].openings = [];
 const wallD = draw(p, 0, {}).match(/stroke-width="4"[^>]*d="([^"]*)"/)[1];
 check('a corner of two walls is three points, its free ends run on', (wallD.match(/[ML]/g) || []).length, 3);
+
+/* ---- the branded frame, as Matt lays it out ---- */
+const br = (plan, facts) => draw(plan, 0, { branded: true, facts });
+const hdr = (svg) => svg.slice(svg.indexOf('data-frame="header"'), svg.indexOf('</g></g>', svg.indexOf('data-frame="header"')));
+p = clone(studio); p.job.address = '225 East 79th Street, Penthouse A';
+const two = br(p, { beds: 3, baths: 3 });
+check('a long address breaks at its last comma: street over unit, white, with the bar before the facts', [(hdr(two).match(/<path d=/g) || []).length, /<rect x="404.15"/.test(hdr(two))], [3, true]);
+p.job.address = '929 Park Avenue, 4C';
+check('a short address stays on one line', (hdr(br(p, { beds: 2, baths: 2 })).match(/<path d=/g) || []).length, 2);
+check('half baths and the size make a second facts line', (hdr(br(p, { beds: 3, baths: 3, half: 1, sqft: 3369 })).match(/<path d=/g) || []).length, 3);
+check('the header fades from cyan down to white', /linearGradient id="fp-header-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03A1C4"\/>.*stop-color="#FFFFFF"/.test(two), true);
+check('no logo; the footer is the approx. note alone', [/data-frame="footer" fill="#00273a"><path d="[^"]*"\/><\/g>/.test(two), /scale\(/.test(two.slice(two.indexOf('data-frame="footer"')))], [true, false]);
+p = clone(studio); p.layout = 'alternate';
+check('an alternate says ALTERNATE bottom right; a current one with an alternate says CURRENT; otherwise nothing', [/data-frame="status"/.test(br(p)), (() => { const q = clone(studio); q.current = true; return /data-frame="status"/.test(br(q)); })(), /data-frame="status"/.test(br(studio))], [true, true, false]);
+p = clone(studio); p.north = 0;
+check('the compass sits at the bottom centre unless the plan is in the way', /data-frame="compass" transform="translate\((400|[\d.]+) 554\)/.test(br(p)), true);
+
+/* ---- walls traced from a picture: solids with holes, free openings across their gaps ---- */
+p = clone(box4); p.levels[0].walls = []; p.levels[0].openings = [];
+p.levels[0].solids = [[[[0, 0], [100, 0], [100, 80], [0, 80]], [[6, 6], [94, 6], [94, 74], [6, 74]]]];
+p.levels[0].openings = [{ type: 'window', a: [30, 3], b: [60, 3], t: 6 }, { type: 'door', a: [94, 30], b: [94, 50], t: 6, hinge: 'from', side: 'right' }];
+check('a free plan (wall masses, free openings) validates', validate(p).errors, []);
+const ring = draw(p, 0, {});
+check('a wall mass with a hole is filled even-odd', /fill="#00273a" fill-rule="evenodd" d="M[^"]*ZM[^"]*Z"/.test(ring), true);
+check('a free window and a free door draw across their gaps', [(ring.match(/stroke-width="0.5"/g) || []).length >= 3, /A[\d.]+ [\d.]+ 0 0 [01] /.test(ring)], [true, true]);
+
+/* ---- labels ---- */
+p = clone(studio); p.levels[0].rooms = [{ name: 'LIVING\nROOM', size: '13\' x 24\'', at: [75, 120] }];
+const lr = draw(p, 0, {});
+const lg = lr.match(/<g data-label="LIVING\nROOM"[^>]*>(.*?)<\/g>/s);
+check('a name with a line break prints on two lines, the size below, with typographic marks', [lg && (lg[1].match(/<path/g) || []).length, validate(p).errors], [3, []]);
+p = clone(box4); p.levels[0].areas = [{ type: 'terrace', pattern: 'pavers', poly: [[0, 0], [50, 0], [50, 50], [0, 50]] }];
+const pv = draw(p, 0, {});
+check('a terrace is white; pavers lay the faint grid over it', [/fill="#ffffff" fill="none"|fill="#ffffff" [^>]*stroke/.test(pv), pv.includes('fill="url(#fp-pat-pavers)"')], [true, true]);
 
 /* ---- report ---- */
 if (failures.length) {

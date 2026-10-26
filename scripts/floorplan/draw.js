@@ -190,10 +190,14 @@ function drawOpenings(level, T, s = 1) {
     const hw = Math.max((free && o0.t > 0 ? o0.t * s : wallWidth(w.type)) / 2 - STYLE.THIN / 2, 0);
 
     if (o.type === 'window') {
-      /* two lines along the wall, closed at each end: neighbouring windows show their mullion */
-      const along = (k) => 'M' + pt(C.at(o.from, k)) + C.seg(o.from, o.to, k);
-      const across = (t) => line(C.at(t, hw), C.at(t, -hw));
-      out.push('<path ' + stroke + ' d="' + along(hw) + along(-hw) + across(o.from) + across(o.to) + '"/>');
+      /* Matt's window: a white frame across the wall's full thickness, closed at each end (so neighbouring
+         panes show their mullion), and the glass, a narrower frame inside it */
+      const along = (t0, t1, k) => 'M' + pt(C.at(t0, k)) + C.seg(t0, t1, k);
+      const frame = (t0, t1, k) => along(t0, t1, k) + along(t0, t1, -k) + line(C.at(t0, k), C.at(t0, -k)) + line(C.at(t1, k), C.at(t1, -k));
+      const inset = Math.min(hw * 0.5, (o.to - o.from) * C.len * 0.1) / (C.len || 1);
+      const g = hw * STYLE.WINDOW_GLASS;
+      out.push('<path fill="' + STYLE.WHITE + '" d="' + frame(o.from, o.to, hw) + '"/>');
+      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '" d="' + frame(o.from, o.to, hw) + frame(o.from + inset, o.to - inset, g) + '"/>');
       return;
     }
     if (o.type === 'opening' || isPt(w.via)) return;   /* a plain gap; the validator keeps doors off curves */
@@ -208,8 +212,12 @@ function drawOpenings(level, T, s = 1) {
       const tip = addv(hinge, addv(mul(along, r * Math.cos(open)), mul(n, r * Math.sin(open))));
       const u = sub(tip, hinge), v = sub(free, hinge);
       const sweep = u[0] * v[1] - u[1] * v[0] > 0 ? 1 : 0;
-      out.push('<path ' + thin() + ' d="' + line(hinge, tip) + '"/>');
-      out.push('<path ' + stroke + ' d="M' + pt(tip) + 'A' + r2(r) + ' ' + r2(r) + ' 0 0 ' + sweep + ' ' + pt(free) + '"/>');
+      /* Matt's leaf: a thin hollow panel, white inside; it and the swing in a fine line */
+      const lw = STYLE.DOOR_LEAF / 2, nn = [-(tip[1] - hinge[1]) / r, (tip[0] - hinge[0]) / r];
+      const leaf = poly([addv(hinge, mul(nn, lw)), addv(tip, mul(nn, lw)), addv(tip, mul(nn, -lw)), addv(hinge, mul(nn, -lw))]);
+      const fine = 'stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '"';
+      out.push('<path fill="' + STYLE.WHITE + '" ' + fine + ' d="' + leaf + '"/>');
+      out.push('<path fill="none" ' + fine + ' d="M' + pt(tip) + 'A' + r2(r) + ' ' + r2(r) + ' 0 0 ' + sweep + ' ' + pt(free) + '"/>');
     };
 
     if (o.type === 'door') {
@@ -404,6 +412,11 @@ const rrect = (x, y, w, h, r) => {
 /* rot 0: the wall the fixture backs onto is at the top (-h/2); it faces down the page */
 const uShape = (bw, yt, yb, ry) => 'M' + r2(-bw) + ' ' + r2(yt) + 'L' + r2(-bw) + ' ' + r2(yb - ry) +
   'A' + r2(bw) + ' ' + r2(ry) + ' 0 0 0 ' + r2(bw) + ' ' + r2(yb - ry) + 'L' + r2(bw) + ' ' + r2(yt) + 'Z';
+/* a square-cornered basin bw wide centred at x in a counter h deep, its faucet a solid bar from the wall */
+const basin = (x, bw, h) => {
+  const top = -h / 2 + h * 0.2, bh = h * 0.66, fw = Math.max(bw * 0.1, 0.9);
+  return [rect(x - bw / 2, top, bw, bh), { raw: '<path fill="' + STYLE.NAVY + '" d="' + rect(x - fw / 2, -h / 2, fw, h * 0.42) + '"/>' }];
+};
 const FIXTURE_DRAW = {
   /* tank against the wall, elongated bowl with its seat opening */
   toilet: (w, h) => {
@@ -411,20 +424,21 @@ const FIXTURE_DRAW = {
     const iw = bw * 0.62, iyt = yt + (yb - yt) * 0.18, iyb = yb - (yb - yt) * 0.14;
     return [rrect(-w / 2, -h / 2, w, tank, Math.min(w, tank) * 0.15), uShape(bw, yt, yb, ry), uShape(iw, iyt, iyb, Math.min(iw * 1.25, (iyb - iyt) * 0.7))];
   },
-  /* vanity: counter, oval basin, faucet at the wall */
-  sink: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, h * 0.06, w * 0.33, h * 0.3), ell(0, -h / 2 + h * 0.13, Math.min(w, h) * 0.05, Math.min(w, h) * 0.05)],
-  /* pedestal or vessel basin: a round bowl, the faucet reaching in from the wall, the drain */
+  /* vanity, as Matt draws it: the counter, a square-cornered basin, a solid faucet bar from the wall */
+  sink: (w, h) => [rect(-w / 2, -h / 2, w, h), ...basin(0, w * 0.62, h)],
+  /* pedestal or vessel basin (Matt's): a round bowl, a small square faucet at the wall, a solid drain */
   'round-sink': (w, h) => {
-    const r = Math.min(w, h) / 2;
-    return [ell(0, 0, r, r), line([0, -r], [0, -r * 0.45]), ell(0, r * 0.15, r * 0.08, r * 0.08)];
+    const r = Math.min(w, h) / 2, f = r * 0.18;
+    return [ell(0, 0, r, r), rect(-f, -r - f * 0.2, 2 * f, f * 1.6), { raw: '<path fill="' + STYLE.NAVY + '" d="' + ell(0, r * 0.05, r * 0.12, r * 0.12) + '"/>' }];
   },
-  'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ell(-w / 4, h * 0.06, w * 0.15, h * 0.3), ell(w / 4, h * 0.06, w * 0.15, h * 0.3)],
-  tub: (w, h) => [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.06, -h / 2 + h * 0.12, w * 0.88, h * 0.76, h * 0.35)],
-  /* the pan with its fall lines to a square drain */
-  shower: (w, h) => {
-    const k = Math.min(w, h) * 0.05;
-    return [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2]), rect(-k, -k, 2 * k, 2 * k)];
+  'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ...basin(-w / 4, w * 0.34, h), ...basin(w / 4, w * 0.34, h)],
+  /* the tub (Matt's): its box, a softly rounded basin, the drain at the end */
+  tub: (w, h) => {
+    const ix = Math.min(w, h) * 0.12, iy = h * 0.12, r = Math.min(w, h) * 0.16;
+    return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + ix, -h / 2 + iy, w - 2 * ix, h - 2 * iy, r), ell(-w / 2 + ix + r * 1.1, 0, r * 0.28, r * 0.28)];
   },
+  /* the pan crossed corner to corner, as Matt draws it */
+  shower: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])],
   /* four burners, each a ring round a grate */
   /* burners 4 (2 x 2, the default) or 6 (3 x 2), each a ring round a grate */
   range: (w, h, f) => {
@@ -440,8 +454,8 @@ const FIXTURE_DRAW = {
     if (f.bowls === 1) return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.1, -h / 2 + h * 0.15, w * 0.8, h * 0.7, Math.min(w, h) * 0.12), dot(0)];
     return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.08, -h / 2 + h * 0.15, w * 0.38, h * 0.7, Math.min(w, h) * 0.1), rrect(w * 0.04, -h / 2 + h * 0.15, w * 0.38, h * 0.7, Math.min(w, h) * 0.1), dot(-w * 0.23), dot(w * 0.23)];
   },
-  /* the box, its door line at the front */
-  refrigerator: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, h / 2 - h * 0.12], [w / 2, h / 2 - h * 0.12])],
+  /* the box: Matt labels it REF (in labels), with no door line */
+  refrigerator: (w, h) => [rect(-w / 2, -h / 2, w, h)],
   /* the firebox: narrow at the back wall, opening wide into the room */
   fireplace: (w, h) => [poly([[-w * 0.32, -h / 2], [w * 0.32, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]])],
   counter: (w, h) => [rect(-w / 2, -h / 2, w, h)],
@@ -452,8 +466,8 @@ const FIXTURE_DRAW = {
   /* one stacked unit: the washer's drum and the dryer's line across */
   'washer-dryer': (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2 + h * 0.18], [w / 2, -h / 2 + h * 0.18]), ell(0, h * 0.09, Math.min(w, h) * 0.3, Math.min(w, h) * 0.3)],
   'water-heater': (w, h) => [ell(0, 0, w / 2, h / 2), ell(0, 0, w * 0.3, h * 0.3)],
-  /* under the counter: its box crossed */
-  dishwasher: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])],
+  /* under the counter: its box, labelled DW (in labels), as Matt draws it */
+  dishwasher: (w, h) => [rect(-w / 2, -h / 2, w, h)],
 
   /* ---- furniture: only when the source shows it, or Matt asks for a furnished plan ---- */
   /* headboard at the wall, pillows (1 on a bed narrower than 0.6 of its length), the turned-down sheet */

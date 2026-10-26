@@ -41,6 +41,9 @@ module.exports = {
   SLIDING_PANEL: 1.6,        // pt thickness of a sliding / pocket panel
   DOOR_OPEN_OUTSIDE: 90,     // degrees a door leaf stands open: doors to a terrace, balcony or the hall
   DOOR_OPEN_INSIDE: 45,      // every other door (Matt, 10-26)
+  DOOR_LEAF: 1.45,           // pt, the width of a door leaf's hollow panel (Matt's 435 E57)
+  DOOR_LINE: 0.3,            // pt, a door leaf's outline, its swing, and a window's frames
+  WINDOW_GLASS: 0.35,        // the glass frame's half-width, as a share of the wall's
 
   /* type (Nunito Sans, outlined); tracking is letter-spacing in em */
   FONT_FILE: 'assets/fonts/nunito-sans-{weight}-latin.woff2',

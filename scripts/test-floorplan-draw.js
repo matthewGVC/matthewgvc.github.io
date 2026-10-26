@@ -155,7 +155,7 @@ check('an opening breaks the loop into one open line', [(ext.match(/M/g) || []).
 p = clone(box4); p.levels[0].walls[0].via = [50, -20];
 check('a wall with via is drawn as an arc', /A/.test(wallPaths(draw(p, 0, {}), STYLE.WALL_EXTERIOR)), true);
 p.levels[0].openings = [{ wall: 0, from: 0, to: 1, type: 'window' }];
-check('a window on a curved wall follows the curve', (draw(p, 0, {}).match(/stroke-width="0.5" d="M[^"]*A[^"]*A/) || []).length, 1);
+check('a window on a curved wall follows the curve', (draw(p, 0, {}).match(/stroke-width="0.3" d="M[^"]*A[^"]*A/) || []).length, 1);
 p = clone(box4); p.levels[0].walls.push({ a: [50, 0], b: [50, 80], type: 'glass' });
 check('glass walls are drawn at their own weight', wallPaths(draw(p, 0, {}), STYLE.WALL_GLASS) !== '', true);
 
@@ -178,11 +178,22 @@ check('underlay is only drawn when asked', /<image/.test(draw(box4, 0, {})), fal
 /* ---- doors: Matt's rule, fully open to the outside, half open inside ---- */
 const leafAngle = (outside) => {
   const q = clone(box4); q.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'door', hinge: 'from', side: 'left', outside }];
-  const m = draw(q, 0, {}).match(/fill="#ffffff" stroke="#00273a" stroke-width="0.5" d="M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)"/);
+  /* the leaf is a hollow panel: its first edge runs from beside the hinge to beside the tip */
+  const m = draw(q, 0, {}).match(/fill="#ffffff" stroke="#00273a" stroke-width="0.3" d="M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)L[^"]*Z"/);
   return Math.round(Math.atan2(-(+m[4] - +m[2]), +m[3] - +m[1]) * 180 / Math.PI);
 };
 check('a door to the outside stands at ' + STYLE.DOOR_OPEN_OUTSIDE + '°', leafAngle(true), STYLE.DOOR_OPEN_OUTSIDE);
 check('an inside door stands at ' + STYLE.DOOR_OPEN_INSIDE + '°', leafAngle(undefined), STYLE.DOOR_OPEN_INSIDE);
+check('a door leaf is a hollow panel ' + STYLE.DOOR_LEAF + ' pt wide, white, in the fine door line (Matt\'s)', (() => {
+  const q = clone(box4); q.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'door', hinge: 'from', side: 'left' }];
+  const m = draw(q, 0, {}).match(/fill="#ffffff" stroke="#00273a" stroke-width="0.3" d="M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)/);
+  return Math.abs(Math.hypot(+m[5] - +m[3], +m[6] - +m[4]) - STYLE.DOOR_LEAF) < 0.03;   // to the 2-decimal rounding of the points
+})(), true);
+check('a window is a white frame across the wall with its glass inside (two frames, fine lines)', (() => {
+  const q = clone(box4); q.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'window' }];
+  const svg = draw(q, 0, {});
+  return [/<path fill="#ffffff" d="M[^"]*"\/><path fill="none" stroke="#00273a" stroke-width="0.3" d="([^"]*)"/.test(svg), ((svg.match(/<path fill="none" stroke="#00273a" stroke-width="0.3" d="([^"]*)"/) || [, ''])[1].match(/M/g) || []).length];
+})(), [true, 8]);
 
 /* ---- the style sheet: every element in its own named group ---- */
 const { sheet, ELEMENTS } = require('./floorplan/style-sheet.js');
@@ -274,7 +285,7 @@ p.levels[0].openings = [{ type: 'window', a: [30, 3], b: [60, 3], t: 6 }, { type
 check('a free plan (wall masses, free openings) validates', validate(p).errors, []);
 const ring = draw(p, 0, {});
 check('a wall mass with a hole is filled even-odd', /fill="#00273a" fill-rule="evenodd" d="M[^"]*ZM[^"]*Z"/.test(ring), true);
-check('a free window and a free door draw across their gaps', [(ring.match(/stroke-width="0.5"/g) || []).length >= 3, /A[\d.]+ [\d.]+ 0 0 [01] /.test(ring)], [true, true]);
+check('a free window and a free door draw across their gaps', [(ring.match(/stroke-width="0.3"/g) || []).length >= 3, /A[\d.]+ [\d.]+ 0 0 [01] /.test(ring)], [true, true]);
 
 /* ---- labels ---- */
 p = clone(studio); p.levels[0].rooms = [{ name: 'LIVING\nROOM', size: '13\' x 24\'', at: [75, 120] }];

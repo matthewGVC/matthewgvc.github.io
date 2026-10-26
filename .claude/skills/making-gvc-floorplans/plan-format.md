@@ -96,7 +96,10 @@ wall masses (sources.md), and then those solids are the walls and the level need
 ### fixtures
 
 `{ "type": …, "at": [x, y], "w": …, "h": …, "rot": degrees }`. `at` is the **centre**. `w` and `h` are
-in plan units, measured on the source.
+in plan units, measured on the source, **before rotation**: `w` always runs along the wall the fixture
+backs onto and `h` out from it, whatever `rot` is. A range against a left-hand wall, 30 wide along it and 25
+deep, is `"w": 30, "h": 25, "rot": 270` (its box on the page is 25 across, 30 tall); `rot` 0 backs onto a
+wall above, 90 a wall to the right, 180 below, 270 to the left.
 - Types: `toilet`, `sink` (a vanity basin), `round-sink`, `double-sink`, `tub` (`"cross": true` when the source draws it as a crossed box), `shower` (square or
   rectangular: just its `w` and `h`), `range` (`"burners": 4` or `6`, default 4), `kitchen-sink`
   (`"bowls": 1` or `2`, default 2), `refrigerator`, `fireplace`, `counter` (any cabinet, island, desk
@@ -161,7 +164,7 @@ in plan units, measured on the source.
   or `13' x 24'` and `12' x 19'6"` when the source leaves the inches off. Never pad it. The drawer
   prints it with typographic marks (12’ x 19’6”), as Matt does. Use `null`, or leave it out, when the
   source gives none.
-- `at` is the centre of the label block. `rot` of 90 or -90 is for a long, narrow room, as the source
+- `at` is the **centre of the whole label block** (name lines and size line together), not the top line. `rot` of 90 or -90 is for a long, narrow room, as the source
   does.
 - `box` is optional: the room's extent. Give it for small rooms, so the validator can warn when the
   name won't fit.

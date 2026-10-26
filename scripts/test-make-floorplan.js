@@ -81,7 +81,7 @@ function listAll(dir) {
     const before = {};
     for (const f of r1.written) before[f] = fs.readFileSync(path.join(dir, f));
     const r2 = await make(dir, { version: 3, today: '2026-10-27' });
-    eq(r2.archived.length, 4);
+    eq(r2.archived.length, 5);  // four plan files + the run note
     for (const a of r2.archived) ok(a.startsWith('Design/archive/2026-10-27/'), a);
     const archivedBytes = r2.archived.map(a => fs.readFileSync(path.join(dir, a)));
     for (const f of r1.written) {
@@ -95,11 +95,11 @@ function listAll(dir) {
     const r2 = await make(dir, { version: 3, today: '2026-10-27' });
     const r3 = await make(dir, { version: 3, today: '2026-10-27' });
     eq(r1.archived.length, 0);
-    eq(r2.archived.length, 4);
-    eq(r3.archived.length, 4);
+    eq(r2.archived.length, 5);  // four plan files + the run note
+    eq(r3.archived.length, 5);
     const all = listAll(dir).filter(f => f.startsWith('Design/archive/2026-10-27/'));
-    eq(all.length, 8);
-    ok(r3.archived.every(a => / \(2\)\.(svg|png)$/.test(a)), r3.archived.join('|'));
+    eq(all.length, 10);
+    ok(r3.archived.filter(a => !a.endsWith('.md')).every(a => / \(2\)\.(svg|png)$/.test(a)), r3.archived.join('|'));
     eq(r2.archived.concat(r3.archived).filter(a => !all.includes(a)), []);
   });
 
@@ -115,11 +115,34 @@ function listAll(dir) {
     const dir = folder(p);
     await make(dir, { version: 3, today: '2026-10-27' });
     const note = fs.readFileSync(path.join(dir, 'Design', 'run-v3.md'), 'utf8');
-    ok(note.includes('cubicasa-png') || note.includes('Design/example.png'), 'sources');
-    ok(note.includes('ceiling heights'), 'missing');
-    ok(note.includes('bath door swing'), 'uncertain');
-    ok(/warning/i.test(note), 'warnings heading');
-    ok(note.includes('2026-10-27'), 'date');
+    ok(note.includes('## Where the plan came from\n- Design/example.png (cubicasa-png)\n'), 'sources line');
+    ok(note.includes('## Missing information\n- ceiling heights\n'), 'missing');
+    ok(note.includes('## Uncertain, please check\n- bath door swing\n'), 'uncertain');
+    ok(note.includes('## Warnings\n- none\n'), 'no warnings');
+    ok(note.includes('Date: 2026-10-27\n'), 'date');
+  });
+
+  await t('warnings appear verbatim in the note and result', async () => {
+    const p = planWith();
+    p.levels[0].rooms = [{ name: 'PRIMARY BEDROOM / LIBRARY', size: null, at: [20, 20], rot: 0, box: [0, 0, 40, 40] }];
+    const expected = require('./floorplan/plan.js').validate(p).warnings;
+    eq(expected.length, 1);
+    const dir = folder(p);
+    const r = await make(dir, { version: 4, today: '2026-10-27' });
+    eq(r.warnings, expected);
+    const note = fs.readFileSync(path.join(dir, 'Design', 'run-v4.md'), 'utf8');
+    ok(note.includes('## Warnings\n- ' + expected[0] + '\n'), 'warning text');
+  });
+
+  await t('second run archives the first run note', async () => {
+    const dir = folder(planWith());
+    await make(dir, { version: 3, today: '2026-10-27' });
+    const first = fs.readFileSync(path.join(dir, 'Design', 'run-v3.md'));
+    const r2 = await make(dir, { version: 3, today: '2026-10-27' });
+    const a = 'Design/archive/2026-10-27/Design/run-v3.md';
+    ok(r2.archived.includes(a), r2.archived.join('|'));
+    ok(fs.readFileSync(path.join(dir, a)).equals(first), 'note not byte-identical');
+    ok(fs.readFileSync(path.join(dir, 'Design', 'run-v3.md'), 'utf8').includes(a), 'new note lists the archived note');
   });
 
   fs.rmSync(TMP_ROOT, { recursive: true, force: true });

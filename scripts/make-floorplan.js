@@ -64,6 +64,20 @@ async function make(folder, opts) {
   const archived = [];
   const jobs = [];
 
+  /* Move an existing file to Design/archive/<today>/<rel>, numbering a clash " (2)", " (3)"... */
+  function archive(rel) {
+    const abs = path.join(folder, rel);
+    let arel = 'Design/archive/' + today + '/' + rel;
+    for (let k = 2; fs.existsSync(path.join(folder, arel)); k++) {
+      const dot = rel.lastIndexOf('.');
+      arel = 'Design/archive/' + today + '/' + rel.slice(0, dot) + ' (' + k + ')' + rel.slice(dot);
+    }
+    const aabs = path.join(folder, arel);
+    fs.mkdirSync(path.dirname(aabs), { recursive: true });
+    fs.renameSync(abs, aabs);
+    return arel;
+  }
+
   plan.levels.forEach((lvl, i) => {
     const base = label + ' v' + version + alt + (multi ? ' - ' + safe(lvl.name) : '');
     for (const [dir, branded] of [['Unbranded', false], ['Branded', true]]) {
@@ -79,17 +93,7 @@ async function make(folder, opts) {
       for (const ext of ['svg', 'png']) {
         const rel = j.dir + '/' + j.base + '.' + ext;
         const abs = path.join(folder, rel);
-        if (fs.existsSync(abs)) {
-          let arel = 'Design/archive/' + today + '/' + rel;
-          for (let k = 2; fs.existsSync(path.join(folder, arel)); k++) {
-            const dot = rel.lastIndexOf('.');
-            arel = 'Design/archive/' + today + '/' + rel.slice(0, dot) + ' (' + k + ')' + rel.slice(dot);
-          }
-          const aabs = path.join(folder, arel);
-          fs.mkdirSync(path.dirname(aabs), { recursive: true });
-          fs.renameSync(abs, aabs);
-          archived.push(arel);
-        }
+        if (fs.existsSync(abs)) archived.push(archive(rel));
       }
       fs.writeFileSync(path.join(folder, j.dir, j.base + '.svg'), j.svg);
       await toPng(j.svg, path.join(folder, j.dir, j.base + '.png'), browser);
@@ -98,6 +102,9 @@ async function make(folder, opts) {
   } finally {
     await browser.close();
   }
+
+  const noteRel = 'Design/run-v' + version + '.md';
+  if (fs.existsSync(path.join(folder, noteRel))) archived.push(archive(noteRel));
 
   const list = (arr, none) => arr.length ? arr.map(x => '- ' + x).join('\n') : '- ' + none;
   const note = [
@@ -126,7 +133,7 @@ async function make(folder, opts) {
     list(plan.uncertain || [], 'nothing noted as uncertain'),
     ''
   ].join('\n');
-  fs.writeFileSync(path.join(folder, 'Design', 'run-v' + version + '.md'), note);
+  fs.writeFileSync(path.join(folder, noteRel), note);
 
   return { written, archived, warnings };
 }

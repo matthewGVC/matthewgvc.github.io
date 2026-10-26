@@ -11,6 +11,7 @@ const ROOM_NAME_PT = 7.2;
 module.exports = {
   /* page and drawing boxes */
   PAGE: { w: 810, h: 630 },
+  PNG: { w: 3375, h: 2625 },   // px, the PNG copy of each plan (810 x 630 pt at 300 dpi)
   BOX_UNBRANDED: { x0: 36, y0: 36, x1: 774, y1: 594 },
   BOX_BRANDED: { x0: 36, y0: 96, x1: 774, y1: 560 },
 

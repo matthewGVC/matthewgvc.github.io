@@ -1,7 +1,8 @@
 """Wall masses straight from a picture of a plan: exact by construction, as Matt draws them.
 
     python -I scripts/floorplan/trace-walls.py <picture> <out.json> [--crop x0,y0,x1,y1] [--min-wall px]
-                                               [--dark 110] [--erase x0,y0,x1,y1 ...] [--preview out.png]
+                                               [--dark 110] [--erase x0,y0,x1,y1 ...] [--cut x0,y0,x1,y1 ...]
+                                               [--preview out.png]
 
 Every dark part of the picture at least --min-wall pixels thick is wall (or a column, a chimney mass):
 text, fixtures, door swings and window lines are thinner and drop out. Each connected mass becomes one
@@ -14,7 +15,8 @@ are the doors, windows and openings: add each as a free opening across its gap,
 {"type": "window", "a": [x, y], "b": [x, y], "t": <wall thickness there>}.
 
 --erase drops any mass lying wholly inside that box (repeat it): a fixture or a bold label that came
-through as wall. --crop keeps only that box (leave out a source's header, logo, compass and footer). --min-wall is
+through as wall. --cut clears everything inside that box first (repeat it): a fixture drawn thick and
+touching a wall (a toilet's tank, a sink's box), where the box can hold the fixture but not the wall. --crop keeps only that box (leave out a source's header, logo, compass and footer). --min-wall is
 measured by default: a little over twice the picture's commonest stroke (its text and thin linework). --preview
 draws the solids in navy over the faded picture, to check them by eye.
 """
@@ -30,7 +32,7 @@ from skimage.morphology import opening, skeletonize
 
 
 def args(argv):
-    a = {'crop': None, 'min_wall': None, 'dark': 110, 'preview': None, 'erase': []}
+    a = {'crop': None, 'min_wall': None, 'dark': 110, 'preview': None, 'erase': [], 'cut': []}
     i = 0
     rest = []
     while i < len(argv):
@@ -40,6 +42,9 @@ def args(argv):
             i += 2
         elif k == '--erase':
             a['erase'].append([int(float(v)) for v in argv[i + 1].split(',')])
+            i += 2
+        elif k == '--cut':
+            a['cut'].append([int(float(v)) for v in argv[i + 1].split(',')])
             i += 2
         elif k == '--min-wall':
             a['min_wall'] = float(argv[i + 1])
@@ -146,6 +151,8 @@ def main(argv):
         keep = np.zeros_like(mask)
         keep[max(0, y0):y1, max(0, x0):x1] = True
         mask &= keep
+    for x0, y0, x1, y1 in a['cut']:
+        mask[max(0, y0):y1, max(0, x0):x1] = False
 
     # how thick the dark runs are: twice the distance to the nearest light pixel, along each run's middle
     dt = ndimage.distance_transform_edt(mask)

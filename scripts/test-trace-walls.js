@@ -63,6 +63,15 @@ check('a marker or a label touching a wall is no part of it (the triangle cut to
   check('the window gap is a gap, at its drawn ends (the partition runs on from its right end)', gapEdges, 3);
   check('it measures the thin linework, not the walls, to decide what is wall', res.min_wall < 10, true);
   check('and says what it found', /2 wall masses/.test(out), true);
+  /* --cut: a fixture drawn thick against a wall (a toilet's tank) is cleared from its box before tracing */
+  cp.execFileSync(py, ['-c', `
+from PIL import Image, ImageDraw
+im = Image.new('RGB', (400, 300), 'white'); d = ImageDraw.Draw(im); N = (0, 39, 58)
+d.rectangle([50, 50, 349, 249], fill=N); d.rectangle([70, 70, 329, 229], fill='white')
+d.rectangle([70, 130, 89, 169], fill=N)   # the tank, against the left wall
+im.save(r'${path.join(dir, 'tank.png')}')`]);
+  const tank = (extra) => { cp.execFileSync(py, ['-I', path.join(__dirname, 'floorplan', 'trace-walls.py'), path.join(dir, 'tank.png'), path.join(dir, 'tank.json'), ...extra]); return JSON.parse(fs.readFileSync(path.join(dir, 'tank.json'), 'utf8')).solids[0][1].length; };
+  check('a thick fixture against a wall comes through as part of it; --cut clears it', [tank([]) > 4, tank(['--cut', '71,125,95,175'])], [true, 4]);
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
 }

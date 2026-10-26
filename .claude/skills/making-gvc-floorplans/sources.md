@@ -47,12 +47,15 @@ im.save(out)
    source's own wall masses, thick where it is thick (his walls run from about 6 pt to 18 pt), with
    the windows and doors set into gaps in them. `trace-walls.py` gives exactly that:
    ```
-   python -I scripts/floorplan/trace-walls.py "<picture>" tmp/walls.json --preview tmp/walls.png [--crop x0,y0,x1,y1] [--erase x0,y0,x1,y1]
+   python -I scripts/floorplan/trace-walls.py "<picture>" tmp/walls.json --preview tmp/walls.png [--crop x0,y0,x1,y1] [--erase x0,y0,x1,y1] [--cut x0,y0,x1,y1]
    ```
    Every dark part at least a wall thick becomes a solid, in the picture's own pixels, its edges made
    exactly level and plumb. Look at the preview: navy is what it kept. Use `--crop` to leave out the
-   source's header, logo, compass and footer, and `--erase` for a bold label or a fixture's thick bar
-   that came through as wall. Copy its `solids` into the level as they are. Write no `walls` at all
+   source's header, logo, compass and footer, `--erase` for a bold label or a fixture's thick bar
+   that came through as a mass of its own, and `--cut` (a box cleared before tracing) for one fused to
+   a wall: a toilet's tank, a sink's box or a door swing drawn thick against it. Draw the box round
+   the fixture only, not the wall, and never erase a hole of a mass to close a gap: a window or door
+   goes across the gap as an opening. Copy its `solids` into the level as they are. Write no `walls` at all
    for a picture traced this way: the solids are the walls.
 3. Add the openings across the gaps the masses leave, each a **free opening** with the two ends of
    its gap and the wall's thickness there: `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`

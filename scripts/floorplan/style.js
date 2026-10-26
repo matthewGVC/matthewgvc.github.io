@@ -6,14 +6,14 @@
 'use strict';
 
 const NAVY = '#00273a';
-const ROOM_NAME_PT = 7.2;
+const ROOM_NAME_PT = 7.5;   // Matt's PRIMARY BEDROOM (435 E57) is 76.8 pt wide
 
 module.exports = {
   /* page and drawing boxes */
   PAGE: { w: 810, h: 630 },
   PNG: { w: 3375, h: 2625 },   // px, the PNG copy of each plan (810 x 630 pt at 300 dpi)
   BOX_UNBRANDED: { x0: 36, y0: 36, x1: 774, y1: 594 },
-  BOX_BRANDED: { x0: 36, y0: 134, x1: 774, y1: 586 },   // Matt's: the page's width, from under the fade to the note
+  BOX_BRANDED: { x0: 36, y0: 96, x1: 774, y1: 586 },   // Matt's: the page's width, from the pale end of the fade to the note (929 Park's top wall is at 96)
 
   /* colours */
   NAVY,
@@ -51,7 +51,7 @@ module.exports = {
   LABEL_EM: 0.62,            // average capital width in em, for the "label wider than its room" warning
   ROOM_NAME_PT,
   ROOM_NAME: { weight: 900, sizePt: ROOM_NAME_PT, tracking: 0, lineGap: ROOM_NAME_PT * 1.24 },   // lineGap: baseline to baseline of a two-line name
-  ROOM_SIZE: { weight: 400, sizePt: 5.1, tracking: 0, gap: 3.8 },  // gap: pt from name baseline to size cap top (Matt's: cap 3.6 pt)
+  ROOM_SIZE: { weight: 400, sizePt: 7, tracking: 0, gap: 4 },  // gap: pt from name baseline to size cap top (Matt's 12' x 19'6" is 35 pt wide)
   SMALL_LABEL: { weight: 800, sizePt: 7.2, tracking: 0 },  // CL, REF, W/D, DW: as tall as a room name in Matt's (cap about 5.2 pt)
 
   /* branded frame: measured off Matt's own sheets (435 E57, 225 E79, 347 W Broadway, 929 Park and others,

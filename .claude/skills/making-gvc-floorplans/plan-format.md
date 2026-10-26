@@ -97,7 +97,7 @@ wall masses (sources.md), and then those solids are the walls and the level need
 
 `{ "type": …, "at": [x, y], "w": …, "h": …, "rot": degrees }`. `at` is the **centre**. `w` and `h` are
 in plan units, measured on the source.
-- Types: `toilet`, `sink` (a vanity basin), `round-sink`, `double-sink`, `tub`, `shower` (square or
+- Types: `toilet`, `sink` (a vanity basin), `round-sink`, `double-sink`, `tub` (`"cross": true` when the source draws it as a crossed box), `shower` (square or
   rectangular: just its `w` and `h`), `range` (`"burners": 4` or `6`, default 4), `kitchen-sink`
   (`"bowls": 1` or `2`, default 2), `refrigerator`, `fireplace`, `counter` (any cabinet, island, desk
   or built-in box), `rod` (a closet rod, `w` along the rod).

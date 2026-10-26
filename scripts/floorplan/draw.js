@@ -439,8 +439,10 @@ const FIXTURE_DRAW = {
     return [ell(0, 0, r, r), rect(-f, -r - f * 0.2, 2 * f, f * 1.6), { raw: '<path fill="' + STYLE.NAVY + '" d="' + ell(0, r * 0.05, r * 0.12, r * 0.12) + '"/>' }];
   },
   'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ...basin(-w / 4, w * 0.34, h), ...basin(w / 4, w * 0.34, h)],
-  /* the tub (Matt's): its box, a softly rounded basin, the drain at the end */
-  tub: (w, h) => {
+  /* the tub (Matt's): its box, a softly rounded basin, the drain at the end; "cross": true is a tub the
+     source draws as a crossed box (some of Matt's older sheets), the box crossed corner to corner */
+  tub: (w, h, f) => {
+    if (f.cross) return [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])];
     const ix = Math.min(w, h) * 0.12, iy = h * 0.12, r = Math.min(w, h) * 0.16;
     return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + ix, -h / 2 + iy, w - 2 * ix, h - 2 * iy, r), ell(-w / 2 + ix + r * 1.1, 0, r * 0.28, r * 0.28)];
   },
@@ -634,25 +636,69 @@ function drawFooter() {
   return '<g data-frame="footer" fill="' + STYLE.NAVY + '"><path d="' + outline(T.text, { ...T, x: T.x, y: T.baseline, anchor: 'middle' }) + '"/></g>';
 }
 
-/* Matt's compass at the bottom centre, turned to north; moved aside when the plan is in the way.
-   plan: the drawing's extent on the page { x0, y0, x1, y1 } */
-function compassAt(plan) {
-  const C = STYLE.COMPASS, B = STYLE.BOX_BRANDED, gap = STYLE.COMPASS_CLEAR, r = C.h / 2;
-  const clear = (x) => x + r + gap <= plan.x0 || x - r - gap >= plan.x1 || C.at[1] - r - gap >= plan.y1;
-  if (clear(C.at[0])) return C.at;
-  const left = (B.x0 + plan.x0) / 2, right = (plan.x1 + B.x1) / 2;
-  const room = [[plan.x0 - B.x0, left], [B.x1 - plan.x1, right]].sort((p, q) => q[0] - p[0]);
-  return room[0][0] >= C.h + 2 * gap ? [room[0][1], C.at[1]] : C.at;
+/* Matt's compass at the bottom centre, turned to north; slid along the bottom into the nearest empty
+   space when the drawing is there (929 Park: beside the bedroom wing), never over the drawing or inside
+   it. "Empty" is found on a 2 pt grid: everything the level draws is marked, and the space outside it is
+   what a flood from the page edge reaches. */
+function occupancy(level, T) {
+  const G = 2, W = Math.ceil(STYLE.PAGE.w / G), H = Math.ceil(STYLE.PAGE.h / G), hit = new Uint8Array(W * H);
+  const mark = (p) => { const x = Math.floor(p[0] / G), y = Math.floor(p[1] / G); if (x >= 0 && y >= 0 && x < W && y < H) hit[y * W + x] = 1; };
+  const seg = (a, b) => { const n = Math.max(1, Math.ceil(len(sub(b, a)) / (G / 2))); for (let i = 0; i <= n; i++) mark(lerp(a, b, i / n)); };
+  const ring = (r, closed = true) => { const P = r.filter(isPt).map(T); for (let i = 0; i + 1 < P.length; i++) seg(P[i], P[i + 1]); if (closed && P.length > 2) seg(P[P.length - 1], P[0]); };
+  (level.walls || []).forEach((w) => { if (isPt(w.a) && isPt(w.b)) seg(T(w.a), T(w.b)); });
+  (level.solids || []).forEach((sd) => ringsOfSolid(sd).forEach((r) => Array.isArray(r) && ring(r)));
+  (level.areas || []).forEach((ar) => ar && Array.isArray(ar.poly) && ring(ar.poly));
+  (level.openings || []).forEach((o) => { if (isPt(o.a) && isPt(o.b)) seg(T(o.a), T(o.b)); });
+  (level.lines || []).forEach((l) => l && Array.isArray(l.pts) && ring(l.pts, !!l.closed));
+  const out = new Uint8Array(W * H), stack = [];
+  for (let x = 0; x < W; x++) { stack.push(x, (H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { stack.push(y * W, y * W + W - 1); }
+  while (stack.length) {
+    const i = stack.pop();
+    if (out[i] || hit[i]) continue;
+    out[i] = 1;
+    const x = i % W, y = (i - x) / W;
+    if (x > 0) stack.push(i - 1); if (x < W - 1) stack.push(i + 1); if (y > 0) stack.push(i - W); if (y < H - 1) stack.push(i + W);
+  }
+  /* is a circle of radius r at c wholly outside the drawing? */
+  return (c, r) => {
+    for (let y = Math.floor((c[1] - r) / G); y <= Math.ceil((c[1] + r) / G); y++) for (let x = Math.floor((c[0] - r) / G); x <= Math.ceil((c[0] + r) / G); x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) return false;
+      if (Math.hypot(x * G + G / 2 - c[0], y * G + G / 2 - c[1]) < r - G && !out[y * W + x]) return false;   // a cell's slack: a plan just r away is clear
+    }
+    return true;
+  };
 }
-const compassBlocked = (plan) => {
-  const C = STYLE.COMPASS, at = compassAt(plan), r = C.h / 2, g = STYLE.COMPASS_CLEAR;
-  return !(at[0] + r + g <= plan.x0 || at[0] - r - g >= plan.x1 || at[1] - r - g >= plan.y1);
-};
-function drawCompass(north, plan) {
-  const C = STYLE.COMPASS, at = compassAt(plan);
+function compassAt(level, T) {
+  const C = STYLE.COMPASS, B = STYLE.BOX_BRANDED, r = C.h / 2 + STYLE.COMPASS_CLEAR, free = occupancy(level, T);
+  for (let d = 0; d <= (B.x1 - B.x0) / 2; d += 6) {
+    for (const x of d ? [C.at[0] - d, C.at[0] + d] : [C.at[0]]) {
+      if (x - r < B.x0 || x + r > B.x1) continue;
+      if (free([x, C.at[1]], r)) return [x, C.at[1]];
+    }
+  }
+  return null;
+}
+
+function drawCompass(north, at) {
+  const C = STYLE.COMPASS;
   if (SYMBOLS.compass) {
-    const sym = SYMBOLS.compass, w = C.h * sym.size[0] / sym.size[1];
-    return '<g data-frame="compass" transform="translate(' + pt(at) + ') rotate(' + r2(north) + ')">' + drawSymbol('compass', w, C.h) + '</g>';
+    /* the star turns to north about its centre; the N stays upright, just past the north point (Matt's) */
+    const sym = SYMBOLS.compass, w = C.h * sym.size[0] / sym.size[1], k = C.h / sym.size[1];
+    const box = (q) => { const v = (q.d.match(/-?[\d.]+/g) || []).map(Number); return [Math.min(...v.filter((_, i) => i % 2 === 0)), Math.min(...v.filter((_, i) => i % 2)), Math.max(...v.filter((_, i) => i % 2 === 0)), Math.max(...v.filter((_, i) => i % 2))]; };
+    const boxes = sym.paths.map(box), top = Math.min(...boxes.map((b, i) => (boxes.every((o) => b[3] < o[1] || o === b) ? Infinity : b[1])));
+    const isN = boxes.map((b) => b[3] < top);
+    if (!isN.some(Boolean)) return '<g data-frame="compass" transform="translate(' + pt(at) + ') rotate(' + r2(north) + ')">' + drawSymbol('compass', w, C.h) + '</g>';
+    const rose = boxes.filter((b, i) => !isN[i]), nb = boxes.filter((b, i) => isN[i]);
+    const rc = [(Math.min(...rose.map((b) => b[0])) + Math.max(...rose.map((b) => b[2]))) / 2, (Math.min(...rose.map((b) => b[1])) + Math.max(...rose.map((b) => b[3]))) / 2];
+    const nc = [(Math.min(...nb.map((b) => b[0])) + Math.max(...nb.map((b) => b[2]))) / 2, (Math.min(...nb.map((b) => b[1])) + Math.max(...nb.map((b) => b[3]))) / 2];
+    const part = (keep) => { SYMBOLS['compass:part'] = Object.assign({}, sym, { paths: sym.paths.filter((q, i) => keep(i)) }); const out = drawSymbol('compass:part', w, C.h); delete SYMBOLS['compass:part']; return out; };
+    const q = north * Math.PI / 180, dx = (nc[0] - rc[0]) * k, dy = (nc[1] - rc[1]) * k;
+    const nAt = [dx * Math.cos(q) - dy * Math.sin(q), dx * Math.sin(q) + dy * Math.cos(q)];
+    const rcp = [rc[0] * k, rc[1] * k];   // the star's centre in the drawn symbol
+    return '<g data-frame="compass" transform="translate(' + pt(sub(at, rcp)) + ')">' +
+      '<g transform="rotate(' + r2(north) + ' ' + pt(rcp) + ')">' + part((i) => !isN[i]) + '</g>' +
+      '<g transform="translate(' + pt(addv(rcp, sub(nAt, [nc[0] * k, nc[1] * k]))) + ')">' + part((i) => isN[i]) + '</g></g>';
   }
   const R = C.h * 0.3, letterCap = capHeight(C.letter);
   const ring = ell(0, 0, R, R);
@@ -692,9 +738,12 @@ function draw(plan, levelIndex = 0, opts = {}) {
   };
   let F = fit(box);
   /* the compass needs its corner at the bottom: when the plan leaves no room for it, the plan stops above it */
-  if (branded && Number.isFinite(plan.north) && compassBlocked(F.extent)) {
+  const place = (f) => compassAt(level, (p) => [f.ox + (p[0] - b.x0) * f.s, f.oy + (p[1] - b.y0) * f.s]);
+  let compass = branded && Number.isFinite(plan.north) ? place(F) : null;
+  if (branded && Number.isFinite(plan.north) && !compass) {
     box = Object.assign({}, box, { y1: STYLE.COMPASS.at[1] - STYLE.COMPASS.h / 2 - STYLE.COMPASS_CLEAR });
     F = fit(box);
+    compass = place(F) || STYLE.COMPASS.at;
   }
   const { s, ox, oy } = F;
   const T = (p) => [ox + (p[0] - b.x0) * s, oy + (p[1] - b.y0) * s];
@@ -715,7 +764,7 @@ function draw(plan, levelIndex = 0, opts = {}) {
       'transform="matrix(' + r6(s) + ' 0 0 ' + r6(s) + ' ' + r6(ox - b.x0 * s) + ' ' + r6(oy - b.y0 * s) + ')"/>');
   }
   if (branded) {
-    if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north, F.extent));
+    if (Number.isFinite(plan.north)) parts.push(drawCompass(plan.north, compass));
     /* the floor's name (also on a sheet of one floor of several: FLOOR 1 ALTERNATE), then the layout */
     const status = [level.name || '', plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : ''].filter(Boolean).join(' ');
     if (status) parts.push(drawStatus(status));

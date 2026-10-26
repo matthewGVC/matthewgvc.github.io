@@ -195,6 +195,12 @@ def main(argv):
         faded.paste(Image.new('RGB', img.size, (0, 39, 58)), (0, 0), layer)
         faded.save(a['preview'])
     print('%d wall masses, %d rings; min wall %.1f px, walls %.1f-%.1f px thick' % (len(solids), sum(len(s) for s in solids), k, thin, thick))
+    # runs just under the cut are often thin partitions (a closet, a shaft), not linework: say so, so the
+    # tracer looks for them rather than losing them silently
+    near_cut = ((th >= 0.7 * k) & (th < 0.9 * k)).mean() if len(th) else 0
+    if near_cut >= 0.03:
+        print('note: %.0f%% of the drawn length is %.1f-%.1f px thick, just under the cut: check for thin walls '
+              'that dropped out (draw them as walls, or rerun with a lower --min-wall)' % (100 * near_cut, 0.7 * k, 0.9 * k))
 
 
 if __name__ == '__main__':

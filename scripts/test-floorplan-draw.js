@@ -284,8 +284,33 @@ check('the header fades from cyan down to white', /linearGradient id="fp-header-
 check('no logo; the footer is the approx. note alone', [/data-frame="footer" fill="#00273a"><path d="[^"]*"\/><\/g>/.test(two), /scale\(/.test(two.slice(two.indexOf('data-frame="footer"')))], [true, false]);
 p = clone(studio); p.layout = 'alternate';
 check('an alternate says ALTERNATE bottom right; a current one with an alternate says CURRENT; otherwise nothing', [/data-frame="status"/.test(br(p)), (() => { const q = clone(studio); q.current = true; return /data-frame="status"/.test(br(q)); })(), /data-frame="status"/.test(br(studio))], [true, true, false]);
-p = clone(studio); p.north = 0;
-check('the compass sits at the bottom centre unless the plan is in the way', /data-frame="compass" transform="translate\((400|[\d.]+) 554\)/.test(br(p)), true);
+/* a wide plan (it fits by width) leaves the bottom centre empty */
+p = clone(studio); p.north = 0; p.levels[0].walls = [{ a: [0, 0], b: [400, 0], type: 'exterior' }, { a: [400, 0], b: [400, 100], type: 'exterior' }, { a: [400, 100], b: [0, 100], type: 'exterior' }, { a: [0, 100], b: [0, 0], type: 'exterior' }];
+p.levels[0].openings = []; p.levels[0].fixtures = []; p.levels[0].rooms = []; p.levels[0].labels = [];
+const wide = clone(p);
+const roseAt = (svg) => { const m = svg.match(/data-frame="compass" transform="translate\(([\d.-]+) ([\d.-]+)\)"><g transform="rotate\([\d.-]+ ([\d.-]+) ([\d.-]+)\)"/); return m && [Math.round(+m[1] + +m[3]), Math.round(+m[2] + +m[4])]; };
+check('the compass sits at the bottom centre when that space is empty', roseAt(br(p)), [400, 554]);
+p = clone(wide); p.north = 90;
+check('its star turns to north; its N stays upright, beside the star (east of it when north is east)', (() => {
+  const svg = br(p), m = svg.match(/data-frame="compass"[^>]*>(<g transform="rotate[^"]*">.*?<\/g>)<g transform="translate\(([\d.-]+) ([\d.-]+)\)">/);
+  return !!m && !/rotate/.test(svg.slice(svg.indexOf(m[1]) + m[1].length, svg.indexOf('</g></g>', svg.indexOf('data-frame="compass"'))));
+})(), true);
+/* a T-shaped plan whose stem reaches into the bottom centre: the compass slides into the empty space beside
+   the stem, under the bar, and the plan keeps its size */
+p = clone(wide); p.levels[0].walls = [{ a: [0, 0], b: [300, 0], type: 'exterior' }, { a: [300, 0], b: [300, 80], type: 'exterior' }, { a: [300, 80], b: [180, 80], type: 'exterior' }, { a: [180, 80], b: [180, 200], type: 'exterior' },
+  { a: [180, 200], b: [120, 200], type: 'exterior' }, { a: [120, 200], b: [120, 80], type: 'exterior' }, { a: [120, 80], b: [0, 80], type: 'exterior' }, { a: [0, 80], b: [0, 0], type: 'exterior' }];
+p.levels[0].openings = []; p.levels[0].fixtures = []; p.levels[0].rooms = []; p.levels[0].labels = [];
+const slid = br(p), sAt = roseAt(slid);
+check('…and slides along the bottom into empty space beside the drawing', !!sAt && Math.abs(sAt[0] - 400) > 60 && sAt[1] === 554, true);
+check('…the plan keeping its size and place', (() => { const q = clone(p); delete q.north; return slid.split('\n').filter((l) => !/data-frame="compass"/.test(l)).join('\n') === br(q); })(), true);
+/* a plan filling the bottom edge to edge: no space beside it, so the plan stops above the compass */
+p = clone(studio); p.north = 0; p.levels[0].walls = [{ a: [0, 0], b: [300, 0], type: 'exterior' }, { a: [300, 0], b: [300, 200], type: 'exterior' }, { a: [300, 200], b: [0, 200], type: 'exterior' }, { a: [0, 200], b: [0, 0], type: 'exterior' }];
+p.levels[0].openings = []; p.levels[0].fixtures = []; p.levels[0].rooms = []; p.levels[0].labels = [];
+check('…and when there is no such space, the plan stops above the compass at the bottom centre', roseAt(br(p)), [400, 554]);
+
+/* a tub the source draws as a crossed box */
+p = clone(box4); p.levels[0].fixtures = [{ type: 'tub', at: [50, 40], w: 30, h: 15, rot: 0, cross: true }];
+check('a crossed tub validates, and draws its box crossed corner to corner, with no basin', [validate(p).errors, (() => { const t = draw(p, 0, {}).split('\n').find((l) => /^<g transform="translate/.test(l)) || ''; return [/A/.test(t), /d="M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+"/.test(t)]; })()], [[], [false, true]]);
 
 /* ---- walls traced from a picture: solids with holes, free openings across their gaps ---- */
 p = clone(box4); p.levels[0].walls = []; p.levels[0].openings = [];

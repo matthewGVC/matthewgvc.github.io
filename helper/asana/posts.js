@@ -3,6 +3,8 @@
 
      await readPosts(asana, gid)        → keepPost rows (allow.js), routines left out
      jobFor(tag, props)                 → the job a "🏡2026 Properties" tag names, or null
+     devFor(tag, devs)                  → the development a tag names ("Le Reve", "Opus 77
+                                          Ridge Road"), or null; a job's own match comes first
      await applyPosts({ client, posts, now })
        → { linked, unlinked: [tag], rows }
 
@@ -10,8 +12,8 @@
    names a job when its street matches the job's address (the tag itself, the tag less
    its last word, or less a trailing "6th Floor"); with more than one job on that street
    the tag must also carry the job's unit ("PHC", "#204", "18/19"). Only jobs with a
-   stage are looked at. A tag naming no job (a development, Le Reve, an old listing) is
-   cached unlinked.
+   stage are looked at. A tag naming no job but a development (its name as whole words
+   in the tag) goes to the development; one naming neither is cached unlinked.
 
    Every post is cached in asana_tasks as kind 'post' (read-only, D77): name, section,
    due_on, completed_at and { tags, format, stage, link } in fields. A post that has left
@@ -69,28 +71,36 @@ function jobFor(tag, props) {
   return byUnit.length === 1 ? byUnit[0] : null;
 }
 
+const words = s => ' ' + String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+function devFor(tag, devs) {
+  const hits = (devs || []).filter(d => d.label && words(tag).indexOf(words(d.label)) !== -1);
+  return hits.length === 1 ? hits[0] : null;
+}
+
 async function applyPosts(o) {
   const { client, posts } = o;
   const now = (o.now || new Date()).toISOString();
   const props = await client.select('properties', {}, 'id,label,stage,units,core');
+  const devs = await client.select('dev_projects', {}, 'id,label');
   const cached = await client.select('asana_tasks', { kind: 'post' }, 'gid,project_gid');
   const unlinked = new Set();
   const rows = posts.map(p => {
-    let job = null;
+    let job = null, dev = null;
     for (const tag of p.tags) { job = jobFor(tag, props); if (job) break; }
-    if (!job) p.tags.forEach(t => unlinked.add(t));
+    if (!job) for (const tag of p.tags) { dev = devFor(tag, devs); if (dev) break; }
+    if (!job && !dev) p.tags.forEach(t => unlinked.add(t));
     return { gid: p.gid, project_gid: p.projectGid, kind: 'post', section: p.section, name: p.name,
       fields: { tags: p.tags, format: p.format, stage: p.stage, link: p.link },
-      due_on: p.dueOn, completed_at: p.completedAt, last_seen: now, property_id: job ? job.id : null };
+      due_on: p.dueOn, completed_at: p.completedAt, last_seen: now, property_id: job ? job.id : null, dev_project_id: dev ? dev.id : null };
   });
   const seen = new Set(rows.map(r => r.gid));
   const gone = cached.filter(c => !seen.has(c.gid))
-    .map(c => ({ gid: c.gid, project_gid: c.project_gid, kind: 'post', property_id: null }));
+    .map(c => ({ gid: c.gid, project_gid: c.project_gid, kind: 'post', property_id: null, dev_project_id: null }));
   // two writes: one upsert must send the same columns on every row
   for (const set of [rows, gone]) {
     for (let i = 0; i < set.length; i += 500) await client.upsert('asana_tasks', set.slice(i, i + 500), 'gid');
   }
-  return { linked: rows.filter(r => r.property_id).length, unlinked: [...unlinked].sort(), rows };
+  return { linked: rows.filter(r => r.property_id || r.dev_project_id).length, unlinked: [...unlinked].sort(), rows };
 }
 
-module.exports = { readPosts, jobFor, applyPosts, streetForms, unitsAgree };
+module.exports = { readPosts, jobFor, devFor, applyPosts, streetForms, unitsAgree };

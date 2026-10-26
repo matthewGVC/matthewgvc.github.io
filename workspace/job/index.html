@@ -256,8 +256,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         kind === 'listing' || kind === 'pitch' ? rest('/documents?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=tool,version,built_from,built_at,output')
           .catch(function () { return []; }) : Promise.resolve([]),
         // its social posts from Asana (0012); unreadable means none
-        kind === 'listing' ? rest('/asana_tasks?property_id=eq.' + encodeURIComponent(row.id) + '&kind=eq.post&select=gid,name,due_on,completed_at,fields')
-          .catch(function () { return []; }) : Promise.resolve([])
+        kind === 'listing' || kind === 'dev' ? rest('/asana_tasks?' + (kind === 'dev' ? 'dev_project_id' : 'property_id') + '=eq.' + encodeURIComponent(row.id) +
+          '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
@@ -397,6 +397,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
       '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
     if (kind === 'pitch') left.push(JP.kit.pitchHtml(c));
+    if (kind === 'dev') left.push(JP.posts.html(c));
     left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
     if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');

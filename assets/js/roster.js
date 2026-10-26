@@ -47,7 +47,7 @@
 
     /* New Jersey */
     {market:'NJ', id:'marli-silver',      name:'Marli Silver',      title:'Licensed Real Estate Salesperson',      phone:'732.387.3807', mobile:'732.403.1174', email:'marli.silver@elliman.com', instagram:'@marlisilverrealestate'},
-    {market:'NJ', id:'george-putykewycz', name:'George Putykewycz', title:'Licensed Real Estate Salesperson',      phone:'732.546.7375', mobile:'',    email:'george.putykewycz@elliman.com', instagram:''},
+    {market:'NJ', id:'george-putykewycz', name:'George Putykewycz', title:'Licensed Real Estate Salesperson',      phone:'732.546.7535', mobile:'',    email:'george.putykewycz@elliman.com', instagram:''},
     {market:'NJ', id:'james-huber',       name:'James Huber',       title:'Licensed Real Estate Salesperson',      phone:'732.962.0683', mobile:'',    email:'james.huber@elliman.com', instagram:''},
 
     /* Florida */

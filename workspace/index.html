@@ -107,6 +107,8 @@
             <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="listing">Listings</button><button type="button" aria-pressed="false" data-v="pitch">Pitches</button><button type="button" aria-pressed="false" data-v="development">Developments</button>
           </div>
           <label class="search" style="min-width:220px;flex:1"><span id="si"></span><input id="wsSearch" placeholder="Search address, unit" aria-label="Search jobs"></label>
+          <select class="inp" id="stg" aria-label="Stage"><option value="">All stages</option></select>
+          <select class="inp" id="srt" aria-label="Sort jobs"><option value="">Needs attention first</option><option value="last">Last activity</option><option value="name">Name, A to Z</option><option value="price">Price, high to low</option><option value="stage">Stage, Prep to Sold</option></select>
           <label class="soft" style="font-size:13px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="arch"> Show archived</label>
         </div>
         <div id="jobs"></div>
@@ -156,7 +158,7 @@
 (function () {
   'use strict';
   var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
-  var f = { market: '', type: '', view: 'list', q: '', archived: false };
+  var f = { market: '', type: '', view: 'list', q: '', archived: false, stage: '', sort: '' };
   var data = null, shell = null;
   var TODAY = new Date(), today = W.today(TODAY);
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -218,7 +220,7 @@
 
   function pass(j) {
     return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')) &&
-      (!f.q || (j.name + ' ' + (j.place || '')).toLowerCase().indexOf(f.q) !== -1);
+      (!f.stage || j.stage === f.stage) && (!f.q || (j.name + ' ' + (j.place || '')).toLowerCase().indexOf(f.q) !== -1);
   }
   function jobsNow() { return W.buildJobs(data, today, { archived: f.archived }).filter(pass); }
 
@@ -318,8 +320,31 @@
     $('chart').innerHTML = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Files touched per week">' + bars + '<line x1="0" x2="' + Wd + '" y1="' + H + '" y2="' + H + '" stroke="var(--rule)"/></svg>';
   }
 
+  /* the Jobs card's sort: none chosen = needs attention first (most flags), then last activity */
+  var byLast = function (a, b) { return (b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0; };
+  var money = function (s) { var n = Number(String(s || '').replace(/[^0-9.]/g, '')); return s && n ? n : null; };
+  var SORTS = {
+    '': function (a, b) { return (b.flags.length - a.flags.length) || byLast(a, b); },
+    last: byLast,
+    name: function (a, b) { return String(a.name || '').localeCompare(String(b.name || '')) || byLast(a, b); },
+    // no price set goes last
+    price: function (a, b) { var x = money(a.price), y = money(b.price); return x === y ? byLast(a, b) : x == null ? 1 : y == null ? -1 : y - x; },
+    stage: function (a, b) {
+      var i = function (j) { var n = W.STAGES.indexOf(j.stage); return n === -1 ? 999 : n; };
+      return (i(a) - i(b)) || byLast(a, b);
+    }
+  };
+  // the stage list offers only the stages the board has (Archived has its own tick box)
+  function stageOptions() {
+    var have = {}; W.buildJobs(data, today, { archived: f.archived }).forEach(function (j) { have[j.stage] = 1; });
+    var list = W.STAGES.filter(function (s) { return have[s] && s !== 'Archived'; })
+      .concat(Object.keys(have).filter(function (s) { return W.STAGES.indexOf(s) === -1; }).sort());
+    if (f.stage && list.indexOf(f.stage) === -1) list.push(f.stage);
+    $('stg').innerHTML = '<option value="">All stages</option>' + list.map(function (s) { return '<option' + (s === f.stage ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('');
+  }
   function render() {
-    var js = jobsNow().sort(function (a, b) { return (b.flags.length - a.flags.length) || ((b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0); });
+    stageOptions();
+    var js = jobsNow().sort(SORTS[f.sort] || SORTS['']);
     stats(js); recent(js); chart(js);
     $('jobs').innerHTML = f.view === 'list' ? list(js) : timeline(js);
   }
@@ -372,6 +397,8 @@
   seg('mkt', 'market'); seg('typ', 'type'); seg('view', 'view');
   $('wsSearch').addEventListener('input', function () { f.q = this.value.trim().toLowerCase(); if (data) render(); });
   $('arch').addEventListener('change', function () { f.archived = this.checked; if (data) render(); });
+  $('stg').addEventListener('change', function () { f.stage = this.value; if (data) render(); });
+  $('srt').addEventListener('change', function () { f.sort = this.value; if (data) render(); });
   $('tlist').addEventListener('click', function (e) {
     var b = e.target.closest('[data-done]'); if (!b) return;
     b.disabled = true;

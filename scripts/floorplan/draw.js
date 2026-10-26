@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const fontkit = require('fontkit');
 const STYLE = require('./style.js');
-const { fitScale, arcOf, levelPoints } = require('./plan.js');
+const { fitScale, arcOf, levelPoints, resolveDoor } = require('./plan.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 
@@ -182,8 +182,8 @@ function drawOpenings(level, T, s = 1) {
     /* an opening on a wall (wall, from, to), or a free one across a gap in traced wall masses (a, b, t:
        its ends, and the wall's thickness in plan units) */
     const free = isPt(o0.a) && isPt(o0.b);
-    const o = free ? Object.assign({}, o0, { from: 0, to: 1 }) : o0;
-    const w = free ? { a: o0.a, b: o0.b, type: 'interior' } : walls[o.wall];
+    const w = free ? { a: o0.a, b: o0.b, type: 'interior' } : walls[o0.wall];
+    const o = Object.assign(resolveDoor(o0, w), free ? { from: 0, to: 1 } : {});
     if (!w || !isPt(w.a) || !isPt(w.b)) return;
     const C = course(w, T);
     if (!C.len) return;
@@ -196,7 +196,9 @@ function drawOpenings(level, T, s = 1) {
       const frame = (t0, t1, k) => along(t0, t1, k) + along(t0, t1, -k) + line(C.at(t0, k), C.at(t0, -k)) + line(C.at(t1, k), C.at(t1, -k));
       const inset = Math.min(hw * 0.5, (o.to - o.from) * C.len * 0.1) / (C.len || 1);
       const g = hw * STYLE.WINDOW_GLASS;
-      out.push('<path fill="' + STYLE.WHITE + '" d="' + frame(o.from, o.to, hw) + '"/>');
+      /* the pane filled white as one closed ring (the frame's four open lines enclose nothing to fill) */
+      const ring = 'M' + pt(C.at(o.from, hw)) + C.seg(o.from, o.to, hw) + 'L' + pt(C.at(o.to, -hw)) + C.seg(o.to, o.from, -hw) + 'Z';
+      out.push('<path fill="' + STYLE.WHITE + '" d="' + ring + '"/>');
       out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '" d="' + frame(o.from, o.to, hw) + frame(o.from + inset, o.to - inset, g) + '"/>');
       return;
     }

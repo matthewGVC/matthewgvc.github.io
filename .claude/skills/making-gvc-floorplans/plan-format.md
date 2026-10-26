@@ -72,14 +72,18 @@ the name bottom right, before ALTERNATE or CURRENT ("FLOOR 1 ALTERNATE"), as Mat
 - Doors only: `hinge` is the end the leaf turns on. `side` is the side the door opens into, as seen
   walking along the wall from `a` to `b` on the page: on a wall running left to right across the
   page, `left` is up the page; on a wall running down the page, `left` is to the right.
+- **Easier and safer: give both as points read straight off the source.** `"hinge": [x, y]`, a point
+  at (or near) the end the leaf turns on, and `"into": [x, y]`, any point inside the room the door
+  swings into (somewhere under its arc). The drawer works out `from`/`to` and `left`/`right` from them,
+  so there is no direction to get backwards. Prefer these on every door, free or on a wall.
 - **`"outside": true`** on every door that opens to the outside: to a terrace or balcony, and the front
   door to the building's hall. Those draw fully open (90°). Every other door draws half open (45°).
   This is Matt's rule.
 - **pocket:** `hinge` is the end with the pocket (the panel slides into the wall there).
 - **Free openings**, across a gap in traced wall masses (no wall to sit on):
   `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`: the gap's two ends on the wall's centre
-  line, and the wall's thickness there in plan units. Doors add `hinge` (`from` = `a`), `side` (seen
-  walking from `a` to `b`) and `outside`.
+  line, and the wall's thickness there in plan units. Doors add `hinge` and `into` as points (above),
+  or `hinge` (`from` = `a`) and `side` (seen walking from `a` to `b`), and `outside`.
 - **Windows:** one opening per pane, edge to edge. Where two windows meet, the drawing shows the
   mullion, so split them where the source shows a divider.
 - **Look for every pocket and sliding door.** They're easy to miss: a thin rectangle sticking out

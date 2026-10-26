@@ -313,6 +313,24 @@ p = clone(box4); p.levels[0].fixtures = [{ type: 'counter', at: [50, 40], w: 40,
 p.levels[0].lines = [{ pts: [[25, 40], [75, 40]], dash: true }, { pts: [[25, 38], [75, 38]] }];
 check('dashed lines draw over the fixtures, plain ones under them', (() => { const t = draw(p, 0, {}), c = t.indexOf('<g transform="translate'), d = t.indexOf('stroke-dasharray'), l = t.search(/<path fill="none" stroke="#00273a" stroke-width="[\d.]+" d="M/); return [d > c, l > -1 && l < c]; })(), [true, true]);
 
+/* a door given as points read off the source (hinge near its turning end, into a point in the room it
+   opens into) draws exactly as the same door given by names */
+p = clone(box4); p.levels[0].walls = []; p.levels[0].solids = [[[[0, 0], [100, 0], [100, 80], [0, 80]], [[6, 6], [94, 6], [94, 74], [6, 74]]]];
+p.levels[0].openings = [{ type: 'door', a: [94, 30], b: [94, 50], t: 6, hinge: 'from', side: 'right' }];
+const named = draw(p, 0, {});
+p.levels[0].openings = [{ type: 'door', a: [94, 30], b: [94, 50], t: 6, hinge: [95, 29], into: [70, 40] }];
+check('a door by points (hinge, into) is the door by names', [validate(p).errors, draw(p, 0, {}) === named], [[], true]);
+p.levels[0].openings = [{ type: 'door', a: [94, 30], b: [94, 50], t: 6, hinge: [95, 51], into: [99, 40] }];
+check('…its other hinge and side', draw(p, 0, {}) === (() => { const q = clone(p); q.levels[0].openings = [{ type: 'door', a: [94, 30], b: [94, 50], t: 6, hinge: 'to', side: 'left' }]; return draw(q, 0, {}); })(), true);
+p.levels[0].openings = [{ type: 'door', a: [94, 30], b: [94, 50], t: 6, hinge: 'middle', into: 'room' }];
+check('a hinge or into that is neither is an error', validate(p).errors.length, 2);
+p = clone(box4); p.levels[0].openings = [{ wall: 1, from: 0.3, to: 0.6, type: 'door', hinge: [100, 25], into: [50, 40] }];
+check('…and works for a door on a traced wall too', draw(p, 0, {}) === (() => { const q = clone(p); q.levels[0].openings = [{ wall: 1, from: 0.3, to: 0.6, type: 'door', hinge: 'from', side: 'right' }]; return draw(q, 0, {}); })(), true);
+
+/* a window pane is filled white as one closed ring, so nothing under it (the header's fade) shows through */
+p = clone(box4); p.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.6, type: 'window' }];
+check('a window pane is filled white, closed', /<path fill="#ffffff" d="M[^"MZ]*Z"\/>/i.test(draw(p, 0, {})), true);
+
 /* a tub the source draws as a crossed box */
 p = clone(box4); p.levels[0].fixtures = [{ type: 'tub', at: [50, 40], w: 30, h: 15, rot: 0, cross: true }];
 check('a crossed tub validates, and draws its box crossed corner to corner, with no basin', [validate(p).errors, (() => { const t = draw(p, 0, {}).split('\n').find((l) => /^<g transform="translate/.test(l)) || ''; return [/A/.test(t), /d="M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+"/.test(t)]; })()], [[], [false, true]]);

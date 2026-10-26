@@ -80,8 +80,8 @@ function levelPoints(level) {
   (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); else if (Array.isArray(p)) p.forEach((q) => { if (isPt(q)) pts.push(q); }); }));
   (level.areas || []).forEach((a) => ((a && a.poly) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
   /* a door to the outside stands fully open, often past the walls: its swing is part of the drawing */
-  (level.openings || []).forEach((o) => {
-    const w = o && isPt(o.a) && isPt(o.b) ? { a: o.a, b: o.b } : (level.walls || [])[o && o.wall];
+  (level.openings || []).forEach((o0) => {
+    const w = o0 && isPt(o0.a) && isPt(o0.b) ? { a: o0.a, b: o0.b } : (level.walls || [])[o0 && o0.wall], o = resolveDoor(o0, w);
     if (!o || !o.outside || !['door', 'double-door'].includes(o.type) || !w || !isPt(w.a) || !isPt(w.b) || isPt(w.via)) return;
     const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
     if (!L) return;
@@ -98,6 +98,22 @@ function levelPoints(level) {
     });
   });
   return pts;
+}
+
+/* a door's hinge and side may be given as points read straight off the source: "hinge": [x, y] near the
+   end the leaf turns on, "into": [x, y] any point in the room the door opens into. Here they become
+   hinge "from" | "to" and side "left" | "right" (seen walking along the wall from a to b). */
+function resolveDoor(o, w) {
+  if (!o || !w || !isPt(w.a) || !isPt(w.b) || (!isPt(o.hinge) && !isPt(o.into))) return o;
+  const at = (t) => [w.a[0] + (w.b[0] - w.a[0]) * t, w.a[1] + (w.b[1] - w.a[1]) * t];
+  const free = isPt(o.a) && isPt(o.b), p0 = free ? o.a : at(o.from), p1 = free ? o.b : at(o.to);
+  const r = Object.assign({}, o), d2 = (p, q) => (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2;
+  if (isPt(o.hinge)) r.hinge = d2(o.hinge, p1) < d2(o.hinge, p0) ? 'to' : 'from';
+  if (isPt(o.into)) {
+    const d = [w.b[0] - w.a[0], w.b[1] - w.a[1]], v = [o.into[0] - p0[0], o.into[1] - p0[1]];
+    r.side = v[0] * d[1] - v[1] * d[0] >= 0 ? 'left' : 'right';   // v . leftOf(d), leftOf(d) = [d1, -d0]
+  }
+  return r;
 }
 
 /* the uniform scale that fits the level's bounding box inside box, keeping aspect */
@@ -141,6 +157,11 @@ function validate(plan) {
       if (!rings.every((r) => Array.isArray(r) && r.length >= 3 && r.every(isPt))) errors.push(L + ' solid ' + (i + 1) + ': needs at least 3 [x, y] points (in each ring)');
     });
 
+    const door = (o, O) => {
+      if (o.hinge !== undefined && !isPt(o.hinge) && !['from', 'to'].includes(o.hinge)) errors.push(O + ': hinge must be "from", "to" or a point [x, y] near the hinge end');
+      if (o.side !== undefined && !['left', 'right'].includes(o.side)) errors.push(O + ': side must be "left" or "right"');
+      if (o.into !== undefined && !isPt(o.into)) errors.push(O + ': into must be a point [x, y] in the room the door opens into');
+    };
     (level.openings || []).forEach((o, i) => {
       const O = L + ' opening ' + (i + 1);
       if (isPt(o.a) || isPt(o.b)) {   /* free: across a gap in traced wall masses */
@@ -148,12 +169,14 @@ function validate(plan) {
         if (o.t !== undefined && !(o.t > 0)) errors.push(O + ': t (the wall thickness) must be more than 0');
         if (!OPENINGS.includes(o.type)) errors.push(O + ': unknown type "' + o.type + '"');
         if (o.outside !== undefined && typeof o.outside !== 'boolean') errors.push(O + ': outside must be true or false');
+        door(o, O);
         return;
       }
       if (!Number.isInteger(o.wall) || o.wall < 0 || o.wall >= walls.length) errors.push(O + ': no wall ' + o.wall);
       if (!OPENINGS.includes(o.type)) errors.push(O + ': unknown type "' + o.type + '"');
       if (OPENINGS.includes(o.type) && walls[o.wall] && walls[o.wall].via !== undefined && !['window', 'opening'].includes(o.type)) errors.push(O + ': only a window or an opening can sit on a curved wall');
       if (o.outside !== undefined && typeof o.outside !== 'boolean') errors.push(O + ': outside must be true or false');
+      door(o, O);
       if (!(Number.isFinite(o.from) && Number.isFinite(o.to) && o.from >= 0 && o.to <= 1 && o.from < o.to)) errors.push(O + ': from and to must satisfy 0 <= from < to <= 1 (fractions along wall ' + o.wall + '; a gap off its wall is a free opening, with a and b)');
     });
 
@@ -212,4 +235,4 @@ function validate(plan) {
   return { errors, warnings };
 }
 
-module.exports = { SCHEMA, FIXTURES, OPENINGS, AREAS, WALLS, PATTERNS, validate, fitScale, levelPoints, arcOf, arcPoint };
+module.exports = { SCHEMA, FIXTURES, OPENINGS, AREAS, WALLS, PATTERNS, validate, fitScale, levelPoints, arcOf, arcPoint, resolveDoor };

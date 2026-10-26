@@ -9,6 +9,11 @@ run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md
   for every interior door. Mark outside doors `"outside": true`.
 - Matt is reviewing every element on the style sheet (`scripts/floorplan/style-sheet.js`). Apply his
   returned sheet as SKILL.md describes.
+- **Fireplaces all differ:** never one fixed symbol. Trace each from its source.
+- The sheet now includes: rectangular shower, 4- and 6-burner ranges, swatches (tile, patio brick,
+  roof brick), the stair break line (the "lightning bolt", needed often), and furniture at true size
+  (beds king to twin, nightstands and side tables, sofas, a sectional, coffee, dining and plain
+  tables). Matt draws his own car, compass and closet clothes into the empty boxes.
 
 ## 2026-10-26: Matt's review of the pilot (v3 → v4)
 

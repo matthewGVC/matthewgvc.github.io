@@ -64,7 +64,8 @@ the source has it ("FIRST FLOOR", "LOWER LEVEL"). It prints on the branded sheet
 `{ "wall": <index>, "from": 0-1, "to": 0-1, "type": …, "hinge": "from" | "to", "side": "left" | "right" }`
 - `from` and `to` are fractions along the wall, measured from its `a` end. A door between 2.0 and 3.0
   units along a wall 10 units long is `from 0.2, to 0.3`.
-- `type`: `door`, `double-door`, `sliding`, `pocket`, `window`, `opening` (a plain gap).
+- `type`: `door`, `double-door`, `sliding`, `pocket`, `bifold` (closets; `side` is the side it folds
+  into), `window`, `opening` (a plain gap).
 - Doors only: `hinge` is the end the leaf turns on. `side` is the side the door opens into, as seen
   walking along the wall from `a` to `b` on the page: on a wall running left to right across the
   page, `left` is up the page; on a wall running down the page, `left` is to the right.
@@ -87,16 +88,28 @@ thick wall masses the source fills in.
 
 `{ "type": …, "at": [x, y], "w": …, "h": …, "rot": degrees }`. `at` is the **centre**. `w` and `h` are
 in plan units, measured on the source.
-- Types: `toilet`, `sink` (a vanity basin), `round-sink`, `double-sink`, `tub`, `shower`, `range`,
-  `kitchen-sink` (`"bowls": 1` or `2`, default 2), `refrigerator`, `fireplace`, `counter` (any
-  cabinet, island, desk or built-in box), `rod` (a closet rod, `w` along the rod).
+- Types: `toilet`, `sink` (a vanity basin), `round-sink`, `double-sink`, `tub`, `shower` (square or
+  rectangular: just its `w` and `h`), `range` (`"burners": 4` or `6`, default 4), `kitchen-sink`
+  (`"bowls": 1` or `2`, default 2), `refrigerator`, `fireplace`, `counter` (any cabinet, island, desk
+  or built-in box), `rod` (a closet rod, `w` along the rod).
+- **Laundry and utility:** `washer`, `dryer`, `washer-dryer` (one stacked unit), `water-heater`,
+  `dishwasher`. Put their labels (W, D, W/D, WH, DW) in `labels`.
+- **Fireplaces are not a fixed symbol.** Every fireplace is traced from its own source: the chimney
+  mass as `solids`, the firebox and hearth as `lines` (or the `fireplace` fixture only when its shape
+  matches the source). The style sheet's fireplace is an example, not the rule.
+- **Furniture:** `bed` (`"pillows": 1` or `2`; a bed narrower than 0.6 of its length gets 1),
+  `nightstand`, `side-table`, `sofa` (`"seats"`, default 3), `armchair`, `sectional`
+  (`"side": "left"` or `"right"`, the side its return runs down), `coffee-table`, `table`,
+  `dining-table` (`"seats"`, default 4, chairs drawn round it). `side-table`, `coffee-table`,
+  `table` and `dining-table` take `"shape": "round"`. Measure each piece off the source at its real
+  size (a queen bed is 60 × 80 in). **Draw furniture only when the source shows it or Matt asks for
+  a furnished plan**; otherwise leave it out.
 - **`rot` 0 means the wall the fixture backs onto is at the top.** Turn each fixture so its back
   (toilet tank, faucet, firebox back, fridge back) **sits flush against its wall**: 90 for a wall to
   its right, 180 below, 270 to its left. Measure `at`, `w` and `h` so the fixture's edge lands on
   the wall face, not short of it or into it.
 - They draw in list order, so put a `counter` before the sink and range that sit on it.
-- **Draw every cabinet, closet and appliance box the source draws.** Furniture is the one thing to
-  leave out. A box the list has no symbol for (a DW bay, a washer) is a `counter` or `lines` box
+- **Draw every cabinet, closet and appliance box the source draws.** A box the list has no symbol for (a DW bay, a washer) is a `counter` or `lines` box
   with its small label.
 
 ### areas
@@ -112,6 +125,13 @@ in plan units, measured on the source.
   turns: the straight flight is the `stair` area, and the turn is drawn with `lines`, as the source
   draws it.
 - `void`: a crossed box (open to below, shafts).
+- `floor`: no outline, only its swatch, for a tiled bathroom floor. `roof`: a thin outline with its
+  swatch.
+- **`"pattern"`** lays a swatch over any area: `tile` (bathroom floors), `brick-patio` (a brick
+  terrace or patio, over the terrace shading) and `brick-roof` (roof pavers). Use one only where the
+  source shows that surface.
+- Stairs also take **`"break": true`** (or a number 0-1 along the flight) for the break line with
+  its zig-zag, wherever the source cuts the stair.
 
 ### rooms
 

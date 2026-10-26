@@ -17,7 +17,8 @@
                       "outside": true for a door to a terrace, balcony or the hall (drawn fully open) }],
        "fixtures": [{ "type", "at": [x,y], "w", "h", "rot", "bowls": 1|2 (kitchen-sink) }],
                      rot 0: the wall the fixture backs onto is at the top
-       "areas":    [{ "type", "poly": [[x,y], ...] }],
+       "areas":    [{ "type", "poly": [[x,y], ...], "pattern": "tile|brick-patio|brick-roof",
+                      stair only: "treads", "dir", "arrow": false, "break": true | 0-1 }],
        "rooms":    [{ "name": "CAPITALS", "size": null | "12'0\" x 20'3\"", "at": [x,y], "rot",
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
@@ -34,9 +35,12 @@ const STYLE = require('./style.js');
 
 const SCHEMA = 1;
 const WALLS = ['exterior', 'interior', 'glass'];
-const OPENINGS = ['door', 'double-door', 'sliding', 'pocket', 'window', 'opening'];
-const FIXTURES = ['toilet', 'sink', 'round-sink', 'double-sink', 'tub', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod'];
-const AREAS = ['terrace', 'balcony', 'closet', 'stair', 'void'];
+const OPENINGS = ['door', 'double-door', 'sliding', 'pocket', 'bifold', 'window', 'opening'];
+const FIXTURES = ['toilet', 'sink', 'round-sink', 'double-sink', 'tub', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod',
+  'washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher',
+  'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'];
+const PATTERNS = ['tile', 'brick-patio', 'brick-roof'];
+const AREAS = ['terrace', 'balcony', 'closet', 'stair', 'void', 'floor', 'roof'];
 
 const SIZE_RE = /^\d+'\d+(\.\d+)?" x \d+'\d+(\.\d+)?"$/;
 const isPt = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
@@ -124,12 +128,17 @@ function validate(plan) {
       if (!isPt(f.at)) errors.push(F + ': at must be [x, y]');
       if (!(f.w > 0) || !(f.h > 0)) errors.push(F + ': w and h must be more than 0');
       if (f.bowls !== undefined && f.bowls !== 1 && f.bowls !== 2) errors.push(F + ': bowls must be 1 or 2');
+      if (f.burners !== undefined && f.burners !== 4 && f.burners !== 6) errors.push(F + ': burners must be 4 or 6');
+      if (f.seats !== undefined && !(Number.isInteger(f.seats) && f.seats >= 1 && f.seats <= 12)) errors.push(F + ': seats must be a whole number from 1 to 12');
+      if (f.shape !== undefined && f.shape !== 'rect' && f.shape !== 'round') errors.push(F + ': shape must be "rect" or "round"');
     });
 
     (level.areas || []).forEach((a, i) => {
       const A = L + ' area ' + (i + 1);
       if (!AREAS.includes(a.type)) errors.push(A + ': unknown type "' + a.type + '"');
       if (!Array.isArray(a.poly) || a.poly.length < 3 || !a.poly.every(isPt)) errors.push(A + ': poly needs at least 3 [x, y] points');
+      if (a.pattern !== undefined && !PATTERNS.includes(a.pattern)) errors.push(A + ': unknown pattern "' + a.pattern + '"');
+      if (a.break !== undefined && a.break !== true && a.break !== false && !(Number.isFinite(a.break) && a.break > 0 && a.break < 1)) errors.push(A + ': break must be true or a number between 0 and 1');
     });
 
     const scale = fitScale(level, STYLE.BOX_UNBRANDED);
@@ -164,4 +173,4 @@ function validate(plan) {
   return { errors, warnings };
 }
 
-module.exports = { SCHEMA, FIXTURES, OPENINGS, AREAS, WALLS, validate, fitScale, levelPoints, arcOf, arcPoint };
+module.exports = { SCHEMA, FIXTURES, OPENINGS, AREAS, WALLS, PATTERNS, validate, fitScale, levelPoints, arcOf, arcPoint };

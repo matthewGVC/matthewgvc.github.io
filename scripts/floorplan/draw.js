@@ -210,6 +210,10 @@ function drawOpenings(level, T) {
       const mid = lerp(p0, p1, 0.5);
       swing(p0, mid, span / 2);
       swing(p1, mid, span / 2);
+    } else if (o.type === 'bifold') {
+      /* two pairs of panels folded into the room, a V at each half */
+      const depth = span * 0.22, v = (q0, q1) => line(q0, addv(lerp(q0, q1, 0.5), mul(n, depth))) + 'L' + pt(q1);
+      out.push('<path ' + stroke + ' d="' + v(p0, lerp(p0, p1, 0.5)) + v(lerp(p0, p1, 0.5), p1) + '"/>');
     } else if (o.type === 'sliding' || o.type === 'pocket') {
       const t = STYLE.SLIDING_PANEL;
       const panel = (s, e, off) => {
@@ -250,8 +254,14 @@ function drawAreas(level, T) {
     if (!Array.isArray(a.poly) || a.poly.length < 3 || !a.poly.every(isPt)) return;
     const P = a.poly.map(T), d = poly(P);
     const stroke = 'stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"';
+    /* a.pattern: a swatch laid over the area (PATTERNS below); its defs come from patternDefs() */
+    const swatch = PATTERNS[a.pattern] ? '<path fill="url(#fp-pat-' + a.pattern + ')" stroke="none" d="' + d + '"/>' : '';
     if (a.type === 'terrace' || a.type === 'balcony') {
-      out.push('<path fill="' + STYLE.TERRACE_FILL + '" ' + stroke + ' d="' + d + '"/>');
+      out.push('<path fill="' + STYLE.TERRACE_FILL + '" ' + stroke + ' d="' + d + '"/>' + swatch);
+    } else if (a.type === 'floor') {
+      out.push(swatch);
+    } else if (a.type === 'roof') {
+      out.push(swatch + '<path fill="none" ' + stroke + ' d="' + d + '"/>');
     } else if (a.type === 'closet') {
       out.push('<path fill="none" ' + stroke + ' stroke-dasharray="' + STYLE.CLOSET_DASH + '" d="' + d + '"/>');
     } else if (a.type === 'void') {
@@ -274,11 +284,44 @@ function drawAreas(level, T) {
       if (alongX) { s0 = [back ? x1 - h : x0 + h, cy]; s1 = [back ? x0 + h : x1 - h, cy]; } else { s0 = [cx, back ? y1 - h : y0 + h]; s1 = [cx, back ? y0 + h : y1 - h]; }
       const dv = mul(sub(s1, s0), 1 / (len(sub(s1, s0)) || 1)), nv = [dv[1], -dv[0]];
       const head = line(addv(s1, addv(mul(dv, -h), mul(nv, h * 0.6))), s1) + 'L' + pt(addv(s1, addv(mul(dv, -h), mul(nv, -h * 0.6))));
+      /* a.break (0-1 along the flight, or true for 0.6): the break line, with its zig-zag, where the
+         drawing cuts the stair */
+      let brk = '';
+      if (a.break !== undefined && a.break !== false) {
+        const t = a.break === true ? 0.6 : a.break, wid = alongX ? y1 - y0 : x1 - x0, rise = wid * 0.35;
+        const P0 = alongX ? (u, v) => [x0 + u, y1 - v] : (u, v) => [x0 + v, y0 + u];   // u along the flight, v across it
+        const u0 = run * t - rise / 2, z = Math.min(wid * 0.16, run * 0.08);
+        const at = (k) => u0 + rise * k;
+        brk = 'M' + [P0(at(0), 0), P0(at(0.44), wid * 0.44), P0(at(0.44) + z, wid * 0.47), P0(at(0.56) - z, wid * 0.53), P0(at(0.56), wid * 0.56), P0(at(1), wid)].map(pt).join('L');
+      }
       out.push('<path ' + thin() + ' d="' + d + '"/>');
-      out.push('<path fill="none" ' + stroke + ' d="' + tr + (a.arrow === false ? '' : line(s0, s1) + head) + '"/>');
+      out.push('<path fill="none" ' + stroke + ' d="' + tr + (a.arrow === false ? '' : line(s0, s1) + head) + brk + '"/>');
     }
   });
   return out.join('');
+}
+
+/* ---------- swatches: patterns laid over floor, roof and terrace areas (sizes in page pt) ---------- */
+const P_LINE = 'fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.PATTERN_LINE + '"';
+const PATTERNS = {
+  /* square floor tile */
+  tile: { w: STYLE.TILE, h: STYLE.TILE, body: (w, h) => '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 0L0 ' + h + '"/>' },
+  /* patio brick: running bond */
+  'brick-patio': { w: STYLE.BRICK.w, h: STYLE.BRICK.h * 2, body: (w, h) => '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 ' + h / 2 + 'L' + w + ' ' + h / 2 +
+    'M0 0L0 ' + h / 2 + 'M' + w / 2 + ' ' + h / 2 + 'L' + w / 2 + ' ' + h + '"/>' },
+  /* roof pavers: basket weave */
+  'brick-roof': { w: STYLE.BRICK.w * 2, h: STYLE.BRICK.w * 2, body: (w, h) => {
+    const q = w / 2, b = q / 2;
+    return '<path ' + P_LINE + ' d="M0 0L' + w + ' 0M0 0L0 ' + h + 'M' + q + ' 0L' + q + ' ' + h + 'M0 ' + q + 'L' + w + ' ' + q +
+      'M0 ' + b + 'L' + q + ' ' + b + 'M' + (q + b) + ' 0L' + (q + b) + ' ' + q + 'M' + b + ' ' + q + 'L' + b + ' ' + h + 'M' + q + ' ' + (q + b) + 'L' + w + ' ' + (q + b) + '"/>';
+  } }
+};
+/* the <defs> for the named patterns (ids fp-pat-<name>) */
+function patternDefs(names) {
+  const list = [...new Set(names)].filter((n) => PATTERNS[n]);
+  if (!list.length) return '';
+  return '<defs>' + list.map((n) => { const P = PATTERNS[n];
+    return '<pattern id="fp-pat-' + n + '" patternUnits="userSpaceOnUse" width="' + P.w + '" height="' + P.h + '">' + P.body(P.w, P.h) + '</pattern>'; }).join('') + '</defs>';
 }
 
 /* ---------- fixtures: drawn in a local box centred on 0,0, w x h pt ---------- */
@@ -317,10 +360,15 @@ const FIXTURE_DRAW = {
     return [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2]), rect(-k, -k, 2 * k, 2 * k)];
   },
   /* four burners, each a ring round a grate */
-  range: (w, h) => [rect(-w / 2, -h / 2, w, h), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].flatMap(([i, j]) => {
-    const r = Math.min(w, h) * 0.16;
-    return [ell(i * w / 4, j * h / 4, r, r), ell(i * w / 4, j * h / 4, r * 0.5, r * 0.5)];
-  })],
+  /* burners 4 (2 x 2, the default) or 6 (3 x 2), each a ring round a grate */
+  range: (w, h, f) => {
+    const cols = f.burners === 6 ? 3 : 2, r = Math.min(w / cols, h / 2) * 0.32, out = [rect(-w / 2, -h / 2, w, h)];
+    for (let c = 0; c < cols; c++) for (let j = 0; j < 2; j++) {
+      const x = -w / 2 + w * (c + 0.5) / cols, y = -h / 2 + h * (j + 0.5) / 2;
+      out.push(ell(x, y, r, r), ell(x, y, r * 0.5, r * 0.5));
+    }
+    return out;
+  },
   'kitchen-sink': (w, h, f) => {
     const dot = (x) => ell(x, h * 0.12, Math.min(w, h) * 0.04, Math.min(w, h) * 0.04);
     if (f.bowls === 1) return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.1, -h / 2 + h * 0.15, w * 0.8, h * 0.7, Math.min(w, h) * 0.12), dot(0)];
@@ -332,6 +380,64 @@ const FIXTURE_DRAW = {
   fireplace: (w, h) => [poly([[-w * 0.32, -h / 2], [w * 0.32, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]])],
   counter: (w, h) => [rect(-w / 2, -h / 2, w, h)],
   /* a closet rod along its length with hangers across it */
+  /* ---- laundry and utility (labels W, D, W/D, WH, DW go in `labels`) ---- */
+  washer: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, h * 0.06, Math.min(w, h) * 0.34, Math.min(w, h) * 0.34)],
+  dryer: (w, h) => [rect(-w / 2, -h / 2, w, h), rrect(-w * 0.32, -h * 0.26, w * 0.64, h * 0.64, Math.min(w, h) * 0.08)],
+  /* one stacked unit: the washer's drum and the dryer's line across */
+  'washer-dryer': (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2 + h * 0.18], [w / 2, -h / 2 + h * 0.18]), ell(0, h * 0.09, Math.min(w, h) * 0.3, Math.min(w, h) * 0.3)],
+  'water-heater': (w, h) => [ell(0, 0, w / 2, h / 2), ell(0, 0, w * 0.3, h * 0.3)],
+  /* under the counter: its box crossed */
+  dishwasher: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])],
+
+  /* ---- furniture: only when the source shows it, or Matt asks for a furnished plan ---- */
+  /* headboard at the wall, pillows (1 on a bed narrower than 0.6 of its length), the turned-down sheet */
+  bed: (w, h, f) => {
+    const n = f.pillows || (w < h * 0.6 ? 1 : 2), hb = h * 0.05, pw = (w * 0.86 - (n - 1) * w * 0.04) / n, out = [rect(-w / 2, -h / 2, w, h), rect(-w / 2, -h / 2, w, hb)];
+    for (let i = 0; i < n; i++) out.push(rrect(-w * 0.43 + i * (pw + w * 0.04), -h / 2 + hb + h * 0.03, pw, h * 0.14, h * 0.03));
+    out.push(line([-w / 2, -h / 2 + h * 0.3], [w / 2, -h / 2 + h * 0.3]));
+    return out;
+  },
+  nightstand: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, 0, Math.min(w, h) * 0.25, Math.min(w, h) * 0.25)],
+  'side-table': (w, h, f) => [f.shape === 'round' ? ell(0, 0, w / 2, h / 2) : rect(-w / 2, -h / 2, w, h)],
+  /* back along the wall, arms at the ends, f.seats cushions (3 by default) */
+  sofa: (w, h, f) => {
+    const n = f.seats || 3, back = h * 0.25, arm = Math.min(w * 0.12, h * 0.3), cw = (w - 2 * arm) / n, out = [rrect(-w / 2, -h / 2, w, h, h * 0.08), line([-w / 2 + arm, -h / 2 + back], [w / 2 - arm, -h / 2 + back])];
+    out.push(line([-w / 2 + arm, -h / 2 + back], [-w / 2 + arm, h / 2]), line([w / 2 - arm, -h / 2 + back], [w / 2 - arm, h / 2]));
+    for (let i = 1; i < n; i++) out.push(line([-w / 2 + arm + cw * i, -h / 2 + back], [-w / 2 + arm + cw * i, h / 2]));
+    return out;
+  },
+  armchair: (w, h) => FIXTURE_DRAW.sofa(w, h, { seats: 1 }),
+  /* an L: the long run against the top wall, the return down the f.side ('left' by default) */
+  sectional: (w, h, f) => {
+    const dep = Math.min(w, h) * 0.42, back = dep * 0.3, sx = f.side === 'right' ? -1 : 1;
+    const X = (x) => x * sx;
+    const outline = poly([[X(-w / 2), -h / 2], [X(w / 2), -h / 2], [X(w / 2), -h / 2 + dep], [X(-w / 2 + dep), -h / 2 + dep], [X(-w / 2 + dep), h / 2], [X(-w / 2), h / 2]]);
+    return [outline, line([X(-w / 2 + back), -h / 2 + back], [X(w / 2), -h / 2 + back]) + line([X(-w / 2 + back), -h / 2 + back], [X(-w / 2 + back), h / 2]),
+      line([X(-w / 2 + dep), -h / 2 + back], [X(-w / 2 + dep), -h / 2 + dep]) + line([X((-w / 2 + dep + w / 2) / 2), -h / 2 + back], [X((-w / 2 + dep + w / 2) / 2), -h / 2 + dep]) +
+      line([X(-w / 2 + back), (-h / 2 + dep + h / 2) / 2], [X(-w / 2 + dep), (-h / 2 + dep + h / 2) / 2])];
+  },
+  'coffee-table': (w, h, f) => [f.shape === 'round' ? ell(0, 0, w / 2, h / 2) : rrect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.12)],
+  table: (w, h, f) => [f.shape === 'round' ? ell(0, 0, w / 2, h / 2) : rect(-w / 2, -h / 2, w, h)],
+  /* the table (w x h) with f.seats chairs round it (4 by default): along the long sides, then the ends */
+  'dining-table': (w, h, f) => {
+    const n = f.seats || 4, c = Math.min(w, h) * 0.36;
+    const out = [], ch = (x, y, rot) => {
+      const k = c / 2, pts = [[-k, -k * 0.2], [k, -k * 0.2], [k, k * 1.1], [-k, k * 1.1]].map(([a, b]) => {
+        const q = rot * Math.PI / 180; return [x + a * Math.cos(q) - b * Math.sin(q), y + a * Math.sin(q) + b * Math.cos(q)];
+      });
+      out.push(poly(pts));
+    };
+    if (f.shape === 'round') {
+      for (let i = 0; i < n; i++) { const q = (i / n) * 2 * Math.PI - Math.PI / 2; ch(Math.cos(q) * w / 2, Math.sin(q) * h / 2, q * 180 / Math.PI - 90); }
+      out.push(ell(0, 0, w / 2, h / 2));
+    } else {
+      const ends = n >= 6 ? 2 : 0, side = (n - ends) / 2;
+      for (let i = 0; i < side; i++) { const x = -w / 2 + w * (i + 0.5) / side; ch(x, -h / 2, 180); ch(x, h / 2, 0); }
+      if (ends) { ch(-w / 2, 0, 90); ch(w / 2, 0, -90); }
+      out.push(rect(-w / 2, -h / 2, w, h));
+    }
+    return out;
+  },
   rod: (w, h) => {
     const n = Math.max(3, Math.round(w / (h * 0.35)));
     let d = line([-w / 2, 0], [w / 2, 0]);
@@ -468,7 +574,7 @@ function draw(plan, levelIndex = 0, opts = {}) {
      the plan so every mismatch shows (scripts/floorplan/overlay.js). Never in a saved plan. */
   const U = opts.underlay, r6 = (v) => Math.round(v * 1e6) / 1e6;
   if (branded) parts.push(drawHeader(plan, opts.facts));
-  parts.push(drawLevel(level, T, s));
+  parts.push(patternDefs((level.areas || []).map((a) => a.pattern)), drawLevel(level, T, s));
   if (U) {
     parts.push('<filter id="fp-red"><feColorMatrix type="matrix" values="0 0 0 0 1 0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0 0 0 1 0"/></filter>' +
       '<image href="' + esc(U.href) + '" x="0" y="0" width="' + U.width + '" height="' + U.height + '" filter="url(#fp-red)" style="mix-blend-mode:multiply" ' +
@@ -483,4 +589,4 @@ function draw(plan, levelIndex = 0, opts = {}) {
   return parts.filter(Boolean).join('\n') + '\n';
 }
 
-module.exports = { draw, drawLevel, outline, measure };
+module.exports = { draw, drawLevel, patternDefs, PATTERNS, outline, measure };

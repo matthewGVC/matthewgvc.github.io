@@ -57,6 +57,16 @@ check('a line needs two points', has(validate(lp), 'level 1 line 1: pts needs at
 lp = clone(studio); lp.levels[0].fixtures[0].bowls = 3;
 check('bowls is 1 or 2', has(validate(lp), 'level 1 fixture 1: bowls must be 1 or 2'), true);
 
+/* furniture, ranges, swatches */
+lp = clone(studio); lp.levels[0].fixtures[0] = { type: 'range', at: [0, 0], w: 10, h: 10, burners: 5 };
+check('burners is 4 or 6', has(validate(lp), 'level 1 fixture 1: burners must be 4 or 6'), true);
+lp = clone(studio); lp.levels[0].fixtures.push({ type: 'dining-table', at: [0, 0], w: 10, h: 10, seats: 6, shape: 'round' }, { type: 'bed', at: [0, 0], w: 10, h: 10 });
+check('furniture is valid', validate(lp).errors, []);
+lp = clone(studio); lp.levels[0].areas = [{ type: 'floor', pattern: 'marble', poly: [[0, 0], [1, 0], [1, 1]] }];
+check('an unknown pattern is refused', has(validate(lp), 'level 1 area 1: unknown pattern "marble"'), true);
+lp = clone(studio); lp.levels[0].areas = [{ type: 'stair', break: 2, poly: [[0, 0], [1, 0], [1, 1]] }];
+check('break is true or between 0 and 1', has(validate(lp), 'level 1 area 1: break must be true or a number between 0 and 1'), true);
+
 if (failures.length) {
   console.log(failures.join('\n'));
   console.log(pass + ' passed, ' + failures.length + ' FAILED');

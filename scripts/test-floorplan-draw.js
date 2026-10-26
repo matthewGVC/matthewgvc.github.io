@@ -187,8 +187,28 @@ check('an inside door stands at ' + STYLE.DOOR_OPEN_INSIDE + '°', leafAngle(und
 const { sheet, ELEMENTS } = require('./floorplan/style-sheet.js');
 const sh = sheet();
 check('style sheet: one group per element, plus the branded frame', ELEMENTS.map(([id]) => sh.includes('<g id="' + id + '">')).filter((x) => !x).length, 0);
-check('style sheet: every element draws something', ELEMENTS.filter(([id]) => /<g id="[^"]*"><\/g>/.test(sh.slice(sh.indexOf('<g id="' + id + '">'), sh.indexOf('<g id="' + id + '">') + id.length + 20))).length, 0);
+const emptyGroup = (id) => sh.includes('<g id="' + id + '"></g>');
+check('style sheet: every element draws something', ELEMENTS.filter(([id, , level]) => level && emptyGroup(id)).map(([id]) => id), []);
+check('style sheet: the boxes for Matt to draw in are empty', ELEMENTS.filter(([, , level]) => !level).map(([id]) => emptyGroup(id)), [true, true, true, true, true]);
+check('style sheet: the swatch patterns are defined once each', ['tile', 'brick-patio', 'brick-roof'].map((n) => sh.split('id="fp-pat-' + n + '"').length - 1), [1, 1, 1]);
 check('style sheet: has the frame and the four layers', ['frame-branded-page', 'GUIDES', 'ELEMENTS', 'CAPTIONS', 'NOTES'].every((id) => sh.includes('id="' + id + '"')), true);
+
+/* ---- ranges, furniture, swatches, stair break ---- */
+const fpaths = (type, extra) => paths(fx(type, extra));
+check('range: 4 burners by default, 6 on request', [fpaths('range'), fpaths('range', { burners: 6 })], [1 + 8, 1 + 12]);
+['washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher', 'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'].forEach((t) =>
+  check('furniture ' + t + ' draws', /<g transform="translate/.test(fx(t)), true));
+check('a twin bed has one pillow, a queen two', [fpaths('bed', { w: 38, h: 75 }), fpaths('bed', { w: 60, h: 80 })], [4, 5]);
+check('a dining table for 6 has six chairs', fpaths('dining-table', { w: 72, h: 36, seats: 6 }), 7);
+p = clone(box4); p.levels[0].areas = [{ type: 'floor', pattern: 'tile', poly: [[0, 0], [50, 0], [50, 50], [0, 50]] }];
+const tl = draw(p, 0, {});
+check('a tiled floor uses the tile swatch, defined once', [tl.includes('fill="url(#fp-pat-tile)"'), tl.split('id="fp-pat-tile"').length - 1], [true, 1]);
+check('no swatch, no pattern defs', /<pattern/.test(draw(box4, 0, {})), false);
+p = clone(box4); p.levels[0].areas = [{ type: 'stair', poly: [[0, 0], [20, 0], [20, 80], [0, 80]], treads: 9, arrow: false, break: true }];
+check('a stair with break: true adds the break line', (draw(p, 0, {}).match(/<path fill="none" stroke="#00273a" stroke-width="0.5" d="([^"]*)"\/>/)[1].match(/M/g) || []).length, 10);
+
+p = clone(box4); p.levels[0].openings = [{ wall: 0, from: 0.3, to: 0.7, type: 'bifold', side: 'right' }];
+check('a bi-fold door draws its folded panels', /stroke-width="0.5" d="M[^"]*L[^"]*L[^"]*M/.test(draw(p, 0, {})), true);
 
 /* ---- report ---- */
 if (failures.length) {

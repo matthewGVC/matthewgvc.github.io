@@ -28,6 +28,9 @@ module.exports = {
   WALL_GLASS: 0.8,           // pt, glass partitions and shower screens
   THIN: 0.5,                 // fixtures, door leaves and arcs, windows, areas
   CLOSET_DASH: '2 2',
+  PATTERN_LINE: 0.25,        // pt, swatch lines (tile, brick)
+  TILE: 4,                   // pt, floor tile square
+  BRICK: { w: 6, h: 2 },     // pt, one brick
   STAIR_TREAD: 6,            // pt between treads
   STAIR_ARROW: 3,            // pt arrow-head length
   SLIDING_PANEL: 1.6,        // pt thickness of a sliding / pocket panel

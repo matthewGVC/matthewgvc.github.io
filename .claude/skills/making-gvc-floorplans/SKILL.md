@@ -142,12 +142,17 @@ Files beside this one:
 ## The style sheet (changing the house style)
 
 `node scripts/floorplan/style-sheet.js "<out.svg>"` writes every element the drawer makes at true
-size, each in a group named after it: walls, windows, doors, fixtures, areas, labels and the branded
-frame. Matt edits that file in Illustrator and hands it back. To apply it:
+size, each in a group named after it: walls, windows, doors, bath and kitchen fixtures, furniture,
+swatches, stairs, areas, labels and the branded frame. Its last section is empty boxes for Matt's
+own artwork (a car, the compass, closet clothes). Matt edits that file in Illustrator and hands it
+back. To apply it:
 - Compare each group in his file with a freshly generated sheet.
 - Make the changes in `style.js` (weights, sizes, colours, angles) or in the element's drawing
   function in `draw.js` (shapes).
 - Regenerate the sheet and check it matches his.
+- Where Matt has drawn a symbol himself (his boxes, or a redrawn fixture), his drawing becomes the
+  symbol. Save it as a file the drawer scales into each fixture's box, rather than re-coding it by
+  hand. Build that the first time a sheet comes back.
 - Read his NOTES layer.
 - Run the floorplan tests, then redraw the worked example and check it.
 

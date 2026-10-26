@@ -96,7 +96,7 @@ const USERS = {
     if (who === 'anon') await db.exec("set role anon; select set_config('request.jwt.claim.sub', '', false);");
     else await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id[who]]).then(() => db.exec('set role authenticated'));
     try { return await db.query(sql, params); }
-    finally { await db.exec('reset role'); }
+    finally { await db.exec("reset role; select set_config('request.jwt.claim.sub', '', false);"); }
   }
   async function fails(who, sql, params) {
     try { await as(who, sql, params); return false; } catch (e) { return true; }
@@ -167,7 +167,7 @@ const USERS = {
 
   /* an account that wrote things can still be removed later */
   const tmp = (await db.query(`insert into auth.users (email) values ('temp@example.com') returning id`)).rows[0].id;
-  await db.query(`insert into public.members (user_id, name, initials) values ($1, 'Temp', 'T')`, [tmp]);
+  await db.query(`insert into public.members (user_id, name, initials, role) values ($1, 'Temp', 'T', 'shared')`, [tmp]);
   id.temp = tmp;
   await as('temp', `insert into public.pitches (slug, label) values ('temp-pitch', 'Temp pitch')`);
   await db.query("select set_config('request.jwt.claim.sub', '', false)");   // as the dashboard does it: nobody signed in
@@ -551,6 +551,23 @@ const USERS = {
     if (UPTO >= '0013') {
       await db.query(`update public.members set role = 'marketing' where role = 'team' and name = 'Team Member'`);
       check('0013: a marketing member links it', await folderErr('teamrole', `update public.properties set drive_folder = 'GVC/NYC/12 Folder St D' where id = $1`, [fp]), null);
+      await db.query(`update public.members set role = 'team' where role = 'marketing' and name = 'Team Member'`);
+    }
+    if (UPTO >= '0014') {
+      const LOCK = "Only Marketing can change a listing's details.";
+      check("0014: a plain team member can't change a job's facts", [
+        await folderErr('teamrole', `update public.properties set core = '{"price": 1}' where id = $1`, [fp]),
+        await folderErr('teamrole', `update public.properties set label = 'Elsewhere' where id = $1`, [fp]),
+        await folderErr('teamrole', `update public.properties set asana_gid = 'x1' where id = $1`, [fp]),
+        await folderErr('teamrole', `insert into public.properties (slug, label) values ('14-facts-st', '14 Facts St')`),
+        await folderErr('teamrole', `insert into public.pitches (slug, label) values ('p-14', 'P 14')`)], [LOCK, LOCK, LOCK, LOCK, LOCK]);
+      check('0014: a plain team member still saves the rest of the row', await folderErr('teamrole', `update public.properties set folder_state = 'linked' where id = $1`, [fp]), null);
+      check('0014: the shared sign-in still saves facts (standalone tools)', await folderErr('team', `update public.properties set core = '{"price": 2}', label = '12 Folder St' where id = $1`, [fp]), null);
+      check('0014: Matt and the helper still save facts', [
+        await folderErr('matt', `update public.properties set core = '{"price": 3}' where id = $1`, [fp]),
+        await folderErr('helper', `update public.properties set core = '{"price": 4}' where id = $1`, [fp])], [null, null]);
+      await db.query(`update public.members set role = 'marketing' where role = 'team' and name = 'Team Member'`);
+      check('0014: a marketing member saves facts', await folderErr('teamrole', `update public.properties set core = '{"price": 5}' where id = $1`, [fp]), null);
       await db.query(`update public.members set role = 'team' where role = 'marketing' and name = 'Team Member'`);
     }
     check('0012: a post goes in the cache', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind, property_id) values ('post1', 'social', 'post', $1)`, [fp]), false);

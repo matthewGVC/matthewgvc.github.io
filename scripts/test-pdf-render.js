@@ -213,7 +213,7 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   };
   const s1 = await sgn({ kind: 'for-sale', market: 'nj', agents: ['george-putykewycz'], qrUrl: 'https://www.elliman.com/x/1' });
   check('sign: For Sale, one agent, M line, NJ office line, 24 x 30', [s1.rendered, s1.kind, s1.names, s1.phones, /^O 732\.387\.3807\|gvcrealestateteam\.com\|/.test(s1.foot), /24in 30in/.test(s1.size), s1.heights],
-    [true, 'for-sale', ['George Putykewycz'], ['M 732.546.7375'], true, true, [true]]);
+    [true, 'for-sale', ['George Putykewycz'], ['M 732.546.7535'], true, true, [true]]);
   check('sign: one 24 x 30 in page', await pages(), 1);
   const s2 = await sgn({ kind: 'for-sale', market: 'fl', agents: ['tj-verdiglione', 'marli-silver', 'john-gasdaska'] });
   check('sign: two agents at most, stacked; Florida\'s office line', [s2.names, s2.two, /^O 561\.245\.2635\|gvcrealestateteam\.com/.test(s2.foot)], [['TJ Verdiglione', 'Marli Silver'], true, true]);
@@ -246,6 +246,8 @@ const NJ_RENT = Object.assign({}, NJ, { kind: 'rental', price: '$6,500', taxesMo
   // the helper's own path: renderPiece with a state
   if (process.env.SKIP_HELPER !== '1') {
     process.env.GVC_HELPER_HOME = require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'gvc-render-'));
+    // a fresh home keeps the test's files apart, but the browser is the one the helper installed (install-browser.js)
+    if (!process.env.PLAYWRIGHT_BROWSERS_PATH) process.env.PLAYWRIGHT_BROWSERS_PATH = require('path').join(require('os').homedir(), '.gvc-helper', 'browsers');
     const { renderPiece } = require('../helper/pdf/render.js');
     try {
       const out = await renderPiece({ tool: 'showsheet', state: NJ, paper: 'a5', siteBase: BASE });

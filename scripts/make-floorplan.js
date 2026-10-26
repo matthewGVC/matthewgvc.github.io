@@ -24,22 +24,33 @@ function safe(s) {
   return String(s).replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
 }
 
-/* Render one SVG string to a PNG (white ground, STYLE.PNG pixels). */
+/* Render one SVG string to PNG bytes (white ground, STYLE.PNG pixels); saved to outPath when given.
+   Chromium now and then fails to capture a page this large, so a failed capture is tried again on a
+   fresh page, up to three times. */
 async function toPng(svgString, outPath, browser) {
   const { chromium } = require('playwright');
   const own = !browser;
   if (own) browser = await chromium.launch();
   try {
-    const page = await browser.newPage({
-      viewport: { width: STYLE.PAGE.w, height: STYLE.PAGE.h },
-      deviceScaleFactor: STYLE.PNG.w / STYLE.PAGE.w
-    });
-    await page.setContent('<!doctype html><html><body style="margin:0;background:#fff">' +
-      '<div style="width:' + STYLE.PAGE.w + 'px;height:' + STYLE.PAGE.h + 'px;overflow:hidden">' +
-      svgString.replace(/<svg\b/, '<svg style="display:block;width:' + STYLE.PAGE.w + 'px;height:' + STYLE.PAGE.h + 'px"') +
-      '</div></body></html>');
-    await page.screenshot({ path: outPath, clip: { x: 0, y: 0, width: STYLE.PAGE.w, height: STYLE.PAGE.h } });
-    await page.close();
+    for (let attempt = 1; ; attempt++) {
+      const page = await browser.newPage({
+        viewport: { width: STYLE.PAGE.w, height: STYLE.PAGE.h },
+        deviceScaleFactor: STYLE.PNG.w / STYLE.PAGE.w
+      });
+      try {
+        await page.setContent('<!doctype html><html><body style="margin:0;background:#fff">' +
+          '<div style="width:' + STYLE.PAGE.w + 'px;height:' + STYLE.PAGE.h + 'px;overflow:hidden">' +
+          svgString.replace(/<svg\b/, '<svg style="display:block;width:' + STYLE.PAGE.w + 'px;height:' + STYLE.PAGE.h + 'px"') +
+          '</div></body></html>');
+        const png = await page.screenshot({ clip: { x: 0, y: 0, width: STYLE.PAGE.w, height: STYLE.PAGE.h } });
+        if (outPath) require('fs').writeFileSync(outPath, png);
+        return png;
+      } catch (e) {
+        if (attempt >= 3) throw e;
+      } finally {
+        await page.close();
+      }
+    }
   } finally {
     if (own) await browser.close();
   }
@@ -88,30 +99,33 @@ async function make(folder, opts) {
   /* Unbranded/ and Branded/ hold only the current plan: this layout's files from any other version
      move to the archive. Only names the maker itself writes are matched; anything else stays. */
   const ours = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' v(\\d+)( Alternate)?( - .+)?\\.(svg|png)$');
+  const olderVersions = [];
   for (const dir of ['Unbranded', 'Branded']) {
     if (!fs.existsSync(path.join(folder, dir))) continue;
     fs.readdirSync(path.join(folder, dir)).sort().forEach((name) => {
       const m = ours.exec(name);
-      if (m && +m[1] !== version && !!m[2] === !!alt) archived.push(archive(dir + '/' + name));
+      if (m && +m[1] !== version && !!m[2] === !!alt) olderVersions.push(dir + '/' + name);
     });
   }
 
+  /* every PNG is rendered before anything in the folder is moved, so a failed render changes nothing */
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
   try {
-    for (const j of jobs) {
-      fs.mkdirSync(path.join(folder, j.dir), { recursive: true });
-      for (const ext of ['svg', 'png']) {
-        const rel = j.dir + '/' + j.base + '.' + ext;
-        const abs = path.join(folder, rel);
-        if (fs.existsSync(abs)) archived.push(archive(rel));
-      }
-      fs.writeFileSync(path.join(folder, j.dir, j.base + '.svg'), j.svg);
-      await toPng(j.svg, path.join(folder, j.dir, j.base + '.png'), browser);
-      written.push(j.dir + '/' + j.base + '.svg', j.dir + '/' + j.base + '.png');
-    }
+    for (const j of jobs) j.png = await toPng(j.svg, null, browser);
   } finally {
     await browser.close();
+  }
+  for (const a of olderVersions) archived.push(archive(a));
+  for (const j of jobs) {
+    fs.mkdirSync(path.join(folder, j.dir), { recursive: true });
+    for (const ext of ['svg', 'png']) {
+      const rel = j.dir + '/' + j.base + '.' + ext;
+      if (fs.existsSync(path.join(folder, rel))) archived.push(archive(rel));
+    }
+    fs.writeFileSync(path.join(folder, j.dir, j.base + '.svg'), j.svg);
+    fs.writeFileSync(path.join(folder, j.dir, j.base + '.png'), j.png);
+    written.push(j.dir + '/' + j.base + '.svg', j.dir + '/' + j.base + '.png');
   }
 
   const noteRel = 'Design/run-v' + version + '.md';

@@ -1,8 +1,9 @@
 /* ============================================================
    The floorplan maker. Reads <Floorplan folder>/Design/plan.json, checks it, draws every level
-   unbranded and branded, and saves an SVG master plus a PNG copy of each into
-   <Floorplan folder>/Unbranded/ and /Branded/. Anything it would overwrite, and the same layout's
-   files from other versions, are moved first to Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md.
+   unbranded and branded, and saves the PNG of each into <Floorplan folder>/Unbranded/ and /Branded/
+   (only PNGs there, Matt 10-27) and its SVG master into Design/Unbranded/ and Design/Branded/.
+   Anything it would overwrite, the same layout's files from other versions, and any SVG left in
+   Unbranded/ or Branded/ are moved first to Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md.
 
      node scripts/make-floorplan.js "<Floorplan folder>" --version 3 [--facts '{"beds":2,"baths":2}']
    ============================================================ */
@@ -102,15 +103,18 @@ async function make(folder, opts) {
     }
   });
 
-  /* Unbranded/ and Branded/ hold only the current plan: this layout's files from any other version
-     move to the archive. Only names the maker itself writes are matched; anything else stays. */
+  /* Unbranded/ and Branded/ (PNGs) and Design/Unbranded/, Design/Branded/ (SVGs) hold only the current
+     plan: this layout's files from any other version move to the archive, and so does an SVG of ours
+     still in Unbranded/ or Branded/ (the layout before 10-27). Only names the maker itself writes are
+     matched; anything else stays. */
   const ours = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' v(\\d+)( Alternate)?( - .+)?\\.(svg|png)$');
   const olderVersions = [];
-  for (const dir of ['Unbranded', 'Branded']) {
+  for (const dir of ['Unbranded', 'Branded', 'Design/Unbranded', 'Design/Branded']) {
     if (!fs.existsSync(path.join(folder, dir))) continue;
     fs.readdirSync(path.join(folder, dir)).sort().forEach((name) => {
       const m = ours.exec(name);
-      if (m && +m[1] !== version && !!m[2] === !!alt) olderVersions.push(dir + '/' + name);
+      if (!m || !!m[2] !== !!alt) return;
+      if (+m[1] !== version || (m[4] === 'svg' && !dir.startsWith('Design'))) olderVersions.push(dir + '/' + name);
     });
   }
 
@@ -124,14 +128,14 @@ async function make(folder, opts) {
   }
   for (const a of olderVersions) archived.push(archive(a));
   for (const j of jobs) {
-    fs.mkdirSync(path.join(folder, j.dir), { recursive: true });
-    for (const ext of ['svg', 'png']) {
-      const rel = j.dir + '/' + j.base + '.' + ext;
+    const pngRel = j.dir + '/' + j.base + '.png', svgRel = 'Design/' + j.dir + '/' + j.base + '.svg';
+    for (const rel of [svgRel, pngRel]) {
+      fs.mkdirSync(path.dirname(path.join(folder, rel)), { recursive: true });
       if (fs.existsSync(path.join(folder, rel))) archived.push(archive(rel));
     }
-    fs.writeFileSync(path.join(folder, j.dir, j.base + '.svg'), j.svg);
-    fs.writeFileSync(path.join(folder, j.dir, j.base + '.png'), j.png);
-    written.push(j.dir + '/' + j.base + '.svg', j.dir + '/' + j.base + '.png');
+    fs.writeFileSync(path.join(folder, svgRel), j.svg);
+    fs.writeFileSync(path.join(folder, pngRel), j.png);
+    written.push(svgRel, pngRel);
   }
 
   const noteRel = 'Design/run-v' + version + '.md';

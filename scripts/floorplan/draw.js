@@ -189,19 +189,19 @@ function drawOpenings(level, T, s = 1) {
     if (!C.len) return;
     const hw = Math.max((free && o0.t > 0 ? o0.t * s : wallWidth(w.type)) / 2 - STYLE.THIN / 2, 0);
 
-    if (o.type === 'window') {
-      /* Matt's window: a white frame across the wall's full thickness, closed at each end (so neighbouring
-         panes show their mullion), and the glass, a narrower frame inside it */
+    /* Matt's window: a white frame across the wall's full thickness, closed at each end (so neighbouring
+       panes show their mullion), and the glass, a narrower frame inside it */
+    const glass = (from, to) => {
       const along = (t0, t1, k) => 'M' + pt(C.at(t0, k)) + C.seg(t0, t1, k);
       const frame = (t0, t1, k) => along(t0, t1, k) + along(t0, t1, -k) + line(C.at(t0, k), C.at(t0, -k)) + line(C.at(t1, k), C.at(t1, -k));
-      const inset = Math.min(hw * 0.5, (o.to - o.from) * C.len * 0.1) / (C.len || 1);
+      const inset = Math.min(hw * 0.5, (to - from) * C.len * 0.1) / (C.len || 1);
       const g = hw * STYLE.WINDOW_GLASS;
       /* the pane filled white as one closed ring (the frame's four open lines enclose nothing to fill) */
-      const ring = 'M' + pt(C.at(o.from, hw)) + C.seg(o.from, o.to, hw) + 'L' + pt(C.at(o.to, -hw)) + C.seg(o.to, o.from, -hw) + 'Z';
+      const ring = 'M' + pt(C.at(from, hw)) + C.seg(from, to, hw) + 'L' + pt(C.at(to, -hw)) + C.seg(to, from, -hw) + 'Z';
       out.push('<path fill="' + STYLE.WHITE + '" d="' + ring + '"/>');
-      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '" d="' + frame(o.from, o.to, hw) + frame(o.from + inset, o.to - inset, g) + '"/>');
-      return;
-    }
+      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '" d="' + frame(from, to, hw) + frame(from + inset, to - inset, g) + '"/>');
+    };
+    if (o.type === 'window') { glass(o.from, o.to); return; }
     if (o.type === 'opening' || isPt(w.via)) return;   /* a plain gap; the validator keeps doors off curves */
 
     const d = C.dir(0), left = leftOf(d);
@@ -222,6 +222,9 @@ function drawOpenings(level, T, s = 1) {
       out.push('<path fill="none" ' + fine + ' d="M' + pt(tip) + 'A' + r2(r) + ' ' + r2(r) + ' 0 0 ' + sweep + ' ' + pt(free) + '"/>');
     };
 
+    /* a glazed (French) door: the window's glass in the opening, one pane per leaf (Matt, 10-27) */
+    if (o.glazed && o.type === 'door') glass(o.from, o.to);
+    if (o.glazed && o.type === 'double-door') { glass(o.from, (o.from + o.to) / 2); glass((o.from + o.to) / 2, o.to); }
     if (o.type === 'door') {
       const [h, f] = o.hinge === 'to' ? [p1, p0] : [p0, p1];
       swing(h, f, span);

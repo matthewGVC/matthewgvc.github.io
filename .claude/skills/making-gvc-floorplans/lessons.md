@@ -3,6 +3,25 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: 366 N 3rd St, all floors v2; new rules from Matt
+
+- **Only PNGs in Unbranded/ and Branded/.** The SVG masters go to `Design/Unbranded/` and
+  `Design/Branded/`. The maker does this now, and any SVG of ours left in Unbranded/ or Branded/ moves
+  to the archive. The site's job page falls back to the PNG, so nothing there changed.
+- **Always CL, never CLOSET** (PRIMARY CL, UTILITY CL). The validator warns on CLOSET.
+- **Fold Matt's hand edits into the generator before regenerating a floor he edited.** Map his shapes
+  back to plan coordinates: take the scale and offset from one shape you know in both files (the
+  elevator box). Read his shapes with `getBoundingClientRect`, not `getBBox`, because his rects carry
+  rotate transforms. Then diff the regeneration against his file again; only the deliberate changes
+  should be left.
+- **French doors take `"glazed": true`:** the window's glass in the opening, one pane per leaf.
+- **Stools and single chairs are `chair`** (Matt's dining chair; `rot` 0 faces the table above it).
+- **A window beside a column:** the measured wall band takes in the column, which made the window too
+  wide and laid it over the post. Give such windows the plain wall's own centre and thickness.
+- **Labels on dashed X lines** (an open area, outdoor showers) take `"backing": true`, like ELEVATOR.
+- **Check the all-floors sheet's labels too.** Each floor is drawn smaller there, so labels that fit on
+  the single sheets touch walls, beds and swings. Still open for 366 N 3rd: ask Matt how he wants it.
+
 ## 2026-10-27: Matt's edits to the library sheet (scripts/floorplan/library.svg)
 
 How it was read: his returned sheet against a fresh `style-sheet.js` run, cell by cell. Each named group's

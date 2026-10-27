@@ -35,8 +35,8 @@
   function keyOf(cur) { for (var k in current) if (current[k] === cur) return k; return null; }
 
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
-  function newest(list) {
-    return global.GVC_KIT.realFiles(list).filter(function (f) { return !f.archived; }).sort(function (a, b) { return ms(b.modified) - ms(a.modified); })[0] || null;
+  function newest(list, key) {
+    return global.GVC_KIT.realFiles(list, key).filter(function (f) { return !f.archived; }).sort(function (a, b) { return ms(b.modified) - ms(a.modified); })[0] || null;
   }
 
   /* ---------- the Showsheet's record (Slice 4: S15, S20, S21) ----------
@@ -233,7 +233,7 @@
     var counted = t.rows.filter(function (x) { return x.state !== 'notUsed' && x.state !== 'tracked'; });
     var done = counted.filter(function (x) { return x.state === 'done'; }).length;
     var rows = t.rows.map(function (x) {
-      var st = STATE[x.state] || [x.state, ''], cur = newest(pieces[x.key]);
+      var st = STATE[x.state] || [x.state, ''], cur = newest(pieces[x.key], x.key);
       if (cur) current[x.key] = cur;
       var file = x.file ? esc(x.file.name) + (x.file.modified ? ' · ' + esc(D.day(x.file.modified)) : '') + (x.older ? ' · ' + x.older + ' older' : '')
         : x.older ? 'No current file · ' + x.older + ' older' : 'No file found';

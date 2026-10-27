@@ -54,9 +54,12 @@
     if (typeof window !== 'undefined' && window.GVC_DRIVE_RULES) return window.GVC_DRIVE_RULES;
     try { return typeof require === 'function' ? require('./drive-rules.js') : null; } catch (e) { return null; }
   }
-  function realFiles(list) {
+  /* a floorplan piece never counts Floorplan/Design/: those are the references a plan is drawn from */
+  function realFiles(list, key) {
     var R = rules();
-    return (list || []).filter(function (f) { return f && !(R && R.isJunk(f.name)); });
+    return (list || []).filter(function (f) {
+      return f && !(R && R.isJunk(f.name)) && !(key === 'floorplan' && R && R.planPlace(f.path) === 'design');
+    });
   }
 
   function flat(checklist) {
@@ -81,7 +84,7 @@
     var steps = flat(input.checklist);
     var matchList = (input.match && input.match.list) || [];
     var rows = KEYS.map(function (key) {
-      var files = realFiles(input.pieces && input.pieces[key]).sort(function (a, b) { return ms(b.modified) - ms(a.modified); });
+      var files = realFiles(input.pieces && input.pieces[key], key).sort(function (a, b) { return ms(b.modified) - ms(a.modified); });
       var current = files.filter(function (f) { return !f.archived; })[0] || null;
       var step = stepFor(key, steps);
       var m = matchList.filter(function (x) { return x.key === 'M8:' + key; })[0] || null;

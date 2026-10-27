@@ -3,6 +3,16 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: 366 N 3rd St, 2ND FLOOR review (Matt, page by page)
+
+- **Traced walls need cleaning before they are used.** Raw `trace-walls.py` masses had gaps, edges a few pixels off from the next wall and little nubs. Run them through `scripts/floorplan/clean_solids.py` (snap, union, drop nubs) and measure every opening (`gap`: both ends and the wall's centre and thickness) and every fixture (`flush`) against the cleaned wall raster, not by eye. Never hand-place an opening's ends.
+- **Toilets, counters and vanities sit flat on the wall face.** Compute the face from the wall raster; a fixture centred by eye leaves a gap.
+- **Measure fixtures at their real size** (a toilet is about 90 x 142 px at 54 px/ft; a double vanity ended where the source's counter ends, not at the room edge). Sinks and the shower must match the source's drawing: the shower is a glass box with an inner tray and an X, drawn with `glass` walls plus `lines`, not the plain crossed-box fixture.
+- **One range is one range.** A 48" range is a single `range` the width of its space (216 px), not two 30" ranges. The library has 4 or 6 burners only; use 6 and say so.
+- **Furniture:** when the architect's plan draws it, bring it in from the library (bed, nightstands, armchairs, sectional, coffee table, dining table, sofa) at the source's placement and size; leave out what the library lacks (stools). Armchairs are about 100 x 108 px; the sectional's `w` is the long back run and `h` the whole extent, `rot` 90 puts its back on the right.
+- **Labels we do not use:** OVEN'S. Leave the box, drop the label.
+- **Stairs are not a pile of treads.** Read the whole stair: the walking line (it climbs, then turns), the flights and their rails, the break line, and the dashed flight that runs above the cut (here it crosses the master closet). Dashed treads are `lines` with `dash`.
+
 ## 2026-10-27: 366 N 3rd St (NJ architect PDF, three floors)
 
 - **The plans in these PDFs are pictures** (only dimension lines are vector). Render each plan at 216 dpi (54 px to the foot at 1/4" = 1'-0") and give every level `unitsPerFoot: 54`.

@@ -203,6 +203,12 @@ That script pulls the latest `main`, rebuilds all galleries, commits, and pushes
 before publishing, run `python scripts/build_photos.py` first, preview via §6's local server,
 then run the publish script.
 
+### Setting up a job's Drive folder
+Every job folder follows one standard, by job type (resale, rental, sfh, newdev): see `docs/folder-standard.md`
+(kept in `assets/js/drive-rules.js`). To check or build one, run
+`node scripts/job-folders.js <type> "<job folder>"` (add `--apply` to create what's missing). It only creates
+folders; it never moves, renames or deletes anything.
+
 ### Adding a new tool
 Follow the project skill `.claude/skills/building-gvc-tools/` (Claude loads it automatically):
 questions to settle first, copy-exact templates, the wiring checklist, and

@@ -142,7 +142,7 @@
     if (!out.detailsDoc) note('noDetails', 'There is no details document at the top of the folder.');
 
     if (!out.pieces.floorplan.length) note('noFloorplan', 'There is no floorplan in the folder.');
-    else if (opts.isNew && !hasVersionDir && !out.pieces.floorplan.some(function (p) { return RULES.planPlace(p.path) === 'unbranded'; })) note('noVersions', 'The Floorplan folder has no version folders. The standard is v1, v2 and so on.');
+    else if (opts.isNew && !hasVersionDir && !out.pieces.floorplan.some(function (p) { return RULES.planPlace(p.path) === 'unbranded'; })) note('noVersions', 'The Floorplan folder has no Unbranded folder yet. The standard is Floorplan\Design, Unbranded and Branded.');
     if (!out.pieces.photos.some(function (p) { return !p.archived; })) note('noEdited', 'There are no edited photos in the folder.');
 
     ONE_CURRENT.forEach(function (key) {

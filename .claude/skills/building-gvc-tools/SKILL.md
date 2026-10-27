@@ -32,7 +32,7 @@ build once answered.** Never guess them:
 | Where does each QR code point? | Team QR is fixed; a tool's own QR (listing, form) is a field |
 | Homepage section: Listing Suite (prints for clients) or Tools (utilities)? | Tile placement |
 
-Record the answers in `docs/superpowers/specs/YYYY-MM-DD-<slug>-design.md`.
+Record the answers in `docs/specs/YYYY-MM-DD-<slug>-design.md`.
 
 **Start from the team's own recent designs, not a fresh restyle.** If the tool makes
 collateral the team already produces by hand (postcards, sheets, social posts), find the

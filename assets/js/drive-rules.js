@@ -20,6 +20,8 @@
                                                             first segment): 'design' | 'unbranded' |
                                                             'branded', any case; else null. Design/ files
                                                             are never plans. Also GVC_SHEETJOB.planPlace.
+     GVC_DRIVE_RULES.layout('sfh')                      → the standard folders of a job type (resale, rental,
+                                                            sfh, newdev), with missingFolders(type, existing)
      GVC_DRIVE_RULES.isJunk('a.m4v.xmpses.xmp')         → true: a sidecar or system file (*.xmp,
                                                             *.xmpses, desktop.ini, Thumbs.db, .DS_Store,
                                                             ~$ Office temp files, ._ AppleDouble, any
@@ -146,6 +148,61 @@
     return out;
   }
 
+  /* ---------- THE FOLDER STANDARD (docs/folder-standard.md) ----------
+     One layout per job type, one name per folder. Every type shares the core; the two new-development
+     types add the build folders and a project also gets Branding. Archive\ is never listed here: the
+     helper makes it inside a piece folder the first time it moves a file there. The workspace reads
+     only Floorplan, Photos and Marketing (READABLE); Docs is never opened. */
+  var CORE = [
+    ['Floorplan', ['Design', 'Unbranded', 'Branded']],
+    ['Photos', ['Raw', 'Edited', 'Staged', 'Print', 'Web']],
+    ['Marketing', ['Pitch', 'Showsheet', 'Brochure', 'Open House', 'Postcard', 'Signage', 'Video']],
+    ['Docs', []]
+  ];
+  var BUILD = [['Architecturals & Site Plan', ['Old']], ['Finishes', []], ['Final Renders', []],
+    ['3D File Assets and Archive - For Matt and Ilin', []]];
+  var TYPES = {
+    resale: CORE,
+    rental: CORE,
+    sfh: CORE.concat(BUILD),
+    newdev: CORE.concat(BUILD, [['Branding', []]])
+  };
+  /* the older names for a top folder, lower case → the standard name (they stay readable, the folder
+     check says to rename them) */
+  var RENAMED = { 'floorplans': 'Floorplan', 'floor plan': 'Floorplan', 'floor plans': 'Floorplan' };
+
+  /* layout('sfh') → [{ name, children: [name] }] in creation order; null for an unknown type */
+  function layout(type) {
+    var t = TYPES[String(type || '').toLowerCase()];
+    return t ? t.map(function (x) { return { name: x[0], children: x[1].slice() }; }) : null;
+  }
+  /* missingFolders('sfh', ['Floorplans', 'Floorplans/Design', 'Finishes']) → what the standard has
+     that the job lacks, as 'Floorplan', 'Floorplan/Unbranded' paths, and the renames to suggest.
+     existing: the job's folder paths, relative, any case. Nothing here touches a drive. */
+  function missingFolders(type, existing) {
+    var L = layout(type);
+    if (!L) return null;
+    var have = {}, renames = [];
+    (existing || []).forEach(function (p) {
+      var parts = String(p).split(/[\/]+/).filter(Boolean);
+      var top = parts[0].toLowerCase();
+      if (RENAMED[top]) {
+        renames.push({ from: parts[0], to: RENAMED[top] });
+        parts[0] = RENAMED[top];
+      }
+      have[parts.join('/').toLowerCase()] = true;
+    });
+    var out = [];
+    L.forEach(function (f) {
+      if (!have[f.name.toLowerCase()]) out.push(f.name);
+      f.children.forEach(function (c) { if (!have[(f.name + '/' + c).toLowerCase()]) out.push(f.name + '/' + c); });
+    });
+    var seen = {};
+    renames = renames.filter(function (r) { return !seen[r.from] && (seen[r.from] = true); });
+    return { missing: out, renames: renames };
+  }
+
   return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
-    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace };
+    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace,
+    layout: layout, missingFolders: missingFolders, TYPES: Object.keys(TYPES) };
 });

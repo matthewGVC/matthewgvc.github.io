@@ -17,8 +17,10 @@ better.** If the house style itself is wrong, that's Matt's decision and a separ
 Matt opens this chat by pasting the prompt from the job page's **Make Floorplan** button:
 
 ```
-Make the floorplan for <label> (<market>, <sale|rental>, <beds> bed / <baths> bath).
+Make the floorplan for <label> (<market>, <sale|rental>, <beds> bed / <baths> bath[, <n> half bath]).
 
+Address: <street address>, <unit>
+Facts: {"beds":2,"baths":2}
 Floorplan folder: G:\Shared drives\...\<job>\Floorplan
 References in Design\:
 - <file> (modified <date>)
@@ -26,6 +28,10 @@ Save as version v<N>.
 
 Use the making-gvc-floorplans skill.
 ```
+
+`Address:` is the job's own address: copy it into `job.address` exactly (the header splits it at the
+first comma). When the prompt has no `Address:` line, write it out from the label (176 E71 4B is
+176 East 71st Street, 4B) and say so in `uncertain`. `Facts:` goes to the maker's `--facts` as it is.
 
 He does not approve anything before you save, so the checks in step 7 are the only review the plan
 gets. Work from the repo root. The scripts need `scripts/node_modules` (`npm install --prefix scripts`
@@ -56,8 +62,8 @@ Files beside this one:
   folder.
 - **Never delete or overwrite.** The maker moves anything it replaces to `Design/archive/<date>/`.
   Leave references in `Design/` where Matt put them.
-- **The facts come from the prompt.** Pass the prompt's beds and baths to the maker. If the prompt
-  has none, pass none. Never read them off the source picture.
+- **The facts come from the prompt.** Pass its `Facts:` line to the maker as it is. If the prompt
+  has none, pass none. Never read beds, baths or a size off the source picture.
 
 ## The process
 
@@ -74,6 +80,9 @@ Files beside this one:
    tracing them: Matt's walls are the source's own masses, exact.
 4. **Several references:**
    - One file per floor becomes one level each, named the way the source names them ("FIRST FLOOR").
+     The maker then also writes one sheet with every floor on it, at one scale (Matt makes both). Floors
+     traced from separate pictures are at different scales: give each level `unitsPerFoot`, read off a
+     room whose size the source prints (its width in pixels over its width in feet).
    - Two files of the same floor: use the newest and name the other in the report. Never merge them.
    - A file is an **alternate** layout only when its name says alt, alternate or option. It gets its
      own `plan.json` with `"layout": "alternate"`, run separately (see "Alternates" below).
@@ -81,24 +90,26 @@ Files beside this one:
    ```
    node -e "const r=require('./scripts/floorplan/plan.js').validate(require(process.argv[1]));console.log(JSON.stringify(r,null,1))" "<Floorplan folder>\Design\plan.json"
    ```
-   Fix every error. Read every warning: "label is wider than its room" means use the standard
-   abbreviation (BATH, CL, WIC, W/D, PDR) or move the label beside the room. **Never make it
+   Fix every error. Read every warning: "no north" means research it (`plan-format.md`, `north`);
+   "label is wider than its room" means use the standard abbreviation (BATH, CL, WIC, W/D, PDR) or
+   move the label beside the room. **Never make it
    smaller.** Write everything you left out in `missing` and everything you guessed in `uncertain`.
 6. **Run the maker** with the prompt's version and facts:
    ```
    node scripts/make-floorplan.js "<Floorplan folder>" --version <N> --facts "{\"beds\":2,\"baths\":2}"
    ```
-   (Leave out `--facts` when the prompt gives no beds or baths. Use `0` beds for a studio. Half baths
-   and the size go on the header's second line: `"half":1`, `"sqft":3369`, only when the prompt gives
-   them.) It
-   writes `<label> v<N>.svg` and `.png` (and `… - <Level>` for each level) into `Unbranded/` and
-   `Branded/`, and archives older versions of the same layout. It also writes `Design/run-v<N>.md`.
+   (`--facts` is the prompt's `Facts:` line; leave it out when there is none. `0` beds is a studio.
+   Half baths and the size go on the header's second line.) It
+   writes `<label> v<N>.svg` and `.png` into `Unbranded/` and `Branded/` (for several floors, that is
+   the all-floors sheet, plus `… - <Level>` for each floor), and archives older versions of the same layout. It also writes `Design/run-v<N>.md`.
 7. **Check the result against the source**, in two passes.
 
    **a. The overlay. Required, and repeated until it is clean.**
    ```
-   node scripts/floorplan/overlay.js "<Floorplan folder>\Design\plan.json" "<the picture you traced>" "tmp\overlay.png"
+   node scripts/floorplan/overlay.js "<Floorplan folder>\Design\plan.json" "<the picture you traced>" "tmp\overlay.png" [--level 2] [--zoom 2]
    ```
+   (`--level` for each floor of several, against its own picture; `--zoom 2` when thin linework is
+   hard to see.)
    The overlay draws your plan in navy with the source over it in red. Where they agree the lines
    go black. **Red with nothing under it is something you missed or misplaced. Navy on its own is
    something that isn't in the source.** Zoom into each part of the overlay and fix every one. Thin red
@@ -117,10 +128,11 @@ Files beside this one:
    - no label sits on a wall or on another label;
    - nothing from the source's branding is left, and nothing was invented.
 
-   Open the Branded PNG too: the header holds the address and facts, and the compass appears only
-   when the source showed one. If anything is wrong, fix `plan.json` and run the maker again with
+   Open the Branded PNG too: the header holds the address and facts, the compass points the right
+   way, and nothing touches ALTERNATE or the note. For several floors, open the all-floors sheet too. If anything is wrong, fix `plan.json` and run the maker again with
    the **same** version (it archives the earlier attempt). Then add a `## Checked against the source`
-   section to `Design/run-v<N>.md`, listing what you compared and what you fixed.
+   section to `Design/run-v<N>.md`, listing what you compared, what you fixed, and what is left. **The
+   run is not done until that section is written.**
 8. **Record the version** in the `floorplans` table, so the job page's version list stays one list.
    Use the Supabase MCP (project `hoszxrrlfhzbbrzenqvp`). Find the job with
    `select id, drive_folder from properties where label = '<label>'`. If more than one row comes back,
@@ -147,8 +159,8 @@ Files beside this one:
 
 `node scripts/floorplan/style-sheet.js "<out.svg>"` writes every element the drawer makes at true
 size, each in a group named after it: walls, windows, doors, bath and kitchen fixtures, furniture,
-swatches, stairs, areas, labels and the branded frame. Its last section is empty boxes for Matt's
-own artwork (a car, the compass, closet clothes). Matt edits that file in Illustrator and hands it
+swatches, stairs, areas, labels and the branded frame. Its last section is Matt's own artwork (his
+two cars, the compass, closet clothes). Matt edits that file in Illustrator and hands it
 back. To apply it:
 - Compare each group in his file with a freshly generated sheet.
 - Make the changes in `style.js` (weights, sizes, colours, angles) or in the element's drawing

@@ -1,7 +1,20 @@
 # Floorplan lessons
 
-What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
+What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
+
+## 2026-10-27: skill audit before the first real jobs
+
+- **The prompt now carries the job's `Address:` and `Facts:`** (beds, baths, half baths, and the size
+  outside NYC). In the test rounds the address had to be typed in by hand, and an agent guessing it
+  from the label is how a header goes wrong.
+- **The all-floors sheet is built:** a home on several floors gets one sheet with every floor at one
+  scale, plus a sheet for each. Floors from separate pictures need `unitsPerFoot`.
+- **Matt's two cars are in** (`car`, `car-2`), split from his garage drawing.
+- Rules that had come up three times moved out of here: the door angles (`plan-format.md`), doors by
+  points and thin partitions the tracer misses (`sources.md`), researching north (`sources.md`).
+- Agents in the test rounds often stopped before writing "Checked against the source". The run is
+  not done until it is written (SKILL step 7).
 
 ## 2026-10-27: Matt's answers after the real-plan tests (rounds 2-5)
 
@@ -9,16 +22,13 @@ run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md
 - **Compass on every branded sheet:** when the source has none, research the building's orientation and
   set `north` (plan-format). Leave it `null` only when it can't be found, and say so in `missing`.
 - **Several floors:** Matt makes one sheet with every floor on it, and a separate sheet for each floor.
-  The drawer makes the separate sheets now; the all-floors sheet is still to build.
+  The maker writes both.
 - **Labels:** `BI` is always written `BUILT-INS`.
-- **Doors:** closet doors at 45°, like every inside door, whatever the source shows. A front door onto
-  a landing is an outside door (90°).
 - **Cubicasa:** its door gaps are drawn as doors with their swings. Hatched masses (a chimney, a
   fireplace) are solid blocks.
 - Rounds 2-5 fixed in the scripts: walls lifted from the picture, the frame measured off Matt's sheets,
   the compass placed in empty space with an upright N, white-filled windows, dashes over counters,
-  doors given by points (`hinge`, `into`), `--cut` for fixtures fused to walls. Door sides were the
-  commonest tracing error: give doors by points.
+  doors given by points (`hinge`, `into`), `--cut` for fixtures fused to walls.
 
 ## 2026-10-26: real-plan test, round 1 (six of Matt's jobs, two element audits)
 
@@ -35,8 +45,6 @@ Six of Matt's real jobs were run from the source he was given and compared with 
 - **What Matt adds that the source lacks** (fixtures in a Cubicasa plan, renamed rooms, a second level,
   CL labels, sizes) comes from sales agents' requests (Matt, 10-26). Never learn it as house style, and
   never add it unless the prompt asks.
-- Matt's older sheets draw interior doors fully open; his rule now is 45° inside, 90° to the outside.
-  Follow the rule.
 
 ## 2026-10-26: Matt's review of his symbols, round 4
 
@@ -57,8 +65,8 @@ Six of Matt's real jobs were run from the source he was given and compared with 
   tuck a third under the table, which is drawn over them.
 - Sofa and sectional seat edges are one line, so their inside corners join.
 - A straight wall's free end no longer carries an extra point.
-- **The car is gone** until Matt sends a new one: a car fixture draws its rounded footprint. The old
-  rod-and-hangers cell is gone too: `rod` draws Matt's clothes 1.
+- The first car was retired (Matt's two new cars came 10-27). The old rod-and-hangers cell is gone
+  too: `rod` draws Matt's clothes 1.
 
 ## 2026-10-26: Matt's style sheet, round 3
 
@@ -79,8 +87,6 @@ Six of Matt's real jobs were run from the source he was given and compared with 
 
 ## 2026-10-26: house-style decisions from Matt
 
-- **Doors:** 90° for any door leading outside (terrace, balcony, the front door to the hall), and 45°
-  for every interior door. Mark outside doors `"outside": true`.
 - Matt is reviewing every element on the style sheet (`scripts/floorplan/style-sheet.js`). Apply his
   returned sheet as SKILL.md describes.
 - **Fireplaces all differ:** never one fixed symbol. Trace each from its source.

@@ -3,6 +3,28 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: 366 N 3rd St FIRST FLOOR v2 (rebuilt with the 2nd-floor lessons)
+
+- **Revising one floor of a hand-edited job: run the maker in a scratch copy.** It moves every other
+  version's files to the archive, so a v2 run in the job folder would have swept Matt's hand-edited v1
+  2ND FLOOR out of Unbranded/. Copy the job's `Design/plan.json` to `tmp/<x>/Floorplan/Design/`, run
+  there, and copy only that floor's `v<N> - <LEVEL>` files across. Archive the old `plan.json` first.
+- **`clean_solids.py` collapsed the outside walls on a busy plan.** Its edge snapping chained near values,
+  so a group drifted across a whole wall. A group now spans at most the tolerance. Always check the
+  cleaned walls against the raw trace (red lost, green added) before using them.
+- **Read grid crops by their printed labels, not by row offsets.** Several first readings were off by
+  the crop's origin. Measure windows by scanning the wall centre for gaps instead (exact ends, and
+  pane splits where the source shows mullions).
+- **`flush` needs a probe point where a window opens behind the fixture** (a tub or a bed under a
+  window): find the wall face beside the window, and keep the fixture's own centre along the wall.
+- **Label pass on both PNGs.** A label clear on the Unbranded sheet can touch a bed or a wall on the
+  Branded one (smaller plan, same type size). Check both. A label never goes on the far side of a
+  wall from its object (WET BAR first landed in bedroom 3).
+- **Room labels take `"backing": true`** for a white box behind them (an elevator's X).
+- Done on this floor from the 2nd-floor list: wall-to-wall vanity where the source's line runs on,
+  glass showers with a tray and X, balcony posts, rail and balusters, walking lines, dashed flights
+  above, nosings. No French doors on this floor (its swings are casement windows).
+
 ## 2026-10-27: full scan of Matt's 2ND FLOOR edits against a fresh regeneration
 
 How: copy `Design/plan.json` to a scratch `Floorplan/Design/`, run the maker there, then

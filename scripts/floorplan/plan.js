@@ -28,6 +28,7 @@
        "areas":    [{ "type", "poly": [[x,y], ...], "pattern": "tile|pavers|brick-patio|brick-roof",
                       stair only: "treads", "dir", "arrow": false, "break": true | 0-1 }],
        "rooms":    [{ "name": "CAPITALS", "size": null | "12'0\" x 20'3\"" | "13' x 24'" (exactly as the source prints it), "at": [x,y], "rot",
+                      "backing": true optional — a white box behind the label, over linework (an elevator's X),
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
        "labels":   [{ "text", "at": [x,y] }],

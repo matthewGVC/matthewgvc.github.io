@@ -68,6 +68,13 @@ lp = clone(studio); lp.levels[0].areas = [{ type: 'floor', pattern: 'marble', po
 check('an unknown pattern is refused', has(validate(lp), 'level 1 area 1: unknown pattern "marble"'), true);
 lp = clone(studio); lp.levels[0].areas = [{ type: 'stair', break: 2, poly: [[0, 0], [1, 0], [1, 1]] }];
 check('break is true or between 0 and 1', has(validate(lp), 'level 1 area 1: break must be true or a number between 0 and 1'), true);
+lp = clone(studio); lp.levels[0].rooms[0].backing = true;
+{
+  const { draw } = require('./floorplan/draw.js');
+  const svg = (p) => { const d = draw(p, 0); return typeof d === 'string' ? d : d.svg || d.unbranded; };
+  const label = (p) => svg(p).split('data-label="' + p.levels[0].rooms[0].name + '"')[1].split('</g>')[0];
+  check('a room with backing draws a white box behind its label, and only then', [validate(lp).errors, /<rect fill="#ffffff"/.test(label(lp)), /<rect/.test(label(studio))], [[], true, false]);
+}
 
 if (failures.length) {
   console.log(failures.join('\n'));

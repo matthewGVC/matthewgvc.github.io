@@ -19,7 +19,9 @@ from shapely.ops import unary_union
 def _cluster(vals, tol):
     vals = sorted(set(round(v, 1) for v in vals)); groups = []
     for v in vals:
-        if groups and v - groups[-1][-1] <= tol: groups[-1].append(v)
+        # a group never spans more than tol: chaining near values let a group drift across a whole
+        # wall on a busy plan and collapsed the 366 N 3rd first floor's outside walls
+        if groups and v - groups[-1][0] <= tol: groups[-1].append(v)
         else: groups.append([v])
     m = {}
     for g in groups:

@@ -586,6 +586,11 @@ function drawRooms(level, T, k = 1) {
     /* sizes print with typographic marks, as Matt sets them: 12’ x 19’6” */
     if (hasSize) paths.push('<path d="' + outline(r.size.replace(/'/g, '\u2019').replace(/"/g, '\u201D'), { ...SIZE, x: c[0], y: nameBase + (lines.length - 1) * gap + SIZE.gap + sizeCap, anchor: 'middle' }) + '"/>');
     const rot = Number.isFinite(r.rot) && r.rot ? ' transform="rotate(' + r2(r.rot) + ' ' + pt(c) + ')"' : '';
+    /* "backing": a white box behind the block, for a label over linework such as an elevator's X (Matt, 10-27) */
+    if (r.backing) {
+      const wide = Math.max(...lines.map((t) => measure(t, NAME)), hasSize ? measure(r.size, SIZE) : 0), pad = 1.5;
+      paths.unshift('<rect fill="#ffffff" x="' + r2(c[0] - wide / 2 - pad) + '" y="' + r2(c[1] - block / 2 - pad) + '" width="' + r2(wide + 2 * pad) + '" height="' + r2(block + 2 * pad) + '"/>');
+    }
     out.push('<g data-label="' + esc(r.name) + '" fill="' + STYLE.NAVY + '"' + rot + '>' + paths.join('') + '</g>');
   });
   (level.labels || []).forEach((t) => {

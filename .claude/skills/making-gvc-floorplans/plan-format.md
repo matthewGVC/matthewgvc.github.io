@@ -28,8 +28,9 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 | `layout` | Leave it out for the current layout. `"alternate"` for an alternate: the branded sheet then says ALTERNATE, bottom right. |
 | `current` | `true` on the current layout of a job that also has an alternate: the sheet then says CURRENT. |
 | `sources` | One entry per reference used: `{ "file": "Design/<name>", "kind": "<cubicasa-svg, cubicasa-png, broker-plan, screenshot, architect-pdf, dwg, dxf, gvc-old-plan-jpg…>", "note": "<what you took from it, e.g. page 2 only>" }`. The maker needs this list. |
-| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **Every branded sheet carries the compass (Matt, 10-27).** When the source shows none, research the building's orientation (the address on a map: which way its street and its walls run; Manhattan's avenues run about 29° east of true north), set `north` from that and say so in the run note. Never guess it: when it can't be found, leave it `null` and list it in `missing`. |
+| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **Every branded sheet carries the compass (Matt, 10-27).** When the source shows none, research the building's orientation (`sources.md`, "North, when the source has no compass"), set `north` from that and say so in the run note. Never guess it: when it can't be found, leave it `null` and list it in `missing`. |
 | `levels` | One per floor (below). |
+| `sheet` | Several floors only, and only to overrule the drawer: `"row"` (side by side, bottoms lined up, as 225 E79) or `"stagger"` (two floors stepped from top left to bottom right, as 401 E89). Left out, it takes whichever draws the floors larger, preferring a row. |
 | `missing` | Plain sentences: what the source doesn't show, or what you left out. |
 | `uncertain` | Plain sentences: anything you had to judge (a blurry size, a door swing you couldn't see). |
 
@@ -39,8 +40,14 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 
 `name` is `null` for a home on one floor. With several levels every one needs a name, in capitals as
 the source has it ("FIRST FLOOR", "LOWER LEVEL"); it prints in the file name. A source that shows one
-floor of several and names it ("MAIN LEVEL", "FLOOR 1") keeps that name too. The branded sheet prints
-the name bottom right, before ALTERNATE or CURRENT ("FLOOR 1 ALTERNATE"), as Matt's do.
+floor of several and names it ("MAIN LEVEL", "FLOOR 1") keeps that name too. A floor's own sheet
+prints the name bottom right, before ALTERNATE or CURRENT ("FLOOR 1 ALTERNATE"); the all-floors sheet
+prints each name with its floor (MAIN in black, LEVEL light), as Matt's do.
+
+`unitsPerFoot` (several floors): how many plan units make a foot on this level. Floors traced from
+separate pictures are at different scales, and the all-floors sheet draws them at one scale with it.
+Read it off a room the source sizes: its width in pixels over its width in feet. Left out, it is read
+off the rooms that give both a `size` and a `box`; floors traced from one picture need none.
 
 ### walls
 
@@ -112,7 +119,7 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
 - **Matt's own symbols** (`scripts/floorplan/symbols.json`) are what these draw, whenever he has
   drawn one: `toilet`, `range` (4 burners; `"burners": 6`; `"burners": 6, "griddle": true`), the
   dining chairs, `lounge-chair` (terrace), `clothes` (`"variant": 1`, `2` or `3`: clothes on a closet
-  rod; `rod` draws variant 1) and the compass. `car` draws a rounded footprint until Matt's car comes.
+  rod; `rod` draws variant 1) and the compass. `car` is Matt's car (`"variant": 2` for his second), nose to the wall: give `w` its width (about 84 in) and its length follows his proportions (about 190 in). Draw a car only where the source shows one (a garage).
   They have a real front and back, so **`rot` matters**: a range's knobs, a toilet's bowl and a chair's
   seat face away from the wall. They keep Matt's proportions: `w` (along the wall) sets their size and
   their back sits on the wall, so a box measured a little shallow never squashes them.

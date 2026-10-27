@@ -60,16 +60,28 @@
     var version = top + 1;
 
     var bits = [row.market, row.kind === 'rental' ? 'rental' : 'sale'].filter(Boolean);
-    var beds = J.valueOf(row, 'beds'), baths = J.valueOf(row, 'baths');
+    var beds = J.valueOf(row, 'beds'), baths = J.valueOf(row, 'baths'), half = J.valueOf(row, 'halfBaths');
+    var sqft = /nyc/i.test(String(row.market || '')) ? null : J.valueOf(row, 'sqft');
+    var num = function (v) { var n = Number(String(v).replace(/,/g, '')); return v !== null && isFinite(n) ? n : null; };
     if (beds !== null && baths !== null) bits.push(beds + ' bed / ' + baths + ' bath');
     else if (beds !== null) bits.push(beds + ' bed');
     else if (baths !== null) bits.push(baths + ' bath');
+    if (num(half) > 0) bits.push(num(half) + ' half bath');
     var lines = [
       'Make the floorplan for ' + row.label + ' (' + bits.join(', ') + ').',
-      '',
-      'Floorplan folder: G:\\Shared drives\\' + String(row.drive_folder).replace(/[\\/]+/g, '\\') + '\\' + folder,
-      'References in Design\\:'
+      ''
     ];
+    /* the header's address and facts, straight from the job, so the chat never reads them off a picture */
+    var core = row.core || {}, addr = [core.address, core.unit].map(function (x) { return String(x || '').trim(); }).filter(Boolean).join(', ');
+    if (addr) lines.push('Address: ' + addr);
+    var facts = {};
+    if (num(beds) !== null) facts.beds = num(beds);
+    if (num(baths) !== null) facts.baths = num(baths);
+    if (num(half) > 0) facts.half = num(half);
+    if (num(sqft) > 0) facts.sqft = num(sqft);
+    if (Object.keys(facts).length) lines.push('Facts: ' + JSON.stringify(facts));
+    lines.push('Floorplan folder: G:\\Shared drives\\' + String(row.drive_folder).replace(/[\\/]+/g, '\\') + '\\' + folder,
+      'References in Design\\:');
     refs.forEach(function (f) { var d = day(f.modified); lines.push('- ' + nameOf(f) + (d ? ' (modified ' + d + ')' : '')); });
     lines.push('Save as version v' + version + '.', '', 'Use the making-gvc-floorplans skill.');
     return { ok: true, text: lines.join('\n'), version: version };

@@ -67,5 +67,7 @@ module.exports = {
   FOOTER_TEXT: { weight: 800, sizePt: 6.1, tracking: 0.25, x: 405, baseline: 595.9, text: 'ARTIST RENDERING - ALL MEASUREMENTS ARE APPROX.' },
   STATUS: { weight: 900, sizePt: 12.77, tracking: 0, right: 761, baseline: 596 },   // CURRENT, ALTERNATE, the level name
   COMPASS: { h: 60, at: [400, 554], letter: { weight: 900, sizePt: 15, tracking: 0 } },   // Matt's compass, bottom centre
+  /* the all-floors sheet (225 E79, 401 E89): each floor's name, MAIN in black and LEVEL light, cap 7.9 pt */
+  LEVEL_NAME: { weight: 900, light: 300, sizePt: 11.4, tracking: 0, below: 31, gap: 48, stagger: 18, above: 3, clear: 14, preferRow: 1.15 },
   COMPASS_CLEAR: 6             // pt kept between the compass and the plan when it moves aside
 };

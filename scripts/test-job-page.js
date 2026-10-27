@@ -436,6 +436,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   const dd = d => { const x = new Date(d), q = n => String(n).padStart(2, '0'); return x.getFullYear() + '-' + q(x.getMonth() + 1) + '-' + q(x.getDate()); };
   check('prompt: the textarea holds the exact text', await p2.$eval('#fpText', e => e.value), [
     'Make the floorplan for x (NYC, sale, 4 bed).', '',
+    'Address: 100 Example St, 4A', 'Facts: {"beds":4}',
     'Floorplan folder: G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A\\Floorplan',
     'References in Design\\:',
     '- cubicasa.png (modified ' + dd('2026-10-20T10:00:00.000Z') + ')', '- architect.pdf (modified ' + dd('2026-10-22T10:00:00.000Z') + ')',

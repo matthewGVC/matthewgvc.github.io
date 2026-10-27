@@ -56,16 +56,18 @@ function listAll(dir) {
     for (const f of r.written) ok(fs.existsSync(path.join(dir, f)), f + ' missing');
   });
 
-  await t('levels are named', async () => {
+  await t('levels are named, and the floors also share one sheet', async () => {
     const p = planWith();
     const l2 = JSON.parse(JSON.stringify(p.levels[0]));
     p.levels[0].name = 'First Floor'; l2.name = 'Second Floor';
     p.levels.push(l2);
     const dir = folder(p);
     const r = await make(dir, { version: 3, today: '2026-10-27' });
-    eq(r.written.length, 8);
+    eq(r.written.length, 12);
     ok(r.written.some(f => f.endsWith(' v3 - First Floor.svg')), 'first');
     ok(r.written.some(f => f.endsWith(' v3 - Second Floor.svg')), 'second');
+    ok(['Unbranded/333 E43 417 v3.svg', 'Branded/333 E43 417 v3.png'].every(f => r.written.includes(f)), 'the all-floors sheet');
+    ok(/data-level="2"/.test(fs.readFileSync(path.join(dir, 'Branded', '333 E43 417 v3.svg'), 'utf8')), 'both floors on it');
   });
 
   await t('alternate layout and forbidden characters', async () => {

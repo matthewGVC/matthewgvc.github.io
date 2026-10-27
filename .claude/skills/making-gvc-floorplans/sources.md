@@ -55,13 +55,20 @@ im.save(out)
    that came through as a mass of its own, and `--cut` (a box cleared before tracing) for one fused to
    a wall: a toilet's tank, a sink's box or a door swing drawn thick against it. Draw the box round
    the fixture only, not the wall, and never erase a hole of a mass to close a gap: a window or door
-   goes across the gap as an opening. Copy its `solids` into the level as they are. Write no `walls` at all
-   for a picture traced this way: the solids are the walls.
+   goes across the gap as an opening. Copy its `solids` into the level as they are: the solids are the walls.
+   **Then compare the preview with the source, partition by partition.** A wall drawn as thin as the
+   source's linework (a closet side, a shaft, a glass screen, often 2-4 px) can't be told from a line,
+   so the tracer leaves it out, and it says so when many runs sit just under its cut. Add each one it
+   missed as a `walls` entry (`interior`, or `glass`) on its centre line. Those are the only `walls`
+   in a traced plan.
 3. Add the openings across the gaps the masses leave, each a **free opening** with the two ends of
    its gap and the wall's thickness there: `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`
-   (doors take `hinge`, `side` and `outside` as usual, walking from `a` to `b`). A hole the tracer
-   leaves where a window sits is the window's gap: keep it and draw the window across it; never fill
-   it. A label fused to a wall mass is cut off the mass in your generator. Then the closets and
+   A door takes `"hinge": [x, y]` (a point at its turning end) and `"into": [x, y]` (a point in the
+   room it swings into), read straight off the source, and `outside`. Wrong door sides were the
+   commonest error in the test rounds; points can't be backwards. A hole the tracer leaves where a
+   window sits is the window's gap: keep it and draw the window across it; never fill it. The tracer
+   trims Cubicasa's marker triangles and a label's letters off a wall's face; anything else fused to a
+   wall is cleared with `--cut`. Then the closets and
    cabinets, the fixtures, the terraces and the stairs. Go room by room, and in each room list
    everything the source draws before you write it, so nothing is skipped.
 4. Draw what the source draws and nothing more: a plain box is a box (a `counter` or `lines`), never a
@@ -77,6 +84,21 @@ im.save(out)
 6. An **old GVC plan** (navy or gradient header, GVC lockup, compass, "FIRST FLOOR" title): take the
    compass angle for `north` and the floor title for the level name only when there are several
    levels. Leave the header, logo and address behind.
+
+## North, when the source has no compass
+
+Every branded sheet carries the compass, so work out which way is north. Never guess.
+- **A label on the source** naming a street or an avenue beside a wall ("PARK AVENUE", "E 71ST ST")
+  ties that wall to the street.
+- **The listing** (the job's `listingUrl`, or the brokerage's page for the address) often shows the
+  exposures ("south and west"), or a plan with a compass.
+- **The address on a map.** Find which side of its block the building stands on, then which wall of
+  the plan faces its street (the entry, the windows, a terrace). Manhattan's grid is turned: its
+  avenues run about 29° east of true north, so "uptown" (the avenue, north on the grid) is 29° and a
+  plan drawn with uptown at the top has `north` about 331. Outside Manhattan, read the street's own
+  direction off the map.
+- Say in the run note how you found it. If none of these settles it, leave `north` `null`, list it in
+  `missing`, and tell Matt.
 
 ## Cubicasa SVG
 

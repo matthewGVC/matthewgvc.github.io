@@ -161,9 +161,10 @@ function sheet() {
   const defs = patternDefs(Object.keys(PATTERNS));
 
   /* the branded frame: a whole small plan, as a plan prints */
-  const studio = JSON.parse(fs.readFileSync(require.resolve('./fixtures/studio.json'), 'utf8'));
-  studio.north = 0;
-  const page = draw(studio, 0, { branded: true, facts: { beds: 0, baths: 1 } }).replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+  /* the example page is the skill's worked example, a real plan traced from its source at its own scale;
+     the test studio's made-up sizes drew its fixtures out of proportion (Matt, 10-27) */
+  const example = JSON.parse(fs.readFileSync(require.resolve('./fixtures/555-w59-phc.json'), 'utf8'));
+  const page = draw(example, 0, { branded: true, facts: { beds: 1, baths: 1 } }).replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
   groups.push('<g id="frame-branded-page" transform="translate(' + X0 + ' ' + frameY + ')">' + page + '</g>');
   guides.push('<rect x="' + X0 + '" y="' + frameY + '" width="' + STYLE.PAGE.w + '" height="' + STYLE.PAGE.h + '" fill="none" stroke="#c9d1d6" stroke-width="0.5"/>');
   captions.push('<text x="' + X0 + '" y="' + (frameY - 8) + '">Branded frame (header, footer note, compass, ALTERNATE / CURRENT label), on a full 810 × 630 pt plan sheet</text>');

@@ -164,7 +164,7 @@ const fx = (type, extra) => { const q = clone(box4); q.levels[0].fixtures = [Obj
 const paths = (svg) => (svg.match(/<g transform="translate[^>]*>([\s\S]*?)<\/g>/) || [, ''])[1].match(/<path/g).length;
 ['toilet', 'sink', 'round-sink', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod'].forEach((t) =>
   check('fixture ' + t + ' draws', /<g transform="translate/.test(fx(t)), true));
-check('a one-bowl kitchen sink has one bowl', paths(fx('kitchen-sink', { bowls: 1 })), 3);
+check('a one-bowl kitchen sink: box, one bowl, its faucet (spout and two handles), the drain', paths(fx('kitchen-sink', { bowls: 1 })), 6);
 check('a two-bowl kitchen sink has two', paths(fx('kitchen-sink')), 5);
 p = clone(box4); p.levels[0].lines = [{ pts: [[10, 10], [30, 10], [30, 20]], closed: true }, { pts: [[40, 40], [60, 60]] }];
 const ln = draw(p, 0, {});

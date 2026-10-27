@@ -393,7 +393,7 @@ function drawSymbol(name, w, h) {
     });
     const a = ['fill="' + (p.fill ? PAINT[p.fill] || p.fill : 'none') + '"'];
     let sw = 0, stroke = p.stroke ? PAINT[p.stroke] || p.stroke : null;
-    if (p.stroke) sw = p.weight === 'fine' ? STYLE.FINE : p.weight === 'thin' ? STYLE.THIN : (p.sw || 0) * sk;
+    if (p.stroke) sw = STYLE.SYMBOL_WEIGHT[name] || (p.weight === 'fine' ? STYLE.FINE : p.weight === 'thin' ? STYLE.THIN : (p.sw || 0) * sk);
     if (stroke) a.push('stroke="' + stroke + '"', 'stroke-width="' + r2(sw) + '"', 'stroke-linejoin="round"');
     if (p.opacity !== undefined) a.push('opacity="' + p.opacity + '"');
     return { d, back: sym.mode === 'line' && p.weight === 'thin' && !p.fill && /Z\s*$/.test(d), el: '<path ' + a.join(' ') + ' d="' + d + '"/>' };
@@ -425,10 +425,13 @@ const rrect = (x, y, w, h, r) => {
 /* rot 0: the wall the fixture backs onto is at the top (-h/2); it faces down the page */
 const uShape = (bw, yt, yb, ry) => 'M' + r2(-bw) + ' ' + r2(yt) + 'L' + r2(-bw) + ' ' + r2(yb - ry) +
   'A' + r2(bw) + ' ' + r2(ry) + ' 0 0 0 ' + r2(bw) + ' ' + r2(yb - ry) + 'L' + r2(bw) + ' ' + r2(yt) + 'Z';
-/* a square-cornered basin bw wide centred at x in a counter h deep, its faucet a solid bar from the wall */
-const basin = (x, bw, h) => {
+/* a softly rounded basin bw wide centred at x in a counter h deep; faucet: a solid bar from the wall
+   (Matt's library sheet, 10-27: rounded corners, and no faucet on the double vanity) */
+const basin = (x, bw, h, faucet = true) => {
   const top = -h / 2 + h * 0.2, bh = h * 0.66, fw = Math.max(bw * 0.1, 0.9);
-  return [rect(x - bw / 2, top, bw, bh), { raw: '<path fill="' + STYLE.NAVY + '" d="' + rect(x - fw / 2, -h / 2, fw, h * 0.42) + '"/>' }];
+  const out = [rrect(x - bw / 2, top, bw, bh, Math.min(bw, bh) * 0.15)];
+  if (faucet) out.push({ raw: '<path fill="' + STYLE.NAVY + '" d="' + rect(x - fw / 2, -h / 2, fw, h * 0.42) + '"/>' });
+  return out;
 };
 const FIXTURE_DRAW = {
   /* tank against the wall, elongated bowl with its seat opening */
@@ -439,18 +442,22 @@ const FIXTURE_DRAW = {
   },
   /* vanity, as Matt draws it: the counter, a square-cornered basin, a solid faucet bar from the wall */
   sink: (w, h) => [rect(-w / 2, -h / 2, w, h), ...basin(0, w * 0.62, h)],
-  /* pedestal or vessel basin (Matt's): a round bowl, a small square faucet at the wall, a solid drain */
+  /* pedestal or vessel basin (Matt's): a round bowl, the faucet an outlined spout from the wall, an
+     open ring for the drain */
   'round-sink': (w, h) => {
-    const r = Math.min(w, h) / 2, f = r * 0.18;
-    return [ell(0, 0, r, r), rect(-f, -r - f * 0.2, 2 * f, f * 1.6), { raw: '<path fill="' + STYLE.NAVY + '" d="' + ell(0, r * 0.05, r * 0.12, r * 0.12) + '"/>' }];
+    const r = Math.min(w, h) / 2;
+    return [ell(0, 0, r, r), rect(-r * 0.14, -r - r * 0.03, r * 0.28, r * 0.75), ell(0, 0, r * 0.1, r * 0.1)];
   },
-  'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ...basin(-w / 4, w * 0.34, h), ...basin(w / 4, w * 0.34, h)],
+  'double-sink': (w, h) => [rect(-w / 2, -h / 2, w, h), ...basin(-w / 4, w * 0.34, h, false), ...basin(w / 4, w * 0.34, h, false)],
   /* the tub (Matt's): its box, a softly rounded basin, the drain at the end; "cross": true is a tub the
      source draws as a crossed box (some of Matt's older sheets), the box crossed corner to corner */
   tub: (w, h, f) => {
     if (f.cross) return [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])];
-    const ix = Math.min(w, h) * 0.12, iy = h * 0.12, r = Math.min(w, h) * 0.16;
-    return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + ix, -h / 2 + iy, w - 2 * ix, h - 2 * iy, r), ell(-w / 2 + ix + r * 1.1, 0, r * 0.28, r * 0.28)];
+    const ix = Math.min(w, h) * 0.12, iy = h * 0.12, r = Math.min(w, h) * 0.16, L = -w / 2;
+    /* the faucet at the drain end, over the rim (Matt's): a spout and its two handles */
+    return [rect(L, -h / 2, w, h), rrect(L + ix, -h / 2 + iy, w - 2 * ix, h - 2 * iy, r),
+      rect(L, -h * 0.03, h * 0.26, h * 0.06), rect(L + h * 0.035, -h * 0.13, h * 0.035, h * 0.1), rect(L + h * 0.035, h * 0.03, h * 0.035, h * 0.1),
+      ell(L + h * 0.34, 0, r * 0.28, r * 0.28)];
   },
   /* the pan crossed corner to corner, as Matt draws it */
   shower: (w, h) => [rect(-w / 2, -h / 2, w, h), line([-w / 2, -h / 2], [w / 2, h / 2]) + line([w / 2, -h / 2], [-w / 2, h / 2])],
@@ -465,12 +472,14 @@ const FIXTURE_DRAW = {
     return out;
   },
   'kitchen-sink': (w, h, f) => {
-    const dot = (x) => ell(x, h * 0.12, Math.min(w, h) * 0.04, Math.min(w, h) * 0.04);
-    if (f.bowls === 1) return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.1, -h / 2 + h * 0.15, w * 0.8, h * 0.7, Math.min(w, h) * 0.12), dot(0)];
+    const dot = (x, y = h * 0.12) => ell(x, y, Math.min(w, h) * 0.04, Math.min(w, h) * 0.04);
+    /* one bowl (Matt's): a faucet at the back, its spout over the bowl and a handle each side */
+    if (f.bowls === 1) return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.1, -h / 2 + h * 0.15, w * 0.8, h * 0.7, Math.min(w, h) * 0.12),
+      rect(-h * 0.04, -h / 2, h * 0.08, h * 0.35), rect(h * 0.04, -h / 2 + h * 0.05, h * 0.14, h * 0.05), rect(-h * 0.18, -h / 2 + h * 0.05, h * 0.14, h * 0.05), dot(0, h * 0.19)];
     return [rect(-w / 2, -h / 2, w, h), rrect(-w / 2 + w * 0.08, -h / 2 + h * 0.15, w * 0.38, h * 0.7, Math.min(w, h) * 0.1), rrect(w * 0.04, -h / 2 + h * 0.15, w * 0.38, h * 0.7, Math.min(w, h) * 0.1), dot(-w * 0.23), dot(w * 0.23)];
   },
-  /* the box: Matt labels it REF (in labels), with no door line */
-  refrigerator: (w, h) => [rect(-w / 2, -h / 2, w, h)],
+  /* the box: Matt labels it REF (in labels), with no door line; a small handle on its front */
+  refrigerator: (w, h) => [rect(-w / 2, -h / 2, w, h), rect(-w / 2 + w * 0.04, h / 2, w * 0.19, h * 0.06)],
   /* the firebox: narrow at the back wall, opening wide into the room */
   fireplace: (w, h) => [poly([[-w * 0.32, -h / 2], [w * 0.32, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]])],
   counter: (w, h) => [rect(-w / 2, -h / 2, w, h)],
@@ -488,8 +497,11 @@ const FIXTURE_DRAW = {
   /* headboard at the wall, pillows (1 on a bed narrower than 0.6 of its length), the turned-down sheet */
   bed: (w, h, f) => {
     const n = f.pillows || (w < h * 0.6 ? 1 : 2), hb = h * 0.05, pw = (w * 0.86 - (n - 1) * w * 0.04) / n, out = [rect(-w / 2, -h / 2, w, h), rect(-w / 2, -h / 2, w, hb)];
-    for (let i = 0; i < n; i++) out.push(rrect(-w * 0.43 + i * (pw + w * 0.04), -h / 2 + hb + h * 0.03, pw, h * 0.14, h * 0.03));
-    out.push(line([-w / 2, -h / 2 + h * 0.3], [w / 2, -h / 2 + h * 0.3]));
+    /* pillows fill the band above the sheet with an even margin (Matt's library sheet, 10-27) */
+    for (let i = 0; i < n; i++) out.push(rrect(-w * 0.43 + i * (pw + w * 0.04), -h / 2 + hb + h * 0.03, pw, h * 0.19, h * 0.03));
+    /* the sheet's edge, its corner turned down at the right: a fold about 18 in square */
+    const y = -h / 2 + h * 0.3, fx = w / 2 - Math.min(h * 0.22, w * 0.45), fy = y + h * 0.23;
+    out.push('M' + pt([-w / 2, y]) + 'L' + pt([fx, y]) + 'L' + pt([w / 2, fy]) + 'L' + pt([fx, fy]) + 'L' + pt([fx, y]));
     return out;
   },
   nightstand: (w, h) => [rect(-w / 2, -h / 2, w, h), ell(0, 0, Math.min(w, h) * 0.25, Math.min(w, h) * 0.25)],
@@ -508,15 +520,19 @@ const FIXTURE_DRAW = {
     const dep = Math.min(w, h) * 0.42, back = dep * 0.3, sx = f.side === 'right' ? -1 : 1;
     const X = (x) => x * sx;
     const outline = poly([[X(-w / 2), -h / 2], [X(w / 2), -h / 2], [X(w / 2), -h / 2 + dep], [X(-w / 2 + dep), -h / 2 + dep], [X(-w / 2 + dep), h / 2], [X(-w / 2), h / 2]]);
-    return [outline, 'M' + pt([X(w / 2), -h / 2 + back]) + 'L' + pt([X(-w / 2 + back), -h / 2 + back]) + 'L' + pt([X(-w / 2 + back), h / 2]),
-      line([X(-w / 2 + dep), -h / 2 + back], [X(-w / 2 + dep), -h / 2 + dep]) + line([X((-w / 2 + dep + w / 2) / 2), -h / 2 + back], [X((-w / 2 + dep + w / 2) / 2), -h / 2 + dep]) +
-      line([X(-w / 2 + back), (-h / 2 + dep + h / 2) / 2], [X(-w / 2 + dep), (-h / 2 + dep + h / 2) / 2])];
+    /* the back and the cushion seams are open lines over the white outline, so no fill hides a seam (Matt's) */
+    const open = (d) => ({ raw: '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '" d="' + d + '"/>' });
+    return [outline, open('M' + pt([X(w / 2), -h / 2 + back]) + 'L' + pt([X(-w / 2 + back), -h / 2 + back]) + 'L' + pt([X(-w / 2 + back), h / 2])),
+      open(line([X(-w / 2 + dep), -h / 2 + back], [X(-w / 2 + dep), -h / 2 + dep]) + line([X((-w / 2 + dep + w / 2) / 2), -h / 2 + back], [X((-w / 2 + dep + w / 2) / 2), -h / 2 + dep]) +
+      line([X(-w / 2 + back), (-h / 2 + dep + h / 2) / 2], [X(-w / 2 + dep), (-h / 2 + dep + h / 2) / 2]))];
   },
   'coffee-table': (w, h, f) => [f.shape === 'round' ? ell(0, 0, w / 2, h / 2) : rrect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.12)],
   table: (w, h, f) => [f.shape === 'round' ? ell(0, 0, w / 2, h / 2) : rect(-w / 2, -h / 2, w, h)],
   /* the table (w x h) with f.seats chairs round it (4 by default): along the long sides, then the ends */
   'dining-table': (w, h, f) => {
     const n = f.seats || 4, c = Math.min(w, h) * 0.36;
+    /* the table at the dining weight, lighter than other furniture, as its chairs are (Matt's) */
+    const table = (d) => ({ raw: '<path ' + thin().replace('stroke-width="' + STYLE.THIN + '"', 'stroke-width="' + STYLE.DINING_LINE + '"') + ' d="' + d + '"/>' });
     /* each chair pulled in to the table, its back away from it: Matt's chair when there is one. Its front
        third tucks under the table, which is drawn over it, so chair and table read as one set */
     const out = [], chair = SYMBOLS.chair, ch = (x, y, rot) => {
@@ -533,12 +549,12 @@ const FIXTURE_DRAW = {
     };
     if (f.shape === 'round') {
       for (let i = 0; i < n; i++) { const q = (i / n) * 2 * Math.PI - Math.PI / 2; ch(Math.cos(q) * w / 2, Math.sin(q) * h / 2, q * 180 / Math.PI - 90); }
-      out.push(ell(0, 0, w / 2, h / 2));
+      out.push(table(ell(0, 0, w / 2, h / 2)));
     } else {
       const ends = n >= 6 ? 2 : 0, side = (n - ends) / 2;
       for (let i = 0; i < side; i++) { const x = -w / 2 + w * (i + 0.5) / side; ch(x, -h / 2, 180); ch(x, h / 2, 0); }
       if (ends) { ch(-w / 2, 0, 90); ch(w / 2, 0, -90); }
-      out.push(rect(-w / 2, -h / 2, w, h));
+      out.push(table(rect(-w / 2, -h / 2, w, h)));
     }
     return out;
   },

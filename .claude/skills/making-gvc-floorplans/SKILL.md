@@ -159,7 +159,8 @@ Files beside this one:
 
 `node scripts/floorplan/style-sheet.js "<out.svg>"` writes every element the drawer makes at true
 size, each in a group named after it: walls, windows, doors, bath and kitchen fixtures, furniture,
-swatches, stairs, areas, labels and the branded frame. Its last section is Matt's own artwork (his
+swatches, stairs, areas, labels and the branded frame. The current sheet is kept at `scripts/floorplan/library.svg`;
+regenerate it there after every house-style change so it always matches the drawer. Its last section is Matt's own artwork (his
 two cars, the compass, closet clothes). Matt edits that file in Illustrator and hands it
 back. To apply it:
 - Compare each group in his file with a freshly generated sheet.

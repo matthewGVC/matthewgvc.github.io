@@ -181,6 +181,8 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
   source gives none.
 - `at` is the **centre of the whole label block** (name lines and size line together), not the top line. `rot` of 90 or -90 is for a long, narrow room, as the source
   does.
+- `"backing": true` puts a white box behind the label, for a label that sits over linework such as an
+  elevator's crossed box (Matt, 10-27).
 - `box` is optional: the room's extent. Give it for small rooms, so the validator can warn when the
   name won't fit.
 - BATH, WIC, PDR, FOYER and similar named spaces are **rooms** (bold name, size if the source gives

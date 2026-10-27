@@ -565,27 +565,31 @@ function drawFixtures(level, T, s) {
 }
 
 /* ---------- labels ---------- */
-function drawRooms(level, T) {
+/* k scales the text (the all-floors sheet sets it a little smaller, as Matt does) */
+function drawRooms(level, T, k = 1) {
   const out = [];
-  const nameCap = capHeight(STYLE.ROOM_NAME), sizeCap = capHeight(STYLE.ROOM_SIZE);
+  const NAME = { ...STYLE.ROOM_NAME, sizePt: STYLE.ROOM_NAME.sizePt * k, lineGap: STYLE.ROOM_NAME.lineGap * k };
+  const SIZE = { ...STYLE.ROOM_SIZE, sizePt: STYLE.ROOM_SIZE.sizePt * k, gap: STYLE.ROOM_SIZE.gap * k };
+  const SMALL = { ...STYLE.SMALL_LABEL, sizePt: STYLE.SMALL_LABEL.sizePt * k };
+  const nameCap = capHeight(NAME), sizeCap = capHeight(SIZE);
   (level.rooms || []).forEach((r) => {
     if (typeof r.name !== 'string' || !r.name.trim() || !isPt(r.at)) return;
     const c = T(r.at), hasSize = typeof r.size === 'string' && r.size;
     /* a name breaks where it has a line break ("LIVING\nROOM"), as the source sets it */
-    const lines = r.name.split('\n').map((t) => t.trim()).filter(Boolean), gap = STYLE.ROOM_NAME.lineGap;
+    const lines = r.name.split('\n').map((t) => t.trim()).filter(Boolean), gap = NAME.lineGap;
     const names = nameCap + (lines.length - 1) * gap;
-    const block = hasSize ? names + STYLE.ROOM_SIZE.gap + sizeCap : names;
+    const block = hasSize ? names + SIZE.gap + sizeCap : names;
     const nameBase = c[1] - block / 2 + nameCap;
-    const paths = lines.map((t, i) => '<path d="' + outline(t, { ...STYLE.ROOM_NAME, x: c[0], y: nameBase + i * gap, anchor: 'middle' }) + '"/>');
+    const paths = lines.map((t, i) => '<path d="' + outline(t, { ...NAME, x: c[0], y: nameBase + i * gap, anchor: 'middle' }) + '"/>');
     /* sizes print with typographic marks, as Matt sets them: 12’ x 19’6” */
-    if (hasSize) paths.push('<path d="' + outline(r.size.replace(/'/g, '\u2019').replace(/"/g, '\u201D'), { ...STYLE.ROOM_SIZE, x: c[0], y: nameBase + (lines.length - 1) * gap + STYLE.ROOM_SIZE.gap + sizeCap, anchor: 'middle' }) + '"/>');
+    if (hasSize) paths.push('<path d="' + outline(r.size.replace(/'/g, '\u2019').replace(/"/g, '\u201D'), { ...SIZE, x: c[0], y: nameBase + (lines.length - 1) * gap + SIZE.gap + sizeCap, anchor: 'middle' }) + '"/>');
     const rot = Number.isFinite(r.rot) && r.rot ? ' transform="rotate(' + r2(r.rot) + ' ' + pt(c) + ')"' : '';
     out.push('<g data-label="' + esc(r.name) + '" fill="' + STYLE.NAVY + '"' + rot + '>' + paths.join('') + '</g>');
   });
   (level.labels || []).forEach((t) => {
     if (typeof t.text !== 'string' || !t.text || !isPt(t.at)) return;
     const c = T(t.at);
-    const d = outline(t.text, { ...STYLE.SMALL_LABEL, x: c[0], y: c[1] + capHeight(STYLE.SMALL_LABEL) / 2, anchor: 'middle' });
+    const d = outline(t.text, { ...SMALL, x: c[0], y: c[1] + capHeight(SMALL) / 2, anchor: 'middle' });
     out.push('<g data-label="' + esc(t.text) + '" fill="' + STYLE.NAVY + '"><path d="' + d + '"/></g>');
   });
   return out.join('');
@@ -644,16 +648,20 @@ function drawFooter() {
    space when the drawing is there (929 Park: beside the bedroom wing), never over the drawing or inside
    it. "Empty" is found on a 2 pt grid: everything the level draws is marked, and the space outside it is
    what a flood from the page edge reaches. */
-function occupancy(level, T) {
+function occupancy(parts, rects = []) {
   const G = 2, W = Math.ceil(STYLE.PAGE.w / G), H = Math.ceil(STYLE.PAGE.h / G), hit = new Uint8Array(W * H);
   const mark = (p) => { const x = Math.floor(p[0] / G), y = Math.floor(p[1] / G); if (x >= 0 && y >= 0 && x < W && y < H) hit[y * W + x] = 1; };
-  const seg = (a, b) => { const n = Math.max(1, Math.ceil(len(sub(b, a)) / (G / 2))); for (let i = 0; i <= n; i++) mark(lerp(a, b, i / n)); };
-  const ring = (r, closed = true) => { const P = r.filter(isPt).map(T); for (let i = 0; i + 1 < P.length; i++) seg(P[i], P[i + 1]); if (closed && P.length > 2) seg(P[P.length - 1], P[0]); };
-  (level.walls || []).forEach((w) => { if (isPt(w.a) && isPt(w.b)) seg(T(w.a), T(w.b)); });
-  (level.solids || []).forEach((sd) => ringsOfSolid(sd).forEach((r) => Array.isArray(r) && ring(r)));
-  (level.areas || []).forEach((ar) => ar && Array.isArray(ar.poly) && ring(ar.poly));
-  (level.openings || []).forEach((o) => { if (isPt(o.a) && isPt(o.b)) seg(T(o.a), T(o.b)); });
-  (level.lines || []).forEach((l) => l && Array.isArray(l.pts) && ring(l.pts, !!l.closed));
+  parts.forEach(([level, T]) => {
+    const seg = (a, b) => { const n = Math.max(1, Math.ceil(len(sub(b, a)) / (G / 2))); for (let i = 0; i <= n; i++) mark(lerp(a, b, i / n)); };
+    const ring = (r, closed = true) => { const P = r.filter(isPt).map(T); for (let i = 0; i + 1 < P.length; i++) seg(P[i], P[i + 1]); if (closed && P.length > 2) seg(P[P.length - 1], P[0]); };
+    (level.walls || []).forEach((w) => { if (isPt(w.a) && isPt(w.b)) seg(T(w.a), T(w.b)); });
+    (level.solids || []).forEach((sd) => ringsOfSolid(sd).forEach((r) => Array.isArray(r) && ring(r)));
+    (level.areas || []).forEach((ar) => ar && Array.isArray(ar.poly) && ring(ar.poly));
+    (level.openings || []).forEach((o) => { if (isPt(o.a) && isPt(o.b)) seg(T(o.a), T(o.b)); });
+    (level.lines || []).forEach((l) => l && Array.isArray(l.pts) && ring(l.pts, !!l.closed));
+  });
+  /* rects: text on the page (a floor's name), wholly taken */
+  rects.forEach(([x0, y0, x1, y1]) => { for (let y = Math.floor(y0 / G); y <= Math.floor(y1 / G); y++) for (let x = Math.floor(x0 / G); x <= Math.floor(x1 / G); x++) if (x >= 0 && y >= 0 && x < W && y < H) hit[y * W + x] = 1; });
   const out = new Uint8Array(W * H), stack = [];
   for (let x = 0; x < W; x++) { stack.push(x, (H - 1) * W + x); }
   for (let y = 0; y < H; y++) { stack.push(y * W, y * W + W - 1); }
@@ -665,16 +673,17 @@ function occupancy(level, T) {
     if (x > 0) stack.push(i - 1); if (x < W - 1) stack.push(i + 1); if (y > 0) stack.push(i - W); if (y < H - 1) stack.push(i + W);
   }
   /* is a circle of radius r at c wholly outside the drawing? */
-  return (c, r) => {
+  const free = (c, r) => {
     for (let y = Math.floor((c[1] - r) / G); y <= Math.ceil((c[1] + r) / G); y++) for (let x = Math.floor((c[0] - r) / G); x <= Math.ceil((c[0] + r) / G); x++) {
       if (x < 0 || y < 0 || x >= W || y >= H) return false;
       if (Math.hypot(x * G + G / 2 - c[0], y * G + G / 2 - c[1]) < r - G && !out[y * W + x]) return false;   // a cell's slack: a plan just r away is clear
     }
     return true;
   };
+  return Object.assign(free, { G, W, H, out });
 }
-function compassAt(level, T) {
-  const C = STYLE.COMPASS, B = STYLE.BOX_BRANDED, r = C.h / 2 + STYLE.COMPASS_CLEAR, free = occupancy(level, T);
+function compassAt(parts, rects) {
+  const C = STYLE.COMPASS, B = STYLE.BOX_BRANDED, r = C.h / 2 + STYLE.COMPASS_CLEAR, free = occupancy(parts, rects);
   for (let d = 0; d <= (B.x1 - B.x0) / 2; d += 6) {
     for (const x of d ? [C.at[0] - d, C.at[0] + d] : [C.at[0]]) {
       if (x - r < B.x0 || x + r > B.x1) continue;
@@ -723,10 +732,10 @@ function drawStatus(text) {
 /* ---------- the page ---------- */
 /* one level's drawing, every layer in order, through T (plan units -> page points, scale s);
    also used by style-sheet.js to draw single elements at a fixed scale */
-function drawLevel(level, T, s) {
+function drawLevel(level, T, s, textK = 1) {
   /* fixtures and linework under the walls, as Matt's are: a counter stops at the wall, it never covers it */
   return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawLines(level, T, true), drawSolids(level, T), drawWalls(level, T),
-    drawOpenings(level, T, s), drawRooms(level, T)].filter(Boolean).join('\n');
+    drawOpenings(level, T, s), drawRooms(level, T, textK)].filter(Boolean).join('\n');
 }
 
 function draw(plan, levelIndex = 0, opts = {}) {
@@ -742,7 +751,7 @@ function draw(plan, levelIndex = 0, opts = {}) {
   };
   let F = fit(box);
   /* the compass needs its corner at the bottom: when the plan leaves no room for it, the plan stops above it */
-  const place = (f) => compassAt(level, (p) => [f.ox + (p[0] - b.x0) * f.s, f.oy + (p[1] - b.y0) * f.s]);
+  const place = (f) => compassAt([[level, (p) => [f.ox + (p[0] - b.x0) * f.s, f.oy + (p[1] - b.y0) * f.s]]]);
   let compass = branded && Number.isFinite(plan.north) ? place(F) : null;
   if (branded && Number.isFinite(plan.north) && !compass) {
     box = Object.assign({}, box, { y1: STYLE.COMPASS.at[1] - STYLE.COMPASS.h / 2 - STYLE.COMPASS_CLEAR });
@@ -778,4 +787,123 @@ function draw(plan, levelIndex = 0, opts = {}) {
   return parts.filter(Boolean).join('\n') + '\n';
 }
 
-module.exports = { draw, drawLevel, drawSymbol, SYMBOLS, patternDefs, PATTERNS, outline, measure };
+/* ---------- the all-floors sheet ---------- */
+/* Matt's sheet of a home on several floors, beside a sheet of its own for each: every floor at one scale
+   (level.unitsPerFoot evens out floors traced from different pictures), each named on the page. Either
+   in a row, bottoms lined up and each named centred below (225 E79: MAIN LEVEL, LOWER LEVEL), or two
+   floors stepped from top left to bottom right, the first named below its left end and the second above
+   its right end (401 E89). It takes whichever draws the floors larger, as Matt fills the page;
+   plan.sheet ("row" or "stagger") picks one. */
+function levelName(name, at, anchor) {
+  const N = STYLE.LEVEL_NAME, words = String(name).split(' ');
+  /* MAIN in black, LEVEL light (Matt's); FLOOR 2 black throughout */
+  const runs = words.length > 1 && words[words.length - 1] === 'LEVEL'
+    ? [[words.slice(0, -1).join(' ') + ' ', N.weight], ['LEVEL', N.light]] : [[String(name), N.weight]];
+  const widths = runs.map(([t, w]) => measure(t, { ...N, weight: w })), total = widths.reduce((a, b) => a + b, 0);
+  const x0 = at[0] - (anchor === 'middle' ? total / 2 : anchor === 'end' ? total : 0);
+  let x = x0;
+  const d = runs.map(([t, w], i) => { const o = outline(t, { ...N, weight: w, x, y: at[1] }); x += widths[i]; return o; }).join('');
+  return { svg: '<path fill="' + STYLE.NAVY + '" d="' + d + '"/>', box: [x0, at[1] - capHeight(N), x0 + total, at[1]] };
+}
+
+/* a level's plan units per foot: as given, or read off its rooms that give both a size and their extent
+   (box), the longer side against the longer side; null when neither is there */
+function unitsPerFoot(level) {
+  if (Number.isFinite(level.unitsPerFoot) && level.unitsPerFoot > 0) return level.unitsPerFoot;
+  const ft = (v) => { const m = /^(\d+)'(?:(\d+(?:\.\d+)?)")?$/.exec(v.trim()); return m ? +m[1] + (+m[2] || 0) / 12 : null; };
+  const est = [];
+  (level.rooms || []).forEach((r) => {
+    if (typeof r.size !== 'string' || !Array.isArray(r.box) || r.box.length !== 4) return;
+    const sz = r.size.split(' x ').map(ft);
+    if (sz.length !== 2 || !sz[0] || !sz[1]) return;
+    const bw = Math.abs(r.box[2] - r.box[0]), bh = Math.abs(r.box[3] - r.box[1]);
+    est.push(Math.max(bw, bh) / Math.max(...sz), Math.min(bw, bh) / Math.min(...sz));
+  });
+  if (!est.length) return null;
+  est.sort((a, b) => a - b);
+  return est[est.length >> 1];
+}
+
+function arrangeLevels(plan, box, reserve = 0) {
+  const L = plan.levels, n = L.length, N = STYLE.LEVEL_NAME, cap = capHeight(N);
+  const u = L.map(unitsPerFoot), k = L.map((l, i) => (u[0] && u[i] ? u[0] / u[i] : 1));
+  const b = L.map(bounds), w = b.map((q, i) => (q.x1 - q.x0) * k[i]), h = b.map((q, i) => (q.y1 - q.y0) * k[i]);
+  const W = box.x1 - box.x0, H = box.y1 - box.y0, sum = (a) => a.reduce((x, y) => x + y, 0);
+  /* level i drawn at scale s (pt per common unit) with its top left corner at x, y */
+  const at = (i, s, x, y) => { const q = s * k[i]; return { s: q, x, y, w: w[i] * s, h: h[i] * s, T: (p) => [x + (p[0] - b[i].x0) * q, y + (p[1] - b[i].y0) * q] }; };
+  const ways = [];
+  {
+    const s = Math.min((W - N.gap * (n - 1)) / (sum(w) || 1), (H - N.below) / (Math.max(...h) || 1));
+    const gw = sum(w) * s + N.gap * (n - 1), bottom = box.y0 + (H - Math.max(...h) * s - N.below) / 2 + Math.max(...h) * s;
+    let x = box.x0 + (W - gw) / 2;
+    const places = L.map((l, i) => { const q = at(i, s, x, bottom - h[i] * s); x += w[i] * s + N.gap; return q; });
+    ways.push({ kind: 'row', s, places, names: places.map((q, i) => levelName(L[i].name || '', [q.x + q.w / 2, bottom + N.below], 'middle')) });
+  }
+  if (n === 2) {
+    const make = (s) => {
+      /* reserve: the bottom right corner kept for ALTERNATE or CURRENT */
+      const p1 = at(0, s, box.x0, box.y0), p2 = at(1, s, box.x1 - w[1] * s, box.y1 - reserve - h[1] * s);
+      return { kind: 'stagger', s, places: [p1, p2],
+        names: [levelName(L[0].name || '', [p1.x, p1.y + p1.h + N.stagger], 'start'), levelName(L[1].name || '', [p2.x + p2.w, p2.y - N.above], 'end')] };
+    };
+    /* the floors (and their names) may share the page's corners, never touch: each floor's drawing, kept
+       N.clear apart from the other's */
+    const clash = (way) => {
+      const A = occupancy([[L[0], way.places[0].T]], [way.names[0].box]), B = occupancy([[L[1], way.places[1].T]], [way.names[1].box]);
+      const r = Math.ceil(N.clear / A.G), dil = new Uint8Array(A.W * A.H);
+      for (let y = 0; y < A.H; y++) for (let x = 0; x < A.W; x++) if (!A.out[y * A.W + x]) {
+        for (let dy = -r; dy <= r; dy++) { const Y = y + dy; if (Y < 0 || Y >= A.H) continue; for (let dx = -r; dx <= r; dx++) { const X = x + dx; if (X >= 0 && X < A.W) dil[Y * A.W + X] = 1; } }
+      }
+      for (let i = 0; i < dil.length; i++) if (dil[i] && !B.out[i]) return true;
+      return false;
+    };
+    const fits = (s) => w[0] * s <= W && w[1] * s <= W && h[0] * s + N.stagger <= H && h[1] * s + N.above + cap + reserve <= H;
+    let lo = 0, hi = Math.min(W / Math.max(w[0], w[1], 1e-9), (H - N.stagger) / Math.max(h[0], 1e-9), (H - N.above - cap - reserve) / Math.max(h[1], 1e-9));
+    if (fits(hi) && !clash(make(hi))) lo = hi;
+    else for (let it = 0; it < 14; it++) { const m = (lo + hi) / 2; if (fits(m) && !clash(make(m))) lo = m; else hi = m; }
+    if (lo > 0) ways.push(make(lo));
+  }
+  /* a row unless stepping them draws the floors clearly larger (Matt's 225 E79 is a row; 401 E89, two long
+     floors, steps) */
+  const pick = ways.find((v) => v.kind === plan.sheet);
+  return pick || ways.reduce((a, v) => (v.s > a.s * N.preferRow ? v : a));
+}
+
+function drawAll(plan, opts = {}) {
+  const branded = !!opts.branded;
+  if (plan.levels.length < 2) return draw(plan, 0, opts);
+  let box = branded ? STYLE.BOX_BRANDED : STYLE.BOX_UNBRANDED;
+  const status = branded ? (plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : '') : '';
+  const reserve = status ? capHeight(STYLE.STATUS) + STYLE.COMPASS_CLEAR : 0;
+  let A = arrangeLevels(plan, box, reserve);
+  const north = branded && Number.isFinite(plan.north);
+  const spot = (a) => compassAt(a.places.map((q, i) => [plan.levels[i], q.T]), a.names.map((m) => m.box));
+  let compass = north ? spot(A) : null;
+  if (north && !compass) {
+    box = Object.assign({}, box, { y1: STYLE.COMPASS.at[1] - STYLE.COMPASS.h / 2 - STYLE.COMPASS_CLEAR });
+    A = arrangeLevels(plan, box, reserve);
+    compass = spot(A) || STYLE.COMPASS.at;
+  }
+  const W = STYLE.PAGE.w, H = STYLE.PAGE.h;
+  const parts = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">',
+    '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="' + STYLE.WHITE + '"/>'
+  ];
+  if (branded) parts.push(drawHeader(plan, opts.facts));
+  parts.push(patternDefs([].concat(...plan.levels.map((l) => (l.areas || []).map((a) => a.pattern)))));
+  /* the text a little smaller than on a floor's own sheet, as Matt sets it: about the cube root of how much
+     smaller the floor is drawn (225 E79: 0.9, 401 E89: 0.8), never under 0.7 */
+  const single = branded ? STYLE.BOX_BRANDED : STYLE.BOX_UNBRANDED;
+  const textK = Math.max(0.7, Math.min(1, ...plan.levels.map((l, i) => Math.cbrt(A.places[i].s / fitScale(l, single)))));
+  plan.levels.forEach((l, i) => parts.push('<g data-level="' + (i + 1) + '">' + drawLevel(l, A.places[i].T, A.places[i].s, textK) + '</g>'));
+  parts.push('<g data-frame="level-names">' + A.names.map((m) => m.svg).join('') + '</g>');
+  if (branded) {
+    if (north) parts.push(drawCompass(plan.north, compass));
+    if (status) parts.push(drawStatus(status));
+    parts.push(drawFooter());
+  }
+  parts.push('</svg>');
+  return parts.filter(Boolean).join('\n') + '\n';
+}
+
+module.exports = { draw, drawAll, drawLevel, drawSymbol, SYMBOLS, patternDefs, PATTERNS, outline, measure };

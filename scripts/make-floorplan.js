@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { validate } = require('./floorplan/plan.js');
-const { draw } = require('./floorplan/draw.js');
+const { draw, drawAll } = require('./floorplan/draw.js');
 const STYLE = require('./floorplan/style.js');
 
 function localDate() {
@@ -89,6 +89,12 @@ async function make(folder, opts) {
     return arel;
   }
 
+  /* a home on several floors: one sheet with every floor (named for the job alone), and a sheet for each */
+  if (multi) {
+    for (const [dir, branded] of [['Unbranded', false], ['Branded', true]]) {
+      jobs.push({ dir, base: label + ' v' + version + alt, svg: drawAll(plan, { branded, facts: opts.facts }) });
+    }
+  }
   plan.levels.forEach((lvl, i) => {
     const base = label + ' v' + version + alt + (multi ? ' - ' + safe(lvl.name) : '');
     for (const [dir, branded] of [['Unbranded', false], ['Branded', true]]) {

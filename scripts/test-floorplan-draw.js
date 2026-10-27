@@ -6,7 +6,7 @@
 
 const path = require('path');
 const fontkit = require('fontkit');
-const { draw } = require('./floorplan/draw.js');
+const { draw, drawAll } = require('./floorplan/draw.js');
 const { validate } = require('./floorplan/plan.js');
 const STYLE = require('./floorplan/style.js');
 const studio = require('./floorplan/fixtures/studio.json');
@@ -364,6 +364,38 @@ check('two overlapping solids add up: each is its own path', (draw(p, 0, {}).mat
 p = clone(box4); p.levels[0].fixtures = [{ type: 'counter', at: [50, 5], w: 60, h: 10, rot: 0 }];
 const order = draw(p, 0, {});
 check('fixtures lie under the walls, so a counter never hides one', order.indexOf('<g transform="translate') >= 0 && order.indexOf('stroke-width="4"') > order.indexOf('<g transform="translate'), true);
+
+/* ---- the all-floors sheet: every floor at one scale, each named on the page ---- */
+const twoFloors = (w1, h1, w2, h2, extra) => {
+  const lv = (w, h, name) => ({ name, walls: [{ a: [0, 0], b: [w, 0], type: 'exterior' }, { a: [w, 0], b: [w, h], type: 'exterior' }, { a: [w, h], b: [0, h], type: 'exterior' }, { a: [0, h], b: [0, 0], type: 'exterior' }],
+    rooms: [{ name: 'BEDROOM', size: "12' x 10'", at: [w / 2, h / 2] }] });
+  return Object.assign({ schema: 1, job: { label: 'x', address: '225 East 79th Street, PHA' }, sources: [], north: 0, levels: [lv(w1, h1, 'MAIN LEVEL'), lv(w2, h2, 'LOWER LEVEL')] }, extra || {});
+};
+/* a floor's outside walls on the page: the first wall line in its group */
+const levelBox = (svg, i) => { const g = svg.slice(svg.indexOf('data-level="' + i + '"')); const n = (g.match(/ d="(M[^"]*)"/)[1].match(/-?[\d.]+/g) || []).map(Number); const xs = n.filter((_, j) => j % 2 === 0), ys = n.filter((_, j) => j % 2); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+p = twoFloors(300, 200, 150, 120);
+let all = drawAll(p, { branded: true });
+check('both floors are drawn, each named, with the frame and the compass', [/data-level="1"/.test(all), /data-level="2"/.test(all), /data-frame="level-names"/.test(all), /data-frame="compass"/.test(all), /data-frame="footer"/.test(all)], [true, true, true, true, true]);
+let b1 = levelBox(all, 1), b2 = levelBox(all, 2);
+check('a wide floor and a small one sit in a row, bottoms lined up, at one scale', [b1[2] < b2[0], Math.abs(b1[3] - b2[3]) < 0.5, Math.abs((b1[2] - b1[0]) / 300 - (b2[2] - b2[0]) / 150) < 0.02], [true, true, true]);
+check('each floor\'s name is one path, under its floor', (() => { const g = all.slice(all.indexOf('data-frame="level-names"')); return (g.slice(0, g.indexOf('</g>')).match(/<path/g) || []).length; })(), 2);
+check('the validator takes the sheet field', [validate({ ...p, sheet: 'stagger' }).errors, validate({ ...p, sheet: 'grid' }).errors.length], [[], 1]);
+p = twoFloors(300, 120, 300, 120);
+all = drawAll(p, { branded: true }); b1 = levelBox(all, 1); b2 = levelBox(all, 2);
+check('two long floors step from top left to bottom right, larger than a row would draw them', [b1[0] < b2[0], b1[1] < b2[1], (b1[2] - b1[0]) > (738 - 48) / 2], [true, true, true]);
+p = twoFloors(300, 120, 300, 120, { sheet: 'row' });
+all = drawAll(p, { branded: true }); b1 = levelBox(all, 1); b2 = levelBox(all, 2);
+check('sheet: "row" keeps them in a row', b1[2] < b2[0] && Math.abs(b1[1] - b2[1]) < 0.5, true);
+p = twoFloors(300, 200, 150, 120); p.levels[1].unitsPerFoot = 2; p.levels[0].unitsPerFoot = 1;
+all = drawAll(p, { branded: true }); b1 = levelBox(all, 1); b2 = levelBox(all, 2);
+check('unitsPerFoot draws floors traced at different scales at one scale', Math.abs((b1[2] - b1[0]) / 300 - 2 * (b2[2] - b2[0]) / 150) < 0.02, true);
+p = twoFloors(300, 200, 150, 120); p.levels[0].rooms[0].box = [0, 0, 300, 200]; p.levels[0].rooms[0].size = "30' x 20'"; p.levels[1].rooms[0].box = [0, 0, 150, 120]; p.levels[1].rooms[0].size = "60' x 48'";
+all = drawAll(p, { branded: true }); b1 = levelBox(all, 1); b2 = levelBox(all, 2);
+check('…and without it, the rooms\' boxes and sizes say how many units make a foot', Math.abs(4 * (b1[2] - b1[0]) / 300 - (b2[2] - b2[0]) / 150) < 0.05, true);
+p = twoFloors(300, 200, 150, 120);
+all = drawAll(p, { branded: true }); const one = draw(p, 0, { branded: true });
+check('the room text is a little smaller than on a floor\'s own sheet, never under 0.7 of it', (() => { const w = (svg) => { const g = svg.slice(svg.indexOf('<path', svg.indexOf('data-label="BEDROOM"'))); const xs = (g.slice(0, g.indexOf('</g>')).match(/-?[\d.]+/g) || []).map(Number).filter((_, j) => j % 2 === 0); return Math.max(...xs) - Math.min(...xs); }; const k = w(all) / w(one); return k < 1 && k >= 0.69; })(), true);
+check('one floor alone is just its own sheet', drawAll(clone(studio), { branded: false }) === draw(clone(studio), 0, { branded: false }), true);
 
 /* ---- report ---- */
 if (failures.length) {

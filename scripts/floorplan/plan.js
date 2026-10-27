@@ -7,10 +7,13 @@
      "job": { "label", "address" },
      "sources": [{ "file", "kind", "note" }],
      "north": null | degrees clockwise from page-up,
-     "layout": "alternate" (left out for the current layout), "current": true (the current layout of a job
+     "layout": "alternate" (left out for the current layout), "sheet": "row" | "stagger" (the all-floors
+     sheet's arrangement; left out, whichever draws the floors larger), "current": true (the current layout of a job
                that also has an alternate: the branded sheet then says CURRENT),
      "levels": [{
        "name": null | "LOWER LEVEL"   (every level must be named when there are several)
+       "unitsPerFoot": plan units per foot (floors traced from different pictures, so the all-floors
+                       sheet draws them at one scale; read off the rooms' boxes and sizes when left out)
        "walls":    [{ "a": [x,y], "b": [x,y], "type": "exterior|interior|glass", "via": [x,y] optional }],
                      via: a point the wall passes through between a and b; the wall is then the circular
                      arc through a, via and b (only windows and plain openings may sit on an arc)
@@ -137,6 +140,7 @@ function validate(plan) {
   if (plan.north === null || plan.north === undefined) warnings.push('no north: the branded sheet will have no compass. Research the building\'s orientation, or list it in missing');
   if (plan.layout !== undefined && plan.layout !== 'alternate') errors.push('layout must be "alternate" or left out');
   if (plan.current !== undefined && typeof plan.current !== 'boolean') errors.push('current must be true or false');
+  if (plan.sheet !== undefined && !['row', 'stagger'].includes(plan.sheet)) errors.push('sheet must be "row" or "stagger" (the all-floors sheet), or left out');
   if (!Array.isArray(plan.levels) || !plan.levels.length) {
     errors.push('plan needs at least one level');
     return { errors, warnings };
@@ -145,6 +149,7 @@ function validate(plan) {
   plan.levels.forEach((level, li) => {
     const L = 'level ' + (li + 1);
     if (plan.levels.length > 1 && !level.name) errors.push(L + ': a plan with several levels needs every level named');
+    if (level.unitsPerFoot !== undefined && !(Number.isFinite(level.unitsPerFoot) && level.unitsPerFoot > 0)) errors.push(L + ': unitsPerFoot must be a number more than 0');
     const walls = level.walls || [];
 
     walls.forEach((w, i) => {

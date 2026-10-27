@@ -3,6 +3,36 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: Matt's edits to the library sheet (scripts/floorplan/library.svg)
+
+How it was read: his returned sheet against a fresh `style-sheet.js` run, cell by cell. Each named group's
+bounding box comes from the browser, both sheets are rendered at 4x, and cells are ranked by how many
+pixels differ. Then side-by-side crops, and the shapes' sizes and weights read in the browser. Also look
+for shapes he drew **outside** the named groups: the tub faucet and the fridge handle sat loose on the
+layer, and only a search for loose shapes found them. Illustrator rounds to one decimal place, so FINE
+0.25 comes back as .2: a weight that changed for real is one that rounding can't explain (the dining
+set at .3).
+What he changed, now in the drawer and symbols:
+- **Beds:** the pillows fill the band above the sheet, with an even margin; the sheet's corner is
+  turned down at the right as an open fold about 18 in square (not a closed shape: a Z draws a diagonal
+  across the bed).
+- **Vanity basins** have softly rounded corners. **The double vanity has no faucets.**
+- **Round sink:** the faucet is an outlined spout from the wall and the drain an open ring (was a solid dot).
+- **Tub:** a faucet at the drain end, a spout with a handle each side, over the rim.
+- **One-bowl kitchen sink:** a faucet at the back (spout and two handles); the drain sits lower.
+- **Refrigerator:** a small handle on its front.
+- **Dining table and its chairs at 0.3** (`DINING_LINE`, and `SYMBOL_WEIGHT.chair`: the importer turns
+  his heaviest weight into THIN, so a symbol he wants lighter needs that override).
+- **Sectional:** the back and cushion seams are open lines, so no white fill hides a seam.
+- **Symbols re-imported:** the lounge chair is redrawn; the cars are navy now (they were cyan); the
+  ranges have lost the small rings on their back burners (one is left on the 6-burner's back right,
+  as he drew it: ask him); the toilet and chair outlines are adjusted.
+- **The example page** at the bottom was the test studio, whose made-up sizes drew fixtures out of
+  proportion and a WIC with no walls. It is now the skill's worked example (555 W59 PHC), a real plan
+  traced at its own scale.
+- Unchanged, despite showing in the pixel diff: the brick-patio swatch (Illustrator only moved its
+  origin), the labels, the stair break, the closet dashes.
+
 ## 2026-10-27: 366 N 3rd St FIRST FLOOR v2 (rebuilt with the 2nd-floor lessons)
 
 - **Revising one floor of a hand-edited job: run the maker in a scratch copy.** It moves every other

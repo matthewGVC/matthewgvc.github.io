@@ -44,6 +44,8 @@ module.exports = {
   DOOR_OPEN_INSIDE: 45,      // every other door (Matt, 10-26)
   DOOR_LEAF: 1.45,           // pt, the width of a door leaf's hollow panel (Matt's 435 E57)
   DOOR_LINE: 0.3,            // pt, a door leaf's outline, its swing, and a window's frames
+  DINING_LINE: 0.3,          // pt, a dining table and every line of its chairs (Matt's library sheet, 10-27)
+  SYMBOL_WEIGHT: { chair: 0.3 },   // symbols drawn at one weight throughout, over the THIN / FINE split
   WINDOW_GLASS: 0.35,        // the glass frame's half-width, as a share of the wall's
 
   /* type (Nunito Sans, outlined); tracking is letter-spacing in em */

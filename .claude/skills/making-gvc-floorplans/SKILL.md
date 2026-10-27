@@ -131,13 +131,21 @@ Files beside this one:
 
    Open the Branded PNG too: the header holds the address and facts, the compass points the right
    way, and nothing touches ALTERNATE or the note. For several floors, open the all-floors sheet too.
-   **Its labels must fit as well** (Matt: "scale and move them, they should fit nicely"). That sheet
-   draws each floor smaller, so labels that fit on a floor's own sheet touch walls and furniture there.
-   Run `node scripts/floorplan/fit-labels.js "<Floorplan folder>\Design\plan.json" --scale 0.8 --write`,
-   then the maker again (same version). It moves each crowded label to a clear spot inside its own room
-   (`allAt`), or sets it smaller (`allScale`); the floors' own sheets are untouched. Look at the result:
-   set any label it placed badly by hand with `allAt`, `allScale` and `"allLock": true`, which a later
-   run keeps. If anything is wrong, fix `plan.json` and run the maker again with
+   **Its labels must fit as well** (Matt: "scale and move them, they should fit nicely"). The maker
+   fits them itself (`fit-labels.js`): each crowded label moves to a clear spot inside its own room, or
+   gets smaller; the floors' own sheets are untouched, and the run note lists what moved. Look at the
+   sheet anyway: set any label it placed badly by hand with `allAt`, `allScale` and `"allLock": true`.
+
+   **c. Joints.** Matt zooms in and circles gaps and corners that don't join. Run
+   ```
+   node scripts/floorplan/check-joints.js "<Floorplan folder>\Design\plan.json" tmp\joints
+   python -I scripts/floorplan/check-joints.py tmp\joints
+   ```
+   It lists every white sliver running along a wall (a frame, counter, rail or post stopping just off the
+   wall) in plan coordinates and rings them on `tmp\joints\<level>-joints.png`. Fix each one at its
+   cause (sources.md, "Clean joints"); a small hollow post or box is the only kind left on purpose.
+
+   If anything is wrong, fix `plan.json` and run the maker again with
    the **same** version (it archives the earlier attempt). Then add a `## Checked against the source`
    section to `Design/run-v<N>.md`, listing what you compared, what you fixed, and what is left. **The
    run is not done until that section is written.**

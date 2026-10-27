@@ -8,9 +8,10 @@
 
      node scripts/floorplan/fit-labels.js "<plan.json>" [--scale 0.8] [--write]
 
-   --scale sets "allSheet": { "textScale" } first (the text size on that sheet; leave it out to keep
-   the drawer's own). Without --write it only reports. Run the maker afterwards and look at the sheet:
-   a label it could not fit is listed, for a hand-set allAt, a smaller scale or a line break.
+   The maker runs it on every plan with several floors (so a rebuild needs no separate step), at the
+   plan's "allSheet": { "textScale" } or 0.8. Run it by hand only to see what it moves: --scale sets
+   the text size first, and without --write it only reports. A label it could not fit is listed, for
+   a hand-set allAt / allScale with "allLock": true.
    ============================================================ */
 'use strict';
 
@@ -24,25 +25,20 @@ const REACH = 30;      // pt, the furthest a label moves
 const NEAR = 8;        // pt, tried at every size before going further
 const SCALES = [1, 0.9, 0.8, 0.7, 0.6, 0.5];   // then smaller, a step at a time, before giving up
 
-async function main() {
-  const args = process.argv.slice(2);
-  const file = args.find((a) => !a.startsWith('--'));
-  const si = args.indexOf('--scale');
-  if (!file) { console.error('usage: fit-labels.js "<plan.json>" [--scale 0.8] [--write]'); process.exit(1); }
-  const plan = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (si >= 0) plan.allSheet = Object.assign({}, plan.allSheet, { textScale: Number(args[si + 1]) });
-  if (plan.levels.length < 2) { console.log('One floor: there is no all-floors sheet.'); return; }
+/* fits plan's labels in place (sets allAt / allScale); returns what it moved and what it could not fit */
+async function fitLabels(plan, opts = {}) {
+  if (plan.levels.length < 2) return { moved: [], stuck: [] };
   /* "allLock": true keeps a hand-set allAt / allScale as it is (and the others keep clear of it) */
   plan.levels.forEach((l) => [...(l.rooms || []), ...(l.labels || [])].forEach((r) => { if (!r.allLock) { delete r.allAt; delete r.allScale; } }));
   const locks = [].concat(...plan.levels.map((l) => [...(l.rooms || []).filter((q) => typeof q.name === 'string' && q.name.trim() && Array.isArray(q.at)), ...(l.labels || []).filter((q) => q.text && Array.isArray(q.at))].map((q) => !!q.allLock)));
 
   const clone = (p) => JSON.parse(JSON.stringify(p));
   const { chromium } = require('playwright');
-  const browser = await chromium.launch();
+  const browser = opts.browser || await chromium.launch();
   const moved = new Map(), stuck = [];
   try {
-    /* the branded sheet first (its floors are drawn smallest), then the unbranded one with those moves */
-    for (const branded of [true, false]) {
+    /* fitted on the branded sheet, where the floors are drawn smallest; the unbranded one has more room */
+    for (const branded of [true]) {
       let layout;
       const full = drawAll(plan, { branded, onLayout: (L) => { layout = L; } });
       const bare = clone(plan); bare.levels.forEach((l) => { l.rooms = []; l.labels = []; });
@@ -154,12 +150,25 @@ async function main() {
       });
     }
   } finally {
-    await browser.close();
+    if (!opts.browser) await browser.close();
   }
+  return { moved: [...new Set(moved.values())], stuck };
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const file = args.find((a) => !a.startsWith('--'));
+  const si = args.indexOf('--scale');
+  if (!file) { console.error('usage: fit-labels.js "<plan.json>" [--scale 0.8] [--write]'); process.exit(1); }
+  const plan = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (si >= 0) plan.allSheet = Object.assign({}, plan.allSheet, { textScale: Number(args[si + 1]) });
+  if (plan.levels.length < 2) { console.log('One floor: there is no all-floors sheet.'); return; }
+  const r = await fitLabels(plan);
   console.log('Text scale on the all-floors sheet: ' + (plan.allSheet ? plan.allSheet.textScale : 'the drawer\'s own'));
-  console.log(moved.size ? 'Moved ' + moved.size + ' labels:\n  ' + [...new Set(moved.values())].join('\n  ') : 'Every label already fits.');
-  if (stuck.length) console.log('No clear spot within ' + REACH + ' pt (set allAt by hand, a smaller scale or a line break):\n  ' + stuck.join('\n  '));
+  console.log(r.moved.length ? 'Moved ' + r.moved.length + ' labels:\n  ' + r.moved.join('\n  ') : 'Every label already fits.');
+  if (r.stuck.length) console.log('No clear spot within ' + REACH + ' pt (set allAt by hand, a smaller scale or a line break):\n  ' + r.stuck.join('\n  '));
   if (args.includes('--write')) { fs.writeFileSync(file, JSON.stringify(plan, null, 1)); console.log('Saved ' + file); }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+module.exports = { fitLabels };
+if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });

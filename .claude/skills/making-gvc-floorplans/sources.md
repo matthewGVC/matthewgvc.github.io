@@ -151,3 +151,20 @@ retire `tools/floorplan/` (tell Matt; it is a separate change).
   which converter to install and why. When it is set up, record the install path and command line in
   `lessons.md`.
 - Render the result to a PNG and check it against any picture or PDF of the same plan.
+
+## Clean joints (Matt circles them)
+
+Walls, windows and fixtures must meet exactly: at his zoom a tenth of a point shows. Build them so:
+- **Clean the traced masses** with `scripts/floorplan/clean_solids.py` (`clean`): edges snap together,
+  pieces union, nubs go, and `square` turns a chamfered corner or a jogged wall end square.
+- **Measure on the cleaned raster.** `band` gives a wall's true centre and thickness; measure an
+  opening's thickness on both sides of the gap and use the thinner, so a frame never stands proud.
+- **Square the wall ends at every opening** once the openings are known:
+  `solids = C.square_ends(solids, openings)`, then make the raster again before placing fixtures.
+- **Fixtures flat on the wall face:** centre = face - direction x h/2, unrounded (no half-pixel margin).
+  A run of boxes along a wall (cabinets, the fridge) takes the wall face from the raster.
+- **Lines that meet a wall run to its face:** a stair's outer rail, a newel post. Read the face off the
+  raster, not the picture.
+- **Keep each job's generator in `Design\gen\`** beside its traced walls (`walls-*.json`), reading them
+  from its own folder, with a `buildall.py` that writes `Design\plan.json` and a `rebuild.sh` that runs it
+  and the maker. A rebuild is then one command: `bash "<Floorplan>\Design\gen\rebuild.sh" <version>`.

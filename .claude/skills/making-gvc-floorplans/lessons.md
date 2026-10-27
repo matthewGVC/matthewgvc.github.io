@@ -3,6 +3,25 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: Matt's red circle = gaps and corners that don't join
+
+His circle at the primary bath window marked a frame meeting its wall badly. At 40x it was three faults,
+all fixed at the cause, not by hand:
+- **Wall thickness one pixel too thick.** The raster fills both edge pixels, so `band` counted one too
+  many; every window frame stood half a pixel proud of the wall faces. `band` now returns `hi - lo`.
+- **Frame inset by the wrong weight** (THIN, not the frame's own DOOR_LINE), so its outer line sat inside
+  the wall face: a step at the corner. Glass now sits flush, is drawn before the walls, and its white runs
+  on under a wall at each end that meets one (not between panes); the frame lines stop at the opening.
+- **Wall ends that weren't square** (a jamb's jog, a slanted end), leaving a wedge beside the frame.
+  `clean_solids.square` straightens chamfers and jogs, and `square_ends` cuts every wall end straight at
+  its opening and fills the notch behind it.
+Then `check-joints` found the rest: fixtures set half a pixel off their wall and rounded (fridge, wet bar,
+sinks, toilets), a window measured on its thicker side, the stair's outer rail and a newel post short of
+their wall. Now: exact flush, the thinner band, faces read off the raster. Its first pass flagged every
+X and hinge; it now counts only slivers that run along a wall.
+Process cleanups in the same pass: the maker fits the all-floors labels itself, and each job keeps its
+generators in `Design\gen\` with `rebuild.sh` (one command).
+
 ## 2026-10-27: fitting the labels on the all-floors sheet (366 N 3rd)
 
 Matt: "scale and move them, they should fit nicely", then, about two POWDER rooms and the PANTRY:

@@ -6,6 +6,7 @@
    Unbranded/ or Branded/ are moved first to Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md.
 
      node scripts/make-floorplan.js "<Floorplan folder>" --version 3 [--facts '{"beds":2,"baths":2}']
+   Several floors: the all-floors sheet's labels are fitted first (floorplan/fit-labels.js).
    ============================================================ */
 'use strict';
 
@@ -68,6 +69,14 @@ async function make(folder, opts) {
   const res = validate(plan);
   if (res.errors.length) throw new Error('plan.json is not valid: ' + res.errors.join('; '));
   const warnings = res.warnings.slice();
+
+  /* several floors: fit the all-floors sheet's labels first (fit-labels.js), at the plan's text size or
+     0.8 (Matt, 10-27: "scale and move them, they should fit nicely"); plan.json itself is left as it is */
+  let fitted = null;
+  if (plan.levels.length > 1 && opts.fitLabels !== false) {
+    if (!(plan.allSheet && plan.allSheet.textScale > 0)) plan.allSheet = Object.assign({}, plan.allSheet, { textScale: 0.8 });
+    fitted = await require('./floorplan/fit-labels.js').fitLabels(plan);
+  }
 
   const label = safe(plan.job.label);
   const alt = plan.layout === 'alternate' ? ' Alternate' : '';
@@ -160,6 +169,9 @@ async function make(folder, opts) {
     '',
     '## Warnings',
     list(warnings, 'none'),
+    ...(fitted ? ['', '## All-floors sheet labels', '- Text at ' + plan.allSheet.textScale + ' of the floors\' own sheets.',
+      ...(fitted.moved.length ? ['- Moved or set smaller to fit their rooms: ' + fitted.moved.join('; ')] : []),
+      ...(fitted.stuck.length ? ['- Could not fit (check the sheet; set allAt / allScale with allLock): ' + fitted.stuck.join('; ')] : [])] : []),
     '',
     '## Missing information',
     list(plan.missing || [], 'nothing noted as missing'),

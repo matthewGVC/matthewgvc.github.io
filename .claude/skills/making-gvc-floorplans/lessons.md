@@ -7,6 +7,7 @@ run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md
 
 His edited file is `Unbranded/366 N 3rd St, Surf City v1 - 2ND FLOOR.svg` (saved from Illustrator 10:59). **Never run the maker on a version Matt has hand-edited: it overwrites his file. Any regeneration is the next version.**
 
+- **Scan Matt's edits against our file, every time.** After he hand-edits a floor, diff his SVG against a fresh regeneration (scratch folder, never over his file) and learn from each difference before the next floor. For the 366 N 3rd 2ND FLOOR this was only done partly (stroke weights and his notes); a full element-by-element scan is still owed. See `docs/floorplan-366-n-3rd-handoff.md`.
 - **Room names (now a validator warning):** a bathroom is `BATH` when it has a shower or tub and `POWDER` when it does not (so no TOILET, BATHROOM or POWDER ROOM); the owner's suite is `PRIMARY`, never `MASTER` (PRIMARY BEDROOM, PRIMARY BATH, PRIMARY CLOSET).
 - **Stair linework is 0.2 (0.0025 in), finer than the 0.5 of other thin lines.** Lines now take `"w": 0.2` for the stair's rails, treads, walking line, break line and the dashed flight above.
 - **Labels fit their room.** He moved room labels to sit clear of walls and fixtures, and gave a label that sits on a crossed box (ELEVATOR) a white background. Check every label on the PNG; consider a white backing for labels over an X box.

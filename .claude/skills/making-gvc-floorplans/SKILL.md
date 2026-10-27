@@ -38,6 +38,10 @@ Files beside this one:
 
 ## Hard rules
 
+- **Accuracy is the job, down to the detail.** Every wall, jog, column, chimney mass, window pane,
+  door and its swing, pocket or sliding door, closet, cabinet, counter, appliance box, fixture, stair
+  tread and label in the source is in the plan, in the same place. "Close enough" is a failure. Matt
+  checks the result against the source, and so must you, with the overlay (step 7).
 - **Never invent.** Draw no wall, room, size, fixture or label that isn't in the source. If the
   source gives no sizes (the NJ architect PDFs), the plan shows names only. If the source is cut off,
   draw what is there and list the rest in `missing`, or stop and tell Matt when too little is there
@@ -63,8 +67,11 @@ Files beside this one:
    paperwork. If a reference named in the prompt is gone, say so and use the ones that are there.
 3. **Identify each reference** and read it, following `sources.md`: a Cubicasa SVG (read its
    geometry), a DWG or DXF (convert it first), an architect PDF (vector or picture, floor-plan pages
-   only), or a picture (read it by eye, in its own pixel coordinates). Look at every reference
-   yourself. For a PDF or SVG, render it to a PNG and view that.
+   only), or a picture. Look at every reference yourself. For a PDF or SVG, render it to a PNG and
+   view that. **Measure; don't eyeball.** Make zoomed views of each part with a coordinate grid
+   (`sources.md`, "Measuring a picture"), and read every coordinate off the grid, in the picture's
+   real pixels. For a picture, lift the walls out of it with `trace-walls.py` (sources.md) instead of
+   tracing them: Matt's walls are the source's own masses, exact.
 4. **Several references:**
    - One file per floor becomes one level each, named the way the source names them ("FIRST FLOOR").
    - Two files of the same floor: use the newest and name the other in the report. Never merge them.
@@ -81,11 +88,30 @@ Files beside this one:
    ```
    node scripts/make-floorplan.js "<Floorplan folder>" --version <N> --facts "{\"beds\":2,\"baths\":2}"
    ```
-   (Leave out `--facts` when the prompt gives no beds or baths. Use `0` beds for a studio.) It
+   (Leave out `--facts` when the prompt gives no beds or baths. Use `0` beds for a studio. Half baths
+   and the size go on the header's second line: `"half":1`, `"sqft":3369`, only when the prompt gives
+   them.) It
    writes `<label> v<N>.svg` and `.png` (and `… - <Level>` for each level) into `Unbranded/` and
    `Branded/`, and archives older versions of the same layout. It also writes `Design/run-v<N>.md`.
-7. **Check the result against the source.** Open the Unbranded PNG and the source and compare them:
+7. **Check the result against the source**, in two passes.
+
+   **a. The overlay. Required, and repeated until it is clean.**
+   ```
+   node scripts/floorplan/overlay.js "<Floorplan folder>\Design\plan.json" "<the picture you traced>" "tmp\overlay.png"
+   ```
+   The overlay draws your plan in navy with the source over it in red. Where they agree the lines
+   go black. **Red with nothing under it is something you missed or misplaced. Navy on its own is
+   something that isn't in the source.** Zoom into each part of the overlay and fix every one. Thin red
+   edges along walls are fine: they are only the house style's wall weight against the source's.
+   The overlay needs a picture traced in its own pixels. For a PDF or SVG, overlay the PNG you
+   rendered and traced. It is cut to the source and drawn in the source's own pixels (times the zoom it
+   prints, so source px = overlay px / zoom): grid crops of it read in plan.json's coordinates. Write it outside the Floorplan folder (the repo's `tmp/`).
+
+   **b. By eye.** Open the Unbranded PNG and the source and compare them:
    - every room in the source is in the drawing, with the same name and the same size;
+   - every closet, cabinet, counter and appliance box is outlined;
+   - curved walls are smooth curves;
+   - corners join cleanly, with no gaps;
    - every door, window and opening is on the right wall and swings the right way;
    - the outline and the terraces match;
    - no label sits on a wall or on another label;
@@ -116,6 +142,38 @@ Files beside this one:
     - anything missing or uncertain in the source;
     - anything you skipped (a second reference, the database row);
     - what you added to the lessons.
+
+## The style sheet (changing the house style)
+
+`node scripts/floorplan/style-sheet.js "<out.svg>"` writes every element the drawer makes at true
+size, each in a group named after it: walls, windows, doors, bath and kitchen fixtures, furniture,
+swatches, stairs, areas, labels and the branded frame. Its last section is empty boxes for Matt's
+own artwork (a car, the compass, closet clothes). Matt edits that file in Illustrator and hands it
+back. To apply it:
+- Compare each group in his file with a freshly generated sheet.
+- Make the changes in `style.js` (weights, sizes, colours, angles) or in the element's drawing
+  function in `draw.js` (shapes).
+- Regenerate the sheet and check it matches his.
+- **Matt's drawings are the symbols.** Cells named `symbol-<name>` hold his artwork, drawn from
+  `scripts/floorplan/symbols.json`. Read his edits straight back with
+  `node scripts/floorplan/import-symbols.js "<his sheet.svg>"`, which picks up every `symbol-*` group.
+  New artwork drawn anywhere else on the sheet needs a map (see the script's header): where it is,
+  which way to turn it so its wall side is at the top, and its true size. The importer:
+  - flattens Illustrator's transforms;
+  - sets the house weights and colours: his heaviest lines THIN and the rest FINE, or, when he drew
+    them all at one weight, the symbol's own outline THIN and every detail FINE;
+  - turns art drawn as filled outlines into smooth, joined centre lines (that step needs
+    `pip install scikit-image`; map options `mirror` and `merge`). Look at the result at large size;
+    stroked art imports exactly, so ask Matt for strokes rather than outlined shapes;
+  - thins out traced artwork.
+
+  After importing, regenerate the sheet, check his symbols look like his drawing, and run
+  `node scripts/test-import-symbols.js`, which proves the sheet round-trips.
+- Read his NOTES layer.
+- Run the floorplan tests, then redraw the worked example and check it.
+
+A house-style change affects every plan from then on, so it is only ever made from Matt's sheet or
+his explicit say-so.
 
 ## Corrections in a later chat
 

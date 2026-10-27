@@ -213,6 +213,10 @@ function validate(plan) {
       const R = L + ' room "' + r.name + '"';
       if (typeof r.name !== 'string' || !r.name.trim()) { errors.push(L + ' room ' + (i + 1) + ': needs a name'); return; }
       if (r.name !== r.name.toUpperCase()) errors.push(R + ': name must be in capitals');
+      /* Matt's room names (10-27): a bathroom is BATH when it has a shower or tub, POWDER when it does not;
+         the owner's suite is PRIMARY, never MASTER */
+      if (/\bMASTER\b/.test(r.name)) warnings.push(R + ': write PRIMARY, never MASTER');
+      if (/\b(TOILET|BATHROOM|POWDER ROOM|WC)\b/.test(r.name.replace(/\n/g, ' '))) warnings.push(R + ': a bathroom is BATH if it has a shower or tub, POWDER if not');
       if (r.size !== null && r.size !== undefined && !SIZE_RE.test(r.size)) errors.push(R + ': size must look like 12\'0" x 20\'3" (or 13\' x 24\', as printed)');
       if (!isPt(r.at)) errors.push(R + ': at must be [x, y]');
       if (r.box !== undefined) {

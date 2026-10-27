@@ -184,7 +184,8 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
 - `box` is optional: the room's extent. Give it for small rooms, so the validator can warn when the
   name won't fit.
 - BATH, WIC, PDR, FOYER and similar named spaces are **rooms** (bold name, size if the source gives
-  one).
+  one). Matt's names: a bathroom is `BATH` if it has a shower or tub and `POWDER` if not (never TOILET or
+  BATHROOM); the owner's suite is `PRIMARY`, never `MASTER`. The validator warns on the old words.
 
 ### labels
 
@@ -195,6 +196,6 @@ BUILT-IN and LAUNDRY. Place each one inside its space, clear of walls and fixtur
 
 `{ "pts": [[x, y], …], "closed": true | false, "dash": true, "arrow": true }`: thin (0.5 pt) linework for what the fixed set doesn't
 cover. Use it for a built-in's outline, a DW bay's dividers, a stair's turn and break line, an entry
-arrow, or a planter edge. `"dash": true` for a line the source dashes (overhead cabinets, a sliding
+arrow, or a planter edge. `"w": 0.2` for the stair's fine linework (rails, treads, walking line, break line, dashed flight above); `"dash": true` for a line the source dashes (overhead cabinets, a sliding
 door's track), drawn over the fixtures so it shows across a counter; `"arrow": true` puts an arrowhead at its last point (an UP or entry arrow). A closed line is filled white. Never use it for a wall, a door or a
 fixture that has a type.

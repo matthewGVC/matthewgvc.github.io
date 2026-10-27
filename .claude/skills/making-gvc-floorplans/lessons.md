@@ -3,11 +3,41 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: full scan of Matt's 2ND FLOOR edits against a fresh regeneration
+
+How: copy `Design/plan.json` to a scratch `Floorplan/Design/`, run the maker there, then
+`node scripts/floorplan/compare-edits.js "<his.svg>" "<regenerated.svg>" tmp/cmp` (red only in his
+file, blue only in ours). Then put the two renders side by side, crop by crop. His file is Illustrator output rounded to one
+decimal place, so a 0.25 stroke comes back as .2 or .3: **compare shapes, not weights under 0.1.**
+What he changed:
+- **French doors get glazing in the wall opening.** Each leaf has a window frame across the wall's
+  thickness (outer box plus an inner pane), like the `window` symbol, with the leaf and swing outside.
+  Our French doors had the swings only.
+- **Balcony rail and posts.** A thin double-line rail on the open sides, a square post at each outer
+  corner (one with an inner square, as the source draws it), and the bottom rail broken where the source
+  breaks it. Ours was a bare outline.
+- **A missed low wall.** A thin wall drawn as an outline (not solid) runs from the west wall across the
+  living room and turns down to the balcony wall. The tracer skips outlined walls: look for every
+  double-line wall in the source and draw it as `lines`.
+- **Counters follow the source's outline.** Both ends of the kitchen run step: the west end is a
+  deeper return, the east end turns down along the wall. One box per run is wrong where the source steps.
+- **Vanity counter runs the full wall.** The source's counter-front line runs from wall to wall with the
+  sinks in it, so the counter does too (this overrides "ended where the source's counter ends" when that
+  line runs on).
+- **Stools are drawn.** He added four stools at the island; the library has no stool, so he used the
+  dining-chair shape. Draw them with `chair` rather than leaving them out.
+- **Labels:** POWDER moved below the door's swing; ELEVATOR centred in its box with a white backing
+  over the X; BALCONY moved to the middle of the balcony.
+- **Armchairs** re-angled into tidy pairs (rot 45 / 315 matched across each pair).
+- **The sectional's back line** extended along the bottom too.
+- **He removed** a stray horizontal at the foot of the stair.
+- **Still open:** a red circle on the left end of the primary bath's window. Ask Matt what it marks.
+
 ## 2026-10-27: Matt's hand edits to the 2ND FLOOR svg (what he changed, so the next plan comes out that way)
 
 His edited file is `Unbranded/366 N 3rd St, Surf City v1 - 2ND FLOOR.svg` (saved from Illustrator 10:59). **Never run the maker on a version Matt has hand-edited: it overwrites his file. Any regeneration is the next version.**
 
-- **Scan Matt's edits against our file, every time.** After he hand-edits a floor, diff his SVG against a fresh regeneration (scratch folder, never over his file) and learn from each difference before the next floor. For the 366 N 3rd 2ND FLOOR this was only done partly (stroke weights and his notes); a full element-by-element scan is still owed. See `docs/floorplan-366-n-3rd-handoff.md`.
+- **Scan Matt's edits against our file, every time.** After he hand-edits a floor, diff his SVG against a fresh regeneration (scratch folder, never over his file) and learn from each difference before the next floor. Done for the 366 N 3rd 2ND FLOOR (section above).
 - **Room names (now a validator warning):** a bathroom is `BATH` when it has a shower or tub and `POWDER` when it does not (so no TOILET, BATHROOM or POWDER ROOM); the owner's suite is `PRIMARY`, never `MASTER` (PRIMARY BEDROOM, PRIMARY BATH, PRIMARY CLOSET).
 - **Stair linework is 0.2 (0.0025 in), finer than the 0.5 of other thin lines.** Lines now take `"w": 0.2` for the stair's rails, treads, walking line, break line and the dashed flight above.
 - **Labels fit their room.** He moved room labels to sit clear of walls and fixtures, and gave a label that sits on a crossed box (ELEVATOR) a white background. Check every label on the PNG; consider a white backing for labels over an X box.

@@ -15,6 +15,7 @@ let passed = 0, failed = 0, n = 0;
 function planWith(over) {
   const p = JSON.parse(JSON.stringify(studio));
   p.job.label = '333 E43 417';
+  p.north = 0;
   return Object.assign(p, over || {});
 }
 function folder(plan) {

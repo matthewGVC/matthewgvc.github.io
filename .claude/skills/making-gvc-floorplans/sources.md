@@ -66,7 +66,8 @@ im.save(out)
    everything the source draws before you write it, so nothing is skipped.
 4. Draw what the source draws and nothing more: a plain box is a box (a `counter` or `lines`), never a
    bed or a sofa because of where it sits; a fixture type only where the source draws that fixture.
-   Read every label and size exactly as printed, its punctuation too (`CL.` stays `CL.`): `13' x 24'` stays `13' x 24'` (the drawer prints it
+   Read every label and size exactly as printed, its punctuation too (`CL.` stays `CL.`), except `BI`,
+   which Matt always writes `BUILT-INS`: `13' x 24'` stays `13' x 24'` (the drawer prints it
    with curly marks). A name the source sets on two lines is written with a line break,
    `"LIVING\nROOM"`. When a size can't be read, leave it out and say so in `uncertain`. Never
    estimate it from the drawing.
@@ -93,6 +94,10 @@ The SVG is already a drawing, so read its geometry rather than the picture:
   - **white blocks:** any element filled white (`#ffffff`, `#fff`, `white`) whose stroke is none,
     transparent or white. These are Cubicasa's masks, not plan geometry.
 - Render the SVG to a PNG and view it before and after, the same way as a picture.
+- **Doors:** Cubicasa draws a door as a plain gap, with no leaf or swing (its small triangles are
+  dimension arrows, not doors). Draw every gap that is a door (a room's or a closet's entry) as a door
+  with its swing, 45° inside and 90° to the outside (Matt, 10-27). A passage with no door stays an
+  `opening`. The same goes for a Cubicasa PNG.
 
 When the first Cubicasa SVG has gone through this process, add a lesson. That is also the trigger to
 retire `tools/floorplan/` (tell Matt; it is a separate change).

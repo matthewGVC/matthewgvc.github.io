@@ -133,6 +133,8 @@ function validate(plan) {
   if (!plan || typeof plan !== 'object') return { errors: ['plan must be an object'], warnings };
   if (plan.schema !== SCHEMA) errors.push('schema must be ' + SCHEMA);
   if (plan.north !== null && plan.north !== undefined && !Number.isFinite(plan.north)) errors.push('north must be a number of degrees or null');
+  /* every branded sheet carries the compass (Matt, 10-27): with no compass in the source, north is researched */
+  if (plan.north === null || plan.north === undefined) warnings.push('no north: the branded sheet will have no compass. Research the building\'s orientation, or list it in missing');
   if (plan.layout !== undefined && plan.layout !== 'alternate') errors.push('layout must be "alternate" or left out');
   if (plan.current !== undefined && typeof plan.current !== 'boolean') errors.push('current must be true or false');
   if (!Array.isArray(plan.levels) || !plan.levels.length) {

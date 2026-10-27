@@ -19,7 +19,7 @@ const has = (r, msg) => r.errors.includes(msg);
 
 check('fixture is valid', validate(studio).errors, []);
 check('the skill\'s worked example (555 W59 PHC) is valid', validate(require('./floorplan/fixtures/555-w59-phc.json')), { errors: [], warnings: [] });
-check('fixture has no warnings', validate(studio).warnings, []);
+check('fixture has no warnings but its missing north (every branded sheet carries the compass)', [validate({ ...clone(studio), north: 0 }).warnings, validate(studio).warnings.length, /no north/.test(validate(studio).warnings[0])], [[], 1, true]);
 
 check('schema must be 1', has(validate({ ...clone(studio), schema: 2 }), 'schema must be 1'), true);
 
@@ -39,7 +39,7 @@ check('a size printed in feet alone on a side is fine', validate(p).errors, []);
 p = clone(studio); p.levels[0].rooms[0].size = null;
 check('null size is fine', validate(p).errors, []);
 
-p = clone(studio);
+p = clone(studio); p.north = 0;
 p.levels[0].rooms = [{ name: 'PRIMARY BEDROOM / LIBRARY', size: null, at: [20, 20], rot: 0, box: [0, 0, 40, 40] }];
 let r = validate(p);
 check('label wider than its room warns', [r.warnings.length, r.errors], [1, []]);

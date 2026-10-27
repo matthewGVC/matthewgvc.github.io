@@ -3,6 +3,23 @@
 What earlier runs learned. **Newest first, one dated line each.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: Matt's answers after the real-plan tests (rounds 2-5)
+
+- **Scale:** Matt fills the artboard with the plan. The drawer already fits it as large as the box allows.
+- **Compass on every branded sheet:** when the source has none, research the building's orientation and
+  set `north` (plan-format). Leave it `null` only when it can't be found, and say so in `missing`.
+- **Several floors:** Matt makes one sheet with every floor on it, and a separate sheet for each floor.
+  The drawer makes the separate sheets now; the all-floors sheet is still to build.
+- **Labels:** `BI` is always written `BUILT-INS`.
+- **Doors:** closet doors at 45°, like every inside door, whatever the source shows. A front door onto
+  a landing is an outside door (90°).
+- **Cubicasa:** its door gaps are drawn as doors with their swings. Hatched masses (a chimney, a
+  fireplace) are solid blocks.
+- Rounds 2-5 fixed in the scripts: walls lifted from the picture, the frame measured off Matt's sheets,
+  the compass placed in empty space with an upright N, white-filled windows, dashes over counters,
+  doors given by points (`hinge`, `into`), `--cut` for fixtures fused to walls. Door sides were the
+  commonest tracing error: give doors by points.
+
 ## 2026-10-26: real-plan test, round 1 (six of Matt's jobs, two element audits)
 
 Six of Matt's real jobs were run from the source he was given and compared with what he made:

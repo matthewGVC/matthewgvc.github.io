@@ -28,7 +28,7 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 | `layout` | Leave it out for the current layout. `"alternate"` for an alternate: the branded sheet then says ALTERNATE, bottom right. |
 | `current` | `true` on the current layout of a job that also has an alternate: the sheet then says CURRENT. |
 | `sources` | One entry per reference used: `{ "file": "Design/<name>", "kind": "<cubicasa-svg, cubicasa-png, broker-plan, screenshot, architect-pdf, dwg, dxf, gvc-old-plan-jpg…>", "note": "<what you took from it, e.g. page 2 only>" }`. The maker needs this list. |
-| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **`null` when the source shows no compass.** Never guess it. |
+| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **Every branded sheet carries the compass (Matt, 10-27).** When the source shows none, research the building's orientation (the address on a map: which way its street and its walls run; Manhattan's avenues run about 29° east of true north), set `north` from that and say so in the run note. Never guess it: when it can't be found, leave it `null` and list it in `missing`. |
 | `levels` | One per floor (below). |
 | `missing` | Plain sentences: what the source doesn't show, or what you left out. |
 | `uncertain` | Plain sentences: anything you had to judge (a blurry size, a door swing you couldn't see). |
@@ -77,8 +77,9 @@ the name bottom right, before ALTERNATE or CURRENT ("FLOOR 1 ALTERNATE"), as Mat
   swings into (somewhere under its arc). The drawer works out `from`/`to` and `left`/`right` from them,
   so there is no direction to get backwards. Prefer these on every door, free or on a wall.
 - **`"outside": true`** on every door that opens to the outside: to a terrace or balcony, and the front
-  door to the building's hall. Those draw fully open (90°). Every other door draws half open (45°).
-  This is Matt's rule.
+  door to the building's hall or a landing (a private landing or an elevator vestibule counts). Those
+  draw fully open (90°). Every other door draws half open (45°), closet doors included, even where the
+  source draws them wide open. This is Matt's rule.
 - **pocket:** `hinge` is the end with the pocket (the panel slides into the wall there).
 - **Free openings**, across a gap in traced wall masses (no wall to sit on):
   `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`: the gap's two ends on the wall's centre
@@ -119,7 +120,8 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
   `dishwasher`. Put their labels (W, D, W/D, WH, DW) in `labels`.
 - **Fireplaces are not a fixed symbol.** Every fireplace is traced from its own source: the chimney
   mass as `solids`, the firebox and hearth as `lines` (or the `fireplace` fixture only when its shape
-  matches the source). The style sheet's fireplace is an example, not the rule.
+  matches the source). The style sheet's fireplace is an example, not the rule. A mass the source
+  hatches (a chimney or a fireplace drawn with diagonal lines) is drawn as a solid block (Matt, 10-27).
 - **Furniture:** `bed` (`"pillows": 1` or `2`; a bed narrower than 0.6 of its length gets 1),
   `nightstand`, `side-table`, `sofa` (`"seats"`, default 3), `armchair`, `sectional`
   (`"side": "left"` or `"right"`, the side its return runs down), `coffee-table`, `table`,

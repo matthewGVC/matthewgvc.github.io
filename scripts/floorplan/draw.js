@@ -259,8 +259,10 @@ function drawLines(level, T, over = false) {
     const P = l.pts.map(T);
     /* dash: a dashed line (overhead cabinets, a track); arrow: an arrowhead at the last point (UP, DN) */
     const dash = l.dash ? ' stroke-dasharray="' + STYLE.LINE_DASH + '"' : '';
-    out.push(l.closed ? '<path ' + thin(dash) + ' d="' + poly(P) + '"/>'
-      : '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"' + dash + ' d="M' + P.map(pt).join('L') + '"/>');
+    /* w: a finer weight for the line (Matt draws the stair's treads, rails and break line at 0.2) */
+    const sw = Number.isFinite(l.w) && l.w > 0 ? l.w : STYLE.THIN;
+    out.push(l.closed ? '<path fill="' + STYLE.WHITE + '" stroke="' + STYLE.NAVY + '" stroke-width="' + sw + '"' + dash + ' d="' + poly(P) + '"/>'
+      : '<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + sw + '"' + dash + ' d="M' + P.map(pt).join('L') + '"/>');
     if (l.arrow && !l.closed) {
       const e = P[P.length - 1], d = sub(e, P[P.length - 2]), L = len(d) || 1, u = mul(d, 1 / L), n = [-u[1], u[0]], a = STYLE.STAIR_ARROW;
       out.push('<path fill="' + STYLE.NAVY + '" d="' + poly([e, addv(addv(e, mul(u, -a)), mul(n, a * 0.45)), addv(addv(e, mul(u, -a)), mul(n, -a * 0.45))]) + '"/>');

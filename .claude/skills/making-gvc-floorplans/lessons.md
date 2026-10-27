@@ -3,6 +3,21 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: Matt's hand edits to the 2ND FLOOR svg (what he changed, so the next plan comes out that way)
+
+His edited file is `Unbranded/366 N 3rd St, Surf City v1 - 2ND FLOOR.svg` (saved from Illustrator 10:59). **Never run the maker on a version Matt has hand-edited: it overwrites his file. Any regeneration is the next version.**
+
+- **Room names (now a validator warning):** a bathroom is `BATH` when it has a shower or tub and `POWDER` when it does not (so no TOILET, BATHROOM or POWDER ROOM); the owner's suite is `PRIMARY`, never `MASTER` (PRIMARY BEDROOM, PRIMARY BATH, PRIMARY CLOSET).
+- **Stair linework is 0.2 (0.0025 in), finer than the 0.5 of other thin lines.** Lines now take `"w": 0.2` for the stair's rails, treads, walking line, break line and the dashed flight above.
+- **Labels fit their room.** He moved room labels to sit clear of walls and fixtures, and gave a label that sits on a crossed box (ELEVATOR) a white background. Check every label on the PNG; consider a white backing for labels over an X box.
+- **Furniture:** he only lined the chairs up better; the layout, which follows the architect's plan, was right.
+- **Missed (to catch next time):**
+  - glazing on the French-door openings, left and bottom walls: the source draws window panes beside and in the leaves, not just the swing;
+  - the foundation and columns around the balcony (the corner posts and the rail lines);
+  - a section of wall at the bottom right (Matt flagged it with a question mark; confirm which one before assuming);
+  - checking my cleaned walls against the raw trace for lost pieces: `clean_solids.py` drops slivers, so diff the raw and cleaned wall rasters and look at anything over a few hundred pixels.
+- **Library symbols Matt will redraw:** bed, side tables (nightstand), sink, toilet, couches (sofa, armchair, sectional), stove (range) and windows. Wait for his returned style sheet (SKILL.md, "changing the house style") before relying on them; until then expect them to look rough.
+
 ## 2026-10-27: 366 N 3rd St, 2ND FLOOR review (Matt, page by page)
 
 - **Traced walls need cleaning before they are used.** Raw `trace-walls.py` masses had gaps, edges a few pixels off from the next wall and little nubs. Run them through `scripts/floorplan/clean_solids.py` (snap, union, drop nubs) and measure every opening (`gap`: both ends and the wall's centre and thickness) and every fixture (`flush`) against the cleaned wall raster, not by eye. Never hand-place an opening's ends.

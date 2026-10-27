@@ -31,7 +31,8 @@
                       "backing": true optional — a white box behind the label, over linework (an elevator's X),
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
-       "labels":   [{ "text", "at": [x,y] }],
+       "labels":   [{ "text", "at": [x,y] }],   rooms and labels also take "allAt": [x,y], "allScale" and "allLock" (fit-labels.js leaves it), where and how big the
+                    all-floors sheet sets them (it draws each floor smaller); top level "allSheet": { "textScale" }
        "lines":    [{ "pts": [[x,y], ...], "closed": bool, "dash": bool, "arrow": bool }]   thin linework the fixed set doesn't cover:
                                                                cabinet and built-in outlines, stair winders
      }],
@@ -140,6 +141,7 @@ function validate(plan) {
   /* every branded sheet carries the compass (Matt, 10-27): with no compass in the source, north is researched */
   if (plan.north === null || plan.north === undefined) warnings.push('no north: the branded sheet will have no compass. Research the building\'s orientation, or list it in missing');
   if (plan.layout !== undefined && plan.layout !== 'alternate') errors.push('layout must be "alternate" or left out');
+  if (plan.allSheet !== undefined && !(plan.allSheet && plan.allSheet.textScale > 0.3 && plan.allSheet.textScale <= 1)) errors.push('allSheet.textScale must be a number above 0.3, at most 1');
   if (plan.current !== undefined && typeof plan.current !== 'boolean') errors.push('current must be true or false');
   if (plan.sheet !== undefined && !['row', 'stagger'].includes(plan.sheet)) errors.push('sheet must be "row" or "stagger" (the all-floors sheet), or left out');
   if (!Array.isArray(plan.levels) || !plan.levels.length) {
@@ -221,6 +223,8 @@ function validate(plan) {
       if (/\bCLOSETS?\b/.test(r.name)) warnings.push(R + ': write CL, never CLOSET (Matt, 10-27)');
       if (r.size !== null && r.size !== undefined && !SIZE_RE.test(r.size)) errors.push(R + ': size must look like 12\'0" x 20\'3" (or 13\' x 24\', as printed)');
       if (!isPt(r.at)) errors.push(R + ': at must be [x, y]');
+      if (r.allAt !== undefined && !isPt(r.allAt)) errors.push(R + ': allAt must be [x, y]');
+      if (r.allScale !== undefined && !(r.allScale > 0.3 && r.allScale <= 1)) errors.push(R + ': allScale must be above 0.3, at most 1');
       if (r.box !== undefined) {
         if (!Array.isArray(r.box) || r.box.length !== 4 || !r.box.every(Number.isFinite)) {
           errors.push(R + ': box must be [x0, y0, x1, y1]');
@@ -238,6 +242,8 @@ function validate(plan) {
       const T = L + ' label ' + (i + 1);
       if (typeof t.text !== 'string' || !t.text) errors.push(T + ': needs text');
       if (!isPt(t.at)) errors.push(T + ': at must be [x, y]');
+      if (t.allAt !== undefined && !isPt(t.allAt)) errors.push(T + ': allAt must be [x, y]');
+      if (t.allScale !== undefined && !(t.allScale > 0.3 && t.allScale <= 1)) errors.push(T + ': allScale must be above 0.3, at most 1');
     });
 
     (level.lines || []).forEach((l, i) => {

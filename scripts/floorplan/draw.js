@@ -586,16 +586,21 @@ function drawFixtures(level, T, s) {
 }
 
 /* ---------- labels ---------- */
-/* k scales the text (the all-floors sheet sets it a little smaller, as Matt does) */
-function drawRooms(level, T, k = 1) {
+/* k scales the text (the all-floors sheet sets it a little smaller, as Matt does). On that sheet (all) a
+   room or label with "allAt" is set there instead of at "at", and "allScale" sets it smaller still, to
+   fit the floor drawn smaller (fit-labels.js writes both) */
+function drawRooms(level, T, k0 = 1, all = false) {
+  const AT = (r) => (all && isPt(r.allAt) ? r.allAt : r.at);
   const out = [];
-  const NAME = { ...STYLE.ROOM_NAME, sizePt: STYLE.ROOM_NAME.sizePt * k, lineGap: STYLE.ROOM_NAME.lineGap * k };
-  const SIZE = { ...STYLE.ROOM_SIZE, sizePt: STYLE.ROOM_SIZE.sizePt * k, gap: STYLE.ROOM_SIZE.gap * k };
-  const SMALL = { ...STYLE.SMALL_LABEL, sizePt: STYLE.SMALL_LABEL.sizePt * k };
-  const nameCap = capHeight(NAME), sizeCap = capHeight(SIZE);
+  const styles = (k) => ({
+    NAME: { ...STYLE.ROOM_NAME, sizePt: STYLE.ROOM_NAME.sizePt * k, lineGap: STYLE.ROOM_NAME.lineGap * k },
+    SIZE: { ...STYLE.ROOM_SIZE, sizePt: STYLE.ROOM_SIZE.sizePt * k, gap: STYLE.ROOM_SIZE.gap * k },
+    SMALL: { ...STYLE.SMALL_LABEL, sizePt: STYLE.SMALL_LABEL.sizePt * k } });
+  const kOf = (r) => k0 * (all && r.allScale > 0 ? r.allScale : 1);
   (level.rooms || []).forEach((r) => {
     if (typeof r.name !== 'string' || !r.name.trim() || !isPt(r.at)) return;
-    const c = T(r.at), hasSize = typeof r.size === 'string' && r.size;
+    const { NAME, SIZE } = styles(kOf(r)), nameCap = capHeight(NAME), sizeCap = capHeight(SIZE);
+    const c = T(AT(r)), hasSize = typeof r.size === 'string' && r.size;
     /* a name breaks where it has a line break ("LIVING\nROOM"), as the source sets it */
     const lines = r.name.split('\n').map((t) => t.trim()).filter(Boolean), gap = NAME.lineGap;
     const names = nameCap + (lines.length - 1) * gap;
@@ -614,9 +619,10 @@ function drawRooms(level, T, k = 1) {
   });
   (level.labels || []).forEach((t) => {
     if (typeof t.text !== 'string' || !t.text || !isPt(t.at)) return;
-    const c = T(t.at);
+    const { SMALL } = styles(kOf(t));
+    const c = T(AT(t));
     const d = outline(t.text, { ...SMALL, x: c[0], y: c[1] + capHeight(SMALL) / 2, anchor: 'middle' });
-    out.push('<g data-label="' + esc(t.text) + '" fill="' + STYLE.NAVY + '"><path d="' + d + '"/></g>');
+    out.push('<g data-label="' + esc(t.text) + '" data-small="1" fill="' + STYLE.NAVY + '"><path d="' + d + '"/></g>');
   });
   return out.join('');
 }
@@ -758,10 +764,10 @@ function drawStatus(text) {
 /* ---------- the page ---------- */
 /* one level's drawing, every layer in order, through T (plan units -> page points, scale s);
    also used by style-sheet.js to draw single elements at a fixed scale */
-function drawLevel(level, T, s, textK = 1) {
+function drawLevel(level, T, s, textK = 1, all = false) {
   /* fixtures and linework under the walls, as Matt's are: a counter stops at the wall, it never covers it */
   return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawLines(level, T, true), drawSolids(level, T), drawWalls(level, T),
-    drawOpenings(level, T, s), drawRooms(level, T, textK)].filter(Boolean).join('\n');
+    drawOpenings(level, T, s), drawRooms(level, T, textK, all)].filter(Boolean).join('\n');
 }
 
 function draw(plan, levelIndex = 0, opts = {}) {
@@ -901,7 +907,8 @@ function drawAll(plan, opts = {}) {
   let box = branded ? STYLE.BOX_BRANDED : STYLE.BOX_UNBRANDED;
   const status = branded ? (plan.layout === 'alternate' ? 'ALTERNATE' : plan.current ? 'CURRENT' : '') : '';
   const reserve = status ? capHeight(STYLE.STATUS) + STYLE.COMPASS_CLEAR : 0;
-  let A = arrangeLevels(plan, box, reserve);
+  /* opts.layout: another drawing's layout, so a copy with parts left out lands exactly where it did (fit-labels.js) */
+  let A = opts.layout ? opts.layout : arrangeLevels(plan, box, reserve);
   const north = branded && Number.isFinite(plan.north);
   const spot = (a) => compassAt(a.places.map((q, i) => [plan.levels[i], q.T]), a.names.map((m) => m.box));
   let compass = north ? spot(A) : null;
@@ -920,8 +927,12 @@ function drawAll(plan, opts = {}) {
   /* the text a little smaller than on a floor's own sheet, as Matt sets it: about the cube root of how much
      smaller the floor is drawn (225 E79: 0.9, 401 E89: 0.8), never under 0.7 */
   const single = branded ? STYLE.BOX_BRANDED : STYLE.BOX_UNBRANDED;
-  const textK = Math.max(0.7, Math.min(1, ...plan.levels.map((l, i) => Math.cbrt(A.places[i].s / fitScale(l, single)))));
-  plan.levels.forEach((l, i) => parts.push('<g data-level="' + (i + 1) + '">' + drawLevel(l, A.places[i].T, A.places[i].s, textK) + '</g>'));
+  /* "allSheet": { "textScale" } sets it by hand where the floors are drawn so small that the labels
+     crowd (366 N 3rd, three floors across: Matt, 10-27) */
+  const auto = Math.max(0.7, Math.min(1, ...plan.levels.map((l, i) => Math.cbrt(A.places[i].s / fitScale(l, single)))));
+  const textK = plan.allSheet && plan.allSheet.textScale > 0 ? plan.allSheet.textScale : auto;
+  if (opts.onLayout) opts.onLayout({ places: A.places, names: A.names, A, textK });   // fit-labels.js reads where each floor went
+  plan.levels.forEach((l, i) => parts.push('<g data-level="' + (i + 1) + '">' + drawLevel(l, A.places[i].T, A.places[i].s, textK, true) + '</g>'));
   parts.push('<g data-frame="level-names">' + A.names.map((m) => m.svg).join('') + '</g>');
   if (branded) {
     if (north) parts.push(drawCompass(plan.north, compass));

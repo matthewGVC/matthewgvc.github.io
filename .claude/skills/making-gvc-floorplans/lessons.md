@@ -3,6 +3,25 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: fitting the labels on the all-floors sheet (366 N 3rd)
+
+Matt: "scale and move them, they should fit nicely", then, about two POWDER rooms and the PANTRY:
+"These can be scaled down even more to fit better". **A label stays in its own room, smaller, and
+never wanders into the next room.** `scripts/floorplan/fit-labels.js` now does this; what it took:
+- **Masks must use the sheet's own layout.** A copy of the plan with the labels or fixtures left out is
+  laid out differently, because the floors' bounds change. Its masks sat offset from the labels, so
+  every room check was wrong and labels swapped rooms (BATH into the CL beside it). `drawAll` takes
+  `opts.layout` to reuse the full sheet's layout.
+- **A label's room** is a flood fill from its centre, bounded by walls, columns and every door or
+  window opening shut with a line. The line runs a little past each end, and the borders are
+  thickened 1 pt so hairline gaps can't leak.
+- **Search order:** each size tries near the label first, then anywhere in its room, before the next
+  smaller size (1 down to 0.5). Otherwise bedrooms shrank to half size beside free space.
+- **Small labels (W, D, REF) never move,** only shrink: they belong in their own box. **Labels backed in
+  white (ELEVATOR, SHOWERS) stay put** and only shrink clear of the walls.
+- **Still look at it.** FOYER found clear space above the foyer stair, which is open to the hall and
+  read wrong. It is set by hand inside the foyer, with `allLock`.
+
 ## 2026-10-27: 366 N 3rd St, all floors v2; new rules from Matt
 
 - **Only PNGs in Unbranded/ and Branded/.** The SVG masters go to `Design/Unbranded/` and
@@ -20,7 +39,7 @@ run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md
   wide and laid it over the post. Give such windows the plain wall's own centre and thickness.
 - **Labels on dashed X lines** (an open area, outdoor showers) take `"backing": true`, like ELEVATOR.
 - **Check the all-floors sheet's labels too.** Each floor is drawn smaller there, so labels that fit on
-  the single sheets touch walls, beds and swings. Still open for 366 N 3rd: ask Matt how he wants it.
+  the single sheets touch walls, beds and swings. Fixed with fit-labels.js (section above).
 
 ## 2026-10-27: Matt's edits to the library sheet (scripts/floorplan/library.svg)
 

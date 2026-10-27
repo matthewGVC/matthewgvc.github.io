@@ -183,6 +183,11 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
   source gives none.
 - `at` is the **centre of the whole label block** (name lines and size line together), not the top line. `rot` of 90 or -90 is for a long, narrow room, as the source
   does.
+- **The all-floors sheet** (several floors) draws each floor smaller. `"allAt": [x, y]` sets a room
+  name or small label somewhere else on that sheet only, `"allScale"` (0.3-1) sets it smaller there,
+  and `"allLock": true` keeps a hand-set one when `fit-labels.js` runs again. The top-level
+  `"allSheet": { "textScale": 0.8 }` sets that sheet's text size. `fit-labels.js` writes all of these;
+  set them by hand only to correct it.
 - `"backing": true` puts a white box behind the label, for a label that sits over linework such as an
   elevator's crossed box (Matt, 10-27).
 - `box` is optional: the room's extent. Give it for small rooms, so the validator can warn when the

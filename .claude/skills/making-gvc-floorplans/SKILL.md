@@ -130,7 +130,14 @@ Files beside this one:
    - nothing from the source's branding is left, and nothing was invented.
 
    Open the Branded PNG too: the header holds the address and facts, the compass points the right
-   way, and nothing touches ALTERNATE or the note. For several floors, open the all-floors sheet too. If anything is wrong, fix `plan.json` and run the maker again with
+   way, and nothing touches ALTERNATE or the note. For several floors, open the all-floors sheet too.
+   **Its labels must fit as well** (Matt: "scale and move them, they should fit nicely"). That sheet
+   draws each floor smaller, so labels that fit on a floor's own sheet touch walls and furniture there.
+   Run `node scripts/floorplan/fit-labels.js "<Floorplan folder>\Design\plan.json" --scale 0.8 --write`,
+   then the maker again (same version). It moves each crowded label to a clear spot inside its own room
+   (`allAt`), or sets it smaller (`allScale`); the floors' own sheets are untouched. Look at the result:
+   set any label it placed badly by hand with `allAt`, `allScale` and `"allLock": true`, which a later
+   run keeps. If anything is wrong, fix `plan.json` and run the maker again with
    the **same** version (it archives the earlier attempt). Then add a `## Checked against the source`
    section to `Design/run-v<N>.md`, listing what you compared, what you fixed, and what is left. **The
    run is not done until that section is written.**

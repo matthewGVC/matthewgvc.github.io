@@ -398,6 +398,18 @@ check('the room text is a little smaller than on a floor\'s own sheet, never und
 check('one floor alone is just its own sheet', drawAll(clone(studio), { branded: false }) === draw(clone(studio), 0, { branded: false }), true);
 
 /* ---- report ---- */
+{
+  /* the all-floors sheet: allAt and allScale move and shrink a label there only */
+  const { drawAll: all } = require('./floorplan/draw.js');
+  const two = clone(box4); two.levels.push(clone(box4.levels[0])); two.levels[0].name = 'A'; two.levels[1].name = 'B';
+  two.levels.forEach((l) => { l.rooms = [{ name: 'DEN', size: null, at: [50, 40], rot: 0 }]; });
+  const r = two.levels[0].rooms[0];
+  const where = (svg) => (svg.split('data-label="' + r.name + '"')[1] || '').slice(0, 400);
+  const before = where(all(two)), single = where(draw(two, 0, {}));
+  r.allAt = [r.at[0] + 5, r.at[1]]; r.allScale = 0.5;
+  check('allAt and allScale change the all-floors sheet, and not the floor\'s own sheet', [where(all(two)) !== before, where(draw(two, 0, {})) === single], [true, true]);
+}
+
 if (failures.length) {
   console.log(failures.length + ' failed, ' + pass + ' passed\n');
   failures.forEach((f) => console.log('  FAIL ' + f));

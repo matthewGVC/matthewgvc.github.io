@@ -12,6 +12,12 @@ run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md
 - **Furniture:** when the architect's plan draws it, bring it in from the library (bed, nightstands, armchairs, sectional, coffee table, dining table, sofa) at the source's placement and size; leave out what the library lacks (stools). Armchairs are about 100 x 108 px; the sectional's `w` is the long back run and `h` the whole extent, `rot` 90 puts its back on the right.
 - **Labels we do not use:** OVEN'S. Leave the box, drop the label.
 - **Stairs are not a pile of treads.** Read the whole stair: the walking line (it climbs, then turns), the flights and their rails, the break line, and the dashed flight that runs above the cut (here it crosses the master closet). Dashed treads are `lines` with `dash`.
+- **Second pass on the 2ND FLOOR (Matt: "you missed a bunch still"):**
+  - Read each thing as the source draws it, not as the nearest library item. The living-room sectional is a U with a round-ended arm and a thin outer back line, drawn as `lines`; the library `sectional` is only an L. Use a library symbol only when its shape is the source's.
+  - Count every cell of a cabinet run. The oven bank was one box in the plan but two cells (oven, then a plain cabinet) down to the fridge.
+  - One door per opening: the pantry showed two swings in the source but is one door. Do not draw the second swing.
+  - Do not invent arrows. The stair's walking line ends at the break mark with no arrowhead; the direction is the UP label and the line's path.
+  - Stairs take their own zoomed pass at 3x, in two crops: lay out the rails (double lines, with their end caps), each flight's own tread positions (they are not evenly spaced), the break line with its jog and `>` mark, and every dashed line above the cut. Compare with the overlay before moving on.
 
 ## 2026-10-27: 366 N 3rd St (NJ architect PDF, three floors)
 

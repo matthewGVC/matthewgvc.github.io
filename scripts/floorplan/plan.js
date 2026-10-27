@@ -47,7 +47,7 @@ const WALLS = ['exterior', 'interior', 'glass'];
 const OPENINGS = ['door', 'double-door', 'sliding', 'pocket', 'bifold', 'window', 'opening'];
 const FIXTURES = ['toilet', 'sink', 'round-sink', 'double-sink', 'tub', 'shower', 'range', 'kitchen-sink', 'refrigerator', 'fireplace', 'counter', 'rod',
   'washer', 'dryer', 'washer-dryer', 'water-heater', 'dishwasher',
-  'lounge-chair', 'car', 'clothes',
+  'lounge-chair', 'chair', 'car', 'clothes',
   'bed', 'nightstand', 'side-table', 'sofa', 'armchair', 'sectional', 'coffee-table', 'table', 'dining-table'];
 const PATTERNS = ['tile', 'pavers', 'brick-patio', 'brick-roof'];
 const AREAS = ['terrace', 'balcony', 'closet', 'stair', 'void', 'floor', 'roof'];
@@ -218,6 +218,7 @@ function validate(plan) {
          the owner's suite is PRIMARY, never MASTER */
       if (/\bMASTER\b/.test(r.name)) warnings.push(R + ': write PRIMARY, never MASTER');
       if (/\b(TOILET|BATHROOM|POWDER ROOM|WC)\b/.test(r.name.replace(/\n/g, ' '))) warnings.push(R + ': a bathroom is BATH if it has a shower or tub, POWDER if not');
+      if (/\bCLOSETS?\b/.test(r.name)) warnings.push(R + ': write CL, never CLOSET (Matt, 10-27)');
       if (r.size !== null && r.size !== undefined && !SIZE_RE.test(r.size)) errors.push(R + ': size must look like 12\'0" x 20\'3" (or 13\' x 24\', as printed)');
       if (!isPt(r.at)) errors.push(R + ': at must be [x, y]');
       if (r.box !== undefined) {

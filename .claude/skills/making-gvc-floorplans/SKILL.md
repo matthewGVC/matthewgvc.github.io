@@ -1,6 +1,6 @@
 ---
 name: making-gvc-floorplans
-description: Use when a prompt says "Use the making-gvc-floorplans skill" or asks to make, redraw or correct a job's floorplan in the GVC Workspace repo (matthewgvc.github.io) - turning a reference in a job's Floorplan\Design folder (Cubicasa SVG or PNG, another brokerage's plan, a screenshot or scan, an architect's PDF, a DWG or DXF) into the standard GVC plan, saved as SVG + PNG in Floorplan\Unbranded and Floorplan\Branded.
+description: Use when a prompt says "Use the making-gvc-floorplans skill" or asks to make, redraw or correct a job's floorplan in the GVC Workspace repo (matthewgvc.github.io) - turning a reference in a job's Floorplan\Design folder (Cubicasa SVG or PNG, another brokerage's plan, a screenshot or scan, an architect's PDF, a DWG or DXF) into the standard GVC plan, saved as PNG in Floorplan\Unbranded and Floorplan\Branded, with the SVG masters in Floorplan\Design.
 ---
 
 # Making GVC floorplans
@@ -100,7 +100,8 @@ Files beside this one:
    ```
    (`--facts` is the prompt's `Facts:` line; leave it out when there is none. `0` beds is a studio.
    Half baths and the size go on the header's second line.) It
-   writes `<label> v<N>.svg` and `.png` into `Unbranded/` and `Branded/` (for several floors, that is
+   writes `<label> v<N>.png` into `Unbranded/` and `Branded/` (only PNGs there, Matt 10-27) and the SVG
+   masters into `Design/Unbranded/` and `Design/Branded/` (for several floors, that is
    the all-floors sheet, plus `… - <Level>` for each floor), and archives older versions of the same layout. It also writes `Design/run-v<N>.md`.
 7. **Check the result against the source**, in two passes.
 

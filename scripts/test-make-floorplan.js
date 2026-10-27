@@ -49,10 +49,10 @@ function listAll(dir) {
     eq(listAll(dir), ['Design/plan.json']);
   });
 
-  await t('one level writes four files', async () => {
+  await t('one level writes four files: PNGs in Unbranded/ and Branded/, SVGs in Design/', async () => {
     const dir = folder(planWith());
     const r = await make(dir, { version: 3, today: '2026-10-27' });
-    eq(r.written.slice().sort(), ['Branded/333 E43 417 v3.png', 'Branded/333 E43 417 v3.svg', 'Unbranded/333 E43 417 v3.png', 'Unbranded/333 E43 417 v3.svg']);
+    eq(r.written.slice().sort(), ['Branded/333 E43 417 v3.png', 'Design/Branded/333 E43 417 v3.svg', 'Design/Unbranded/333 E43 417 v3.svg', 'Unbranded/333 E43 417 v3.png']);
     for (const f of r.written) ok(fs.existsSync(path.join(dir, f)), f + ' missing');
   });
 
@@ -66,8 +66,8 @@ function listAll(dir) {
     eq(r.written.length, 12);
     ok(r.written.some(f => f.endsWith(' v3 - First Floor.svg')), 'first');
     ok(r.written.some(f => f.endsWith(' v3 - Second Floor.svg')), 'second');
-    ok(['Unbranded/333 E43 417 v3.svg', 'Branded/333 E43 417 v3.png'].every(f => r.written.includes(f)), 'the all-floors sheet');
-    ok(/data-level="2"/.test(fs.readFileSync(path.join(dir, 'Branded', '333 E43 417 v3.svg'), 'utf8')), 'both floors on it');
+    ok(['Design/Unbranded/333 E43 417 v3.svg', 'Branded/333 E43 417 v3.png'].every(f => r.written.includes(f)), 'the all-floors sheet');
+    ok(/data-level="2"/.test(fs.readFileSync(path.join(dir, 'Design', 'Branded', '333 E43 417 v3.svg'), 'utf8')), 'both floors on it');
   });
 
   await t('alternate layout and forbidden characters', async () => {
@@ -75,7 +75,7 @@ function listAll(dir) {
     p.job.label = '333 E43: 417?';
     const dir = folder(p);
     const r = await make(dir, { version: 2, today: '2026-10-27' });
-    ok(r.written.includes('Unbranded/333 E43 417 v2 Alternate.svg'), r.written.join('|'));
+    ok(r.written.includes('Design/Unbranded/333 E43 417 v2 Alternate.svg'), r.written.join('|'));
   });
 
   await t('second run archives the first', async () => {
@@ -115,10 +115,20 @@ function listAll(dir) {
     fs.writeFileSync(path.join(dir, 'Unbranded', 'Matt hand drawn.png'), 'x');
     fs.writeFileSync(path.join(dir, 'Design', 'plan.json'), JSON.stringify(planWith()));
     const r = await make(dir, { version: 3, today: '2026-10-28' });
-    eq(r.archived.slice().sort(), ['Design/archive/2026-10-28/Branded/333 E43 417 v2.png', 'Design/archive/2026-10-28/Branded/333 E43 417 v2.svg',
-      'Design/archive/2026-10-28/Unbranded/333 E43 417 v2.png', 'Design/archive/2026-10-28/Unbranded/333 E43 417 v2.svg']);
-    eq(listAll(dir).filter(f => f.startsWith('Unbranded/')), ['Unbranded/333 E43 417 v2 Alternate.png', 'Unbranded/333 E43 417 v2 Alternate.svg',
-      'Unbranded/333 E43 417 v3.png', 'Unbranded/333 E43 417 v3.svg', 'Unbranded/Matt hand drawn.png']);
+    eq(r.archived.slice().sort(), ['Design/archive/2026-10-28/Branded/333 E43 417 v2.png', 'Design/archive/2026-10-28/Design/Branded/333 E43 417 v2.svg',
+      'Design/archive/2026-10-28/Design/Unbranded/333 E43 417 v2.svg', 'Design/archive/2026-10-28/Unbranded/333 E43 417 v2.png']);
+    eq(listAll(dir).filter(f => f.startsWith('Unbranded/')), ['Unbranded/333 E43 417 v2 Alternate.png', 'Unbranded/333 E43 417 v3.png', 'Unbranded/Matt hand drawn.png']);
+    eq(listAll(dir).filter(f => f.startsWith('Design/Unbranded/')), ['Design/Unbranded/333 E43 417 v2 Alternate.svg', 'Design/Unbranded/333 E43 417 v3.svg']);
+  });
+
+  await t('an SVG of ours left in Unbranded/ or Branded/ (the old layout) moves to the archive, even this version', async () => {
+    const dir = folder(planWith());
+    fs.mkdirSync(path.join(dir, 'Unbranded'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'Unbranded', '333 E43 417 v3.svg'), '<svg/>');
+    fs.writeFileSync(path.join(dir, 'Unbranded', 'Matt hand drawn.svg'), '<svg/>');
+    const r = await make(dir, { version: 3, today: '2026-10-28' });
+    ok(r.archived.includes('Design/archive/2026-10-28/Unbranded/333 E43 417 v3.svg'), r.archived.join('|'));
+    eq(listAll(dir).filter(f => f.startsWith('Unbranded/')), ['Unbranded/333 E43 417 v3.png', 'Unbranded/Matt hand drawn.svg']);
   });
 
   await t('png size', async () => {

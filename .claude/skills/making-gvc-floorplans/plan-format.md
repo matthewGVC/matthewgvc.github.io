@@ -87,6 +87,8 @@ off the rooms that give both a `size` and a `box`; floors traced from one pictur
   door to the building's hall or a landing (a private landing or an elevator vestibule counts). Those
   draw fully open (90°). Every other door draws half open (45°), closet doors included, even where the
   source draws them wide open. This is Matt's rule.
+- **`"glazed": true`** on a French door (`door` or `double-door` whose leaves are glass): the window's
+  glass is drawn in the opening, one pane per leaf, under the leaves and swings (Matt, 10-27).
 - **pocket:** `hinge` is the end with the pocket (the panel slides into the wall there).
 - **Free openings**, across a gap in traced wall masses (no wall to sit on):
   `{"type": "window", "a": [x, y], "b": [x, y], "t": 20}`: the gap's two ends on the wall's centre
@@ -132,7 +134,7 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
 - **Furniture:** `bed` (`"pillows": 1` or `2`; a bed narrower than 0.6 of its length gets 1),
   `nightstand`, `side-table`, `sofa` (`"seats"`, default 3), `armchair`, `sectional`
   (`"side": "left"` or `"right"`, the side its return runs down), `coffee-table`, `table`,
-  `dining-table` (`"seats"`, default 4, chairs drawn round it). `side-table`, `coffee-table`,
+  `dining-table` (`"seats"`, default 4, chairs drawn round it). `chair` is one of Matt's dining chairs on its own (a stool at an island: he draws them with the chair, `rot` 0 faces the table above it). `side-table`, `coffee-table`,
   `table` and `dining-table` take `"shape": "round"`. Measure each piece off the source at its real
   size (a queen bed is 60 × 80 in). **Draw furniture only when the source shows it or Matt asks for
   a furnished plan**; otherwise leave it out.
@@ -187,7 +189,7 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
   name won't fit.
 - BATH, WIC, PDR, FOYER and similar named spaces are **rooms** (bold name, size if the source gives
   one). Matt's names: a bathroom is `BATH` if it has a shower or tub and `POWDER` if not (never TOILET or
-  BATHROOM); the owner's suite is `PRIMARY`, never `MASTER`. The validator warns on the old words.
+  BATHROOM); the owner's suite is `PRIMARY`, never `MASTER`; a closet is always `CL`, never CLOSET (PRIMARY CL, UTILITY CL). The validator warns on the old words.
 
 ### labels
 

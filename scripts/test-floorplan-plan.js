@@ -75,6 +75,16 @@ lp = clone(studio); lp.levels[0].rooms[0].backing = true;
   const label = (p) => svg(p).split('data-label="' + p.levels[0].rooms[0].name + '"')[1].split('</g>')[0];
   check('a room with backing draws a white box behind its label, and only then', [validate(lp).errors, /<rect fill="#ffffff"/.test(label(lp)), /<rect/.test(label(studio))], [[], true, false]);
 }
+lp = clone(studio); lp.levels[0].rooms[0].name = 'PRIMARY CLOSET';
+check('a closet is CL, never CLOSET (Matt, 10-27)', validate(lp).warnings.some((w) => /write CL, never CLOSET/.test(w)), true);
+lp = clone(studio); lp.levels[0].fixtures.push({ type: 'chair', at: [50, 50], w: 20, h: 10, rot: 0 });
+check('a single chair (a stool at an island) is a fixture', validate(lp).errors, []);
+{
+  const { draw } = require('./floorplan/draw.js');
+  const door = (glazed) => { const q = clone(studio); q.levels[0].openings[0] = Object.assign({ wall: 4, from: 0.6, to: 0.9, type: 'double-door', hinge: 'from', side: 'left' }, glazed ? { glazed: true } : {}); return draw(q, 0, {}); };
+  const panes = (svg) => (svg.match(/stroke-width="0.3" d="M[^"]*"/g) || []).length;
+  check('a glazed French door draws a pane in each leaf, over a plain one', panes(door(true)) - panes(door(false)), 2);
+}
 
 if (failures.length) {
   console.log(failures.join('\n'));

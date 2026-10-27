@@ -80,7 +80,7 @@ function fakeDb(seed) {
 
 /* ---------- the made-up Asana, cloned per test so each can change it ---------- */
 const FIX = path.join(__dirname, '..', 'helper', 'fixtures', 'synthetic', 'asana');
-const NYC = '1209188026968555', NJ = '1209188026968552', DEV = '1210736852899934', PEOPLE = '1209434796793215';
+const NYC = '1209188026968555', NJ = '1209188026968552', DEV = '1210736852899934';
 const fx = f => JSON.parse(fs.readFileSync(path.join(FIX, f), 'utf8'));
 const cfg = { asanaToken: 'tok-test-secret', asana: require('../helper/config.js').DEFAULTS.asana };
 const NOW = new Date('2026-10-20T12:00:00Z');

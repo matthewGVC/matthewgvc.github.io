@@ -46,7 +46,6 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
 .card-h h2{font-size:22px;line-height:1.15}
 .card-h p{font-size:13px;color:var(--ink-soft);margin-top:3px}
-.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 .grid3.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .split{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start}
@@ -164,10 +163,9 @@ h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
 .search{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:8px;padding:0 12px;background:var(--paper);min-width:300px;color:var(--ink-soft)}
 .search input{border:0;background:none;font:inherit;font-size:14px;padding:9px 0;flex:1;color:var(--ink);outline:none}
 .search:focus-within{border-color:var(--ink)}
-.kbd{font-family:var(--mono);font-size:10.5px;background:var(--paper-2);border-radius:4px;padding:1px 6px}
 
 
-@media (max-width:1200px){ .split{grid-template-columns:minmax(0,1fr)} .grid4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1200px){ .split{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:900px){ .grid3,.grid3.two{grid-template-columns:1fr} .top .pill-ok{display:none} }
 @media (max-width:720px){
   .top{padding:0 16px;gap:12px}
@@ -176,8 +174,7 @@ h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
   body{padding-bottom:60px}
   .top-r .ibtn{display:none}
   .wrap{padding:22px 16px 0}
-  .page-h h1{font-size:30px}
-  .grid4{grid-template-columns:1fr 1fr;gap:12px}
+  .page-h h1{font-size:30px}
   .card{padding:16px}
   .search{min-width:0;width:100%}
   .foot{padding:18px 16px;flex-direction:column}
@@ -223,4 +220,3 @@ button.pill-ok{cursor:pointer;font:inherit;font-family:var(--mono);font-size:11p
 .mm li:last-child{border-bottom:0}
 .mm li > :last-child{min-width:0;overflow-wrap:anywhere}
 .mm .code{font-family:var(--mono);font-size:10.5px;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:1px 7px;align-self:start;margin-top:1px}
-.why-inline{font-size:13px;color:var(--danger);margin-top:6px}

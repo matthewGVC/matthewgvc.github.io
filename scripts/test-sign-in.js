@@ -14,8 +14,6 @@
    ============================================================ */
 'use strict';
 
-const path = require('path'), fs = require('fs');
-
 let pass = 0;
 const failures = [];
 function check(name, got, want) {

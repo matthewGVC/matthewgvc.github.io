@@ -20,7 +20,6 @@ const { draw, drawLevel, drawSymbol, SYMBOLS, patternDefs, PATTERNS } = require(
 const S = 8 / 12;                  // pt per plan unit: plan units are inches, 8 pt to the foot
 const CELL = { w: 150, h: 120 };   // pt
 const COLS = 8, X0 = 36, Y0 = 130;
-const r2 = (v) => Math.round(v * 100) / 100;
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /* the sheet, section by section. Each element: [id, caption, level drawn in inches centred on 0,0];

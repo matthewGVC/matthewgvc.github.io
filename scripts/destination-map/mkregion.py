@@ -12,9 +12,9 @@ need fetching one at a time as 'rel(<id>);out geom;'.
 import json, math, os, re, sys, time, urllib.parse, urllib.request, collections
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(CACHE, 'cache')   # downloads live here (gitignored)
+CACHE = os.path.join(HERE, 'cache')   # downloads live here (gitignored)
 os.makedirs(CACHE, exist_ok=True)
-GD = os.path.join(CACHE, '..', '..', 'tools', 'destination-guide', 'guide-data.js')
+GD = os.path.join(HERE, '..', '..', 'tools', 'destination-guide', 'guide-data.js')
 EP = ['https://overpass.kumi.systems/api/interpreter', 'https://overpass-api.de/api/interpreter']
 UA = {'User-Agent': 'GVC-guide/1.0'}
 
@@ -53,7 +53,6 @@ CFG = {
 def get(url, data=None, tries=8):
     for i in range(tries):
         try:
-            u = EP[i % 2] if data is not None and 'overpass' in (url or '') else url
             req = urllib.request.Request(url if 'overpass' not in url else EP[i % 2], data=data, headers=UA)
             return json.load(urllib.request.urlopen(req, timeout=100))
         except Exception as e:

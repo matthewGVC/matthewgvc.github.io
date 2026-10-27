@@ -9,7 +9,7 @@
 
 const fs = require('fs'), os = require('os'), path = require('path');
 process.env.GVC_HELPER_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-db-'));
-const { createClient, ConflictError } = require('../helper/supabase.js');
+const { createClient } = require('../helper/supabase.js');
 const { backup, TABLES } = require('../helper/backup.js');
 
 let pass = 0;

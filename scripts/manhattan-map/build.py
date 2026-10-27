@@ -2,7 +2,7 @@
 # usage: python build.py <neighbourhoods.geojson> <osm_streets.json> <out_parts.json>
 import json, sys, math
 import numpy as np
-from shapely.geometry import shape, box, Polygon, LineString, Point
+from shapely.geometry import shape, box, LineString, Point
 from shapely.ops import unary_union, split
 from shapely import affinity
 
@@ -217,7 +217,7 @@ for n in list(done):
     if g.geom_type == 'GeometryCollection':
         g = unary_union([p for p in g.geoms if p.geom_type in ('Polygon', 'MultiPolygon')])
     done[n] = g
-from shapely.geometry import Polygon as _Poly, MultiPolygon as _MP
+from shapely.geometry import Polygon as _Poly
 def _fill(g):
     ps = [_Poly(p.exterior) for p in getattr(g, 'geoms', [g]) if p.geom_type == 'Polygon']
     return unary_union(ps)

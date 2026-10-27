@@ -89,7 +89,7 @@ async function applyRun(o) {
 }
 
 async function writeRows(o, run, out, now) {
-  const { client, report } = o;
+  const { client } = o;
   const props = await client.select('properties');
   const known = new Map((await client.select('de_listings')).map(d => [d.de_listing_id, d]));
   const byDe = new Map(props.filter(p => p.de_listing_id).map(p => [p.de_listing_id, p]));

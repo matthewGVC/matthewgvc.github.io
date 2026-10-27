@@ -46,11 +46,11 @@ def merge(ways):
             if not prev: break
             start = prev[0]; seen.add(start)
             if key(ways[start][0]) == key(ways[i][-1]) and start == i: break
-        chain = list(ways[start]); used.add(start); cur = start
+        chain = list(ways[start]); used.add(start)
         while True:
             nxt = [j for j in by_start.get(key(chain[-1]), []) if j not in used]
             if not nxt: break
-            used.add(nxt[0]); chain += ways[nxt[0]][1:]; cur = nxt[0]
+            used.add(nxt[0]); chain += ways[nxt[0]][1:]
         chains.append(chain)
     return chains
 
@@ -140,7 +140,7 @@ def build(name):
     entries = [(perim_t(p[0], box), i) for i, p in enumerate(open_pieces)]
     for i in range(len(open_pieces)):
         if i in used: continue
-        ring = list(open_pieces[i]); used.add(i); cur = i
+        ring = list(open_pieces[i]); used.add(i)
         for _ in range(len(open_pieces) + 2):
             te = perim_t(ring[-1], box)
             cands = sorted(((t - te) % Pm, j) for t, j in entries)

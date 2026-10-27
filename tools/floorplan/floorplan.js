@@ -195,17 +195,6 @@
     return serializeStyle(props);
   }
 
-  // ── set_font_weight ───────────────────────────────────────────────────────
-  // (Defined in Python as a helper; not invoked by convert(), but ported for
-  // fidelity.) Set font-weight on a <text> element via attribute and style.
-  function setFontWeight(elem, weight) {
-    elem.setAttribute("font-weight", weight);
-    var style = getAttr(elem, "style", "");
-    var props = parseStyle(style);
-    props["font-weight"] = weight;
-    elem.setAttribute("style", serializeStyle(props));
-  }
-
   // ── normalize_viewbox ─────────────────────────────────────────────────────
   // Shift viewBox so it starts at 0 0; compensate with a translate wrapper <g>.
   function normalizeViewbox(root) {
@@ -298,10 +287,6 @@
 
       // Collect text from <tspan> children (Python iter over {ns}tspan).
       var tspans = iterByLocal(elem, "tspan");
-      var spanText = "";
-      for (var s = 0; s < tspans.length; s++) {
-        spanText += " " + (directText(tspans[s]) || "");
-      }
       // Python: full_text = raw + " ".join(t.text for t in tspans)
       // " ".join of N items inserts N-1 separators; replicate by joining the
       // span texts with single spaces and concatenating directly to raw.

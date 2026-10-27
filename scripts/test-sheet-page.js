@@ -87,7 +87,7 @@ const FAKE_DRIVE = `(function () {
 async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
-  const errors = [], saves = [], pieces = [], helper = [], prints = [];
+  const errors = [], saves = [], pieces = [], helper = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));

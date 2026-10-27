@@ -65,7 +65,7 @@ off the rooms that give both a `size` and a `box`; floors traced from one pictur
   centred at c, the middle point is c plus r·0.7071 toward the corner. Only windows and plain
   openings can sit on a curve.
 - Walls are referenced by their **index** (0 = first) from `openings`, so write all the walls first
-  and add openings after. A generator script in your scratch folder (Python or Node) that appends
+  and add openings after. A generator script (Python or Node) that appends
   walls and openings as it goes makes the index bookkeeping safe. The 555 W59 example was made that
   way.
 

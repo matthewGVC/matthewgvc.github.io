@@ -175,8 +175,15 @@ function drawWalls(level, T) {
 }
 
 /* ---------- openings: doors, windows, sliders ---------- */
-function drawOpenings(level, T, s = 1) {
+/* part 'glass' draws only the glass (windows, and the panes of glazed doors), before the walls; 'rest'
+   draws the doors over them. Matt's library sheet (10-27) circled gaps and open corners where a window
+   met its wall: the glass now runs into the wall at each end that meets one, sitting flush with its
+   faces, and the wall drawn over it closes the frame */
+function drawOpenings(level, T, s = 1, part = 'all') {
   const walls = level.walls || [], out = [];
+  /* the ends of every glass opening, so a pane only runs on where it meets a wall, not the next pane */
+  const glassEnds = (level.openings || []).filter((o) => isPt(o.a) && isPt(o.b) && (o.type === 'window' || o.glazed)).flatMap((o) => [o.a, o.b]);
+  const meetsPane = (p, self) => glassEnds.filter((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < 2).length > 1;
   const stroke = 'fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.THIN + '"';
   (level.openings || []).forEach((o0) => {
     /* an opening on a wall (wall, from, to), or a free one across a gap in traced wall masses (a, b, t:
@@ -188,20 +195,30 @@ function drawOpenings(level, T, s = 1) {
     const C = course(w, T);
     if (!C.len) return;
     const hw = Math.max((free && o0.t > 0 ? o0.t * s : wallWidth(w.type)) / 2 - STYLE.THIN / 2, 0);
+    /* the glass frame's outer line sits flush with the wall's faces */
+    const gw = Math.max((free && o0.t > 0 ? o0.t * s : wallWidth(w.type)) / 2 - STYLE.DOOR_LINE / 2, 0);
+    const run = (free && !isPt(w.via) ? STYLE.WINDOW_RUN / (C.len || 1) : 0);
+    const runA = free && !meetsPane(o0.a) ? run : 0, runB = free && !meetsPane(o0.b) ? run : 0;
 
     /* Matt's window: a white frame across the wall's full thickness, closed at each end (so neighbouring
        panes show their mullion), and the glass, a narrower frame inside it */
     const glass = (from, to) => {
+      if (part === 'rest') return;
       const along = (t0, t1, k) => 'M' + pt(C.at(t0, k)) + C.seg(t0, t1, k);
       const frame = (t0, t1, k) => along(t0, t1, k) + along(t0, t1, -k) + line(C.at(t0, k), C.at(t0, -k)) + line(C.at(t1, k), C.at(t1, -k));
       const inset = Math.min(hw * 0.5, (to - from) * C.len * 0.1) / (C.len || 1);
       const g = hw * STYLE.WINDOW_GLASS;
+      /* where the pane meets a wall its white runs on under it (the wall, drawn over, closes any sliver);
+         the frame itself stops at the opening's ends, where the wall's squared end meets it (a frame run
+         on under the wall showed a hairline stub past the wall's face). Between panes it stops at the mullion */
+      const f0 = from - (from === o.from ? runA : 0), t1 = to + (to === o.to ? runB : 0);
       /* the pane filled white as one closed ring (the frame's four open lines enclose nothing to fill) */
-      const ring = 'M' + pt(C.at(from, hw)) + C.seg(from, to, hw) + 'L' + pt(C.at(to, -hw)) + C.seg(to, from, -hw) + 'Z';
+      const ring = 'M' + pt(C.at(f0, gw)) + C.seg(f0, t1, gw) + 'L' + pt(C.at(t1, -gw)) + C.seg(t1, f0, -gw) + 'Z';
       out.push('<path fill="' + STYLE.WHITE + '" d="' + ring + '"/>');
-      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '" d="' + frame(from, to, hw) + frame(from + inset, to - inset, g) + '"/>');
+      out.push('<path fill="none" stroke="' + STYLE.NAVY + '" stroke-width="' + STYLE.DOOR_LINE + '" d="' + frame(from, to, gw) + frame(from + inset, to - inset, g) + '"/>');
     };
     if (o.type === 'window') { glass(o.from, o.to); return; }
+    if (part === 'glass') { if (o.glazed && o.type === 'door') glass(o.from, o.to); if (o.glazed && o.type === 'double-door') { glass(o.from, (o.from + o.to) / 2); glass((o.from + o.to) / 2, o.to); } return; }
     if (o.type === 'opening' || isPt(w.via)) return;   /* a plain gap; the validator keeps doors off curves */
 
     const d = C.dir(0), left = leftOf(d);
@@ -223,8 +240,8 @@ function drawOpenings(level, T, s = 1) {
     };
 
     /* a glazed (French) door: the window's glass in the opening, one pane per leaf (Matt, 10-27) */
-    if (o.glazed && o.type === 'door') glass(o.from, o.to);
-    if (o.glazed && o.type === 'double-door') { glass(o.from, (o.from + o.to) / 2); glass((o.from + o.to) / 2, o.to); }
+    if (part === 'all' && o.glazed && o.type === 'door') glass(o.from, o.to);
+    if (part === 'all' && o.glazed && o.type === 'double-door') { glass(o.from, (o.from + o.to) / 2); glass((o.from + o.to) / 2, o.to); }
     if (o.type === 'door') {
       const [h, f] = o.hinge === 'to' ? [p1, p0] : [p0, p1];
       swing(h, f, span);
@@ -766,8 +783,8 @@ function drawStatus(text) {
    also used by style-sheet.js to draw single elements at a fixed scale */
 function drawLevel(level, T, s, textK = 1, all = false) {
   /* fixtures and linework under the walls, as Matt's are: a counter stops at the wall, it never covers it */
-  return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawLines(level, T, true), drawSolids(level, T), drawWalls(level, T),
-    drawOpenings(level, T, s), drawRooms(level, T, textK, all)].filter(Boolean).join('\n');
+  return [drawAreas(level, T), drawLines(level, T), drawFixtures(level, T, s), drawLines(level, T, true), drawOpenings(level, T, s, 'glass'),
+    drawSolids(level, T), drawWalls(level, T), drawOpenings(level, T, s, 'rest'), drawRooms(level, T, textK, all)].filter(Boolean).join('\n');
 }
 
 function draw(plan, levelIndex = 0, opts = {}) {
@@ -792,6 +809,7 @@ function draw(plan, levelIndex = 0, opts = {}) {
   }
   const { s, ox, oy } = F;
   const T = (p) => [ox + (p[0] - b.x0) * s, oy + (p[1] - b.y0) * s];
+  if (opts.onLayout) opts.onLayout({ T, s });   // check-joints.js maps what it finds back to plan units
 
   const W = STYLE.PAGE.w, H = STYLE.PAGE.h;
   const parts = [

@@ -129,7 +129,8 @@ const SECTIONS = [
     ['label-rotated', 'Room name in a narrow room (rot 90)', { rooms: [{ name: 'HALL', at: [0, 0], rot: -90 }] }]
   ]],
   ['Matt\'s artwork', [
-    ['draw-car', 'Car (about 190 × 75 in), to come from Matt', null],
+    ['symbol-car', 'Car, 1 (Matt\'s), nose to the wall', mine('car', 'car')],
+    ['symbol-car-2', 'Car, 2 (Matt\'s), nose to the wall', mine('car-2', 'car', { variant: 2 })],
     ['symbol-compass', 'Compass (Matt\'s): the branded frame uses it', mine('compass', 'compass')],
     ['symbol-clothes-1', 'Clothes in a closet, 1 (Matt\'s)', mine('clothes-1', 'clothes', { variant: 1 })],
     ['symbol-clothes-2', 'Clothes in a closet, 2 (Matt\'s)', mine('clothes-2', 'clothes', { variant: 2 })],

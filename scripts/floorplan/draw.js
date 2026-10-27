@@ -404,7 +404,7 @@ function drawSymbol(name, w, h) {
 /* the symbol a fixture draws with, when Matt has drawn one */
 function symbolFor(f) {
   const name = f.type === 'range' ? (f.griddle ? 'range-6-griddle' : f.burners === 6 ? 'range-6' : 'range-4')
-    : f.type === 'clothes' ? 'clothes-' + (f.variant || 1) : f.type;
+    : f.type === 'clothes' ? 'clothes-' + (f.variant || 1) : f.type === 'car' && f.variant === 2 ? 'car-2' : f.type;
   /* a plain rod is drawn as Matt's first clothes symbol */
   return SYMBOLS[name] ? name : f.type === 'rod' && SYMBOLS['clothes-1'] ? 'clothes-1' : null;
 }
@@ -540,7 +540,7 @@ const FIXTURE_DRAW = {
     }
     return out;
   },
-  /* until Matt's car comes: its footprint, rounded */
+  /* Matt's cars are symbols (car, car-2); without symbols.json, the footprint, rounded */
   car: (w, h) => [rrect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.25)],
   rod: (w, h) => {
     const n = Math.max(3, Math.round(w / (h * 0.35)));

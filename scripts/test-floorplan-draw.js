@@ -219,7 +219,7 @@ const bigPlan = clone(box4); bigPlan.levels[0].walls = [{ a: [0, 0], b: [960, 0]
 bigPlan.levels[0].fixtures = [{ type: 'toilet', at: [100, 100], w: 19, h: 30, rot: 0 }];
 check('the toilet is Matt\'s, thickened to the house weight', /stroke-linejoin="round"/.test(draw(bigPlan, 0, {})), true);
 check('lounge-chair draws Matt\'s symbol', (fx('lounge-chair').match(/<path/g) || []).length > SYM['lounge-chair'].paths.length - 1, true);
-check('until Matt\'s car comes, a car is its rounded footprint', [!SYM.car, /<g transform="translate[^>]*><path [^>]*d="M[^"]*A/.test(fx('car', { w: 190, h: 75 }))], [true, true]);
+check('a car is Matt\'s (two of them: variant 2 is his second), at his proportions', [!!SYM.car && !!SYM['car-2'], (fx('car', { w: 84, h: 190 }).match(/<path/g) || []).length >= SYM.car.paths.length, fx('car', { w: 84, h: 190, variant: 2 }) !== fx('car', { w: 84, h: 190 })], [true, true, true]);
 check('a closet rod is drawn as Matt\'s clothes', (fx('rod', { w: 72, h: 20 }).match(/stroke="#00A1C4"/g) || []).length > 0, true);
 /* Matt's symbols keep his proportions: scaled to the box's width, set against its wall side */
 const symBox = (svg) => {

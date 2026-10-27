@@ -3,6 +3,14 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-27: 366 N 3rd St (NJ architect PDF, three floors)
+
+- **The plans in these PDFs are pictures** (only dimension lines are vector). Render each plan at 216 dpi (54 px to the foot at 1/4" = 1'-0") and give every level `unitsPerFoot: 54`.
+- **`trace-walls.py` drops big parts of a plan when thin grid lines or dimension ticks join the wall masses** (its small-bump trim then removes real walls). Fix: make a copy of the render keeping only dark runs at least 9 px thick (`skimage.morphology.opening`), then trace that copy. Light-grey partitions (value about 196) need `--dark 222`; shadows are about 242.
+- Columns drawn as a square with a round post are dropped by the tracer; add them as a square plus a round hole.
+- Casement windows are drawn as a thin V or triangle outside the wall; French doors as arc-and-leaf pairs. Do not mix them up.
+- Lines are not counted when the all-floors sheet is laid out: an exterior stair drawn as `lines` ran off its floor's canvas and under the title. Add a `floor` area (no pattern) over it.
+
 ## 2026-10-27: skill audit before the first real jobs
 
 - **The prompt now carries the job's `Address:` and `Facts:`** (beds, baths, half baths, and the size

@@ -3,6 +3,25 @@
 What earlier runs learned. **Newest first, under a dated heading.** Read the whole file before every
 run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md` and delete it here.
 
+## 2026-10-28: 366 N 3rd v3, Matt's markups on v2 (pink = wrong or missing, red circle = joint, red tick = good)
+
+- **Arcs outside a wall are doors, not casements.** The first floor's west wall had swing arcs outside
+  it: two pairs of glazed French doors opening out. Look for the leaf hinges and where the arcs meet.
+- **A long thin line beside a stair or wall may be the architect's dimension line.** One at the entry
+  stair was drawn as a stair line. A dimension line runs on past the drawing and has ticks; leave it out.
+- **Round columns over a wall split the trace.** The ground floor's stair wall had white breaks where
+  the source draws column circles on it. `clean_solids.close` joins masses split by less than 60 px;
+  run it on the traced walls before adding free-standing columns with round holes.
+- **Draw a stair's foot:** its last tread and the closing edge line (both were missing).
+- **A balcony's open side has a rail** (a double line), like the 2nd floor's, not a single line.
+- **Sidelights in a thin wall join it:** fill the thin wall from each sidelight to the next wall's face.
+- **Furniture faces into the room.** Two armchairs faced the wall. After rotating a chair, check which
+  way its seat opens.
+- **Folding Matt's hand edits in: tick off every red-only shape in the diff.** His v1 DW bar at the
+  island was missed. List them and check each one is in the generator.
+- **Place nothing against a wall by eye** (a balcony rail, a bed, nightstands): read the wall face off
+  the raster. Under a window there is no wall to read, so read it beside the window.
+
 ## 2026-10-27: Matt's red circle = gaps and corners that don't join
 
 His circle at the primary bath window marked a frame meeting its wall badly. At 40x it was three faults,

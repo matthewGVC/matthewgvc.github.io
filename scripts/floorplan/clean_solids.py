@@ -160,3 +160,21 @@ def square_ends(solids, openings, cap=12):
         for i in g.interiors: rings.append(square([[round(x), round(y)] for x, y in list(i.coords)[:-1]]))
         res.append(rings)
     return res
+
+def close(solids, gap=30):
+    """join wall masses split by less than 2 x gap px (a round column drawn over a wall, which the tracer
+    reads as a white break: Matt marked the breaks in the 366 N 3rd ground floor's stair wall, 10-28).
+    Openings are wider than that; run it on the traced walls before adding columns with round holes"""
+    def poly(s):
+        out = Polygon(s[0])
+        for h in s[1:]: out = out.difference(Polygon(h))
+        return out.buffer(0)
+    u = unary_union([poly(s) for s in solids]).buffer(gap, join_style=2).buffer(-gap, join_style=2)
+    geoms = list(u.geoms) if hasattr(u, 'geoms') else [u]
+    res = []
+    for g in geoms:
+        if g.area < 400: continue
+        rings = [square([[round(x), round(y)] for x, y in list(g.exterior.coords)[:-1]])]
+        for i in g.interiors: rings.append(square([[round(x), round(y)] for x, y in list(i.coords)[:-1]]))
+        res.append(rings)
+    return res

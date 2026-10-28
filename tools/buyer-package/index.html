@@ -252,6 +252,17 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .lk-g + .lk-g{margin-top:.15in;}
 .lk-ph{flex:1;min-height:1.1in;margin-top:.2in;overflow:hidden;}
 .lk-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 55%;display:block;}
+/* Marli's Preferred Vendors: on the Useful Links page in her version, in the photo's place */
+.vd{margin-top:.14in;flex:1;min-height:0;}
+.vd-g{display:grid;grid-template-columns:repeat(4,1fr);gap:.05in .2in;margin-top:.05in;}
+.vd-g .vd-c.wide{grid-column:span 2;}
+/* with the vendors on it, the link rows close up so the page still fits */
+.pg[data-key="links"]:has(.vd) .lk-r{padding:.025in 0;}
+.pg[data-key="links"]:has(.vd) .lk-g + .lk-g{margin-top:.09in;}
+.vd-c h4{margin:0 0 .02in;font:800 6.8pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--navy);}
+.vd-v{padding:.02in 0;font:300 7.2pt/1.28 var(--body);color:rgba(0,39,58,.8);}
+.vd-v b{font-weight:700;color:var(--navy);}
+.vd-v.tbd{border:1pt dashed rgba(140,58,43,.45);border-radius:2px;padding:.04in .07in;color:rgba(140,58,43,.85);}
 .lk-note{margin-top:.12in;font:300 7.4pt/10.4pt var(--body);color:rgba(0,39,58,.72);}
 .lk-g .fg-h{font:800 7.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
   padding-bottom:.05in;border-bottom:1pt solid var(--navy);}
@@ -943,12 +954,22 @@ const pgOffer = (n, p) => pgOfferLive(n);
 /* ---------- Useful Links, New Jersey ----------
    Where to check today's mortgage rates and find the legal and closing paperwork.
    Rates are pointed to, never printed. Links are in GG.NJ_LINKS. */
+function vendorsBlock() {
+  const v = r => '<div class="vd-v"><b>' + esc(r[0]) + '</b>' + (r[1] ? ', ' + esc(r[1]) : '') +
+    (r.length > 2 ? '<br>' + r.slice(2).map(esc).join(' · ') : '') + '</div>';
+  return '<div class="vd"><div class="lk-g"><div class="fg-h">Marli’s Preferred Vendors</div></div><div class="vd-g">' +
+    GG.MARLI_VENDORS.map(c => '<div class="vd-c' + (c.vendors.length > 2 ? ' wide' : '') + '"><h4>' + esc(c.title) + '</h4>' +
+      (c.vendors.length ? c.vendors.map(v).join('') : '<div class="vd-v tbd">To be added: no vendor yet</div>') +
+    '</div>').join('') + '</div></div>';
+}
 function pgLinks(n) {
   const body =
     GG.NJ_LINKS.map(g => '<div class="lk-g"><div class="fg-h">' + esc(g.title) + '</div>' +
       g.items.map(r => '<div class="lk-r"><div class="w"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>' +
         '<a href="' + esc(r[3]) + '">' + esc(r[2]) + '</a></div>').join('') + '</div>').join('') +
-    '<div class="lk-ph"><img src="static/links-nj.jpg" alt=""></div>' +
+    /* Marli's version: her Preferred Vendors take the photo's place (placement
+       picked 2026-10-28; the owner may move them to a page of their own) */
+    (hasMarli() ? vendorsBlock() : '<div class="lk-ph"><img src="static/links-nj.jpg" alt=""></div>') +
     '<p class="lk-note">These links go to outside websites and were live when this guide was printed. Sites change ' +
       'without notice, and The GVC Team is not responsible for their content. Nothing here is legal, tax or lending ' +
       'advice: rates move daily, so confirm yours with your lender, and any document with your attorney.</p>';

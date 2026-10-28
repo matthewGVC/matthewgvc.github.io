@@ -966,12 +966,36 @@
     { title: 'Contractors & designers', partners: [] }
   ];
 
+  /* Marli's Preferred Vendors, exactly as Marli sent them (her email, forwarded
+     2026-10-28). Printed on the Useful Links page in Marli's version only.
+     Each vendor is [name, company, details...]; details print as given.
+     An empty category prints a dashed "to be added" placeholder: Marli has
+     no mover, stager or designer yet. Do not invent one. */
+  var MARLI_VENDORS = [
+    { title: 'Mortgage lender', vendors: [
+      ['Tiron Sela', 'CrossCountry Mortgage, LLC', '347.604.1253', 'tiron.sela@ccm.com'] ]},
+    { title: 'Real estate attorneys', vendors: [
+      ['Alon Solon', '', '(732) 485-6299', 'alon@alonsolonllc.com'],
+      ['John Poulos', '', '732-757-0165', 'poulos@pllawfirm.com'] ]},
+    { title: 'Home inspectors', vendors: [
+      ['Thomas Fillippone', 'TF Home Inspection', 'www.tfhomeinspection.com', '908-463-3423', 'caryn@tfhomeinspection.com'],
+      ['Ricky Farrah', 'RF Home Inspection', '732-539-8022'],
+      ['Alan Walker', 'Allspec Home Inspection', 'allspechomeinspection.com', '732-513-7254', 'allspecinsp@aol.com'] ]},
+    { title: 'Title', vendors: [
+      ['Rally Point Title', '', '732-359-2009', 'Emily@rallypointtitle.com'] ]},
+    { title: 'Insurance', vendors: [
+      ['Eric Ulino', 'Goosehead Insurance', '833-779-4090'] ]},
+    { title: 'Contractor', vendors: [
+      ['Alex D’Anna', '', '732-245-6911', 'https://woodbinecontractingnj.com/'] ]},
+    { title: 'Movers, stagers & designers', vendors: [] }
+  ];
+
   global.GVC_GUIDE = {
     REGIONS: REGIONS, fiftyFor: fiftyFor, askFor: askFor,
     PROCESS: PROCESS, offerCards: offerCards,
     COSTS: COSTS, faqFor: faqFor,
     statesFor: statesFor, joinStates: joinStates,
     stepsFifty: stepsFifty, offerLive: offerLive, NJ_LINKS: NJ_LINKS,
-    POWERHAUS: POWERHAUS, MARLI_REFERRALS: MARLI_REFERRALS
+    POWERHAUS: POWERHAUS, MARLI_REFERRALS: MARLI_REFERRALS, MARLI_VENDORS: MARLI_VENDORS
   };
 })(window);

@@ -246,6 +246,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
 <script src="../../assets/js/chrome.js"></script>
 <script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let map = null;
@@ -653,6 +654,7 @@ function download(canvas){
   a.download='gvc-3d-property-map.png';
   a.href=canvas.toDataURL('image/png');
   a.click();
+  GVC_UNSAVED.clear();   // the picture is on disk now
 }
 
 function wrap(ctx,text,maxW){
@@ -741,6 +743,7 @@ $('resetView').onclick=()=>{
 };
 $('build').onclick=build;
 $('export').onclick=exportImage;
+GVC_UNSAVED.watch();
 updateModifierState();
 /* what a job's map works through (Slice 5, job-mode.js) */
 window.__mapStudio = { setNear(p){ GEO_NEAR = p; }, build, setStatus, get buildings(){ return buildings; }, get map(){ return map; } };

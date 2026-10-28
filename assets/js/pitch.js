@@ -667,7 +667,7 @@
           '<p class="lede">' + esc(H.lede) + '</p>' +
           '<div class="copy">' + H.paras.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
           '<div class="stats">' + H.stats.map(stat).join('') + '</div>' +
-          '<div class="qrrow"><img class="phw" src="' + base + 'phw-logo-navy.png" alt="Power Haus Network">' +
+          '<div class="qrrow"><img class="phw" src="' + base + 'powerhaus-logo.png" alt="Power Haus">' +
             '<div class="qbox">' + qr(H.url) + '</div>' +
             '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText).replace(/\//g, '/<wbr>') + '</span></div></div>' +
         '</div>' +

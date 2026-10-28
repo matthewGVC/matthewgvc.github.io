@@ -629,8 +629,9 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .ph-pg .copy p + p{margin-top:.13in;}
 .ph-pg .stats{display:flex;gap:.25in;margin-top:.3in;text-align:center;}
 .ph-pg .qrrow{position:relative;display:flex;gap:.2in;align-items:center;margin-top:auto;padding-top:.5in;border-top:.75pt solid var(--rule);}
-/* the Power Haus Network logo, sat on the rule above the QR */
-.ph-pg .qrrow .phw{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);height:.62in;width:auto;
+/* the Power Haus logo ("POWER HAUS EST. 2023", black on a transparent ground,
+   supplied 2026-10-28), sat on the rule above the QR */
+.ph-pg .qrrow .phw{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);height:.4in;width:auto;
   background:#fff;padding:0 .14in;}
 .ph-pg .qrrow .qbox{flex:none;width:1in;height:1in;}
 .ph-pg .qrrow .qbox svg{width:100%;height:100%;display:block;}

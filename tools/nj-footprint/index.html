@@ -55,14 +55,14 @@
 .mapcol{min-height:0;display:flex;align-items:center;justify-content:center;}
 .mapcol svg{display:block;width:100%;height:100%;}
 .county{stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
-.county.none{fill:#E7E4DC;}
-.county.active{fill:#53C7DC;}
-.county.core{fill:#00273A;}
-.cnum{font:800 14px var(--sans);fill:#00273A;text-anchor:middle;dominant-baseline:central;}
-.lead{stroke:#00273A;stroke-width:.8;fill:none;}
-.lead-dot{fill:#00273A;}
-.lbl-n{font:800 14px var(--sans);letter-spacing:.14em;fill:#00273A;}
-.lbl-v{font:400 13px var(--body);fill:#33525F;}
+.county.none{fill:var(--ui-paper-2);}
+.county.active{fill:var(--sky);}
+.county.core{fill:var(--navy);}
+.cnum{font:800 14px var(--sans);fill:var(--navy);text-anchor:middle;dominant-baseline:central;}
+.lead{stroke:var(--navy);stroke-width:.8;fill:none;}
+.lead-dot{fill:var(--navy);}
+.lbl-n{font:800 14px var(--sans);letter-spacing:.14em;fill:var(--navy);}
+.lbl-v{font:400 13px var(--body);fill:var(--ui-ink-soft);}
 
 .panel{min-width:0;display:flex;flex-direction:column;padding-top:.04in;}
 .eyebrow{font:800 7.5pt var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--ui-ink-soft);margin:0 0 .09in;}
@@ -75,7 +75,7 @@
 .also ul{list-style:none;margin:0;padding:0;}
 .also li{display:flex;align-items:baseline;gap:.08in;padding:.045in 0;border-bottom:1px solid var(--rule);font:400 9pt var(--body);}
 .also li:last-child{border-bottom:0;}
-.also .sw{flex:none;width:.1in;height:.1in;border-radius:2px;background:#53C7DC;transform:translateY(1px);}
+.also .sw{flex:none;width:.1in;height:.1in;border-radius:2px;background:var(--sky);transform:translateY(1px);}
 .also .cn{flex:1;}
 .also .cv{color:var(--ui-ink-soft);font-variant-numeric:tabular-nums;}
 .team{flex:none;margin:.14in var(--pad) 0;border-top:1px solid var(--rule);padding-top:.12in;}
@@ -84,11 +84,11 @@
 .ag{display:grid;grid-template-columns:.64in 1fr;column-gap:.12in;row-gap:.09in;align-items:center;align-content:start;
   background:#F4F2EE;border-top:3px solid var(--navy);border-radius:2px;padding:.15in .16in .16in;}
 .ag .ph{width:.64in;height:.64in;border-radius:50%;overflow:hidden;background:var(--paper-2);
-  border:2px solid #fff;box-shadow:0 0 0 1.5px #53C7DC;}
+  border:2px solid #fff;box-shadow:0 0 0 1.5px var(--sky);}
 .ag .ph img{display:block;width:100%;height:100%;object-fit:cover;transform:scale(1.55);transform-origin:50% 26%;}
 .ag .who{min-width:0;}
 .ag .an{font:400 12pt/1.1 var(--serif);color:var(--navy);white-space:nowrap;}
-.ag .rl{margin-top:.05in;padding-left:.07in;border-left:2px solid #53C7DC;
+.ag .rl{margin-top:.05in;padding-left:.07in;border-left:2px solid var(--sky);
   font:800 6pt/1.35 var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--ui-ink-soft);}
 .ag .bio{grid-column:1 / -1;padding-top:.08in;border-top:1px solid var(--rule);font:300 7.8pt/1.42 var(--body);color:var(--navy);}
 
@@ -110,16 +110,16 @@
 .tmap{flex:1;min-height:0;display:flex;padding:.12in calc(var(--pad) - .1in) 0;}
 .tmap svg{display:block;width:100%;height:100%;}
 .townmap .tn{stroke:#fff;stroke-width:.7;stroke-linejoin:round;fill-rule:evenodd;}
-.townmap .co{fill:none;stroke:#00273A;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;}
+.townmap .co{fill:none;stroke:var(--navy);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;}
 .townmap .cn{font:800 15px var(--sans);letter-spacing:.24em;fill:rgba(0,39,58,.42);text-anchor:middle;dominant-baseline:central;}
 .townmap .ld{fill:none;stroke:rgba(0,39,58,.62);stroke-width:.6;stroke-linejoin:round;}
-.townmap .dt{fill:#00273A;stroke:#fff;stroke-width:1.2;}
-.townmap .lb{font-family:var(--body);font-weight:400;fill:#00273A;dominant-baseline:central;}
+.townmap .dt{fill:var(--navy);stroke:#fff;stroke-width:1.2;}
+.townmap .lb{font-family:var(--body);font-weight:400;fill:var(--navy);dominant-baseline:central;}
 .townmap .ln{font-family:var(--sans);font-weight:800;}
 .townmap .lbg{fill:#fff;fill-opacity:.85;}
 .townmap .lc{font:800 8.5px var(--sans);letter-spacing:.22em;fill:rgba(0,39,58,.6);text-anchor:middle;}
 .townmap .nm{font:800 10px var(--sans);text-anchor:middle;dominant-baseline:central;}
-.townmap .nl{font:800 10px var(--sans);fill:#00273A;dominant-baseline:central;}
+.townmap .nl{font:800 10px var(--sans);fill:var(--navy);dominant-baseline:central;}
 .townmap .sea{font:italic 300 15px var(--serif);fill:rgba(0,39,58,.45);text-anchor:middle;}
 .key{flex:none;display:flex;align-items:center;gap:.28in;margin:.08in var(--pad) 0;padding-top:.11in;border-top:1px solid var(--rule);}
 .key .eyebrow{margin:0;}
@@ -145,7 +145,7 @@
 
 /* Draft stamp — prints. Removed by setting NJ_DRAFT_NOTE = '' in transactions.js. */
 .stamp{position:absolute;top:1.1in;right:.62in;transform:rotate(-2deg);z-index:5;
-  border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.92);padding:.04in .12in;
+  border:2px solid var(--danger);color:var(--danger);background:rgba(255,255,255,.92);padding:.04in .12in;
   font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
 </style>
 </head>
@@ -215,7 +215,7 @@
      it (?view=areas, its first name, still works). */
   const asked = new URLSearchParams(location.search).get('view');
   let VIEW = asked === 'towns' || asked === 'areas' ? 'towns' : 'sales';
-  const COUNTY_COLOURS = { Monmouth: '#53C7DC', Ocean: '#00273A' };
+  const COUNTY_COLOURS = { Monmouth: 'var(--sky)', Ocean: 'var(--navy)' };
 
   /* ---------- the map ---------- */
   function mapSVG() {
@@ -309,7 +309,7 @@
   }
   function foot() {
     const badges = ['badge-de.svg', 'badge-gvc.svg'].map(f => '<span class="badge"><img src="../../assets/logos/sheet/' + f + '" alt=""></span>').join('') +
-      '<span class="badge"><svg viewBox="8.5 8 23.5 22" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#00273A" stroke-width="1.6"><path d="M20 9.5 10 17h2.3v11.5h15.4V17H30L20 9.5z" stroke-linejoin="round"/><path d="M16 20h8M16 23.6h8" stroke-linecap="round"/></svg></span>';
+      '<span class="badge"><svg viewBox="8.5 8 23.5 22" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--navy)" stroke-width="1.6"><path d="M20 9.5 10 17h2.3v11.5h15.4V17H30L20 9.5z" stroke-linejoin="round"/><path d="M16 20h8M16 23.6h8" stroke-linecap="round"/></svg></span>';
     return '<div class="ft"><div class="legal">' + window.GVC_LEGAL.BROKERAGE + (VIEW === 'sales' ? '<span class="src">' + esc(window.NJ_SOURCE) + '</span>' : '') + '</div><div class="badges">' + badges + '</div></div>';
   }
 
@@ -323,7 +323,7 @@
           .map(t => { nums.set(t, nums.size + 1); return '<li><b>' + nums.size + '</b>' + esc(t.name) + '</li>'; }).join('') + '</ul></div>').join('');
       return head('Monmouth &amp; Ocean · town by town') +
         '<div class="title"><h1>Town by <em>town.</em></h1></div>' +
-        '<div class="abody"><div class="amap">' + window.NJTownMap.countySvg(window.NJ_TOWNS, COUNTY_COLOURS, MAP, nums, { Monmouth: '#00273A', Ocean: '#fff' }) + '</div>' +
+        '<div class="abody"><div class="amap">' + window.NJTownMap.countySvg(window.NJ_TOWNS, COUNTY_COLOURS, MAP, nums, { Monmouth: 'var(--navy)', Ocean: '#fff' }) + '</div>' +
           '<div class="alist">' + list + '</div></div>' +
         foot();
     }

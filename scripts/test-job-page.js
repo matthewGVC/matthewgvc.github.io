@@ -85,7 +85,7 @@ const FAKE_DRIVE = `(function () {
     d('Offers', [f('Offer from Jane Client.pdf', '05')]), d('Docs', [f('Contract.pdf', '01')]),
     d('Marketing', [f('Offer from Jane Client.pdf', '06'), d('Showsheet', [f('Showsheet - 100 Example St 4A - 2026-10-12.pdf', '12'),
       d('Archive', [f('Showsheet - 100 Example St 4A - 2026-09-14.pdf', '01')])])]),
-    d('Floorplan', [d('v1', [f('Floorplan - 100 Example St 4A.pdf', '04')]), d('v2', [f('Floorplan - 100 Example St 4A v2.pdf', '09'), f('Floorplan unbranded v2.pdf', '09')])]),
+    d('Floorplan', [d('v1', [f('Floorplan - 100 Example St 4A.pdf', '04')]), d('v2', [f('Floorplan - 100 Example St 4A v2.pdf', '09'), f('Floorplan unbranded v2.pdf', '09'), f('Floorplan unbranded v2 - 1ST FLOOR.png', '09'), f('Floorplan unbranded v2 - 2ND FLOOR.png', '09')])]),
     d('Video', [f('GVC Video Clips.m4v', '05'), f('GVC Video Clips.m4v.xmpses.xmp', '11'), f('desktop.ini', '11')]),
     d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08'), f('Thumbs.db', '12'), f('._01.jpg', '12'), f('03.jpg.xmp', '12')])),
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
@@ -384,6 +384,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   const kit = async key => text(p, '#kitCard [data-kit="' + key + '"]');
   check('kit: showsheet done, Asana ticked', [(await kit('showsheet')).includes('Done'), (await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older')], [true, true, true]);
   check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
+  check('kit: a multi-floor plan lists each floor with its own Open and Copy', await p.$$eval('#kitCard [data-kit="floorplan"] [data-level]', els => els.map(e => [e.textContent.includes('FLOOR'), e.querySelector('[data-copy]') !== null, e.querySelector('[data-open]') !== null])), [[true, true, true], [true, true, true]]);
+  check('kit: the multi-floor row names the floor count, not one file', (await kit('floorplan')).includes('2 floors · v2'), true);
   check('kit: brochure says there is no Asana step', (await kit('brochure')).includes('No Asana step for this piece'), true);
   check('kit: signage not used in NYC, video tracked', [(await kit('signage')).includes('Not used here'), (await kit('video')).includes('Tracked only')], [true, true]);
   check('kit: the video piece is the film, never its sidecar (tune-up 3)', [(await kit('video')).includes('GVC Video Clips.m4v ·'), /xmp|desktop\.ini/i.test(await kit('video'))], [true, false]);

@@ -542,6 +542,14 @@
         '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/></svg>';
   }
 
+  /* The Social rows as one band across the page, under the "Thank you" (the
+     Seller Pitch, 2026-10-28: the socials are the priority on its back page). */
+  function socialBand(rows) {
+    return '<div class="ag-soc"><div class="ag-col-t">Social</div><div class="ag-soc-r">' +
+      rows.map(([k, v]) => '<div class="ag-lrow"><span class="lk">' + esc(k) + '</span>' +
+        '<span class="lv">' + esc(v) + '</span></div>').join('') + '</div></div>';
+  }
+
   function closingPage(o) {
     const list = o.agents || [];
     const people = list.length
@@ -549,7 +557,10 @@
       : '<div class="ag-person"><div class="ag-who">' +
         '<div class="empty-note" style="position:static">Pick an agent in the Agents panel</div>' +
         '</div></div>';
-    return '<div class="ag' + (list.length === 1 ? ' solo' : '') + '">' +
+    /* o.social replaces the Social rows (Marli's copy of the Seller Pitch prints her
+       own account, not the team's); o.socialTop sets them as a band above the agents */
+    const social = o.social || socialRows(list);
+    return '<div class="ag' + (list.length === 1 ? ' solo' : '') + (o.socialTop ? ' soc-top' : '') + '">' +
       '<div class="ag-body">' +
         '<div class="ag-hdr">' +
           LOCKUP +
@@ -557,9 +568,10 @@
                   '<div class="qcap">' + esc(o.qrCap || '') + '</div></div>' : '') +
         '</div>' +
         '<div class="ag-hero"><div class="say"><h2>Thank <em>you</em>.</h2></div></div>' +
+        (o.socialTop ? socialBand(social) : '') +
         '<div class="ag-people">' + people + '</div>' +
         '<div class="ag-foot">' +
-          agentCol('Social', socialRows(list)) +
+          (o.socialTop ? '' : agentCol('Social', social)) +
           agentCol('Links', TEAM_LINKS) +
           '<div class="ag-col"><div class="ag-col-t">' + esc(o.licensedLabel || 'Licensed in') + '</div>' +
             (o.states || STATES).map(([nm, art]) =>
@@ -594,6 +606,53 @@
     return state.agents.map(id => global.GVC_AGENT(id)).filter(Boolean);
   }
 
+
+  /* ---------- agent biography page (Meet Your Agent) ----------
+     Shared by the Buyer Package and the Seller Pitch. A compact name band,
+     the roster copy (assets/js/bios.js) down the left and the agent's tall
+     photograph on the right; with no photograph, the roster cut-out on navy.
+     Returns the page body; the deck wraps it with page({cls:'nohead'}). */
+  function agentBioBody(a, photo, headshotFor) {
+    const first = esc(a.name.split(' ')[0]);
+    const facts = (a.facts || []).length
+      ? '<div class="ab-facts">' + a.facts.map(f =>
+          '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
+      : '';
+    return '<div class="agnj">' +
+        '<div class="band">' +
+          (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
+          '<div class="nm">' + esc(a.name) + '</div>' +
+          '<div class="tt">' + esc(a.title) + '</div>' +
+        '</div>' +
+        '<div class="row"><div class="words' + ((a.blurb || '').length + (a.bio || []).join('').length > 2300 ? ' long' : '') + '">' +
+          (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
+          ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
+            '<div class="ab-text tight">' + a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +
+          facts +
+        '</div>' +
+        '<div class="shot' + (photo ? '' : ' cut') + '"><img src="' + esc(photo || headshotFor(a)) + '" alt=""></div></div>' +
+      '</div>';
+  }
+
+  /* ---------- Power Haus Network page (Marli) ----------
+     H is GVC_GUIDE.POWERHAUS (tools/buyer-package/guide-data.js); `base` is
+     the path to the Buyer Package's static/ folder from the calling tool. */
+  function powerhausBody(H, base, qr) {
+    const stat = s => '<div class="stat"><div class="v">' + esc(s[0]) + '</div><div class="l">' + esc(s[1]) + '</div></div>';
+    return '<div class="ph-pg">' +
+        '<div class="ph"><img src="' + base + 'powerhaus-women.jpg" alt="" style="object-position:50% 30%"></div>' +
+        '<div class="txt">' +
+          '<div class="kick">' + esc(H.kicker || 'A national network behind your purchase') + '</div>' +
+          '<p class="lede">' + esc(H.lede) + '</p>' +
+          '<div class="copy">' + H.paras.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
+          '<div class="stats">' + H.stats.map(stat).join('') + '</div>' +
+          '<div class="qrrow"><img class="phw" src="' + base + 'phw-logo-navy.png" alt="Power Haus Network">' +
+            '<div class="qbox">' + qr(H.url) + '</div>' +
+            '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText).replace(/\//g, '/<wbr>') + '</span></div></div>' +
+        '</div>' +
+      '</div>';
+  }
+
   global.Pitch = {
     MONO, MONO_NAVY,
     esc, lines, money, moneyShort, num,
@@ -603,6 +662,6 @@
     LOCKUP, STATES, TEAM_SOCIAL, TEAM_LINKS,
     socialRows, agentRow, agentCol, closingPage, referralNote,
     assignRoles, placementOf, compsEditor, blankComp,
-    segPick, tickList
+    segPick, tickList, agentBioBody, powerhausBody
   };
 })(window);

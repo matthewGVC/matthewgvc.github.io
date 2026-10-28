@@ -590,3 +590,85 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .ag .ref b{flex:none;font:italic 400 13pt/1.1 var(--serif);color:#fff;}
 .ag .ref p{margin:0;padding-left:.16in;border-left:.75pt solid rgba(229,229,229,.25);
   font:300 7.8pt/1.4 var(--body);color:var(--ow);}
+
+/* ============================================================
+   AGENT BIOGRAPHY + POWER HAUS PAGES — shared by the Buyer Package and the
+   Seller Pitch (moved here from the Buyer Package 2026-10-28). Built by
+   Pitch.agentBioBody() and Pitch.powerhausBody().
+   ============================================================ */
+/* ============================================================
+   MEET YOUR AGENT — one page per selected agent, every market (the .agnj
+   rules further down lay it out). All of it is roster copy
+   (assets/js/bios.js); nothing is written per page.
+   ============================================================ */
+.ab-lab{font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
+  padding-bottom:.05in;border-bottom:1pt solid var(--navy);margin-bottom:.12in;}
+.ab-bio{margin:0;font:400 13pt/1.52 var(--serif);color:var(--navy);}
+.ab-facts{margin-top:.28in;}
+.ab-facts .f{display:flex;gap:.14in;padding:.075in 0;border-bottom:.75pt solid var(--rule);
+  font:300 9.5pt/1.4 var(--body);color:var(--navy);}
+.ab-facts .f b{flex:none;width:1.25in;font:800 6.6pt/1.9 var(--sans);letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(0,39,58,.72);}
+.ab-bio.sm{font-size:11pt;line-height:1.45;margin-bottom:.16in;}
+.ab-text{columns:2;column-gap:.4in;font:300 8.9pt/12.6pt var(--body);color:var(--navy);}
+.ab-text p{margin:0 0 .08in;}
+.ab-text.tight{font-size:8.4pt;line-height:11.6pt;}
+
+/* Power Haus Network (Marli) — her photo down the left, the copy, the two
+   numbers and a QR to the market-partner directory down the right. */
+.ph-pg{display:flex;gap:.42in;flex:1;min-height:0;}
+.ph-pg{gap:.34in;}
+/* the group photo bleeds off the left trim, so it can run wide without
+   squeezing the copy */
+.ph-pg .ph{width:calc(4.5in + var(--pad));margin-left:calc(-1 * var(--pad));flex:none;align-self:stretch;}
+.ph-pg .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.ph-pg .kick{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky2);}
+.ph-pg .lede{margin:.1in 0 .2in;font:400 13pt/1.4 var(--serif);color:var(--navy);}
+.ph-pg .copy{font-size:10.3pt;line-height:15.5pt;}
+.ph-pg .copy p{margin:0;}
+.ph-pg .copy p + p{margin-top:.13in;}
+.ph-pg .stats{display:flex;gap:.25in;margin-top:.3in;text-align:center;}
+.ph-pg .qrrow{position:relative;display:flex;gap:.2in;align-items:center;margin-top:auto;padding-top:.5in;border-top:.75pt solid var(--rule);}
+/* the Power Haus Network logo, sat on the rule above the QR */
+.ph-pg .qrrow .phw{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);height:.62in;width:auto;
+  background:#fff;padding:0 .14in;}
+.ph-pg .qrrow .qbox{flex:none;width:1in;height:1in;}
+.ph-pg .qrrow .qbox svg{width:100%;height:100%;display:block;}
+.ph-pg .qrrow b{display:block;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
+.ph-pg .qrrow > div:last-child{flex:1;min-width:0;}
+.ph-pg .qrrow span{display:block;margin-top:.05in;font:300 9pt/1.4 var(--body);color:var(--sky2);}
+
+/* Meet Your Agent (every market since 2026-10-09; first built for NJ): a compact name band at the top, the words down the
+   left, and the agent's photograph (not the cut-out) beside them on the right,
+   inside the page margins. No contact block. */
+.agnj{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
+.agnj .band{flex:none;background:var(--navy);color:#fff;padding:.24in .34in .22in;margin-bottom:.26in;text-align:left;}
+.agnj .band .role{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
+.agnj .band .nm{margin:.06in 0 .1in;font:700 30pt/1.04 var(--serif);color:#fff;}
+.agnj .band .tt{font:800 6.8pt/1.5 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(229,229,229,.78);}
+/* no page heading: the name band is the top of the page */
+.pg.nohead .pg-h{display:none;}
+.pg.nohead .pg-body{padding-top:.5in;}
+.pg.nohead .nj-stamp{top:.12in;}
+.agnj .row{flex:1;min-height:0;display:flex;gap:.3in;}
+.agnj .words{width:4.05in;flex:none;min-height:0;display:flex;flex-direction:column;}
+.agnj .ab-bio.sm{text-align:left;}
+.agnj .ab-text{columns:1;text-align:left;}
+/* a long blurb plus a long bio (Gary, John, Jonathan) would run past the page */
+.agnj .words.long .ab-bio.sm{font-size:10pt;line-height:1.4;margin-bottom:.1in;}
+.agnj .words.long .ab-text{font-size:7.7pt;line-height:10.6pt;}
+.agnj .ab-facts{margin-top:auto;padding-top:.16in;}
+.agnj .ab-facts .f b{width:1in;}
+.agnj .shot{flex:1;min-width:0;overflow:hidden;background:var(--navy);}
+.agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
+.agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
+
+
+/* Closing page with the socials on top (Seller Pitch): one band under the hero,
+   the rows side by side; the footer then has two columns. */
+.ag-soc{flex:none;padding:.16in 0 .14in;border-bottom:1pt solid var(--ag-rule);}
+.ag-soc-r{display:flex;flex-wrap:wrap;gap:.04in .45in;}
+.ag-soc .ag-lrow{border:0;}
+.ag-soc .ag-lrow{margin-bottom:0;}
+.ag.soc-top .ag-foot{grid-template-columns:1.7fr 1.45in;}
+.ag.soc-top .ag-hero,.ag.solo.soc-top .ag-hero{padding:.24in 0 .12in;}

@@ -74,6 +74,19 @@
     a.facts = b.facts || [];
   });
 
+  /* NAME CASING — one rule for every generator that prints a person's name
+     (agents here, and any name typed into a panel: tools call
+     GVC_NAMECASE on it before printing). Each word gets a capital first
+     letter, including after a hyphen or apostrophe and after Mc/Mac-style
+     prefixes already typed that way; letters the person typed in capitals
+     are kept ("TJ", "McKenzie"), so it only ever adds capitals. */
+  function nameCase(s) {
+    return String(s == null ? '' : s).replace(/(^|[\s\-'’(&])([a-zà-þ])/g,
+      function (m, pre, ch) { return pre + ch.toUpperCase(); });
+  }
+  global.GVC_NAMECASE = nameCase;
+  PEOPLE.forEach(function (a) { a.name = nameCase(a.name); });
+
   global.GVC_ROSTER = PEOPLE;
 
   /* INITIALS — Asana's "🧑‍💼 Point Person" field holds initials ("JG/KC"),

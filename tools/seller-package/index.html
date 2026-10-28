@@ -33,6 +33,7 @@
 
 /* ---- shared: the reference deck's three-up colour blocks ---- */
 .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.tri.two{grid-template-columns:repeat(2,1fr);}
 .tri .tb{padding:.2in .18in;min-width:0;display:flex;flex-direction:column;justify-content:center;
   align-items:center;text-align:center;}
 .tri .tb.c1{background:var(--navy);}
@@ -109,6 +110,10 @@
 .showcase{flex:none;}
 .showcase .mock{aspect-ratio:2600 / 1491;overflow:hidden;background:#929292;}
 .showcase .mock img{width:100%;height:100%;object-fit:contain;display:block;}
+/* the Made In-House line (2026-10-28) took room from the mock-up, which now crops to a band */
+.showcase .mock{aspect-ratio:auto;height:2.95in;}
+.showcase .mock img{object-fit:cover;}
+.about-copy.inhouse{margin-bottom:0;}
 /* this page carries four sections, so its headings sit tighter than the
    other company pages' */
 .showcase ~ .dline.sm{margin:.14in 0 .1in;}
@@ -264,9 +269,13 @@ table.tbl th.num{text-align:right;}
    each of those handles into a flex container, which drops the inherited
    text-align:center and left-aligned them under their QR codes. */
 .vids{display:flex;gap:.4in;flex:1;min-height:0;}
-.vids .vids-copy{width:2.7in;flex:none;display:flex;flex-direction:column;justify-content:center;
+/* The copy hugs its own height at the top of the column and is set ragged-right:
+   centred in the full column height it left a band of empty page above and below,
+   and justified in this narrow measure it opened wide gaps between words (James's
+   two "too much space" notes, 2026-10-21). */
+.vids .vids-copy{width:2.7in;flex:none;align-self:flex-start;display:flex;flex-direction:column;
   border-top:1.2pt solid var(--sky);border-bottom:1.2pt solid var(--sky);padding:.24in 0;}
-.vids .vids-copy p{margin:0 0 .15in;font:300 9pt/13.5pt var(--body);color:var(--navy);text-align:justify;}
+.vids .vids-copy p{margin:0 0 .15in;font:300 9pt/13.5pt var(--body);color:var(--navy);text-align:left;}
 .vids .vids-copy p:last-child{margin-bottom:0;}
 .vids .vids-list{flex:1;min-width:0;display:flex;flex-direction:column;gap:.16in;}
 .vid{flex:1;min-height:0;position:relative;overflow:hidden;background:rgba(0,39,58,.06);}
@@ -319,6 +328,22 @@ table.tbl th.num{text-align:right;}
           </div>
           <div class="sec-note">Guide borrows the Local Guide&rsquo;s look: serif headlines, a running head on
             every page, navy rules, paper panels and a split cover. The words and pages do not change.</div>
+        </div>
+      </details>
+
+      <details class="ed-sec" open>
+        <summary>Version <span class="hint">Marli &middot; James</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <div class="seg pick" id="versionPick" role="group" aria-label="Version">
+              <button type="button" data-ver="marli">Marli</button>
+              <button type="button" data-ver="james">James</button>
+            </div>
+          </div>
+          <div class="sec-note">Each of them presents their own copy. Picking one sets New Jersey and makes
+            that agent the one on the deck. Both get their own biography page and the showings line that
+            is true for them; Marli&rsquo;s also gets the Power Haus Network page and her own Instagram in
+            place of the team&rsquo;s on the Marketing Plan and the closing page. Everything else is shared.</div>
         </div>
       </details>
 
@@ -424,13 +449,7 @@ table.tbl th.num{text-align:right;}
             <div class="field"><label>Mid range</label><input type="text" data-f="priceMid" placeholder="3,695,000"></div>
             <div class="field"><label>High range</label><input type="text" data-f="priceHigh" placeholder="3,950,000"></div>
           </div>
-          <div class="field"><label>Recommended range</label>
-            <div class="seg pick" id="recPick" role="group" aria-label="Recommended range">
-              <button type="button" data-rec="low">Low</button>
-              <button type="button" data-rec="mid">Mid</button>
-              <button type="button" data-rec="high">High</button>
-            </div>
-          </div>
+          <div class="sec-note">The middle price is always the one highlighted on the page.</div>
           <div class="warn" id="warnStrategy" hidden></div>
         </div>
       </details>
@@ -502,7 +521,9 @@ table.tbl th.num{text-align:right;}
 <script src="../../assets/js/chrome.js"></script>
 <script src="../../assets/js/motion.js"></script>
 <script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/bios.js"></script>
 <script src="../../assets/js/roster.js"></script>
+<script src="../buyer-package/guide-data.js"></script>
 <script src="../../assets/js/photo-dnd.js"></script>
 <script src="../../assets/js/pitch.js"></script>
 <script src="../../assets/js/look.js"></script>
@@ -538,6 +559,8 @@ const state = {
   priceLow:'', priceMid:'', priceHigh:'', recBand:'mid',
   showProperty:true,
   agents:[],
+  /* 'marli' | 'james' | '' - the Version pick: each presents their own copy */
+  version:'',
   /* Which market's verbiage the deck speaks - 'nj' or 'nyc'. Defaults from
      the State field typed on the property; 'nyc' for a deck with no property
      yet, the firm being New York-headquartered. */
@@ -777,14 +800,7 @@ const VIDEOS = [
     title:'14 Ridge Road, Rumson, NJ 07760',
     photo:'../../assets/videos/14-ridge-road.jpg',
     qr:'', url:'https://youtube.com/shorts/CHApl_TPuz0?feature=shared' },
-  { id:'205-parkway', market:'nj',
-    title:'205 Parkway, Point Pleasant Beach, NJ 08742',
-    photo:'../../assets/videos/205-parkway.jpg',
-    qr:'', url:'https://www.youtube.com/shorts/pvdRa6qlZ0U' },
-  { id:'50-north-way', market:'nj',
-    title:'50 North Way, Sea Bright, NJ 07760',
-    photo:'../../assets/videos/sea-bright.jpg',
-    qr:'', url:'https://www.youtube.com/watch?v=S0PWmtKhpDE' },
+  /* 205 Parkway and 50 North Way were taken out 2026-10-28 (James's seller comments). */
   { id:'105-norfolk', market:'nyc',
     title:'105 Norfolk Street, Tower 15, NY 10002',
     photo:'../../assets/videos/105-norfolk.jpg',
@@ -860,7 +876,8 @@ const STATE_LINE = () => state.market === 'nj'
 const NJ_STOCK = {
   cover:    '../../assets/img/nj/stock-cover.jpg',
   hero:     '../../assets/img/nj/stock-hero.jpg',
-  strategy: '../../assets/img/nj/stock-strategy.jpg'
+  /* Marli's drone shot, a Monmouth County aerial (2026-10-28; final pick still open) */
+  strategy: '../../assets/img/nj/marli-drone.webp'
 };
 const photoFor = name => slot(name) || (state.market === 'nj' ? NJ_STOCK[name] : null) || null;
 
@@ -868,6 +885,10 @@ const photoFor = name => slot(name) || (state.market === 'nj' ? NJ_STOCK[name] :
    HELPERS
    ============================================================ */
 const headshotFor = a => a.photo;
+const VERSIONS = { marli:'marli-silver', james:'james-huber' };
+const hasMarli = () => state.agents.indexOf('marli-silver') >= 0;
+/* Marli's own channel, used in place of the team's in her copy */
+const MARLI_IG = ['Instagram', '@marlisilverrealestate', 'https://instagram.com/marlisilverrealestate'];
 /* Marli Silver's admin is James Huber; a New Jersey deck's closing page prints him on her row
    (Pitch.agentRow's "Admin" line). His details come from the roster. */
 const ADMINS = { 'marli-silver': 'james-huber' };
@@ -1064,10 +1085,16 @@ function paintSlotGrips() {
 function pageList() {
   const pages = [
     { key:'cover',   title:'Cover' },
-    { key:'about',   title:'About The GVC Team' },
+    { key:'about',   title:'About The GVC Team' }
+  ];
+  /* A Marli or James copy (the Version pick) carries the agent's own biography
+     page, and Marli's her Power Haus page; an ordinary deck does not. */
+  if (state.version) agents().forEach(a => pages.push({ key:'bio', title:'Meet Your Agent', agent:a }));
+  if (state.version && hasMarli()) pages.push({ key:'powerhaus', title:'Power Haus Network' });
+  pages.push(
     { key:'studio',  title:'In-House Marketing & Design' },
     { key:'map',     title:'Where We Have Sold' }
-  ];
+  );
   if (state.showProperty) pages.push({ key:'property', title:'Your Property' });
   pages.push(
     { key:'comps',   title:'Comparable Sales' },
@@ -1092,7 +1119,7 @@ let PAGES = pageList(), OF = PAGES.length;
    are on the closing page. */
 function pgCover() {
   return P.frameCover({
-    kicker: 'Listing Presentation & Market Analysis',
+    kicker: 'Listing Presentation & Comparative Market Analysis',
     title: state.address || 'Property Address',
     foot: coverFoot(),
     image: photoFor('cover'),
@@ -1104,7 +1131,7 @@ function pgCover() {
    neither yet falls back to the markets line the Buyer Package prints — an
    unfinished cover should still look like a finished one. */
 function coverFoot() {
-  const who = state.client && 'Prepared for ' + state.client;
+  const who = state.client && 'Prepared for ' + window.GVC_NAMECASE(state.client);
   const line = [who, state.date].filter(Boolean).join(' · ');
   return line || STATE_LINE().join(' · ');
 }
@@ -1152,13 +1179,20 @@ function pgAbout(n) {
         'customized strategy for selling your most precious asset: your home.</p></div>' +
     '</div>' +
     '<div class="dline sm">Present <b>Your Property</b> Right</div>' +
-    '<div class="tri flat">' +
+    '<div class="tri flat' + (hasMarli() ? ' two' : '') + '">' +
       '<div class="tb c0"><h4><b>Tailored Experience</b><br>for Each Client</h4></div>' +
-      '<div class="tb c3"><h4>Personalized Showings<br><b>No Lockboxes!</b></h4></div>' +
+      showingsTile() +
       '<div class="tb c2"><h4>We <b>Gather Info Directly</b><br>from the Buyer</h4></div>' +
     '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE,
     title:'Our Team', body });
+}
+/* The middle box under "Present Your Property Right". Marli uses lockboxes, so her
+   copy leaves the line out; everyone else does not, so theirs keeps saying so,
+   alongside the open houses James asked for (2026-10-28). */
+function showingsTile() {
+  if (hasMarli()) return '';
+  return '<div class="tb c3"><h4>Hosted <b>Open Houses</b><br>Personal Showings, No Lockboxes</h4></div>';
 }
 
 /* The in-house marketing & design division. Static: these are the people who
@@ -1221,6 +1255,10 @@ function pgStudioNj(n) {
     '<div class="showcase">' +
       '<div class="mock"><img src="../../assets/img/nj/marketing-mockup.jpg" alt="A GVC listing brochure and its film playing on a phone"></div>' +
     '</div>' +
+    '<div class="dline sm">Made <b>In-House</b></div>' +
+    '<div class="about-copy inhouse">Our own photographer and videographer shoot every New Jersey listing, and a ' +
+    'full-time marketing and graphic design team produces everything around it: the brochure, signage, ' +
+    'social campaigns, ads and email. One team, start to finish, so your home looks the same everywhere it appears.</div>' +
     '<div class="dline sm">Our Marketing <b>Advantage</b></div>' +
     '<div class="tri">' +
       '<div class="tb c1">' + ico('pen') +
@@ -1344,7 +1382,7 @@ function pgStrategy(n) {
     '<div class="eval">After a personal consultation and a thorough assessment of your home, we will ' +
     'provide you with our expert evaluation of its value.</div>' +
     '<div class="bands">' + BANDS.map(([id, lab, key, strat, risk]) =>
-      '<div class="band' + (state.recBand === id ? ' mid' : '') + '">' +
+      '<div class="band' + (id === 'mid' ? ' mid' : '') + '">' +
         '<div class="bl">' + lab + '</div>' +
         '<div class="bv">' + (state[key] ? P.money(state[key]) : '$ —') + '</div>' +
         '<div class="bsr">' +
@@ -1383,7 +1421,7 @@ function pgPlan(n) {
       groups.map(g => '<div class="grp"><div class="grp-t">' + g.name + '</div><ul>' +
         g.items.map(t => '<li>' + t + '</li>').join('') + '</ul></div>').join('') + '</div>';
   };
-  const social = '<div class="plan-social">' + PLAN_SOCIAL.map(([label, handle, url]) => {
+  const social = '<div class="plan-social">' + (hasMarli() ? [MARLI_IG] : PLAN_SOCIAL).map(([label, handle, url]) => {
     const code = qrSvg(url);
     return '<div class="ps">' +
       '<div class="qbox">' + (code || '') + '</div>' +
@@ -1496,12 +1534,40 @@ function pgContact(n) {
       legal: GVC_LEGAL.block('listing', state.market),
       referral: P.referralNote(STATE_LINE().slice(0, -1).join(', ') + ' or ' + STATE_LINE().slice(-1)),
       states: STATE_LINE().map(nm => P.STATES.filter(s => s[0] === nm)[0]),
-      foot: P.foot(SITE, true, n, OF)
+      foot: P.foot(SITE, true, n, OF),
+      socialTop: true,
+      social: hasMarli() ? [['Instagram', '@marlisilverrealestate', 'instagram']] : null
     }) +
   '</div>';
 }
 
+/* Biography page: the Buyer Package's Meet Your Agent page (Pitch.agentBioBody).
+   The tall photographs live in the Buyer Package's static folder. */
+const BIO_PHOTO = {
+  'marli-silver': '../buyer-package/static/agent-marli-silver.jpg',
+  'james-huber':  '../buyer-package/static/agent-james-huber.jpg'
+};
+function pgBio(n, p) {
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', cls:'nohead',
+    body: P.agentBioBody(p.agent, BIO_PHOTO[p.agent.id], headshotFor) });
+}
+/* Power Haus Network, Marli's copy only: the Buyer Package's page, told for a seller. */
+function pgPowerhaus(n) {
+  const G = window.GVC_GUIDE.POWERHAUS;
+  const H = Object.assign({}, G, {
+    kicker: 'Your property has exposure nationwide',
+    paras: [G.paras[0],
+      'Its real estate network has market partners in 26+ states. When you list with Marli, your home ' +
+      'is not marketed by one agent alone: it reaches a national network of agents and their buyers, ' +
+      'wherever they are moving from.'],
+    cta: 'Scan to see the Power Haus market partners'
+  });
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Network',
+    body: P.powerhausBody(H, '../buyer-package/static/', qrSvg) });
+}
+
 const RENDER = {
+  bio:pgBio, powerhaus:pgPowerhaus,
   cover:pgCover, about:pgAbout, studio:n => state.market === 'nj' ? pgStudioNj(n) : pgStudio(n), property:pgProperty,
   map:pgMap, comps:pgComps, strategy:pgStrategy, plan:pgPlan, prep:pgPrep,
   reviews:pgReviews, videos:pgVideos, contact:pgContact
@@ -1587,7 +1653,7 @@ function renderThumbs(hostId, arr, onRemove) {
    shared P.segPick(), which hands back a repaint function so the buttons
    can be re-synced with state after a property is loaded rather than being
    left showing the last document's answer. */
-let paintRoster = () => {}, paintRec = () => {}, paintProp = () => {};
+let paintRoster = () => {}, paintRec = () => {}, paintProp = () => {}, paintVersion = () => {};
 /* The market seg, and the two grouped tick lists. The tick lists are rebuilt
    rather than merely repainted when their groups change — the testimonial
    groups follow whichever agents are picked, so the subheads themselves move. */
@@ -1611,7 +1677,19 @@ document.addEventListener('DOMContentLoaded', () => {
      roster has to rebuild the picker rather than just redraw the page. A
      manual selection is left alone, which is the whole point of the mode. */
   paintRoster = P.wireRoster(document.getElementById('rosterPick'), state, 2,
-    () => { wireReviewPick(); paintPickModes(); redraw(); });
+    () => {
+      /* hand-picking agents leaves the version's own choice behind */
+      const v = VERSIONS[state.version];
+      if (v && (state.agents.length !== 1 || state.agents[0] !== v)) { state.version = ''; paintVersion(); }
+      wireReviewPick(); paintPickModes(); redraw();
+    });
+  /* The Version pick: Marli's copy or James's. Sets the agent and New Jersey in one go. */
+  paintVersion = P.segPick(document.getElementById('versionPick'), 'ver',
+    () => state.version,
+    v => {
+      state.version = v; state.agents = [VERSIONS[v]]; state.market = 'nj';
+      paintRoster(); paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw(); GVC_UNSAVED.touch();
+    });
 
   document.getElementById('addComp').addEventListener('click', () => {
     state.comps.push(P.blankComp());
@@ -1707,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return addr ? 'Seller Pitch - ' + addr : 'Seller Pitch';
     },
     render: (page, i) => {
-      page.innerHTML = RENDER[PAGES[i].key](i + 1);
+      page.innerHTML = RENDER[PAGES[i].key](i + 1, PAGES[i]);
       // tag the rendered page so the overflow check can name it
       const pg = page.querySelector('.pg');
       if (pg) { pg.dataset.key = PAGES[i].key; pg.dataset.n = String(i + 1); pg.dataset.market = state.market; }
@@ -1731,7 +1809,7 @@ document.addEventListener('DOMContentLoaded', () => {
      carries the real fact in its state field — which is what the toggle
      derives its default from. */
   const DOC_ONLY = ['client','date','photos','map','priceLow','priceMid','priceHigh',
-                    'recBand','showProperty','pos','agents','market','videos','reviews'];
+                    'recBand','showProperty','pos','agents','market','videos','reviews','version'];
 
   /* Called before a property's facts are applied — see property-bar's open().
      Every document field goes back to blank; fromCore then re-establishes the
@@ -1826,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (doc) DOC_ONLY.forEach(k => { if (k in doc) state[k] = doc[k]; });
       uid = Math.max(uid, ...state.photos.map(p => p.id || 0), 0);
       document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
-      paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp();
+      paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp(); paintVersion();
       paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw();
     }
   };
@@ -1872,6 +1950,7 @@ function sanitize(s) {
     'priceLow', 'priceMid', 'priceHigh'].forEach(k => { base[k] = str(base[k]); });
   if (['low', 'mid', 'high'].indexOf(base.recBand) === -1) base.recBand = 'mid';
   base.showProperty = base.showProperty !== false;
+  if (['marli', 'james'].indexOf(base.version) === -1) base.version = '';
   if (base.market !== 'nj') base.market = 'nyc';
   return base;
 }
@@ -1890,7 +1969,7 @@ window.__piece = {
     Object.assign(state, base);
     uid = Math.max(uid, ...state.photos.map(p => p.id), 0);
     document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
-    paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp();
+    paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp(); paintVersion();
     paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw();
   },
   redraw, paintPhotos, paintMap, renderComps, checkAll,

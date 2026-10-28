@@ -200,7 +200,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
    carrying it is waiting on somebody, and the mark has to reach the
    printer so the copy does not go out as finished. Positioned against .pg. */
 .nj-stamp{position:absolute;top:.52in;right:var(--pad);z-index:5;transform:rotate(-2deg);
-  border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.94);padding:.04in .12in;
+  border:2px solid var(--danger);color:var(--danger);background:rgba(255,255,255,.94);padding:.04in .12in;
   font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
 
 .nj-stamp.warn{display:inline-flex;align-items:center;gap:.07in;}
@@ -210,10 +210,10 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
    photo's place, with the four counties the team works lit. */
 .why .ph.njmap{position:relative;background:#fff;display:flex;align-items:center;justify-content:center;}
 .why .ph.njmap svg{display:block;width:100%;height:100%;}
-.njmap .cty{fill:#E7E4DC;stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
-.njmap .cty.lit{fill:#53C7DC;}
+.njmap .cty{fill:var(--ui-paper-2);stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
+.njmap .cty.lit{fill:var(--sky);}
 .njmap .cl.end{text-anchor:end;}
-.njmap .cll{fill:none;stroke:#00273A;stroke-width:.8;}
+.njmap .cll{fill:none;stroke:var(--navy);stroke-width:.8;}
 .njmap .cl{font:800 16px var(--sans);letter-spacing:.06em;fill:var(--navy);text-anchor:middle;
   dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
 
@@ -235,9 +235,9 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .fifty.steps.dense li{padding:.016in 0;font-size:8pt;line-height:9.9pt;}
 .fifty.steps.dense li .n{line-height:9.9pt;}
 /* lines Matt is checking with the agents — prints, so it cannot be missed */
-.fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
-  font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#8C3A2B;}
-.fifty.steps .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:#53C7DC;}
+.fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid var(--danger);border-radius:2px;
+  font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--danger);}
+.fifty.steps .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:var(--sky);}
 
 /* Offer & Negotiation, NJ: the artwork's six cards as live, editable HTML.
    No telephone — the cards take the whole page. */

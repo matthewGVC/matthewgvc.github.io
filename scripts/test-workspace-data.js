@@ -365,6 +365,7 @@ check('D88 no "Archive the job?" task for an off-market job (Matt archives it wh
 check('D88 the team Status page lists it after the live stages', W.statusRows(offJobs).find(g => g.market === 'NJ').rows.map(r => r.stage).filter((s, i, a) => a.indexOf(s) === i).slice(-2), ['Sold', 'Off market']);
 check('D88 a stage change to Off market reads plainly', W.changeTitle({ field: 'stage', new_value: 'Off market' }), 'Stage moved to Off market');
 check('D88 recent changes colour it as off market', W.recentChanges(offChanges, offJobs, 1)[0].kind, 'off');
+check('recent changes skip Asana milestone suggestions', W.recentChanges([{ at: '2026-10-28T09:00:00Z', field: 'milestone_hints', dev_project_id: devs[0].id, note: '3 milestones suggested from Asana' }].concat(changes), W.buildJobs({ properties: props, pitches, devProjects: devs, changes }, '2026-10-22'), 20).some(r => /suggested from Asana/.test(r.title)), false);
 
 /* Slice 4 (S21): buildJobs reads the pieces' records and says what is stale */
 {

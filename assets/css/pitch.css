@@ -446,6 +446,9 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
   align-items:start;border-top:1pt solid var(--ag-rule);padding-top:.16in;
   min-height:calc(var(--ag-crop) + var(--ag-sill));}
 .ag-person + .ag-person{margin-top:0;}
+/* team copy (no agent picked): the team's name in place of a person, no photo rail */
+.ag-person.ag-team{grid-template-columns:1fr;min-height:0;padding-bottom:.16in;}
+.ag-person.ag-team .ag-who{grid-column:1;}
 /* A stated height rather than bottom:0 — the window is the crop, so it must
    not follow the row's height around. */
 .ag-shot{position:absolute;left:calc(var(--ag-bleed) * -1);top:.16in;

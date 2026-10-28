@@ -151,50 +151,6 @@
     fitRun('.fcv-foot', CAPS_MAX, CAPS_MEASURE);
   }
 
-  /* Closing-page agent cards. One solid box per agent holding the cutout
-     and every detail that belongs to them — name, title, phone, email —
-     rather than the box holding the photo and the details floating loose
-     underneath it. Every deck's closing page calls this. */
-  /* The phone lines for one agent. With both an office and a mobile number
-     each is labelled o: / m:, because two bare numbers in a row say nothing
-     about which is which. With only one the label is noise, so the number
-     prints bare — which is every agent whose `mobile` is still blank in the
-     roster. */
-  function phoneLines(a) {
-    var o = a.phone && String(a.phone).trim();
-    var m = a.mobile && String(a.mobile).trim();
-    if (o && m) {
-      return '<span class="num"><b>o:</b> ' + esc(o) + '</span>' +
-             '<span class="num"><b>m:</b> ' + esc(m) + '</span>';
-    }
-    var one = o || m;
-    return one ? '<span class="num">' + esc(one) + '</span>' : '';
-  }
-
-  function agentCards(list, headshotFor) {
-    if (!list.length) {
-      return '<div class="ag-row"><div class="ag-c"><div class="shot">' +
-             '<div class="empty-note on-white">Pick an agent<br>in the Agents panel</div></div></div></div>';
-    }
-    /* A lone agent gets the wide card: the cutout stands on the page at full
-       size and the panel overlaps its foot, so the page reads as being about
-       that person rather than as half of a missing pair. Two or more keep the
-       paired columns — the wide card twice over would not fit the width. */
-    var solo = list.length === 1 ? ' solo' : '';
-    return '<div class="ag-row' + solo + '">' + list.map(a =>
-      '<div class="ag-c' + solo + '">' +
-        '<div class="shot"><img src="' + headshotFor(a) + '" alt=""></div>' +
-        '<div class="ag-meta">' +
-          '<div class="nm">' + esc(a.name) + '</div>' +
-          (a.title ? '<div class="tt">' + esc(a.title) + '</div>' : '') +
-          '<div class="ct">' +
-            '<div class="nums">' + phoneLines(a) + '</div>' +
-            (a.email ? '<span class="em">' + esc(a.email) + '</span>' : '') +
-          '</div>' +
-        '</div>' +
-      '</div>').join('') + '</div>';
-  }
-
   /* ---------- closing-page contact columns ----------
      Each row is marked with the platform's own glyph rather than a
      two-letter monogram. Anything without a mark of its own falls back to
@@ -211,29 +167,6 @@
     const name = LINK_ICONS[String(label || '').trim().toLowerCase()] || 'link';
     return global.icon ? global.icon(name) : '';
   }
-  /* cols: [[heading, [[label, value], ...]], ...]
-
-     A row may name its own glyph as a third element. That is for rows whose
-     label is not the platform — an agent's own Instagram is labelled with
-     their name, and should still be marked with the Instagram glyph rather
-     than falling back to the generic link one. */
-  function linkCols(cols) {
-    return '<div class="lcols">' + cols.map(c =>
-      '<div class="lcol"><div class="lcol-t">' + esc(c[0]) + '</div>' + c[1].map(r =>
-        '<div class="lrow"><span class="lb">' + linkIcon(r[2] || r[0]) + '</span>' +
-        '<span class="ltxt"><span class="lk">' + esc(r[0]) + '</span>' +
-        '<span class="lv">' + esc(r[1]) + '</span></span></div>').join('') +
-      '</div>').join('') + '</div>';
-  }
-
-  /* ---------- table of contents ---------- */
-  function toc(entries) {
-    return '<ol class="toc">' + entries.map(e =>
-      '<li><span class="n">' + String(e.page).padStart(2, '0') + '</span>' +
-      '<span class="t">' + esc(e.title) + '</span>' +
-      '<span class="d"></span><span class="p">' + e.page + '</span></li>').join('') + '</ol>';
-  }
-
   /* ---------- overflow warnings ----------
      Content that runs past its box is silently clipped by overflow:hidden,
      so each deck registers the selectors that must not overflow and gets a
@@ -456,9 +389,8 @@
      tools/brochure/index.html because that deck cannot load pitch.css (its
      own .stat/.ph/.band would collide). Change one, change the other.
 
-     The older centred-card close — agentCards() + linkCols() + .cx-top — is
-     still what the Seller Pitch & CMA prints, so both designs live in this
-     file. They share no class names.
+     The older centred-card close (agentCards / linkCols) was removed
+     2026-10-28: every deck now prints closingPage().
      ============================================================ */
 
   const LOCKUP = '<svg class="lk" viewBox="184.4 730.6 1675.8 514.7" ' +
@@ -498,7 +430,7 @@
   }
 
   /* One editorial row per agent: the cut-out bleeds off the left trim, the
-     details hang in the column beside it. phoneLines() is not reused here —
+     details hang in the column beside it. The old phoneLines() was not reused here —
      this row labels its fields Tel / Mobile / Email down a keyed column
      instead of setting o: / m: inline. */
   function agentRow(a, headshotFor) {
@@ -575,8 +507,11 @@
     const list = o.agents || [];
     const people = list.length
       ? list.map(a => agentRow(a, o.headshotFor)).join('')
-      : '<div class="ag-person"><div class="ag-who">' +
-        '<div class="empty-note" style="position:static">Pick an agent in the Agents panel</div>' +
+      /* Team copy: nobody picked prints the team, never an editor prompt */
+      : '<div class="ag-person ag-team"><div class="ag-who">' +
+        '<div class="nm">The GVC Real Estate Team</div>' +
+        '<div class="tt">Douglas Elliman Real Estate</div>' +
+        '<div class="ct"><div><span class="k">Web</span><span class="v">gvcrealestateteam.com</span></div></div>' +
         '</div></div>';
     /* o.social replaces the Social rows (Marli's copy of the Seller Pitch prints her
        own account, not the team's); o.socialTop sets them as a band above the agents */
@@ -677,8 +612,8 @@
   global.Pitch = {
     MONO, MONO_NAVY,
     esc, lines, money, moneyShort, num,
-    page, frameCover, fitCover, heading, foot, toc, agentCards,
-    linkCols, linkIcon,
+    page, frameCover, fitCover, heading, foot,
+    linkIcon,
     checkOverflow, overflowing, wireDrop, wireRoster, agentsOf,
     LOCKUP, STATES, TEAM_SOCIAL, TEAM_LINKS,
     socialRows, agentRow, agentCol, closingPage, referralNote,

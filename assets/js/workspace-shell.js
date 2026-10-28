@@ -194,12 +194,67 @@
       el.title = h.text + (h.why ? '. ' + h.why : '');
     }
 
-    /* ---------- search ---------- */
+    /* ---------- search: its own dropdown on every page (Matt, 10-28) ---------- */
+    var searchRows = null;
+    function loadSearchRows() {
+      if (searchRows) return searchRows;
+      if (!P || !P.signedIn()) return Promise.resolve([]);
+      var ask = function (path) { return P.call('/rest/v1' + path).then(function (r) { return r || []; }, function () { return []; }); };
+      searchRows = Promise.all([
+        ask('/properties?select=slug,label,kind,market,stage,core&stage=not.is.null'),
+        ask('/pitches?select=slug,label,market,outcome'),
+        ask('/dev_projects?select=slug,label,market')
+      ]).then(function (r) {
+        var out = [];
+        r[0].forEach(function (x) { var c = x.core || {}; out.push({ name: x.label || c.address || 'Untitled listing', meta: [x.market, x.kind === 'rental' ? 'Rental' : '', x.stage], href: 'job/?listing=' + encodeURIComponent(x.slug), hay: [x.label, c.address, c.unit, c.city, c.town, x.market, x.stage].join(' ') }); });
+        r[1].forEach(function (x) { out.push({ name: x.label || 'Pitch', meta: [x.market, 'Pitch'], href: 'job/?pitch=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'pitch'].join(' ') }); });
+        r[2].forEach(function (x) { out.push({ name: x.label || 'Development', meta: [x.market, 'Development'], href: 'job/?dev=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'development'].join(' ') }); });
+        out.forEach(function (o) { o.hay = o.hay.toLowerCase(); });
+        return out;
+      });
+      return searchRows;
+    }
+    function closeSearch(refocus) {
+      var old = doc.getElementById('wsSearchPop'); if (!old) return;
+      old.remove(); doc.removeEventListener('click', onSearchOutside, true); doc.removeEventListener('keydown', onSearchKey);
+      if (refocus) doc.getElementById('wsSearchBtn').focus();
+    }
+    function onSearchOutside(e) { var m = doc.getElementById('wsSearchPop'); if (m && !m.contains(e.target) && !doc.getElementById('wsSearchBtn').contains(e.target)) closeSearch(false); }
+    function onSearchKey(e) { if (e.key === 'Escape') closeSearch(true); }
     doc.getElementById('wsSearchBtn').addEventListener('click', function () {
-      var box = doc.getElementById('wsSearch');
-      if (box) { box.focus(); return; }
-      if (opts.onSearchOpen) opts.onSearchOpen();
+      if (doc.getElementById('wsSearchPop')) { closeSearch(false); return; }
+      closeMenu(false);
+      var pop = doc.createElement('div'); pop.className = 'sbox'; pop.id = 'wsSearchPop';
+      pop.innerHTML = '<input type="search" id="wsSearchGlobal" placeholder="Search any job: address, unit, town" autocomplete="off" aria-label="Search any job"><div class="sres" id="wsSearchRes" role="listbox"></div>';
+      top.appendChild(pop);
+      var input = doc.getElementById('wsSearchGlobal'), res = doc.getElementById('wsSearchRes'), shown = [], active = 0;
+      function paint() {
+        res.innerHTML = shown.length ? shown.map(function (o, i) {
+          return '<a role="option" href="' + esc(root + o.href) + '"' + (i === active ? ' aria-selected="true"' : '') + '><b>' + esc(o.name) + '</b><small>' + esc(o.meta.filter(Boolean).join(' · ')) + '</small></a>';
+        }).join('') : '<p>' + (input.value.trim() ? 'No job matches that.' : 'Type an address, unit or town.') + '</p>';
+      }
+      function run() {
+        var words = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+        if (!words.length) { shown = []; active = 0; paint(); return; }
+        loadSearchRows().then(function (rows) {
+          shown = rows.filter(function (o) { return words.every(function (w) { return o.hay.indexOf(w) !== -1; }); }).slice(0, 8);
+          active = 0; paint();
+        });
+      }
+      input.addEventListener('input', run);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (shown.length) { active = (active + (e.key === 'ArrowDown' ? 1 : shown.length - 1)) % shown.length; paint(); }
+        } else if (e.key === 'Enter' && shown[active]) { global.location.href = root + shown[active].href; }
+      });
+      paint(); input.focus(); loadSearchRows();
+      doc.addEventListener('keydown', onSearchKey); doc.addEventListener('click', onSearchOutside, true);
     });
+
+    /* coming back to a page (Back button, a restored tab): the browser may hand over the old, frozen copy, so
+       re-read it. Only when it really was restored from history, never on a normal load. */
+    global.addEventListener('pageshow', function (e) { if (e.persisted) global.location.reload(); });
 
     /* ---------- who is signed in ---------- */
     var me = doc.getElementById('wsMe');

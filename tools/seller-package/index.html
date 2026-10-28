@@ -332,18 +332,15 @@ table.tbl th.num{text-align:right;}
       </details>
 
       <details class="ed-sec" open>
-        <summary>Version <span class="hint">Marli &middot; James</span></summary>
+        <summary>Version <span class="hint">any agent</span></summary>
         <div class="sec-in">
           <div class="field">
-            <div class="seg pick" id="versionPick" role="group" aria-label="Version">
-              <button type="button" data-ver="marli">Marli</button>
-              <button type="button" data-ver="james">James</button>
-            </div>
+            <select id="versionPick" aria-label="Version"></select>
           </div>
-          <div class="sec-note">Each of them presents their own copy. Picking one sets New Jersey and makes
-            that agent the one on the deck. Both get their own biography page and the showings line that
-            is true for them; Marli&rsquo;s also gets the Power Haus Network page and her own Instagram in
-            place of the team&rsquo;s on the Marketing Plan and the closing page. Everything else is shared.</div>
+          <div class="sec-note">Any agent can present their own copy. Picking one makes that agent the one on the
+            deck (cover and closing page), adds their biography page and moves to their market. An agent
+            with an Instagram in the roster gets it in place of the team&rsquo;s on the Marketing Plan and
+            closing page. Marli&rsquo;s copy also adds her Power Haus page. Picking agents by hand clears the version.</div>
         </div>
       </details>
 
@@ -559,7 +556,7 @@ const state = {
   priceLow:'', priceMid:'', priceHigh:'', recBand:'mid',
   showProperty:true,
   agents:[],
-  /* 'marli' | 'james' | '' - the Version pick: each presents their own copy */
+  /* a roster agent id, or '' - the Version pick: any agent presents their own copy */
   version:'',
   /* Which market's verbiage the deck speaks - 'nj' or 'nyc'. Defaults from
      the State field typed on the property; 'nyc' for a deck with no property
@@ -885,10 +882,12 @@ const photoFor = name => slot(name) || (state.market === 'nj' ? NJ_STOCK[name] :
    HELPERS
    ============================================================ */
 const headshotFor = a => a.photo;
-const VERSIONS = { marli:'marli-silver', james:'james-huber' };
 const hasMarli = () => state.agents.indexOf('marli-silver') >= 0;
-/* Marli's own channel, used in place of the team's in her copy */
-const MARLI_IG = ['Instagram', '@marlisilverrealestate', 'https://instagram.com/marlisilverrealestate'];
+/* The version's agent (roster row), or null for a team copy. */
+const verAgent = () => { const v = P.versionId(state.version); return v ? GVC_AGENT(v) : null; };
+/* A version agent's own Instagram (from the roster) replaces the team's
+   channels in their copy. Agents without one keep the team's. */
+const verIG = () => { const a = verAgent(); const h = a && (a.instagram || '').trim(); return h ? h.replace(/^@?/, '@') : ''; };
 /* Marli Silver's admin is James Huber; a New Jersey deck's closing page prints him on her row
    (Pitch.agentRow's "Admin" line). His details come from the roster. */
 const ADMINS = { 'marli-silver': 'james-huber' };
@@ -1089,8 +1088,10 @@ function pageList() {
   ];
   /* A Marli or James copy (the Version pick) carries the agent's own biography
      page, and Marli's her Power Haus page; an ordinary deck does not. */
-  if (state.version) agents().forEach(a => pages.push({ key:'bio', title:'Meet Your Agent', agent:a }));
-  if (state.version && hasMarli()) pages.push({ key:'powerhaus', title:'Power Haus Network' });
+  if (verAgent()) agents().forEach(a => pages.push({ key:'bio', title:'Meet Your Agent', agent:a }));
+  /* Power Haus is Marli's own network (she co-founded it), so the page is
+     Marli-specific content: it prints only in Marli's version. */
+  if (P.versionId(state.version) === 'marli-silver') pages.push({ key:'powerhaus', title:'Power Haus' });
   pages.push(
     { key:'studio',  title:'In-House Marketing & Design' },
     { key:'map',     title:'Where We Have Sold' }
@@ -1421,7 +1422,7 @@ function pgPlan(n) {
       groups.map(g => '<div class="grp"><div class="grp-t">' + g.name + '</div><ul>' +
         g.items.map(t => '<li>' + t + '</li>').join('') + '</ul></div>').join('') + '</div>';
   };
-  const social = '<div class="plan-social">' + (hasMarli() ? [MARLI_IG] : PLAN_SOCIAL).map(([label, handle, url]) => {
+  const social = '<div class="plan-social">' + (verIG() ? [['Instagram', verIG(), 'https://instagram.com/' + verIG().slice(1)]] : PLAN_SOCIAL).map(([label, handle, url]) => {
     const code = qrSvg(url);
     return '<div class="ps">' +
       '<div class="qbox">' + (code || '') + '</div>' +
@@ -1536,20 +1537,19 @@ function pgContact(n) {
       states: STATE_LINE().map(nm => P.STATES.filter(s => s[0] === nm)[0]),
       foot: P.foot(SITE, true, n, OF),
       socialTop: true,
-      social: hasMarli() ? [['Instagram', '@marlisilverrealestate', 'instagram']] : null
+      social: verIG() ? [['Instagram', verIG(), 'instagram']] : null
     }) +
   '</div>';
 }
 
 /* Biography page: the Buyer Package's Meet Your Agent page (Pitch.agentBioBody).
    The tall photographs live in the Buyer Package's static folder. */
-const BIO_PHOTO = {
-  'marli-silver': '../buyer-package/static/agent-marli-silver.jpg',
-  'james-huber':  '../buyer-package/static/agent-james-huber.jpg'
-};
+const BIO_PHOTO = id => ['marli-silver', 'james-huber', 'tj-verdiglione', 'gary-kasparov', 'nicole-melveney',
+  'katie-cook', 'john-gasdaska', 'jonathan-conlon', 'ayuen-gai', 'nicole-sobol', 'george-putykewycz']
+  .indexOf(id) >= 0 ? '../buyer-package/static/agent-' + id + '.jpg' : '';
 function pgBio(n, p) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', cls:'nohead',
-    body: P.agentBioBody(p.agent, BIO_PHOTO[p.agent.id], headshotFor) });
+    body: P.agentBioBody(p.agent, BIO_PHOTO(p.agent.id), headshotFor) });
 }
 /* Power Haus Network, Marli's copy only: the Buyer Package's page, told for a seller. */
 function pgPowerhaus(n) {
@@ -1679,15 +1679,22 @@ document.addEventListener('DOMContentLoaded', () => {
   paintRoster = P.wireRoster(document.getElementById('rosterPick'), state, 2,
     () => {
       /* hand-picking agents leaves the version's own choice behind */
-      const v = VERSIONS[state.version];
+      const v = P.versionId(state.version);
       if (v && (state.agents.length !== 1 || state.agents[0] !== v)) { state.version = ''; paintVersion(); }
       wireReviewPick(); paintPickModes(); redraw();
     });
-  /* The Version pick: Marli's copy or James's. Sets the agent and New Jersey in one go. */
-  paintVersion = P.segPick(document.getElementById('versionPick'), 'ver',
-    () => state.version,
+  /* The Version pick: any roster agent. That agent alone goes on the deck (one
+     agent, inside the Agents section's limit of two: cover + closing), and the
+     deck moves to their market when it is one this deck prints (NJ or NYC). */
+  paintVersion = P.versionPick(document.getElementById('versionPick'),
+    () => P.versionId(state.version),
     v => {
-      state.version = v; state.agents = [VERSIONS[v]]; state.market = 'nj';
+      state.version = v = P.versionId(v);
+      if (v) {
+        state.agents = [v];
+        const m = (GVC_AGENT(v).market || '').toLowerCase();
+        if (m === 'nj' || m === 'nyc') state.market = m;
+      }
       paintRoster(); paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw(); GVC_UNSAVED.touch();
     });
 
@@ -1950,7 +1957,7 @@ function sanitize(s) {
     'priceLow', 'priceMid', 'priceHigh'].forEach(k => { base[k] = str(base[k]); });
   if (['low', 'mid', 'high'].indexOf(base.recBand) === -1) base.recBand = 'mid';
   base.showProperty = base.showProperty !== false;
-  if (['marli', 'james'].indexOf(base.version) === -1) base.version = '';
+  base.version = P.versionId(base.version);  /* old 'marli'/'james' saves map to roster ids */
   if (base.market !== 'nj') base.market = 'nyc';
   return base;
 }

@@ -295,18 +295,14 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
     <div class="ed-body">
 
       <details class="ed-sec" open>
-        <summary>Version <span class="hint">Marli &middot; James</span></summary>
+        <summary>Version <span class="hint">any agent</span></summary>
         <div class="sec-in">
           <div class="field">
-            <div class="seg pick" id="versionPick" role="group" aria-label="Version">
-              <button type="button" data-ver="marli">Marli</button>
-              <button type="button" data-ver="james">James</button>
-            </div>
+            <select id="versionPick" aria-label="Version"></select>
           </div>
-          <div class="sec-note">Each of them hands out their own copy. Picking one sets New Jersey,
-            makes that agent the one on the guide (their own biography page and the closing page),
-            and, for Marli, adds her Power Haus Network page. Everything else is shared. The Agents
-            section below can still change who is on it.</div>
+          <div class="sec-note">Any agent can hand out their own copy. Picking one makes that agent the one on the
+            guide (their own biography page and the closing page) and moves to their market.
+            Marli&rsquo;s copy also adds her Power Haus page. Picking agents by hand below clears the version.</div>
         </div>
       </details>
 
@@ -461,7 +457,7 @@ const state = {
   off:{ referrals:true, offer:true },
   region:'nj',   // NJ | NYC | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
-  /* 'marli' | 'james' | '' — the Version pick: each hands out their own copy */
+  /* a roster agent id, or '' — the Version pick: any agent hands out their own copy */
   version:'',
   /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
   njAgents:true,
@@ -603,11 +599,11 @@ const SPINE = [
 ];
 /* `only` / `not` list the markets a page is printed for. New Jersey merges the
    Buying Process into 50 Things and hands the two agent-facing pages to the
-   Useful Agent Info tool; `marli` pages print only when Marli Silver is picked. */
+   Useful Agent Info tool; `marli` pages print only in Marli's version. */
 const inMarket = p => (!p.only || p.only.indexOf(state.region) >= 0) && (p.not || []).indexOf(state.region) < 0;
-/* The Version pick: Marli's copy or James's. */
-const VERSIONS = { marli:'marli-silver', james:'james-huber' };
-const hasMarli = () => state.agents.indexOf('marli-silver') >= 0;
+/* Power Haus and the referral partners are Marli-specific content (her own
+   network and her own vendors), so `marli` pages print only in Marli's version. */
+const hasMarli = () => P.versionId(state.version) === 'marli-silver';
 /* The tick list for this market. In New Jersey the agent pages are a work in
    progress, so they get a tick of their own (state.njAgents), on by default. */
 const NJ_AGENTS_TICK = { key:'njAgents', title:'Meet Your Agent', opt:'Work in progress' };
@@ -1171,16 +1167,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const paintRoster = P.wireRoster(document.getElementById('rosterPick'), state, 2, () => {
     /* hand-picking agents leaves the version's own choice behind */
-    const v = VERSIONS[state.version];
+    const v = P.versionId(state.version);
     if (v && (state.agents.length !== 1 || state.agents[0] !== v)) { state.version = ''; paintVersion(); }
     redraw();
   });
   const paintRegion = () => document.querySelectorAll('#regionPick button').forEach(b =>
     b.classList.toggle('on', b.dataset.region === state.region));
-  const paintVersion = P.segPick(document.getElementById('versionPick'), 'ver',
-    () => state.version,
+  /* The Version pick: any roster agent. Puts that agent alone on the guide and
+     moves to their market (founders work every market, so they keep the current one). */
+  const paintVersion = P.versionPick(document.getElementById('versionPick'),
+    () => P.versionId(state.version),
     v => {
-      state.version = v; state.agents = [VERSIONS[v]]; state.region = 'nj';
+      state.version = v = P.versionId(v);
+      if (v) {
+        state.agents = [v];
+        const m = (GVC_AGENT(v).market || '').toLowerCase();
+        if (REGIONS[m]) state.region = m;
+      }
       paintRegion(); paintRoster && paintRoster(); paintOfferEd(); redraw(); GVC_UNSAVED.touch();
     });
 

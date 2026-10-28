@@ -391,6 +391,27 @@
     return paint;
   }
 
+  /* ---------- editor: version pick ----------
+     A <select> of every roster agent (assets/js/roster.js) plus a blank
+     "no version" row. The value is the agent's roster id ('' for none), so
+     any teammate gets their own copy with no code change. Jobs saved before
+     2026-10-28 stored 'marli' / 'james': versionId() maps those forward. */
+  const OLD_VERSIONS = { marli:'marli-silver', james:'james-huber' };
+  function versionId(v) {
+    v = OLD_VERSIONS[v] || v;
+    return (typeof v === 'string' && global.GVC_AGENT && global.GVC_AGENT(v)) ? v : '';
+  }
+  function versionPick(sel, get, set) {
+    if (!sel) return function () {};
+    const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
+    sel.replaceChildren(opt('', 'No version (team copy)'));
+    (global.GVC_ROSTER || []).forEach(a => sel.appendChild(opt(a.id, a.name)));
+    const paint = () => { sel.value = get() || ''; };
+    sel.addEventListener('change', () => set(sel.value));
+    paint();
+    return paint;
+  }
+
   /* ---------- editor: tick list ----------
      A column of checkboxes for choosing what a package prints — which
      optional pages, and which town tearsheets. `items` is [[value, label,
@@ -662,6 +683,6 @@
     LOCKUP, STATES, TEAM_SOCIAL, TEAM_LINKS,
     socialRows, agentRow, agentCol, closingPage, referralNote,
     assignRoles, placementOf, compsEditor, blankComp,
-    segPick, tickList, agentBioBody, powerhausBody
+    segPick, versionPick, versionId, tickList, agentBioBody, powerhausBody
   };
 })(window);

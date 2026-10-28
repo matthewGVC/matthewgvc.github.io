@@ -66,6 +66,11 @@
   var PAPER_ANYWHERE = /\b(offers?|contracts?|exclusives?|commissions?|closings?|deals?|leases?|agreements?|signed)\b/i;
   function hasPaperworkWord(name) { return PAPER_ANYWHERE.test(String(name == null ? '' : name)); }
 
+  /* "2026 - Sale": a folder a sale's own pieces and paperwork sit in. It is see-through: the pieces inside
+     (Floorplan, Photos, Showsheet...) count as if they were at the top, and everything else in it is
+     refused like any other top file, so its paperwork is still never listed or opened */
+  var SALE_WRAPPER = /^(19|20)\d{2}\s*[-–]\s*sales?$/i;
+
   function allowedInJob(path) {
     var r = rel(path);
     if (!r) return false;
@@ -76,6 +81,10 @@
     for (var i = 0; i < parts.length; i++) {
       if (hasPaperworkWord(parts[i])) return false;
       if (i < parts.length - 1 && isPaperworkFolder(parts[i])) return false;
+    }
+    if (SALE_WRAPPER.test(parts[0])) {
+      if (parts.length === 1) return true;
+      parts = parts.slice(1);
     }
     if (parts.length === 1) {
       var name = parts[0].toLowerCase();

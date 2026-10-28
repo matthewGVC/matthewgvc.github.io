@@ -99,6 +99,15 @@ const jt = R.jobTree(junky);
 check('jobTree: junk dropped at the top and below, never counted', [jt.children.map(c => c.name), jt.children[1].children.map(c => c.name), jt.looseCount], [['Details 2A.docx', 'Video'], ['Clip.m4v'], 0]);
 check('rel dotdot', R.rel('Photos/../Docs'), null);
 
+/* a "2026 - Sale" folder is see-through: the pieces in it count, its paperwork and loose files never do */
+check('year-Sale: the folder and the pieces inside it are readable', ['2026 - Sale', '2026 - Sale/Showsheet/a.pdf', '2025 – Sale/Photos/Edited/x.jpg', '2026 - Sale/Floorplan/Unbranded/p.png'].map(R.allowedInJob), [true, true, true, true]);
+check('year-Sale: paperwork, loose files and Docs stay refused', ['2026 - Sale/Tax Bill.pdf', '2026 - Sale/Exclusive Sales Agreement.pdf', '2026 - Sale/Docs/x.pdf', '2026 - Sale/Showsheet.pdf', '2026 - Sale/Offer/Photos/x.jpg'].map(R.allowedInJob), [false, false, false, false, false]);
+check('year-Sale: only that exact shape is see-through', ['2026 Sale', 'Sale', '2026 - Sale/2025 - Sale/Photos', '2026 - Rental/Photos'].map(R.allowedInJob), [false, false, false, false]);
+const sale = R.jobTree({ name: 'x', kind: 'directory', children: [{ name: '2026 - Sale', kind: 'directory', children: [
+  { name: 'Exclusive Sales Agreement.pdf', kind: 'file' }, { name: 'Tax Bill.pdf', kind: 'file' },
+  { name: 'Showsheet', kind: 'directory', children: [{ name: 'S.pdf', kind: 'file' }] }, { name: 'Docs', kind: 'directory', children: [{ name: 'a.pdf', kind: 'file' }] }] }] });
+check('year-Sale: jobTree keeps only the pieces inside it', sale.children[0].children.map(c => c.name + ':' + (c.children || []).map(f => f.name).join(',')), ['Showsheet:S.pdf']);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

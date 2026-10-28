@@ -482,7 +482,7 @@
     var owner = {};
     jobs.forEach(function (j) { owner[j.id] = j; });
     return (changes || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : 1; })
-      .filter(function (c) { return owner[c.property_id || c.pitch_id || c.dev_project_id]; })
+      .filter(function (c) { return c.field !== 'milestone_hints' && owner[c.property_id || c.pitch_id || c.dev_project_id]; })
       .slice(0, n).map(function (c) {
         var j = owner[c.property_id || c.pitch_id || c.dev_project_id];
         var noteToo = c.field && ['price', 'match', 'milestones', 'milestone_hints'].indexOf(c.field) === -1;

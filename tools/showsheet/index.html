@@ -105,7 +105,9 @@ body.is-dragging-photo .photo-secondary.is-empty{display:block;}
 .ag-chip{font:inherit;}
 .ag-chip.sel{background:#fff;}
 /* toasts */
-#toasts{position:fixed;bottom:18px;left:18px;z-index:99;display:flex;flex-direction:column;gap:8px;}
+/* top right, under the masthead: at the bottom they covered Print / Save PDF
+   whenever the panel was folded or the window narrow */
+#toasts{position:fixed;top:76px;right:18px;z-index:99;align-items:flex-end;display:flex;flex-direction:column;gap:8px;}
 .toast{background:#fff;color:var(--navy);border:1px solid var(--ui-rule);border-left:3px solid var(--navy);border-radius:8px;font:600 12px var(--body);padding:10px 16px;box-shadow:0 6px 24px rgba(0,39,58,.18);animation:tIn .2s;max-width:360px;}
 .toast.err{border-left-color:var(--ui-danger);color:var(--ui-danger);}
 @keyframes tIn{from{transform:translateY(8px);opacity:0;}to{transform:none;opacity:1;}}

@@ -1274,8 +1274,10 @@ function pgStudioNj(n) {
     '</div>' +
     '<div class="dline sm">Virtual <b>Staging</b></div>' +
     '<div class="staging">' +
-      '<figure><img src="../../assets/img/nj/staging-before.jpg" alt="A living room as photographed"><figcaption>Before</figcaption></figure>' +
-      '<figure><img src="../../assets/img/nj/staging-after.jpg" alt="The same room virtually staged"><figcaption>After</figcaption></figure>' +
+      /* 3 Crosby Lane, Drone 1, raw and edited (photos/pairs.json; copied here
+         2026-10-28 so a gallery rebuild cannot renumber them). New Jersey only. */
+      '<figure><img src="../../assets/img/nj/crosby-drone1-before.webp" alt="3 Crosby Lane from the air, as shot" style="object-position:50% 50%"><figcaption>Before</figcaption></figure>' +
+      '<figure><img src="../../assets/img/nj/crosby-drone1-after.webp" alt="The same aerial, edited" style="object-position:50% 50%"><figcaption>After</figcaption></figure>' +
     '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Marketing', body });
 }

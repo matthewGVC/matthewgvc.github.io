@@ -29,6 +29,10 @@ xs = sorted({p[0] for s in sq for r in s for p in r})
 check('square_ends: the wall is cut at the window\'s ends', 60 in xs and 120 in xs, True)
 check('square_ends: two pieces either side', len(sq), 2)
 
+# a wall split by a round column (the tracer's white break) joins up; a doorway (wider) stays open
+split = [[[[0, 0], [100, 0], [100, 20], [0, 20]]], [[[140, 0], [300, 0], [300, 20], [140, 20]]], [[[400, 0], [600, 0], [600, 20], [400, 20]]]]
+check('close: a 40 px break joins, a 100 px opening stays', len(C.close(split)), 2)
+
 if failed:
     print('\n'.join(failed)); print('%d passed, %d FAILED' % (passed, len(failed))); sys.exit(1)
 print('%d passed' % passed)

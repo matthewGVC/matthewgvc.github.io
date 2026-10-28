@@ -463,9 +463,8 @@ const GG = window.GVC_GUIDE, REGIONS = GG.REGIONS;
 const state = {
   photos:[], pos:{},
   /* optional page key -> true when it is switched off */
-  /* Marli's referral page stays out until her partner list exists, and Offer & Negotiation is
-     hidden for now; both come back with a tick in the Pages list */
-  off:{ referrals:true, offer:true },
+  /* Offer & Negotiation is hidden for now; it comes back with a tick in the Pages list */
+  off:{ offer:true },
   region:'nj',   // NJ | NYC | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
   /* a roster agent id, or '' — the Version pick: any agent hands out their own copy */
@@ -598,7 +597,6 @@ const SPINE = [
   { key:'why',       title:'Why Work With Us' },
   { key:'agents',    title:'Meet Your Agent',     agents:true },
   { key:'powerhaus', title:'Power Haus',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
-  { key:'referrals', title:'Referral Partners',   only:['nj'], marli:true, opt:'Marli’s partners (list still needed)' },
   { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj','nyc','fl'] },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
   { key:'costs',     title:'What It Costs',       opt:'Every cost in the deal, with ranges' },
@@ -984,27 +982,6 @@ function pgPowerhaus(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus', key:'powerhaus', body });
 }
 
-/* ---------- Marli's referral partners (New Jersey, Marli picked) ----------
-   Six categories from GG.MARLI_REFERRALS. No names have been supplied, so an
-   empty category prints dashed "to be added" rows and the page carries a
-   "List needed" stamp until every category has partners. */
-const REF_ICONS = ['home', 'check', 'box', 'mail', 'users', 'phone'];
-function pgReferrals(n) {
-  const cats = GG.MARLI_REFERRALS;
-  const empty = cats.some(c => !c.partners.length);
-  const rows = c => c.partners.length
-    ? c.partners.map(p => '<div class="row"><b>' + esc(p.name) + '</b>' +
-        (p.company ? ' · ' + esc(p.company) : '') + (p.contact ? '<span>' + esc(p.contact) + '</span>' : '') + '</div>').join('')
-    : '<div class="row tbd">Partner to be added</div><div class="row tbd">Partner to be added</div>';
-  const body =
-    (empty ? '<span class="nj-stamp">List needed</span>' : '') +
-    '<p class="rf-lede">The people Marli trusts with her own clients. Ask her for an introduction to any of them.</p>' +
-    '<div class="rf">' + cats.map((c, i) =>
-      '<div class="card">' + ic(REF_ICONS[i % REF_ICONS.length], 'ci') + '<h3>' + esc(c.title) + '</h3>' + rows(c) + '</div>').join('') +
-    '</div>';
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Marli’s Referral Partners', key:'referrals', body });
-}
-
 /* Closing page — Team and Next Steps merged into one. It is the Brochure's
    editorial close, not the Seller Pitch & CMA's centred cards: the lockup and
    the team QR on a header line, the sign-off under it, then one row per agent
@@ -1042,7 +1019,7 @@ const RENDER = {
   cover:pgCover, why:pgWhy, agent:pgAgentNj, process:pgProcess,
   fifty:(n, p) => GG.stepsFifty(state.region) ? pgFiftySteps(n, p) : pgFifty(n, p),
   costs:pgCosts, discovery:pgDiscovery, questions:pgFaq, offer:pgOffer, next:pgNext,
-  links:pgLinks, powerhaus:pgPowerhaus, referrals:pgReferrals
+  links:pgLinks, powerhaus:pgPowerhaus
 };
 
 /* ---------- wiring ---------- */

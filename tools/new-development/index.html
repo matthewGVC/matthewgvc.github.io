@@ -196,7 +196,7 @@ let rowsHave = [];
 
 /* What is loaded, and whether it has changed since, as the property bar says it. */
 function paintLib() {
-  $('devName').textContent = (doc.developer.name || 'New development') + (saved ? '' : ' (not saved yet)');
+  $('devName').textContent = (doc.developer.name || 'New development') + (saved ? '' : P.signedIn() ? ' (not saved yet)' : ' (sample, not saved)');
   $('devName').className = 'plib-name' + (saved ? '' : ' is-empty');
   $('devMark').textContent = GVC_UNSAVED.isDirty() ? 'Unsaved changes' : '';
   $('btnSave').textContent = saved ? 'Save' : 'Save as new';
@@ -268,7 +268,7 @@ function newDevelopment() {
 
 function startLibrary() {
   paintLib(); fillPick();
-  if (!P.signedIn()) { say('Showing the South Street starting copy. Open the dropdown to sign in.'); return; }
+  if (!P.signedIn()) { say('SAMPLE DATA: this is the bundled South Street starting copy, not the team’s saved library, so its homes and details may be out of date. Open the dropdown to sign in and load the saved version.', 'warn'); return; }
   list().then(rows => {
     const target = rows.find(r => r.slug === doc.slug) ? doc.slug : (rows[0] && rows[0].slug);
     if (target) return load(target);

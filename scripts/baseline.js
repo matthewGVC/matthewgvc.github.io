@@ -4,7 +4,7 @@
 
      python -m http.server 8080            (from the repo root)
      node scripts/baseline.js              render → exports/baseline/<date>/ (--force replaces it)
-     node scripts/baseline.js --compare 2026-10-19
+     node scripts/baseline.js --compare 2026-10-28
                                            render again into a temp folder and
                                            fail on any page that moved
 

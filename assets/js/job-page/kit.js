@@ -32,11 +32,29 @@
   var SAFE_TYPE = /^(application\/pdf|image\/(jpeg|png|webp|gif)|video\/[a-z0-9.+-]+)$/i;
   var TYPE_OF = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
     mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/mp4', webm: 'video/webm' };
-  function keyOf(cur) { for (var k in current) if (current[k] === cur) return k; return null; }
+  function keyOf(cur) { for (var k in current) if (current[k] === cur) return k.split(':')[0]; return null; }
 
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
   function newest(list, key) {
     return global.GVC_KIT.realFiles(list, key).filter(function (f) { return !f.archived; }).sort(function (a, b) { return ms(b.modified) - ms(a.modified); })[0] || null;
+  }
+
+  /* a job with several floors has one floorplan file per level: the newest version's levels, each its own
+     way in, so Open never lands on whichever level was saved last. [] when there is one level or none. */
+  function planLevels(list) {
+    var PJ = global.GVC_PIECEJOB;
+    if (!PJ || !PJ.pickFloorplans) return [];
+    /* last night's scan keeps names and links, not paths: the name stands in for the path there */
+    var files = global.GVC_KIT.realFiles(list, 'floorplan').filter(function (f) { return !f.archived && (f.path || f.name); })
+      .map(function (f) { return f.path ? f : { name: f.name, path: f.name, modified: f.modified, url: f.url, scanned: true }; });
+    var picks = PJ.pickFloorplans(files);
+    if (picks.length < 2) return [];
+    return picks.map(function (p) {
+      var f = files.filter(function (x) { return x.path === p.path; })[0] || { path: p.path, name: p.path.split('/').pop() };
+      var base = String(f.name || p.path.split('/').pop()).replace(/\.[a-z0-9]+$/i, '');
+      return { path: f.scanned ? null : f.path, name: f.name || base, url: f.url, modified: f.modified, version: p.version,
+        label: (base.split(/\s+-\s+/).pop() || base).replace(/\b(unbranded|branded|mls)\b/gi, '').replace(/\s+/g, ' ').trim() };
+    });
   }
 
   /* ---------- the Showsheet's record (Slice 4: S15, S20, S21) ----------
@@ -239,11 +257,23 @@
         : x.older ? 'No current file · ' + x.older + ' older' : 'No file found';
       var step = x.step ? 'Asana: ' + esc(x.step.name) + (x.step.done ? ', ticked' + (x.step.doneOn ? ' ' + esc(D.day(x.step.doneOn)) : '') + (x.step.who ? ' by ' + esc(x.step.who) : '') : ', open')
         : x.file && NO_STEP.indexOf(x.key) !== -1 ? 'No Asana step for this piece' : '';
+      var levels = x.key === 'floorplan' && cur ? planLevels(pieces.floorplan) : [], lv = '';
+      if (levels.length) {
+        file = levels.length + ' floors' + (levels[0].version ? ' · v' + levels[0].version : '');
+        levels.forEach(function (l, i) {
+          current['floorplan:' + i] = l;
+          lv += '<div class="d" data-level style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px"><span>' + esc(l.label || l.name) +
+            (l.modified ? ' · ' + esc(D.day(l.modified)) : '') + '</span>' +
+            (live ? '<button class="b sm ghost" type="button" data-open="floorplan:' + i + '">Open</button>'
+              : l.url && /^https:\/\/drive\.google\.com\//.test(l.url) ? '<a class="b sm ghost" href="' + esc(l.url) + '" target="_blank" rel="noopener">Open</a>' : '') +
+            '<button class="b sm ghost" type="button" data-copy="floorplan:' + i + '">' + I('copy') + 'Copy Drive link</button></div>';
+        });
+      }
       var acts = '', bits = x.key === 'showsheet' && sheet ? sheetBits(ctx, sheet) : extraBits(ctx, x.key, pieces, live);
       if (cur && x.key === 'photos' && ctx.row.drive_folder) {
         acts += '<button class="b sm ghost" type="button" data-open-dir>Open folder</button>' +
           '<button class="b sm ghost" type="button" data-copy-dir>' + I('copy') + 'Copy Drive link</button>';
-      } else if (cur) {
+      } else if (cur && !levels.length) {
         if (live && cur.path) acts += '<button class="b sm ghost" type="button" data-open="' + esc(x.key) + '">Open</button>';
         else if (cur.url && /^https:\/\/drive\.google\.com\//.test(cur.url)) acts += '<a class="b sm ghost" href="' + esc(cur.url) + '" target="_blank" rel="noopener">Open</a>';
         acts += '<button class="b sm ghost" type="button" data-copy="' + esc(x.key) + '">' + I('copy') + 'Copy Drive link</button>';
@@ -252,7 +282,7 @@
       var cls = x.state === 'notStarted' || x.state === 'notUsed' ? ' none' : (x.state === 'fileOpen' || x.state === 'tickedNoFile') ? ' stale' : '';
       return '<div class="kr' + cls + '" data-kit="' + esc(x.key) + '"><span class="ic">' + I(ICON[x.key] || 'file') + '</span><div>' +
         '<div class="t">' + esc(x.label) + ' <span class="chip ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
-        '<div class="d">' + file + '</div>' + (step ? '<div class="d" data-step>' + step + '</div>' : '') +
+        '<div class="d">' + file + '</div>' + lv + (step ? '<div class="d" data-step>' + step + '</div>' : '') +
         (x.mismatch ? '<div class="d kmm"><span class="code">' + esc(x.mismatch.code) + '</span> ' + esc(x.mismatch.text) + '</div>' : '') + (bits ? bits.lines : '') +
         '</div><div class="a">' + acts + '</div></div>';
     }).join('');

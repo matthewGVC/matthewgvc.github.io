@@ -15,23 +15,13 @@
 <link rel="stylesheet" href="../assets/css/base.css">
 <link rel="stylesheet" href="../assets/css/workspace.css">
 <style>
-.recent{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;padding:14px}
-.recent .when{height:84px;border-radius:6px;background:var(--ink);color:var(--bone);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.recent .when b{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1}
-.recent .when span{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--sky)}
-.recent .when.contract{background:var(--cyan);color:var(--ink)}
-.recent .when.contract span{color:var(--ink)}
-.recent .when.pre,.recent .when.sold,.recent .when.off{background:var(--paper-2);color:var(--ink)}
-.recent .when.pre span,.recent .when.sold span,.recent .when.off span{color:var(--ink-soft)}
-.recent h3{font-size:19px;margin:3px 0}
-.recent:hover{border-color:var(--ink)}
 .pipe{display:flex;flex-direction:column;gap:12px}
 .pj{background:color-mix(in srgb,var(--paper-2) 45%,var(--paper));border-radius:8px;padding:16px 18px;display:block}
 .pj:hover{outline:1px solid var(--ink)}
 .pj-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .pj-h h3{font-size:19px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .pj-h > div{min-width:0}
-.pj-h h3,.recent h3{overflow-wrap:anywhere}
+.pj-h h3{overflow-wrap:anywhere}
 .pj-h .sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
 .pj-h .r{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap}
 .pj-h .r.warn{color:var(--danger)}
@@ -74,7 +64,7 @@
 .addt .inp{flex:1}
 .todo-i .bx{cursor:pointer;background:none;padding:0}
 .todo-i .bx:hover{border-color:var(--ink)}
-@media (max-width:720px){ .tl-row,.tl-ax{grid-template-columns:110px 1fr} .tl-wrap{overflow-x:auto} .tl{min-width:640px} .recent{grid-template-columns:72px 1fr} .recent .when{height:72px} }
+@media (max-width:720px){ .tl-row,.tl-ax{grid-template-columns:110px 1fr} .tl-wrap{overflow-x:auto} .tl{min-width:640px} }
 </style>
 </head>
 <body data-nav="overview" data-root="./">
@@ -94,7 +84,6 @@
 
   <div id="board" hidden>
     <div class="grid3" id="stats"></div>
-    <div class="grid3" id="recent" style="margin-top:20px"></div>
 
     <div class="split" style="margin-top:24px">
       <section class="card" aria-labelledby="pipe-h" data-open>
@@ -236,16 +225,6 @@
       (s.mismatches ? ' · <a class="link" id="mmTotal" href="match/">' + s.mismatches + ' error' + (s.mismatches === 1 ? '' : 's') + '</a>' : '');
   }
 
-  function recent(js) {
-    var items = W.recentChanges(data.changes, js, 3);
-    if (!items.length) { $('recent').innerHTML = '<div class="card empty" style="grid-column:1/-1">No changes yet. They show here as DE and Drive report them.</div>'; return; }
-    $('recent').innerHTML = items.map(function (x) {
-      var p = W.fmtDay(x.when).split(' ');
-      return '<a class="card recent" href="' + esc(x.href) + '"><div class="when ' + esc(x.kind) + '"><b>' + esc(p[0]) + '</b><span>' + esc(p[1]) + '</span></div><div><div class="eyebrow">' +
-        esc(x.market) + ' · ' + esc(x.stage) + '</div><h3>' + esc(x.job) + '</h3><div class="soft" style="font-size:13.5px">' + esc(x.title) + (x.note ? '. ' + esc(x.note) : '') + '</div></div></a>';
-    }).join('');
-  }
-
   function note(j) {
     if (j.flags.some(function (x) { return x.k === 'relink'; })) return 'The linked folder moved or was renamed. Relink it.';
     if (j.flags.some(function (x) { return x.k === 'link'; })) return 'No Drive folder linked yet.';
@@ -345,7 +324,7 @@
   function render() {
     stageOptions();
     var js = jobsNow().sort(SORTS[f.sort] || SORTS['']);
-    stats(js); recent(js); chart(js);
+    stats(js); chart(js);
     $('jobs').innerHTML = f.view === 'list' ? list(js) : timeline(js);
   }
 

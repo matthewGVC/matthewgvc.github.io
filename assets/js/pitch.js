@@ -11,8 +11,12 @@
 (function (global) {
   'use strict';
 
-  const MONO = '../../assets/logos/monogram-white.svg';
-  const MONO_NAVY = '../../assets/logos/monogram.svg';
+  /* Asset paths resolve from this script's own location (assets/js/), not the
+     page's, so a deck at any folder depth gets the right files. */
+  const ASSETS = (document.currentScript && document.currentScript.src)
+    ? new URL('../', document.currentScript.src).href : '/assets/';
+  const MONO = ASSETS + 'logos/monogram-white.svg';
+  const MONO_NAVY = ASSETS + 'logos/monogram.svg';
 
   /* ---------- text ---------- */
   function esc(s) {
@@ -81,7 +85,7 @@
      measure, a framed photo, a second caps line and the lifted band
      underneath. A deck supplies the three text runs and the photo; nothing
      else about it varies, which is why the band is a constant here. */
-  const COVER_BAND = '../../assets/img/cover-band.png';
+  const COVER_BAND = ASSETS + 'img/cover-band.png';
 
   function frameCover(o) {
     return '<div class="fcv">' +
@@ -398,9 +402,9 @@
 
   /* The states on every closing page, in the order they print. */
   const STATES = [
-    ['New York',   '../../assets/img/states/new-york.svg'],
-    ['New Jersey', '../../assets/img/states/new-jersey.svg'],
-    ['Florida',    '../../assets/img/states/florida.svg']
+    ['New York',   ASSETS + 'img/states/new-york.svg'],
+    ['New Jersey', ASSETS + 'img/states/new-jersey.svg'],
+    ['Florida',    ASSETS + 'img/states/florida.svg']
   ];
 
   /* The team's own accounts. Not editable in any deck, so the handles can
@@ -481,7 +485,7 @@
      assets/js/state-shapes.js) when that file is loaded, because a CSS mask
      printed thin lines along the box edges in Chrome's PDF output; the CSS
      mask is the fallback. */
-  const MESH = '../../assets/img/mesh-gradient.jpg';
+  const MESH = ASSETS + 'img/mesh-gradient.jpg';
   const STATE_ID = { 'new-york': 'ny', 'new-jersey': 'nj', 'florida': 'fl' };
   let markN = 0;
   function stateMark(art) {

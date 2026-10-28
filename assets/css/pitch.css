@@ -4,6 +4,11 @@
    tools/buyer-package/. Layered on top of builder.css, which owns
    the editor chrome and the 8.5x11 page geometry.
 
+   LOAD ORDER: builder.css first, then this file. These tokens are defined
+   in builder.css, not tokens.css, and are used here without fallbacks:
+   --navy --sky2 --ow --mesh --body --sans --ui-ink-soft --ui-mono --ui-rule.
+   Every page that loads pitch.css loads builder.css just before it.
+
    Type is set in pt so the design canvas matches real print sizes.
    Sizes follow tools/brochure/type-sample.html: 9.5/14pt Raleway for
    body copy, 6.5pt floor for tracked caps.

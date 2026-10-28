@@ -165,6 +165,12 @@ Walls, windows and fixtures must meet exactly: at his zoom a tenth of a point sh
   A run of boxes along a wall (cabinets, the fridge) takes the wall face from the raster.
 - **Lines that meet a wall run to its face:** a stair's outer rail, a newel post. Read the face off the
   raster, not the picture.
+- **Place nothing against a wall by eye:** toilets, counters, vanities, a balcony rail, a bed,
+  nightstands. Read the wall face off the raster. Under a window there is no wall to read, so read it
+  beside the window.
+- **Symbols have a front, so `rot` matters.** A range, a chair or an armchair faces into the room (a
+  dining chair at `rot` 0 faces the table above it). After rotating one, check which way its seat or
+  burners open; ranges and armchairs have both been drawn facing the wall.
 - **Keep each job's generator in `Design\gen\`** beside its traced walls (`walls-*.json`), reading them
   from its own folder, with a `buildall.py` that writes `Design\plan.json` and a `rebuild.sh` that runs it
   and the maker. A rebuild is then one command: `bash "<Floorplan>\Design\gen\rebuild.sh" <version>`.

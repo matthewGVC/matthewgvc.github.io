@@ -15,12 +15,8 @@ run. When a lesson comes up a third time, move it into `SKILL.md` or `sources.md
 - **Draw a stair's foot:** its last tread and the closing edge line (both were missing).
 - **A balcony's open side has a rail** (a double line), like the 2nd floor's, not a single line.
 - **Sidelights in a thin wall join it:** fill the thin wall from each sidelight to the next wall's face.
-- **Furniture faces into the room.** Two armchairs faced the wall. After rotating a chair, check which
-  way its seat opens.
-- **Folding Matt's hand edits in: tick off every red-only shape in the diff.** His v1 DW bar at the
-  island was missed. List them and check each one is in the generator.
-- **Place nothing against a wall by eye** (a balcony rail, a bed, nightstands): read the wall face off
-  the raster. Under a window there is no wall to read, so read it beside the window.
+- Promoted to SKILL.md / sources.md (third time): furniture facing into the room, folding in Matt's
+  hand edits, placing nothing against a wall by eye.
 
 ## 2026-10-27: Matt's red circle = gaps and corners that don't join
 
@@ -66,13 +62,8 @@ never wanders into the next room.** `scripts/floorplan/fit-labels.js` now does t
   `Design/Branded/`. The maker does this now, and any SVG of ours left in Unbranded/ or Branded/ moves
   to the archive. The site's job page falls back to the PNG, so nothing there changed.
 - **Always CL, never CLOSET** (PRIMARY CL, UTILITY CL). The validator warns on CLOSET.
-- **Fold Matt's hand edits into the generator before regenerating a floor he edited.** Map his shapes
-  back to plan coordinates: take the scale and offset from one shape you know in both files (the
-  elevator box). Read his shapes with `getBoundingClientRect`, not `getBBox`, because his rects carry
-  rotate transforms. Then diff the regeneration against his file again; only the deliberate changes
-  should be left.
 - **French doors take `"glazed": true`:** the window's glass in the opening, one pane per leaf.
-- **Stools and single chairs are `chair`** (Matt's dining chair; `rot` 0 faces the table above it).
+- **Stools and single chairs are `chair`** (Matt's dining chair).
 - **A window beside a column:** the measured wall band takes in the column, which made the window too
   wide and laid it over the post. Give such windows the plain wall's own centre and thickness.
 - **Labels on dashed X lines** (an open area, outdoor showers) take `"backing": true`, like ELEVATOR.
@@ -165,7 +156,6 @@ What he changed:
 
 His edited file is `Unbranded/366 N 3rd St, Surf City v1 - 2ND FLOOR.svg` (saved from Illustrator 10:59). **Never run the maker on a version Matt has hand-edited: it overwrites his file. Any regeneration is the next version.**
 
-- **Scan Matt's edits against our file, every time.** After he hand-edits a floor, diff his SVG against a fresh regeneration (scratch folder, never over his file) and learn from each difference before the next floor. Done for the 366 N 3rd 2ND FLOOR (section above).
 - **Room names (now a validator warning):** a bathroom is `BATH` when it has a shower or tub and `POWDER` when it does not (so no TOILET, BATHROOM or POWDER ROOM); the owner's suite is `PRIMARY`, never `MASTER` (PRIMARY BEDROOM, PRIMARY BATH, PRIMARY CLOSET).
 - **Stair linework is 0.2 (0.0025 in), finer than the 0.5 of other thin lines.** Lines now take `"w": 0.2` for the stair's rails, treads, walking line, break line and the dashed flight above.
 - **Labels fit their room.** He moved room labels to sit clear of walls and fixtures, and gave a label that sits on a crossed box (ELEVATOR) a white background. Check every label on the PNG; consider a white backing for labels over an X box.
@@ -180,7 +170,6 @@ His edited file is `Unbranded/366 N 3rd St, Surf City v1 - 2ND FLOOR.svg` (saved
 ## 2026-10-27: 366 N 3rd St, 2ND FLOOR review (Matt, page by page)
 
 - **Traced walls need cleaning before they are used.** Raw `trace-walls.py` masses had gaps, edges a few pixels off from the next wall and little nubs. Run them through `scripts/floorplan/clean_solids.py` (snap, union, drop nubs) and measure every opening (`gap`: both ends and the wall's centre and thickness) and every fixture (`flush`) against the cleaned wall raster, not by eye. Never hand-place an opening's ends.
-- **Toilets, counters and vanities sit flat on the wall face.** Compute the face from the wall raster; a fixture centred by eye leaves a gap.
 - **Measure fixtures at their real size** (a toilet is about 90 x 142 px at 54 px/ft; a double vanity ended where the source's counter ends, not at the room edge). Sinks and the shower must match the source's drawing: the shower is a glass box with an inner tray and an X, drawn with `glass` walls plus `lines`, not the plain crossed-box fixture.
 - **One range is one range.** A 48" range is a single `range` the width of its space (216 px), not two 30" ranges. The library has 4 or 6 burners only; use 6 and say so.
 - **Furniture:** when the architect's plan draws it, bring it in from the library (bed, nightstands, armchairs, sectional, coffee table, dining table, sofa) at the source's placement and size; leave out what the library lacks (stools). Armchairs are about 100 x 108 px; the sectional's `w` is the long back run and `h` the whole extent, `rot` 90 puts its back on the right.
@@ -280,8 +269,6 @@ Six of Matt's real jobs were run from the source he was given and compared with 
   against his original (19.1% against 19.2%).
 - The compass "N" was live Avenir LT Pro Black text. Avenir isn't on file, so it was outlined in
   Nunito Sans Black. If Matt wants Avenir, he outlines the N in Illustrator (Type > Create Outlines).
-- His symbols have a front, so `rot` matters. The 555 W59 range was drawn facing the wall until his
-  symbol showed it.
 
 ## 2026-10-26: house-style decisions from Matt
 

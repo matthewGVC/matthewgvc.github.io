@@ -109,24 +109,6 @@
   font-variant-numeric:tabular-nums;}
 .fifty-lede{margin:0 0 .16in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
 
-/* ============================================================
-   MEET YOUR AGENT — one page per selected agent, every market (the .agnj
-   rules further down lay it out). All of it is roster copy
-   (assets/js/bios.js); nothing is written per page.
-   ============================================================ */
-.ab-lab{font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky2);
-  padding-bottom:.05in;border-bottom:1pt solid var(--navy);margin-bottom:.12in;}
-.ab-bio{margin:0;font:400 13pt/1.52 var(--serif);color:var(--navy);}
-.ab-facts{margin-top:.28in;}
-.ab-facts .f{display:flex;gap:.14in;padding:.075in 0;border-bottom:.75pt solid var(--rule);
-  font:300 9.5pt/1.4 var(--body);color:var(--navy);}
-.ab-facts .f b{flex:none;width:1.25in;font:800 6.6pt/1.9 var(--sans);letter-spacing:.14em;
-  text-transform:uppercase;color:rgba(0,39,58,.72);}
-.ab-bio.sm{font-size:11pt;line-height:1.45;margin-bottom:.16in;}
-.ab-text{columns:2;column-gap:.4in;font:300 8.9pt/12.6pt var(--body);color:var(--navy);}
-.ab-text p{margin:0 0 .08in;}
-.ab-text.tight{font-size:8.4pt;line-height:11.6pt;}
-
 /* "Know someone moving?" — a slim full-width band at the foot of the closing page, above the legal text: the
    question set in the serif, and the line about introducing them. */
 .ag-hero{display:flex;flex-direction:column;align-items:stretch;}
@@ -247,6 +229,11 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
     color-mix(in srgb,#06475f var(--t),#0f7694));}
 .fifty.steps li{padding:.03in 0;font-size:8.7pt;line-height:11.2pt;}
 .fifty.steps li .n{line-height:11.2pt;}
+/* Marli's fifty (NJ) are longer lines than the old list, so New Jersey sets them a size down */
+.fifty.steps.dense .fg + .fg{margin-top:.08in;}
+.fifty.steps.dense .fg-h{padding-bottom:.03in;}
+.fifty.steps.dense li{padding:.016in 0;font-size:8pt;line-height:9.9pt;}
+.fifty.steps.dense li .n{line-height:9.9pt;}
 /* lines Matt is checking with the agents — prints, so it cannot be missed */
 .fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
   font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#8C3A2B;}
@@ -275,30 +262,6 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .lk-r a{flex:none;width:3in;text-align:right;font:600 8pt/1.35 var(--sans);color:var(--sky2);
   text-decoration:none;overflow-wrap:anywhere;}
 
-/* Power Haus Women (Marli) — her photo down the left, the copy, the two
-   numbers and a QR to the market-partner directory down the right. */
-.ph-pg{display:flex;gap:.42in;flex:1;min-height:0;}
-.ph-pg{gap:.34in;}
-/* the group photo bleeds off the left trim, so it can run wide without
-   squeezing the copy */
-.ph-pg .ph{width:calc(4.5in + var(--pad));margin-left:calc(-1 * var(--pad));flex:none;align-self:stretch;}
-.ph-pg .txt{flex:1;min-width:0;display:flex;flex-direction:column;}
-.ph-pg .kick{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky2);}
-.ph-pg .lede{margin:.1in 0 .2in;font:400 13pt/1.4 var(--serif);color:var(--navy);}
-.ph-pg .copy{font-size:10.3pt;line-height:15.5pt;}
-.ph-pg .copy p{margin:0;}
-.ph-pg .copy p + p{margin-top:.13in;}
-.ph-pg .stats{display:flex;gap:.25in;margin-top:.3in;text-align:center;}
-.ph-pg .qrrow{position:relative;display:flex;gap:.2in;align-items:center;margin-top:auto;padding-top:.5in;border-top:.75pt solid var(--rule);}
-/* the Power Haus Women logo, sat on the rule above the QR */
-.ph-pg .qrrow .phw{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);height:.62in;width:auto;
-  background:#fff;padding:0 .14in;}
-.ph-pg .qrrow .qbox{flex:none;width:1in;height:1in;}
-.ph-pg .qrrow .qbox svg{width:100%;height:100%;display:block;}
-.ph-pg .qrrow b{display:block;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
-.ph-pg .qrrow > div:last-child{flex:1;min-width:0;}
-.ph-pg .qrrow span{display:block;margin-top:.05in;font:300 9pt/1.4 var(--body);color:var(--sky2);}
-
 /* Marli's referral partners — six categories; an empty one prints dashed
    "to be added" rows until the list arrives (MARLI_REFERRALS in guide-data.js). */
 .rf-lede{margin:0 0 .16in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
@@ -310,31 +273,6 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .rf .row span{display:block;color:rgba(0,39,58,.72);}
 .rf .row.tbd{border:1pt dashed rgba(140,58,43,.45);border-radius:2px;margin-top:.07in;padding:.07in .1in;
   color:rgba(140,58,43,.85);font-style:italic;}
-
-/* Meet Your Agent (every market since 2026-10-09; first built for NJ): a compact name band at the top, the words down the
-   left, and the agent's photograph (not the cut-out) beside them on the right,
-   inside the page margins. No contact block. */
-.agnj{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
-.agnj .band{flex:none;background:var(--navy);color:#fff;padding:.24in .34in .22in;margin-bottom:.26in;text-align:left;}
-.agnj .band .role{font:800 7pt var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--sky);}
-.agnj .band .nm{margin:.06in 0 .1in;font:700 30pt/1.04 var(--serif);color:#fff;}
-.agnj .band .tt{font:800 6.8pt/1.5 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(229,229,229,.78);}
-/* no page heading: the name band is the top of the page */
-.pg.nohead .pg-h{display:none;}
-.pg.nohead .pg-body{padding-top:.5in;}
-.pg.nohead .nj-stamp{top:.12in;}
-.agnj .row{flex:1;min-height:0;display:flex;gap:.3in;}
-.agnj .words{width:4.05in;flex:none;min-height:0;display:flex;flex-direction:column;}
-.agnj .ab-bio.sm{text-align:left;}
-.agnj .ab-text{columns:1;text-align:left;}
-/* a long blurb plus a long bio (Gary, John, Jonathan) would run past the page */
-.agnj .words.long .ab-bio.sm{font-size:10pt;line-height:1.4;margin-bottom:.1in;}
-.agnj .words.long .ab-text{font-size:7.7pt;line-height:10.6pt;}
-.agnj .ab-facts{margin-top:auto;padding-top:.16in;}
-.agnj .ab-facts .f b{width:1in;}
-.agnj .shot{flex:1;min-width:0;overflow:hidden;background:var(--navy);}
-.agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
-.agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
 
 /* the costs footnote was ~3.8:1 */
 .foot-note{color:rgba(0,39,58,.72);}
@@ -355,6 +293,22 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
        presenting it. -->
   <aside id="editor">
     <div class="ed-body">
+
+      <details class="ed-sec" open>
+        <summary>Version <span class="hint">Marli &middot; James</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <div class="seg pick" id="versionPick" role="group" aria-label="Version">
+              <button type="button" data-ver="marli">Marli</button>
+              <button type="button" data-ver="james">James</button>
+            </div>
+          </div>
+          <div class="sec-note">Each of them hands out their own copy. Picking one sets New Jersey,
+            makes that agent the one on the guide (their own biography page and the closing page),
+            and, for Marli, adds her Power Haus Network page. Everything else is shared. The Agents
+            section below can still change who is on it.</div>
+        </div>
+      </details>
 
       <details class="ed-sec" open>
         <summary>Page design <span class="hint">classic &middot; guide</span></summary>
@@ -507,6 +461,8 @@ const state = {
   off:{ referrals:true, offer:true },
   region:'nj',   // NJ | NYC | FL — the cover toggle; see guide-data.js REGIONS
   agents:[],
+  /* 'marli' | 'james' | '' — the Version pick: each hands out their own copy */
+  version:'',
   /* NJ only: the Meet Your Agent pages (still a work in progress); on unless unticked */
   njAgents:true,
   /* The Offer & Negotiation cards as edited in the panel, by
@@ -634,7 +590,7 @@ const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
   { key:'agents',    title:'Meet Your Agent',     agents:true },
-  { key:'powerhaus', title:'Power Haus Women',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
+  { key:'powerhaus', title:'Power Haus Network',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
   { key:'referrals', title:'Referral Partners',   only:['nj'], marli:true, opt:'Marli’s partners (list still needed)' },
   { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj','nyc','fl'] },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
@@ -649,6 +605,8 @@ const SPINE = [
    Buying Process into 50 Things and hands the two agent-facing pages to the
    Useful Agent Info tool; `marli` pages print only when Marli Silver is picked. */
 const inMarket = p => (!p.only || p.only.indexOf(state.region) >= 0) && (p.not || []).indexOf(state.region) < 0;
+/* The Version pick: Marli's copy or James's. */
+const VERSIONS = { marli:'marli-silver', james:'james-huber' };
 const hasMarli = () => state.agents.indexOf('marli-silver') >= 0;
 /* The tick list for this market. In New Jersey the agent pages are a work in
    progress, so they get a tick of their own (state.njAgents), on by default. */
@@ -816,27 +774,7 @@ const AGENT_PHOTO = {
   'george-putykewycz': 'static/agent-george-putykewycz.jpg'
 };
 function pgAgentNj(n, p) {
-  const a = p.agent, first = esc(a.name.split(' ')[0]);
-  const photo = AGENT_PHOTO[a.id];
-  const facts = (a.facts || []).length
-    ? '<div class="ab-facts">' + a.facts.map(f =>
-        '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
-    : '';
-  const body =
-    '<div class="agnj">' +
-      '<div class="band">' +
-        (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
-        '<div class="nm">' + esc(a.name) + '</div>' +
-        '<div class="tt">' + esc(a.title) + '</div>' +
-      '</div>' +
-      '<div class="row"><div class="words' + ((a.blurb || '').length + (a.bio || []).join('').length > 2300 ? ' long' : '') + '">' +
-        (a.blurb ? '<p class="ab-bio sm">' + esc(a.blurb) + '</p>' : '') +
-        ((a.bio || []).length ? '<div class="ab-lab">About ' + first + '</div>' +
-          '<div class="ab-text tight">' + a.bio.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' : '') +
-        facts +
-      '</div>' +
-      '<div class="shot' + (photo ? '' : ' cut') + '"><img src="' + esc(photo || headshotFor(a)) + '" alt=""></div></div>' +
-    '</div>';
+  const body = P.agentBioBody(p.agent, AGENT_PHOTO[p.agent.id], headshotFor);
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', key:'agent', cls:'nohead', body });
 }
 
@@ -873,7 +811,7 @@ const STEPS_SPLIT = { nj: 4, nyc: 3, fl: 4 };
 /* New Jersey lines Matt is confirming with the agents (by number) get a
    printed "Check" tag; take a number out once it is confirmed. The last line
    gets a star. */
-const NJ_FIFTY_CHECK = [10, 15, 17, 23, 28];
+const NJ_FIFTY_CHECK = [];  /* emptied 2026-10-28: the NJ list is now Marli's own 50 */
 const STAR = '<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" ' +
   'd="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
 const lineMark = i => state.region === 'nj' && NJ_FIFTY_CHECK.indexOf(i) >= 0
@@ -892,7 +830,7 @@ function pgFiftySteps(n) {
     '</ol></div>').join('') + (tail || '') + '</div>';
   /* the footnote closes the right-hand column, which is the shorter one */
   const note = steps.note ? '<p class="foot-note">' + esc(steps.note) + '</p>' : '';
-  const body = '<div class="fifty steps">' + col(steps.slice(0, split), 0) + col(steps.slice(split), split, note) + '</div>';
+  const body = '<div class="fifty steps' + (state.region === 'nj' ? ' dense' : '') + '">' + col(steps.slice(0, split), 0) + col(steps.slice(split), split, note) + '</div>';
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:STEPS_FIFTY_TITLE, key:'fifty', body });
 }
 
@@ -1021,26 +959,12 @@ function pgLinks(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Useful Links', key:'links', body });
 }
 
-/* ---------- Power Haus Women (New Jersey, Marli picked) ----------
-   Marli co-founded Power Haus Women. Copy in GG.POWERHAUS, photo is the
+/* ---------- Power Haus Network (New Jersey, Marli picked) ----------
+   Marli co-founded Power Haus Network. Copy in GG.POWERHAUS, photo is the
    group picture from the team's stock folder. */
 function pgPowerhaus(n) {
-  const H = GG.POWERHAUS;
-  const stat = s => '<div class="stat"><div class="v">' + esc(s[0]) + '</div><div class="l">' + esc(s[1]) + '</div></div>';
-  const body =
-    '<div class="ph-pg">' +
-      '<div class="ph"><img src="static/powerhaus-women.jpg" alt="" style="object-position:50% 30%"></div>' +
-      '<div class="txt">' +
-        '<div class="kick">A national network behind your purchase</div>' +
-        '<p class="lede">' + esc(H.lede) + '</p>' +
-        '<div class="copy">' + H.paras.map(t => '<p>' + esc(t) + '</p>').join('') + '</div>' +
-        '<div class="stats">' + H.stats.map(stat).join('') + '</div>' +
-        '<div class="qrrow"><img class="phw" src="static/phw-logo-navy.png" alt="Power Haus Women">' +
-          '<div class="qbox">' + qrSvg(H.url) + '</div>' +
-          '<div><b>' + esc(H.cta) + '</b><span>' + esc(H.urlText).replace(/\//g, '/<wbr>') + '</span></div></div>' +
-      '</div>' +
-    '</div>';
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Women', key:'powerhaus', body });
+  const body = P.powerhausBody(GG.POWERHAUS, 'static/', qrSvg);
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Network', key:'powerhaus', body });
 }
 
 /* ---------- Marli's referral partners (New Jersey, Marli picked) ----------
@@ -1245,7 +1169,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  P.wireRoster(document.getElementById('rosterPick'), state, 2, redraw);
+  const paintRoster = P.wireRoster(document.getElementById('rosterPick'), state, 2, () => {
+    /* hand-picking agents leaves the version's own choice behind */
+    const v = VERSIONS[state.version];
+    if (v && (state.agents.length !== 1 || state.agents[0] !== v)) { state.version = ''; paintVersion(); }
+    redraw();
+  });
+  const paintRegion = () => document.querySelectorAll('#regionPick button').forEach(b =>
+    b.classList.toggle('on', b.dataset.region === state.region));
+  const paintVersion = P.segPick(document.getElementById('versionPick'), 'ver',
+    () => state.version,
+    v => {
+      state.version = v; state.agents = [VERSIONS[v]]; state.region = 'nj';
+      paintRegion(); paintRoster && paintRoster(); paintOfferEd(); redraw(); GVC_UNSAVED.touch();
+    });
 
   paintOfferEd();
   document.getElementById('offerReset').addEventListener('click', () => {

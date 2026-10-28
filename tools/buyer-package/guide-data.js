@@ -41,7 +41,8 @@
     },
     nj: {
       id: 'nj', label: 'NJ', name: 'New Jersey',
-      cover: 'static/cover-nj-springlake.jpg',
+      /* Marli's drone shot (2026-10-28, from James's buyer comments) */
+      cover: 'static/cover-nj-marli-drone.webp',
       why: 'static/why-nj.jpg',
       quote: {
         text: 'This is my third closing with Marli and she is the best realtor I have ever worked with ' +
@@ -382,9 +383,9 @@
      Ranges marked "estimate" in the notes are budgeting figures, not quotes.
      ============================================================ */
   var COST_OPTIONAL = [
-    ['Staging', 'Only if you are selling a home to buy this one', '$1,500 – $5,000'],
-    ['Movers', 'A local move, two bedrooms or so', '$1,200 – $4,000'],
-    ['Repairs and paint', 'What you want done before you move in', 'Varies']
+    ['Staging', 'Preparing the home you are selling, if you have one', '$1,500 – $5,000'],
+    ['Movers', 'Professional movers, local two-bedroom move', '$1,200 – $4,000'],
+    ['Repairs and paint', 'Fixes and fresh paint you choose to do', 'Varies']
   ];
   var COSTS = {
     nyc: {
@@ -665,70 +666,74 @@
      paperwork..." was reworded here (2026-10-06); the total is checked in
      index.html. Step titles and order match PROCESS.nj.
      ============================================================ */
+  /* Marli Silver's own "50 Things I Do as a Buyer's Agent" (her list, pages 5-6,
+     supplied 2026-10-28), used in both the Marli and the James versions. Her
+     wording is kept; her items "0.4", "0.5", "0.6" are numbered 4, 5, 6 here,
+     and the list runs 1 to 50 in her order, grouped under the seven steps. */
   var NJ_STEPS_FIFTY = [
     { t: 'Consultation', items: [
-      'Set a realistic budget and timeline with you',
-      'Sort your must-haves from your deal-breakers',
-      'Explain the buyer agreement and how I am paid',
-      'Compare towns by taxes, schools and commute',
-      'Set up listing alerts so you see new homes first',
-      'Line up your NJ attorney before you make an offer'
+      'We will meet for a buyer consultation.',
+      'Align on the best communication plan throughout the entire process.'
     ]},
     { t: 'Pre-Approval', items: [
-      'Connect you with lenders for a written pre-approval',
-      'Show the real monthly cost, not just the mortgage'
+      'Connect you with my preferred lenders for pre-approval.',
+      'Once you are pre-approved, we will complete a buyer questionnaire to understand your needs and objectives.'
     ]},
     { t: 'The Search', items: [
-      'Pre-screen listings so you tour only the right ones',
-      'Book and attend every private showing with you',
-      'Tap my network for off-market homes',
-      'Research price history and time on the market',
-      'Pull recent nearby sales to show real prices',
-      'Tell you honestly when a home is wrong for you',
-      'Point out what photos hide: noise, light, layout, street',
-      'Check flood zone, school feed and tax history',
-      'Test the commute at rush hour, not at noon',
-      'Look past the seller’s tax bill to your own'
+      'Collect market data and recent comparables in neighborhoods you’re interested in.',
+      'If necessary, I will research off-market opportunities for you to find additional suitable inventory.',
+      'Create an MLS email subscription so you’re aware of listings that fit your criteria.',
+      'Select properties to show you based on your criteria.',
+      'Pull market trend data to understand what’s happening within the broader region.',
+      'Coordinate showing appointments to gain access to desired listings.',
+      'Learn relevant details and attributes of the properties shown.',
+      'Attend broker tours to view other available properties on the market.',
+      'Stay connected to local buyers, sellers, and other agents to maintain a constant view of what drives the market.',
+      'Reach out to agents with similar listings to understand traffic and buyer demand.',
+      'Provide objective advice and help you evaluate the pros and cons of different properties.',
+      'Prepare a Comparative Market Analysis (CMA).',
+      'Advise you on potential offer strategies that reflect current market conditions.',
+      'Help you obtain HOA documents if needed.',
+      'Review all transaction documents with you in advance of writing any offer.',
+      'Review all forms in the disclosure package.',
+      'Coordinate additional access to the property, if necessary.',
+      'Maintain consistent communication to provide market updates.'
     ]},
     { t: 'The Offer', items: [
-      'Price your offer against real comparable sales',
-      'Structure terms and dates to make it competitive',
-      'Find out what the seller actually needs',
-      'Make the contract dates and review terms clear',
-      'Use escalation clauses carefully, never casually'
+      'Monitor any changes in the market to refine offer strategy and make needed updates (revising price, terms, etc.) accordingly.',
+      'Explain the offer process, timeline, and recommended preparation.',
+      'Align on offer strategy and prepare the offer on your behalf.',
+      'Notify the listing agent you are submitting an offer.'
     ]},
     { t: 'Negotiation', items: [
-      'Negotiate counter-offers, credits and repairs for you',
-      'Negotiate the deposit and what conveys with the house',
-      'Keep every agreed term in writing'
+      'Advise and strategize with you on counteroffer response.',
+      'Negotiate terms as needed with the listing broker and seller in writing.',
+      'Notify you when terms are agreed upon.'
     ]},
     { t: 'Contract & Diligence', items: [
-      'Run the three-business-day attorney review with your lawyer',
-      'Recommend inspectors and specialists, and attend',
-      'Review the report with you and decide what to ask for',
-      'Order the survey and coordinate the title search',
-      'Arrange radon, sewer-line and oil-tank checks',
-      'Confirm the smoke/CO certificate and the town’s CO where required',
-      'Get a flood insurance quote before inspections end',
-      'Check permits on basements, additions and decks',
-      'Track every deadline so nothing lapses',
-      'Coordinate lender, appraiser, attorney and title company',
-      'Keep the paperwork moving so nothing slips through',
-      'Update you weekly, not just when things change'
+      'Assist with the review of the final contract, disclosures + pre-qualification letter.',
+      'Coordinate the signing of the final agreement.',
+      'Connect you with my preferred real estate attorney to conduct attorney review on your behalf.',
+      'Send contract to all parties including both attorneys to begin attorney review.',
+      'Once attorney review is complete, I will help you schedule your home inspection.',
+      'If requested, recommend at least three home inspectors to you on your specific request.',
+      'Join you at your home inspection to ensure everything goes smoothly.',
+      'Review inspection report and help you formulate a plan.',
+      'Share estimated timeline and all documents with client and Attorney(s), if applicable.',
+      'Stay in close contact with all relevant parties through next steps.',
+      'Coordinate and confirm appraisal has been received.',
+      'Confirm loan approval has been received.'
     ]},
     { t: 'Closing & Beyond', items: [
-      'Do the final walk-through with you',
-      'Check the closing figures before you sign',
-      'Check property tax and escrow figures at closing',
-      'Confirm the proration of taxes, fuel and utilities',
-      'Warn you to confirm wire instructions by phone',
-      'Line up utilities, insurance and moving dates',
-      'Be at the closing table with you',
-      'Hand you the keys',
-      'Remind you of tax-relief filings you may qualify for',
-      'Introduce movers, designers and trusted vendors',
-      'Introduce local landscapers and contractors',
-      'Stay your real estate resource long after closing'
+      'Schedule final walk-through.',
+      'Remind you to order home warranty (if applicable).',
+      'Remind you to set up utilities prior to closing.',
+      'Request final closing figures from the closing agent (attorney or title company).',
+      'Advise you to carefully review closing figures with settlement service provider.',
+      'Confirm scheduling of closing date/time/location.',
+      'Conduct final walk-through and address issues that may arise by communicating with the seller’s agent.',
+      'Facilitate closing for you and the seller.',
+      'Receive your keys + CONGRATS, you’re a homeowner!'
     ]}
   ];
 
@@ -926,7 +931,7 @@
   ];
 
   /* ============================================================
-     MARLI SILVER — Power Haus Women, and her referral partners.
+     MARLI SILVER — Power Haus Network, and her referral partners.
 
      Power Haus copy is from powerhauswomen.com (fetched 2026-10-06):
      founded 2023 by five female real estate professionals, market partners
@@ -935,10 +940,10 @@
   var POWERHAUS = {
     url: 'https://www.powerhauswomen.com/market-partners',
     urlText: 'powerhauswomen.com/market-partners',
-    lede: 'Marli Silver is the co-founder and Chief of Development of Power Haus Women, a national ' +
+    lede: 'Marli Silver is the co-founder and Chief of Development of Power Haus Network, a national ' +
           'community of female real estate professionals and business owners.',
     paras: [
-      'Power Haus Women was founded in 2023 by five female real estate professionals who saw the need for a ' +
+      'Power Haus Network was founded in 2023 by five female real estate professionals who saw the need for a ' +
       'community built on collaboration, value and business growth.',
       'Its real estate network has market partners in 26+ states. When you work with Marli you are not ' +
       'hiring one agent: wherever you are moving next, a trusted local expert is one introduction away, ' +

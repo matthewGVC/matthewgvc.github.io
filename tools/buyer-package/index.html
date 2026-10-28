@@ -234,6 +234,11 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .fifty.steps.dense .fg-h{padding-bottom:.03in;}
 .fifty.steps.dense li{padding:.016in 0;font-size:8pt;line-height:9.9pt;}
 .fifty.steps.dense li .n{line-height:9.9pt;}
+/* the Guide look draws each step heading as a ruled band, which is taller; NJ's seven
+   steps then ran 29px past the footer and hid item 25, so dense tightens them back */
+body.look-guide .fifty.steps.dense .fg + .fg{margin-top:.05in;}
+body.look-guide .fifty.steps.dense .fg-h{padding:.045in 0 .025in;}
+body.look-guide .fifty.steps.dense li{padding:.01in 0;}
 /* lines Matt is checking with the agents — prints, so it cannot be missed */
 .fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
   font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#8C3A2B;}

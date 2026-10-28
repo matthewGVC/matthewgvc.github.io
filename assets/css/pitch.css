@@ -662,6 +662,11 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 .agnj .shot{flex:1;min-width:0;overflow:hidden;background:var(--navy);}
 .agnj .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;}
 .agnj .shot.cut img{object-fit:contain;object-position:50% 100%;}
+/* James's tall photo came on a baked-in navy studio backdrop, which sat as a blue
+   panel beside the copy. agent-james-huber-cut.webp is the same photo with only
+   that backdrop cut out (original .jpg kept); with no panel behind it he stands
+   on the paper like Marli's photograph does. */
+.agnj[data-agent="james-huber"] .shot{background:none;}
 
 
 /* Closing page with the socials on top (Seller Pitch): one band under the hero,

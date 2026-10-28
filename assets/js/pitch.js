@@ -639,7 +639,7 @@
       ? '<div class="ab-facts">' + a.facts.map(f =>
           '<div class="f"><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>').join('') + '</div>'
       : '';
-    return '<div class="agnj">' +
+    return '<div class="agnj" data-agent="' + esc(a.id) + '">' +
         '<div class="band">' +
           (a.role ? '<div class="role">' + esc(a.role) + '</div>' : '') +
           '<div class="nm">' + esc(a.name) + '</div>' +

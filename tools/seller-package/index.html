@@ -1546,7 +1546,7 @@ function pgContact(n) {
    The tall photographs live in the Buyer Package's static folder. */
 const BIO_PHOTO = id => ['marli-silver', 'james-huber', 'tj-verdiglione', 'gary-kasparov', 'nicole-melveney',
   'katie-cook', 'john-gasdaska', 'jonathan-conlon', 'ayuen-gai', 'nicole-sobol', 'george-putykewycz']
-  .indexOf(id) >= 0 ? '../buyer-package/static/agent-' + id + '.jpg' : '';
+  .indexOf(id) >= 0 ? '../buyer-package/static/agent-' + id + (id === 'james-huber' ? '-cut.webp' : '.jpg') : '';
 function pgBio(n, p) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', cls:'nohead',
     body: P.agentBioBody(p.agent, BIO_PHOTO(p.agent.id), headshotFor) });

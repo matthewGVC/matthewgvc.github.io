@@ -752,8 +752,9 @@ const PREP_NYC = [
 /* ============================================================
    PROFESSIONAL VIDEOS  (page 11)  —  EDIT THIS BLOCK
    ------------------------------------------------------------
-   The library the page picks three cards from, three New Jersey films and
-   three New York. Fields:
+   The library the page picks up to three cards from. Today that is one
+   New Jersey film and three New York; there are no Florida films, so a
+   Florida property prints the neutral copy below with no cards. Fields:
 
      id      Stable key. This is what the panel's ticks and a saved deck
              store, so renaming one drops it out of any deck that had it.
@@ -773,7 +774,7 @@ const PREP_NYC = [
 
    Paths must be repo-relative, not G:\ paths — the published site is served
    from GitHub Pages, where nobody has the shared drive mounted, and a
-   browser cannot read a local drive from an http page anyway. All six
+   browser cannot read a local drive from an http page anyway. All the
    stills are committed in assets/videos/ at 1600x1067, cropped so the
    top-right stays light (the QR sits there) and the bottom third is floor
    (the address band sits there). Note the Sea Bright file is named for its
@@ -785,9 +786,11 @@ const PREP_NYC = [
    PNGs are committed alongside if you would rather use them — set `qr` and
    clear `url`.
 
-   All six are real films the team chose, which is why the page no longer
-   carries a "swap these out" stamp. Add a seventh by adding a row here: it
-   appears in the picker under its market with no other change.
+   All four are real films the team chose, which is why the page no longer
+   carries a "swap these out" stamp. Add another by adding a row here: it
+   appears in the picker under its market with no other change. The page
+   prints only the films that exist, so a market with one film shows one
+   card. (A 'fl' row would also need a Florida tick list in the panel.)
 
    The two New York ZIPs, 10019 and 10022, were inferred from the street
    addresses rather than confirmed. Matt has read both and let them stand.
@@ -825,9 +828,10 @@ const VIDEO_SLOTS = 3;
    Fair Haven and every NJ film is Monmouth or Ocean — Rumson, Point
    Pleasant Beach, Sea Bright — so the line now names those two counties.
 
-   The New York paragraph 4 says Manhattan rather than listing boroughs.
-   All three NYC films are Manhattan, and naming boroughs GVC may not list
-   in would repeat the mistake the county line already makes. */
+   The New York paragraph 4 says New York City: the films are Manhattan,
+   but the deck goes to every NYC seller, Brooklyn included. The NJ
+   paragraph 2 used to promise "Manhattan skyline views", which contradicts
+   the Monmouth / Ocean copy; it now says the Shore. */
 const VIDEO_COPY_SHARED =
   'Our team works with professional videographers whose skill and expertise capture the essence of ' +
   'these spaces, utilizing cutting-edge equipment and techniques to highlight every architectural ' +
@@ -839,7 +843,7 @@ const VIDEO_COPY = {
     'to sift through, and there are only a few ways to stand out. Price, photography, and copy writing ' +
     'are all important, but high-quality, professional video content has shown time and time again to ' +
     'be the most impactful.',
-    'From center-hall colonials on tree-lined streets to waterfront homes with Manhattan skyline views, ' +
+    'From center-hall colonials on tree-lined streets to waterfront homes along the Shore, ' +
     'each property tells a unique story.',
     VIDEO_COPY_SHARED,
     'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
@@ -855,10 +859,33 @@ const VIDEO_COPY = {
     'each property tells a unique story.',
     VIDEO_COPY_SHARED,
     'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
-    'necessity for sellers looking to stand out across Manhattan, ultimately attracting discerning ' +
+    'necessity for sellers looking to stand out across New York City, ultimately attracting discerning ' +
     'buyers and maximizing property value.'
+  ],
+  /* Florida: no market names and no films yet, so no "scan the QR codes" line. */
+  fl: [
+    'In a competitive real estate market, buyers have a wealth of media to sift through, and there are ' +
+    'only a few ways to stand out. Price, photography, and copy writing are all important, but ' +
+    'high-quality, professional video content has shown time and time again to be the most impactful.',
+    'Our team works with professional videographers whose skill and expertise capture the essence of ' +
+    'each home, utilizing cutting-edge equipment and techniques to highlight every architectural ' +
+    'detail and luxurious amenity.',
+    'In a digital age where first impressions are everything, investing in top-tier video content is a ' +
+    'necessity for sellers looking to stand out, ultimately attracting discerning buyers and ' +
+    'maximizing property value.'
   ]
 };
+/* A Florida property. The deck has no Florida market of its own (the toggle,
+   plan and legal stay NJ / NYC), but the Videos page must not sell Florida
+   with New York or New Jersey films: it prints VIDEO_COPY.fl and no cards.
+   Florida is the property's State, or, with no State yet, a Florida agent's
+   version. */
+const isFL = () => {
+  const st = String(state.state || '').trim().toUpperCase();
+  if (st) return st === 'FL';
+  return !!(state.version && window.GVC_AGENT && (GVC_AGENT(state.version) || {}).market === 'FL');
+};
+const videoMarket = () => (isFL() ? 'fl' : state.market);
 
 /* The two markets, in the order the toggle prints them. */
 const MARKETS = [['nj', 'New Jersey'], ['nyc', 'New York']];
@@ -918,7 +945,7 @@ function posFor(key) { return state.pos[key] || (state.pos[key] = { x: 50, y: 50
    following the market toggle, which offers that market's three films. */
 function videoIds() {
   return state.videos === null
-    ? VIDEOS.filter(v => v.market === state.market).map(v => v.id)
+    ? VIDEOS.filter(v => v.market === videoMarket()).map(v => v.id)
     : state.videos;
 }
 function chosenVideos() {
@@ -1493,7 +1520,7 @@ function pgReviews(n) {
 function pgVideos(n) {
   const body =
     '<div class="vids">' +
-      '<div class="vids-copy">' + VIDEO_COPY[state.market].map(p => '<p>' + p + '</p>').join('') + '</div>' +
+      '<div class="vids-copy">' + VIDEO_COPY[videoMarket()].map(p => '<p>' + p + '</p>').join('') + '</div>' +
       '<div class="vids-list">' + chosenVideos().map((v, i) => {
         /* A photo the user pinned to this card wins over the film's own still:
            dropping one here is a deliberate act and has to show. Auto-placed

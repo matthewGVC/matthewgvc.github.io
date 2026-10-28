@@ -62,6 +62,8 @@
     });
   }
 
+  function isTop(f) { return f.top === true || (f.path && String(f.path).indexOf('/') === -1) ? 1 : 0; }
+
   function flat(checklist) {
     var steps = [];
     (checklist || []).forEach(function (b) { (b.steps || []).forEach(function (s) { steps.push(s); }); });
@@ -84,7 +86,8 @@
     var steps = flat(input.checklist);
     var matchList = (input.match && input.match.list) || [];
     var rows = KEYS.map(function (key) {
-      var files = realFiles(input.pieces && input.pieces[key], key).sort(function (a, b) { return ms(b.modified) - ms(a.modified); });
+      // a file in the piece's own folder beats one loose at the top of the job (often another job's copy), then newest first
+      var files = realFiles(input.pieces && input.pieces[key], key).sort(function (a, b) { return (isTop(a) - isTop(b)) || ms(b.modified) - ms(a.modified); });
       var current = files.filter(function (f) { return !f.archived; })[0] || null;
       var step = stepFor(key, steps);
       var m = matchList.filter(function (x) { return x.key === 'M8:' + key; })[0] || null;

@@ -80,9 +80,25 @@
      letter, including after a hyphen or apostrophe and after Mc/Mac-style
      prefixes already typed that way; letters the person typed in capitals
      are kept ("TJ", "McKenzie"), so it only ever adds capitals. */
+  /* Beyond that: particles inside a name stay lower case ("Juan de la Cruz",
+     "Ludwig van der Rohe") unless the name starts with one; generational
+     suffixes read II / III / IV and Jr / Sr; a typed "mc" prefix gets its
+     second capital ("McDonald"); and a letter after a full stop is an
+     initial, so "j.r." reads "J.R.". */
+  var PARTICLES = { de: 1, del: 1, della: 1, der: 1, di: 1, da: 1, du: 1, la: 1, le: 1, van: 1, von: 1, den: 1, dos: 1, das: 1 };
+  var ROMAN = { ii: 'II', iii: 'III', iv: 'IV', vi: 'VI', vii: 'VII' };
+  var SUFFIX = { jr: 'Jr', sr: 'Sr' };
   function nameCase(s) {
-    return String(s == null ? '' : s).replace(/(^|[\s\-'’(&])([a-zà-þ])/g,
-      function (m, pre, ch) { return pre + ch.toUpperCase(); });
+    var first = true;
+    return String(s == null ? '' : s).replace(/[^\s]+/g, function (word) {
+      var bare = word.replace(/[.,]+$/, ''), tail = word.slice(bare.length), low = bare.toLowerCase();
+      var wasFirst = first; first = false;
+      if (!wasFirst && bare === low && PARTICLES[low]) return word;
+      if (!wasFirst && ROMAN[low] && (bare === low || bare === ROMAN[low])) return ROMAN[low] + tail;
+      if (!wasFirst && SUFFIX[low] && bare === low) return SUFFIX[low] + tail;
+      word = word.replace(/(^|[\-'’(&.])([a-zà-þ])/g, function (m, pre, ch) { return pre + ch.toUpperCase(); });
+      return word.replace(/^(\(?)Mc([a-zà-þ])/, function (m, pre, ch) { return pre + 'Mc' + ch.toUpperCase(); });
+    });
   }
   global.GVC_NAMECASE = nameCase;
   PEOPLE.forEach(function (a) { a.name = nameCase(a.name); });
@@ -121,7 +137,7 @@
     CR: 'past:CJ Reid',
     AR: 'past:Anthony Romano',
     SB: 'past:Sharon Baum',
-    MSa: 'past:Mariana Santelli',
+    MSA: 'past:Mariana Santelli',   /* typed "MSa" in Asana; lookups also try upper case */
     VB: 'past:Victor Barbenes'
   };
 

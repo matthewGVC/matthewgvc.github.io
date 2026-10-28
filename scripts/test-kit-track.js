@@ -20,6 +20,14 @@ const file = (name, modified, archived) => ({ path: 'Marketing/' + name, name, m
 const step = (name, done, doneOn, who) => ({ name, done, doneOn: doneOn || null, who: who || null });
 const row = (res, key) => res.rows.filter((r) => r.key === key)[0];
 
+/* a showsheet loose at the top (another job's copy) never beats the one in its own folder, even when newer */
+const top1 = K.track({ kind: 'sale', market: 'NYC', checklist: [], pieces: { showsheet: [
+  { path: 'Showsheet 69 W9 - 12E.docx', name: 'Showsheet 69 W9 - 12E.docx', modified: '2026-08-10T00:00:00Z' },
+  { path: '2026 - Sale/Showsheet/404 PAS - SHOWSHEET.pdf', name: '404 PAS - SHOWSHEET.pdf', modified: '2026-06-12T00:00:00Z' }] } });
+check('loose top showsheet ranks after the one in its folder', row(top1, 'showsheet').file.name, '404 PAS - SHOWSHEET.pdf');
+const top2 = K.track({ kind: 'sale', market: 'NYC', checklist: [], pieces: { showsheet: [{ name: 'Showsheet old.docx', modified: '2026-08-10T00:00:00Z', top: true }, { name: 'S.pdf', modified: '2026-06-12T00:00:00Z' }] } });
+check('the scan top flag does the same', row(top2, 'showsheet').file.name, 'S.pdf');
+
 const ORDER = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
 
 /* NYC sale: Global order, signage not used */

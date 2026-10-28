@@ -159,9 +159,10 @@ function richScan(abs, tree, r) {
   const h = HEALTH.health(tree, { market: r.market, driveRoot: String(r.drive_folder || '').split('/')[0], isNew: false });
   const pieces = {};
   HEALTH.KEYS.forEach(k => {
-    const list = (h.pieces[k] || []).slice().sort((a, b) => (Date.parse(b.modified) || 0) - (Date.parse(a.modified) || 0)).slice(0, 5);
-    if (list.length) pieces[k] = list.map(f => ({ name: f.name, modified: f.modified, archived: !!f.archived,
-      url: driveLink(path.join(abs, ...f.path.split('/')), false) }));
+    const loose = f => f.path.indexOf('/') === -1 ? 1 : 0;   // a file loose at the top ranks after one in the piece's own folder
+    const list = (h.pieces[k] || []).slice().sort((a, b) => (loose(a) - loose(b)) || (Date.parse(b.modified) || 0) - (Date.parse(a.modified) || 0)).slice(0, 5);
+    if (list.length) pieces[k] = list.map(f => Object.assign({ name: f.name, modified: f.modified, archived: !!f.archived,
+      url: driveLink(path.join(abs, ...f.path.split('/')), false) }, f.path.indexOf('/') === -1 ? { top: true } : {}));
   });
   return { folderUrl: driveLink(abs, true), pieces, health: { notes: h.notes, counts: h.counts }, detailsDoc: h.detailsDoc };
 }

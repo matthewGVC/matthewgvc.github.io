@@ -354,6 +354,8 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
 @media print{
   .pg,.fcv{position:absolute;}
   .empty-note{display:none !important;}
+  /* editor-only marks: shown in the preview, never on the client's copy */
+  .ed-only{display:none !important;}
 }
 
 

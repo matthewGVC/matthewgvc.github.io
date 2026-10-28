@@ -198,7 +198,8 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 
 /* "Needs updating" / "Work in progress". It PRINTS on purpose: a page
    carrying it is waiting on somebody, and the mark has to reach the
-   printer so the copy does not go out as finished. Positioned against .pg. */
+   printer so the copy does not go out as finished. Positioned against .pg.
+   Exception: the costs page's red Check stamp carries .ed-only and does not print. */
 .nj-stamp{position:absolute;top:.52in;right:var(--pad);z-index:5;transform:rotate(-2deg);
   border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.94);padding:.04in .12in;
   font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
@@ -319,6 +320,7 @@ body.look-guide .fifty.steps.dense li{padding:.01in 0;}
           <div class="sec-note">Any agent can hand out their own copy. Picking one makes that agent the one on the
             guide (their own biography page and the closing page) and moves to their market.
             Marli&rsquo;s copy also adds her Power Haus page. Picking agents by hand below clears the version.</div>
+          <div class="sec-note" id="versionDrop" role="status" hidden></div>
         </div>
       </details>
 
@@ -883,7 +885,8 @@ function pgCosts(n, p) {
     '</div>' +
     sections.map(s => sect(s[0], s[1])).join('') +
     '<div class="foot-note">' + esc(c.note) + '</div>' +
-    (state.region === 'nj' ? '<span class="nj-stamp warn">' + WARN_ICON + 'Check</span>' : '');
+    /* editor-only: a reminder to check the NJ figures, not something the client sees */
+    (state.region === 'nj' ? '<span class="nj-stamp warn ed-only">' + WARN_ICON + 'Check</span>' : '');
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:c.title || 'What It Costs', key:'costs', body });
 }
 
@@ -961,8 +964,10 @@ function vendorsBlock() {
   const v = r => '<div class="vd-v"><b>' + esc(r[0]) + '</b>' + (r[1] ? ', ' + esc(r[1]) : '') +
     (r.length > 2 ? '<br>' + r.slice(2).map(esc).join(' · ') : '') + '</div>';
   return '<div class="vd"><div class="lk-g"><div class="fg-h">Marli’s Preferred Vendors</div></div><div class="vd-g">' +
-    GG.MARLI_VENDORS.map(c => '<div class="vd-c' + (c.vendors.length > 2 ? ' wide' : '') + '"><h4>' + esc(c.title) + '</h4>' +
-      (c.vendors.length ? c.vendors.map(v).join('') : '<div class="vd-v tbd">To be added: no vendor yet</div>') +
+    /* a category with no vendor yet shows its placeholder in the editor only: the whole
+       card is left off the printed copy rather than printing "to be added" to a client */
+    GG.MARLI_VENDORS.map(c => '<div class="vd-c' + (c.vendors.length > 2 ? ' wide' : '') + (c.vendors.length ? '' : ' ed-only') + '"><h4>' + esc(c.title) + '</h4>' +
+      (c.vendors.length ? c.vendors.map(v).join('') : '<div class="vd-v tbd">To be added: no vendor yet (editor only, not printed)</div>') +
     '</div>').join('') + '</div></div>';
 }
 function pgLinks(n) {
@@ -1155,6 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     () => state.region,
     v => {
       state.region = v;
+      if (typeof sayDrop === 'function') sayDrop(marliOutOfNj());
       paintOfferEd(); redraw(); GVC_UNSAVED.touch();
     });
 
@@ -1178,15 +1184,25 @@ document.addEventListener('DOMContentLoaded', () => {
     b.classList.toggle('on', b.dataset.region === state.region));
   /* The Version pick: any roster agent. Puts that agent alone on the guide and
      moves to their market (founders work every market, so they keep the current one). */
+  /* Say so when Marli's own pages (Power Haus, her vendors on Useful Links) leave
+     the guide, rather than letting the page count drop silently. */
+  const versionDrop = document.getElementById('versionDrop');
+  const sayDrop = msg => { versionDrop.textContent = msg || ''; versionDrop.hidden = !msg; };
+  const marliOutOfNj = () => hasMarli() && state.region !== 'nj'
+    ? 'Power Haus and Marli’s vendors print with New Jersey only, so this ' + REGIONS[state.region].name + ' copy leaves them out.' : '';
   const paintVersion = P.versionPick(document.getElementById('versionPick'),
     () => P.versionId(state.version),
     v => {
+      const wasMarli = hasMarli();
       state.version = v = P.versionId(v);
       if (v) {
         state.agents = [v];
         const m = (GVC_AGENT(v).market || '').toLowerCase();
         if (REGIONS[m]) state.region = m;
       }
+      sayDrop(wasMarli && !hasMarli()
+        ? 'Power Haus and Marli’s vendors on Useful Links are in Marli’s copy only, so they were taken out. The market stayed ' + REGIONS[state.region].name + '.'
+        : marliOutOfNj());
       paintRegion(); paintRoster && paintRoster(); paintOfferEd(); redraw(); GVC_UNSAVED.touch();
     });
 

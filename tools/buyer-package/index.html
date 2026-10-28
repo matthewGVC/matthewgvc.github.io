@@ -586,7 +586,7 @@ const SPINE = [
   { key:'cover',     title:'Cover' },
   { key:'why',       title:'Why Work With Us' },
   { key:'agents',    title:'Meet Your Agent',     agents:true },
-  { key:'powerhaus', title:'Power Haus Network',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
+  { key:'powerhaus', title:'Power Haus',    only:['nj'], marli:true, opt:'Marli’s national network (Marli picked)' },
   { key:'referrals', title:'Referral Partners',   only:['nj'], marli:true, opt:'Marli’s partners (list still needed)' },
   { key:'process',   title:'The Buying Process',  opt:'The steps, start to keys', not:['nj','nyc','fl'] },
   { key:'fifty',     title:'50 Things We Do',     opt:'What a buyer\u2019s agent does, for your state' },
@@ -955,12 +955,12 @@ function pgLinks(n) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Useful Links', key:'links', body });
 }
 
-/* ---------- Power Haus Network (New Jersey, Marli picked) ----------
-   Marli co-founded Power Haus Network. Copy in GG.POWERHAUS, photo is the
+/* ---------- Power Haus (New Jersey, Marli's version only) ----------
+   Marli co-founded Power Haus. Copy in GG.POWERHAUS, photo is the
    group picture from the team's stock folder. */
 function pgPowerhaus(n) {
   const body = P.powerhausBody(GG.POWERHAUS, 'static/', qrSvg);
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Network', key:'powerhaus', body });
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus', key:'powerhaus', body });
 }
 
 /* ---------- Marli's referral partners (New Jersey, Marli picked) ----------

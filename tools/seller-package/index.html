@@ -1551,18 +1551,14 @@ function pgBio(n, p) {
   return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Meet Your Agent', cls:'nohead',
     body: P.agentBioBody(p.agent, BIO_PHOTO(p.agent.id), headshotFor) });
 }
-/* Power Haus Network, Marli's copy only: the Buyer Package's page, told for a seller. */
+/* Power Haus, Marli's copy only: the Buyer Package's page, told for a seller. */
 function pgPowerhaus(n) {
   const G = window.GVC_GUIDE.POWERHAUS;
   const H = Object.assign({}, G, {
     kicker: 'Your property has exposure nationwide',
-    paras: [G.paras[0],
-      'Its real estate network has market partners in 26+ states. When you list with Marli, your home ' +
-      'is not marketed by one agent alone: it reaches a national network of agents and their buyers, ' +
-      'wherever they are moving from.'],
     cta: 'Scan to see the Power Haus market partners'
   });
-  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus Network',
+  return P.page({ deck:DECK, n, of:OF, site:SITE, title:'Power Haus',
     body: P.powerhausBody(H, '../buyer-package/static/', qrSvg) });
 }
 

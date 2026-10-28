@@ -655,7 +655,7 @@
       '</div>';
   }
 
-  /* ---------- Power Haus Network page (Marli) ----------
+  /* ---------- Power Haus page (Marli) ----------
      H is GVC_GUIDE.POWERHAUS (tools/buyer-package/guide-data.js); `base` is
      the path to the Buyer Package's static/ folder from the calling tool. */
   function powerhausBody(H, base, qr) {

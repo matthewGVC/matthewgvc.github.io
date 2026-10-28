@@ -931,25 +931,27 @@
   ];
 
   /* ============================================================
-     MARLI SILVER — Power Haus Network, and her referral partners.
+     MARLI SILVER — Power Haus, and her referral partners.
 
      Power Haus copy is from powerhauswomen.com (fetched 2026-10-06):
      founded 2023 by five female real estate professionals, market partners
-     in 26+ states. Marli's role is from her bio in assets/js/bios.js.
+     in 26+ states; Marli's 2026-10-28 email updates this to members in 60+ markets across the US.
      ============================================================ */
   var POWERHAUS = {
     url: 'https://www.powerhauswomen.com/market-partners',
     urlText: 'powerhauswomen.com/market-partners',
-    lede: 'Marli Silver is the co-founder and Chief of Development of Power Haus Network, a national ' +
-          'community of female real estate professionals and business owners.',
+    /* Wording below is Marli's own, from her email (forwarded 2026-10-28).
+       The brand is "Power Haus": not "Power Haus Network", not "Power Haus Women". */
+    lede: 'Marli Silver is the co-founder and Chief of Development of Power Haus, a membership-based ' +
+          'national network of female real estate professionals.',
     paras: [
-      'Power Haus Network was founded in 2023 by five female real estate professionals who saw the need for a ' +
-      'community built on collaboration, value and business growth.',
-      'Its real estate network has market partners in 26+ states. When you work with Marli you are not ' +
-      'hiring one agent: wherever you are moving next, a trusted local expert is one introduction away, ' +
-      'with a national network behind your purchase.'
+      'Power Haus was founded in 2023 by five female real estate professionals who saw the need for a ' +
+      'community built on collaboration, value and business growth. Today, the network has members in ' +
+      '60+ markets across the US. When you work with Marli, you’re not hiring just one agent. Wherever ' +
+      'you’re moving next, a trusted local expert is one introduction away, with a national network ' +
+      'behind your purchase or sale.'
     ],
-    stats: [['2023', 'Founded'], ['26+', 'States with market partners']],
+    stats: [['2023', 'Founded'], ['60+', 'Markets across the US']],
     cta: 'Scan to meet a Power Haus agent in your market'
   };
   /* Marli's referral partners. NOT supplied yet: the page prints a visible

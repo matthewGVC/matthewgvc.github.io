@@ -101,6 +101,79 @@ Vistaprint's 9.21 x 6.21 in bleed size or at trim size. Everything is typed or d
 (photos are not saved; the words are, in `localStorage`); agents come from the roster.
 The back keeps its lower right clear for the mail house. Tested by `node scripts/interact-local.js postcard`.
 
+## Brochure tool
+
+`tools/brochure/` builds a property brochure, printed at 8.5 x 11 or 5.5 x 8.5 in (toggle under the
+preview). Photos are dragged onto the pages; the panel has the gallery layout and crops, the property
+facts, floor plans (two per page) and up to two agents. The property bar at the top of the panel saves
+the facts and the brochure, photos included, to the shared property library (team password) and loads
+them back. Opened from a job (`?listing=<slug>`), `job-mode.js` fills it from the job instead.
+Print / Save PDF prints it.
+
+## Seller Pitch & CMA tool
+
+`tools/seller-package/` builds an 8.5 x 11 listing presentation and CMA: a classic or guide page
+design, a per-agent version, the property, the client and cover, comparable sales, the listing
+strategy, professional videos, client testimonials and up to two agents. It saves and loads through the
+same property bar as the Brochure. Opened from a job (`?listing=<slug>` or `?pitch=<slug>`),
+`job-mode.js` takes the subject, comps, agents and photos from the job. Print / Save PDF prints it.
+
+## Buyer Package tool
+
+`tools/buyer-package/` builds the 8.5 x 11 buyer packet: the process, the costs and the questions to
+ask, for New Jersey, New York City or Florida. The panel picks a per-agent version, the page design,
+the cover market and title, photos, which pages show, the New Jersey offer and negotiation text and up
+to two agents. Nothing is saved: the page asks before you leave with changes, and Print / Save PDF is
+the output. The copy lives in `guide-data.js`.
+
+## Useful Agent Info tool
+
+`tools/agent-info/` prints the agent's own crib sheets: "Don't Forget to Ask", "FAQ's" and a draft
+Buyer Cheat Sheet (marked Check, not for use until reviewed). Pick the market (NJ, NYC, FL) and the
+pages; there is nothing to type and nothing is saved. The copy comes from
+`tools/buyer-package/guide-data.js` through `assets/js/agent-pages.js`.
+
+## Properties tool
+
+`tools/properties/` is the shared property library's own page, behind the team password. It lists every
+property, archived ones included, with what has been built for each, its photos and when it was
+updated. Here you can rename a property, change its status (active, coming soon, sold, archived) and
+"Free up photos", which deletes that property's photo files (the facts and saved documents stay).
+It shows how much of the 1 GB photo storage is used.
+
+## Floorplan Converter tool
+
+`tools/floorplan/` turns a CubiCasa floorplan SVG into a GVC-branded SVG: navy palette, Nunito Sans
+labels, CubiCasa footers and dimension arrows removed, named layers, ready for Illustrator. Drop the
+SVG, compare Converted and Original, then download `<name>_gvc.svg`. It runs in the browser
+(`floorplan.js`); nothing is uploaded or saved.
+
+## Watermark tool
+
+`tools/watermark/` adds a Virtually Staged or Virtually Renovated label to listing photos. Drop photos
+or a folder, pick the label, the corner and the size (50 to 200%), then Download saves each photo as
+`<name>-virtually-staged` (or `-virtually-renovated`), as JPG or PNG to match. It runs in the browser;
+nothing is uploaded or saved, and the page asks before you leave with photos loaded.
+
+## Map Studio tool
+
+`tools/map-studio/` places numbered pins for a list of addresses on a 3D Mapbox map, with a legend,
+and exports a PNG (`gvc-3d-property-map.png`) at a chosen shape. It needs a Mapbox access token, typed
+into the page. Opened from a job (`?pitch=<slug>` or `?listing=<slug>`), `job-mode.js` maps the job and
+its comps, remembers the token on that computer, and the owner can save the map to the job through the
+helper. The page asks before you leave with unexported changes.
+
+## Feet & Inches Calculator tool
+
+`tools/calculator/` adds or subtracts measurements in feet and inches and shows the total as feet and
+inches, total inches and decimal feet. Nothing is saved.
+
+## Office Screens tool
+
+`tools/office-screens/` previews the looping motion pieces for the office TVs, each in landscape and
+portrait, drawn live by `screens.js`. There is a Pause / Play button. The finished 4K videos are not on
+the site.
+
 ## Docs
 
 - Design spec: `docs/superpowers/specs/2026-06-10-gvc-workspace-site-design.md`

@@ -199,6 +199,23 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await p.click('#typ button[data-v=""]'); await p.fill('#wsSearch', 'sample');
   check('search', await p.$$eval('.pj h3', els => els.length), 2);
   await p.fill('#wsSearch', '');
+  /* the header search: its own dropdown, on every page */
+  await p.click('#wsSearchBtn');
+  await p.fill('#wsSearchGlobal', 'sample');
+  await p.waitForSelector('#wsSearchRes a');
+  check('header search: opens its own box and finds jobs by address', [await visible(p, '#wsSearchPop'), await p.$$eval('#wsSearchRes a', els => els.map(e => e.getAttribute('href')))],
+    [true, ['./job/?listing=20-sample-ave-7b', './job/?listing=12-sample-lane']]);
+  await p.fill('#wsSearchGlobal', '619');
+  await p.waitForFunction(() => document.querySelectorAll('#wsSearchRes a').length === 1);
+  check('header search: finds a development', await p.$$eval('#wsSearchRes a', els => els.map(e => e.getAttribute('href'))), ['./job/?dev=619-example-ave']);
+  await p.fill('#wsSearchGlobal', 'zzzzz');
+  await p.waitForFunction(() => !document.querySelector('#wsSearchRes a'));
+  check('header search: says so when nothing matches', await text(p, '#wsSearchRes'), 'No job matches that.');
+  await p.keyboard.press('Escape');
+  check('header search: Escape closes it', await p.$('#wsSearchPop'), null);
+  await p.evaluate(() => { window.__marker = 1; });
+  await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })))]);
+  check('a page restored from history reloads itself', await p.evaluate(() => window.__marker), undefined);
   await p.click('#view button[data-v="time"]');
   check('timeline rows and bars', [await p.$$eval('.tl-row', els => els.length), await p.$$eval('.tl-row .bar', els => els.length) > 0], [6, true]);
 

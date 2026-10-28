@@ -214,6 +214,16 @@ When Matt says something like "the W/D is in the wrong closet":
 - If Matt hasn't said which version is current, read the highest `v<N>` in `Unbranded/` and the
   `floorplans` rows.
 
+When Matt has **hand-edited** a floor's SVG in Illustrator:
+- Never run the maker over his file; any regeneration is the next version.
+- Diff his file against a fresh regeneration (scratch folder) and learn from every difference. His
+  file is Illustrator output, so compare geometry and weights, not text
+  (`scripts/floorplan/compare-edits.js`).
+- Fold his shapes into the generator: take the scale and offset from one shape known in both files,
+  and read his shapes with `getBoundingClientRect` (his rects carry rotate transforms). List every
+  shape only he has and tick each one off as it goes into the generator.
+- Diff the regeneration against his file again: only the deliberate changes should be left.
+
 ## Alternates
 
 An alternate layout gets its own description. Matt's references stay where he put them. Move the

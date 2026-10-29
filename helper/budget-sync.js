@@ -10,8 +10,9 @@
    unchanged one only moves synced_at. A sheet that fails keeps its last
    budget and gets the failure in `error` (the job page shows it); the run
    goes on. A row someone changed meanwhile (version check) is skipped.
-   Every run is a sync_runs row of kind 'budget'. Reads only: nothing is
-   ever written to the sheet or to Drive.
+   Every run is a sync_runs row of kind 'budget', finished even when the
+   run itself fails (then ok false, the error kept, and thrown on).
+   Reads only: nothing is ever written to the sheet or to Drive.
    ============================================================ */
 'use strict';
 
@@ -27,12 +28,8 @@ async function readOne(sheets, id) {
   return allow.keepBudget({ title: meta.title, costs: await sheets.grid(id, costs), payments: paid ? await sheets.grid(id, paid) : null });
 }
 
-async function syncNow(o) {
-  const { client } = o;
-  const sheets = o.sheets || createSheets(o.cfg);
-  const now = (o.now || new Date()).toISOString();
-  const run = (await client.insert('sync_runs', { kind: 'budget', started_at: now }))[0];
-  const out = { runId: run.id, ok: true, read: 0, changed: 0, errors: [] };
+/* every linked sheet, one at a time; fills out.read / changed / errors → the rows read */
+async function syncRows(client, sheets, now, out) {
   const rows = await client.select('dev_budgets');
   for (const row of rows) {
     let patch;
@@ -51,9 +48,27 @@ async function syncNow(o) {
       out.errors.push({ what: 'conflict', detail: e.message, row: row.dev_project_id });
     }
   }
+  return rows;
+}
+
+async function syncNow(o) {
+  const { client } = o;
+  const sheets = o.sheets || createSheets(o.cfg);
+  const now = (o.now || new Date()).toISOString();
+  const run = (await client.insert('sync_runs', { kind: 'budget', started_at: now }))[0];
+  const out = { runId: run.id, ok: true, read: 0, changed: 0, errors: [] };
+  const finish = rowsRead => client.update('sync_runs', { id: run.id }, { finished_at: new Date().toISOString(), ok: out.ok, changes: out.changed,
+    rows_read: rowsRead, errors: out.errors.length ? out.errors : null });
+  let rows;
+  try { rows = await syncRows(client, sheets, now, out); }
+  catch (e) {
+    out.ok = false;
+    out.errors.push({ what: 'run', detail: e.message });
+    await finish(null);
+    throw e;
+  }
   out.ok = !out.errors.some(e => e.what === 'sheet') || out.read > 0;
-  await client.update('sync_runs', { id: run.id }, { finished_at: new Date().toISOString(), ok: out.ok, changes: out.changed,
-    rows_read: { sheets: rows.length }, errors: out.errors.length ? out.errors : null });
+  await finish({ sheets: rows.length });
   return out;
 }
 

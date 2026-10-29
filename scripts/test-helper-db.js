@@ -94,6 +94,9 @@ const CFG = { supabaseUrl: 'https://example.supabase.co', publishableKey: 'pk', 
   T.asana_tasks = [{ gid: 'g1' }]; T.asana_people = [{ gid: 'u1' }];
   await c.select('asana_tasks'); await c.select('asana_people');
   check('Asana tables are read in gid order (they have no id)', fake.log.filter(l => /^GET \/rest\/v1\/asana_/.test(l)).every(l => /[?&]order=gid/.test(l)), true);
+  T.dev_budgets = [{ dev_project_id: 'd1' }];
+  await c.select('dev_budgets');
+  check('budgets are read in development order (they have no id)', /[?&]order=dev_project_id/.test(fake.log.filter(l => /^GET \/rest\/v1\/dev_budgets/.test(l)).pop()), true);
   check('filtered select',(await c.select('properties', { slug: 'b' })).map(r => r.id), ['p2']);
   /* C1: order and limit read just the newest rows, in one request */
   T.sync_runs = [1, 2, 3].map(i => ({ id: 'r' + i, kind: 'de', started_at: '2026-10-1' + i, totals: { full: i === 2 } }));

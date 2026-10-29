@@ -142,6 +142,10 @@ const PAID = [
   check('sync: an unchanged budget isn\'t rewritten', r2.changed, 0);
   T.dev_budgets.splice(0, 1);
   check('sync: every sheet failing is a failed run', (await syncNow({ client: db, sheets, now: NOW })).ok, false);
+  const broken = Object.assign({}, db, { select: async () => { throw new Error('GET /rest/v1/dev_budgets failed (400)'); } });
+  check('sync: a run that breaks still closes its record, then says why', [await syncNow({ client: broken, sheets, now: NOW }).then(() => null, e => e.message),
+    T.sync_runs[T.sync_runs.length - 1].ok, !!T.sync_runs[T.sync_runs.length - 1].finished_at, T.sync_runs[T.sync_runs.length - 1].errors[0].what],
+    ['GET /rest/v1/dev_budgets failed (400)', false, true, 'run']);
 
   /* ---------- the schedule ---------- */
   const at = s => new Date(s);

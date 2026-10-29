@@ -123,12 +123,20 @@
     var t0 = Date.parse(dates[0]) - 4 * 864e5, t1 = Date.parse(dates[dates.length - 1]) + 5 * 864e5, span = t1 - t0;
     var at = function (d) { return ((Date.parse(d) - t0) / span * 100).toFixed(2) + '%'; };
     var wide = function (from, to) { return 'calc(' + ((Date.parse(to) + 864e5 - Date.parse(from)) / span * 100).toFixed(2) + '% + 2px)'; };
-    var ticks = [], m = new Date(t0);
+    // the months on one row, the years on their own row above (a year label never sits on a month)
+    var ticks = [], years = [], janAt = [], m = new Date(t0);
     m.setUTCDate(1);
     for (m.setUTCMonth(m.getUTCMonth() + 1); m.getTime() < t1; m.setUTCMonth(m.getUTCMonth() + 1)) {
-      var mo = m.getUTCMonth();
-      ticks.push('<span style="left:' + at(m.toISOString().slice(0, 10)) + '">' + MON[mo] + (mo === 0 ? ' ' + m.getUTCFullYear() : '') + '</span>');
+      var mo = m.getUTCMonth(), iso = m.toISOString().slice(0, 10);
+      ticks.push('<span class="g-mo" style="left:' + at(iso) + '">' + MON[mo] + '</span>');
+      if (mo === 0) {
+        years.push('<span class="g-yr" style="left:' + at(iso) + '">' + m.getUTCFullYear() + '</span>');
+        janAt.push((Date.parse(iso) - t0) / span * 100);
+      }
     }
+    // the first year, at the left edge, unless a January label already sits near that edge
+    if (!janAt.length || janAt[0] > 12) years.unshift('<span class="g-yr" style="left:0%">' + new Date(t0).getUTCFullYear() + '</span>');
+    ticks = years.concat(ticks);
     var item = function (t, inPhase) {
       var s = B.statusOf(t, today), from = t.startOn || t.dueOn, mark = '';
       if (t.milestone && t.dueOn) mark = '<i class="g-ms" style="left:' + at(t.dueOn) + '"></i>';

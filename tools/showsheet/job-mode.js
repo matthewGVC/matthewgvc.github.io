@@ -82,7 +82,8 @@
     '#jobFacts .chip{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid var(--ui-rule);border-radius:9px;font-size:11px}' +
     '#jobFacts .jfo,#jobFacts .jfe{color:var(--ui-ink-soft);font-size:12px;margin-top:2px}#jobFacts .jfw{font-size:12px;margin-top:2px;font-weight:600}' +
     '#jobFacts .jfw::before{content:"\\26A0  "}#jobFacts .jfe label{margin-left:8px}' +
-    '#jobPhotoMsg,#jobPlanMsg{margin:8px 0 0;font-size:12.5px}';
+    '#jobPhotoMsg,#jobPlanMsg{margin:8px 0 0;font-size:12.5px}' +
+    '#jobBar .jb-why{align-self:center;color:var(--ui-ink-soft);font-size:12.5px}#jobBar .btn:disabled{opacity:.45;cursor:not-allowed}';
   document.head.appendChild(css);
   document.body.classList.add('job-mode');
   var quick = $('#quickBar');
@@ -160,9 +161,17 @@
       ' · <a data-back href="' + esc(back) + '">← Job page</a></div>' +
       '<div class="jb-s">' + esc(MARKET[r.market] || 'New York') + ' · <span id="jobState">' + esc(stateWords(s)) + '</span>' + fileLinks() + '</div>';
     if (!ag.confirmed) html += '<div class="jb-n">Agents not confirmed on the job: Asana\'s suggestion prints for now. <a href="' + esc(back) + '">Confirm them on the job page</a>.</div>';
-    if (M.canEdit) html += '<div class="jb-b"><button type="button" class="btn sm" id="btnSaveSheet">Save sheet</button>' +
-      '<button type="button" class="btn sm" id="btnSavePdf">Save PDF to Drive</button></div>';
-    else html += '<div class="jb-n">Read only: only the owner account saves this sheet. Print still works.</div>';
+    if (M.canEdit) {
+      var why = notReady();   // greyed out, with the reason beside it, not only after a click
+      html += '<div class="jb-b"><button type="button" class="btn sm" id="btnSaveSheet">Save sheet</button>' +
+        '<button type="button" class="btn sm" id="btnSavePdf"' + (why ? ' disabled' : '') + '>Save PDF to Drive</button>' +
+        (why ? '<span class="jb-why" id="jobPdfWhy">' + esc(why) + '</span>' : '') + '</div>';
+    } else {
+      // a teammate gets the PDF from Drive, or Matt: never a dead end
+      var pdf = M.doc && M.doc.output, got = pdf && /^https:\/\/drive\.google\.com\//.test(String(pdf.url || '')) ? pdf.url : null;
+      if (got) html += '<div class="jb-b"><a class="btn sm" data-get href="' + esc(got) + '" target="_blank" rel="noopener">Get PDF</a></div>';
+      html += '<div class="jb-n">Read only: only the owner account saves this sheet.' + (got ? '' : ' Ask Matt for the PDF.') + '</div>';
+    }
     html += banner(s) + '<p id="jobMsg" role="status"></p>';
     var keep = $('#jobMsg') ? $('#jobMsg').textContent : '';
     bar.innerHTML = html;
@@ -180,7 +189,10 @@
   }
   function busy(on) {
     M.busy = !!on;
-    $$('#btnSaveSheet, #btnSavePdf').forEach(function (b) { b.disabled = M.busy; });
+    var save = $('#btnSaveSheet'), pdf = $('#btnSavePdf');
+    if (save) save.disabled = M.busy;
+    // Save PDF stays greyed while what it prints isn't ready (the reason is beside it)
+    if (pdf) pdf.disabled = M.busy || !!notReady();
   }
 
   /* ---------- the facts block ---------- */
@@ -298,15 +310,17 @@
 
   /* ---------- Drive: photos and the floorplan (S7, S8) ---------- */
   function wireReconnect() {
-    var b = $('#jobReconnect');
-    if (b) b.onclick = function () {
-      window.GVC_DRIVE.reconnect().then(function () { return readDrive(); }).then(drawAll, function (e) { setPhotoHtml(esc(e.message)); });
-    };
+    var b = $('#jobReconnect'), c = $('#jobConnect');
+    var again = function () { return readDrive().then(drawAll); };
+    var failed = function (e) { setPhotoHtml(e && e.name === 'AbortError' ? 'No folder was picked. Press Connect Drive to try again.' : esc(e && e.message)); };
+    if (b) b.onclick = function () { window.GVC_DRIVE.reconnect().then(again).catch(failed); };
+    if (c) c.onclick = function () { window.GVC_DRIVE.connect().then(again).catch(failed); };
   }
   /* M.loading covers the whole read (folder and files); M.driveFailed when it didn't finish */
   function readDrive() {
     M.loading = true; M.driveFailed = false;
-    var done = function () { M.loading = false; };
+    if (M.row) drawBar();   // "still reading" shows at once, not after the walk
+    var done = function () { M.loading = false; if (M.row) drawBar(); };   // the bar follows what Drive brought in
     return readDriveNow().then(done, function (e) { done(); throw e; });
   }
   function readDriveNow() {
@@ -316,7 +330,10 @@
       M.drive = st;
       if (st === 'unsupported') { setPhotoHtml('This browser can\'t read Drive. Photos and the floorplan come in on the desktop in Chrome.'); return; }
       if (st !== 'connected') {
-        setPhotoHtml('Connect Drive on this desktop to bring in photos and the floorplan. <button type="button" class="btn sm ghost" id="jobReconnect">Reconnect</button>');
+        // a folder saved here that needs a click: Reconnect; no folder saved in this browser: Connect Drive opens the picker
+        setPhotoHtml(st === 'needs-click'
+          ? 'Connect Drive on this desktop to bring in photos and the floorplan. <button type="button" class="btn sm ghost" id="jobReconnect">Reconnect</button>'
+          : 'Connect Drive on this desktop to bring in photos and the floorplan. <button type="button" class="btn sm ghost" id="jobConnect">Connect Drive</button>');
         return;
       }
       setPhotoHtml('Reading the folder…');
@@ -503,9 +520,10 @@
   function notReady() {
     var s = SH.state, r = M.row;
     if (r.drive_folder && M.drive === 'unsupported') return 'This browser can\'t read Drive. Save the PDF from Chrome on the desktop.';
-    if (r.drive_folder && M.drive !== 'connected') return 'Connect Drive on this desktop first, so the sheet has its photos and floorplan.';
     if (r.drive_folder && M.loading) return 'Drive is still reading the job\'s folder; wait a moment.';
     if (r.drive_folder && M.driveFailed) return 'Drive didn\'t finish reading the job\'s folder. Reload to try again.';
+    if (r.drive_folder && M.drive == null) return 'Drive is still being checked; wait a moment.';
+    if (r.drive_folder && M.drive !== 'connected') return 'Connect Drive on this desktop first, so the sheet has its photos and floorplan.';
     if (M.reading) return 'Drive hasn\'t downloaded the photos yet; wait or reload.';
     var printed = [s.heroIndex, s.secondaryIndex].map(function (i) { return i == null ? null : s.photos[i]; }).filter(Boolean)
       .map(function (p) { return p.path; });
@@ -557,6 +575,10 @@
     var title = document.title;
     document.title = name;
     try { window.print(); } finally { document.title = title; }
+    // a print dialog can be cancelled: the sheet is made only when the user says the print finished
+    if (!window.confirm('Did the print finish and get saved?\n\nOK: mark the sheet as made (printed by hand, file not tracked).\nCancel: it is not made yet.')) {
+      return Promise.resolve('Not marked as made. Save PDF to Drive, or print it again, when the print is finished.');
+    }
     bf.via = 'print';
     return record(bf, { name: name + '.pdf', paper: s.paper || 'a5', madeAt: new Date().toISOString(), via: 'print' }, null,
       'Printed, but the job didn\'t record it. Press Save PDF to Drive again or reload.').then(function () {

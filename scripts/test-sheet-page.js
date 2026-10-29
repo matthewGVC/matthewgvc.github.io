@@ -70,7 +70,7 @@ const FAKE_DRIVE = `(function () {
   window.GVC_DRIVE = {
     supported: function () { return true; },
     state: function () { return cfg.stateThrows ? Promise.reject(new Error('Drive went away.')) : Promise.resolve(cfg.state || 'connected'); },
-    connect: function () { return Promise.resolve([]); },
+    connect: function () { cfg.state = 'connected'; return Promise.resolve(['GVC - New York']); },
     reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
     tree: function () { log.tree++; return cfg.slowTree ? new Promise(function () {}) : Promise.resolve(JSON.parse(JSON.stringify(tree))); },
@@ -88,7 +88,10 @@ async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   const errors = [], saves = [], pieces = [], helper = [];
+  // print confirms and other dialogs: accepted unless a test asks to dismiss them
+  const dialog = { answer: 'accept', seen: [] };
   page.on('pageerror', e => errors.push(e.message));
+  page.on('dialog', d => { dialog.seen.push(d.message()); if (dialog.answer === 'dismiss') d.dismiss(); else d.accept(); });
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
   await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__sheetTimeoutMs = 300; window.__sheetRetryMs = 30; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
@@ -134,7 +137,7 @@ async function open(browser, opts) {
   await page.goto(BASE + (opts.path || '/tools/showsheet/?listing=100-example-st-4a'), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.GVC_SHEETMODE && window.GVC_SHEETMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, ctx, T, dialog, printed: () => page.evaluate(() => window.__printed || 0) };
 }
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const st = page => page.evaluate(() => window.__test.state);
@@ -230,6 +233,16 @@ const typeIn = async (page, field, value) => {
   check('Reconnect brings the photos in', (await st(t.page)).photos.length, 3);
   await t.ctx.close();
 
+  // no Drive folder saved in this browser at all: Connect Drive (the picker), not Reconnect
+  t = await open(browser, { drive: { state: 'not-connected' } });
+  check('not connected: Connect Drive, not Reconnect', [!!(await t.page.$('#jobConnect')), !!(await t.page.$('#jobReconnect'))], [true, false]);
+  check('not connected: Save PDF greyed, the reason beside it', [await t.page.$eval('#btnSavePdf', e => e.disabled), /Connect Drive on this desktop first/.test(await text(t.page, '#jobPdfWhy'))], [true, true]);
+  await t.page.click('#jobConnect');
+  await t.page.waitForTimeout(800);
+  check('Connect Drive brings the photos in', (await st(t.page)).photos.length, 3);
+  check('Connect Drive: Save PDF ready again, no reason', [await t.page.$eval('#btnSavePdf', e => e.disabled), await t.page.$('#jobPdfWhy')], [false, null]);
+  await t.ctx.close();
+
   // a floorplan folder with only PDF / Illustrator files (S8)
   t = await open(browser, { drive: { pdfOnly: true } });
   check('PDF-only floorplan: says what to do', (await text(t.page, '#jobPlanMsg')), 'No floorplan image in Floorplan\\v2\\ (only PDF). Export a JPG there, or drop one here for this sheet.');
@@ -314,6 +327,14 @@ const typeIn = async (page, field, value) => {
   check('helper down: the bar says so', (await text(t.page, '#jobBar')).includes('printed by hand, file not tracked'), true);
   await t.ctx.close();
 
+  // the print dialog cancelled, and the user says it didn't finish: not recorded as made
+  t = await open(browser, { helperDown: true });
+  t.dialog.answer = 'dismiss';
+  await savePdf(t);
+  check('print cancelled: asked once, nothing recorded', [t.dialog.seen.length, /Did the print finish/.test(t.dialog.seen[0] || ''), t.pieces.length, await t.printed()], [1, true, 0, 1]);
+  check('print cancelled: says it is not made', (await text(t.page, '#jobMsg')).startsWith('Not marked as made'), true);
+  await t.ctx.close();
+
   // the helper refuses with a sentence: shown, nothing recorded, no print
   t = await open(browser, { helperStatus: 409, helperReply: { ok: false, error: 'This job has no Drive folder linked.' } });
   await savePdf(t);
@@ -333,19 +354,18 @@ const typeIn = async (page, field, value) => {
 
   // a printed photo Drive hasn't downloaded: refused, nothing made
   t = await open(browser, { drive: { slow: 'Photos/Edited/01.jpg' } });
-  await savePdf(t);
-  check('photo not downloaded: refused', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('Drive hasn\'t downloaded 01.jpg yet')], [0, 0, true]);
+  await t.page.waitForTimeout(800);
+  check('photo not downloaded: Save PDF greyed, the reason beside it', [await t.page.$eval('#btnSavePdf', e => e.disabled), /Drive hasn\'t downloaded 01\.jpg yet/.test(await text(t.page, '#jobPdfWhy')), t.helper.filter(h => h.path === '/piece').length, t.pieces.length], [true, true, 0, 0]);
   await t.ctx.close();
   t = await open(browser, { drive: { state: 'needs-click' } });
-  await savePdf(t);
-  check('Drive not connected: refused', [t.helper.filter(h => h.path === '/piece').length, (await text(t.page, '#jobMsg')).includes('Connect Drive')], [0, true]);
+  check('Drive not connected: Save PDF greyed, nothing made', [await t.page.$eval('#btnSavePdf', e => e.disabled), (await text(t.page, '#jobPdfWhy')).includes('Connect Drive'), t.helper.filter(h => h.path === '/piece').length], [true, true, 0]);
   await t.ctx.close();
 
   // review fixes (Task 8)
   t = await open(browser, { drive: { slowTree: true }, rows: Object.assign(rowsFor({}), {}) });
   await t.page.evaluate(() => { window.__sheetTimeoutMs = 60000; });
-  await savePdf(t);
-  check('Drive still reading the folder: refused', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length], [0, 0]);
+  check('Drive still reading the folder: Save PDF greyed, says so', [await t.page.$eval('#btnSavePdf', e => e.disabled), /Drive (didn't finish|is still) reading/.test(await text(t.page, '#jobPdfWhy'))], [true, true]);
+  check('Drive still reading the folder: nothing made', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length], [0, 0]);
   await t.ctx.close();
   t = await open(browser, { helperDown: true, pieceFails: 3 });
   await savePdf(t);
@@ -362,6 +382,7 @@ const typeIn = async (page, field, value) => {
   // team role: read-only
   t = await open(browser, { members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('team: no save buttons', [await t.page.$('#btnSaveSheet'), await t.page.$('#btnSavePdf')], [null, null]);
+  check('team: Get PDF or Ask Matt, never a dead end', /Get PDF|Ask Matt/.test(await text(t.page, '#jobBar')), true);
   check('team: fields read-only, print stays', [await t.page.$eval('[data-field="price"]', e => e.readOnly || e.disabled), !!(await t.page.$('#btnPrint'))], [true, true]);
   await t.ctx.close();
 

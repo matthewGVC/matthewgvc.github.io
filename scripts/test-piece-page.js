@@ -79,7 +79,7 @@ const FAKE_DRIVE = `(function () {
   window.GVC_DRIVE = {
     supported: function () { return true; },
     state: function () { return Promise.resolve(cfg.state || 'connected'); },
-    connect: function () { return Promise.resolve([]); },
+    connect: function () { cfg.state = 'connected'; return Promise.resolve(['GVC - New York']); },
     reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
     tree: function (folder) { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(/Pitches/.test(folder) ? trees.pitch : trees.listing))); },
@@ -96,7 +96,10 @@ async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   const errors = [], saves = [], pieces = [], helper = [];
+  // print confirms and other dialogs: accepted unless a test asks to dismiss them
+  const dialog = { answer: 'accept', seen: [] };
   page.on('pageerror', e => errors.push(e.message));
+  page.on('dialog', d => { dialog.seen.push(d.message()); if (dialog.answer === 'dismiss') d.dismiss(); else d.accept(); });
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
   await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__pieceTimeoutMs = 300; window.__pieceRetryMs = 30; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
@@ -146,7 +149,7 @@ async function open(browser, opts) {
   if (/[?&](listing|pitch)=/.test(opts.path) && !/map-studio/.test(opts.path))
     await page.waitForFunction(() => window.GVC_PIECEMODE && window.GVC_PIECEMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, ctx, T, dialog, printed: () => page.evaluate(() => window.__printed || 0) };
 }
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const pstate = page => page.evaluate(() => JSON.parse(JSON.stringify(window.__piece.state)));
@@ -212,6 +215,15 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('brochure: helper down → print, recorded by hand', [await o.printed(), o.pieces[0] && o.pieces[0].p_output.via, o.pieces[0] && o.pieces[0].p_built_from.via], [1, 'print', 'print']);
   await o.ctx.close();
 
+  // the print dialog cancelled, and the user says it didn't finish: not recorded as made
+  o = await open(browser, { path: BRO, helperDown: true });
+  o.dialog.answer = 'dismiss';
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(600);
+  check('print cancelled: asked once, nothing recorded', [o.dialog.seen.length, /Did the print finish/.test(o.dialog.seen[0] || ''), o.pieces.length, await o.printed()], [1, true, 0, 1]);
+  check('print cancelled: says it is not made', /^Not marked as made/.test(await text(o.page, '#pieceMsg')), true);
+  await o.ctx.close();
+
   // a helper refusal is said, nothing recorded
   o = await open(browser, { path: BRO, helperStatus: 409, helperReply: { error: 'This job has no Drive folder linked.' } });
   await o.page.click('#btnPiecePdf');
@@ -230,9 +242,19 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   // a photo Drive hasn't downloaded
   o = await open(browser, { path: BRO, drive: { slow: 'Photos/Edited/01.jpg' } });
   check('brochure: a slow photo is named', /hasn't downloaded this yet: 01\.jpg/.test(await text(o.page, '#piecePhotoMsg')), true);
-  await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(300);
-  check('brochure: and Save PDF waits for it', [/01\.jpg yet/.test(await text(o.page, '#pieceMsg')), o.helper.length], [true, 0]);
+  await o.page.waitForTimeout(700);
+  check('brochure: Save PDF greyed, the reason beside it', [await o.page.$eval('#btnPiecePdf', e => e.disabled), /01\.jpg yet/.test(await text(o.page, '#piecePdfWhy'))], [true, true]);
+  check('brochure: a greyed Save PDF makes no helper call', [o.helper.length, o.pieces.length], [0, 0]);
+  await o.ctx.close();
+
+  // Drive not connected in this browser: Connect Drive opens the picker (not Reconnect), then the photos come in
+  o = await open(browser, { path: BRO, drive: { state: 'not-connected' } });
+  check('connect: a Connect Drive button, not Reconnect', [!!(await o.page.$('#pieceConnect')), !!(await o.page.$('#pieceReconnect'))], [true, false]);
+  check('connect: Save PDF greyed, its reason beside it', [await o.page.$eval('#btnPiecePdf', e => e.disabled), /Connect Drive on this desktop first/.test(await text(o.page, '#piecePdfWhy'))], [true, true]);
+  await o.page.click('#pieceConnect');
+  await o.page.waitForTimeout(800);
+  check('connect: the photos come in after the picker', (await pstate(o.page)).images.length, 3);
+  check('connect: Save PDF ready again, no reason', [await o.page.$eval('#btnPiecePdf', e => e.disabled), await o.page.$('#piecePdfWhy')], [false, null]);
   await o.ctx.close();
 
   // a saved brochure reopens with its own roles and ids; a rebuild lists what changed
@@ -248,7 +270,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
 
   // the team sees it read-only
   o = await open(browser, { path: BRO, members: [{ name: 'Team', initials: 'T', role: 'team' }] });
-  check('brochure: team read-only', [!!(await o.page.$('#btnPiecePdf')), /Read only/.test(await text(o.page, '#pieceBar'))], [false, true]);
+  check('brochure: team read-only, Get PDF or Ask Matt', [!!(await o.page.$('#btnPiecePdf')), /Read only/.test(await text(o.page, '#pieceBar')), /Get PDF|Ask Matt/.test(await text(o.page, '#pieceBar'))], [false, true, true]);
   await o.ctx.close();
 
   // an unknown job, a hostile job, and the standalone tool

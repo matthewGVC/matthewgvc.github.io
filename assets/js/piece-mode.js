@@ -88,6 +88,7 @@
       '#pieceFacts .jfo,#pieceFacts .jfe{color:var(--ui-ink-soft);font-size:12px;margin-top:2px}#pieceFacts .jfw{font-size:12px;margin-top:2px;font-weight:600}' +
       '#pieceFacts .jfw::before{content:"\\26A0  "}#pieceFacts .jfe label{margin-left:8px}' +
       '#piecePhotoMsg{margin:8px 0 0;font-size:12.5px}' +
+      '#pieceBar .jb-why{align-self:center;color:var(--ui-ink-soft);font-size:12.5px}#pieceBar .btn:disabled{opacity:.45;cursor:not-allowed}' +
       'body.piece-mode #propBar{display:none}';
     document.head.appendChild(css);
     document.body.classList.add('piece-mode');
@@ -152,9 +153,17 @@
     if (J.maxAgents(A.tool) && SJ.agentsOf(r).ids.length > J.maxAgents(A.tool)) {
       html += '<div class="jb-n">This ' + esc(A.label.toLowerCase()) + ' prints the first ' + J.maxAgents(A.tool) + ' of the ' + NOUN + '\'s ' + SJ.agentsOf(r).ids.length + ' agents.</div>';
     }
-    if (M.canEdit) html += '<div class="jb-b"><button type="button" class="btn sm" id="btnPieceSave">Save sheet</button>' +
-      '<button type="button" class="btn sm" id="btnPiecePdf">Save PDF to Drive</button></div>';
-    else html += '<div class="jb-n">Read only: only the owner account saves this ' + esc(A.label.toLowerCase()) + '. Print still works.</div>';
+    if (M.canEdit) {
+      var why = notReady();   // greyed out, with the reason beside it, not only after a click
+      html += '<div class="jb-b"><button type="button" class="btn sm" id="btnPieceSave">Save sheet</button>' +
+        '<button type="button" class="btn sm" id="btnPiecePdf"' + (why ? ' disabled' : '') + '>Save PDF to Drive</button>' +
+        (why ? '<span class="jb-why" id="piecePdfWhy">' + esc(why) + '</span>' : '') + '</div>';
+    } else {
+      // a teammate gets the PDF from Drive, or Matt: never a dead end
+      var pdf = M.doc && M.doc.output, got = pdf && /^https:\/\/drive\.google\.com\//.test(String(pdf.url || '')) ? pdf.url : null;
+      if (got) html += '<div class="jb-b"><a class="btn sm" data-get href="' + esc(got) + '" target="_blank" rel="noopener">Get PDF</a></div>';
+      html += '<div class="jb-n">Read only: only the owner account saves this ' + esc(A.label.toLowerCase()) + '.' + (got ? '' : ' Ask Matt for the PDF.') + '</div>';
+    }
     html += banner(s) + '<p id="pieceMsg" role="status"></p>';
     var keep = $('#pieceMsg') ? $('#pieceMsg').textContent : '';
     bar.innerHTML = html;
@@ -170,7 +179,13 @@
     };
     busy(M.busy);
   }
-  function busy(on) { M.busy = !!on; $$('#btnPieceSave, #btnPiecePdf').forEach(function (b) { b.disabled = M.busy; }); }
+  function busy(on) {
+    M.busy = !!on;
+    var save = $('#btnPieceSave'), pdf = $('#btnPiecePdf');
+    if (save) save.disabled = M.busy;
+    // Save PDF stays greyed while what it prints isn't ready (the reason is beside it)
+    if (pdf) pdf.disabled = M.busy || !!notReady();
+  }
 
   /* ---------- the facts block ---------- */
   function labelOf(name) {
@@ -278,10 +293,11 @@
 
   /* ---------- Drive ---------- */
   function wireReconnect() {
-    var b = $('#pieceReconnect');
-    if (b) b.onclick = function () {
-      global.GVC_DRIVE.reconnect().then(function () { return readDrive(); }).then(drawAll, function (e) { setPhotoHtml(esc(e.message)); });
-    };
+    var b = $('#pieceReconnect'), c = $('#pieceConnect');
+    var again = function () { return readDrive().then(drawAll); };
+    var failed = function (e) { setPhotoHtml(e && e.name === 'AbortError' ? 'No folder was picked. Press Connect Drive to try again.' : esc(e && e.message)); };
+    if (b) b.onclick = function () { global.GVC_DRIVE.reconnect().then(again).catch(failed); };
+    if (c) c.onclick = function () { global.GVC_DRIVE.connect().then(again).catch(failed); };
   }
   function flat(node, base, out) {
     (node && node.children || []).forEach(function (c) {
@@ -293,7 +309,8 @@
   }
   function readDrive() {
     M.loading = true; M.driveFailed = false;
-    var done = function () { M.loading = false; };
+    if (M.row) drawBar();   // "still reading" shows at once, not after the walk
+    var done = function () { M.loading = false; if (M.row) drawBar(); };   // the bar follows what Drive brought in
     return readDriveNow().then(done, function (e) { done(); throw e; });
   }
   function readDriveNow() {
@@ -303,7 +320,10 @@
       M.drive = st;
       if (st === 'unsupported') { setPhotoHtml('This browser can\'t read Drive. Photos come in on the desktop in Chrome.'); return; }
       if (st !== 'connected') {
-        setPhotoHtml('Connect Drive on this desktop to bring in photos. <button type="button" class="btn sm ghost" id="pieceReconnect">Reconnect</button>');
+        // a folder saved here that needs a click: Reconnect; no folder saved in this browser: Connect Drive opens the picker
+        setPhotoHtml(st === 'needs-click'
+          ? 'Connect Drive on this desktop to bring in photos. <button type="button" class="btn sm ghost" id="pieceReconnect">Reconnect</button>'
+          : 'Connect Drive on this desktop to bring in photos. <button type="button" class="btn sm ghost" id="pieceConnect">Connect Drive</button>');
         return;
       }
       setPhotoHtml('Reading the folder…');
@@ -457,9 +477,10 @@
   function notReady() {
     var r = M.row;
     if (r.drive_folder && M.drive === 'unsupported') return 'This browser can\'t read Drive. Save the PDF from Chrome on the desktop.';
-    if (r.drive_folder && M.drive !== 'connected') return 'Connect Drive on this desktop first, so the ' + A.label.toLowerCase() + ' has its photos.';
     if (r.drive_folder && M.loading) return 'Drive is still reading the ' + NOUN + '\'s folder; wait a moment.';
     if (r.drive_folder && M.driveFailed) return 'Drive didn\'t finish reading the ' + NOUN + '\'s folder. Reload to try again.';
+    if (r.drive_folder && M.drive == null) return 'Drive is still being checked; wait a moment.';
+    if (r.drive_folder && M.drive !== 'connected') return 'Connect Drive on this desktop first, so the ' + A.label.toLowerCase() + ' has its photos.';
     if (M.reading) return 'Drive hasn\'t downloaded the photos yet; wait or reload.';
     var miss = (M.failed || [])[0];
     if (miss) return 'Drive hasn\'t downloaded ' + miss.split('/').pop() + ' yet; wait or reload.';
@@ -487,6 +508,10 @@
     var title = document.title;
     document.title = name;
     try { global.print(); } finally { document.title = title; }
+    // a print dialog can be cancelled: the piece is made only when the user says the print finished
+    if (!global.confirm('Did the print finish and get saved?\n\nOK: mark the ' + A.label.toLowerCase() + ' as made (printed by hand, file not tracked).\nCancel: it is not made yet.')) {
+      return Promise.resolve('Not marked as made. Save PDF to Drive, or print it again, when the print is finished.');
+    }
     bf.via = 'print';
     return record(bf, { name: name + '.pdf', paper: A.paper() || null, madeAt: new Date().toISOString(), via: 'print' }, null,
       'Printed, but the ' + NOUN + ' didn\'t record it. Press Save PDF to Drive again or reload.').then(function () {

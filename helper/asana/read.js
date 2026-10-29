@@ -22,9 +22,12 @@
              and history (allow.keepStory, kept kinds only). A task whose
              subtasks or history fail to read keeps neither (the writer keeps
              what it had) and the run gets a warning.
-   devs      [{ project: { gid, name }, tasks }] for every 🚧 project: all its tasks
-             (batch days need every tick), history for the changed ones (every
-             one on a full read)
+   devs      [{ project: { gid, name }, tasks, schedule }] for every 🚧 project: all
+             its tasks (batch days need every tick), history for the changed ones
+             (every one on a full read), and schedule = every task and work item
+             (subtasks, three levels down) through allow.keepScheduleTask, read on
+             every run (a work item's change doesn't touch its parent's modified_at);
+             null when a work item failed to read (the writer keeps the last one)
    loose     allow.keepLoose rows that name a linked development
    people    allow.keepPerson rows, or null when not asked
    missing   kept field names no listing task has (a renamed field), judged on a
@@ -163,14 +166,39 @@ async function readRun(o) {
         out.warnings.push('a development portfolio could not be listed; the config list is used alone');
       }
     }
+    /* a task's work items and theirs, as schedule rows; null when one failed to read */
+    async function workItems(raw, depth) {
+      if (!(raw.num_subtasks > 0) || depth > 3) return [];
+      try {
+        const subs = await asana.get('/tasks/' + raw.gid + '/subtasks', { opt_fields: allow.SUBTASK_SCHEDULE_FIELDS });
+        const rows = subs.map(r => allow.keepScheduleTask(r));
+        for (const r of subs) {
+          const deeper = await workItems(r, depth + 1);
+          if (deeper === null) return null;
+          rows.push(...deeper);
+        }
+        return rows;
+      } catch (e) {
+        if (stopFor(e)) throw e;
+        out.warnings.push('the work items of a development task (' + raw.gid + ') could not be read: ' + e.message + '; the last schedule is kept');
+        return null;
+      }
+    }
     for (const gid of devGids) {
       try {
         let name = null;
         try { name = ((await asana.get('/projects/' + gid, { opt_fields: 'name', limit: null }))[0] || {}).name || null; }
         catch (e) { if (stopFor(e)) throw e; }
-        const tasks = (await asana.get('/projects/' + gid + '/tasks', { opt_fields: allow.TASK_FIELDS })).map(r => allow.keepTask(r, gid));
+        const raws = await asana.get('/projects/' + gid + '/tasks', { opt_fields: allow.TASK_FIELDS + ',' + allow.SCHEDULE_FIELDS });
+        const tasks = raws.map(r => allow.keepTask(r, gid));
         for (const t of tasks) if (changed(t)) await detail(t, false);
-        out.devs.push({ project: { gid, name }, tasks });
+        let schedule = raws.map(r => allow.keepScheduleTask(r, gid));
+        for (const r of raws) {
+          const items = await workItems(r, 1);
+          if (items === null) { schedule = null; break; }
+          schedule.push(...items);
+        }
+        out.devs.push({ project: { gid, name }, tasks, schedule });
       } catch (e) {
         if (stopFor(e)) throw e;
         out.warnings.push('a development project (' + gid + ') could not be read: ' + e.message);

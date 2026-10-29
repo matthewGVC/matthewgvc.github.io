@@ -62,7 +62,21 @@ function rowsFor() {
     dev_projects: [{ id: 'd1', slug: '619-example-ave', label: '619 Example Ave', market: 'NJ', version: 4, folder_state: 'linked', drive_folder: 'v', asana_project_gid: '1300',
       milestones: { agreement: { done: true, on: '2026-01-10', source: 'Matt' }, landClosed: { done: true, on: '2026-02-01', asanaGid: 'g1', confirmedBy: 'Matt Bloomfield' } },
       asana_map: {}, milestone_hints: [],
-      next_milestone: { key: 'permits', dueOn: ymd(NOW + 12 * 864e5), slips: { g1: { count: 2, days: 9 } }, construction: { done: 3, total: 12 } } }],
+      next_milestone: { key: 'permits', dueOn: ymd(NOW + 12 * 864e5), slips: { g1: { count: 2, days: 9 } }, construction: { done: 3, total: 12 } },
+      schedule: { tasks: [
+        { gid: 't1', name: 'Groundbreaking', section: 'Construction', milestone: true, dueOn: ymd(NOW - 90 * 864e5), completed: true, link: 'https://app.asana.com/0/1/t1' },
+        { gid: 't2', name: 'Site Work', section: 'Construction', completed: false },
+        { gid: 'w1', name: 'Excavation', parentGid: 't2', startOn: ymd(NOW - 80 * 864e5), dueOn: ymd(NOW - 75 * 864e5), completed: true, deps: [] },
+        { gid: 'w2', name: 'Roofing', parentGid: 't2', startOn: ymd(NOW - 30 * 864e5), dueOn: ymd(NOW - 5 * 864e5), completed: false, deps: ['w1'] },
+        { gid: 'w3', name: 'Stairs', parentGid: 't2', startOn: ymd(NOW + 2 * 864e5), dueOn: ymd(NOW + 9 * 864e5), completed: false, deps: ['w2'] },
+        { gid: 't3', name: 'Cleanup', section: 'Closeout', completed: false }] } }],
+    dev_budgets: [{ dev_project_id: 'd1', sheet_id: '1_exampleSheetId0123456789', version: 2, synced_at: iso(NOW - 3600e3), error: null, budget: {
+      title: 'Pro-forma 619 Example Ave',
+      lines: [{ name: 'Architect', estimate: 10000, actual: 6000, upgrade: false }, { name: 'Lumber', estimate: 40000, actual: 52500, upgrade: false },
+        { name: 'Landscaping', estimate: null, actual: null, upgrade: false }, { name: 'Pool', estimate: 30000, actual: null, upgrade: true }],
+      sheetTotal: { estimate: 50000, actual: 60000, remaining: -10000 },
+      payments: [{ date: '2026-05-20', category: 'Lumber', vendor: 'Example Lumber', description: 'Deposit', amount: 52500, status: 'Paid', receipt: false },
+        { date: '2025-12-16', category: 'Architect', vendor: 'Example Design', description: 'Permit set', amount: 6000, status: 'Paid', receipt: true }] } }],
     floorplans: [{ id: 'f1', property_id: 'p1', version: 3, layout: 'current', note: 'Move the kitchen door', asked_by: 'Katie Cook', created_at: iso(NOW - 2 * 864e5) }],
     changes: [
       { id: 'c1', property_id: 'p1', at: iso(NOW - 3 * 864e5), field: 'beds', old_value: 3, new_value: 4, source: 'Matt', no_rebuild: true },
@@ -162,7 +176,10 @@ async function open(browser, opts) {
       const row = (T[body.p_table] || []).find(x => x.id === body.p_id) || {};
       return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(Object.assign({}, row, body.p_set, { version: row.version + 1 })) });
     }
-    if (m !== 'GET') { writes.push(m + ' ' + table + ' ' + (r.request().postData() || '')); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
+    if (m !== 'GET') {
+      writes.push(m + ' ' + table + ' ' + (r.request().postData() || ''));
+      return r.fulfill({ status: 201, contentType: 'application/json', body: table === 'dev_budgets' ? '[' + r.request().postData() + ']' : '[]' });
+    }
     const eqs = [...u.searchParams].filter(([, v]) => /^eq\./.test(v)).map(([k, v]) => [k, v.slice(3)]);
     const hit = row => eqs.every(([k, v]) => String(row[k]) === v);
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((T[table] || []).filter(hit)) });
@@ -350,6 +367,57 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('dev: no ticks for a teammate', await t.page.$$eval('[data-tick], [data-untick]', e => e.length), 0);
   await t.ctx.close();
+  /* ---------- a development's build: Needs attention, Schedule, Budget (D109 to D114) ---------- */
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
+  p = t.page;
+  check('build: no page errors', t.errors, []);
+  check('build: attention groups', await p.$$eval('#attnCard .at-g h3', e => e.map(h => h.firstChild.textContent.trim())),
+    ['Past target', 'Over estimate', 'Due in the next 14 days', 'No estimate yet', 'Sheet total', 'Receipts']);
+  check('build: the sheet total that is off', (await text(p, '#attnCard')).includes('The sheet says $60,000 spent; its lines add up to $58,500.'), true);
+  check('build: past target and over estimate', [(await text(p, '#attnCard .at-g')).includes('Roofing'), (await text(p, '#attnCard')).includes('$12,500 over (31.3%)')], [true, true]);
+  check('build: the work items, done count', [await p.$$eval('.g-row', e => e.length), await text(p, '.sched-n')], [5, '2 of 5 work items done in Asana']);
+  check('build: bars and the milestone', [await p.$$eval('.g-bar', e => e.length), await p.$$eval('.g-ms', e => e.length), await p.$$eval('.g-row.s-late', e => e.length)], [3, 1, 1]);
+  await p.selectOption('#schedS', 'late');
+  check('build: filter by status', await p.$$eval('.g-row', e => e.map(r => r.querySelector('.g-name').firstChild.textContent)), ['Roofing']);
+  await p.selectOption('#schedS', 'all');
+  await p.click('[data-view="list"]');
+  check('build: list view with what each waits on', await p.$$eval('.tbl.sched tbody tr', e => e.map(r => r.lastElementChild.textContent)), ['', '', 'Excavation', 'Roofing', '']);
+  await p.fill('#schedQ', 'stai');
+  check('build: search keeps focus', [await p.$$eval('.tbl.sched tbody tr', e => e.length), await p.evaluate(() => document.activeElement.id)], [1, 'schedQ']);
+  check('build: budget tiles', await p.$$eval('#budgetCard .facts .v', e => e.map(v => v.textContent)), ['$50,000', '$58,500', '−$8,500', '2']);
+  await p.click('[data-up="1"]');
+  check('build: with upgrades', [await p.$eval('#budgetCard .facts .v', v => v.textContent), await p.$$eval('.blines tbody tr', e => e.length)], ['$80,000', 4]);
+  check('build: the over line is marked', await p.$$eval('.blines tr.over td:first-child', e => e.map(d => d.textContent)), ['Lumber']);
+  check('build: payments newest first, missing receipt shown', [await text(p, '.pays summary'), await p.$$eval('.pays tbody tr td:first-child', e => e.map(d => d.textContent)), await text(p, '.pays .miss')],
+    ['2 payments', ['20 May 2026', '16 Dec 2025'], 'Missing']);
+  await p.click('#budgetChange');
+  await p.fill('#budgetSheet', 'https://example.com/nope');
+  await p.click('#budgetLink [type="submit"]');
+  check('build: a link that is not a sheet', [await text(p, '#budgetMsg'), t.writes.length], ['Paste the sheet\'s link from Google Sheets.', 0]);
+  await p.fill('#budgetSheet', 'https://docs.google.com/spreadsheets/d/1_otherSheetId9876543210xyz/edit#gid=0');
+  await p.click('#budgetLink [type="submit"]');
+  await settle(p);
+  const bw = t.writes.find(w => /^PATCH dev_budgets/.test(w)) || '';
+  check('build: changing the sheet clears the old read', JSON.parse(bw.replace(/^PATCH dev_budgets /, '') || '{}'),
+    { dev_project_id: 'd1', sheet_id: '1_otherSheetId9876543210xyz', budget: null, synced_at: null, error: null });
+  check('build: logged', t.writes.some(w => /^POST changes .*"field":"budget_sheet".*Budget sheet changed\./.test(w)), true);
+  await t.ctx.close();
+  const RB = rowsFor();
+  RB.dev_budgets = [];
+  t = await open(browser, { rows: RB, path: '/workspace/job/?dev=619-example-ave' });
+  check('build: no sheet yet: the owner links one', !!(await t.page.$('#budgetLink')), true);
+  await t.page.fill('#budgetSheet', '1_brandNewSheetId0123456789');
+  await t.page.click('#budgetLink [type="submit"]');
+  await settle(t.page);
+  check('build: first link is an insert', t.writes.some(w => /^POST dev_budgets .*"sheet_id":"1_brandNewSheetId0123456789"/.test(w)), true);
+  await t.ctx.close();
+  t = await open(browser, { rows: RB, path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
+  check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate')], [true, null, false]);
+  await t.ctx.close();
+  t = await open(browser, { phone: true, path: '/workspace/job/?dev=619-example-ave' });
+  check('build: no sideways page scroll on a phone', await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+  await t.ctx.close();
+
   /* final review 3: Asana's suggestions and the folder link are the owner's */
   const RH = rowsFor();
   RH.dev_projects[0].milestone_hints = [{ key: 'permits', date: '2026-10-01', source: 'Asana', asanaGid: 'g9' }];

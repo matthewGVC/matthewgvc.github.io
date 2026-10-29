@@ -319,6 +319,31 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('land row: never a job', db3.T.properties.some(p => /30 Lot/.test(p.core.address)), false);
   check('land row: the dev\'s next milestone stored', 'next_milestone' in db3.T.dev_projects[0], true);
   check('land row: the dev Match result stored', Array.isArray((db3.T.dev_projects[0].match || {}).list), true);
+
+  /* ================= the development's schedule (D110) ================= */
+  const wS = world();
+  wS.tasks[DEV] = fx('tasks-' + DEV + '.json').data.map((t, i) => i === 0 ? Object.assign({}, t, { num_subtasks: 2, start_on: '2026-02-01', resource_subtype: 'milestone' }) : t);
+  const parentGid = wS.tasks[DEV][0].gid;
+  wS.subtasks[parentGid] = [
+    { gid: 'w1', name: 'Excavation', completed: true, completed_at: '2026-05-08T12:00:00.000Z', start_on: '2026-05-04', due_on: '2026-05-08', parent: { gid: parentGid }, dependencies: [], assignee: { name: 'Agent A' }, notes: 'SECRET work note' },
+    { gid: 'w2', name: 'Framing', completed: false, start_on: '2026-05-11', due_on: '2026-06-15', parent: { gid: parentGid }, dependencies: [{ gid: 'w1' }], num_subtasks: 1 }];
+  wS.subtasks.w2 = [{ gid: 'w3', name: 'Framing inspection', completed: false, due_on: '2026-06-16', parent: { gid: 'w2' } }];
+  const rS = await read(wS);
+  const sched = rS.devs.find(d => d.project.gid === DEV).schedule;
+  check('schedule: every task, its work items and theirs', [sched.length, sched.slice(-3).map(x => [x.gid, x.parentGid])], [17, [['w1', parentGid], ['w2', parentGid], ['w3', 'w2']]]);
+  check('schedule: dates, milestone and links kept', [sched[0].startOn, sched[0].milestone, sched.find(x => x.gid === 'w2').deps], ['2026-02-01', true, ['w1']]);
+  check('schedule: no notes or assignee', /SECRET|Agent A/.test(JSON.stringify(sched)), false);
+  const dbS = fakeDb({ dev_projects: [Object.assign({}, DEVROW, { asana_project_gid: DEV, version: 1 })], asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }] });
+  await applyRun({ client: dbS, run: rS, now: NOW });
+  check('schedule: stored on the development', dbS.T.dev_projects[0].schedule.tasks.length, 17);
+  const vS = dbS.T.dev_projects[0].version;
+  await applyRun({ client: dbS, run: await read(wS), now: NOW });
+  check('schedule: an unchanged one is not written again', dbS.T.dev_projects[0].version, vS);
+  const rSF = await read(wS, { asana: asanaOf(wS, { failTask: { w2: 500 } }) });
+  check('schedule: a work item that fails to read gives none, with a warning',
+    [rSF.devs.find(d => d.project.gid === DEV).schedule, rSF.warnings.some(x => /w2/.test(x))], [null, true]);
+  await applyRun({ client: dbS, run: rSF, now: NOW });
+  check('schedule: the last one is kept', dbS.T.dev_projects[0].schedule.tasks.length, 17);
   check('land row: the hint is logged on the development', db3.T.changes.some(c => c.dev_project_id === 'dev1' && c.source === 'Asana'), true);
   // a hint Matt turned down on the job page (asana_map.dismissed) stays down
   let db3b = fakeDb({ dev_projects: [Object.assign({}, DEVROW, { asana_project_gid: DEV, asana_map: { dismissed: { landClosed: ['9000000000211'] } } })], asana_tasks: [{ gid: 'marker', project_gid: NYC, kind: 'listing', ignored: true }] });

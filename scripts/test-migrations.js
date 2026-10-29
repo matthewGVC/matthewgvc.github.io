@@ -104,7 +104,7 @@ const USERS = {
 
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
-  check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings', 'dev_projects', 'developments', 'documents', 'floorplans']
+  check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings'].concat(UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
     .concat(UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos', 'pitches', 'properties', 'sync_runs', 'todos']));
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
@@ -572,6 +572,24 @@ const USERS = {
     }
     check('0012: a post goes in the cache', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind, property_id) values ('post1', 'social', 'post', $1)`, [fp]), false);
     check('0012: a made-up kind still refused', await fails('helper', `insert into public.asana_tasks (gid, project_gid, kind) values ('post2', 'social', 'tweet')`), true);
+  }
+
+  /* ---------- 0015: a development's schedule (everyone) and budget (owner, admin, helper) ---------- */
+  if (UPTO >= '0015') {
+    const dev = (await db.query(`insert into public.dev_projects (slug, label) values ('15-budget-st', '15 Budget St') returning id`)).rows[0].id;
+    const sheet = '1_abcdefghijklmnopqrstuvwxyz0123';
+    check('0015: the helper writes a schedule', await fails('helper', `update public.dev_projects set schedule = '{"tasks":[]}' where id = $1`, [dev]), false);
+    check('0015: Matt links a budget sheet', await fails('matt', 'insert into public.dev_budgets (dev_project_id, sheet_id) values ($1, $2)', [dev, sheet]), false);
+    check('0015: not a sheet id', await fails('matt', `update public.dev_budgets set sheet_id = 'https://example.com' where dev_project_id = $1`, [dev]), true);
+    check('0015: the helper stores the budget', (await as('helper', `update public.dev_budgets set budget = '{"lines":[]}', synced_at = now() where dev_project_id = $1 returning version`, [dev])).rows[0].version, 2);
+    check('0015: the shared team account sees no budget', (await as('team', 'select count(*)::int n from public.dev_budgets')).rows[0].n, 0);
+    check('0015: a plain team member sees none', (await as('teamrole', 'select count(*)::int n from public.dev_budgets')).rows[0].n, 0);
+    check('0015: nor writes one', (await as('teamrole', `update public.dev_budgets set error = 'x' returning 1`)).rows.length, 0);
+    await db.query(`update public.members set role = 'admin' where role = 'team' and name = 'Team Member'`);
+    check('0015: an admin sees it', (await as('teamrole', 'select count(*)::int n from public.dev_budgets')).rows[0].n, 1);
+    await db.query(`update public.members set role = 'team' where role = 'admin' and name = 'Team Member'`);
+    check('0015: the helper logs a budget run', await fails('helper', `insert into public.sync_runs (kind) values ('budget')`), false);
+    check('0015: anon reads no budget', (await as('anon', 'select * from public.dev_budgets')).rows.length, 0);
   }
 
   /* ---------- the switch: the shared account stops ---------- */

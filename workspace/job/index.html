@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/workspace.css">
+<link rel="stylesheet" href="../../assets/css/job-dev.css">
 <style>
 .hd{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin:10px 0 24px}
 .hd > div{min-width:0}
@@ -202,6 +203,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/agents.js"></script>
 <script src="../../assets/js/job-page/log.js"></script>
 <script src="../../assets/js/job-page/dev.js"></script>
+<script src="../../assets/js/dev-build.js"></script>
+<script src="../../assets/js/job-page/build.js"></script>
 <!-- Drive cards: the folder tree and health, the marketing track, floorplans, photos, the details doc.
      The details doc is read with the Showsheet's own reader (same pinned mammoth as tools/showsheet). -->
 <script async id="mammothJs" src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" integrity="sha384-/cXAMbzovUIKbBERjPmR3SnPTh8siWr5lsvFYj1Uq4XP0yaJUZJmsh0YXyGv5P0y" crossorigin="anonymous" onerror="this.dataset.failed='1'"></script>
@@ -229,7 +232,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
   var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
   var today = W.today();
-  var state = { row: null, job: null, changes: [], won: null, me: null, drive: null, doc: null };
+  var state = { row: null, job: null, changes: [], won: null, me: null, drive: null, doc: null, budget: null };
   var shell = GVC_SHELL.mount({ onDrive: function (s) { var was = state.drive; state.drive = s; if (state.row && s !== was) render(); } });
 
   function rest(path) { return P.call('/rest/v1' + path); }
@@ -258,13 +261,16 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
           .catch(function () { return []; }) : Promise.resolve([]),
         // its social posts from Asana (0012); unreadable means none
         kind === 'listing' || kind === 'dev' ? rest('/asana_tasks?' + (kind === 'dev' ? 'dev_project_id' : 'property_id') + '=eq.' + encodeURIComponent(row.id) +
-          '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([])
+          '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([]),
+        // its budget (0015): owner, admin and the helper only, so anyone else reads none
+        kind === 'dev' ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
         state.me = r[3];
         state.docs = r[4] || [];
         state.posts = r[5] || [];
+        state.budget = (r[6] || [])[0] || null;
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         JP.canEdit = state.me.role === 'owner';
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
@@ -287,7 +293,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, docs: state.docs, posts: state.posts, onSheet: paintRebuild };
+      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, onSheet: paintRebuild };
   }
 
   /* S21: Rebuild n stale in the header (owner only), from the scan at first, then live. Slice 5: every
@@ -407,10 +413,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
       '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
-      '<div id="topHost">' + tiles() + '</div>' + steps() +
+      '<div id="topHost">' + tiles() + '</div>' + (kind === 'dev' ? '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
-    if (kind === 'dev') JP.dev.wire($('topHost'), c);
+    if (kind === 'dev') { JP.dev.wire($('topHost'), c); JP.build.wire($('buildHost'), c); }
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);
     JP.log.wire($('logHost'), c);

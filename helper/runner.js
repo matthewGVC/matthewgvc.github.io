@@ -6,6 +6,7 @@
      r.lastRuns()          → { de: { at, ok, error? }, … }  (for /health)
    Asana jobs (asana every 30 min, asanaFull 03:00, people 03:15) exist only
    when the config holds a token; the full read also counts as the plain one.
+   The budget job (hourly) exists only when the Google key file is there.
      r.start()             ticks every minute
 
    A job that fails is still recorded as run for its slot, so a broken job
@@ -30,7 +31,7 @@ function createRunner(o) {
     try {
       const at = now || new Date();
       const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people);
-      for (const k of due(at, last, { asana: withAsana })) {
+      for (const k of due(at, last, { asana: withAsana, budget: !!o.jobs.budget })) {
         if (!o.jobs[k]) continue;
         // the nightly full read already covers the plain read that is due beside it
         if (k === 'asana' && last.asana && last.asana >= at) continue;
@@ -65,8 +66,15 @@ function asanaJobs(cfg, client, syncNow) {
   return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }) };
 }
 
+/* the budget job, only when the helper has its Google key (D113) */
+function budgetJobs(cfg, client) {
+  const { createSheets } = require('./budget/sheets.js');
+  const sheets = createSheets(cfg);
+  return sheets.ready() ? { budget: () => require('./budget-sync.js').syncNow({ cfg, client, sheets }) } : {};
+}
+
 /* startup: only the newest run of each kind, and the newest full Asana read (C1) */
-const RUN_KINDS = ['de', 'scan', 'asana', 'people'];
+const RUN_KINDS = ['de', 'scan', 'asana', 'people', 'budget'];
 async function readLastRuns(client) {
   const newest = { order: 'started_at.desc', limit: 1 };
   const rows = [];
@@ -99,6 +107,7 @@ async function startRunner(cfg) {
     jobs: {
       de: () => require('./de-sync.js').syncNow({ cfg, client }),
       ...asanaJobs(cfg, client),
+      ...budgetJobs(cfg, client),
       scan: () => require('./scan.js').scanAll({ client, driveRoot: 'G:\\Shared drives' }),
       backup: async () => {
         const date = new Date().toISOString().slice(0, 10);
@@ -112,4 +121,4 @@ async function startRunner(cfg) {
   return runner;
 }
 
-module.exports = { createRunner, startRunner, asanaJobs, lastFromRuns, readLastRuns };
+module.exports = { createRunner, startRunner, asanaJobs, budgetJobs, lastFromRuns, readLastRuns };

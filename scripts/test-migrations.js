@@ -105,7 +105,7 @@ const USERS = {
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
   check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings'].concat(UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
-    .concat(UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos', 'pitches', 'properties', 'sync_runs', 'todos']));
+    .concat(UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches', 'properties', 'sync_runs', 'todos']));
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
     'drive_folder', 'folder_state', 'scan', 'photo_hero', 'photo_order', 'version', 'updated_by', 'from_pitch_id',
@@ -593,10 +593,58 @@ const USERS = {
     check('0015: anon reads no budget', (await as('anon', 'select * from public.dev_budgets')).rows.length, 0);
   }
 
+  /* ---------- 0017: piece requests, worked by the helper, recorded by save_piece_build ---------- */
+  if (UPTO >= '0017') {
+    const pr = (await db.query(`insert into public.properties (slug, label, core) values ('17-piece-st', '17 Piece St', '{"address":"17 Piece St"}') returning id`)).rows[0].id;
+    const ask = (who, tool, extra) => as(who, `insert into public.piece_requests (property_id, tool` + (extra ? ', status, message' : '') + `) values ($1, $2` + (extra ? `, 'done', 'x'` : '') + `) returning *`, [pr, tool]);
+    const askErr = async (...a) => { try { await ask(...a); return null; } catch (e) { return e.message; } };
+    const r1 = (await ask('team', 'showsheet', true)).rows[0];
+    check('0017: the team account asks; it is waiting, in its own name, whatever it sent', [r1.status, r1.message, r1.asked_by, r1.asked_name], ['waiting', null, id.team, 'Team (shared)']);
+    check('0017: asking again for the same piece joins the open one (refused)', !!(await askErr('matt', 'showsheet')), true);
+    check('0017: another piece may be asked at once', await askErr('matt', 'brochure'), null);
+    check('0017: a plain team member may not ask', !!(await askErr('teamrole', 'signage')), true);
+    check('0017: the helper may not ask', !!(await askErr('helper', 'signage')), true);
+    check('0017: a stranger may not ask', !!(await askErr('stranger', 'signage')), true);
+    check('0017: the map is not a piece the helper makes', !!(await askErr('matt', 'pitch-map')), true);
+    check('0017: the team reads the asks', (await as('team', 'select count(*)::int n from public.piece_requests')).rows[0].n, 2);
+    check('0017: the team cannot mark one done', (await as('team', `update public.piece_requests set status = 'done' returning id`)).rows.length, 0);
+    check('0017: nor delete a waiting one', (await as('matt', `delete from public.piece_requests where status = 'waiting' returning id`)).rows.length, 0);
+    const claim = (await as('helper', `update public.piece_requests set status = 'working', started_at = now() where id = $1 and status = 'waiting' returning status`, [r1.id])).rows;
+    check('0017: the helper claims it', claim, [{ status: 'working' }]);
+    const spb = (who, req, ver, st, bf, out, arch) => as(who, 'select public.save_piece_build($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb) r',
+      [req, ver, JSON.stringify(st), bf == null ? null : JSON.stringify(bf), out == null ? null : JSON.stringify(out), arch == null ? null : JSON.stringify(arch)]);
+    const spbErr = async (...a) => { try { await spb(...a); return null; } catch (e) { return e.message; } };
+    const OUT = { path: 'Marketing/Showsheet/Showsheet - 17 Piece St - 2026-10-29.pdf', name: 'Showsheet - 17 Piece St - 2026-10-29.pdf', url: 'https://drive.google.com/file/d/X/view', paper: 'a5', madeAt: '2026-10-29T12:00:00.000Z', via: 'helper' };
+    const BF = { v: 2, tool: 'showsheet', facts: { price: 1 }, via: 'helper' };
+    check('0017: Matt cannot record a helper build', await spbErr('matt', r1.id, null, {}, BF, OUT, null), 'not allowed');
+    check('0017: a build needs its output', await spbErr('helper', r1.id, null, {}, BF, null, null), 'bad build');
+    const brochureReq = (await db.query(`select id from public.piece_requests where tool = 'brochure' and property_id = $1`, [pr])).rows[0].id;
+    check('0017: only a request being worked can be recorded', await spbErr('helper', brochureReq, null, {}, BF, OUT, null), 'no such request');
+    const d1 = (await spb('helper', r1.id, null, { s: 1 }, BF, OUT, null)).rows[0].r;
+    check('0017: the helper records the build on the right piece', [d1.property_id, d1.tool, d1.version, d1.output.name, d1.built_by, d1.outputs.length],
+      [pr, 'showsheet', 1, OUT.name, id.helper, 1]);
+    const done = (await db.query('select status, result, finished_at is not null f from public.piece_requests where id = $1', [r1.id])).rows[0];
+    check('0017: the request is done, with the file', [done.status, done.result.name, done.result.url, done.f], ['done', OUT.name, OUT.url, true]);
+    check('0017: the change log says the helper made it, asked by the team', (await db.query(`select note, source, asked_by from public.changes where property_id = $1 and field = 'piece:showsheet'`, [pr])).rows,
+      [{ note: 'Showsheet made', source: 'Helper', asked_by: 'Team (shared)' }]);
+    // a rebuild: the old file's archive move is kept on its entry, the version check holds
+    const r2 = (await ask('team', 'showsheet')).rows[0];
+    await as('helper', `update public.piece_requests set status = 'working' where id = $1`, [r2.id]);
+    check('0017: a stale version is a conflict', await spbErr('helper', r2.id, 9, { s: 2 }, BF, OUT, null), 'conflict');
+    const d2 = (await spb('helper', r2.id, 1, { s: 2 }, BF, Object.assign({}, OUT, { name: 'B.pdf' }), { to: 'Marketing/Showsheet/Archive/x.pdf' })).rows[0].r;
+    check('0017: the rebuild is recorded, the older file\'s move kept', [d2.version, d2.outputs.length, d2.outputs[1].archived.to], [2, 2, 'Marketing/Showsheet/Archive/x.pdf']);
+    check('0017: the helper fails one with a reason', (await as('helper', `update public.piece_requests set status = 'failed', message = 'No photos' where id = $1 returning status`, [brochureReq])).rows, [{ status: 'failed' }]);
+    check('0017: the helper clears finished asks', (await as('helper', `delete from public.piece_requests where property_id = $1 and status in ('done', 'failed') returning id`, [pr])).rows.length, 3);
+    check('0017: the record columns are still not the team\'s', await fails('team', `update public.documents set built_from = '{}' where property_id = $1 and tool = 'showsheet'`, [pr]), true);
+    check('0017: nor the helper\'s outside save_piece_build', await fails('helper', `update public.documents set built_from = '{}' where property_id = $1 and tool = 'showsheet'`, [pr]), true);
+    check('0017: anon reads no asks', (await as('anon', 'select * from public.piece_requests')).rows.length, 0);
+    check('0017: the change log still refuses a made-up source', await fails('matt', `insert into public.changes (property_id, field, source) values ($1, 'x', 'Robot')`, [pr]), true);
+  }
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);
-  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0012' ? 7 : UPTO >= '0009' ? 6 : UPTO >= '0007' ? 5 : 3);
+  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0017' ? 8 : UPTO >= '0012' ? 7 : UPTO >= '0009' ? 6 : UPTO >= '0007' ? 5 : 3);
 
   /* ---------- run before the accounts exist: refuse rather than lock everyone out ---------- */
   if (fresh.length) {

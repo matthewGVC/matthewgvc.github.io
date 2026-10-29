@@ -374,6 +374,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: attention groups, each a count', await p.$$eval('#attnCard .at-d summary', e => e.map(x => x.querySelector('span').textContent + ': ' + x.querySelector('b').textContent)),
     ['Past target: 1 item', 'Over estimate: 1 line', 'Due in the next 14 days: 1 item', 'No estimate yet: 1 line', 'Sheet total: Differs', 'Receipts missing: 1 payment']);
   check('build: overview figures', await p.$$eval('#ovCard .v', e => e.map(v => v.textContent)), ['$50,000', '$58,500', '−$8,500', '2 / 5']);
+  check('build: remaining, and what is still planned on open lines', await p.$$eval('#ovCard .ov-t:nth-child(3) .s', e => e.map(s => s.textContent)),
+    ['over the budget', '$4,000 still planned on open lines']);
   check('build: the header names the phase the build is in', await text(p, 'h1 .chip'), 'Construction: Site Work');
   check('build: the sheet total that is off', (await text(p, '#attnCard')).includes('The sheet says $60,000 spent; its lines add up to $58,500.'), true);
   check('build: past target and over estimate', [(await text(p, '#attnCard .at-d')).includes('Roofing'), (await text(p, '#attnCard')).includes('$12,500 over (31.3%)')], [true, true]);

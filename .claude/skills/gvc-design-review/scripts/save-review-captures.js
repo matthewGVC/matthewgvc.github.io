@@ -11,7 +11,7 @@
      python -m http.server 8080                         (from the repo root, first)
      node .claude/skills/gvc-design-review/scripts/save-review-captures.js <slug> [path]
 
-   <slug> is a tool folder (tools/<slug>/); pass a path such as /photos/ for
+   <slug> is a tool folder (tools/<slug>/); pass a path such as /workspace/tools/ for
    any other page. Output goes to tmp/review/<slug>/ (untracked, not committed).
    Tools that need data first (the showsheet needs its sample files dropped
    on "Listing files") are only as good as the state you put them in: set the

@@ -10,8 +10,11 @@
    tool must meet; WARN lines are worth fixing but older tools may carry
    them for a reason. Exit code 1 on any FAIL.
 
-   Redirect stubs (a meta refresh, like tools/cma/) are skipped, and so
-   are ARCHIVED tools: kept in the repo, but off the homepage and tests.
+   Redirect stubs (a meta refresh, like tools/cma/ and tools/properties/) are
+   skipped, and so are ARCHIVED tools: kept in the repo, but off the Tools
+   page and tests. Every other tool is listed on the workspace's Tools page
+   (workspace/tools/), except NO_TILE: Map Studio opens from a Seller Package's
+   job (D16).
    ============================================================ */
 const fs = require('fs');
 const path = require('path');
@@ -19,7 +22,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-const home = read('index.html');
+const home = read('workspace/tools/index.html');
 const verify = read('scripts/verify-local.js');
 const interact = read('scripts/interact-local.js');
 
@@ -28,6 +31,7 @@ const slugs = process.argv[2]
   : fs.readdirSync(path.join(ROOT, 'tools')).filter(d => fs.existsSync(path.join(ROOT, 'tools', d, 'index.html')));
 
 const ARCHIVED = ['new-development'];
+const NO_TILE = ['map-studio'];
 
 /* pinned = an exact x.y.z version in the URL */
 const PINNED = /[@/]v?\d+\.\d+\.\d+/;
@@ -117,7 +121,7 @@ ${slug}  (archived, skipped)`); continue; }
     warn.push('print button label differs from "Print / Save PDF"');
 
   /* ---- site wiring ---- */
-  if (!home.includes(`href="tools/${slug}/"`)) fail.push('no tile on the homepage (index.html)');
+  if (!NO_TILE.includes(slug) && !home.includes(`href="../../tools/${slug}/"`)) fail.push('not listed on the Tools page (workspace/tools/index.html)');
   if (!verify.includes(`'/tools/${slug}/'`)) fail.push('not in scripts/verify-local.js PAGES');
   if (!new RegExp(`'${slug}'`).test(interact.match(/const ALL = \[[\s\S]*?\];/)[0])) fail.push('not in scripts/interact-local.js ALL');
 

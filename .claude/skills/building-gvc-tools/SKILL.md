@@ -1,6 +1,6 @@
 ---
 name: building-gvc-tools
-description: Use when adding a new tool, builder, sheet or page under tools/ in the GVC Workspace repo (matthewgvc.github.io), or when changing an existing tool's head, shell, side panel, print setup, saved state or homepage tile.
+description: Use when adding a new tool, builder, sheet or page under tools/ in the GVC Workspace repo (matthewgvc.github.io), or when changing an existing tool's head, shell, side panel, print setup, saved state or Tools page entry.
 ---
 
 # Building GVC tools
@@ -28,9 +28,9 @@ build once answered.** Never guess them:
 |---|---|
 | What does it print? Paper size, page count, which markets (NJ / NYC / FL)? | Picks the shell; markets stay independent |
 | Where does the content come from? Columns, copy, figures? | **Never invent** names, figures, quotes, partners, towns, form fields. Missing → a visible stamp ("List needed") |
-| Does it read or save a property from the library? | Saving needs a migration Matt runs (§4) |
+| Does it read or save a property from the library? | Saving needs its slug in `TOOLS` (§4) |
 | Where does each QR code point? | Team QR is fixed; a tool's own QR (listing, form) is a field |
-| Homepage section: Listing Suite (prints for clients) or Tools (utilities)? | Tile placement |
+| Tools page section: Listing pieces (made from a job), Team, or Utilities? | Where it is listed |
 
 Record the answers in `docs/specs/YYYY-MM-DD-<slug>-design.md`.
 
@@ -60,7 +60,7 @@ lists it. Never copy a pattern from a tool that check-tools flags for it.
 - [ ] Head, body and script order exactly as `templates.md`
 - [ ] `panel-collapse.js` **and** `field-labels.js` after the tool script (any side panel / any form control)
 - [ ] `unsaved.js`: `GVC_UNSAVED.watch()` after first render; `touch()` after drags, crops, and other changes that don't fire an input event
-- [ ] Homepage tile in `index.html`, in the right `.tool-row`
+- [ ] Listed on the workspace's Tools page (`workspace/tools/index.html`), in the right section
 - [ ] Test lists: `verify-local.js` `PAGES`, `interact-local.js` `ALL`, and `dnd-local.js` `TOOLS` (`'<slug>': '#fileInputId'`) if photos are dropped
 - [ ] `README.md`: a `## <Name> tool` section, 2–4 lines: what it makes, where its data lives, its test
 
@@ -81,7 +81,7 @@ icons `icons.js`, property library `property-library.js` (+ `property-bar.js` to
   - *Reading* works for any tool: `GVC_PROPS.signedIn()`, `list()`, `load(id, '<slug>')`, `photoUrls()`. Sign-in is `GVC_PROPS.signIn(password)`, prompted from Matt's team; copy how `property-bar.js` asks.
   - *Saving* is allow-listed by `TOOLS` in `property-library.js`; add the slug there or `property-bar.js`'s Save fails with "Unknown tool". The database takes any lower-case slug (`documents_tool_check` in `0009_pieces.sql`), so a migration is needed only when the schema changes; from a second Claude account, hand Matt the SQL file.
   - Test signed-in paths by mocking `GVC_PROPS.call`; never type the team password.
-- **Class names:** check `components.css` before naming a class. `.tool` is the homepage tile, and Watermark's panel inherited its border and padding by reusing it.
+- **Class names:** check `components.css` before naming a class. Watermark once inherited a retired homepage tile's border and padding by reusing its class name.
 - **Other tools' folders:** don't load another tool's files; move shared data to `assets/js/`.
 - **`data-foot="none"`** on full-height tools, or chrome.js adds the site footer under the app and the page scrolls.
 - **Not US Letter?** Set `--pw`/`--ph` on `body` (builder.js reads the size off the body, and

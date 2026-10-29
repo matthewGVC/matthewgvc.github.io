@@ -27,7 +27,9 @@ developer.** Treat that as your default unless they tell you otherwise. That mea
 
 ## 2. What this project is (say this to them if they ask)
 
-- It is **GVC Workspace** — Matt Bloomfield's work + tools site for The GVC Team (Douglas Elliman).
+- It is **GVC Workspace** — The GVC Team's (Douglas Elliman) production workspace, built by Matt
+  Bloomfield: every listing and new development with its facts, milestones and pieces, and the tools
+  that make those pieces. The site opens on the workspace; its **Tools** page lists every tool.
 - It is a **plain static website** — just HTML, CSS, and JavaScript files. **There is no build
   step, no installation, nothing to compile.** You change a file, refresh the browser, done.
 - The code lives on GitHub at: **https://github.com/matthewGVC/matthewgvc.github.io**
@@ -35,7 +37,7 @@ developer.** Treat that as your default unless they tell you otherwise. That mea
 - ⚠️ **The live site is published straight from the `main` branch.** The moment a change lands on
   `main`, GitHub puts it on the real, public website within about a minute. This is why we are
   strict about git (§7). **`main` is production. Protect it.**
-- The headline tool is the **Showsheet Generator** at `tools/showsheet/index.html` — a
+- The most-used tool is the **Showsheet Generator** at `tools/showsheet/index.html` — a
   listing-sheet maker. If the teammate wants to "redesign the showsheet," that is
   almost always the file they mean. See §6.
 
@@ -179,7 +181,8 @@ python -m http.server 8080        # if Python is installed (most common)
 # or
 npx serve -l 8080                 # if Node.js is installed
 ```
-Then open **http://localhost:8080** in the browser. For the showsheet specifically, open
+Then open **http://localhost:8080** in the browser (it opens the workspace; the workspace pages
+need a team sign-in, the tools under `tools/` don't). For the showsheet specifically, open
 **http://localhost:8080/tools/showsheet/**, open the **"Listing files"** section in the left
 panel, and drop the three sample files from `tools/showsheet/sample/` — `listing.docx`,
 `hero.jpg` and `floorplan.jpg` — onto its three drop zones (Word document, Photos, Floorplan) to
@@ -188,20 +191,10 @@ see a fully populated sheet. (There is no "load sample" button; an older one was
 If neither Python nor Node is installed and they want to preview, the simplest fix is to install
 Python from https://www.python.org/downloads/ (check "Add to PATH" during install).
 
-### Adding a photo gallery — Matt's one-command publish
-Matt (the repo owner) publishes new property galleries with a single command — **no branch, no
-PR, no account switching.** Matt also publishes his own code changes straight to `main` once
-they have been verified locally (still never a force-push). Both are owner-only exceptions to
-§5/§7: teammates — including when helping with photos — still follow §5 and send a PR.
-
-1. Drop the photos into `"<Property Name>/Raw/"` and `"<Property Name>/Edited/"` inside the
-   **Personal Photo Editing Project** folder in `Desktop\Claude` (it sits next to this repo).
-2. From this repo run: `python scripts/publish_photos.py`
-
-That script pulls the latest `main`, rebuilds all galleries, commits, and pushes straight to
-`main` — live at https://matthewgvc.github.io/photos/ within a minute. To eyeball a gallery
-before publishing, run `python scripts/build_photos.py` first, preview via §6's local server,
-then run the publish script.
+### Matt's own changes
+Matt (the repo owner) publishes his own code changes straight to `main` once they have been
+verified locally on a branch (still never a force-push). That is an owner-only exception to §5/§7:
+teammates still follow §5 and send a PR.
 
 ### Setting up a job's Drive folder
 Every job folder follows one standard, by job type (resale, rental, sfh, newdev): see `docs/folder-standard.md`

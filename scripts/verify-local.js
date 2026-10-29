@@ -20,7 +20,8 @@ const engine = require('playwright')[ENGINE];
 const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://localhost:8092 to test another copy */
 
 const PAGES = [
-  ['Homepage',        '/'],
+  ['Front door',      '/'],
+  ['Workspace tools', '/workspace/tools/'],
   ['404',             '/404.html'],
   ['Showsheet',       '/tools/showsheet/'],
   ['Seller Package',  '/tools/seller-package/'],
@@ -125,12 +126,12 @@ async function check(page, label, path) {
     if (!await check(page, label, path)) failed++;
   }
 
-  /* The 404 page's one job is to get somebody back to the site. */
+  /* The 404 page's one job is to get somebody back to the workspace. */
   await page.goto(BASE + '/404.html', { waitUntil: 'networkidle' });
   await page.click('a.btn');
   await page.waitForLoadState('networkidle');
-  const home = new URL(page.url()).pathname === '/';
-  console.log((home ? '  ok   ' : '  FAIL ') + '404 "back to home" lands on ' + page.url());
+  const home = new URL(page.url()).pathname === '/workspace/';
+  console.log((home ? '  ok   ' : '  FAIL ') + '404 "back to the workspace" lands on ' + page.url());
   if (!home) failed++;
 
   await browser.close();

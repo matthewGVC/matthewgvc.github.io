@@ -139,7 +139,9 @@
       var c = ((((ctx.row.scan || {}).health || {}).counts || {}).photos) || {};
       body = JP.drive.scanLine(ctx.row, ctx.esc) + (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + (+c.edited || 0) + ' edited photos in the folder.</p>' : '');
     } else body = '<p class="soft">Link the job\'s Drive folder to see its photos.</p>';
-    return '<div class="card" id="photosCard"><div class="card-h"><div><h2>Photos</h2></div></div>' +
+    // Watermark folds into the photo step (D16): staged photos are marked there, then saved back to the folder
+    return '<div class="card" id="photosCard"><div class="card-h"><div><h2>Photos</h2></div>' +
+      '<a class="b sm" id="phWatermark" href="../../tools/watermark/" target="_blank" rel="noopener" title="Mark staged photos as Virtually Staged or Renovated">Watermark</a></div>' +
       '<div id="phBody">' + body + '</div><div id="phPicks">' + picksHtml(ctx) + '</div></div>';
   }
 

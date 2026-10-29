@@ -82,7 +82,7 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 
 - [ ] `check-tools.js <slug>` prints `ok` with no FAIL. Warnings are listed and either fixed or excused.
 - [ ] Test lists updated: `verify-local.js` PAGES, `interact-local.js` ALL, `dnd-local.js` TOOLS (photo tools).
-- [ ] Homepage tile in the right `.tool-row`; `README.md` section present.
+- [ ] Listed on the workspace's Tools page in the right section; `README.md` section present.
 - [ ] CDN: pinned version in the URL and `integrity` plus `crossorigin="anonymous"`.
 - [ ] Shared files: other tools' PDFs unchanged versus `main`.
 - [ ] Dead CSS, dangling `getElementById` lookups and unreferenced files checked for what the change touched; dead code this change created is reported separately from what was already there.
@@ -119,7 +119,7 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 - The "text runs past the page" warning from `interact-local.js` on deliberately long test text.
 - Stamps that are supposed to be there (see `gvc-design-standards/references/copy-and-content.md`).
 - `Tool ·` inside a generated string the tool never prints (verify in the captured output before reporting).
-- The showcase pages (home, galleries, case studies, listing rules) loading Google Fonts: they are the documented exception.
+- The listing rules page and the 404 loading Google Fonts: they never print, so they are the documented exception.
 
 ## Known misses (check by hand)
 

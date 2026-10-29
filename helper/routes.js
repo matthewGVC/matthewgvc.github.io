@@ -7,7 +7,6 @@
      POST /pdf          {tool, inputs, paper, outDir}
                                                   → {ok, path, pages}
      POST /drive-link   {folder, file?}           → {url} (the real Google Drive link; paperwork refused)
-     GET  /lab/samples                            → paths of the Showsheet sample files
      POST /piece        {propertyId, tool, state, paper}
                                                   → the showsheet PDF written into the job's
                                                     folder (helper/piece.js); body up to 40 MB
@@ -31,11 +30,6 @@ function today() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-
-route('GET', '/lab/samples', () => Promise.resolve({
-  ok: true,
-  inputs: { docx: path.join(SAMPLES, 'listing.docx'), photo: path.join(SAMPLES, 'hero.jpg'), floorplan: path.join(SAMPLES, 'floorplan.jpg') }
-}));
 
 route('POST', '/de/dry-run', () => require('./de-sync.js').dryRun({}));
 

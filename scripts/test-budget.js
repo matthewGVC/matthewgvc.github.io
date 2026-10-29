@@ -1,7 +1,7 @@
 /* ============================================================
    Tests for the budget read (D112, D113): the allowlist on a made-up
-   pro-forma, the read-only Google client against a fake Google, the sync
-   against a fake database, and the hourly schedule.
+   pro-forma, the read-only Google client and the one-time sign-in against a
+   fake Google, the sync against a fake database, and the hourly schedule.
 
      node scripts/test-budget.js
 
@@ -10,9 +10,10 @@
    ============================================================ */
 'use strict';
 
-const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto');
+const fs = require('fs'), os = require('os'), path = require('path');
 const allow = require('../helper/budget/allow.js');
-const { createSheets, SCOPE } = require('../helper/budget/sheets.js');
+const { createSheets } = require('../helper/budget/sheets.js');
+const { authUrl, exchange } = require('../helper/budget/sign-in.js');
 const { syncNow } = require('../helper/budget-sync.js');
 const { due } = require('../helper/schedule.js');
 
@@ -74,30 +75,50 @@ const PAID = [
 
   /* ---------- the Google client: read-only, signs in once ---------- */
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-budget-'));
-  const { privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
-  fs.writeFileSync(path.join(home, 'google-key.json'), JSON.stringify({ client_email: 'reader@example.iam.gserviceaccount.com', private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }) }));
+  fs.writeFileSync(path.join(home, 'google-auth.json'), JSON.stringify({ client_id: 'cid', client_secret: 'csecret', refresh_token: 'rtok' }));
   const log = [];
   const send = (body, status) => ({ ok: !status || status < 400, status: status || 200, json: async () => body });
   const google = async (url, init) => {
     log.push({ url: String(url), method: (init && init.method) || 'GET', body: init && init.body });
-    if (url.startsWith('https://oauth2.googleapis.com/token')) return send({ access_token: 'tok', expires_in: 3600 });
+    if (url.startsWith('https://oauth2.googleapis.com/token')) {
+      const f = new URLSearchParams(init.body);
+      if (f.get('grant_type') === 'refresh_token') return f.get('refresh_token') === 'rtok' ? send({ access_token: 'tok', expires_in: 3600 }) : send({ error: 'invalid_grant' }, 400);
+      return send({ refresh_token: 'new-rtok', access_token: 'tok', scope: f.get('code') === 'wide' ? 'https://www.googleapis.com/auth/drive' : 'https://www.googleapis.com/auth/spreadsheets.readonly' });
+    }
     if (/\/values\//.test(url)) return send({ values: decodeURIComponent(url).includes('Expense_Tracker') ? PAID : COSTS });
     if (url.includes('/spreadsheets/locked')) return send({ error: {} }, 403);
     return send({ properties: { title: 'Pro-forma 1 Sample Lane' }, sheets: [{ properties: { title: 'Updated Pro-Forma' } }, { properties: { title: 'Copy of Expense_Tracker' } }] });
   };
   const sheets = createSheets({ home }, { fetch: google });
-  check('ready with the key file', [sheets.ready(), createSheets({ home: path.join(home, 'none') }).ready()], [true, false]);
+  check('ready with the sign-in file', [sheets.ready(), createSheets({ home: path.join(home, 'none') }).ready()], [true, false]);
   check('tabs', await sheets.tabs('sheet1'), { title: 'Pro-forma 1 Sample Lane', tabs: ['Updated Pro-Forma', 'Copy of Expense_Tracker'] });
   await sheets.grid('sheet1', "Bob's Tab");
   check('a tab name is quoted', decodeURIComponent(log[log.length - 1].url).includes("/values/'Bob''s Tab'?"), true);
   check('signed in once for both reads', log.filter(l => l.method === 'POST').length, 1);
   check('the only non-read is the sign-in', log.filter(l => l.method !== 'GET').every(l => l.url === 'https://oauth2.googleapis.com/token'), true);
-  const claims = JSON.parse(Buffer.from(new URLSearchParams(log[0].body).get('assertion').split('.')[1], 'base64').toString());
-  check('asks for read-only sheets', [claims.scope, SCOPE], ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/spreadsheets.readonly']);
-  check('a sheet not shared: says who to share it with', await sheets.tabs('locked').then(() => null, e => e.message),
-    'This sheet isn\'t shared with the helper\'s Google account (reader@example.iam.gserviceaccount.com). Share it as Viewer.');
-  const src = fs.readFileSync(path.join(__dirname, '..', 'helper', 'budget', 'sheets.js'), 'utf8') + fs.readFileSync(path.join(__dirname, '..', 'helper', 'budget-sync.js'), 'utf8');
-  check('no write verb but the sign-in', (src.match(/\b(POST|PUT|PATCH|DELETE)\b/g) || []), ['POST']);
+  check('refreshes with the saved sign-in', Object.fromEntries(new URLSearchParams(log[0].body)), { grant_type: 'refresh_token', client_id: 'cid', client_secret: 'csecret', refresh_token: 'rtok' });
+  check('a sheet it can\'t open: a plain sentence', await sheets.tabs('locked').then(() => null, e => e.message),
+    'Matt\'s Google account can\'t open this sheet. Check the link, or that the sheet still exists.');
+  fs.writeFileSync(path.join(home, 'old-auth.json'), JSON.stringify({ client_id: 'cid', client_secret: 'csecret', refresh_token: 'revoked' }));
+  check('a revoked sign-in says to sign in again', await createSheets({ googleAuthFile: path.join(home, 'old-auth.json') }, { fetch: google }).tabs('sheet1').then(() => null, e => e.message),
+    'Google sign-in has expired or was removed. Run node helper/budget/sign-in.js again.');
+  for (const f of ['sheets.js', 'sign-in.js']) {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'helper', 'budget', f), 'utf8');
+    check('no write verb but the token request: ' + f, (src.match(/\b(POST|PUT|PATCH|DELETE)\b/g) || []), ['POST']);
+  }
+  check('the sync sends nothing anywhere itself', /\b(POST|PUT|PATCH|DELETE)\b/.test(fs.readFileSync(path.join(__dirname, '..', 'helper', 'budget-sync.js'), 'utf8')), false);
+
+  /* ---------- the one-time sign-in ---------- */
+  const u = new URL(authUrl({ clientId: 'cid', redirect: 'http://127.0.0.1:5555', challenge: 'chal', state: 'st' }));
+  check('consent asks for read-only sheets, offline, with PKCE', ['scope', 'access_type', 'prompt', 'code_challenge_method', 'redirect_uri', 'state'].map(k => u.searchParams.get(k)),
+    ['https://www.googleapis.com/auth/spreadsheets.readonly', 'offline', 'consent', 'S256', 'http://127.0.0.1:5555', 'st']);
+  const client = { client_id: 'cid', client_secret: 'csecret' };
+  log.length = 0;
+  check('the code becomes a saved sign-in', await exchange({ client, code: 'c1', verifier: 'ver', redirect: 'http://127.0.0.1:5555', fetch: google }),
+    { client_id: 'cid', client_secret: 'csecret', refresh_token: 'new-rtok' });
+  check('the exchange sends the verifier', new URLSearchParams(log[0].body).get('code_verifier'), 'ver');
+  check('a wider permission than read-only Sheets is refused', await exchange({ client, code: 'wide', verifier: 'v', redirect: 'r', fetch: google }).then(() => null, e => e.message),
+    'Google gave a different permission than read-only Sheets. Try again and allow it.');
 
   /* ---------- the sync ---------- */
   const T = { dev_budgets: [{ dev_project_id: 'd1', sheet_id: 'sheet1', budget: null, version: 1 }, { dev_project_id: 'd2', sheet_id: 'locked', budget: { lines: [] }, version: 4 }], sync_runs: [] };
@@ -115,7 +136,7 @@ const PAID = [
   const r1 = await syncNow({ client: db, sheets, now: NOW });
   check('sync: one read, one failure, the run still ok', [r1.read, r1.changed, r1.ok, r1.errors.map(e => e.row)], [1, 1, true, ['d2']]);
   check('sync: budget and time stored', [T.dev_budgets[0].budget.lines.length, T.dev_budgets[0].synced_at, T.dev_budgets[0].error], [5, NOW.toISOString(), null]);
-  check('sync: a failing sheet keeps its budget and says why', [T.dev_budgets[1].budget, /Share it as Viewer/.test(T.dev_budgets[1].error)], [{ lines: [] }, true]);
+  check('sync: a failing sheet keeps its budget and says why', [T.dev_budgets[1].budget, /can't open this sheet/.test(T.dev_budgets[1].error)], [{ lines: [] }, true]);
   check('sync: the run is logged as budget', [T.sync_runs[0].kind, T.sync_runs[0].ok, T.sync_runs[0].changes], ['budget', true, 1]);
   const r2 = await syncNow({ client: db, sheets, now: NOW });
   check('sync: an unchanged budget isn\'t rewritten', r2.changed, 0);

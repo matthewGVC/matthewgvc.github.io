@@ -5,8 +5,8 @@
        last = { de, scan, backup, asana, asanaFull, people: Date } (latest start of each)
        opts.asana = true adds the three Asana jobs; without a token the runner
        leaves it off, so they are never due.
-       opts.budget = true adds the hourly budget read (D113); without the
-       Google key file the runner leaves it off.
+       opts.budget = true adds the hourly budget read (D113); without a
+       Google sign-in the runner leaves it off.
 
    Each job has a daily time (local clock). A job is due when its last run
    started before the most recent occurrence of that time, so a PC that was

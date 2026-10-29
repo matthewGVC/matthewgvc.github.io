@@ -6,7 +6,7 @@
      r.lastRuns()          → { de: { at, ok, error? }, … }  (for /health)
    Asana jobs (asana every 30 min, asanaFull 03:00, people 03:15) exist only
    when the config holds a token; the full read also counts as the plain one.
-   The budget job (hourly) exists only when the Google key file is there.
+   The budget job (hourly) exists only once Google sign-in is saved (budget/sign-in.js).
      r.start()             ticks every minute
 
    A job that fails is still recorded as run for its slot, so a broken job
@@ -66,7 +66,7 @@ function asanaJobs(cfg, client, syncNow) {
   return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }) };
 }
 
-/* the budget job, only when the helper has its Google key (D113) */
+/* the budget job, only once the helper holds a Google sign-in (D113) */
 function budgetJobs(cfg, client) {
   const { createSheets } = require('./budget/sheets.js');
   const sheets = createSheets(cfg);

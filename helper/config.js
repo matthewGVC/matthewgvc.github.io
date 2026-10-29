@@ -7,8 +7,8 @@
    the helper account's password into it.
 
      const cfg = loadConfig();   // { home, pairCode, siteBase, teamUrl, outputRoots, port, asana }
-                                 // googleKeyFile (optional): the service account's key for the
-                                 // budget read; default <home>\google-key.json (D113)
+                                 // googleAuthFile (optional): the budget read's Google sign-in,
+                                 // default <home>\google-auth.json (helper/budget/sign-in.js, D113)
      DEFAULTS                    the shipped defaults (asana gids aren't secret)
    ============================================================ */
 'use strict';

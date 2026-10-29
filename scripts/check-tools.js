@@ -58,7 +58,7 @@ ${slug}  (archived, skipped)`); continue; }
   if (!/<meta charset="UTF-8"\s*\/?>/i.test(head)) fail.push('<meta charset="UTF-8"> missing');
   if (!/name="viewport" content="width=device-width, initial-scale=1(\.0)?[",]/.test(head)) fail.push('standard viewport meta missing');
   const title = (head.match(/<title>([^<]*)<\/title>/) || [, ''])[1];
-  if (!/ — Matt Bloomfield$/.test(title)) fail.push(`title should end " — Matt Bloomfield" (is "${title}")`);
+  if (!/ · GVC Workspace$/.test(title)) fail.push(`title should end " · GVC Workspace" (is "${title}")`);
   if (!/<meta name="description" content="[^"]+"\s*\/?>/.test(head)) fail.push('meta description missing');
   for (const icon of ['monogram.svg', 'monogram-32.png', 'apple-touch-icon-180.png'])
     if (!head.includes(`assets/logos/${icon}`)) fail.push(`icon link ${icon} missing`);

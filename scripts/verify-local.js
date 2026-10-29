@@ -22,6 +22,7 @@ const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://local
 const PAGES = [
   ['Front door',      '/'],
   ['Workspace tools', '/workspace/tools/'],
+  ['Tools redirect',  '/tools/'],
   ['404',             '/404.html'],
   ['Showsheet',       '/tools/showsheet/'],
   ['Seller Package',  '/tools/seller-package/'],

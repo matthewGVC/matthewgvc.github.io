@@ -331,7 +331,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: Open in Asana on each line', await mp.$eval('.mg:first-of-type .mline a.asana', a => [a.getAttribute('href'), a.target]), ['https://app.asana.com/0/1/1201', '_blank']);
   check('match: M7 shows the link to paste', await mp.$$eval('.mline .paste', els => els.map(e => e.textContent.trim())), ['https://drive.google.com/drive/folders/abc']);
   check('match: roster drift uses the latest People read only', [(await text(mp, '.mg:last-of-type')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg:last-of-type')).includes('Old Person')], [true, false]);
-  check('match: total in the header', (await text(mp, '#lead')).startsWith('4 errors'), true);
+  check('match: total in the header, the overview count', (await text(mp, '#lead')).startsWith('4 errors on jobs'), true);
   check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
     ['/listing-rules/', '/workspace/#tasks']);
   check('match: no Drive pill or read-only banner', [await visible(mp, '#wsDrive'), await visible(mp, '.banner')], [false, false]);
@@ -368,7 +368,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: DE-only listing shows in the Asana group', [asanaGroup.includes('DE listing 9101'), asanaGroup.includes('On DE, not in Asana.'), asanaGroup.includes('9103')], [true, true, false]);
   check('match: Open on DE link', await mp.$eval('.mline[data-key="M2:de:9101"] a.de', a => a.getAttribute('href')).catch(() => null), 'https://www.elliman.com/x/9101');
   check('match: unlinked tasks from the latest run, ignored left out', [asanaGroup.includes('7 Lone Pl'), asanaGroup.includes('Asana task not linked'), asanaGroup.includes('8 Ignored Pl'), asanaGroup.includes('6 Old Pl')], [true, true, false, false]);
-  check('match: they count in the header', (await text(mp, '#lead')).startsWith('6 errors'), true);
+  check('match: they count apart in the header', (await text(mp, '#lead')).startsWith('4 errors on jobs · 2 not linked to a job'), true);
   check('match: no page errors with loose lines', t.errors, []);
   await t.ctx.close();
   /* Link by hand (tune-up A): a loose line can be linked to a job, or set aside */
@@ -471,7 +471,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     await mp.$eval('.bulk [data-bulk]', b => [b.getAttribute('aria-expanded'), b.textContent.trim()])], [true, 2, ['true', 'Hide the jobs']]);
   await mp.click('.bulk [data-bulk]');
   check('match M6: hide again', await visible(mp, '.bulk .bulk-list'), false);
-  check('match M6: the header total still counts them', (await text(mp, '#lead')).startsWith('6 errors'), true);
+  check('match M6: the header total still counts them', (await text(mp, '#lead')).startsWith('6 errors on jobs'), true);
   check('match M6: other groups unchanged', await mp.$$eval('.mg > .card-h h2', els => els.map(e => e.textContent.trim())), ['Asana', 'DE', 'Drive', 'Roster']);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
@@ -786,6 +786,10 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.ctx.close();
 
   /* ---------- tune-ups 2 (Matt's notes, 10-23) ---------- */
+  // the mocks serve whole rows whatever a page selects, so check the selects themselves: the Resell
+  // list must read every column the overview's jobs are built from (the live list showed no Asana link)
+  const selectOf = f => (require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8').match(/rest\('\/properties\?select=([^&']+)/) || [])[1] || '';
+  check('Resell reads the same property columns as the overview', selectOf('assets/js/ws-jobs.js').split(',').sort(), selectOf('workspace/index.html').split(',').sort());
   // the tabs: Overview | Resell | New Dev | Errors | Tools
   t = await open(browser, { path: '/workspace/jobs/' });
   check('tabs: the five names', await t.page.$$eval('.nav a', as => as.map(a => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('aria-current')])),

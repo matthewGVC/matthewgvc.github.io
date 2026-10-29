@@ -66,6 +66,8 @@ const PAID = [
     .forEach(w => check('never kept: ' + w, dump.indexOf(w), -1));
   check('no Hard Costs table: a plain sentence', (() => { try { allow.keepBudget({ costs: [['a', 'b']] }); return null; } catch (e) { return e.message; } })(),
     'The pro-forma has no Hard Costs table with Estimated Price and Actual columns.');
+  const renamed = COSTS.map(r => r.map(c => (c === 'Hard Costs' ? 'Costs' : c)));
+  check('a later template heads the column "Costs"', allow.keepBudget({ costs: renamed }).lines.map(l => l.name), b.lines.map(l => l.name));
   check('no Expense_Tracker tab: no payments', allow.keepBudget({ costs: COSTS, payments: null }).payments, []);
   check('money', [' $ 13,500.00 ', '-$4,132.54', '-', ' $ -   ', '(250)', 12, ''].map(allow.money), [13500, -4132.54, null, null, -250, 12, null]);
   check('day', ['12/16/2025', '4/10/26', '2026-05-20', 'June 15', ''].map(allow.day), ['2025-12-16', '2026-04-10', '2026-05-20', null, null]);

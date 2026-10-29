@@ -7,7 +7,8 @@
        payments  the Expense_Tracker tab the same way, or null when the sheet has none
      costsTab(titles) / paymentsTab(titles) → the tab to read, or null
 
-   Kept: the Hard Costs block, each line { name, estimate, actual, upgrade }
+   Kept: the Hard Costs block (its first column headed "Hard Costs", or
+   "Costs" in later copies of the template), each line { name, estimate, actual, upgrade }
    ("(Upgrade)" lines marked upgrade and the word dropped) up to the sheet's
    own TOTAL row, which is kept as sheetTotal { estimate, actual, remaining };
    each payment { date, category, vendor, description, amount, status,
@@ -55,13 +56,13 @@ function headings(grid, words) {
 const UPGRADE = /\s*\(upgrade\)\s*/i;
 
 function keepLines(grid) {
-  const h = headings(grid, ['hard costs', 'estimated price', 'actual']);
-  if (!h) throw new Error('The pro-forma has no Hard Costs table with Estimated Price and Actual columns.');
-  const at = (cells, w) => cells[h.col[w]];
+  const found = ['hard costs', 'costs'].map(item => ({ item, h: headings(grid, [item, 'estimated price', 'actual']) })).find(x => x.h);
+  if (!found) throw new Error('The pro-forma has no Hard Costs table with Estimated Price and Actual columns.');
+  const h = found.h, at = (cells, w) => cells[h.col[w === 'item' ? found.item : w]];
   const rest = (grid[h.row] || []).findIndex(c => same(c, 'remaining'));
   const lines = [];
   for (let r = h.row + 1; r < grid.length; r++) {
-    const cells = grid[r] || [], name = text(at(cells, 'hard costs'));
+    const cells = grid[r] || [], name = text(at(cells, 'item'));
     if (/^total\b/i.test(name)) {
       return { lines, sheetTotal: { estimate: money(at(cells, 'estimated price')), actual: money(at(cells, 'actual')), remaining: rest === -1 ? null : money(cells[rest]) } };
     }

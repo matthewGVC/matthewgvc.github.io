@@ -205,8 +205,10 @@
     jobs.forEach(function (j) { data.names[j.id] = j.name; });
     var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
     var loose = data.loose || [];
-    var groups = W.matchGroups(jobs, drift, loose), n = W.overviewStats(jobs).mismatches + loose.length;
-    $('lead').textContent = (n ? n + ' error' + (n === 1 ? '' : 's') : 'No errors') +
+    // the jobs' errors first, the same count as the overview's; then what belongs to no job yet
+    var groups = W.matchGroups(jobs, drift, loose), n = W.overviewStats(jobs).mismatches;
+    $('lead').textContent = (n ? n + ' error' + (n === 1 ? '' : 's') + ' on jobs' : 'No errors on jobs') +
+      (loose.length ? ' · ' + loose.length + ' not linked to a job' : '') +
       (drift.length ? ' · ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') : '');
     if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b></div>'; return; }
     $('groups').innerHTML = groups.map(function (g) {

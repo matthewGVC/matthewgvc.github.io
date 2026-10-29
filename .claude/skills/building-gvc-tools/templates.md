@@ -11,9 +11,9 @@ Paths assume `tools/<slug>/index.html`.
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><Name> — Matt Bloomfield</title>
+<title><Name> · GVC Workspace</title>
 <meta name="description" content="<one sentence: what it makes, for whom>">
-<meta property="og:title" content="<Name> — Matt Bloomfield">
+<meta property="og:title" content="<Name> · GVC Workspace">
 <meta property="og:description" content="<same sentence>">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/<slug>/">
 <meta property="og:type" content="website">

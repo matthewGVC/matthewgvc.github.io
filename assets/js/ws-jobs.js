@@ -56,7 +56,7 @@
   }
   function load() {
     return Promise.all([
-      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_listing_id,drive_folder,folder_state,scan,version&stage=not.is.null'),
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'), rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
       // unreadable (0012 not run yet) means no counts, never a broken list

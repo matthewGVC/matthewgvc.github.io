@@ -2552,10 +2552,12 @@ window.__test = {
 };
 </script>
 <script>
-/* job mode's own files, only when the sheet was opened from a job */
+/* job mode's own files, only when the sheet was opened from a job: the shared piece mode
+   (assets/js/piece-mode.js, as the other pieces use it) and the sheet's adapter, job-mode.js */
 if (new URLSearchParams(location.search).has('listing')) {
   ['../../assets/js/drive-rules.js', '../../assets/js/drive.js', '../../assets/js/folder-health.js', '../../assets/js/job-facts.js',
-   '../../assets/js/sheet-job.js', '../../assets/js/piece-stale.js', '../../assets/js/workspace-shell.js', 'job-mode.js']
+   '../../assets/js/sheet-job.js', '../../assets/js/piece-job.js', '../../assets/js/piece-stale.js', '../../assets/js/workspace-shell.js',
+   '../../assets/js/piece-mode.js', 'job-mode.js']
     .reduce((ready, src) => ready.then(() => new Promise((ok, fail) => {
       const el = document.createElement('script');
       el.src = src; el.onload = ok; el.onerror = () => fail(new Error(src));

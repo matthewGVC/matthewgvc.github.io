@@ -1,9 +1,10 @@
 /* ============================================================
    Browser tests for the Showsheet in job mode (Slice 4, Tasks 6 and 8):
    /tools/showsheet/?listing=<slug> opens filled from the job, with its
-   photos and floorplan read from Drive, and saves back through save_job,
-   save_piece and the helper's POST /piece. Supabase, Drive and the helper
-   are mocked by request interception (made-up rows and names; nothing real).
+   photos and floorplan read from Drive, and saves back through save_job and
+   save_piece_of; Make PDF adds a piece request for the helper (0017) and
+   buildPayload() is what the helper's page would print. Supabase, Drive and
+   the helper are mocked by request interception (made-up rows and names).
 
      BASE=http://localhost:8096 node scripts/test-sheet-page.js
    ============================================================ */
@@ -87,17 +88,25 @@ const FAKE_DRIVE = `(function () {
 async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
-  const errors = [], saves = [], pieces = [], helper = [];
+  const errors = [], saves = [], pieces = [], helper = [], asks = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
-  await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__sheetTimeoutMs = 300; window.__sheetRetryMs = 30; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
+  await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__pieceTimeoutMs = cfg.timeoutMs || 300; window.__pieceRetryMs = 30; window.__piecePollMs = 60; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
   await page.route('**/assets/js/drive.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FAKE_DRIVE }));
   const T = opts.rows || rowsFor(opts);
+  T.piece_requests = T.piece_requests || [];
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
     const json = (status, body) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     if (table === 'members') return json(200, opts.members || [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]);
+    if (table === 'piece_requests' && m === 'POST') {
+      const body = JSON.parse(r.request().postData() || '{}');
+      asks.push(body);
+      const row = Object.assign({ id: 'req' + asks.length, status: 'waiting', asked_at: new Date().toISOString(), asked_name: 'Matt Bloomfield' }, body);
+      T.piece_requests.unshift(row);
+      return json(201, [row]);
+    }
     if (table === 'save_job') {
       const body = JSON.parse(r.request().postData() || '{}');
       saves.push(body);
@@ -106,14 +115,13 @@ async function open(browser, opts) {
       Object.assign(row, body.p_set, { version: row.version + 1 });
       return json(200, row);
     }
-    if (table === 'save_piece') {
+    if (table === 'save_piece_of') {
       const body = JSON.parse(r.request().postData() || '{}');
       pieces.push(body);
       if (opts.pieceFails && pieces.length <= opts.pieceFails) return json(500, { message: 'boom' });
-      const doc = Object.assign({ property_id: body.p_property_id, tool: body.p_tool, version: (body.p_version || 0) + 1, state: body.p_state, outputs: [] },
+      const doc = Object.assign({ property_id: body.p_id, tool: body.p_tool, version: (body.p_version || 0) + 1, state: body.p_state, outputs: [] },
         body.p_built_from ? { built_from: body.p_built_from, output: body.p_output } : {});
       T.documents = [doc];
-      if (opts.pieceLost && pieces.length <= opts.pieceLost) return json(500, { message: 'the reply was lost' });
       return json(200, doc);
     }
     if (m !== 'GET') return json(201, []);
@@ -125,17 +133,19 @@ async function open(browser, opts) {
   await page.route('http://localhost:47610/**', r => {
     if (opts.helperDown) return r.abort();
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
-    const body = JSON.parse(r.request().postData() || '{}');
-    helper.push({ path: new URL(r.request().url()).pathname, body, pair: r.request().headers()['x-gvc-pair'] });
-    const reply = opts.helperReply || { ok: true, path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf',
-      size: 12345, modified: '2026-10-22T15:00:00.000Z', url: 'https://drive.google.com/file/d/NEW/view', pages: 2, archived: { from: 'a', to: 'b' } };
-    r.fulfill({ status: opts.helperStatus || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(reply) });
+    const body = JSON.parse(r.request().postData() || '{}'), where = new URL(r.request().url()).pathname;
+    helper.push({ path: where, body, pair: r.request().headers()['x-gvc-pair'] });
+    const send = (x, status) => r.fulfill({ status: status || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(x) });
+    if (where === '/health') return send({ ok: true, version: 't', paired: true });
+    if (where === '/pieces/run') return send({ ok: true });
+    send({ ok: false, error: 'The helper has no ' + where + '.' }, 404);
   });
   await page.goto(BASE + (opts.path || '/tools/showsheet/?listing=100-example-st-4a'), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.GVC_SHEETMODE && window.GVC_SHEETMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, asks, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
 }
+const payload = t => t.page.evaluate(() => window.GVC_SHEETMODE.buildPayload());
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const st = page => page.evaluate(() => window.__test.state);
 const typeIn = async (page, field, value) => {
@@ -222,8 +232,8 @@ const typeIn = async (page, field, value) => {
   await t.ctx.close();
 
   // Drive not connected here
-  t = await open(browser, { drive: { state: 'needs-click' } });
-  check('no Drive: says so with Reconnect', [(await text(t.page, '#jobPhotoMsg')).includes('Connect Drive on this desktop to bring in photos and the floorplan'), !!(await t.page.$('#jobReconnect'))], [true, true]);
+  t = await open(browser, { drive: { state: 'needs-click' }, helperDown: true });
+  check('no Drive: says so with Reconnect', [(await text(t.page, '#jobPhotoMsg')).includes('Drive isn\'t connected in this browser, and the helper isn\'t on this computer'), await text(t.page, '#jobReconnect')], [true, 'Reconnect Drive']);
   check('no Drive: facts filled', (await st(t.page)).price, '$4,500,000');
   await t.page.click('#jobReconnect');
   await t.page.waitForTimeout(800);
@@ -250,7 +260,7 @@ const typeIn = async (page, field, value) => {
 
   // Save sheet with Drive not connected keeps the crops saved earlier (review I1)
   const CROPS = { property_id: 'p1', tool: 'showsheet', version: 3, state: { photos: [{ path: 'Photos/Edited/01.jpg', fx: 20, fy: 70, name: '01.jpg' }, { path: 'Photos/Edited/02.jpg', fx: 40, fy: 10, name: '02.jpg' }], heroIndex: 0, secondaryIndex: 1 } };
-  t = await open(browser, { documents: [CROPS], drive: { state: 'needs-click' } });
+  t = await open(browser, { documents: [CROPS], drive: { state: 'needs-click' }, helperDown: true });
   await t.page.click('#btnSaveSheet');
   await t.page.waitForTimeout(600);
   check('no Drive: Save sheet keeps the saved crops', (((t.pieces[0] || {}).p_state || {}).photos || []).map(x => [x.path, x.fx, x.fy]),
@@ -264,7 +274,7 @@ const typeIn = async (page, field, value) => {
   await t.ctx.close();
 
   // Drive failing after the job loaded leaves the bar alone (review I2)
-  t = await open(browser, { drive: { stateThrows: true } });
+  t = await open(browser, { drive: { stateThrows: true }, helperDown: true });
   check('Drive throws: bar and Save stay', [(await text(t.page, '#jobBar')).includes('Showsheet for 100 Example St'), !!(await t.page.$('#btnSaveSheet'))], [true, true]);
   check('Drive throws: said on the panel', (await text(t.page, '#jobPhotoMsg')).includes('Drive went away.'), true);
   await t.ctx.close();
@@ -274,89 +284,87 @@ const typeIn = async (page, field, value) => {
   check('standalone: no job mode', [await t.page.evaluate(() => typeof window.GVC_SHEETMODE), await t.page.$eval('#jobBar', e => e.hidden)], ['undefined', true]);
   await t.ctx.close();
 
-  /* ---------- Save PDF to Drive (Task 8) ---------- */
-  const savePdf = async t => { await t.page.click('#btnSavePdf'); await t.page.waitForTimeout(900); };
+  /* ---------- Make PDF: the helper makes it (0017; was Save PDF to Drive, Task 8) ---------- */
+  const savePdf = async t => { await t.page.click('#btnSavePdf'); await t.page.waitForTimeout(600); };
   t = await open(browser, {});
   p = t.page;
   await typeIn(p, 'price', '4200000');
+  const pc = await payload(t);
+  check('PDF: what the helper\'s page prints has exactly the two photos, inline', [pc.why, (pc.state.photos || []).length, (pc.state.photos || []).every(x => /^data:image\//.test(x.src)), pc.state.heroIndex, pc.state.secondaryIndex, pc.paper],
+    [undefined, 2, true, 0, 1, 'a5']);
+  check('PDF: the plan travels inline', /^data:image\//.test(pc.state.floorplan || ''), true);
+  check('PDF: built_from: the photos and plan it prints, made by the helper', [(pc.builtFrom.photos.front || {}).path, (pc.builtFrom.photos.back || {}).path, (pc.builtFrom.floorplan || {}).path, pc.builtFrom.via, pc.builtFrom.v],
+    ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Floorplan/v2/Plan v2.jpg', 'helper', 1]);
+  check('PDF: what is kept has no pictures', JSON.stringify(pc.storable).includes('data:'), false);
   await savePdf(t);
-  check('PDF: the fact edit saved first', [t.saves.length, ((t.saves[0] || {}).p_changes || []).map(c => c.field)], [1, ['price']]);
-  const pc = (t.helper.filter(h => h.path === '/piece')[0] || {}).body || {};
-  check('PDF: one /piece call with the job and paper', [t.helper.filter(h => h.path === '/piece').length, pc.propertyId, pc.tool, pc.paper], [1, 'p1', 'showsheet', 'a5']);
-  check('PDF: the printed state has exactly the two photos, inline', [((pc.state || {}).photos || []).length, ((pc.state || {}).photos || []).every(x => /^data:image\//.test(x.src)), (pc.state || {}).heroIndex, (pc.state || {}).secondaryIndex], [2, true, 0, 1]);
-  check('PDF: the plan travels inline', /^data:image\//.test((pc.state || {}).floorplan || ''), true);
-  check('PDF: the sheet prints the saved price', String((pc.state || {}).price).replace(/[^0-9]/g, ''), '4200000');
-  const sp = t.pieces[0] || {};
-  check('PDF: then save_piece with built_from from the saved row', [t.pieces.length, ((sp.p_built_from || {}).facts || {}).price, (((sp.p_built_from || {}).photos || {}).front || {}).path, (((sp.p_built_from || {}).photos || {}).back || {}).path, (sp.p_built_from || {}).via],
-    [1, 4200000, 'Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'helper']);
-  check('PDF: the output from the helper reply', [(sp.p_output || {}).name, (sp.p_output || {}).path, (sp.p_output || {}).url, (sp.p_output || {}).via, (sp.p_output || {}).paper],
-    ['Showsheet - 100 Example St 4A - 2026-10-22.pdf', 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', 'https://drive.google.com/file/d/NEW/view', 'helper', 'a5']);
-  check('PDF: the move passed through, no image data stored', [sp.p_archived, JSON.stringify(sp.p_state || {}).includes('data:')], [{ from: 'a', to: 'b' }, false]);
-  check('PDF: the bar says made today, with Open and Copy Drive link', [(await text(p, '#jobBar')).includes('Made today'), await p.$eval('#jobBar a[data-open]', a => a.href).catch(() => null), !!(await p.$('#jobBar [data-copy]'))],
-    [true, 'https://drive.google.com/file/d/NEW/view', true]);
+  check('PDF: the fact edit saved first, then the sheet', [t.saves.length, ((t.saves[0] || {}).p_changes || []).map(c => c.field), t.pieces.length, (t.pieces[0] || {}).p_built_from, (t.pieces[0] || {}).p_table],
+    [1, ['price'], 1, null, 'properties']);
+  check('PDF: then one request for the helper, which is told to start; never a PDF from here', [t.asks.map(a => [a.tool, a.property_id]), t.helper.filter(h => h.path === '/pieces/run').length, t.helper.filter(h => h.path === '/piece').length, await t.printed()],
+    [[['showsheet', 'p1']], 1, 0, 0]);
+  check('PDF: the bar follows it', (await text(p, '#jobBar')).includes('Waiting for the helper'), true);
+  // the helper finishes
+  Object.assign(t.T.documents[0], { built_from: pc.builtFrom, version: 2,
+    output: { name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf', path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', url: 'https://drive.google.com/file/d/NEW/view', via: 'helper', paper: 'a5', madeAt: new Date().toISOString() } });
+  Object.assign(t.T.piece_requests[0], { status: 'done', result: { name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf' } });
+  await p.waitForTimeout(500);
+  check('PDF: the bar says made today, with Open and Copy Drive link', [(await text(p, '#jobBar')).includes('Made today'), await p.$eval('#jobBar a[data-open]', a => a.href).catch(() => null), !!(await p.$('#jobBar [data-copy]')),
+    (await text(p, '#jobMsg')).startsWith('Made: Showsheet - 100 Example St 4A')], [true, 'https://drive.google.com/file/d/NEW/view', true, true]);
   check('PDF: no page errors', t.errors, []);
   await t.ctx.close();
 
-  // conflict before the PDF: no file, the typing kept
+  // conflict before the request: nothing asked, the typing kept
   t = await open(browser, { conflict: true });
   await typeIn(t.page, 'price', '4100000');
   await savePdf(t);
-  check('conflict before the PDF', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length, await text(t.page, '#jobMsg'), (await st(t.page)).price],
+  check('conflict before the PDF', [t.asks.length, t.pieces.length, await text(t.page, '#jobMsg'), (await st(t.page)).price],
     [0, 0, 'This job changed a moment ago. Reloaded; try again.', '4100000']);
   await t.ctx.close();
 
-  // helper down: the print dialog, recorded as printed by hand
+  // the helper isn't on this computer: the request waits for it; no print, nothing marked made
   t = await open(browser, { helperDown: true });
   await savePdf(t);
-  check('helper down: printed once', await t.printed(), 1);
-  check('helper down: recorded as printed', [((t.pieces[0] || {}).p_output || {}).via, ((t.pieces[0] || {}).p_built_from || {}).via, /^Showsheet - 100 Example St 4A - \d{4}-\d{2}-\d{2}\.pdf$/.test(((t.pieces[0] || {}).p_output || {}).name || ''), (t.pieces[0] || {}).p_archived],
-    ['print', 'print', true, null]);
-  check('helper down: the bar says so', (await text(t.page, '#jobBar')).includes('printed by hand, file not tracked'), true);
+  check('helper away: never printed, never marked made', [await t.printed(), t.pieces.filter(x => x.p_output).length, t.asks.length], [0, 0, 1]);
+  check('helper away: the bar says it waits for the helper', (await text(t.page, '#jobBar')).includes('Waiting for the helper on Matt\'s desktop'), true);
   await t.ctx.close();
 
-  // the helper refuses with a sentence: shown, nothing recorded, no print
-  t = await open(browser, { helperStatus: 409, helperReply: { ok: false, error: 'This job has no Drive folder linked.' } });
-  await savePdf(t);
-  check('helper refusal: shown, nothing recorded', [await text(t.page, '#jobMsg'), t.pieces.length, await t.printed()], ['This job has no Drive folder linked.', 0, 0]);
+  // the helper couldn't: its sentence on the bar
+  t = await open(browser, { rows: Object.assign(rowsFor({}), { piece_requests: [{ id: 'f1', property_id: 'p1', tool: 'showsheet', status: 'failed', asked_at: '2026-10-22T10:00:00Z', message: 'The job\'s Drive folder isn\'t on this computer.' }] }) });
+  check('helper refusal: shown on the bar', (await text(t.page, '#jobBar')).includes('The helper couldn\'t make it: The job\'s Drive folder isn\'t on this computer.'), true);
   await t.ctx.close();
 
-  // the file is written but the job can't record it
-  t = await open(browser, { pieceFails: 3 });
-  await savePdf(t);
-  check('save_piece failing 3 times', [t.pieces.length, await text(t.page, '#jobMsg')],
-    [3, 'Saved to Drive, but the job didn\'t record it. Press Save PDF to Drive again or reload.']);
-  await t.ctx.close();
-  t = await open(browser, { pieceFails: 2 });
-  await savePdf(t);
-  check('save_piece failing twice then working', [t.pieces.length, (await text(t.page, '#jobMsg')).startsWith('Saved to Drive')], [3, true]);
-  await t.ctx.close();
-
-  // a printed photo Drive hasn't downloaded: refused, nothing made
+  // a printed photo Drive hasn't downloaded: the helper's page would refuse it with the name
   t = await open(browser, { drive: { slow: 'Photos/Edited/01.jpg' } });
-  await savePdf(t);
-  check('photo not downloaded: refused', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('Drive hasn\'t downloaded 01.jpg yet')], [0, 0, true]);
+  check('photo not downloaded: the helper\'s page refuses, naming it', /Drive hasn't downloaded 01\.jpg/.test((await payload(t)).why || ''), true);
   await t.ctx.close();
-  t = await open(browser, { drive: { state: 'needs-click' } });
-  await savePdf(t);
-  check('Drive not connected: refused', [t.helper.filter(h => h.path === '/piece').length, (await text(t.page, '#jobMsg')).includes('Connect Drive')], [0, true]);
+  // a photo the sheet doesn't print never stops it
+  t = await open(browser, { drive: { slow: 'Photos/Edited/03.jpg' } });
+  check('an unprinted photo not downloaded: still made', (await payload(t)).why, undefined);
   await t.ctx.close();
 
-  // review fixes (Task 8)
-  t = await open(browser, { drive: { slowTree: true }, rows: Object.assign(rowsFor({}), {}) });
-  await t.page.evaluate(() => { window.__sheetTimeoutMs = 60000; });
+  // Drive still reading the folder: nothing saved yet
+  t = await open(browser, { drive: { slowTree: true, timeoutMs: 60000 } });
   await savePdf(t);
-  check('Drive still reading the folder: refused', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length], [0, 0]);
+  check('Drive still reading the folder: refused', [t.asks.length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('still reading')], [0, 0, true]);
   await t.ctx.close();
-  t = await open(browser, { helperDown: true, pieceFails: 3 });
+  // the folder couldn't be read here: the helper reads it itself, so Make PDF still asks
+  t = await open(browser, { drive: { slowTree: true } });
   await savePdf(t);
-  check('printed but not recorded: says printed, not saved to Drive', await text(t.page, '#jobMsg'), 'Printed, but the job didn\'t record it. Press Save PDF to Drive again or reload.');
+  check('the folder not read here: still asked', [t.asks.length, /Drive didn't answer in time/.test(await text(t.page, '#jobPhotoMsg'))], [1, true]);
   await t.ctx.close();
+
+  // the job changed elsewhere since the sheet opened: the helper lays the job as it is then, so it goes ahead (audit)
   t = await open(browser, {});
   Object.assign(t.T.properties[0].core, { price: 3900000 });
   t.T.properties[0].core.facts.price = rec(3900000, 'Matt');
   t.T.properties[0].version = 9;
   await savePdf(t);
-  check('the job changed elsewhere since the sheet opened: no PDF made', [t.helper.filter(h => h.path === '/piece').length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('changed')], [0, 0, true]);
+  check('the job changed elsewhere: still asked, nothing refused', [t.asks.length, t.pieces.length], [1, 1]);
+  await t.ctx.close();
+
+  // no Drive folder linked: Make PDF greyed out with the reason
+  const unlinked = rowsFor({}); delete unlinked.properties[0].drive_folder;
+  t = await open(browser, { rows: unlinked });
+  check('no folder: Make PDF off, with the reason', [await t.page.$eval('#btnSavePdf', b => b.disabled), (await text(t.page, '#jobBar')).includes('Link the job\'s Drive folder on the job page first')], [true, true]);
   await t.ctx.close();
 
   // team role: read-only
@@ -392,25 +400,11 @@ const typeIn = async (page, field, value) => {
   check('rebuild: the sheet\'s own wording kept elsewhere', [(await st(p)).residence.features, (await st(p)).textScale.residence], [['Mine'], 120]);
   await t.ctx.close();
 
-  // the job moved elsewhere (agents only, nothing the sheet edits) after the sheet opened: no PDF, no record (review I3)
-  t = await open(browser, {});
-  const jp = t.T.properties.find(x => x.id === 'p1');
-  jp.core = Object.assign({}, jp.core, { agentIds: ['someone-else'] });
-  jp.version += 1;
-  await savePdf(t);
-  check('moved elsewhere: no PDF, no record, told to reload', [t.helper.length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('Reload the page')], [0, 0, true]);
-  await t.ctx.close();
-  // the sheet's own fact save moves the version too: that alone never stops it
+  // the sheet's own fact save, then the request
   t = await open(browser, {});
   await t.page.evaluate(() => { window.__test.state.price = '$4,200,000'; });
   await savePdf(t);
-  check('own save then PDF: goes through', [t.saves.length, t.helper.length, t.pieces.length], [1, 1, 1]);
-  await t.ctx.close();
-
-  // the record landed but its reply was lost: the retry finds it and doesn't record the file twice (review M4)
-  t = await open(browser, { pieceLost: 1 });
-  await savePdf(t);
-  check('reply lost: recorded once, said saved', [t.pieces.length, (await text(t.page, '#jobMsg')).startsWith('Saved to Drive')], [1, true]);
+  check('own save then PDF: goes through', [t.saves.length, t.asks.length, t.pieces.length], [1, 1, 1]);
   await t.ctx.close();
 
   // a saved draft (never built) opens with its own wording when the job's lists haven't moved (review I1)

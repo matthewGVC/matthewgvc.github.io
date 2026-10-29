@@ -12,6 +12,9 @@
                                      modifiedAt, createdAt, assignee, section,
                                      projectGid, parentGid, permalink, fields }
      keepSubtask(raw)            → the same without fields, section or project
+     keepScheduleTask(raw)       → { gid, name, section, parentGid, startOn, dueOn,
+                                     completed, completedAt, milestone, deps, link }
+                                   (a 🚧 task or work item on the schedule, D110)
      keepStory(raw)              → { type, at, from, to } | null  (comments etc. → null)
      keepPerson(raw)             → { gid, name, section, title, state, team,
                                      deBioUrl, deProfileUrl, past }
@@ -22,6 +25,8 @@
      missingKept(tasks)          → kept field names no task has at all (a renamed field)
      KEPT_FIELDS, TASK_FIELDS    the names kept; the opt_fields string asked for
      POST_FIELDS                 the opt_fields string for the social posts project
+     SCHEDULE_FIELDS             what a 🚧 task adds for the schedule; with
+                                 SUBTASK_SCHEDULE_FIELDS, what a work item is read with
 
    A kept field a task has but left empty is present as null; one the task
    doesn't have is absent. That difference is how a rename is noticed.
@@ -48,6 +53,9 @@ const TASK_FIELDS = [
   'custom_fields.date_value', 'custom_fields.enum_value.name', 'custom_fields.multi_enum_values.name',
   'permalink_url'
 ].join(',');
+
+const SCHEDULE_FIELDS = 'start_on,resource_subtype,dependencies.gid,num_subtasks';
+const SUBTASK_SCHEDULE_FIELDS = 'name,completed,completed_at,due_on,parent.gid,permalink_url,' + SCHEDULE_FIELDS;
 
 const STORY_FIELDS = [
   'resource_subtype', 'created_at', 'custom_field.name', 'old_enum_value.name', 'new_enum_value.name',
@@ -113,6 +121,23 @@ function keepSubtask(raw) {
     dueOn: raw.due_on || null,
     assignee: nm(raw.assignee),
     parentGid: gidOf(raw.parent)
+  };
+}
+
+/* a schedule row: dates, the milestone flag and what it waits on; never assignee, notes or fields */
+function keepScheduleTask(raw, projectGid) {
+  return {
+    gid: raw.gid,
+    name: raw.name,
+    section: nm(membership(raw, projectGid).section),
+    parentGid: gidOf(raw.parent),
+    startOn: raw.start_on || null,
+    dueOn: raw.due_on || null,
+    completed: !!raw.completed,
+    completedAt: raw.completed_at || null,
+    milestone: raw.resource_subtype === 'milestone',
+    deps: (raw.dependencies || []).map(gidOf).filter(Boolean),
+    link: raw.permalink_url || null
   };
 }
 
@@ -193,4 +218,5 @@ function missingKept(tasks) {
   return KEPT_FIELDS.filter(n => !tasks.some(t => t.fields && n in t.fields));
 }
 
-module.exports = { keepTask, keepSubtask, keepStory, keepPerson, keepLoose, keepPost, missingKept, KEPT_FIELDS, TASK_FIELDS, STORY_FIELDS, POST_FIELDS };
+module.exports = { keepTask, keepSubtask, keepScheduleTask, keepStory, keepPerson, keepLoose, keepPost, missingKept,
+  KEPT_FIELDS, TASK_FIELDS, STORY_FIELDS, POST_FIELDS, SCHEDULE_FIELDS, SUBTASK_SCHEDULE_FIELDS };

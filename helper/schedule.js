@@ -5,6 +5,8 @@
        last = { de, scan, backup, asana, asanaFull, people: Date } (latest start of each)
        opts.asana = true adds the three Asana jobs; without a token the runner
        leaves it off, so they are never due.
+       opts.budget = true adds the hourly budget read (D113); without the
+       Google key file the runner leaves it off.
 
    Each job has a daily time (local clock). A job is due when its last run
    started before the most recent occurrence of that time, so a PC that was
@@ -16,6 +18,7 @@
 const TIMES = { de: [7, 0], scan: [2, 0], backup: [2, 30] };
 const ASANA_TIMES = { asanaFull: [3, 0], people: [3, 15] };   // nightly full read, then People
 const ASANA_EVERY_MS = 30 * 60 * 1000;                        // the plain read, all day
+const BUDGET_EVERY_MS = 60 * 60 * 1000;                       // the pro-forma sheets, all day
 
 function lastSlot(now, h, m) {
   const t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
@@ -31,7 +34,8 @@ function due(now, last, opts) {
     return !(last && last[k]) || new Date(last[k]) < slot;
   });
   if (withAsana && (!(last && last.asana) || now - new Date(last.asana) >= ASANA_EVERY_MS)) out.push('asana');
+  if (opts && opts.budget && (!(last && last.budget) || now - new Date(last.budget) >= BUDGET_EVERY_MS)) out.push('budget');
   return out;
 }
 
-module.exports = { due, TIMES, ASANA_TIMES, ASANA_EVERY_MS };
+module.exports = { due, TIMES, ASANA_TIMES, ASANA_EVERY_MS, BUDGET_EVERY_MS };

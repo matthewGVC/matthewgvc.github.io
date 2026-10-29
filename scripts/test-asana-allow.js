@@ -82,7 +82,16 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
   check('keepTask assignee is a name', t.assignee, 'Agent A');
   check('keepSubtask has no fields it was not given', Object.keys(allow.keepSubtask({ gid: '2', name: 's', completed: true, completed_at: 'x', due_on: null, parent: { gid: '1' }, notes: 'secret' })),
     ['gid', 'name', 'completed', 'completedAt', 'dueOn', 'assignee', 'parentGid']);
-  check('every opt_fields entry avoids notes and text', /notes|html_text|\btext\b|attachments/.test(allow.TASK_FIELDS), false);
+  check('every opt_fields entry avoids notes and text', /notes|html_text|\btext\b|attachments/.test(allow.TASK_FIELDS + allow.SUBTASK_SCHEDULE_FIELDS), false);
+
+  /* ---------- keepScheduleTask (D110) ---------- */
+  const work = allow.keepScheduleTask({ gid: '20', name: 'Framing', completed: false, completed_at: null, start_on: '2026-05-08', due_on: '2026-06-15',
+    resource_subtype: 'default_task', dependencies: [{ gid: '19' }, { gid: '18' }], parent: { gid: '10' }, permalink_url: 'https://app.asana.com/0/0/20',
+    assignee: { name: 'Agent A' }, notes: 'secret', custom_fields: [field('💵 Contract Price', { number_value: 9 })] });
+  check('keepScheduleTask shape', work, { gid: '20', name: 'Framing', section: null, parentGid: '10', startOn: '2026-05-08', dueOn: '2026-06-15',
+    completed: false, completedAt: null, milestone: false, deps: ['19', '18'], link: 'https://app.asana.com/0/0/20' });
+  const ms = allow.keepScheduleTask({ gid: '30', name: 'CO received', resource_subtype: 'milestone', memberships: [{ project: { gid: '555' }, section: { name: 'Construction' } }] }, '555');
+  check('keepScheduleTask: a milestone in its section, no dates', [ms.milestone, ms.section, ms.startOn, ms.dueOn, ms.deps], [true, 'Construction', null, null, []]);
   check('Zip Code is read as the kept Zip field', allow.keepTask({ gid: '3', custom_fields: [field('📍 Zip Code', { display_value: '10001' })] }).fields['📍 Zip'], '10001');
 
   /* ---------- keepStory ---------- */

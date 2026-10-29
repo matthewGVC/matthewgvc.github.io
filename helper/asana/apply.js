@@ -56,7 +56,8 @@
      won_property_id = that job (logged), never left open (tune-up A3).
    - developments (D65): hints from the 🚧 project, the house row, the Buy-Side
      land row and the loose tasks naming it → milestone_hints (confirmed keys
-     and hints Matt turned down, asana_map.dismissed, left out), next_milestone (+ family, slips, construction, early ticks).
+     and hints Matt turned down, asana_map.dismissed, left out), next_milestone (+ family, slips, construction, early ticks),
+     and schedule = { tasks } when the read gave one that differs (D110; a failed read keeps the last).
    - a full read that no longer has a linked task: the job stays and
      `asana.gone` is set (Match turns it into M2 "Asana task gone").
    - match: after the run, GVC_MATCH.check on every staged listing (and each
@@ -234,6 +235,7 @@ async function writeRun(o, sr, out, now) {
         hints.length + ' milestone' + (hints.length === 1 ? '' : 's') + ' suggested from Asana'));
     }
     if (!eq(next, dev.next_milestone)) patch.next_milestone = next;
+    if (d.schedule && !eq({ tasks: d.schedule }, dev.schedule)) patch.schedule = { tasks: d.schedule };
     const mu = matchUpdate(dev, GM.check(dev, { asana: { tasks, early: res.early }, now }), now, { dev_project_id: dev.id }, sr.id);
     if (mu) { patch.match = mu.match; changes.push(...mu.changes); }
     await save('dev_projects', dev, patch, changes);

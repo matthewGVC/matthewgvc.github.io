@@ -174,7 +174,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 /* Slice 4: the showsheet's record on the Kit row; making and rebuilding need the desktop (S20) */
 #rebuildHost{display:contents}
 .kr button.link{background:none;border:0;padding:0;cursor:pointer}
-@media (max-width:600px){ #rebuildStale, [data-sheet]{display:none} }
+@media (max-width:600px){ a#rebuildStale, [data-sheet]{display:none} }   /* the helper's one-click buttons stay: any device may ask (0017) */
 @media (max-width:720px){ .hd h1{font-size:30px} }
 /* phone: the stages wrap into rows of three so every one stays in view (no hidden scroll) */
 @media (max-width:640px){ .steps{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));row-gap:18px} .step::before{display:none} }
@@ -262,7 +262,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         kind === 'listing' || kind === 'dev' ? rest('/asana_tasks?' + (kind === 'dev' ? 'dev_project_id' : 'property_id') + '=eq.' + encodeURIComponent(row.id) +
           '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([]),
         // its budget (0015): owner, admin and the helper only, so anyone else reads none
-        kind === 'dev' ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([])
+        kind === 'dev' ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([]),
+        // the pieces asked of the helper (0017); unreadable (0017 not run yet) means none
+        kind === 'listing' || kind === 'pitch' ? requestsOf(row) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
@@ -271,7 +273,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         state.posts = r[5] || [];
         state.budget = (r[6] || [])[0] || null;
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
+        state.requests = r[7] || [];
         JP.canEdit = state.me.role === 'owner';
+        JP.canAsk = ASKERS.indexOf(state.me.role) !== -1;
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
         if (kind === 'listing') { data.properties = [row]; data.pitches = r[1] || []; }
         if (kind === 'pitch') data.pitches = [Object.assign({}, row, { won_property_id: null })];   // show the pitch itself even when won
@@ -280,6 +284,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         state.won = (r[2] || [])[0] || null;
         if (!state.job) return missing();   // a listing with no stage yet
         render();
+        follow();
       }).catch(function (e) {
         page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
       });
@@ -291,17 +296,84 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   JP.redraw = function () { if (state.row) render(); };
 
   function ctx() {
-    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, onSheet: paintRebuild };
+    return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, canAsk: JP.canAsk, drive: state.drive, W: W, I: I, esc: esc,
+      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, onSheet: paintRebuild };
   }
 
-  /* S21: Rebuild n stale in the header (owner only), from the scan at first, then live. Slice 5: every
-     piece of the job counts (JP.kit.judgeAll: [{ tool, s, href }]); the button opens the first stale one */
+  /* ---------- 0017: the helper makes the pieces (overturns D89, D91) ----------
+     Make / Rebuild on a piece, and Rebuild n stale, add piece requests; the helper on Matt's desktop
+     makes them (at once when it runs on this computer, else when it next runs). Asking again for a
+     piece already waiting joins that request. The page follows the requests and reloads once the
+     helper has finished one, so the row shows the file it made. */
+  var ASKERS = ['owner', 'admin', 'marketing', 'shared'];
+  function requestsOf(row) {
+    return rest('/piece_requests?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=asked_at.desc&limit=40').catch(function () { return []; });
+  }
+  function ask(tools) {
+    var r = state.row;
+    return tools.reduce(function (done, tool) {
+      return done.then(function (n) {
+        var body = { tool: tool };
+        body[OWNER] = r.id;
+        return P.call('/rest/v1/piece_requests', { method: 'POST', body: JSON.stringify(body), prefer: 'return=minimal' })
+          .then(function () { return n + 1; }, function (e) { if (e && e.status === 409) return n; throw e; });   // 409: already waiting
+      });
+    }, Promise.resolve(0)).then(function () {
+      // on the desktop that runs the helper it starts now; nothing to do anywhere else
+      return GVC_SHELL.helper('POST', '/pieces/run', {}).then(function (x) { return !!(x && x.ok); }, function () { return false; });
+    }).then(function (here) {
+      return requestsOf(r).then(function (rows) {
+        state.requests = rows || [];
+        render();
+        $('actMsg').textContent = here ? 'The helper is making ' + (tools.length > 1 ? 'them' : 'it') + '.'
+          : 'Asked. The helper makes ' + (tools.length > 1 ? 'them' : 'it') + ' on Matt\'s desktop; this page shows when ' + (tools.length > 1 ? 'they are' : 'it is') + ' done.';
+        follow();
+      });
+    }, function (e) {
+      $('actMsg').textContent = e && (e.status === 401 || e.status === 403) ? 'This account can\'t ask the helper to make pieces.' : (e && e.message) || 'The request didn\'t go through.';
+    });
+  }
+  var following = null;
+  function follow() {
+    var open = function () { return (state.requests || []).some(function (q) { return q.status === 'waiting' || q.status === 'working'; }); };
+    if (following || !state.row || !open()) return;
+    following = setInterval(function () {
+      if (!state.row) { clearInterval(following); following = null; return; }
+      requestsOf(state.row).then(function (rows) {
+        var before = JSON.stringify((state.requests || []).map(function (q) { return [q.id, q.status]; }));
+        state.requests = rows || [];
+        var after = JSON.stringify(state.requests.map(function (q) { return [q.id, q.status]; }));
+        if (open()) { if (before !== after) render(); return; }
+        clearInterval(following); following = null;
+        load();   // one finished: its record is new
+      });
+    }, window.__jobPollMs || 5000);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-build], button#rebuildStale');
+    if (!b || b.disabled || !JP.canAsk || !state.row) return;
+    var tools = b.id === 'rebuildStale' ? String(b.dataset.tools || '').split(',').filter(Boolean) : [b.dataset.build];
+    if (!tools.length) return;
+    b.disabled = true;
+    $('actMsg').textContent = 'Asking the helper…';
+    ask(tools);
+  });
+
+  /* S21: Rebuild n stale in the header, from the scan at first, then live. Slice 5: every piece of the
+     job counts (JP.kit.judgeAll: [{ tool, s, href }]). 0017: one click asks the helper for every stale
+     piece it makes (anyone who may ask); a stale map alone still opens Map Studio (the owner). */
   function paintRebuild(list) {
     var host = $('rebuildHost');
     if (!host) return;
     var stale = (Array.isArray(list) ? list : []).filter(function (x) { return x && x.s && x.s.state === 'stale'; });
-    host.innerHTML = stale.length && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="' + esc(stale[0].href) + '">Rebuild ' + stale.length + ' stale</a>' : '';
+    var K = JP.kit, c = ctx();
+    var made = stale.filter(function (x) { return K.HELPER_MAKES.indexOf(x.tool) !== -1 && !K.openRequest(c, x.tool); });
+    if (JP.canAsk && made.length && state.row.drive_folder) {
+      host.innerHTML = '<button class="b primary" type="button" id="rebuildStale" data-tools="' + esc(made.map(function (x) { return x.tool; }).join(',')) + '">Rebuild ' + made.length + ' stale</button>';
+      return;
+    }
+    var byHand = stale.filter(function (x) { return K.HELPER_MAKES.indexOf(x.tool) === -1; });
+    host.innerHTML = byHand.length && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="' + esc(byHand[0].href) + '">Rebuild ' + byHand.length + ' stale</a>' : '';
   }
 
   function tile(k, v, s, badge) {

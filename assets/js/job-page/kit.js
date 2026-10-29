@@ -13,9 +13,12 @@
    checklist-only steps (Advertising Spots, NYC's Just Listed Email).
    The Showsheet row also carries its record (Slice 4, S21): Not made yet /
    Up to date / Stale: price, agents / Made before the workspace kept track,
-   "Made 22 Oct · A5 · Open · Copy Drive link", and Make showsheet, Open sheet
-   or Rebuild. ctx.doc is the showsheet's documents row; ctx.onSheet(result)
-   hears each judgement (the page's Rebuild n stale button).
+   "Made 22 Oct · A5 · Open · Copy Drive link". Since 0017 a piece the helper
+   makes has one-click Make / Rebuild ([data-build], ctx.ask through the page)
+   for anyone who may ask (ctx.canAsk), the newest request's state
+   ([data-build-state], from ctx.requests), and Open, its own page. ctx.doc is
+   the showsheet's documents row; ctx.onSheet(result) hears each judgement
+   (the page's Rebuild n stale button).
    ============================================================ */
 (function (global) {
   'use strict';
@@ -85,8 +88,46 @@
   function sheetHref(ctx, rebuild) {
     return '../../tools/showsheet/?listing=' + encodeURIComponent(ctx.row.slug) + (rebuild ? '&rebuild=1' : '');
   }
-  /* the lines under the Showsheet row and its one way into the sheet; a teammate opens it
-     read-only, never Make or Rebuild; a phone shows the state only (CSS hides [data-sheet]) */
+
+  /* ---------- 0017: the helper makes a piece from one click (overturns D89, D91) ----------
+     Make / Rebuild on a row asks the helper (a piece_requests row, ctx.ask); the piece's own page
+     stays one click away as Open. Anyone who may ask (ctx.canAsk: owner, admin, marketing, the team
+     account) sees the button, on any device; the map is still made in Map Studio. The row says
+     where the newest request is: waiting for the helper, being made, or why it couldn't. */
+  var HELPER_MAKES = ['showsheet', 'brochure', 'postcard-listed', 'postcard-sold', 'seller', 'signage'];
+  function requestOf(ctx, tool) {
+    return (ctx.requests || []).filter(function (r) { return r && r.tool === tool; })
+      .sort(function (a, b) { return a.asked_at < b.asked_at ? 1 : a.asked_at > b.asked_at ? -1 : 0; })[0] || null;
+  }
+  function openRequest(ctx, tool) { var r = requestOf(ctx, tool); return r && (r.status === 'waiting' || r.status === 'working') ? r : null; }
+  function clockOf(v) {
+    var d = new Date(v);
+    if (isNaN(d)) return '';
+    var t = ((d.getHours() % 12) || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + ' ' + (d.getHours() < 12 ? 'am' : 'pm');
+    return d.toDateString() === new Date().toDateString() ? t : JP.drive.day(v) + ', ' + t;
+  }
+  /* the request line under a row, and the one-click button (or '') */
+  function buildBits(ctx, tool, s, doc, name) {
+    var esc = ctx.esc, out = { line: '', btn: '' };
+    if (HELPER_MAKES.indexOf(tool) === -1 || !ctx.canAsk || ctx.kind === 'dev') return out;
+    var r = requestOf(ctx, tool), open = openRequest(ctx, tool);
+    var builtAt = Date.parse((doc && doc.built_at) || ((doc && doc.output) || {}).madeAt || 0) || 0;
+    if (open && open.status === 'working') out.line = 'The helper is making it now…';
+    else if (open) out.line = 'Waiting for the helper on Matt\'s desktop (asked ' + clockOf(open.asked_at) + (open.asked_name ? ' by ' + open.asked_name : '') + ')';
+    else if (r && r.status === 'failed' && (Date.parse(r.asked_at) || 0) > builtAt) out.line = 'The helper couldn\'t make it: ' + (r.message || 'it stopped.');
+    if (out.line) out.line = '<div class="d" data-build-state="' + esc(tool) + '">' + esc(out.line) + '</div>';
+    if (s.state !== 'stale' && s.state !== 'none') return out;
+    if (!ctx.row.drive_folder) {
+      out.line += '<div class="d" data-build-state="' + esc(tool) + '">Link the Drive folder so the helper can make it.</div>';
+      return out;
+    }
+    var label = open ? (open.status === 'working' ? 'Making…' : 'Waiting for the helper') : s.state === 'stale' ? 'Rebuild' + (name ? ' ' + name : '') : 'Make ' + (name || 'showsheet');
+    out.btn = '<button class="b sm primary" type="button" data-build="' + esc(tool) + '"' + (open ? ' disabled' : '') + '>' + esc(label) + '</button>';
+    return out;
+  }
+
+  /* the lines under the Showsheet row, Make / Rebuild (the helper) and Open sheet; a teammate opens
+     it read-only; a phone sees the state and the helper's button (CSS hides [data-sheet]) */
   function sheetBits(ctx, s) {
     var esc = ctx.esc, out = (ctx.doc && ctx.doc.output) || null;
     var word = { none: ['Not made yet', ''], untracked: ['Made before the workspace kept track', ''], fresh: ['Up to date', 'made'],
@@ -102,9 +143,9 @@
       }
       lines += '<div class="d" data-sheet-made>' + made.join(' · ') + '</div>';
     }
-    var act = !ctx.canEdit || s.state === 'fresh' || s.state === 'untracked' ? ['Open sheet', false, 'ghost']
-      : s.state === 'stale' ? ['Rebuild', true, 'primary'] : ['Make showsheet', false, 'primary'];
-    return { lines: lines, act: '<a class="b sm ' + act[2] + '" data-sheet href="' + esc(sheetHref(ctx, act[1])) + '">' + esc(act[0]) + '</a>' };
+    // the helper makes it (one click); the sheet itself is where its wording is changed (stale: with what changed)
+    var b = buildBits(ctx, 'showsheet', s, ctx.doc, '');
+    return { lines: lines + b.line, act: b.btn + '<a class="b sm ghost" data-sheet href="' + esc(sheetHref(ctx, s.state === 'stale' && ctx.canAsk)) + '">Open sheet</a>' };
   }
 
   /* ---------- Slice 5: the other pieces' records (spec S16) ----------
@@ -178,9 +219,14 @@
     if (tool === 'postcard-sold' && !soldYet(ctx) && s.state === 'none') {
       return { lines: '<div class="d" data-piece-line="' + esc(tool) + '">' + esc(head) + ': once the job is sold</div>', act: '' };
     }
-    var verb = tool === 'pitch-map' ? 'Make the map' : 'Make ' + name;
-    var act = !ctx.canEdit || s.state === 'fresh' || s.state === 'untracked' ? ['Open ' + (tool === 'pitch-map' ? 'map' : name), false, 'ghost']
-      : s.state === 'stale' ? ['Rebuild ' + name, true, 'primary'] : [verb, false, 'primary'];
+    if (HELPER_MAKES.indexOf(tool) !== -1) {
+      // the helper makes it (one click); the piece's own page is where its wording is changed
+      var b = buildBits(ctx, tool, s, doc, name);
+      return { lines: lines + b.line, act: b.btn + '<a class="b sm ghost" data-sheet data-piece="' + esc(tool) + '" href="' + esc(pieceHref(ctx, tool, s.state === 'stale' && ctx.canAsk)) + '">' + esc('Open ' + name) + '</a>' };
+    }
+    // the map: made by a person in Map Studio, as before
+    var act = !ctx.canEdit || s.state === 'fresh' || s.state === 'untracked' ? ['Open map', false, 'ghost']
+      : s.state === 'stale' ? ['Rebuild ' + name, true, 'primary'] : ['Make the map', false, 'primary'];
     return { lines: lines, act: '<a class="b sm ' + act[2] + '" data-sheet data-piece="' + esc(tool) + '" href="' + esc(pieceHref(ctx, tool, act[1])) + '">' + esc(act[0]) + '</a>' };
   }
   /* every piece of the job with its judgement, for the header's Rebuild n stale */
@@ -382,5 +428,5 @@
     });
   }
 
-  JP.kit = { html: html, wire: wire, judge: judge, judgeAll: judgeAll, pitchHtml: pitchHtml };
+  JP.kit = { html: html, wire: wire, judge: judge, judgeAll: judgeAll, pitchHtml: pitchHtml, HELPER_MAKES: HELPER_MAKES, openRequest: openRequest };
 })(window);

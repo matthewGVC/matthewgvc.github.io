@@ -49,12 +49,11 @@
     var save = el('button', 'plib-save btn sm');
     var status = el('select', 'plib-status');
     var note = el('div', 'plib-note');
-    /* The bar can load and save; renaming, archived properties and the photo
-       storage read-out live on the Properties page. Same relative path from
-       every builder. */
-    var more = el('a', 'plib-more', 'All properties');
-    more.href = '../properties/';
-    more.title = 'Rename, un-archive, and see how much photo storage is left';
+    /* The bar can load and save; every listing's own page is in the workspace
+       (the Properties page retired, D16). Same relative path from every builder. */
+    var more = el('a', 'plib-more', 'All listings');
+    more.href = '../../workspace/jobs/';
+    more.title = 'Every listing, in the workspace';
 
     name.type = 'button';
     save.type = 'button';

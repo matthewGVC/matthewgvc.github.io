@@ -1,13 +1,23 @@
 # matthewgvc.github.io
 
-GVC Workspace — tool hub. Matt Bloomfield, for The GVC Team (Douglas Elliman).
+GVC Workspace — the GVC Team's (Douglas Elliman) production workspace: every listing and new
+development with its facts, milestones and pieces, and the tools that make those pieces.
 
-Static site, no build step. GSAP via CDN.
+Static site, no build step. GSAP via CDN on the tool pages.
 
 ## Local preview
 
     python -m http.server 8080
-    # open http://localhost:8080
+    # open http://localhost:8080 (it opens the workspace)
+
+## Workspace
+
+`/` forwards to `workspace/`. Its menu: **Overview** (every job's stage and milestones), **Resell**
+(listings, rentals and pitches; Table view is `workspace/status/`), **New Dev** (developments),
+**Errors** (where Drive, Asana and DE disagree, `workspace/match/`) and **Tools** (`workspace/tools/`,
+the list of every tool below). A job's own page is `workspace/job/?listing=` / `?pitch=` / `?dev=`.
+Sign-in is per person (Supabase); the desktop helper in `helper/` (see its README) syncs DE and Asana
+and writes PDFs into the job's Drive folder.
 
 ## Deploy
 
@@ -15,12 +25,9 @@ Push to `main`. GitHub Pages serves the repo root.
 
 ## Scripts
 
-Python — `pip install -r scripts/requirements.txt`:
+Python — `pip install -r scripts/requirements.txt` (the floorplan scripts, film grain, phone mockup):
 
-- `build_photos.py` — regenerate web-optimized property galleries from the
-  sibling Personal Photo Editing Project folder
-- `publish_photos.py` — build the galleries, then commit and push to `main`
-- `test_build_photos.py` — unit tests for the gallery builder
+- `sync_todo.py` — the SQL that mirrors `docs/todo.md` onto the live To-do page
 
 Plain Node, no install — each exits non-zero on a failure:
 
@@ -29,14 +36,12 @@ Plain Node, no install — each exits non-zero on a failure:
 - `test-destination-guide.js` — destination-guide POIs, source links, coordinates, and required page data
 - `test-listing.js` — the Showsheet's Word-document reader and its money math
 - `check-tools.js` — every tool against the house conventions (head, fonts, SRI, panel,
-  labels, homepage tile, test lists); `node scripts/check-tools.js <slug>` for one
+  labels, listed on the Tools page, test lists); `node scripts/check-tools.js <slug>` for one
 - `test-nj-footprint.js` — the NJ Footprint sales list (counties, agents, prices) and its totals
 - `test-namecase.js` — the roster's name casing (particles, II/III/IV, Jr/Sr, Mc, initials)
 
 Node + Playwright — `cd scripts && npm install`:
 
-- `shoot-heroes.js` — re-screenshot both project heroes into `projects/*/hero.webp`
-- `reshoot-gvc.js` — the same, for the GVC team site only
 - `make-png.js` — regenerate the monogram PNG favicons from `assets/logos/monogram.svg`
 - `check-svgs.js` — render-check the monogram and lockup SVGs
 - `baseline.js` — print every tool's reference pages to `exports/baseline/<date>/`;
@@ -138,13 +143,10 @@ Buyer Cheat Sheet (marked Check, not for use until reviewed). Pick the market (N
 pages; there is nothing to type and nothing is saved, but the page asks before you leave once a choice has changed. The copy comes from
 `tools/buyer-package/guide-data.js` through `assets/js/agent-pages.js`.
 
-## Properties tool
+## Retired pages
 
-`tools/properties/` is the shared property library's own page, behind the team password. It lists every
-property, archived ones included, with what has been built for each, its photos and when it was
-updated. Here you can rename a property, change its status (active, coming soon, sold, archived) and
-"Free up photos", which deletes that property's photo files (the facts and saved documents stay).
-It shows how much of the 1 GB photo storage is used.
+`tools/properties/` and `tools/cma/` are redirects only: Properties to the workspace's Resell list (every
+listing is a job now), the CMA to the Seller Package.
 
 ## Floorplan Converter tool
 
@@ -155,14 +157,14 @@ SVG, compare Converted and Original, then download `<name>_gvc.svg`. It runs in 
 
 ## Watermark tool
 
-`tools/watermark/` adds a Virtually Staged or Virtually Renovated label to listing photos. Drop photos
+`tools/watermark/` (also linked from a job's Photos card) adds a Virtually Staged or Virtually Renovated label to listing photos. Drop photos
 or a folder, pick the label, the corner and the size (50 to 200%), then Download saves each photo as
 `<name>-virtually-staged` (or `-virtually-renovated`), as JPG or PNG to match. It runs in the browser;
 nothing is uploaded or saved, and the page asks before you leave with photos loaded.
 
 ## Map Studio tool
 
-`tools/map-studio/` places numbered pins for a list of addresses on a 3D Mapbox map, with a legend,
+`tools/map-studio/` (opened from a job's Seller Package row; it has no place on the Tools page) places numbered pins for a list of addresses on a 3D Mapbox map, with a legend,
 and exports a PNG (`gvc-3d-property-map.png`) at a chosen shape. It needs a Mapbox access token, typed
 into the page. Opened from a job (`?pitch=<slug>` or `?listing=<slug>`), `job-mode.js` maps the job and
 its comps, remembers the token on that computer, and the owner can save the map to the job through the

@@ -1,7 +1,10 @@
-# The property library's database
+# The workspace's database
 
-Three listing builders — Showsheet, Brochure and Seller Package — share one saved property each.
-The Buyer Package does not use the library. This folder holds the schema for that shared store.
+It started as the property library (0001: three listing builders — Showsheet, Brochure and Seller
+Package — share one saved property each) and now holds the whole workspace: members and per-person
+sign-in (0004), jobs, pitches, developments, the change log and sync runs (0005 on), Asana (0006),
+the pieces made from a job (0009, 0010), the folder and facts locks (0012–0014) and a development's
+schedule and budget (0015). The Buyer Package does not use it.
 
 - **Project:** `hoszxrrlfhzbbrzenqvp` (Supabase, free tier, region `us-west-2`)
 - **Client config:** `assets/js/supabase-config.js` — the project URL and the publishable key,
@@ -37,22 +40,19 @@ that is the first thing to revisit.
 
 ## Managing it
 
-`tools/properties/` is the library's own page — every property including the archived ones,
-renaming, status, the photo storage read-out, and "Free up photos". The three builders that
-bind to a property — the Showsheet, the Brochure and the Seller Package — can only load and
-save; anything else is there. The Buyer Package is the fourth builder but has no property at
-all, so it never touches the library.
+Every listing is a job in the workspace (`workspace/`); the old Properties page is retired and
+redirects there. The builders' property bar can only load and save. To see how much photo storage
+is used, look in the Supabase dashboard (Storage).
 
-Two conventions that page relies on:
+Two conventions the library keeps:
 
 - **`core.displayLabel`** — a property's `label` is normally derived from its address, and
-  `saveCore` rebuilds it on every save. A name typed on the Properties page is stored here as
-  well, and `saveCore` prefers it, so a rename survives the next time a builder saves facts.
-  The `slug` is never touched by a rename: the address is the identity and duplicate detection
-  matches on it.
-- **Freeing photos deletes files before rows.** A row whose file is already gone is harmless —
-  `hydrate()` resolves its token to an empty string. A file with no row is not: it consumes
-  quota with nothing pointing at it. Keep that order in anything new.
+  `saveCore` rebuilds it on every save. A name stored here is preferred, so a rename survives the
+  next time a builder saves facts. The `slug` is never touched by a rename: the address is the
+  identity and duplicate detection matches on it.
+- **Photos are deleted files first, rows second.** A row whose file is already gone is harmless —
+  `hydrate()` resolves its token to an empty string. A file with no row is not: it consumes quota
+  with nothing pointing at it. Keep that order in anything new.
 
 ## Applying a migration
 
@@ -78,7 +78,7 @@ Or, with the CLI:
 
 - **1 GB** of file storage. Photos are downscaled to 2000 px on the long edge on the way in, so a
   ten-photo property is about 7 MB — roughly 140 properties before it needs paying for.
-  `tools/properties/` shows how much of it is gone and turns red past 80%.
+  The Supabase dashboard (Storage) shows how much of it is gone.
 - **500 MB** of database, **5 GB** of transfer a month. Every property load pulls its photos.
 - A free project **pauses after a week with no activity** and needs a click in the dashboard to
   wake up.

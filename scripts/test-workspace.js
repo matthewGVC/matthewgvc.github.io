@@ -180,9 +180,9 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('sync card ok', [await p.$eval('#deCard', e => e.className), (await text(p, '#deTitle'))], ['card health', 'DE sync ran']);
   check('read-only banner without Drive', [(await text(p, '.banner')).includes('Read-only here'), await text(p, '#wsDrive')], [true, 'Read-only here']);
   check('avatar initials', await text(p, '#wsMe'), 'MB');
-  check('nav: Overview, Resell, New Dev, Errors', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Resell', 'New Dev', 'Errors']);
+  check('nav: Overview, Resell, New Dev, Errors, Tools', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Resell', 'New Dev', 'Errors', 'Tools']);
   check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
-    [['Team tools', './../#tools'], ['Listing rules', './../listing-rules/'], ['Tasks', './#tasks']]);
+    [['Listing rules', './../listing-rules/'], ['Tasks', './#tasks']]);
   check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
   check('top bar: Asana pill beside DE, the time on hover', [await text(p, '#wsFootAsana'), (await p.$eval('#wsFootAsana', e => e.title)).startsWith('Asana last synced'), await p.$eval('#wsFootAsana', e => e.className)], ['Asana synced', true, 'pill-ok']);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
@@ -333,7 +333,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: roster drift uses the latest People read only', [(await text(mp, '.mg:last-of-type')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg:last-of-type')).includes('Old Person')], [true, false]);
   check('match: total in the header', (await text(mp, '#lead')).startsWith('4 errors'), true);
   check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
-    ['/#tools', '/listing-rules/', '/workspace/#tasks']);
+    ['/listing-rules/', '/workspace/#tasks']);
   check('match: no Drive pill or read-only banner', [await visible(mp, '#wsDrive'), await visible(mp, '.banner')], [false, false]);
   await mp.click('.mline[data-key="M3"] [data-dismiss]');
   check('dismiss: asks for a reason', await visible(mp, '.mline[data-key="M3"] input.reason'), true);
@@ -786,10 +786,10 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await t.ctx.close();
 
   /* ---------- tune-ups 2 (Matt's notes, 10-23) ---------- */
-  // the tabs: Overview | Resell | New Dev | Errors
+  // the tabs: Overview | Resell | New Dev | Errors | Tools
   t = await open(browser, { path: '/workspace/jobs/' });
-  check('tabs: the four names', await t.page.$$eval('.nav a', as => as.map(a => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('aria-current')])),
-    [['Overview', '../', null], ['Resell', '../jobs/', 'page'], ['New Dev', '../new-dev/', null], ['Errors', '../match/', null]]);
+  check('tabs: the five names', await t.page.$$eval('.nav a', as => as.map(a => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('aria-current')])),
+    [['Overview', '../', null], ['Resell', '../jobs/', 'page'], ['New Dev', '../new-dev/', null], ['Errors', '../match/', null], ['Tools', '../tools/', null]]);
   check('Resell: listings, rentals and pitches, no developments', await t.page.$$eval('#rows .nm a', as => as.map(a => a.textContent.trim()).sort()),
     ['100 Example St 4A', '12 Sample Lane', '20 Sample Ave 7B', '90 Pitch St 11B', '<img src=x onerror="window.__xss=1">'].sort());
   check('Resell: the Table view is the status table', await t.page.$eval('[aria-label="View"] a[href="../status/"]', a => a.textContent), 'Table');

@@ -1,10 +1,10 @@
 /* ============================================================
    WORKSPACE SHELL — the top bar, banner and footer of every /workspace/ page
    (from the locked mockup's shell.js, now wired to real state).
-   Main nav: Overview · Resell · New Dev · Errors (Status is Resell's Table view). The footer keeps the links to
-   the rest of the site: Team tools (../#tools), Listing rules and Tasks.
+   Main nav: Overview · Resell · New Dev · Errors · Tools (Status is Resell's Table view). The footer
+   keeps Listing rules and Tasks.
 
-     <body data-nav="overview|resell|newdev|job|match" data-root="./ or ../">
+     <body data-nav="overview|resell|newdev|job|match|tools" data-root="./ or ../">
      const shell = GVC_SHELL.mount({ onSynced, onDrive, noDrive })   after the page's markup
                                 noDrive: the page never needs Drive (Match, Status):
                                 no Drive pill, no read-only banner
@@ -101,7 +101,8 @@
     top.className = 'top';
     top.innerHTML = '<a class="brand" href="' + root + '"><img src="' + root + '../assets/logos/monogram.svg" alt="">GVC Workspace</a>' +
       '<nav class="nav" aria-label="Main"><a href="' + root + '"' + cur('overview') + '>Overview</a><a href="' + root + 'jobs/"' + cur('resell') + '>Resell</a>' +
-      '<a href="' + root + 'new-dev/"' + cur('newdev') + '>New Dev</a><a href="' + root + 'match/"' + cur('match') + '>Errors</a></nav>' +
+      '<a href="' + root + 'new-dev/"' + cur('newdev') + '>New Dev</a><a href="' + root + 'match/"' + cur('match') + '>Errors</a>' +
+      '<a href="' + root + 'tools/"' + cur('tools') + '>Tools</a></nav>' +
       // the DE and Asana sync pills sit beside the Drive pill, the same bubble, the last sync on hover (Matt, 10-23);
       // ids kept from the footer days
       '<div class="top-r"><span class="top-sync"><span class="pill-ok off" id="wsFootSync" title="DE sync status loading">DE…</span><span class="pill-ok off" id="wsFootAsana" title="Asana sync status loading">Asana…</span></span>' +
@@ -117,7 +118,7 @@
 
     var foot = doc.createElement('footer');
     foot.className = 'foot';
-    foot.innerHTML = '<nav class="foot-links" aria-label="More"><a href="' + root + '../#tools">Team tools</a><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a></nav>' +
+    foot.innerHTML = '<nav class="foot-links" aria-label="More"><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a></nav>' +
       '<span>The GVC Team · Douglas Elliman</span>';
     body.appendChild(foot);
 

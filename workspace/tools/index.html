@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tools · GVC Workspace</title>
+<meta name="description" content="Every GVC tool: the pieces a job makes, the team's packages and reference sheets, and the small utilities.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/workspace.css">
+<style>
+.tl-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.tl-g .card-h p{max-width:46ch}
+.tl{list-style:none;margin:0;padding:0}
+.tl li + li{border-top:1px solid var(--rule)}
+.tl a{display:block;padding:11px 0;text-decoration:none;color:var(--ink)}
+.tl a b{display:block;font-family:var(--serif);font-weight:400;font-size:18px}
+.tl a span{display:block;font-size:13px;color:var(--ink-soft);margin-top:2px}
+.tl a:hover b{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:4px}
+.tl a:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+@media (max-width:1100px){ .tl-g{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:640px){ .tl-g{grid-template-columns:minmax(0,1fr)} }
+</style>
+</head>
+<body data-nav="tools" data-root="../">
+<main class="wrap">
+  <div class="page-h">
+    <div>
+      <h1>Tools</h1>
+      <p>A listing's pieces are best made from its job page, where they open filled in and save to its Drive folder. Opened here, they start blank.</p>
+    </div>
+  </div>
+  <!-- Every tool under tools/ is listed here (scripts/check-tools.js checks it), except
+       Map Studio (opened from a Seller Package's job: D16), the archived New Development
+       tool and the redirects (cma, properties). -->
+  <div class="tl-g">
+    <section class="card" data-collapse="off">
+      <div class="card-h"><div><h2>Listing pieces</h2><p>Made from a job's Kit, or here from scratch.</p></div></div>
+      <ul class="tl">
+        <li><a href="../../tools/showsheet/"><b>Showsheet</b><span>The two-sided listing sheet, A5 or Letter.</span></a></li>
+        <li><a href="../../tools/brochure/"><b>Brochure</b><span>The property brochure, Letter or half-letter.</span></a></li>
+        <li><a href="../../tools/postcard/"><b>Postcards</b><span>Just Listed and Just Sold, 6 x 9 in, with bleed.</span></a></li>
+        <li><a href="../../tools/seller-package/"><b>Seller Package</b><span>The listing presentation and CMA.</span></a></li>
+        <li><a href="../../tools/signage/"><b>Signage</b><span>The For Sale sign and the Open House arrow sign.</span></a></li>
+      </ul>
+    </section>
+    <section class="card" data-collapse="off">
+      <div class="card-h"><div><h2>Team</h2><p>Packages and sheets for the whole team, not tied to one job.</p></div></div>
+      <ul class="tl">
+        <li><a href="../../tools/buyer-package/"><b>Buyer Package</b><span>The buyer packet: the process, the costs, the questions to ask.</span></a></li>
+        <li><a href="../../tools/destination-guide/"><b>Local Guide</b><span>A sourced regional guide.</span></a></li>
+        <li><a href="../../tools/agent-info/"><b>Useful Agent Info</b><span>Crib sheets: the questions that get lost, and the buyer's checklist.</span></a></li>
+        <li><a href="../../tools/nj-footprint/"><b>NJ Footprint</b><span>Where the team sells in New Jersey, and how much.</span></a></li>
+        <li><a href="../../tools/office-screens/"><b>Office Screens</b><span>The looping pieces for the office TVs.</span></a></li>
+        <li><a href="../../listing-rules/"><b>Listing media rules</b><span>Advertising, photo and floor plan rules for NY, FL and NJ.</span></a></li>
+      </ul>
+    </section>
+    <section class="card" data-collapse="off">
+      <div class="card-h"><div><h2>Utilities</h2><p>Small jobs.</p></div></div>
+      <ul class="tl">
+        <li><a href="../../tools/floorplan/"><b>Floorplan Converter</b><span>A CubiCasa SVG into a GVC-branded SVG.</span></a></li>
+        <li><a href="../../tools/watermark/"><b>Watermark</b><span>Virtually Staged or Renovated marks on listing photos.</span></a></li>
+        <li><a href="../../tools/calculator/"><b>Feet and Inches Calculator</b><span>Adds and subtracts measurements.</span></a></li>
+        <li><a href="../../tools/todo/"><b>To-do</b><span>Matt's list, visible to the team.</span></a></li>
+      </ul>
+    </section>
+  </div>
+</main>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/drive-rules.js"></script>
+<script src="../../assets/js/drive.js"></script>
+<script src="../../assets/js/workspace-data.js"></script>
+<script src="../../assets/js/workspace-shell.js"></script>
+<script>GVC_SHELL.mount({ noDrive: true });</script>
+</body>
+</html>

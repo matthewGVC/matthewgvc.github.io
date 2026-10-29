@@ -146,17 +146,13 @@ Paper: `builder.css` sets `@page{size:letter portrait;margin:0}` and an 8.5x11in
 </body>
 ```
 
-## Homepage tile (index.html)
+## Tools page entry (workspace/tools/index.html)
 
-Inside the right section's `<div class="tool-row">`, separated by blank lines.
-The mono label is one or two real words for the kind, like the existing tiles: Builder, Sheet,
-Generator, Converter, Library, Reference, Measurements, Staging, 3D maps.
+Inside the right section's `<ul class="tl">` (Listing pieces, Team or Utilities). The line under the
+name says what it makes, in plain words, like the tool's own meta description.
 
 ```html
-      <a class="tool" href="tools/<slug>/" data-enter>
-        <span class="t-mono">Builder</span>
-        <span class="tool-name"><Name></span>
-      </a>
+        <li><a href="../../tools/<slug>/"><b><Name></b><span>What it makes.</span></a></li>
 ```
 
 ## Test lists

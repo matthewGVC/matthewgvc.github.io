@@ -1,6 +1,6 @@
 /* Injects shared masthead + footer.
-   There is no nav: the home page is the index for everything, and the lockup
-   is the way back to it. Pages still set data-nav; it is unused but harmless.
+   There is no nav: the workspace's Tools page is the index for every tool, and the
+   lockup is the way back to it. Pages still set data-nav; it is unused but harmless.
    Dereferences document.body at execution — load as a classic script at the end of <body>. */
 (function () {
   if (document.querySelector(".masthead")) return;
@@ -9,7 +9,7 @@
   const mast = document.createElement("header");
   mast.className = "masthead";
   mast.innerHTML = `
-    <a class="mast-lockup" href="${root}." aria-label="Matt Bloomfield — GVC Workspace, home">
+    <a class="mast-lockup" href="${root}workspace/tools/" aria-label="GVC Workspace tools">
       <span class="monogram" id="mast-monogram"></span>
     </a>`;
   document.body.prepend(mast);
@@ -30,10 +30,7 @@
   const foot = document.createElement("footer");
   foot.className = "site-foot";
   foot.innerHTML = `
-    <span class="left">Matt Bloomfield — The GVC Team, Douglas Elliman</span>
-    <span class="right">
-      <a href="https://github.com/matthewGVC" target="_blank" rel="noopener">github/matthewGVC</a>
-      <a href="https://gvcrealestateteam.com" target="_blank" rel="noopener">gvcrealestateteam.com</a>
-    </span>`;
+    <span class="left">The GVC Team, Douglas Elliman</span>
+    <span class="right"><a href="${root}workspace/tools/">All tools</a></span>`;
   document.body.append(foot);
 })();

@@ -19,6 +19,13 @@ the list of every tool below). A job's own page is `workspace/job/?listing=` / `
 Sign-in is per person (Supabase); the desktop helper in `helper/` (see its README) syncs DE and Asana
 and writes PDFs into the job's Drive folder.
 
+**Pieces made from a job** (Showsheet, Brochure, Postcards, Seller Package, Signage): the helper makes
+them. Make / Rebuild on a job page (any device, owner, admin, marketing or the team account), Rebuild
+n stale, or Make PDF on the piece's own page add a row to `piece_requests` (migration 0017); the helper
+reads the job folder itself, lays the piece out with the piece's own page (`assets/js/piece-mode.js`
+plus each tool's `job-mode.js` adapter) and saves it into the folder. Requests wait while the helper is
+off. Tests: `scripts/test-piece-build.js`, `test-piece-page.js`, `test-sheet-page.js`, `test-job-page.js`.
+
 ## Deploy
 
 Push to `main`. GitHub Pages serves the repo root.
@@ -67,7 +74,8 @@ out of a listing — the Word document and the money fields — is `listing.js`,
 apart so `scripts/test-listing.js` can run it without a browser. Its editor panel
 uses the builders' shared `assets/css/builder.css`; photo and floorplan handling is
 `assets/js/images.js`, shared with the Brochure; its logos are files in
-`assets/logos/sheet/`, read once at startup and placed inline.
+`assets/logos/sheet/`, read once at startup and placed inline. Opened from a job
+(`?listing=<slug>`) it runs on the shared piece mode; `job-mode.js` is only the sheet's adapter.
 
 A sample listing lives in `tools/showsheet/sample/` (555 W59th PHC — `listing.docx`,
 `hero.jpg`, `floorplan.jpg`); open "Listing files" and drop those three onto the tool

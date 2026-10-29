@@ -147,7 +147,8 @@ function driveLinkRoute(o) {
 }
 route('POST', '/drive-link', driveLinkRoute({ driveRoot: 'G:\\Shared drives' }));
 
-/* "Save PDF to Drive" on a job's piece (pieces.js). The helper's own account reads the job. */
+/* A drawn piece or the map written into a job's folder (pieces.js). Since 0017 the job pages ask through
+   piece_requests instead; Map Studio still saves its map here. The helper's own account reads the job. */
 let pieceDb = null;
 route('POST', '/piece', require('./piece.js').pieceRoute({
   db: cfg => (pieceDb = pieceDb || require('./supabase.js').createClient(cfg)),

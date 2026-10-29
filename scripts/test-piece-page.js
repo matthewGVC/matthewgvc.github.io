@@ -347,7 +347,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   /* ---------- the Seller pitch from a listing and from a pitch ---------- */
   o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Pitch' });
   s = await pstate(o.page);
-  check('seller on a listing: the bar', /^Seller pitch for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
+  check('seller on a listing: the bar', /^Seller Package for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
   check('seller on a listing: subject facts, comps, market', [s.address, s.beds, s.sqft, s.city, s.comps.length, s.comps[0].address, s.market, s.agents],
     ['100 Example St, Residence 4A', '3', '1800', 'Testville', 1, '14 Example St', 'nj', ['john-gasdaska']]);
   check('seller on a listing: photos from the picks', s.photos.length, 3);
@@ -356,7 +356,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   await o.page.click('#btnPieceSave');
   await o.page.waitForTimeout(500);
   check('seller on a listing: the price band saves to the job', o.saves.map(x => [x.p_table, x.p_changes.map(c => [c.field, c.new_value, c.note])]),
-    [['properties', [['priceMid', 4350000, 'on the Seller pitch']]]]);
+    [['properties', [['priceMid', 4350000, 'on the Seller Package']]]]);
   check('seller on a listing: the draft is on the listing, paths only', [o.pieces[0] && o.pieces[0].p_table, o.pieces[0] && o.pieces[0].p_tool, noData(o.pieces[0] && o.pieces[0].p_state)], ['properties', 'seller', true]);
   check('seller: no page errors', o.errors, []);
   await o.ctx.close();
@@ -367,7 +367,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   o = await open(browser, { path: PITCH, documents: [mapDoc], prefix: 'Seller Pitch',
     helperReply: { ok: true, path: 'Marketing/Pitch/Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', size: 1, modified: '2026-10-22T15:00:00.000Z', url: null, pages: 12, archived: null } });
   s = await pstate(o.page);
-  check('seller on a pitch: the bar points at the pitch page', [/^Seller pitch for 12 Sample Ln/.test(await text(o.page, '#pieceBar .jb-t')), await o.page.$eval('#pieceBar [data-back]', a => a.getAttribute('href'))],
+  check('seller on a pitch: the bar points at the pitch page', [/^Seller Package for 12 Sample Ln/.test(await text(o.page, '#pieceBar .jb-t')), await o.page.$eval('#pieceBar [data-back]', a => a.getAttribute('href'))],
     [true, '../../workspace/job/?pitch=12-sample-ln-2026-10-01']);
   check('seller on a pitch: facts from the pitch, Asana\'s agents flagged', [s.address, s.priceMid, s.comps.length, /Agents not confirmed on the pitch/.test(await text(o.page, '#pieceBar'))], ['12 Sample Ln', '1900000', 1, true]);
   check('seller on a pitch: photos from its Photos folder only, never loose files', [s.photos.map(p => p.name), await o.page.evaluate(() => window.__driveLog.read.indexOf('img.jpg'))], [['back.jpg', 'front.jpg'], -1]);

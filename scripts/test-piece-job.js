@@ -31,7 +31,7 @@ const pitch = over => Object.assign({ id: 'q1', slug: '12-sample-ln', label: '12
 
 /* ---------- small pieces ---------- */
 check('tools (Slice 5)', J.TOOLS.slice(0, 5), ['brochure', 'postcard-listed', 'postcard-sold', 'seller', 'pitch-map']);
-check('labels (Slice 5)', J.TOOLS.slice(0, 5).map(J.label), ['Brochure', 'Just Listed postcard', 'Just Sold postcard', 'Seller pitch', 'Map']);
+check('labels (Slice 5)', J.TOOLS.slice(0, 5).map(J.label), ['Brochure', 'Just Listed postcard', 'Just Sold postcard', 'Seller Package', 'Map']);
 check('joinUnit', [J.joinUnit('100 Example St', '4A'), J.joinUnit('12 Sample Ln', ''), J.joinUnit('1 Main St', 'Penthouse North')],
   ['100 Example St, Residence 4A', '12 Sample Ln', '1 Main St, Penthouse North']);
 check('mapAddresses: subject then comps, blanks dropped', J.mapAddresses(pitch({ core: { comps: [{ address: '14 Sample Ln' }, { address: ' ' }, { price: '1' }, { address: '9 Other Rd' }] } })),
@@ -111,7 +111,7 @@ check('seller: a band that is words is refused', J.factEdits('seller', Object.as
 const sap = J.applyEdits('seller', njHouse, se2.edits, {});
 check('seller applyEdits: band and comps plain on core, taxes as Matt\'s', [sap.set.core.priceMid, sap.set.core.comps.length, sap.set.core.facts.taxesMonthly.source, !!sap.set.core.facts.priceMid],
   [1950000, 2, 'Matt', false]);
-check('seller applyEdits: note', sap.changes.map(c => c.note), ['on the Seller pitch', 'on the Seller pitch', 'on the Seller pitch']);
+check('seller applyEdits: note', sap.changes.map(c => c.note), ['on the Seller Package', 'on the Seller Package', 'on the Seller Package']);
 const pfillP = J.fill('seller', {}, pitch(), {}).state;
 const pe = J.factEdits('seller', Object.assign({}, pfillP, { beds: '3', comps: [{ address: '14 Sample Ln' }] }), pitch());
 check('seller on a pitch: beds and comps', pe.edits.map(e => [e.field, e.to]), [['beds', 3], ['comps', [{ address: '14 Sample Ln' }]]]);   // the deck's rows as typed

@@ -109,12 +109,12 @@
 
   /* ---------- Slice 5: the other pieces' records (spec S16) ----------
      Each kit row may carry pieces made from the job: Brochure → brochure, Postcard →
-     Just Listed and Just Sold, and a Seller pitch row of its own (sales). A pitch's page
-     gets the Seller pitch and its Map (pitchHtml). Same words and buttons as the
+     Just Listed and Just Sold, and a Seller Package row of its own (sales). A pitch's page
+     gets the Seller Package and its Map (pitchHtml). Same words and buttons as the
      Showsheet's: Not made yet / Up to date / Stale: price / Made before the workspace
      kept track, Make / Open / Rebuild; a teammate opens, never makes; a phone sees states. */
   var TOOLS_OF = { brochure: ['brochure'], postcard: ['postcard-listed', 'postcard-sold'], signage: ['signage'] };
-  var NAME = { brochure: 'brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'seller pitch', 'pitch-map': 'map',
+  var NAME = { brochure: 'brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'seller package', 'pitch-map': 'map',
     signage: 'sign' };
   var DIR = { brochure: 'brochure', 'postcard-listed': 'postcard', 'postcard-sold': 'postcard', seller: 'seller-package', 'pitch-map': 'map-studio',
     signage: 'signage' };
@@ -205,16 +205,16 @@
     });
     return { lines: lines, act: acts };
   }
-  /* a listing's Seller pitch row (sales), under the kit rows */
+  /* a listing's Seller Package row (sales), under the kit rows */
   function sellerRow(ctx, pieces, live) {
     if (ctx.kind !== 'listing' || ctx.row.kind === 'rental') return '';
     var s = judgeTool(ctx, 'seller', pieces, live);
     if (!s) return '';
     var b = pieceBits(ctx, 'seller', s), m = judgeTool(ctx, 'pitch-map', pieces, live), mb = m ? pieceBits(ctx, 'pitch-map', m) : { lines: '', act: '' };
-    return '<div class="kr" data-kit="seller"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">Seller pitch</div>' + b.lines + mb.lines +
+    return '<div class="kr" data-kit="seller"><span class="ic">' + ctx.I('file') + '</span><div><div class="t">Seller Package</div>' + b.lines + mb.lines +
       '</div><div class="a">' + b.act + mb.act + '</div></div>';
   }
-  /* a pitch's own page: its Seller pitch and its Map */
+  /* a pitch's own page: its Seller Package and its Map */
   function pitchHtml(ctx) {
     if (!global.GVC_STALE || !global.GVC_PIECEJOB) return '';
     var row = function (tool, title) {
@@ -225,7 +225,7 @@
         '</div><div class="a">' + b.act + '</div></div>';
     };
     return '<div class="card" id="pitchPieces"><div class="card-h"><div><h2>Pieces</h2></div></div>' +
-      '<div class="kit">' + row('seller', 'Seller pitch') + row('pitch-map', 'Map') + '</div></div>';
+      '<div class="kit">' + row('seller', 'Seller Package') + row('pitch-map', 'Map') + '</div></div>';
   }
 
   /* the Showsheet row by itself, when the folder can't be listed (no folder linked) */

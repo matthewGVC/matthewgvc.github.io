@@ -748,7 +748,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
       ['Just Listed postcard: Up to date', 'Just Sold postcard: once the job is sold']);
     check('kit: the postcard row opens the listed card', await acts(p, 'postcard'), [['Open Just Listed postcard', '../../tools/postcard/?listing=100-example-st-4a']]);
     check('kit: the seller pitch and its map, not made yet', [await line(p, 'seller'), await line(p, 'pitch-map'), await acts(p, 'seller')],
-      ['Not made yet', 'Map: Not made yet', [['Make seller pitch', '../../tools/seller-package/?listing=100-example-st-4a'], ['Make the map', '../../tools/map-studio/?listing=100-example-st-4a']]]);
+      ['Not made yet', 'Map: Not made yet', [['Make seller package', '../../tools/seller-package/?listing=100-example-st-4a'], ['Make the map', '../../tools/map-studio/?listing=100-example-st-4a']]]);
     check('kit: Rebuild n stale counts every piece, opens the first stale one', await p.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')])),
       [['Rebuild 1 stale', '../../tools/brochure/?listing=100-example-st-4a&rebuild=1']]);
     check('kit: the documents read asks for this job\'s pieces', await p.evaluate(() => performance.getEntriesByType('resource').map(e => e.name)
@@ -779,7 +779,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     await t.ctx.close();
     t = await open(browser, { rows: R2, path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
     check('kit team: opens pieces, never makes or rebuilds', [(await acts(t.page, 'brochure')).map(a => a[0]), (await acts(t.page, 'seller')).map(a => a[0]),
-      await t.page.$$eval('#rebuildStale', e => e.length)], [['Open brochure'], ['Open seller pitch', 'Open map'], 0]);
+      await t.page.$$eval('#rebuildStale', e => e.length)], [['Open brochure'], ['Open seller package', 'Open map'], 0]);
     await t.ctx.close();
 
     // a pitch's own page: Pieces, its seller pitch and map
@@ -793,7 +793,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     check('pitch page: a Pieces card', await p.$$eval('#pitchPieces [data-kit]', e => e.map(x => x.dataset.kit)), ['seller', 'pitch-map']);
     check('pitch page: the seller pitch stale, Rebuild; the map not made', [await text(p, '#pitchPieces [data-piece-state="seller"]'),
       await p.$$eval('#pitchPieces [data-piece]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]))],
-      ['Stale: beds', [['Rebuild seller pitch', '../../tools/seller-package/?pitch=90-pitch-st-11b&rebuild=1'], ['Make the map', '../../tools/map-studio/?pitch=90-pitch-st-11b']]]);
+      ['Stale: beds', [['Rebuild seller package', '../../tools/seller-package/?pitch=90-pitch-st-11b&rebuild=1'], ['Make the map', '../../tools/map-studio/?pitch=90-pitch-st-11b']]]);
     check('pitch page: Rebuild 1 stale in the header', await p.$$eval('#rebuildStale', els => els.map(a => a.textContent.trim())), ['Rebuild 1 stale']);
     check('pitch page: the documents read asks for the pitch\'s pieces', await p.evaluate(() => performance.getEntriesByType('resource').map(e => e.name)
       .filter(u => /\/rest\/v1\/documents\?/.test(u)).map(u => /pitch_id=eq\.q1/.test(u))), [true]);

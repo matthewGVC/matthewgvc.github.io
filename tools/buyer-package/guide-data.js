@@ -931,7 +931,7 @@
   ];
 
   /* ============================================================
-     MARLI SILVER — Power Haus, and her referral partners.
+     MARLI SILVER — Power Haus, and her preferred vendors.
 
      Power Haus copy is from powerhauswomen.com (fetched 2026-10-06):
      founded 2023 by five female real estate professionals, market partners
@@ -954,18 +954,6 @@
     stats: [['2023', 'Founded'], ['60+', 'Markets across the US']],
     cta: 'Scan to meet a Power Haus agent in your market'
   };
-  /* Marli's referral partners. NOT supplied yet: the page prints a visible
-     "list needed" placeholder per category until each `partners` array holds
-     { name, company, contact } rows. Do not invent entries. */
-  var MARLI_REFERRALS = [
-    { title: 'Mortgage lenders', partners: [] },
-    { title: 'Real estate attorneys', partners: [] },
-    { title: 'Home inspectors', partners: [] },
-    { title: 'Title & insurance', partners: [] },
-    { title: 'Movers & stagers', partners: [] },
-    { title: 'Contractors & designers', partners: [] }
-  ];
-
   /* Marli's Preferred Vendors, exactly as Marli sent them (her email, forwarded
      2026-10-28). Printed on the Useful Links page in Marli's version only.
      Each vendor is [name, company, details...]; details print as given.
@@ -996,6 +984,6 @@
     COSTS: COSTS, faqFor: faqFor,
     statesFor: statesFor, joinStates: joinStates,
     stepsFifty: stepsFifty, offerLive: offerLive, NJ_LINKS: NJ_LINKS,
-    POWERHAUS: POWERHAUS, MARLI_REFERRALS: MARLI_REFERRALS, MARLI_VENDORS: MARLI_VENDORS
+    POWERHAUS: POWERHAUS, MARLI_VENDORS: MARLI_VENDORS
   };
 })(window);

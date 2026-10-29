@@ -46,7 +46,7 @@ paragraph, legal). Render them with PyMuPDF and pull exact text, sizes and colou
 
 | Tool kind | Shell | Reference tool |
 |---|---|---|
-| Prints pages (sheet, package, guide) | Builder: `#app > aside#editor + #stage + #stageBar`, `builder.js` | `tools/agent-info/` (smallest), `tools/new-development/` (with data) |
+| Prints pages (sheet, package, guide) | Builder: `#app > aside#editor + #stage + #stageBar`, `builder.js` | `tools/agent-info/` (smallest), `tools/postcard/` (with roster data) |
 | Converter / calculator, no print | Plain page: `main.page > .page-head + .app`, `components.css` | `tools/calculator/` |
 | Full-height canvas with sidebar | `.mapstudio > aside.sidebar` | `tools/map-studio/` |
 
@@ -79,7 +79,7 @@ icons `icons.js`, property library `property-library.js` (+ `property-bar.js` to
 - **Saved state** is optional: keep only what the user would hate to retype. `localStorage` key `gvc.<slug>.<thing>`, wrapped in try/catch. Never image data URLs. **Never store client or visitor personal data** (names, emails, phones) anywhere; property addresses are fine.
 - **Property library:**
   - *Reading* works for any tool: `GVC_PROPS.signedIn()`, `list()`, `load(id, '<slug>')`, `photoUrls()`. Sign-in is `GVC_PROPS.signIn(password)`, prompted from Matt's team; copy how `property-bar.js` asks.
-  - *Saving* is allow-listed twice: `TOOLS` in `property-library.js` and the `documents.tool` check in `supabase/migrations/0001_property_library.sql`. A new tool needs a new migration that **Matt runs in the Supabase SQL editor** (the Supabase MCP in Claude sessions is a different account). Until then, don't mount `property-bar.js`: its Save fails with "Unknown tool".
+  - *Saving* is allow-listed by `TOOLS` in `property-library.js`; add the slug there or `property-bar.js`'s Save fails with "Unknown tool". The database takes any lower-case slug (`documents_tool_check` in `0009_pieces.sql`), so a migration is needed only when the schema changes; from a second Claude account, hand Matt the SQL file.
   - Test signed-in paths by mocking `GVC_PROPS.call`; never type the team password.
 - **Class names:** check `components.css` before naming a class. `.tool` is the homepage tile, and Watermark's panel inherited its border and padding by reusing it.
 - **Other tools' folders:** don't load another tool's files; move shared data to `assets/js/`.
@@ -123,7 +123,7 @@ printBackground:true})`, then look at the PDF (PyMuPDF render), not the screen.
 Non-print tools: check the mobile preset (375px) and edge inputs (blank, zero, "$1,250,000").
 Print tools: print → Save as PDF in Chromium **and** WebKit, for every paper size and market:
 no half-empty page, nothing past the page edge, fonts embedded. Look at the PDF itself.
-If you touched a shared file, diff the other tools' PDFs against `main`: they must not move.
+If you touched a shared file, run `node scripts/baseline.js --compare <latest date in exports/baseline>`: the other tools' printed pages must not move.
 Sweep what you touched for dead CSS/ids/files.
 
 ## 6. Ship

@@ -17,7 +17,7 @@ Matt Bloomfield, graphic/design assistant for The GVC Team (Gasdaska Verdiglione
 1. **GVC team members** who run the production tools during listing and marketing prep, mostly on desktop. They build a document, then print or save it as a PDF.
 2. **People evaluating Matt's work**: real-estate colleagues, collaborators and prospective employers, browsing on any device.
 
-The printed packages (buyer package, seller pitch and CMA, brochure, showsheet, destination guide, NJ footprint, New Development) are made by GVC agents and handed to clients: buyers, sellers and prospects. Clients never touch the tools; they read the print. Matt (the owner) publishes straight to `main`; other teammates send a pull request for him to review.
+The printed packages (buyer package, Seller Package, brochure, showsheet, postcards, signage, destination guide, NJ footprint) are made by GVC agents and handed to clients: buyers, sellers and prospects. Clients never touch the tools; they read the print. Matt (the owner) publishes straight to `main`; other teammates send a pull request for him to review.
 
 ## Product Purpose
 
@@ -29,19 +29,19 @@ Built in-house for GVC's own listings. Every builder is made for this team's exa
 
 ## Operating Context
 
-- Tools live under `tools/`: showsheet generator, brochure, buyer package, seller pitch and CMA, destination guide, NJ footprint, New Development, agent info, calculator, floorplan converter, map studio, watermark, properties, office screens (`tools/cma/` now forwards to the seller pitch). Photo galleries live under `photos/`.
+- Tools live under `tools/`: showsheet generator, brochure, postcards, signage, buyer package, Seller Package, destination guide, NJ footprint, agent info, calculator, floorplan converter, map studio, watermark, properties, office screens, to-do. New Development is archived (no homepage tile); `tools/cma/` forwards to the Seller Package. Photo galleries live under `photos/`.
 - Printed pages are fixed-size canvases (the packages are US Letter portrait), previewed on screen and printed or saved as PDF through the browser. Print output is checked in Chromium and WebKit, including a rasterized printed PDF.
 - Markets are kept independent: New Jersey, New York City and Florida each have their own copy and page set, and a change for one must not alter another.
-- Copy for agents, bios, testimonials, referral partners and listings comes from real GVC sources; the shared drives hold headshots, stock and film originals.
+- Copy for agents, bios, testimonials, preferred vendors and listings comes from real GVC sources; the shared drives hold headshots, stock and film originals.
 - Workflow: work on a branch, verify with `scripts/verify-local.js`, `interact-local.js` and `dnd-local.js`, then merge to `main`. Never force-push. The live site updates within about a minute of a merge.
 
 ## Capabilities and Constraints
 
-- Static hosting, a local preview server for development (`file://` breaks the Word-document reader and image handling), Supabase for the property library (Showsheet, Brochure, Seller Pitch, Properties) and the New Development library.
-- Placeholder stamps are deliberate and stay visible until real content arrives ("Work in progress" on NJ agent pages, "List needed" and "Partner to be added" on Marli's referral page, red "Check" tags on NJ 50 Things items).
+- Static hosting, a local preview server for development (`file://` breaks the Word-document reader and image handling), Supabase for the property library (Showsheet, Brochure, Seller Package, Properties) and the New Development library.
+- Placeholder stamps are deliberate and stay visible until real content arrives ("Work in progress" on NJ agent pages; empty vendor categories on Marli's Useful Links page show an editor-only "to be added" line).
 - Standing decisions: the NJ seller deck uses NJ stock photos only, never specific home shots; the NYC buyer packet keeps Don't Forget to Ask and the FAQs; the seller Professional Videos page keeps its justified-text spacing.
 - Frozen outputs stay frozen: print- and pixel-verified generated artifacts (such as the showsheet's `.sheet`) are never restyled.
-- Open product facts: Marli's referral partner list, the NJ 50 Things items still marked Check, and a team decision on including the tiered showing service in the marketing package.
+- Open product facts: a mover, stager or designer for Marli's Preferred Vendors, and a team decision on including the tiered showing service in the marketing package.
 
 ## Brand Commitments
 

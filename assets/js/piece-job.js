@@ -36,9 +36,9 @@
   'use strict';
 
   var TOOLS = ['brochure', 'postcard-listed', 'postcard-sold', 'seller', 'pitch-map', 'signage'];
-  var LABEL = { brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'Seller pitch', 'pitch-map': 'Map',
+  var LABEL = { brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'Seller Package', 'pitch-map': 'Map',
     signage: 'Signage' };
-  var NOTE = { brochure: 'on the Brochure', 'postcard-listed': 'on the Postcard', 'postcard-sold': 'on the Postcard', seller: 'on the Seller pitch', 'pitch-map': 'on the Map',
+  var NOTE = { brochure: 'on the Brochure', 'postcard-listed': 'on the Postcard', 'postcard-sold': 'on the Postcard', seller: 'on the Seller Package', 'pitch-map': 'on the Map',
     signage: 'on the Sign' };
   var MAX_AGENTS = { brochure: 2, 'postcard-listed': 2, 'postcard-sold': 2, seller: 2, 'pitch-map': 0, signage: 2 };
   var LINKED = ['brochure', 'signage'];   // pieces that print the listing link (a QR)

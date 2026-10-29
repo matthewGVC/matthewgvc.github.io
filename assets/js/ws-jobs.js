@@ -8,7 +8,8 @@
   var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   // one page script, two tabs: Resell (listings, rentals, pitches) and New Dev (developments)
   var DEV = document.body.dataset.nav === 'newdev';
-  var mine = function (j) { return DEV ? j.type === 'development' : j.type !== 'development'; };
+  // a property that belongs to a development (its own sale listing) is new dev, not resell (Matt, 10-29)
+  var mine = function (j) { return DEV ? j.type === 'development' : j.type !== 'development' && !j.devProjectId; };
   var f = { market: '', type: '', q: '' }, data = null, agentsOf = {}, postsBy = {};
   /* column sorting: no column chosen = last activity, newest first */
   var sort = { key: null, dir: 1 };
@@ -56,7 +57,7 @@
   }
   function load() {
     return Promise.all([
-      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,dev_project_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'), rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
       // unreadable (0012 not run yet) means no counts, never a broken list
@@ -107,8 +108,8 @@
       var ag = agentsOf[j.id] || [];
       return '<tr><td class="nm"><a href="../' + esc(j.href) + '">' + esc(j.name) + '</a><small>' + esc(j.place || (j.folder ? j.folder.split('/').slice(-2).join(' / ') : 'no folder linked')) + '</small><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></td>' +
         '<td>' + esc({ listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' }[j.type]) + '</td><td>' + esc(j.market) + '</td>' +
-        '<td class="stg"><span class="chip ' + j.chip + '">' + esc(j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
-        '<td class="r price">' + (j.price ? esc(j.price) : '<span class="soft">Not set</span>') + '</td><td>' + ((j.agentIds || []).length ? window.GVC_FACES(j.agentIds) : ag.length ? '<span class="soft">' + esc(ag.join(', ')) + ' (from Asana)</span>' : '<span class="soft">Not set</span>') + '</td>' +
+        '<td class="stg"><span class="chip ' + j.chip + '">' + esc(j.phase || j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
+        '<td class="r price">' + (j.price ? esc(j.price) : j.type === 'development' ? '' : '<span class="soft">Not set</span>') + '</td><td>' + ((j.agentIds || []).length ? window.GVC_FACES(j.agentIds) : ag.length ? '<span class="soft">' + esc(ag.join(', ')) + ' (from Asana)</span>' : '<span class="soft">Not set</span>') + '</td>' +
         '<td class="r posts">' + (j.type === 'pitch' ? '' : postsCell(postsBy[j.id])) + '</td>' +
         '<td class="r">' + (W.deLabel(j.deStatus) || (j.type !== 'pitch' && j.type !== 'development') ? '<span class="chip">' + esc(W.deLabel(j.deStatus) || 'not on DE') + '</span>' : '') + '</td></tr>';
     }).join('') : '<tr><td colspan="' + COLS.length + '" class="empty">' + (all.length ? 'Nothing matches these filters.' : (DEV ? 'No developments yet.' : 'No jobs yet.')) + '</td></tr>';

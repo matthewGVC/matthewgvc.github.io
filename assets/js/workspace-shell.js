@@ -1,7 +1,7 @@
 /* ============================================================
    WORKSPACE SHELL — the top bar, banner and footer of every /workspace/ page
    (from the locked mockup's shell.js, now wired to real state).
-   Main nav: Overview · Resell · New Dev · Errors · Tools (Status is Resell's Table view). The footer
+   Main nav: Overview · Resell · New Dev · Errors · Tools. The footer
    keeps Listing rules and Tasks.
 
      <body data-nav="overview|resell|newdev|job|match|tools" data-root="./ or ../">
@@ -161,16 +161,29 @@
     refreshDrive();
 
     /* ---------- sync now ---------- */
-    var syncBtn = doc.getElementById('wsSync'), syncText = 'DE sync status loading';
+    var syncBtn = doc.getElementById('wsSync'), syncText = 'DE sync status loading', unpaired = false;
     // no helper can run where Drive can't (phones, Safari): don't even ask
-    (D && D.supported() ? helper('GET', '/health') : Promise.reject(new Error('no helper here'))).then(function (h) {
-      syncBtn.disabled = false;
-      if (!h.paired) syncBtn.title = 'Pair this browser with the helper first (Slice 0 lab page).';
-    }, function () {
-      syncBtn.disabled = true;
-      syncBtn.title = 'The helper isn\'t running on this PC. ' + syncText + '.';
-    });
+    function checkHelper() {
+      return (D && D.supported() ? helper('GET', '/health') : Promise.reject(new Error('no helper here'))).then(function (h) {
+        syncBtn.disabled = false;
+        unpaired = !h.paired;
+        syncBtn.title = unpaired ? 'Pair this browser with the helper: click, then type the code that node helper/pair.js prints on this PC.'
+          : 'Sync now: Asana, then DE. ' + syncText;
+      }, function () {
+        // the helper runs on Matt's PC only: elsewhere the pills still say when each last synced
+        syncBtn.disabled = true;
+        syncBtn.title = 'Sync now works only on the PC that runs the helper.';
+      });
+    }
+    checkHelper();
     syncBtn.addEventListener('click', function () {
+      if (unpaired) {   // pairing lives here since the Slice 0 lab page went (D115)
+        var code = global.prompt('Pairing code (run node helper/pair.js on this PC to see it):');
+        if (!code) return;
+        try { global.localStorage.setItem(PAIR_KEY, code.trim()); } catch (e) { /* this browser keeps nothing */ }
+        checkHelper().then(function () { if (unpaired) global.alert('That code didn\'t pair. Check it and try again.'); });
+        return;
+      }
       if (!global.confirm('This takes approx. 5 minutes, are you sure?')) return;
       syncBtn.disabled = true;
       syncBtn.title = 'Syncing Asana, then DE…';
@@ -261,7 +274,7 @@
     var me = doc.getElementById('wsMe');
     function paintMe() {
       if (!P || !P.signedIn()) { me.textContent = '·'; me.title = 'Not signed in'; return; }
-      P.whoAmI().then(function (w) { me.textContent = w.initials; me.title = 'Signed in as ' + w.name; shell.me = w; }, function () { me.textContent = '?'; });
+      P.whoAmI().then(function (w) { me.textContent = w.initials; me.title = 'Signed in as ' + w.name; me.setAttribute('aria-label', 'Account: ' + w.name); shell.me = w; }, function () { me.textContent = '?'; });
     }
     me.setAttribute('aria-haspopup', 'true'); me.setAttribute('aria-expanded', 'false');
     function closeMenu(refocus) {
@@ -278,7 +291,8 @@
       var p = doc.createElement('p'); p.textContent = shell.me ? 'Signed in as ' + shell.me.name : 'Not signed in';
       var b = doc.createElement('button'); b.type = 'button'; b.textContent = P && P.signedIn() ? 'Sign out' : 'Sign in';
       b.addEventListener('click', function () {
-        if (P.signedIn()) { P.signOut(); global.location.reload(); }
+        // a tap next to the name mustn't sign anyone out by accident (testers, 10-29)
+        if (P.signedIn()) { if (global.confirm('Sign out of the workspace on this device?')) { P.signOut(); global.location.reload(); } }
         else P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) global.location.reload(); });
       });
       m.appendChild(p); m.appendChild(b); top.appendChild(m);

@@ -109,7 +109,6 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .mtick{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .mtick .inp{width:auto}
 /* Drive cards (mockup .kr, .fpm, .phg, .hl) */
-.scanl{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
 .kit{display:flex;flex-direction:column;gap:10px}
 .kr{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px}
 .kr > div{min-width:0;overflow-wrap:anywhere}
@@ -183,7 +182,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 </head>
 <body data-nav="job" data-root="../">
 <main class="wrap">
-  <div class="crumb" id="crumb"><a href="../jobs/">Resell</a></div>
+  <div class="crumb" id="crumb">&nbsp;</div><!-- filled once the job loads: Resell or New Dev -->
   <div id="page"><p class="soft" style="margin-top:20px">Loading the job…</p></div>
 </main>
 <script src="../../assets/js/supabase-config.js"></script>
@@ -415,7 +414,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var phase = kind === 'dev' && window.GVC_DEVBUILD.currentPhase(r.schedule);
     var stage = phase ? '<span class="chip">' + esc((phase.section ? window.GVC_DEVBUILD.sectionLabel(phase.section) + ': ' : '') + phase.name) + '</span>' : '<span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>';
     page('<div class="hd"><div><h1>' + esc(j.name) + ' ' + stage + '</h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
-      '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
+      // the folder's path itself isn't shown (Open folder and the Drive links reach it); only a problem with it is
+      (!r.drive_folder ? '<div class="path" style="margin-top:8px">No Drive folder linked yet</div>' : r.folder_state === 'broken' ? '<div class="path" style="margin-top:8px"><span class="chip stale">Drive folder moved or renamed</span></div>' : '') +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + (kind === 'dev' ? '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');

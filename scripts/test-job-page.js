@@ -373,7 +373,9 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: no page errors', t.errors, []);
   check('build: attention groups, each a count', await p.$$eval('#attnCard .at-d summary', e => e.map(x => x.querySelector('span').textContent + ': ' + x.querySelector('b').textContent)),
     ['Past target: 1 item', 'Over estimate: 1 line', 'Due in the next 14 days: 1 item', 'No estimate yet: 1 line', 'Sheet total: Differs', 'Receipts missing: 1 payment']);
-  check('build: overview figures', await p.$$eval('#ovCard .v', e => e.map(v => v.textContent)), ['$50,000', '$58,500', '−$8,500', '2 / 5']);
+  check('build: overview figures', await p.$$eval('#ovCard .v', e => e.map(v => v.textContent)), ['$50,000', '$58,500', '−$8,500', '$62,500', '2 / 5']);
+  check('build: the final cost outlook says how far off the budget', await text(p, '#ovCard .ov-t:nth-child(4) .s'), '$12,500 over the budget');
+  check('build: no Next milestone card', await p.$('#nextCard'), null);
   check('build: remaining, and what is still planned on open lines', await p.$$eval('#ovCard .ov-t:nth-child(3) .s', e => e.map(s => s.textContent)),
     ['over the budget', '$4,000 still planned on open lines']);
   check('build: the header names the phase the build is in', await text(p, 'h1 .chip'), 'Construction: Site Work');
@@ -386,6 +388,11 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: a phase folds', [await p.$$eval('.g-row', e => e.length), await p.$eval('[data-phase="Site Work"]', b => b.getAttribute('aria-expanded'))], [1, 'false']);
   await p.click('[data-phase="Site Work"]');
   check('build: bars and the milestone', [await p.$$eval('.g-bar', e => e.length), await p.$$eval('.g-ms', e => e.length), await p.$$eval('.g-row.s-late', e => e.length)], [3, 1, 1]);
+  await p.$eval('#attnCard .at-d', d => { d.open = true; });
+  await p.click('#attnCard [data-show="late"]');
+  check('build: Needs attention opens its items in the schedule', [await p.$eval('#schedS', x => x.value), await p.$$eval('.g-row', e => e.map(r => r.querySelector('.g-name').firstChild.textContent))], ['late', ['Roofing']]);
+  await p.selectOption('#schedS', 'all');
+  await p.selectOption('#schedSec', 'Construction');
   await p.selectOption('#schedS', 'late');
   check('build: filter by status', await p.$$eval('.g-row', e => e.map(r => r.querySelector('.g-name').firstChild.textContent)), ['Roofing']);
   await p.selectOption('#schedS', 'all');
@@ -463,6 +470,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   /* the marketing track */
   check('kit: eight rows (Slice 5 adds the Seller pitch)', await p.$$eval('#kitCard .kr', e => e.length), 8);
   const kit = async key => text(p, '#kitCard [data-kit="' + key + '"]');
+  check('kit: a piece not made yet says so once, not also Not started / No file found', await p.$$eval('#kitCard .kr', rows => rows.filter(r => r.textContent.includes('Not made yet'))
+    .some(r => /Not started|No file found/.test(r.textContent))), false);
   check('kit: showsheet done, Asana ticked', [(await kit('showsheet')).includes('Done'), (await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older')], [true, true, true]);
   check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
   check('kit: a multi-floor plan lists each floor with its own Open and Copy', await p.$$eval('#kitCard [data-kit="floorplan"] [data-level]', els => els.map(e => [e.textContent.includes('FLOOR'), e.querySelector('[data-copy]') !== null, e.querySelector('[data-open]') !== null])), [[true, true, true], [true, true, true]]);
@@ -648,8 +657,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   /* Drive not connected here: last night's scan */
   t = await open(browser, { path: LISTING, drive: { state: 'not-connected' } });
   p = t.page;
-  check('scan: every Drive card says where it came from', await p.$$eval('#kitCard .scanl, #fpCard .scanl, #photosCard .scanl, #docCard .scanl, #folderCard .scanl', els => els.map(e => e.textContent.startsWith('From last night\'s scan'))), [true, true, true, true, true]);
-  check('scan: the line', (await text(p, '#kitCard .scanl')).endsWith('Connect Drive on the desktop to see it live.'), true);
+  check('scan: no last-night scan lines (Matt, 10-29: visual only)', (await text(p, 'main')).includes('last night'), false);
   check('scan: kit from the stored pieces', [(await text(p, '#kitCard [data-kit="showsheet"]')).includes('Done'), await p.$eval('#kitCard [data-kit="showsheet"] a', a => a.getAttribute('href')).catch(() => null)],
     [true, 'https://drive.google.com/file/d/SS1/view']);
   check('scan: health notes and counts', [(await text(p, '#folderBody')).includes('brochure file sits loose'), (await text(p, '#folderBody')).includes('edited 6 · raws 2')], [true, true]);

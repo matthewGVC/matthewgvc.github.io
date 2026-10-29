@@ -137,7 +137,7 @@
     if (m === 'live' || m === 'checking') body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     else if (m === 'scan') {
       var c = ((((ctx.row.scan || {}).health || {}).counts || {}).photos) || {};
-      body = JP.drive.scanLine(ctx.row, ctx.esc) + (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + (+c.edited || 0) + ' edited photos in the folder.</p>' : '');
+      body = (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + (+c.edited || 0) + ' edited photos in the folder.</p>' : '');
     } else body = '<p class="soft">Link the job\'s Drive folder to see its photos.</p>';
     // Watermark folds into the photo step (D16): staged photos are marked there, then saved back to the folder
     return '<div class="card" id="photosCard"><div class="card-h"><div><h2>Photos</h2></div>' +

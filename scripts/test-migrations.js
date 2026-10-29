@@ -582,7 +582,8 @@ const USERS = {
     check('0015: Matt links a budget sheet', await fails('matt', 'insert into public.dev_budgets (dev_project_id, sheet_id) values ($1, $2)', [dev, sheet]), false);
     check('0015: not a sheet id', await fails('matt', `update public.dev_budgets set sheet_id = 'https://example.com' where dev_project_id = $1`, [dev]), true);
     check('0015: the helper stores the budget', (await as('helper', `update public.dev_budgets set budget = '{"lines":[]}', synced_at = now() where dev_project_id = $1 returning version`, [dev])).rows[0].version, 2);
-    check('0015: the shared team account sees no budget', (await as('team', 'select count(*)::int n from public.dev_budgets')).rows[0].n, 0);
+    check('0016: the shared team account reads the budget (0015: none)', (await as('team', 'select count(*)::int n from public.dev_budgets')).rows[0].n, UPTO >= '0016' ? 1 : 0);
+    check('0016: but never writes it', (await as('team', `update public.dev_budgets set error = 'x' returning 1`)).rows.length, 0);
     check('0015: a plain team member sees none', (await as('teamrole', 'select count(*)::int n from public.dev_budgets')).rows[0].n, 0);
     check('0015: nor writes one', (await as('teamrole', `update public.dev_budgets set error = 'x' returning 1`)).rows.length, 0);
     await db.query(`update public.members set role = 'admin' where role = 'team' and name = 'Team Member'`);

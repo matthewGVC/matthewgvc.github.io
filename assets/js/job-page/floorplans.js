@@ -103,7 +103,7 @@
 
   function html(ctx) {
     var m = JP.drive.mode(ctx), body;
-    if (m === 'scan') body = JP.drive.scanLine(ctx.row, ctx.esc) + matrix(((ctx.row.scan || {}).pieces || {}).floorplan || [], ctx);
+    if (m === 'scan') body = matrix(((ctx.row.scan || {}).pieces || {}).floorplan || [], ctx);
     else if (m === 'none') body = matrix([], ctx);
     else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     var acts = ctx.canEdit ? (recording ? formHtml(ctx) : '<div class="fbtn"><button class="b sm" type="button" id="fpNew">Record new version</button>' +
@@ -122,7 +122,7 @@
       if (!b) return;
       if (m === 'live' && files === null) return;   // still reading
       var list = m === 'live' ? files : m === 'scan' ? (((r.scan || {}).pieces || {}).floorplan || []) : [];
-      b.innerHTML = (m === 'scan' ? JP.drive.scanLine(r, ctx.esc) : '') + matrix(list, ctx);
+      b.innerHTML = matrix(list, ctx);
     };
     if (!recorded[r.id]) {
       recorded[r.id] = [];

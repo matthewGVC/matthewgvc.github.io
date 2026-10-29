@@ -9,8 +9,8 @@
   const mast = document.createElement("header");
   mast.className = "masthead";
   mast.innerHTML = `
-    <a class="mast-lockup" href="${root}workspace/tools/" aria-label="GVC Workspace tools">
-      <span class="monogram" id="mast-monogram"></span>
+    <a class="mast-lockup" href="${root}workspace/tools/">
+      <span class="monogram" id="mast-monogram"></span><span class="mast-label">All tools</span>
     </a>`;
   document.body.prepend(mast);
 

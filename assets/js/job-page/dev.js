@@ -33,7 +33,6 @@
   function html(ctx) {
     var W = ctx.W, I = ctx.I, esc = ctx.esc, r = ctx.row, j = ctx.job, ms = r.milestones || {}, nx = [];
     if (j.next) nx.push('<span class="dmk planned' + (j.next.overdue ? ' over' : '') + '">' + esc('Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) : '') + (j.next.overdue ? ' (overdue)' : '')) + '</span>');
-    if (j.slips) nx.push('<span>' + esc('Milestones re-dated ' + j.slips + ' time' + (j.slips === 1 ? '' : 's')) + '</span>');
     if (j.construction) nx.push('<span>' + esc('Construction ' + j.construction.done + ' of ' + j.construction.total) + '</span>');
     return '<div class="card" id="msCard"><div class="card-h"><div><h2>Milestones</h2><p>Confirmed by Matt. What Asana suggests waits under Asana suggestions until it is confirmed.' +
       (ctx.canEdit ? ' Tick one by hand with the day it happened.' : '') + '</p></div>' +

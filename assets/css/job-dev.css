@@ -10,7 +10,7 @@
 .ov-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
 .ov-t{padding:20px 22px;border-left:1px solid var(--rule);min-width:0}
 .ov-t:first-child{border-left:0}
-.ov-t .k,.nx-k,.pays summary{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+.ov-t .k,.pays summary{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
 .ov-t .v{font-family:var(--mono);font-size:28px;line-height:1.15;margin-top:8px;overflow-wrap:anywhere}
 .ov-t .s{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
 .ov-t.over .v,.ov-t.over .s:not(.ov-n){color:var(--danger)}
@@ -42,10 +42,7 @@
 .at li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:7px 0;border-top:1px solid var(--rule);font-size:13px}
 .at li span{color:var(--ink-soft);overflow-wrap:anywhere}
 
-/* Next milestone */
-.nx-v{font-family:var(--serif);font-size:20px;line-height:1.2;margin-top:8px}
-.nx-s{font-size:13px;color:var(--ink-soft);margin-top:4px}
-.nx-s.over{color:var(--danger)}
+.at-show{margin:0 0 12px}
 
 /* Schedule */
 .sched-n{font-size:14px;margin:-4px 0 12px;color:var(--ink-soft)}

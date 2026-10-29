@@ -73,7 +73,7 @@
     <div>
       <div class="eyebrow" id="today"></div>
       <h1>Overview</h1>
-      <p id="lead">Loading the jobs…</p>
+      <p id="lead"><span class="spin" aria-hidden="true"></span>Loading the jobs…</p>
     </div>
     <div class="seg mkt" role="group" aria-label="Market" id="mkt">
       <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="NYC">NYC</button><button type="button" aria-pressed="false" data-v="NJ">NJ</button><button type="button" aria-pressed="false" data-v="FL">FL</button>
@@ -140,6 +140,7 @@
 <script src="../assets/js/sheet-job.js"></script>
 <script src="../assets/js/piece-job.js"></script>
 <script src="../assets/js/piece-stale.js"></script>
+<script src="../assets/js/dev-build.js"></script>
 <script src="../assets/js/workspace-data.js"></script>
 <script src="../assets/js/workspace-shell.js"></script>
 <script defer src="../assets/js/ws-collapse.js"></script>
@@ -186,7 +187,7 @@
     var personal = false;
     var mine = P.whoAmI().then(function (w) { personal = !!(w && w.role === 'owner'); return personal; }, function () { return false; });
     return Promise.all([
-      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,dev_project_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'),
       rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
@@ -232,12 +233,11 @@
     if (j.type === 'pitch') return 'Pitched ' + W.fmtDay(j.pitchedOn) + '.';
     if (j.stage === 'Off market') {
       var om = (j.dates || []).filter(function (d) { return d.key === 'offMarketOn'; })[0];
-      return (om ? 'Off market since ' + W.fmtDay(om.on) + '.' : 'Off market.') + ' Prep can carry on.';
+      return om ? 'Off market since ' + W.fmtDay(om.on) + '.' : 'Off market.';
     }
     if (j.type === 'development') {
       var t = j.next ? 'Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) + (j.next.overdue ? ' (overdue)' : '') : '') + '.'
         : j.stageIdx < 0 ? 'No milestones confirmed yet.' : 'Latest milestone: ' + j.stage + '.';
-      if (j.slips) t += ' Milestones re-dated ' + j.slips + ' time' + (j.slips === 1 ? '' : 's') + '.';
       return t;
     }
     return j.last ? 'Last activity ' + W.fmtDay(j.last) + '.' : 'No activity recorded yet.';
@@ -265,7 +265,7 @@
         if (j.hints) dev += '<div class="dates"><span>' + j.hints + ' milestone' + (j.hints === 1 ? '' : 's') + ' suggested from Asana. Review them on the job page.</span></div>';
       }
       var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc((j.stalePieces || []).map(function (x) { return x.label + ' stale: ' + x.words.join(', '); }).join('; ')) + '">stale</span>' : '';
-      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
+      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.phase || j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
         '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div>' + dates + dev + '</a>';
     }).join('') + '</div>';
   }

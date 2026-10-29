@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Match · GVC Workspace</title>
-<meta name="description" content="Every place Asana, DE and Drive disagree about a GVC job, grouped by where to fix it and by person.">
+<meta name="description" content="Every place Asana, DE and Drive disagree about a GVC job, one card per property.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
@@ -15,9 +15,18 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/workspace.css">
 <style>
+/* one card per property; the codes' meanings beside them, top right (Matt, 10-29) */
+.mx{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.mx aside{position:sticky;top:calc(var(--mast-h) + 16px);padding:18px 20px}
+.mx aside h2{font-size:18px;margin-bottom:10px}
+#keyList{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:13px}
+#keyList li{display:grid;grid-template-columns:52px 1fr;gap:10px}
+#keyList .code{justify-self:start}
+@media (max-width:1100px){ .mx{grid-template-columns:minmax(0,1fr)} .mx aside{position:static;order:-1} }
 #groups > * + *{margin-top:20px}
-.who + .who{margin-top:18px;padding-top:16px;border-top:1px solid var(--rule)}
-.who h3{font-size:19px;margin-bottom:4px}
+.mg .card-h h2 a{color:var(--ink);text-decoration:none}
+.mg .card-h h2 a:hover{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:4px}
+.mline .fix{font-weight:600;color:var(--ink)}
 .mline > div{min-width:0;overflow-wrap:anywhere}
 .mline .job{font-weight:600;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
 .mline .meta{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12.5px;color:var(--ink-soft)}
@@ -28,18 +37,12 @@
 .mline .dz .inp{flex:1;min-width:0}
 .mline .msg{font-size:13px;color:var(--danger);margin-top:4px}
 .mline .msg:empty{display:none}
-.bulk{display:flex;gap:12px;align-items:flex-start}
-.bulk > div{min-width:0;flex:1}
-.bulk > .code{font-family:var(--mono);font-size:10.5px;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:1px 7px;margin-top:2px}
-.bulk > div > b{font-size:14px;font-weight:600}
-.bulk .bulk-list{margin-top:10px}
-.bulk .bulk-list[hidden]{display:none}
 /* who is dealing with it (0011): claimed, fixed and waiting for a sync, or still wrong */
 .mline .claim{font-family:var(--mono);font-size:11px;border-radius:999px;padding:1px 8px;background:var(--paper-2);color:var(--ink)}
 .mline .claim.still{background:none;border:1px solid var(--danger);color:var(--danger)}
 .mline.waiting{opacity:.62}
 .mline .lnk.do{font-weight:600}
-.mline .lnk,.bulk .lnk{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+.mline .lnk{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
 </style>
 </head>
 <body data-nav="match" data-root="../">
@@ -51,8 +54,8 @@
     </div>
   </div>
   <div id="gate" hidden></div>
-  <div id="board" hidden><div id="groups"></div>
-    <details class="card" id="key" style="margin-top:20px;padding:16px 20px"><summary style="cursor:pointer;font-weight:600">What the codes mean</summary><ul id="keyList" style="margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px"></ul></details>
+  <div id="board" hidden><div class="mx"><div id="groups"></div>
+    <aside class="card" id="key" data-collapse="off"><h2>What the codes mean</h2><ul id="keyList"></ul></aside></div>
   </div>
 </main>
 <script src="../../assets/js/supabase-config.js"></script>
@@ -75,14 +78,10 @@
   var P = window.GVC_PROPS, W = window.GVC_WS, M = window.GVC_MATCH, L = window.GVC_MATCH_LINK, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   // the key: every code in plain words (fixed text from match-check.js, still escaped)
   var KEY = (M && M.KEY) || {};
-  $('keyList').innerHTML = Object.keys(KEY).map(function (c) { return '<li style="display:grid;grid-template-columns:52px 1fr;gap:10px"><span class="code" style="justify-self:start">' + esc(c) + '</span><span>' + esc(KEY[c]) + '</span></li>'; }).join('');
+  $('keyList').innerHTML = Object.keys(KEY).map(function (c) { return '<li><span class="code">' + esc(c) + '</span><span>' + esc(KEY[c]) + '</span></li>'; }).join('');
   var today = W.today(), data = null;
   var shell = GVC_SHELL.mount({ noDrive: true, onSynced: function () { load(); } });
-  var WHERE = {
-    Asana: 'Fix in Asana.', DE: 'Fix on DE.', Drive: 'Fix on Drive.',
-    Matt: 'Fix in the workspace.',
-    Roster: 'Update the roster by hand.'
-  };
+  var WHERE = { Asana: 'Fix in Asana', DE: 'Fix on DE', Drive: 'Fix on Drive', Matt: 'Fix in the workspace', Roster: 'Update the roster by hand' };
   var OWNER = { properties: 'property_id', dev_projects: 'dev_project_id', pitches: 'pitch_id' };
 
   function rest(path) { return P.call('/rest/v1' + path); }
@@ -145,8 +144,9 @@
     });
   }
 
-  function line(it, fix) {
+  function line(it, fix, inJob) {
     var meta = [];
+    if (fix !== 'Roster') meta.push('<span class="fix">' + esc(WHERE[it.fixAt] || 'Fix in the workspace') + '</span>' + (it.who && it.who.length ? '<span>' + esc(it.who.join(', ')) + '</span>' : ''));
     if (it.since) meta.push('<span class="when">Since ' + esc(W.fmtDay(it.since)) + '</span>');
     if (it.asanaUrl && fix !== 'Roster') meta.push('<a class="link asana" href="' + esc(it.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>');
     if (it.deUrl) meta.push('<a class="link de" href="' + esc(it.deUrl) + '" target="_blank" rel="noopener">Open on DE</a>');
@@ -169,7 +169,7 @@
     // a line that belongs to no job: tie it to one, or set it aside (tune-up A)
     if (it.link && L) meta.push('<button class="lnk" type="button" data-link>Link to a job</button><button class="lnk" type="button" data-aside>' + (it.link.type === 'de' ? 'Not ours' : 'Ignore') + '</button>');
     return '<li class="mline' + (waiting ? ' waiting' : '') + '" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code"' + (KEY[it.code] ? ' title="' + esc(KEY[it.code]) + '"' : '') + '>' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
-      (it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
+      (inJob ? '' : it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
       (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
       (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +
       '<button class="b sm primary" type="button" data-confirm>Dismiss</button><button class="b sm" type="button" data-cancel>Cancel</button></div>' : '') + '<p class="msg" role="alert"></p></div></li>';
@@ -206,24 +206,18 @@
     var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
     var loose = data.loose || [];
     // the jobs' errors first, the same count as the overview's; then what belongs to no job yet
-    var groups = W.matchGroups(jobs, drift, loose), n = W.overviewStats(jobs).mismatches;
+    var groups = W.matchByJob(jobs, drift, loose), n = W.overviewStats(jobs).mismatches;
     $('lead').textContent = (n ? n + ' error' + (n === 1 ? '' : 's') + ' on jobs' : 'No errors on jobs') +
       (loose.length ? ' · ' + loose.length + ' not linked to a job' : '') +
       (drift.length ? ' · ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') : '');
     if (!groups.length) { $('groups').innerHTML = '<div class="card empty"><b>Nothing to fix</b></div>'; return; }
+    // one card per property (the most errors first), then what belongs to no job, then the roster
     $('groups').innerHTML = groups.map(function (g) {
-      var bulk = g.bulk || [];
-      var count = g.people.reduce(function (a, p) { return a + p.items.length; }, 0) + bulk.reduce(function (a, b) { return a + b.items.length; }, 0);
-      return '<section class="card mg" data-open><div class="card-h"><div><h2>' + esc(g.fixAt) + '</h2><p>' + esc(WHERE[g.fixAt] || '') + '</p></div><span class="chip made">' + count + '</span></div>' +
-        bulk.map(function (b, i) {
-          var id = 'bulk-' + esc(g.fixAt) + '-' + i;
-          return '<div class="who bulk" data-key="' + esc(b.key) + '"><span class="code">' + esc(b.code) + '</span><div><b>' + esc(b.text) + '</b> ' +
-            '<button class="lnk" type="button" data-bulk aria-expanded="false" aria-controls="' + id + '">Show the jobs</button>' +
-            '<ul class="mm bulk-list" id="' + id + '" hidden>' + b.items.map(function (it) { return line(it, g.fixAt); }).join('') + '</ul></div></div>';
-        }).join('') +
-        g.people.map(function (p) {
-          return '<div class="who">' + (g.fixAt === 'Roster' ? '' : '<h3>' + esc(p.who || 'No one named') + '</h3>') + '<ul class="mm">' + p.items.map(function (it) { return line(it, g.fixAt); }).join('') + '</ul></div>';
-        }).join('') + '</section>';
+      var head = g.kind === 'job' ? '<h2><a href="../' + esc(g.href) + '">' + esc(g.job) + '</a></h2>' + (g.who.length ? '<p>Asana names ' + esc(g.who.join(', ')) + '</p>' : '')
+        : g.kind === 'loose' ? '<h2>Not linked to a job</h2><p>Asana tasks and DE listings the workspace cannot tie to a job yet.</p>'
+        : '<h2>Roster</h2><p>Update the roster by hand.</p>';
+      return '<section class="card mg" data-kind="' + g.kind + '" data-collapse="off"><div class="card-h"><div>' + head + '</div><span class="chip made">' + g.items.length + '</span></div>' +
+        '<ul class="mm">' + g.items.map(function (it) { return line(it, g.kind === 'roster' ? 'Roster' : it.fixAt, g.kind === 'job'); }).join('') + '</ul></section>';
     }).join('');
   }
 
@@ -287,11 +281,6 @@
     var b = e.target.closest('button'); if (!b) return;
     if (b.hasAttribute('data-link')) { linkLine(b.closest('.mline')); return; }
     if (b.hasAttribute('data-aside')) { asideLine(b.closest('.mline')); return; }
-    if (b.hasAttribute('data-bulk')) {
-      var list = document.getElementById(b.getAttribute('aria-controls')), open = list.hidden;
-      list.hidden = !open; b.setAttribute('aria-expanded', String(open)); b.textContent = open ? 'Hide the jobs' : 'Show the jobs';
-      return;
-    }
     var li = b.closest('.mline');
     if (b.hasAttribute('data-copy')) {
       var v = b.dataset.copy;

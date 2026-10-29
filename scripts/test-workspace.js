@@ -188,7 +188,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
   check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 errors'), true);
   check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 errors', 'match/']);
-  check('development row: next, slips, construction, hints', [(await text(p, 'a.pj[href*="619"]')).includes('Next: Permits / zoning'), (await text(p, 'a.pj[href*="619"]')).includes('re-dated 2 times'),
+  check('development row: next, slips, construction, hints', [(await text(p, 'a.pj[href*="619"]')).includes('Next: Permits / zoning'), !(await text(p, 'a.pj[href*="619"]')).includes('re-dated'),
     await p.$$eval('a.pj[href*="619"] .cons', els => els.length), (await text(p, 'a.pj[href*="619"]')).includes('2 milestones suggested from Asana')], [true, true, 1, true]);
 
   /* filters */
@@ -263,7 +263,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
 
   /* helper off: Sync greyed with the reason */
   t = await open(browser, { helper: false });
-  check('helper off', [await t.page.$eval('#wsSync', b => b.disabled), (await t.page.$eval('#wsSync', b => b.title)).includes('isn\'t running')], [true, true]);
+  check('helper off', [await t.page.$eval('#wsSync', b => b.disabled), (await t.page.$eval('#wsSync', b => b.title)).includes('only on the PC that runs the helper')], [true, true]);
   check('helper off: the DE card\'s Sync is greyed too', await t.page.$eval('#deBtn', b => b.disabled), true);
   await t.ctx.close();
 
@@ -326,11 +326,14 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { path: '/workspace/match/' });
   let mp = t.page;
   check('match: no page errors', t.errors, []);
-  check('match: groups by where to fix it, roster drift last', await mp.$$eval('.mg > .card-h h2', els => els.map(e => e.textContent.trim())), ['Asana', 'DE', 'Roster']);
-  check('match: then by person', await mp.$$eval('.mg:first-of-type .who h3', els => els.map(e => e.textContent.trim())), ['Elyse Gutman', 'Pat Builder', 'No one named']);
-  check('match: Open in Asana on each line', await mp.$eval('.mg:first-of-type .mline a.asana', a => [a.getAttribute('href'), a.target]), ['https://app.asana.com/0/1/1201', '_blank']);
+  check('match: one card per property, the roster last', await mp.$$eval('.mg', els => els.map(e => e.dataset.kind)).then(k => [k[0], k[k.length - 1], k.filter(x => x === 'job').length > 0]), ['job', 'roster', true]);
+  const card100 = await mp.$$eval('.mg[data-kind="job"]', gs => gs.filter(g => g.querySelector('h2').textContent.includes('100 Example St 4A')).map(g => ({ lines: g.querySelectorAll('.mline').length, text: g.textContent })))
+    .then(x => x[0] || { lines: 0, text: '' });
+  check('match: its lines say where to fix each and who Asana names', [card100.lines, card100.text.includes('Fix in Asana'), card100.text.includes('Fix on DE'), card100.text.includes('Elyse Gutman')], [3, true, true, true]);
+  check('match: Open in Asana on each line', await mp.$eval('.mg[data-kind="job"] .mline a.asana', a => [a.getAttribute('href'), a.target]), ['https://app.asana.com/0/1/1201', '_blank']);
+  check('match: the codes explained beside the cards', [await visible(mp, 'aside#key'), (await mp.$$eval('#keyList li', l => l.length)) > 3], [true, true]);
   check('match: M7 shows the link to paste', await mp.$$eval('.mline .paste', els => els.map(e => e.textContent.trim())), ['https://drive.google.com/drive/folders/abc']);
-  check('match: roster drift uses the latest People read only', [(await text(mp, '.mg:last-of-type')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg:last-of-type')).includes('Old Person')], [true, false]);
+  check('match: roster drift uses the latest People read only', [(await text(mp, '.mg[data-kind="roster"]')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg[data-kind="roster"]')).includes('Old Person')], [true, false]);
   check('match: total in the header, the overview count', (await text(mp, '#lead')).startsWith('4 errors on jobs'), true);
   check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
     ['/listing-rules/', '/workspace/#tasks']);
@@ -364,8 +367,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
       { kind: 'asana', started_at: iso(NOW - 3600e3), ok: true, totals: { unlinked: [{ gid: '1500', name: '7 Lone Pl', why: 'no street number' }, { gid: '1501', name: '8 Ignored Pl', why: 'same address' }] } }],
     asana_tasks: [{ gid: '1501', ignored: true }] }) });
   mp = t.page;
-  const asanaGroup = (await text(mp, '.mg:first-of-type')) || '';
-  check('match: DE-only listing shows in the Asana group', [asanaGroup.includes('DE listing 9101'), asanaGroup.includes('On DE, not in Asana.'), asanaGroup.includes('9103')], [true, true, false]);
+  const asanaGroup = (await text(mp, '.mg[data-kind="loose"]')) || '';
+  check('match: DE-only listing shows under Not linked to a job', [asanaGroup.includes('DE listing 9101'), asanaGroup.includes('On DE, not in Asana.'), asanaGroup.includes('9103')], [true, true, false]);
   check('match: Open on DE link', await mp.$eval('.mline[data-key="M2:de:9101"] a.de', a => a.getAttribute('href')).catch(() => null), 'https://www.elliman.com/x/9101');
   check('match: unlinked tasks from the latest run, ignored left out', [asanaGroup.includes('7 Lone Pl'), asanaGroup.includes('Asana task not linked'), asanaGroup.includes('8 Ignored Pl'), asanaGroup.includes('6 Old Pl')], [true, true, false, false]);
   check('match: they count apart in the header', (await text(mp, '#lead')).startsWith('4 errors on jobs · 2 not linked to a job'), true);
@@ -454,7 +457,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('link Asana: a task linked by hand since the last run is off the list', await t.page.$$eval('.mline[data-key="link:1600"]', els => els.length), 0);
   await t.ctx.close();
 
-  /* M6 "no Drive folder linked" collapses to one line per fix group, with a show/hide list */
+  /* a line naming two people shows once, under its property (Matt, 10-29: no repeats by person) */
   const R6 = rowsFor();
   const m6 = (stage, who) => ({ list: [{ code: 'M6', key: 'M6', text: 'No Drive folder is linked, and the job is ' + stage + '.', values: { folder: null, stage }, fixAt: 'Drive', who, since: '2026-10-14' }], dismissed: {} });
   R6.properties[1].match = m6('Live', ['Elyse Gutman']);
@@ -462,17 +465,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { path: '/workspace/match/', rows: R6 });
   mp = t.page;
   check('match M6: no page errors', t.errors, []);
-  check('match M6: one collapsed line in the Drive group', await mp.$$eval('.mg', gs => gs.filter(g => g.querySelector('h2').textContent.trim() === 'Drive').map(g =>
-    [g.querySelectorAll('.bulk').length, g.querySelector('.bulk b').textContent.trim(), g.querySelectorAll('.who h3').length, g.querySelector('.chip').textContent.trim()])),
-    [[1, '2 jobs have no Drive folder linked yet.', 0, '2']]);
-  check('match M6: the list starts hidden', [await visible(mp, '.bulk .bulk-list'), await mp.$eval('.bulk [data-bulk]', b => b.getAttribute('aria-expanded'))], [false, 'false']);
-  await mp.click('.bulk [data-bulk]');
-  check('match M6: show lists each job once', [await visible(mp, '.bulk .bulk-list'), await mp.$$eval('.bulk .bulk-list .mline', els => els.length),
-    await mp.$eval('.bulk [data-bulk]', b => [b.getAttribute('aria-expanded'), b.textContent.trim()])], [true, 2, ['true', 'Hide the jobs']]);
-  await mp.click('.bulk [data-bulk]');
-  check('match M6: hide again', await visible(mp, '.bulk .bulk-list'), false);
-  check('match M6: the header total still counts them', (await text(mp, '#lead')).startsWith('6 errors on jobs'), true);
-  check('match M6: other groups unchanged', await mp.$$eval('.mg > .card-h h2', els => els.map(e => e.textContent.trim())), ['Asana', 'DE', 'Drive', 'Roster']);
+  check('match M6: each line once, however many people it names', await mp.$$eval('.mline[data-key="M6"]', els => els.length), 2);
+  check('match M6: the header total counts them', (await text(mp, '#lead')).startsWith('6 errors on jobs'), true);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/match/', rows: rowsFor({ properties: [], dev_projects: [], asana_people: [] }) });
   check('match: nothing to fix', (await text(t.page, '#groups')).includes('Nothing to fix'), true);
@@ -488,26 +482,13 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { path: '/workspace/match/', rows: RD });
   mp = t.page;
   check('deepen: no page errors', t.errors, []);
-  const mattGroup = await mp.$$eval('.mg', gs => gs.filter(g => g.querySelector('h2').textContent.trim() === 'Matt').map(g => [g.querySelector('.card-h p').textContent.trim(), g.querySelectorAll('.mline').length]));
-  check('deepen: M18 and M19 sit in the workspace (Matt) group, which says what it holds', mattGroup,
-    [['Fix in the workspace.', 2]]);
-  check('deepen: M18 is its own line, not folded into the Drive group', await mp.$$eval('.bulk', els => els.length), 0);
+  check('deepen: M18 and M19 say to fix them in the workspace', await mp.$$eval('.mline[data-key="M18"] .fix, .mline[data-key="M19:9301"] .fix', els => els.map(e => e.textContent)),
+    ['Fix in the workspace', 'Fix in the workspace']);
   const deLine = (await text(mp, '.mline[data-key="M2:de:9301"]')) || '';
   check('deepen: the DE line names the job M19 points at, and keeps its buttons', [deLine.includes('Probably the same listing as 20 Sample Ave 7B'),
     await mp.$$eval('.mline[data-key="M2:de:9301"] button[data-link], .mline[data-key="M2:de:9301"] button[data-aside]', els => els.length)], [true, 2]);
   await t.ctx.close();
 
-  /* ---------- the team Status page ---------- */
-  t = await open(browser, { path: '/workspace/status/' });
-  let sp = t.page;
-  check('status: no page errors', t.errors, []);
-  check('status: every staged job, by market', [await sp.$$eval('.mkt h2', els => els.map(e => e.textContent.trim())), await sp.$$eval('.mkt tbody tr', els => els.length)], [['NYC', 'NJ', 'FL'], 5]);
-  check('status: stage order inside a market', await sp.$$eval('.mkt:first-of-type tbody tr .stg', els => els.map(e => e.textContent.trim())), ['Pitch', 'Live', 'In contract']);
-  const row1 = await sp.$eval('.mkt tr[data-href*="100-example"]', tr => [...tr.querySelectorAll('td')].map(td => td.textContent.replace(/\s+/g, ' ').trim()));
-  check('status: a row', [row1[0].startsWith('100 Example St 4A'), row1[2].startsWith('Listed'), row1[3].startsWith('Closing'), row1[5]], [true, true, true, '3']);
-  check('status: no Drive pill needed', [await visible(sp, '#wsDrive'), await visible(sp, '.banner')], [false, false]);
-  check('status: read-only, nothing written', t.writes, []);
-  await t.ctx.close();
   const sphone = await browser.newContext({ viewport: { width: 375, height: 812 } });
   await sphone.route(/mammoth\.browser\.min\.js/, r => r.abort());
   const spp = await sphone.newPage();
@@ -516,9 +497,9 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const T1 = rowsFor({ members: [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }] });
   await spp.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T1[new URL(r.request().url()).pathname.split('/').pop()] || []) }));
   await spp.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"u1","email":"m@x"}' }));
-  await spp.goto(BASE + '/workspace/status/', { waitUntil: 'networkidle' });
-  check('status: phone, rows shown', await spp.$$eval('.mkt tbody tr', els => els.length), 5);
-  check('status: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
+  await spp.goto(BASE + '/workspace/jobs/', { waitUntil: 'networkidle' });
+  check('Resell: phone, rows as cards with no sideways scroll', [await spp.$eval('#rows tr', tr => getComputedStyle(tr).display), await spp.evaluate(() => document.documentElement.scrollWidth <= 376),
+    await spp.$eval('.tbl-wrap', w => w.scrollWidth <= w.clientWidth + 1)], ['flex', true, true]);
   await spp.goto(BASE + '/workspace/match/', { waitUntil: 'networkidle' });
   check('match: phone, no sideways scroll', await spp.evaluate(() => document.documentElement.scrollWidth <= 376), true);
   /* the job page at 375 px: every stage in view, the M7 paste link wraps inside its card */
@@ -536,14 +517,14 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   await sphone.close();
 
   /* no em or en dashes in visible text on any /workspace/ page */
-  for (const path of ['/workspace/', '/workspace/jobs/', '/workspace/match/', '/workspace/status/', '/workspace/job/?listing=20-sample-ave-7b', '/workspace/job/?listing=100-example-st-residence-4a', '/workspace/job/?pitch=90-pitch-st-11b-2026-08-04']) {
+  for (const path of ['/workspace/', '/workspace/jobs/', '/workspace/match/', '/workspace/job/?listing=20-sample-ave-7b', '/workspace/job/?listing=100-example-st-residence-4a', '/workspace/job/?pitch=90-pitch-st-11b-2026-08-04']) {
     t = await open(browser, { path });
     check('no em or en dash shown: ' + path, (await t.page.evaluate(() => document.body.innerText)).match(/[\u2013\u2014]/g), null);
     await t.ctx.close();
   }
 
   /* signed out: the sign-in box only, nothing asked of the database */
-  for (const path of ['/workspace/match/', '/workspace/status/']) {
+  for (const path of ['/workspace/match/']) {
     t = await open(browser, { signedIn: false, path });
     check('signed out ' + path + ': sign-in box only', [await visible(t.page, '#gate'), await visible(t.page, '#board'), (await text(t.page, '#gate')).includes('Sign in')], [true, false, true]);
     check('signed out ' + path + ': no REST calls', t.reads, []);
@@ -599,7 +580,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('development page: D66\'s 18 milestones', await t.page.$$eval('#msList li', els => els.length), 18);
   check('development page: its social posts', [await text(t.page, '#postsCount'), await t.page.$$eval('#postsCard .pn', els => els.map(e => e.textContent))], ['1 posted', ['Construction update reel']]);
   check('development page: hints listed with ✓ and ✗', [await t.page.$$eval('#hints li', els => els.length), await t.page.$$eval('#hints [data-ok]', els => els.length), await t.page.$$eval('#hints [data-no]', els => els.length)], [2, 2, 2]);
-  check('development page: next milestone and slips', [(await text(t.page, '#devNext')).includes('Permits / zoning'), (await text(t.page, '#devNext')).includes('re-dated 2 times')], [true, true]);
+  check('development page: next milestone and slips', [(await text(t.page, '#devNext')).includes('Permits / zoning'), !(await text(t.page, '#devNext')).includes('Milestones re-dated')], [true, true]);
   await t.page.click('#hints [data-ok="0"]');
   await t.page.waitForTimeout(400);
   let dp = t.writes.find(w => /^PATCH dev_projects/.test(w)) || '';
@@ -686,7 +667,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
 
   /* ---------- tune-up B ---------- */
   // B5: signed in, but not on the team list: say so, never an empty "all clear"
-  for (const [name, path] of [['overview', '/workspace/'], ['match', '/workspace/match/'], ['status', '/workspace/status/']]) {
+  for (const [name, path] of [['overview', '/workspace/'], ['match', '/workspace/match/']]) {
     t = await open(browser, { path, members: [] });
     check('B5 ' + name + ': not on the team list says so', [await visible(t.page, '#gate'), await visible(t.page, '#board'),
       ((await text(t.page, '#gate')) || '').includes('Your account isn\'t on the GVC team list yet. Ask Matt to add you.'), t.errors], [true, false, true, []]);
@@ -718,7 +699,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const g8 = (await text(t.page, '#groups')) || '';
   // asked of the database directly, so a long Asana outage (many failed runs) can't push the good run out of reach
   const runAsk = await t.page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name).filter(u => /sync_runs\?select=[^&]*totals.*kind=eq\.asana/.test(u)));
-  check('match: the key lists every code, folded away until opened', [await t.page.$$eval('#key li', li => li.length), await t.page.$eval('#key', d => d.open)], [27, false]);
+  check('match: the key lists every code, open beside the cards', [await t.page.$$eval('#key li', li => li.length), await t.page.$eval('#key', d => d.tagName)], [27, 'ASIDE']);
   check('match: a line\'s code says what it means on hover', await t.page.$$eval('#groups .mline .code[title]', els => els.length > 0), true);
   check('B8 match: only the newest ok run is asked for', [runAsk.length > 0, runAsk.every(u => /ok=is\.true/.test(u) && /limit=1(&|$)/.test(u))], [true, true]);
   check('B8 match: unlinked from the newest ok run, never a failed one', [g8.includes('70 Good Run Pl'), g8.includes('71 Failed Run Pl')], [true, false]);
@@ -746,7 +727,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { rows: ROM });
   const omCard = await t.page.$$eval('#jobs .pj', els => { const e = els.find(x => x.textContent.includes('619 Sample Ave')); return e ? [e.querySelector('.chip').className, e.querySelector('.sub').textContent, e.querySelector('.prog span').textContent, e.querySelectorAll('.track i').length] : null; });
   check('D88 overview: the off-market job is listed with its own chip, its town, and when it went off market',
-    omCard && [omCard[0], omCard[1].includes('Brielle'), /^Off market since \d+ \w{3}\. Prep can carry on\.$/.test(omCard[2]), omCard[3]], ['chip off', true, true, 4]);
+    omCard && [omCard[0], omCard[1].includes('Brielle'), /^Off market since \d+ \w{3}\.$/.test(omCard[2]), omCard[3]], ['chip off', true, true, 4]);
   check('D88 overview: Live still counts only Live jobs', await t.page.$eval('#stats .stat .v', v => parseInt(v.textContent, 10)), 2);
   await t.page.click('#view [data-v="time"]').catch(() => {});
   check('D88 overview timeline: the legend names Off market', ((await text(t.page, '#jobs')) || '').includes('Off market'), true);
@@ -796,7 +777,6 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     [['Overview', '../', null], ['Resell', '../jobs/', 'page'], ['New Dev', '../new-dev/', null], ['Errors', '../match/', null], ['Tools', '../tools/', null]]);
   check('Resell: listings, rentals and pitches, no developments', await t.page.$$eval('#rows .nm a', as => as.map(a => a.textContent.trim()).sort()),
     ['100 Example St 4A', '12 Sample Lane', '20 Sample Ave 7B', '90 Pitch St 11B', '<img src=x onerror="window.__xss=1">'].sort());
-  check('Resell: the Table view is the status table', await t.page.$eval('[aria-label="View"] a[href="../status/"]', a => a.textContent), 'Table');
   check('Resell: sync badges per job (100 Example St: all three linked)', await t.page.$$eval('#rows tr:first-child .sb', bs => bs.map(b => b.className + ':' + b.textContent.replace(/:.*/, ''))),
     ['sb ok:✓Asana', 'sb ok:✓Drive', 'sb ok:✓DE']);
   check('Resell: no page errors', t.errors, []);
@@ -806,9 +786,6 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('New Dev: Posts column', await text(t.page, '#rows td.posts'), '1');
   check('New Dev: the tab is current', await t.page.$eval('.nav a[aria-current="page"]', a => a.textContent.trim()), 'New Dev');
   check('New Dev: no page errors', t.errors, []);
-  await t.ctx.close();
-  t = await open(browser, { path: '/workspace/status/' });
-  check('Table view: under the Resell tab', await t.page.$eval('.nav a[aria-current="page"]', a => a.textContent.trim()), 'Resell');
   await t.ctx.close();
 
   // the badges on the overview: a broken folder is a cross, a Prep job has no DE yet

@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Useful Agent Info · GVC Workspace</title>
+<title>Agent Crib Sheets · GVC Workspace</title>
 <meta name="description" content="Print-ready agent crib sheets for The GVC Team: the questions that get lost, and the buyer's checklist.">
-<meta property="og:title" content="Useful Agent Info · GVC Workspace">
+<meta property="og:title" content="Agent Crib Sheets · GVC Workspace">
 <meta property="og:description" content="Print-ready agent crib sheets for The GVC Team: the questions that get lost, and the buyer's checklist.">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/agent-info/">
 <meta property="og:type" content="website">
@@ -36,7 +36,7 @@
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
 <main>
-<h1 class="visually-hidden">Useful Agent Info</h1>
+<h1 class="visually-hidden">Agent Crib Sheets</h1>
 
 <div id="app">
   <!-- Moved out of the Buyer Package for New Jersey: these two pages are for
@@ -97,7 +97,7 @@
 <script>
 'use strict';
 const P = window.Pitch;
-const DECK = 'Useful Agent Info';
+const DECK = 'Agent Crib Sheets';
 const SITE = 'gvcrealestateteam.com';
 const AP = window.GVC_AGENTPAGES;
 
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
   P.segPick(document.getElementById('regionPick'), 'region', () => state.region, v => { state.region = v; redraw(); });
   builder = Builder.init({
     pages: PAGES.length, label: 'Page',
-    printName: () => 'Useful Agent Info',
+    printName: () => 'Agent Crib Sheets',
     render: (page, i) => {
       page.innerHTML = RENDER[PAGES[i].key](i + 1);
       const pg = page.querySelector('.pg');

@@ -2,7 +2,7 @@
    AGENT-FACING PAGE BODIES — "Don't Forget to Ask" and "FAQ's".
 
    The words are in tools/buyer-package/guide-data.js (askFor / faqFor);
-   this only draws them, so the Useful Agent Info tool and the Buyer Package
+   this only draws them, so the Agent Crib Sheets tool and the Buyer Package
    print the same page. Styles: assets/css/agent-pages.css.
    Needs GVC_GUIDE and Pitch loaded first.
    ============================================================ */

@@ -13,7 +13,7 @@ Static site, no build step. GSAP via CDN on the tool pages.
 ## Workspace
 
 `/` forwards to `workspace/`. Its menu: **Overview** (every job's stage and milestones), **Resell**
-(listings, rentals and pitches; Table view is `workspace/status/`), **New Dev** (developments),
+(listings, rentals and pitches), **New Dev** (developments),
 **Errors** (where Drive, Asana and DE disagree, `workspace/match/`) and **Tools** (`workspace/tools/`,
 the list of every tool below). A job's own page is `workspace/job/?listing=` / `?pitch=` / `?dev=`.
 Sign-in is per person (Supabase); the desktop helper in `helper/` (see its README) syncs DE and Asana
@@ -136,7 +136,7 @@ the cover market and title, photos, which pages show, the New Jersey offer and n
 to two agents. Nothing is saved: the page asks before you leave with changes, and Print / Save PDF is
 the output. The copy lives in `guide-data.js`.
 
-## Useful Agent Info tool
+## Agent Crib Sheets tool
 
 `tools/agent-info/` prints the agent's own crib sheets: "Don't Forget to Ask", "FAQ's" and a draft
 Buyer Cheat Sheet (marked Check, not for use until reviewed). Pick the market (NJ, NYC, FL) and the

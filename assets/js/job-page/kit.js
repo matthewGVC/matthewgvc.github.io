@@ -280,9 +280,12 @@
       }
       if (bits) acts += bits.act;
       var cls = x.state === 'notStarted' || x.state === 'notUsed' ? ' none' : (x.state === 'fileOpen' || x.state === 'tickedNoFile') ? ' stale' : '';
+      // a piece the workspace makes and hasn't yet says so once ("Not made yet"), not also "Not started"
+      // on the track chip and "No file found" on the file line
+      var own = !!bits && !x.file && !x.older && />Not made yet</.test(bits.lines || '');
       return '<div class="kr' + cls + '" data-kit="' + esc(x.key) + '"><span class="ic">' + I(ICON[x.key] || 'file') + '</span><div>' +
-        '<div class="t">' + esc(x.label) + ' <span class="chip ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
-        '<div class="d">' + file + '</div>' + lv + (step ? '<div class="d" data-step>' + step + '</div>' : '') +
+        '<div class="t">' + esc(x.label) + (own ? '' : ' <span class="chip ' + st[1] + '">' + esc(st[0]) + '</span>') + '</div>' +
+        (own ? '' : '<div class="d">' + file + '</div>') + lv + (step ? '<div class="d" data-step>' + step + '</div>' : '') +
         (x.mismatch ? '<div class="d kmm"><span class="code">' + esc(x.mismatch.code) + '</span> ' + esc(x.mismatch.text) + '</div>' : '') + (bits ? bits.lines : '') +
         '</div><div class="a">' + acts + '</div></div>';
     }).join('');
@@ -297,7 +300,7 @@
     if (m === 'none') body = '<p class="soft">Link the job\'s Drive folder to see its files.</p>' + sheetOnly(ctx);
     else if (m === 'scan') {
       var x = rowsHtml((ctx.row.scan && ctx.row.scan.pieces) || {}, ctx, false);
-      body = JP.drive.scanLine(ctx.row, ctx.esc) + x.html;
+      body = x.html;
     } else body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     return '<div class="card" id="kitCard"><div class="card-h"><div><h2>Marketing track</h2></div>' +
       '<span class="chip" id="kitCount"></span></div><div id="kitBody">' + body + '</div>' +

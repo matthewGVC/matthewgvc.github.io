@@ -37,6 +37,12 @@
   --pin-out-top: #0c3b52;     /* map studio pins for distant outliers */
   --pin-out-ring: #7ad8ea;
   --pin-out-text: #d3eff7;
+  --warn-bg: #FFF4E5;         /* the amber warning box (pitch.css .warn, brochure) */
+  --warn-rule: #E8C99B;
+  --warn-ink: #6B4A12;
+  --ok-ink: #2F6E4F;          /* properties: the 'saved' note */
+  --tv-frame: #0C1519;        /* office screens: the TV bezel */
+  --tv-screen: #001A27;       /* office screens: the TV screen behind the loop */
 
   /* type */
   --serif: 'Fraunces', Georgia, serif;

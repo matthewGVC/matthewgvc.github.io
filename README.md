@@ -110,13 +110,15 @@ the facts and the brochure, photos included, to the shared property library (tea
 them back. Opened from a job (`?listing=<slug>`), `job-mode.js` fills it from the job instead.
 Print / Save PDF prints it.
 
-## Seller Pitch & CMA tool
+## Seller Package tool
 
 `tools/seller-package/` builds an 8.5 x 11 listing presentation and CMA: a classic or guide page
 design, a per-agent version, the property, the client and cover, comparable sales, the listing
 strategy, professional videos, client testimonials and up to two agents. It saves and loads through the
 same property bar as the Brochure. Opened from a job (`?listing=<slug>` or `?pitch=<slug>`),
-`job-mode.js` takes the subject, comps, agents and photos from the job. Print / Save PDF prints it.
+`job-mode.js` takes the subject, comps, agents and photos from the job. The Market panel's New Jersey / New
+York switch follows the property's State field and sets the market-specific Marketing Plan rows and
+the Videos page prose; it is usually right untouched. Print / Save PDF prints it.
 
 ## Buyer Package tool
 
@@ -130,7 +132,7 @@ the output. The copy lives in `guide-data.js`.
 
 `tools/agent-info/` prints the agent's own crib sheets: "Don't Forget to Ask", "FAQ's" and a draft
 Buyer Cheat Sheet (marked Check, not for use until reviewed). Pick the market (NJ, NYC, FL) and the
-pages; there is nothing to type and nothing is saved. The copy comes from
+pages; there is nothing to type and nothing is saved, but the page asks before you leave once a choice has changed. The copy comes from
 `tools/buyer-package/guide-data.js` through `assets/js/agent-pages.js`.
 
 ## Properties tool

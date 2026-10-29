@@ -39,7 +39,7 @@
 /* two screens, one height: the landscape one is 16/9 of it, the portrait one 9/16 */
 .os-wall{--h:clamp(180px,26vw,360px);display:flex;gap:18px;align-items:flex-end;}
 .os-tv{margin:0;}
-.os-tv .scr{height:var(--h);background:#001A27;border:6px solid #0C1519;border-radius:6px;overflow:hidden;
+.os-tv .scr{height:var(--h);background:var(--tv-screen);border:6px solid var(--tv-frame);border-radius:6px;overflow:hidden;
   box-shadow:0 10px 30px rgba(0,39,58,.18);}
 .os-tv.l .scr{aspect-ratio:16/9;}
 .os-tv.p .scr{aspect-ratio:9/16;}

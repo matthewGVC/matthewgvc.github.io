@@ -113,6 +113,7 @@
       var output = { path: reply.path, name: reply.name, size: reply.size, modified: reply.modified, url: reply.url || null, madeAt: new Date().toISOString(), via: 'helper' };
       return record3(bf, output, reply.archived || null).then(function () {
         drawBar();
+        if (window.GVC_UNSAVED) GVC_UNSAVED.clear();
         say('Saved to Drive: ' + reply.name + '. Reload the seller pitch to use it.');
       }, function (e) { drawBar(); say(e.message); });
     }, function (e) {

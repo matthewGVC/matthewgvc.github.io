@@ -12,6 +12,38 @@
   --ink-soft: #33525F;   /* secondary text on paper (7.1:1, passes AA) */
   --danger: #8C3A2B;     /* destructive actions (remove, error) */
 
+  /* printed-page and export colours with no brand token of their own.
+     Values are the ones the pages already printed; change one and the print moves. */
+  --sky-text: #0b7a95;        /* the darker Sky the printed pages use for text on paper */
+  --quote-card: #ecece6;      /* buyer package: the client-quote card */
+  --grad-deep: #06475f;       /* buyer package: the blue panel gradient, dark end */
+  --grad-teal: #13809b;       /* ... the gradient's first light stop */
+  --grad-teal-2: #0f7694;     /* ... the gradient's second light stop */
+  --state-ny-end: #0a7c99;    /* buyer package: New York outline gradient (starts at --ink) */
+  --state-nj-end: #a9dce6;    /* New Jersey outline gradient (starts at --sky) */
+  --state-fl-start: #7fcfe0;  /* Florida outline gradient */
+  --state-fl-end: #0a8aa6;
+  --tile-light: #EDEDEB;      /* seller package: the light tile and crew label */
+  --mock-top: #F4F3EF;        /* seller package: the device mock-up gradient */
+  --mock-bottom: #E4E2DC;
+  --mock-screen: #929292;     /* seller package: the showcase mock-up's empty screen */
+  --card-warm: #F4F2EE;       /* nj footprint: the warm summary card */
+  --navy-hover: #003a54;      /* map studio: primary button hover */
+  --legend-rule: #114a63;     /* map studio PNG: the legend's left rule */
+  --legend-meta: #7fa8b8;     /* map studio PNG: legend subtitle and unit lines */
+  --pin-top: #1cb6d6;         /* map studio pins: gradient top, bottom, ring */
+  --pin-bottom: #0090b4;
+  --pin-ring: #eaf7fe;
+  --pin-out-top: #0c3b52;     /* map studio pins for distant outliers */
+  --pin-out-ring: #7ad8ea;
+  --pin-out-text: #d3eff7;
+  --warn-bg: #FFF4E5;         /* the amber warning box (pitch.css .warn, brochure) */
+  --warn-rule: #E8C99B;
+  --warn-ink: #6B4A12;
+  --ok-ink: #2F6E4F;          /* properties: the 'saved' note */
+  --tv-frame: #0C1519;        /* office screens: the TV bezel */
+  --tv-screen: #001A27;       /* office screens: the TV screen behind the loop */
+
   /* type */
   --serif: 'Fraunces', Georgia, serif;
   --sans-display: 'Nunito Sans', system-ui, sans-serif; /* 800/900, caps, tracked */

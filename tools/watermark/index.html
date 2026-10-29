@@ -208,6 +208,7 @@
   </section>
 </main>
 
+<script src="../../assets/js/unsaved.js"></script>
 <script>
 const canvas = document.getElementById("canvas");
 const dropzone = document.getElementById("dropzone");
@@ -362,6 +363,7 @@ function setPhotos(list){
   }
   keep.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" }));
   photos = keep;
+  GVC_UNSAVED.touch();
   const notes = [];
   if(keep.length > 1) notes.push(plural(keep.length, "photo", "photos"));
   if(skipped) notes.push(plural(skipped, "file", "files") + " skipped (not photos)");
@@ -441,6 +443,7 @@ function wireSeg(id, attr, cb){
     seg.querySelectorAll("button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     cb(btn.dataset[attr]);
+    GVC_UNSAVED.touch();
     draw();
   });
 }
@@ -494,11 +497,13 @@ downloadBtn.addEventListener("click", async () => {
 
   exportCanvas.width = exportCanvas.height = 0;
   saving = false;
+  if(saved) GVC_UNSAVED.clear();   // the work is on disk now
   updateDownload();
   statusEl.textContent = batch.length > 1 || failed
     ? "Downloaded " + plural(saved, "photo", "photos") + (failed ? " · " + failed + " couldn't be opened" : "")
     : "";
 });
+GVC_UNSAVED.watch();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
 <script src="../../assets/js/chrome.js"></script>

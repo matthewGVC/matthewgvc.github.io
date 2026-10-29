@@ -1,6 +1,6 @@
 /* ============================================================
    GVC PITCH DECKS — shared behaviour
-   Paired with assets/css/pitch.css. Used by the Seller Pitch & CMA
+   Paired with assets/css/pitch.css. Used by the Seller Package
    and the Buyer Package.
 
    Everything here is deck-agnostic: page furniture, the cover, agent

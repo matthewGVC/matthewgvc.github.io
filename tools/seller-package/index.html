@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Seller Package Builder — Matt Bloomfield</title>
+<title>Seller Package — Matt Bloomfield</title>
 <meta name="description" content="Build a print-ready 8.5x11 listing presentation and CMA for The GVC Team.">
-<meta property="og:title" content="Seller Package Builder — Matt Bloomfield">
+<meta property="og:title" content="Seller Package — Matt Bloomfield">
 <meta property="og:description" content="Build a print-ready 8.5x11 listing presentation and CMA for The GVC Team.">
 <meta property="og:url" content="https://matthewgvc.github.io/tools/seller-package/">
 <meta property="og:type" content="website">
@@ -47,7 +47,7 @@
 .tri .tb.c3 p{color:rgba(0,39,58,.95);}
 /* a quieter variant for short one-line claims */
 .tri.flat .tb{text-align:center;padding:.24in .18in;}
-.tri.flat .tb.c0{background:#EDEDEB;}
+.tri.flat .tb.c0{background:var(--tile-light);}
 .tri.flat .tb h4{margin:0;font:400 11pt/1.4 var(--body);color:#fff;}
 .tri.flat .tb.c0 h4,.tri.flat .tb.c3 h4{color:var(--navy);}
 .tri.flat .tb b{font-weight:800;}
@@ -65,14 +65,14 @@
 
 /* p3 — about GVC: one wide founders photo, headline stat, copy, value blocks. */
 .duo{position:relative;height:3.15in;flex:none;margin-bottom:.24in;overflow:hidden;
-  background:linear-gradient(#F4F3EF,#E4E2DC);box-shadow:0 .1in .26in rgba(0,39,58,.22);}
+  background:linear-gradient(var(--mock-top),var(--mock-bottom));box-shadow:0 .1in .26in rgba(0,39,58,.22);}
 .duo img{width:100%;height:100%;display:block;object-fit:cover;}
 .duo .cap{position:absolute;left:0;right:0;bottom:0;padding:.12in .2in;
   background:rgba(0,39,58,.82);text-align:center;
   font:800 8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#fff;}
 /* New Jersey: the agents presenting the listing, standing on a navy panel,
    in place of the founders photo. */
-.duo.cut{background:#00273A;}
+.duo.cut{background:var(--navy);}
 /* the team's own stone-and-glass doorway, out of focus and tinted navy, so the figures stand
    in a place rather than on a flat colour */
 .duo.cut::before{content:'';position:absolute;inset:-.2in;
@@ -98,7 +98,7 @@
 .crew .cell.lab.n1{background:var(--navy);}
 .crew .cell.lab.n2{background:var(--sky2);}
 .crew .cell.lab.n3{background:var(--sky);}
-.crew .cell.lab.n4{background:#EDEDEB;}
+.crew .cell.lab.n4{background:var(--tile-light);}
 .crew .cell.lab .nm{font:800 11pt/1.2 var(--sans);color:#fff;}
 .crew .cell.lab .tt{margin-top:.06in;font:400 8.5pt/1.35 var(--body);
   text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.97);}
@@ -108,7 +108,7 @@
    camera, a film on a phone). The panel takes the image's own proportions, so
    none of it is ever cropped. */
 .showcase{flex:none;}
-.showcase .mock{aspect-ratio:2600 / 1491;overflow:hidden;background:#929292;}
+.showcase .mock{aspect-ratio:2600 / 1491;overflow:hidden;background:var(--mock-screen);}
 .showcase .mock img{width:100%;height:100%;object-fit:contain;display:block;}
 /* the Made In-House line (2026-10-28) took room from the mock-up, which now crops to a band */
 .showcase .mock{aspect-ratio:auto;height:2.95in;}
@@ -168,7 +168,7 @@
 /* Contrast. The shared pitch.css sets small labels in --sky2 (3:1 on white) and the
    running footer and stat captions at 42-60% ink, short of 4.5:1. Held to AA here
    the way the Buyer's Guide holds it. */
-.pg:not(.rev){--sky2:#0b7a95;}
+.pg:not(.rev){--sky2:var(--sky-text);}
 .pg:not(.rev) .stat .l,.pg:not(.rev) .quote .who{color:rgba(0,39,58,.72);}
 .pg-foot .site{color:rgba(0,39,58,.72);}
 .pg-foot .pg-n{color:rgba(0,39,58,.7);}
@@ -307,7 +307,7 @@ table.tbl th.num{text-align:right;}
 </head>
 <body data-root="../../" data-nav="tools" data-foot="none">
 <main>
-<h1 class="visually-hidden">Seller Package Builder</h1>
+<h1 class="visually-hidden">Seller Package</h1>
 
 <div id="app">
 
@@ -536,7 +536,7 @@ table.tbl th.num{text-align:right;}
 'use strict';
 const P = window.Pitch, esc = P.esc;
 const PD = window.GVC_PHOTODND;
-const DECK = 'Seller Pitch & CMA';
+const DECK = 'Seller Package';
 
 /* The website printed in every footer. Not editable — the footer, the
    social handles and the links are all fixed team boilerplate in all three

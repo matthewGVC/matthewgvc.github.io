@@ -82,7 +82,7 @@
   .btn:active{transform:translateY(1px);}
   .btn:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
   .btn-primary{background:var(--ink);color:var(--bone);}
-  .btn-primary:hover{background:#003a54;}
+  .btn-primary:hover{background:var(--navy-hover);}
   .btn-gold{margin-top:10px;}
   .btn-gold:hover{background:var(--ink);color:var(--bone);}
   .btn:disabled{opacity:.4;cursor:not-allowed;}
@@ -246,6 +246,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
 <script src="../../assets/js/chrome.js"></script>
 <script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let map = null;
@@ -323,8 +324,10 @@ function flagOutliers(list){
    then paste the copied block over the three constants below — buildPin() reads
    the same fields, so the studio preview matches the map exactly. */
 const PIN = { r:16.5, tipLen:42, ringW:2, numSize:15, highlight:0, shadowBlur:0, shadowY:0, numOutline:false, innerRing:true, dpr:2 };
-const PIN_NORM = { top:'#1cb6d6', bot:'#0090b4', ring:'#eaf7fe', text:'#ffffff' };
-const PIN_OUT  = { top:'#0c3b52', bot:'#00273a', ring:'#7ad8ea', text:'#d3eff7' };
+/* colours from tokens.css (the stylesheet has loaded before this script runs) */
+const tok = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const PIN_NORM = { top:tok('--pin-top'), bot:tok('--pin-bottom'), ring:tok('--pin-ring'), text:'#ffffff' };
+const PIN_OUT  = { top:tok('--pin-out-top'), bot:tok('--ink'), ring:tok('--pin-out-ring'), text:tok('--pin-out-text') };
 
 /* Draws a classic map marker — round head over a pointed tip — with the building
    number baked into the head. Rendered at `dpr`× for crisp retina pins; the tip
@@ -441,7 +444,7 @@ function renderMap(token, styleUrl){
         layout:{ 'text-field':['get','label'],'text-font':['DIN Pro Medium','Arial Unicode MS Regular'],
           'text-size':12,'text-offset':[0,0.8],'text-anchor':'top','text-allow-overlap':false,
           'visibility': $('showLabels').checked ? 'visible':'none' },
-        paint:{ 'text-color':'#e5e5e5','text-halo-color':'#00273a','text-halo-width':1.8 } });
+        paint:{ 'text-color':tok('--bone'),'text-halo-color':tok('--ink'),'text-halo-width':1.8 } });
     }
 
     applyBasemapConfig();
@@ -600,17 +603,17 @@ async function exportImage(){
 
   const out=document.createElement('canvas'); out.width=outW; out.height=outH;
   const g=out.getContext('2d');
-  g.fillStyle='#00273a'; g.fillRect(0,0,outW,outH);
+  g.fillStyle=tok('--ink'); g.fillRect(0,0,outW,outH);
   g.drawImage(mc,0,0);
-  g.fillStyle='#00273a'; g.fillRect(mw,0,legW,outH);
-  g.fillStyle='#114a63'; g.fillRect(mw,0,2*scale,outH);
+  g.fillStyle=tok('--ink'); g.fillRect(mw,0,legW,outH);
+  g.fillStyle=tok('--legend-rule'); g.fillRect(mw,0,2*scale,outH);
 
   let x=mw+pad;
-  g.fillStyle='#53c7dc'; g.font=`600 ${11*scale}px Raleway, sans-serif`;
+  g.fillStyle=tok('--sky'); g.font=`600 ${11*scale}px Raleway, sans-serif`;
   g.fillText('GVC REAL ESTATE'.split('').join('\u200a'), x, pad+12*scale);
-  g.fillStyle='#e5e5e5'; g.font=`700 ${fTitle}px 'Fraunces', serif`;
+  g.fillStyle=tok('--bone'); g.font=`700 ${fTitle}px 'Fraunces', serif`;
   g.fillText('Property Locations', x, pad+fTitle+16*scale);
-  g.fillStyle='#7fa8b8'; g.font=`400 ${fSub}px Raleway, sans-serif`;
+  g.fillStyle=tok('--legend-meta'); g.font=`400 ${fSub}px Raleway, sans-serif`;
   g.fillText(`${entries.length} buildings · ${buildings.reduce((n,b)=>n+Math.max(b.units.length,1),0)} units`, x, pad+fTitle+16*scale+fSub+6*scale);
 
   for(let c=0;c<cols;c++){
@@ -620,14 +623,14 @@ async function exportImage(){
       const b=entries[i];
       const r=11*scale;
       g.beginPath(); g.arc(cx+r,cy+r,r,0,Math.PI*2);
-      g.fillStyle=b.outlier?'#53c7dc':'#00a1c4'; g.fill();
-      g.fillStyle=b.outlier?'#00273a':'#e5e5e5'; g.font=`600 ${fNum}px Raleway, sans-serif`;
+      g.fillStyle=b.outlier?tok('--sky'):tok('--cyan'); g.fill();
+      g.fillStyle=b.outlier?tok('--ink'):tok('--bone'); g.font=`600 ${fNum}px Raleway, sans-serif`;
       g.textAlign='center'; g.textBaseline='middle';
       g.fillText(String(b.idx),cx+r,cy+r+0.5*scale);
       g.textAlign='left'; g.textBaseline='alphabetic';
-      g.fillStyle='#e5e5e5'; g.font=`500 ${fAddr}px Raleway, sans-serif`;
+      g.fillStyle=tok('--bone'); g.font=`500 ${fAddr}px Raleway, sans-serif`;
       g.fillText(`${b.number} ${b.street}`, cx+r*2+10*scale, cy+fAddr);
-      g.fillStyle='#7fa8b8'; g.font=`400 ${fUnit}px Raleway, sans-serif`;
+      g.fillStyle=tok('--legend-meta'); g.font=`400 ${fUnit}px Raleway, sans-serif`;
       const lines=wrap(g,unitText(b),colW-(r*2+10*scale));
       let ly=cy+fAddr+unitH;
       lines.forEach(ln=>{ g.fillText(ln, cx+r*2+10*scale, ly); ly+=unitH; });
@@ -653,6 +656,7 @@ function download(canvas){
   a.download='gvc-3d-property-map.png';
   a.href=canvas.toDataURL('image/png');
   a.click();
+  GVC_UNSAVED.clear();   // the picture is on disk now
 }
 
 function wrap(ctx,text,maxW){
@@ -741,6 +745,7 @@ $('resetView').onclick=()=>{
 };
 $('build').onclick=build;
 $('export').onclick=exportImage;
+GVC_UNSAVED.watch();
 updateModifierState();
 /* what a job's map works through (Slice 5, job-mode.js) */
 window.__mapStudio = { setNear(p){ GEO_NEAR = p; }, build, setStatus, get buildings(){ return buildings; }, get map(){ return map; } };

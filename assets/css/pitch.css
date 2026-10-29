@@ -332,8 +332,8 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
    ============================================================ */
 /* the agent picker (.ag-chip) is shared — see builder.css */
 
-.warn{margin-top:10px;padding:9px 11px;border-radius:6px;background:#FFF4E5;border:1px solid #E8C99B;
-  font:400 10.5px/1.6 var(--ui-mono);color:#6B4A12;}
+.warn{margin-top:10px;padding:9px 11px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-rule);
+  font:400 10.5px/1.6 var(--ui-mono);color:var(--warn-ink);}
 .warn .warn-item + .warn-item{margin-top:5px;}
 
 .thumbs{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}

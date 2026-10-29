@@ -62,7 +62,7 @@
 .why .sts svg.fl{width:1.15in;}
 .why .sts b{width:.22in;height:0;border-top:1pt solid var(--sky);}
 /* the client's words in a card at the foot of the column */
-.why .qcard{margin-top:auto;background:#ecece6;border-top:.08in solid var(--navy);padding:.2in .22in .18in .12in;}
+.why .qcard{margin-top:auto;background:var(--quote-card);border-top:.08in solid var(--navy);padding:.2in .22in .18in .12in;}
 .why .qcard .who{margin-top:.14in;padding-top:.1in;border-top:.75pt solid rgba(0,39,58,.22);}
 .why .quote{font-size:10.5pt;}
 
@@ -137,8 +137,8 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
 .proc li{display:flex;gap:.2in;align-items:center;padding:.1in 0;border-bottom:.5pt solid rgba(0,39,58,.14);}
 .proc .no{flex:none;width:.46in;height:.46in;border-radius:50%;display:flex;align-items:center;
   justify-content:center;color:#fff;font:italic 400 15pt/1 var(--serif);
-  background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#13809b),
-    color-mix(in srgb,#06475f var(--t),#0f7694));}
+  background:linear-gradient(135deg,color-mix(in srgb,var(--grad-deep) var(--t),var(--grad-teal)),
+    color-mix(in srgb,var(--grad-deep) var(--t),var(--grad-teal-2)));}
 .proc b{display:block;font:800 9.6pt/1 var(--sans);letter-spacing:.17em;text-transform:uppercase;color:var(--navy);}
 .proc sup{font-size:9pt;letter-spacing:0;}
 .proc p{margin:.05in 0 0;font:300 10.4pt/14pt var(--sans);color:var(--navy);}
@@ -150,7 +150,7 @@ table.tbl tr.grp:first-child td{padding-top:.11in;}
    but falls short of 4.5:1. This guide holds every line of text to that; the Seller
    Pitch keeps the shared look. The closing page's disclaimer was the worst of it:
    6.5pt at 55% white on navy. */
-.pg:not(.rev){--sky2:#0b7a95;}
+.pg:not(.rev){--sky2:var(--sky-text);}
 .pg:not(.rev) .stat .l,.pg:not(.rev) .quote .who{color:rgba(0,39,58,.72);}
 .pg-foot .site{color:rgba(0,39,58,.72);}
 .pg-foot .pg-n{color:rgba(0,39,58,.7);}
@@ -201,7 +201,7 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
    printer so the copy does not go out as finished. Positioned against .pg.
    Exception: the costs page's red Check stamp carries .ed-only and does not print. */
 .nj-stamp{position:absolute;top:.52in;right:var(--pad);z-index:5;transform:rotate(-2deg);
-  border:2px solid #8C3A2B;color:#8C3A2B;background:rgba(255,255,255,.94);padding:.04in .12in;
+  border:2px solid var(--danger);color:var(--danger);background:rgba(255,255,255,.94);padding:.04in .12in;
   font:800 7.5pt var(--sans);letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;pointer-events:none;}
 
 .nj-stamp.warn{display:inline-flex;align-items:center;gap:.07in;}
@@ -211,10 +211,10 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
    photo's place, with the four counties the team works lit. */
 .why .ph.njmap{position:relative;background:#fff;display:flex;align-items:center;justify-content:center;}
 .why .ph.njmap svg{display:block;width:100%;height:100%;}
-.njmap .cty{fill:#E7E4DC;stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
-.njmap .cty.lit{fill:#53C7DC;}
+.njmap .cty{fill:var(--ui-paper-2);stroke:#fff;stroke-width:.9;stroke-linejoin:round;}
+.njmap .cty.lit{fill:var(--sky);}
 .njmap .cl.end{text-anchor:end;}
-.njmap .cll{fill:none;stroke:#00273A;stroke-width:.8;}
+.njmap .cll{fill:none;stroke:var(--navy);stroke-width:.8;}
 .njmap .cl{font:800 16px var(--sans);letter-spacing:.06em;fill:var(--navy);text-anchor:middle;
   dominant-baseline:central;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
 
@@ -226,8 +226,8 @@ table.tbl.cost .num{width:1.5in;padding-right:0;}
 .fifty.steps .fg-h{display:flex;align-items:center;gap:.09in;font-size:7.6pt;color:var(--navy);padding-bottom:.045in;}
 .fifty.steps .sn{flex:none;width:.25in;height:.25in;border-radius:50%;display:flex;align-items:center;
   justify-content:center;color:#fff;font:800 8pt/1 var(--sans);letter-spacing:0;padding-top:.5pt;
-  background:linear-gradient(135deg,color-mix(in srgb,#06475f var(--t),#13809b),
-    color-mix(in srgb,#06475f var(--t),#0f7694));}
+  background:linear-gradient(135deg,color-mix(in srgb,var(--grad-deep) var(--t),var(--grad-teal)),
+    color-mix(in srgb,var(--grad-deep) var(--t),var(--grad-teal-2)));}
 .fifty.steps li{padding:.03in 0;font-size:8.7pt;line-height:11.2pt;}
 .fifty.steps li .n{line-height:11.2pt;}
 /* Marli's fifty (NJ) are longer lines than the old list, so New Jersey sets them a size down */
@@ -241,9 +241,9 @@ body.look-guide .fifty.steps.dense .fg + .fg{margin-top:.05in;}
 body.look-guide .fifty.steps.dense .fg-h{padding:.045in 0 .025in;}
 body.look-guide .fifty.steps.dense li{padding:.01in 0;}
 /* lines Matt is checking with the agents — prints, so it cannot be missed */
-.fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid #8C3A2B;border-radius:2px;
-  font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#8C3A2B;}
-.fifty.steps .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:#53C7DC;}
+.fifty.steps .vfy{flex:none;align-self:center;margin-left:auto;padding:0 .05in;border:1pt solid var(--danger);border-radius:2px;
+  font:800 5.6pt/1.6 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--danger);}
+.fifty.steps .star{flex:none;align-self:center;margin-left:auto;width:.17in;height:.17in;color:var(--sky);}
 
 /* Offer & Negotiation, NJ: the artwork's six cards as live, editable HTML.
    No telephone — the cards take the whole page. */
@@ -655,7 +655,7 @@ let PAGES = pageList(), OF = PAGES.length;
    down and gone through with anyone, so the caps line under the photo says
    where the team works rather than who this copy is for. The design itself,
    measured off the drawn page 1, is Pitch.frameCover() — shared with the
-   Seller Pitch & CMA, which now fronts with the same page. */
+   Seller Package, which now fronts with the same page. */
 function pgCover() {
   return P.frameCover({
     kicker: state.cover.kicker,
@@ -718,12 +718,12 @@ const njMapPanel = () => countyMapPanel(window.NJ_COUNTIES, NJ_LIT, 'New Jersey'
 const flMapPanel = () => countyMapPanel(window.FL_COUNTIES, FL_LIT, 'Florida');
 
 /* One state's outline as inline SVG in the artwork's blues (state-shapes.js). */
-const STATE_GRAD = { ny: ['#00273A', '#0a7c99'], nj: ['#53C7DC', '#a9dce6'], fl: ['#7fcfe0', '#0a8aa6'] };
+const STATE_GRAD = { ny: ['--ink', '--state-ny-end'], nj: ['--sky', '--state-nj-end'], fl: ['--state-fl-start', '--state-fl-end'] };
 function stateSvg(id) {
   const sh = window.GVC_STATE_SHAPES[id], g = STATE_GRAD[id];
   return '<svg class="' + id + '" viewBox="' + sh.vb + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
     '<defs><linearGradient id="sg-' + id + '" x1="0" y1="0" x2="1" y2="1">' +
-      '<stop offset="0" stop-color="' + g[0] + '"/><stop offset="1" stop-color="' + g[1] + '"/></linearGradient></defs>' +
+      '<stop offset="0" style="stop-color:var(' + g[0] + ')"/><stop offset="1" style="stop-color:var(' + g[1] + ')"/></linearGradient></defs>' +
     sh.d.map(d => '<path fill="url(#sg-' + id + ')" d="' + d + '"/>').join('') + '</svg>';
 }
 
@@ -993,7 +993,7 @@ function pgPowerhaus(n) {
 }
 
 /* Closing page — Team and Next Steps merged into one. It is the Brochure's
-   editorial close, not the Seller Pitch & CMA's centred cards: the lockup and
+   editorial close, not the Seller Package's centred cards: the lockup and
    the team QR on a header line, the sign-off under it, then one row per agent
    with their cut-out standing in a rail down the left and their office number,
    mobile and email hung beside it. An agent with an Instagram in the roster

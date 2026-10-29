@@ -306,7 +306,11 @@
 
     paint();
     if (P.signedIn()) refresh();
-    else fillPick([]);
+    else {
+      fillPick([]);
+      /* signed out, nothing on the bar said where signing in happens: say it */
+      say('Not signed in. Click the dropdown or Save and a sign-in box opens (your email and password, or the team password). You can build and print without signing in.');
+    }
 
     return { refresh: refresh, property: function () { return current; } };
   }

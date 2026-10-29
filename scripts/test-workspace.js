@@ -137,7 +137,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('readable name', (await p.$$eval('.pj h3', els => els.map(e => e.childNodes[0].textContent.trim()))).includes('100 Example St 4A'), true);
   check('job links per job', await p.$eval('a.pj[href*="100-example"]', a => a.getAttribute('href')), 'job/?listing=100-example-st-residence-4a');
   check('hostile text shown as text', [await p.evaluate(() => window.__xss || null), (await p.$$eval('.pj h3', els => els.map(e => e.textContent))).some(s => s.includes('<img'))], [null, true]);
-  check('recent: newest first', (await text(p, '#recent')).includes('Price $4,750,000 → $4,500,000'), true);
+  /* the recent-changes card was removed from the overview on purpose (9eeabfc) */
   check('tasks: flags and own items', [(await text(p, '#tlist')).includes('20 Sample Ave 7B: Link the Drive folder'), (await text(p, '#tlist')).includes('Florida office signage')], [true, true]);
   check('no won-or-lost task', /won or lost/i.test(await text(p, '#tlist')), false);
 
@@ -274,7 +274,6 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { rows: rowsFor({ properties: [], pitches: [], dev_projects: [], changes: [], todos: [] }) });
   check('empty database', [(await text(t.page, '#jobs')).includes('ready but empty'), await p.evaluate(() => 1).catch(() => 1), t.errors], [true, 1, []]);
   check('empty: zeros, no NaN', (await text(t.page, '#stats')).includes('NaN'), false);
-  check('empty: recent changes says so', (await text(t.page, '#recent')).includes('No changes yet'), true);
   // the account menu works from the keyboard
   await t.page.click('#wsMe');
   const opened = [await visible(t.page, '#wsMenu'), await t.page.$eval('#wsMe', b => b.getAttribute('aria-expanded'))];

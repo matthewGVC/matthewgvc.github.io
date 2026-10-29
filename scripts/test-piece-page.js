@@ -6,7 +6,11 @@
    helper's POST /piece. Supabase, Drive and the helper are mocked by request
    interception (made-up rows and names; nothing real).
 
-     BASE=http://127.0.0.1:8097 node scripts/test-piece-page.js
+     BASE=http://localhost:8080 node scripts/test-piece-page.js
+
+   Needs the static server running from the repo root first:
+     python -m http.server 8080
+   A full run takes about a minute; give it a timeout of at least 180s.
    ============================================================ */
 'use strict';
 
@@ -137,7 +141,10 @@ async function open(browser, opts) {
     r.fulfill({ status: opts.helperStatus || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(reply) });
   });
   await page.goto(BASE + opts.path, { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => window.GVC_PIECEMODE && window.GVC_PIECEMODE.ready, null, { timeout: 15000 }).catch(() => {});
+  // only job-mode pages (?listing= / ?pitch= on a piece tool) ever set GVC_PIECEMODE;
+  // waiting 15s for it on Map Studio or a standalone page made the run take 3+ minutes
+  if (/[?&](listing|pitch)=/.test(opts.path) && !/map-studio/.test(opts.path))
+    await page.waitForFunction(() => window.GVC_PIECEMODE && window.GVC_PIECEMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
   return { page, errors, saves, pieces, helper, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
 }

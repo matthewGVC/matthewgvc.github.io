@@ -25,6 +25,7 @@
   function whyNot(point) {
     var map = global.GVC_ROSTER_INITIALS || {}, out = [];
     String(point || '').split(/[\/,&+\s]+/).filter(Boolean).forEach(function (ini) {
+      if (!(ini in map) && ini.toUpperCase() in map) ini = ini.toUpperCase();
       if (!(ini in map)) out.push(ini + ' isn\'t a set of initials the workspace knows, so it isn\'t suggested.');
       else if (map[ini] === null) out.push(ini + ' could be more than one person, so pick by hand.');
       else if (/^past:/.test(map[ini])) out.push(ini + ' is ' + map[ini].slice(5) + ', no longer on the team.');

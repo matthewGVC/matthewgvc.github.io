@@ -279,18 +279,6 @@ body.look-guide .fifty.steps.dense li{padding:.01in 0;}
 .lk-r a{flex:none;width:3in;text-align:right;font:600 8pt/1.35 var(--sans);color:var(--sky2);
   text-decoration:none;overflow-wrap:anywhere;}
 
-/* Marli's referral partners — six categories; an empty one prints dashed
-   "to be added" rows until the list arrives (MARLI_REFERRALS in guide-data.js). */
-.rf-lede{margin:0 0 .16in;font:300 10pt/14pt var(--body);color:rgba(0,39,58,.7);}
-.rf{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:.24in .3in;}
-.rf .card{display:flex;flex-direction:column;}
-.rf .card .ci{margin-bottom:.08in;}
-.rf .row{padding:.07in 0;border-bottom:.5pt solid var(--rule);font:300 9pt/1.35 var(--body);color:var(--navy);}
-.rf .row b{font-weight:700;}
-.rf .row span{display:block;color:rgba(0,39,58,.72);}
-.rf .row.tbd{border:1pt dashed rgba(140,58,43,.45);border-radius:2px;margin-top:.07in;padding:.07in .1in;
-  color:rgba(140,58,43,.85);font-style:italic;}
-
 /* the costs footnote was ~3.8:1 */
 .foot-note{color:rgba(0,39,58,.72);}
 </style>
@@ -352,7 +340,7 @@ body.look-guide .fifty.steps.dense li{padding:.01in 0;}
           <div class="sec-note">Swaps the cover photo, the client quote on &ldquo;Why Work With Us&rdquo;,
             and the state-specific lines, and puts that state first wherever the three are listed.
             <b>New Jersey</b> also merges the Buying Process into the 50 Things page, adds Useful Links
-            (and Power Haus + referral partners when Marli is picked), and moves &ldquo;Don&rsquo;t Forget
+            (and Power Haus + Marli's preferred vendors when Marli is picked), and moves &ldquo;Don&rsquo;t Forget
             to Ask&rdquo; and &ldquo;FAQ&rsquo;s&rdquo; out to the
             <a href="../agent-info/">Useful Agent Info</a> tool.</div>
           <div class="field">
@@ -617,7 +605,7 @@ const SPINE = [
    Buying Process into 50 Things and hands the two agent-facing pages to the
    Useful Agent Info tool; `marli` pages print only in Marli's version. */
 const inMarket = p => (!p.only || p.only.indexOf(state.region) >= 0) && (p.not || []).indexOf(state.region) < 0;
-/* Power Haus and the referral partners are Marli-specific content (her own
+/* Power Haus and the preferred vendors are Marli-specific content (her own
    network and her own vendors), so `marli` pages print only in Marli's version. */
 const hasMarli = () => P.versionId(state.version) === 'marli-silver';
 /* The tick list for this market. In New Jersey the agent pages are a work in

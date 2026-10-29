@@ -70,6 +70,8 @@ check('current phase: no construction section falls back to the whole schedule',
   B.currentPhase({ tasks: [{ gid: 'a', name: 'Design ', section: 'Planning', completed: false }] }), { name: 'Design', section: 'Planning' });
 check('section label drops the number', [B.sectionLabel('3. Construction'), B.sectionLabel('Closeout'), B.sectionLabel(null)], ['Construction', 'Closeout', '']);
 
+check('planned: what the lines under their estimate have left, overruns at $0', [B.totals(budget, false).planned, B.totals(budget, true).planned], [4000, 34000]);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

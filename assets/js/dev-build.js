@@ -10,9 +10,11 @@
      GVC_DEVBUILD.statusOf(task, today)
          → 'done' | 'late' | 'soon' (due within SOON_DAYS) | 'open' | 'undated'
      GVC_DEVBUILD.totals(budget, withUpgrades)
-         → { lines, estimate, actual, remaining, payments, missingReceipts }
+         → { lines, estimate, actual, remaining, planned, payments, missingReceipts }
            lines in scope (the base build, or with the "(Upgrade)" lines);
-           remaining = estimate − actual
+           remaining = estimate − actual (overruns eat into it);
+           planned = what the lines still under their estimate have left (the
+           sheet's own Remaining column, where a line that went over counts $0)
      GVC_DEVBUILD.attention(schedule, budget, today)
          → { over, noEstimate, unestimated, late, soon, sheetDiff, missingReceipts }
            over         lines whose actual passed their estimate (+ by, pct)
@@ -67,7 +69,8 @@
   function totals(budget, withUpgrades) {
     var b = budget || {}, lines = (b.lines || []).filter(function (l) { return withUpgrades || !l.upgrade; });
     var estimate = cents(sum(lines, 'estimate')), actual = cents(sum(lines, 'actual')), pays = b.payments || [];
-    return { lines: lines, estimate: estimate, actual: actual, remaining: cents(estimate - actual), payments: pays.length,
+    var planned = cents(lines.reduce(function (n, l) { return l.estimate != null ? n + Math.max(0, l.estimate - (Number(l.actual) || 0)) : n; }, 0));
+    return { lines: lines, estimate: estimate, actual: actual, remaining: cents(estimate - actual), planned: planned, payments: pays.length,
       missingReceipts: pays.filter(function (p) { return !p.receipt; }).length };
   }
 

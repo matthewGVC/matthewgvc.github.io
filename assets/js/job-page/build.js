@@ -36,14 +36,17 @@
   /* ---------- Overview: the figures across the top ---------- */
   function overviewHtml(ctx) {
     var W = ctx.W, esc = ctx.esc, j = ctx.job, b = readable(ctx), items = ctx.row.schedule ? B.workItems(ctx.row.schedule) : null, tiles = [];
-    var tile = function (k, v, s, bar, cls) {
-      return '<div class="ov-t' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div>' + (bar || '') + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
+    var tile = function (k, v, s, bar, cls, note) {
+      return '<div class="ov-t' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div>' + (bar || '') + (s ? '<div class="s">' + esc(s) + '</div>' : '') +
+        (note ? '<div class="s ov-n">' + esc(note) + '</div>' : '') + '</div>';
     };
     if (b) {
       var t = scoped(b), spent = pctOf(t.actual, t.estimate), over = t.remaining < 0;
       tiles.push(tile('Total budget', W.money(t.estimate), (upgrades ? 'with upgrades, ' : 'base build, ') + plural(t.lines.length, 'line')));
       tiles.push(tile('Spent to date', W.money(t.actual), spent != null ? spent + '% of the budget' : '', meter(spent, over ? 'over' : '')));
-      tiles.push(tile('Remaining', (over ? '−' : '') + W.money(Math.abs(t.remaining)), over ? 'over the budget' : spent != null ? Math.round((100 - spent) * 10) / 10 + '% of the budget left' : '', '', over ? 'over' : ''));
+      tiles.push(tile('Remaining', (over ? '−' : '') + W.money(Math.abs(t.remaining)), over ? 'over the budget' : spent != null ? Math.round((100 - spent) * 10) / 10 + '% of the budget left' : '', '', over ? 'over' : '',
+        // the sheet's way: lines that went over count $0, so this only differs when a line ran over
+        t.planned !== t.remaining ? W.money(t.planned) + ' still planned on open lines' : ''));
     }
     if (items) {
       var done = items.filter(function (x) { return x.completed; }).length;

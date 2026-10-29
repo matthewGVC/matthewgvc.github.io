@@ -342,7 +342,7 @@ body.look-guide .fifty.steps.dense li{padding:.01in 0;}
             <b>New Jersey</b> also merges the Buying Process into the 50 Things page, adds Useful Links
             (and Power Haus + Marli's preferred vendors when Marli is picked), and moves &ldquo;Don&rsquo;t Forget
             to Ask&rdquo; and &ldquo;FAQ&rsquo;s&rdquo; out to the
-            <a href="../agent-info/">Useful Agent Info</a> tool.</div>
+            <a href="../agent-info/">Agent Crib Sheets</a> tool.</div>
           <div class="field">
             <label for="covKicker">Line above the title</label>
             <input type="text" id="covKicker" value="Comprehensive Guide for the Home Buying Process">
@@ -603,7 +603,7 @@ const SPINE = [
 ];
 /* `only` / `not` list the markets a page is printed for. New Jersey merges the
    Buying Process into 50 Things and hands the two agent-facing pages to the
-   Useful Agent Info tool; `marli` pages print only in Marli's version. */
+   Agent Crib Sheets tool; `marli` pages print only in Marli's version. */
 const inMarket = p => (!p.only || p.only.indexOf(state.region) >= 0) && (p.not || []).indexOf(state.region) < 0;
 /* Power Haus and the preferred vendors are Marli-specific content (her own
    network and her own vendors), so `marli` pages print only in Marli's version. */
@@ -838,7 +838,7 @@ function pgFiftySteps(n) {
    The agent's own prompt sheet, replacing the blank search-criteria
    worksheet: the questions that slip out of a first consultation, the
    renovation one above all. Five shared groups and one for the market. Drawn by
-   assets/js/agent-pages.js, shared with the Useful Agent Info tool; New Jersey
+   assets/js/agent-pages.js, shared with the Agent Crib Sheets tool; New Jersey
    prints it there rather than in this packet. */
 function pgDiscovery(n) {
   const body = GVC_AGENTPAGES.discovery(state.region);

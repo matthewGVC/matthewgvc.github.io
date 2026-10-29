@@ -105,6 +105,17 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .tbl td{padding:14px;border-bottom:1px solid var(--rule);vertical-align:middle}
 .tbl tr:hover td{background:color-mix(in srgb,var(--paper-2) 50%,var(--paper))}
 .tbl .r{text-align:right}
+/* the job lists (Resell, New Dev) on a phone: each row a card, no sideways scroll */
+@media (max-width:640px){
+  .tbl-card .tbl,.tbl-card .tbl tbody{display:block}
+  .tbl-card .tbl thead{display:none}
+  .tbl-card .tbl tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+  .tbl-card .tbl td{display:block;padding:0;border:0;background:none !important}
+  .tbl-card .tbl td.nm{flex:1 0 100%}
+  .tbl-card .tbl td.r{text-align:left}
+  .tbl-card .tbl td:empty{display:none}
+  .tbl-card .tbl td.empty{flex:1 0 100%}
+}
 
 /* checkbox list */
 .todo-i{display:grid;grid-template-columns:18px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule);font-size:14.5px;line-height:1.4}
@@ -124,7 +135,10 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .card.cz-shut > :not(.cz-head){display:none !important}
 .card.cz-shut > .card-h.cz-head{margin-bottom:0}
 h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
-@media (prefers-reduced-motion:reduce){ .cz-btn svg{transition:none} }
+/* a loading line's spinner */
+.spin{display:inline-block;width:12px;height:12px;margin-right:8px;vertical-align:-1px;border:2px solid var(--rule);border-top-color:var(--ink);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){ .cz-btn svg{transition:none} .spin{animation-duration:2.4s} }
 
 /* a job's Asana / Drive / DE badges */
 .pj-sync{margin-top:7px}
@@ -174,7 +188,8 @@ h2.cz-head,h3.cz-head{display:flex;align-items:center;gap:12px}
   body{padding-bottom:60px}
   .top-r .ibtn{display:none}
   .wrap{padding:22px 16px 0}
-  .page-h h1{font-size:30px}
+  .page-h h1{font-size:30px}
+
   .card{padding:16px}
   .search{min-width:0;width:100%}
   .foot{padding:18px 16px;flex-direction:column}

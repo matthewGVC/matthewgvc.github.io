@@ -43,17 +43,13 @@
                            ("someNewField" → "Some new field"); never the raw name
      syncHealth(lastDeRun, now)      → { state: 'ok'|'amber'|'red'|'never', text, why }   36 h
      asanaHealth(lastAsanaRun, now)  → the same for Asana, amber after 6 h
-     statusRows(jobs)   → [{ market, rows: [{ name, href, stage, chip, lastMilestone,
-                           nextDate, agents, mismatches }] }]   the team Status page (S9):
-                           listings and open pitches, by market, then stage order
-     matchGroups(jobs, drift, loose?) → [{ fixAt, people: [{ who, items: [{ job, href, id, table,
-                           code, key, text, since, asanaUrl, paste, deUrl }] }] }]   the Match
-                           page (S10): Asana, DE, Drive, Matt, then 'Roster' (drift);
-                           loose = looseMatch(...) lines, which belong to no job.
-                           M6 "no Drive folder linked" lines (on most jobs early on)
-                           leave the people lists and become one collapsed line:
-                           the group gains bulk: [{ code, key, text, items }]
-                           ("38 jobs have no Drive folder linked yet"), one item per job
+     matchByJob(jobs, drift, loose?) → [{ kind: 'job', job, href, id, table, who, items }, …,
+                           { kind: 'loose', items }, { kind: 'roster', items }]   the Errors
+                           page (Matt, 10-29): one group per job, the jobs with the most errors
+                           first; each item { job, href, id, table, code, key, text, since,
+                           asanaUrl, paste, deUrl, fixAt, who } says where to fix it (Asana, DE,
+                           Drive, Matt) and who Asana names. loose = looseMatch(...) lines, which
+                           belong to no job; roster = drift.
      looseMatch({ deListings, asanaRun, ignoredGids, linkedGids, linkedDeIds, claims }, GVC_MATCH) → [{ fixAt, who, item }]
                           claims { DE id: job name }: a DE line a job's M19 ("probably the same
                           listing") names says which job, and keeps its Link / Not ours
@@ -216,6 +212,12 @@
     if (typeof module === 'object' && module.exports && typeof require === 'function') return require('./piece-stale.js');
     return null;
   }
+  /* a development's build (dev-build.js: loaded by the page, required in Node) */
+  function buildApi() {
+    if (global && global.GVC_DEVBUILD) return global.GVC_DEVBUILD;
+    if (typeof module === 'object' && module.exports && typeof require === 'function') return require('./dev-build.js');
+    return null;
+  }
   var STALE_LABEL = { showsheet: 'Showsheet', brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard',
     seller: 'Seller Package', 'pitch-map': 'Map', signage: 'Signage' };
   /* { stale: words, stalePieces } for one job from its pieces' records. The Showsheet's
@@ -302,7 +304,7 @@
       var steps = stepsOf(p.kind, p.stage, p.milestones, done), match = activeMatch(p.match);
 
       jobs.push({
-        id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '',
+        id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '', devProjectId: p.dev_project_id || null,
         name: au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing'), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
         rooms: [beds != null ? beds + ' bd' : '', baths != null ? baths + ' ba' : ''].filter(Boolean).join(' · '),   // whatever is known
@@ -354,8 +356,11 @@
       var cTotal = nm && nm.construction ? Number(nm.construction.total) : 0;
       var cons = cTotal > 0 ? { done: Number(nm.construction.done) || 0, total: cTotal } : null;
       var match = activeMatch(d.match);
+      // what the lists show for a development: the phase its build is in (Asana's schedule), as its page does
+      var B = buildApi(), ph = B && d.schedule ? B.currentPhase(d.schedule) : null;
+      var phase = ph ? (ph.section ? B.sectionLabel(ph.section) + ': ' : '') + ph.name : null;
       jobs.push({
-        id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: idx >= 0 ? DEV[idx] : 'No milestones yet',
+        id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: idx >= 0 ? DEV[idx] : 'No milestones yet', phase: phase,
         chip: 'pre', price: '', rooms: '', place: d.size_band ? d.size_band : '', folder: d.drive_folder || null, folderState: d.folder_state,
         steps: DEV, stageIdx: idx, done: {}, milestones: ms, bars: [], ticks: dated, activity: {}, flags: flags,
         dates: [], match: match, mismatches: match.length, stale: [], stalePieces: [], asanaUrl: d.asana_project_gid && /^\d+$/.test(String(d.asana_project_gid)) ? 'https://app.asana.com/0/' + d.asana_project_gid : null, agents: [],
@@ -509,29 +514,6 @@
     return health('Asana', run, now, 6 * 3600e3, function (w) { return 'Asana last synced ' + w + ', over 6 hours ago. Is the PC on?'; });
   }
 
-  /* ---------- the team Status page (S9) ---------- */
-  function statusRows(jobs) {
-    var by = {};
-    jobs.forEach(function (j) {
-      if (!(j.type === 'listing' || j.type === 'rental' || (j.type === 'pitch' && j.stage === 'Pitch'))) return;
-      var done = (j.dates || []).filter(function (d) { return !d.planned; }), planned = (j.dates || []).filter(function (d) { return d.planned; });
-      var last = done.length ? done[done.length - 1] : null;
-      (by[j.market || ''] = by[j.market || ''] || []).push({
-        name: j.name, href: j.href, stage: j.stage, chip: j.chip,
-        lastMilestone: last ? { label: last.label, on: last.on } : null,
-        nextDate: planned.length ? { label: planned[0].label, on: planned[0].on } : null,
-        agents: (j.agents || []).slice(), agentIds: (j.agentIds || []).slice(), mismatches: j.mismatches || 0
-      });
-    });
-    var keys = Object.keys(by).sort(function (a, b) {
-      var x = MARKETS.indexOf(a), y = MARKETS.indexOf(b);
-      return (x === -1 ? 99 : x) - (y === -1 ? 99 : y) || (a < b ? -1 : a > b ? 1 : 0);
-    });
-    return keys.map(function (m) {
-      return { market: m, rows: by[m].sort(function (a, b) { return ORDER.indexOf(a.stage) - ORDER.indexOf(b.stage) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0); }) };
-    });
-  }
-
   /* ---------- the Match page (S10) ---------- */
   var UNLINKED_WHY = {
     'same address': 'another task is linked to the job at this address',
@@ -566,43 +548,30 @@
     return out;
   }
 
-  function matchGroups(jobs, drift, loose) {
-    var g = {}, bulk = {};
-    (loose || []).forEach(function (l) {
-      var fix = FIX.indexOf(l.fixAt) === -1 ? 'Matt' : l.fixAt;
-      g[fix] = g[fix] || {};
-      (l.who && l.who.length ? l.who : ['']).forEach(function (w) { (g[fix][w] = g[fix][w] || []).push(l.item); });
-    });
+  function matchByJob(jobs, drift, loose) {
+    var out = [];
     jobs.forEach(function (j) {
-      (j.match || []).forEach(function (m) {
-        var fix = FIX.indexOf(m.fixAt) === -1 ? 'Matt' : m.fixAt;
-        var item = { job: j.name, href: j.href, id: j.id, table: j.type === 'development' ? 'dev_projects' : j.type === 'pitch' ? 'pitches' : 'properties',
+      var items = (j.match || []).map(function (m) {
+        return { job: j.name, href: j.href, id: j.id, table: j.type === 'development' ? 'dev_projects' : j.type === 'pitch' ? 'pitches' : 'properties',
           code: m.code, key: m.key || m.code, text: m.text, since: m.since || null, asanaUrl: j.asanaUrl || null,
-          paste: m.values && typeof m.values.paste === 'string' ? m.values.paste : null };
-        if (m.code === 'M6' && (m.key || m.code) === 'M6' && m.values && m.values.folder === null) {   // no folder linked: one collapsed line
-          bulk[fix] = bulk[fix] || [];
-          if (!bulk[fix].some(function (x) { return x.id === item.id && x.table === item.table; })) bulk[fix].push(item);
-          return;
-        }
-        var who = m.who && m.who.length ? m.who : [''];
-        g[fix] = g[fix] || {};
-        who.forEach(function (w) { (g[fix][w] = g[fix][w] || []).push(item); });
+          paste: m.values && typeof m.values.paste === 'string' ? m.values.paste : null,
+          fixAt: FIX.indexOf(m.fixAt) === -1 ? 'Matt' : m.fixAt, who: (m.who || []).slice() };
       });
+      if (!items.length) return;
+      var who = [];
+      items.forEach(function (it) { it.who.forEach(function (w) { if (who.indexOf(w) === -1) who.push(w); }); });
+      out.push({ kind: 'job', job: j.name, href: j.href, id: j.id, table: items[0].table, who: who, items: items });
     });
-    var out = FIX.filter(function (f) { return g[f] || bulk[f]; }).map(function (f) {
-      var grp = { fixAt: f, people: Object.keys(g[f] || {}).sort(function (a, b) {
-        if (!a) return 1; if (!b) return -1; return a.toLowerCase() < b.toLowerCase() ? -1 : 1;
-      }).map(function (w) { return { who: w, items: g[f][w] }; }) };
-      if (bulk[f]) {
-        var n = bulk[f].length;
-        grp.bulk = [{ code: 'M6', key: 'M6', text: n + (n === 1 ? ' job has' : ' jobs have') + ' no Drive folder linked yet.', items: bulk[f] }];
-      }
-      return grp;
-    });
+    out.sort(function (a, b) { return b.items.length - a.items.length || (a.job.toLowerCase() < b.job.toLowerCase() ? -1 : 1); });
+    if (loose && loose.length) {
+      out.push({ kind: 'loose', items: loose.map(function (l) {
+        return Object.assign({}, l.item, { fixAt: FIX.indexOf(l.fixAt) === -1 ? 'Matt' : l.fixAt, who: (l.who || []).slice() });
+      }) });
+    }
     if (drift && drift.length) {
-      out.push({ fixAt: 'Roster', people: [{ who: '', items: drift.map(function (d) {
-        return { job: d.name, href: null, id: null, table: null, code: 'roster', key: 'roster:' + d.name, text: d.text, since: null, asanaUrl: null, paste: null };
-      }) }] });
+      out.push({ kind: 'roster', items: drift.map(function (d) {
+        return { job: d.name, href: null, id: null, table: null, code: 'roster', key: 'roster:' + d.name, text: d.text, since: null, asanaUrl: null, paste: null, fixAt: 'Roster', who: [] };
+      }) });
     }
     return out;
   }
@@ -622,7 +591,7 @@
 
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
-    recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, statusRows: statusRows, matchGroups: matchGroups, looseMatch: looseMatch,
+    recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, matchByJob: matchByJob, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable,
     changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf };
 });

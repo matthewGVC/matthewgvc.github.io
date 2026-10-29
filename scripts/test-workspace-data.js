@@ -231,37 +231,31 @@ check('won pitch whose listing has no stage still shows', odd.some(j => j.id ===
 /* ---------- empty database ---------- */
 const none = W.buildJobs({ properties: [], pitches: [], devProjects: [], changes: [] }, TODAY);
 check('empty: no jobs, sane numbers', [none.length, W.overviewStats(none)], [0, { live: 0, contract: 0, toLink: 0, total: 0, mismatches: 0 }]);
-check('empty: no status rows, no match groups', [W.statusRows(none), W.matchGroups(none, [])], [[], []]);
+check('empty: no match groups', W.matchByJob(none, []), []);
 
-/* ---------- the team Status page (S9) ---------- */
-const st = W.statusRows(jobs);
-check('status: grouped by market', st.map(g => g.market), ['NYC', 'NJ']);
-check('status: by stage order inside a market', st[0].rows.map(r => r.stage + ' ' + r.name), ['Pitch 90 Pitch St 11B', 'Live 20 Sample Ave 7B', 'In contract 100 Example St 4A', 'Sold 1 Old St']);
-check('status: developments are not on it', st.some(g => g.rows.some(r => /Example Ave|West Example/.test(r.name))), false);
-check('status: a row', st[0].rows[2], { name: '100 Example St 4A', href: 'job/?listing=100-example-st-residence-4a', stage: 'In contract', chip: 'contract',
-  lastMilestone: { label: 'Contract signed', on: '2026-10-12' }, nextDate: { label: 'Closing', on: '2026-12-15' }, agents: ['Elyse Gutman'], agentIds: ['elyse-gutman'], mismatches: 3 });
-check('status: no dates, no milestone', st[0].rows[1].lastMilestone, null);
-check('status: a pitch\'s milestone is its pitch day', st[0].rows[0].lastMilestone, { label: 'Pitched', on: '2026-08-04' });
+/* ---------- a development's phase, and the listing that belongs to it (Matt, 10-29) ---------- */
+const devJobs = W.buildJobs({ properties: [{ id: 'p9', slug: '619-x', label: '619 X Ave', kind: 'sale', market: 'NJ', stage: 'Prep', core: {}, dev_project_id: 'd9' }], pitches: [],
+  devProjects: [{ id: 'd9', slug: 'x', label: 'X', market: 'NJ', milestones: {}, schedule: { tasks: [{ gid: 'a', name: 'Framing', section: '3. Construction', completed: false }] } }], changes: [] }, TODAY);
+check('dev: the lists show the build phase; the listing knows its development', devJobs.map(x => [x.type, x.devProjectId || null, x.phase || null]),
+  [['listing', 'd9', null], ['development', null, 'Construction: Framing']]);
 
 /* ---------- the Match page (S10) ---------- */
-const mg = W.matchGroups(jobs, [{ name: 'Alexandra Lynch', text: 'Alexandra Lynch is in Asana People but not on the roster.' }]);
-check('match: grouped by where to fix it, roster drift last', mg.map(g => g.fixAt), ['Asana', 'DE', 'Roster']);
-check('match: then by person, no one named last', mg[0].people.map(p => p.who), ['Elyse Gutman', 'Pat Builder', '']);
-check('match: a line', mg[0].people[0].items[0], { job: '100 Example St 4A', href: 'job/?listing=100-example-st-residence-4a', id: 'p1', table: 'properties',
-  code: 'M3', key: 'M3', text: 'Asana says $4,750,000; DE says $4,500,000.', since: '2026-10-13', asanaUrl: 'https://app.asana.com/0/1/1201', paste: null });
-check('match: M7 carries the link to paste', mg[0].people[2].items[0].paste, 'https://drive.google.com/x');
-check('match: development lines point at dev_projects', mg[0].people[1].items[0].table, 'dev_projects');
-check('match: roster drift', mg[2].people[0].items.map(i => i.text), ['Alexandra Lynch is in Asana People but not on the roster.']);
+const mg = W.matchByJob(jobs, [{ name: 'Alexandra Lynch', text: 'Alexandra Lynch is in Asana People but not on the roster.' }]);
+check('match: one group per job, the most errors first, roster last', mg.map(g => [g.kind, g.job || null, g.items.length]),
+  mg.filter(g => g.kind === 'job').map(g => ['job', g.job, g.items.length]).sort((a, b) => b[2] - a[2] || (a[1].toLowerCase() < b[1].toLowerCase() ? -1 : 1)).concat([['roster', null, 1]]));
+const mg100 = mg.find(g => g.job === '100 Example St 4A');
+check('match: a line says where to fix it and who Asana names', mg100.items.find(i => i.key === 'M3'), { job: '100 Example St 4A', href: 'job/?listing=100-example-st-residence-4a', id: 'p1', table: 'properties',
+  code: 'M3', key: 'M3', text: 'Asana says $4,750,000; DE says $4,500,000.', since: '2026-10-13', asanaUrl: 'https://app.asana.com/0/1/1201', paste: null, fixAt: 'Asana', who: ['Elyse Gutman'] });
+check('match: a job lists everyone its lines name, once', mg100.who.includes('Elyse Gutman') && new Set(mg100.who).size === mg100.who.length, true);
+check('match: M7 carries the link to paste', mg100.items.find(i => i.code === 'M7').paste, 'https://drive.google.com/x');
+check('match: development lines point at dev_projects', mg.find(g => g.table === 'dev_projects').items[0].table, 'dev_projects');
+check('match: roster drift', mg[mg.length - 1].items.map(i => i.text), ['Alexandra Lynch is in Asana People but not on the roster.']);
 
-/* M6 "no Drive folder linked" collapses to one line per fix group (each job once) */
+/* a job's errors appear once, under the job, however many people they name (Matt, 10-29) */
 const m6job = (id, who, values) => ({ id, name: 'Job ' + id, href: 'job/?listing=' + id, type: 'listing', asanaUrl: null,
   match: [{ code: 'M6', key: 'M6', text: 'No Drive folder is linked, and the job is Live.', values, fixAt: 'Drive', who }] });
-const mg6 = W.matchGroups([m6job('a', ['Ann'], { folder: null, stage: 'Live' }), m6job('b', ['Ann', 'Ben'], { folder: null, stage: 'Live' }),
-  m6job('c', ['Ben'], { folder: 'x', broken: true })], []);
-check('match M6: one bulk line, each job once', mg6.map(g => [g.fixAt, (g.bulk || []).map(b => [b.code, b.text, b.items.map(i => i.id)])]),
-  [['Drive', [['M6', '2 jobs have no Drive folder linked yet.', ['a', 'b']]]]]);
-check('match M6: a broken folder stays a normal line', mg6[0].people.map(p => [p.who, p.items.map(i => i.id)]), [['Ben', ['c']]]);
-check('match M6: one job reads "1 job has"', W.matchGroups([m6job('a', [], { folder: null, stage: 'Prep' })], [])[0].bulk[0].text, '1 job has no Drive folder linked yet.');
+const mg6 = W.matchByJob([m6job('a', ['Ann'], { folder: null, stage: 'Live' }), m6job('b', ['Ann', 'Ben'], { folder: null, stage: 'Live' })], []);
+check('match: a line naming two people shows once', mg6.map(g => [g.job, g.items.length, g.items[0].who]), [['Job a', 1, ['Ann']], ['Job b', 1, ['Ann', 'Ben']]]);
 
 /* ---------- Asana sync status (6 h) ---------- */
 check('asana: never', W.asanaHealth(null, now).text, 'Asana hasn\'t synced yet');
@@ -283,8 +277,8 @@ const loose = W.looseMatch({
 check('loose: one DE-only line and one unlinked task', loose.map(l => [l.fixAt, l.item.code, l.item.job]), [['Asana', 'M2', 'DE listing 9101'], ['Asana', 'Link', '7 Lone Pl']]);
 check('loose: plain words and links', [loose[0].item.text, loose[0].item.deUrl, loose[1].item.text, loose[1].item.asanaUrl],
   ['On DE, not in Asana. DE shows: Douglas Elliman: Test Agent.', 'https://www.elliman.com/x/9101', 'Asana task not linked: another task is linked to the job at this address.', 'https://app.asana.com/0/0/1500']);
-const mgL = W.matchGroups([], [], loose);
-check('loose: in the Asana group, no one named', [mgL.map(g => g.fixAt), mgL[0].people.map(p => p.who), mgL[0].people[0].items.length], [['Asana'], [''], 2]);
+const mgL = W.matchByJob([], [], loose);
+check('loose: one Not linked group, fixed in Asana', [mgL.map(g => g.kind), mgL[0].items.map(i => i.fixAt)], [['loose'], ['Asana', 'Asana']]);
 // Link by hand (tune-up A): each loose line says what it is, so the page can link it to a job or set it aside
 check('loose: what a DE line links (no address kept yet: no street, no market)', loose[0].item.link, { type: 'de', id: '9101', kind: null, market: null, street: null, unit: null });
 check('loose: what an Asana line links', loose[1].item.link, { type: 'asana', gid: '1500', name: '7 Lone Pl', market: null });
@@ -362,7 +356,6 @@ const offStats = W.overviewStats(offJobs), baseStats = W.overviewStats(W.buildJo
 check('D88 overview counts: not live, not in contract; counted in the total and To link',
   [offStats.live - baseStats.live, offStats.contract - baseStats.contract, offStats.total - baseStats.total, offStats.toLink - baseStats.toLink], [0, 0, 2, 1]);
 check('D88 no "Archive the job?" task for an off-market job (Matt archives it when he chooses)', W.taskFlags(offJobs).filter(t => /619 Sample|8 Plan/.test(t.job) && t.kind === 'archive').length, 0);
-check('D88 the team Status page lists it after the live stages', W.statusRows(offJobs).find(g => g.market === 'NJ').rows.map(r => r.stage).filter((s, i, a) => a.indexOf(s) === i).slice(-2), ['Sold', 'Off market']);
 check('D88 a stage change to Off market reads plainly', W.changeTitle({ field: 'stage', new_value: 'Off market' }), 'Stage moved to Off market');
 check('D88 recent changes colour it as off market', W.recentChanges(offChanges, offJobs, 1)[0].kind, 'off');
 check('recent changes skip Asana milestone suggestions', W.recentChanges([{ at: '2026-10-28T09:00:00Z', field: 'milestone_hints', dev_project_id: devs[0].id, note: '3 milestones suggested from Asana' }].concat(changes), W.buildJobs({ properties: props, pitches, devProjects: devs, changes }, '2026-10-22'), 20).some(r => /suggested from Asana/.test(r.title)), false);

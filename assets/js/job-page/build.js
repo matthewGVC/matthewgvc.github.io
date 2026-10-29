@@ -2,14 +2,15 @@
    JOB PAGE: a development's build (D109–D114), laid out as an overview.
 
      GVC_JP.build.html(ctx)       → the overview figures, the Schedule by phase
-                                    with Needs attention / Asana suggestions /
-                                    Next milestone beside it, then the Budget
+                                    with Needs attention and Asana suggestions
+                                    beside it, then the Budget
      GVC_JP.build.wire(host, ctx) → their controls
 
    ctx.row.schedule is the 🚧 project's tasks from Asana (D110); ctx.budget is
-   the development's dev_budgets row, or null (none linked, or a teammate's
-   sign-in, which can't read budgets: then the budget figures, the Budget card
-   and the budget half of Needs attention are left out). The owner links the
+   the development's dev_budgets row, or null (none linked, or a sign-in that
+   can't read budgets: 0016 lets the team's shared account read them; then the
+   budget figures, the Budget card and the budget half of Needs attention are
+   left out). The owner links the
    pro-forma sheet here: a version-checked write of dev_budgets, then the
    change-log row. Figures and dates come from dev-build.js; all schedule
    dates are Asana's tentative targets.
@@ -47,10 +48,14 @@
       tiles.push(tile('Remaining', (over ? '−' : '') + W.money(Math.abs(t.remaining)), over ? 'over the budget' : spent != null ? Math.round((100 - spent) * 10) / 10 + '% of the budget left' : '', '', over ? 'over' : '',
         // the sheet's way: lines that went over count $0, so this only differs when a line ran over
         t.planned !== t.remaining ? W.money(t.planned) + ' still planned on open lines' : ''));
+      // where the build is heading: what's spent, plus what every line under its estimate still plans
+      var outlook = t.actual + t.planned, past = outlook - t.estimate;
+      tiles.push(tile('Final cost outlook', W.money(outlook), Math.abs(past) < 1 ? 'on the budget' : W.money(Math.abs(past)) + (past > 0 ? ' over the budget' : ' under the budget'),
+        '', past >= 1 ? 'over' : ''));
     }
     if (items) {
       var done = items.filter(function (x) { return x.completed; }).length;
-      tiles.push(tile('Work items', done + ' / ' + items.length, 'done in Asana', meter(pctOf(done, items.length))));
+      tiles.push(tile('Work items', done + ' / ' + items.length, 'done in Asana, every phase', meter(pctOf(done, items.length))));
     }
     if (!b) {
       if (j.next) tiles.push(tile('Next milestone', j.next.label, j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : '', '', j.next.overdue ? 'over' : ''));
@@ -67,16 +72,17 @@
     var W = ctx.W, esc = ctx.esc, b = readable(ctx);
     if (!ctx.row.schedule && !b) return '';
     var a = B.attention(ctx.row.schedule, b, W.today()), groups = [];
-    var group = function (title, count, rows, warn) {
-      if (rows.length) groups.push('<details class="at-d"><summary><span>' + esc(title) + '</span><b class="' + (warn ? 'warn' : '') + '">' + esc(count) + '</b></summary><ul class="at">' + rows.join('') + '</ul></details>');
+    var group = function (title, count, rows, warn, show) {
+      if (rows.length) groups.push('<details class="at-d"><summary><span>' + esc(title) + '</span><b class="' + (warn ? 'warn' : '') + '">' + esc(count) + '</b></summary><ul class="at">' + rows.join('') + '</ul>' +
+        (show ? '<button class="b sm at-show" type="button" data-show="' + show + '">Show them in the schedule</button>' : '') + '</details>');
     };
     var row = function (name, text) { return '<li><b>' + esc(name) + '</b><span>' + esc(text) + '</span></li>'; };
-    group('Past target', plural(a.late.length, 'item'), a.late.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '. Not done in Asana.'); }), true);
+    group('Past target', plural(a.late.length, 'item'), a.late.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '. Not done in Asana.'); }), true, 'late');
     group('Over estimate', plural(a.over.length, 'line'), a.over.map(function (o) {
       return row(o.name, W.money(o.by) + ' over' + (o.pct != null ? ' (' + o.pct + '%)' : '') + '. ' + W.money(o.actual) + ' spent against ' + W.money(o.estimate) + '.');
     }), true);
     group('Spending with no estimate', plural(a.noEstimate.length, 'line'), a.noEstimate.map(function (o) { return row(o.name, W.money(o.actual) + ' spent; the sheet has no estimate.'); }), true);
-    group('Due in the next ' + B.SOON_DAYS + ' days', plural(a.soon.length, 'item'), a.soon.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '.'); }));
+    group('Due in the next ' + B.SOON_DAYS + ' days', plural(a.soon.length, 'item'), a.soon.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '.'); }), false, 'soon');
     if (a.unestimated.length) group('No estimate yet', plural(a.unestimated.length, 'line'), [row(plural(a.unestimated.length, 'line'), a.unestimated.join(', ') + '.')]);
     if (a.sheetDiff) {
       group('Sheet total', 'Differs', [row('TOTAL row differs', 'The sheet says ' + W.money(a.sheetDiff.sheet) + ' ' + (a.sheetDiff.field === 'actual' ? 'spent' : 'estimated') +
@@ -85,16 +91,6 @@
     if (a.missingReceipts) group('Receipts missing', plural(a.missingReceipts, 'payment'), [row(plural(a.missingReceipts, 'payment'), 'No receipt linked on the Expense_Tracker tab.')]);
     return '<div class="card" id="attnCard" data-open><div class="card-h"><div><h2>Needs attention</h2><p>From Asana\'s schedule' + (b ? ' and the pro-forma' : '') +
       '. Open a line to see each item.</p></div></div>' + (groups.join('') || '<p class="soft">Nothing needs attention.</p>') + '</div>';
-  }
-
-  /* ---------- Next milestone ---------- */
-  function nextHtml(ctx) {
-    var W = ctx.W, esc = ctx.esc, j = ctx.job;
-    if (!j.next && !j.progress) return '';
-    return '<div class="card" id="nextCard" data-collapse="off"><div class="nx-k">Next milestone</div>' +
-      (j.next ? '<div class="nx-v">' + esc(j.next.label) + '</div><div class="nx-s' + (j.next.overdue ? ' over' : '') + '">' + esc(j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : 'No target date yet') + '</div>'
-        : '<div class="nx-s">None open.</div>') +
-      (j.progress ? '<div class="nx-s">' + esc(j.progress.done + ' of ' + j.progress.total + ' milestones confirmed') + '</div>' : '') + '</div>';
   }
 
   /* ---------- Schedule, grouped by phase ---------- */
@@ -213,7 +209,7 @@
     var W = ctx.W, esc = ctx.esc, row = ctx.budget, b = row && row.budget;
     if (!row && !ctx.canEdit) return '';
     var head = '<div class="card-h"><div><h2>Budget</h2><p>' + (b && b.title ? 'Spent against estimate, line by line, from ' + esc(b.title) + '. ' : 'From the developer\'s pro-forma sheet. ') +
-      'Seen by Matt and admins only.</p></div>' + (row ? '<a class="b sm" href="https://docs.google.com/spreadsheets/d/' + esc(row.sheet_id) + '/edit" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open sheet</a>' : '') + '</div>';
+      'Seen only when signed in to the team.</p></div>' + (row ? '<a class="b sm" href="https://docs.google.com/spreadsheets/d/' + esc(row.sheet_id) + '/edit" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open sheet</a>' : '') + '</div>';
     if (!row || linking) return '<div class="card" id="budgetCard" data-open>' + head + linkForm(ctx, !!row) + '</div>';
     var foot = '<p class="b-foot">' + (row.synced_at ? 'Read ' + esc(W.fmtWhen(row.synced_at)) : 'Linked; the helper reads it within the hour') +
       (ctx.canEdit ? ' · <button class="link" type="button" id="budgetChange">Change sheet</button>' : '') + '</p>';
@@ -246,7 +242,7 @@
   function html(ctx) {
     return '<div id="ovHost">' + overviewHtml(ctx) + '</div>' +
       '<div class="dv-main"><div id="schedHost">' + scheduleHtml(ctx) + '</div>' +
-      '<div class="dv-side"><div id="attnHost">' + attentionHtml(ctx) + '</div><div id="hintsHost">' + JP.dev.hintsHtml(ctx) + '</div>' + nextHtml(ctx) + '</div></div>' +
+      '<div class="dv-side"><div id="attnHost">' + attentionHtml(ctx) + '</div><div id="hintsHost">' + JP.dev.hintsHtml(ctx) + '</div></div></div>' +
       '<div id="budgetHost">' + budgetHtml(ctx) + '</div>';
   }
 
@@ -323,6 +319,13 @@
       });
     }
 
+    // Needs attention → the schedule: every phase, that status, scrolled into view
+    host.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-show]'); if (!b) return;
+      view.status = b.dataset.show; view.section = ''; view.q = ''; view.mode = 'gantt';
+      redrawSchedule();
+      $('schedCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
     wireSchedule();
     wireBudget();
     JP.dev.wireHints($('hintsHost'), ctx);

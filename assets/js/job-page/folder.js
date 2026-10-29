@@ -14,7 +14,6 @@
                               helper's POST /drive-link, else the stored link
      GVC_JP.drive.gPath(row, file)  the G: path of the folder or a file in it
      GVC_JP.drive.copy(text, ok, el) copies, saying so in el
-     GVC_JP.drive.scanLine(row)     "From last night's scan · …" (HTML)
      GVC_JP.folder.html(ctx) / wire(host, ctx)   the card
 
    The tree shows readable folders only (two levels open), each with its
@@ -93,14 +92,8 @@
       return copy(gPath(row, file), 'No Drive link known yet, so the folder path was copied instead.', el);
     });
   }
-  function scanLine(row, esc) {
-    var s = row.scan;
-    if (!s || !s.scannedAt) return '<p class="scanl">No scan yet. Connect Drive on the desktop to see it live.</p>';
-    return '<p class="scanl">From last night\'s scan (' + esc(day(s.scannedAt)) + ') · Connect Drive on the desktop to see it live.</p>';
-  }
-
   JP.drive = { FAIL: FAIL, ms: ms, timed: timed, mode: mode, folder: folder, forget: forget, link: link, gPath: gPath,
-    copy: copy, copyLink: copyLink, scanLine: scanLine, day: day, msgs: msgs };
+    copy: copy, copyLink: copyLink, day: day, msgs: msgs };
 
   /* ---------- the card ---------- */
   function stat(node) {
@@ -160,7 +153,7 @@
     return out;
   }
   function scanBody(ctx) {
-    var r = ctx.row, s = r.scan || {}, h = s.health || {}, c = h.counts || {}, ph = c.photos || {}, out = JP.drive.scanLine(r, ctx.esc);
+    var r = ctx.row, s = r.scan || {}, h = s.health || {}, c = h.counts || {}, ph = c.photos || {}, out = '';
     out += notesHtml(h.notes, ctx);
     if (s.scannedAt) {
       out += '<div class="hl"><span class="x">' + ctx.I('photo') + 'Photos\\</span><span class="k">edited ' + (+ph.edited || 0) + (ph.raw ? ' · raws ' + ph.raw : '') + '</span></div>';

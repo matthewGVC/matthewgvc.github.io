@@ -97,7 +97,7 @@
     if (bad) body += '<div class="fw" id="docWarn" role="note">' + ctx.I('alert') + esc('This doc names ' + bad.doc + ', not ' + bad.job +
       ', so its address was left out. Check the doc is the right one.') + '</div>';
     if (m === 'live') body += '<p class="soft" id="docNow" data-reading>Looking for the details doc…</p>';
-    else if (m === 'scan') body += JP.drive.scanLine(ctx.row, esc) + (ctx.row.scan && ctx.row.scan.detailsDoc ? '<p class="soft" style="font-size:13px">The scan found ' + esc(ctx.row.scan.detailsDoc.name || 'a details doc') + '.</p>' : '');
+    else if (m === 'scan') body += (ctx.row.scan && ctx.row.scan.detailsDoc ? '<p class="soft" style="font-size:13px">The scan found ' + esc(ctx.row.scan.detailsDoc.name || 'a details doc') + '.</p>' : '');
     var btn = ctx.canEdit && m === 'live' ? '<div class="fbtn"><button class="b sm" type="button" id="docRead" disabled>Read details doc</button></div>' : '';
     return '<div class="card" id="docCard"><div class="card-h"><div><h2>Details doc</h2></div></div>' + body + btn +
       '<p class="soft" id="docMsg" role="status" style="font-size:13px;margin-top:8px">' + esc(said) + '</p></div>';

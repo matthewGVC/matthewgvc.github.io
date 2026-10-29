@@ -8,7 +8,7 @@ Never make up, round, or "fill in to show the layout":
 
 - agent names, bios, headshots, titles, licence numbers or contact details
 - testimonials and quotes (none exist yet for Katie, Nicole, Gary, Ayuen or TJ)
-- referral partners (Marli's list is empty on purpose)
+- preferred vendors (Marli has no mover, stager or designer yet; that category stays empty on purpose)
 - property figures: prices, sizes, sale dates, days on market, fees
 - towns, counties, neighbourhoods, regions or area groupings (a Claude-invented "9-area" grouping was removed at Matt's request)
 - taglines, mottos, statistics, awards, "why GVC" claims
@@ -23,10 +23,9 @@ When real content is missing, show a stamp that a reader cannot miss. Existing s
 
 | Stamp | Meaning | Where used |
 |---|---|---|
-| "List needed" | A source list must be supplied | Marli's referral partners page |
-| "Partner to be added" | A partner slot is waiting for a name | Referral page |
 | "Work in progress" | Page is live but not cleaned up | NJ Meet Your Agent pages |
-| Red "CHECK" tag | Item needs confirmation with the agents | NJ 50 Things lines 10, 15, 17, 23, 28 (`NJ_FIFTY_CHECK`) |
+| Red "CHECK" tag | Item needs confirmation with the agents | NJ 50 Things, via `NJ_FIFTY_CHECK` (empty since 2026-10-28: Marli's own list) |
+| Dashed "to be added" (editor only) | A vendor category has no name yet | Marli's Preferred Vendors, Useful Links page |
 | "Needs updating" | Map or image is a stand-in | NJ buyer why-page map |
 | "Draft" stamp | Draft status | Off for NJ Footprint since 2026-10-13 |
 

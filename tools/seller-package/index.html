@@ -1995,7 +1995,7 @@ window.__piece = {
   ready: () => !!builder,
   /* replace the whole deck (sanitized), then draw */
   set(s) {
-    if (!builder) throw new Error('The seller pitch page has not finished loading.');
+    if (!builder) throw new Error('The Seller Package page has not finished loading.');
     const base = sanitize(s);
     Object.keys(state).forEach(k => { delete state[k]; });
     Object.assign(state, base);

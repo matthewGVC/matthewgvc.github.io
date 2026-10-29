@@ -22,7 +22,7 @@
                       'agents'], each word once, from documents (GVC_STALE; no Drive
                       here, so photo dates aren't judged); [] when all are fresh or none made
            stalePieces  [{ tool, label, words }] each stale piece (Slice 5: brochure,
-                      postcards, seller pitch, the pitch's map, as well as the showsheet)
+                      postcards, seller package, the pitch's map, as well as the showsheet)
          and a development: next { key, label, on, overdue } | null,
          slips (times a milestone was re-dated, D67), progress { done, total }
          (confirmed milestones of D66's 18), construction { done, total } | null,
@@ -217,7 +217,7 @@
     return null;
   }
   var STALE_LABEL = { showsheet: 'Showsheet', brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard',
-    seller: 'Seller pitch', 'pitch-map': 'Map', signage: 'Signage' };
+    seller: 'Seller Package', 'pitch-map': 'Map', signage: 'Signage' };
   /* { stale: words, stalePieces } for one job from its pieces' records. The Showsheet's
      record is the Slice 4 kind; any other piece is judged only from a Slice 5 record (v 2) */
   function staleOf(p, docs) {

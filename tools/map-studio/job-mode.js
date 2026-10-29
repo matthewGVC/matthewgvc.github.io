@@ -1,6 +1,6 @@
 /* ============================================================
    MAP STUDIO JOB MODE (workspace v2, Slice 5, spec S10 to S12): the map for
-   a job's seller pitch, /tools/map-studio/?pitch=<slug> (or ?listing=).
+   a job's Seller Package, /tools/map-studio/?pitch=<slug> (or ?listing=).
    Loaded by piece-loader.js only then.
 
    The address list is the job's subject and its comps (GVC_PIECEJOB.
@@ -114,12 +114,12 @@
       return record3(bf, output, reply.archived || null).then(function () {
         drawBar();
         if (window.GVC_UNSAVED) GVC_UNSAVED.clear();
-        say('Saved to Drive: ' + reply.name + '. Reload the seller pitch to use it.');
+        say('Saved to Drive: ' + reply.name + '. Reload the Seller Package to use it.');
       }, function (e) { drawBar(); say(e.message); });
     }, function (e) {
       if (e && e.status) { say(e.message); return; }   // the helper answered and refused
       download(canvas);
-      say('The helper isn\'t running here, so the map downloaded. Put it in the ' + kind + ' folder\'s Marketing\\Pitch, or drop it on the seller pitch.');
+      say('The helper isn\'t running here, so the map downloaded. Put it in the ' + kind + ' folder\'s Marketing\\Pitch, or drop it on the Seller Package.');
     }).catch(function (e) { say((e && e.message) || 'The map was not saved.'); });   // never a half-done export with nothing said
   };
 

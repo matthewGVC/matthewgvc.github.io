@@ -31,7 +31,7 @@ hidden at every log on and restarts it if it stops. Run it from the main repo fo
   `--write` is one sync after that. Needs `asanaToken` in the helper's config.
 - Development budgets (read-only, D113): the helper reads each linked pro-forma sheet every hour as
   Matt. Sign in once with `node helper/budget/sign-in.js <client.json>` (the "GVC Helper budget read"
-  Desktop app client from Google Cloud); it saves `google-auth.json` in the helper's folder. Restart
+  Desktop app client from Google Cloud); it saves `%USERPROFILE%\.gvc-helper\google-auth.json`. Restart
   the helper afterwards. If the sign-in expires, run the command again.
 - Real DE recordings: `helper/fixtures/recorded/` (gitignored). The repo's tests use the
   made-up `helper/fixtures/synthetic/`.
@@ -44,4 +44,6 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 ## Tests
 
 `node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`, `node scripts/test-de-apply.js`,
-`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-budget.js`.
+`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-budget.js`,
+`node scripts/test-asana-map.js`, `node scripts/test-asana-posts.js`, `node scripts/test-helper-db.js`,
+`node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`.

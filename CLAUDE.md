@@ -195,7 +195,7 @@ they have been verified locally (still never a force-push). Both are owner-only 
 §5/§7: teammates — including when helping with photos — still follow §5 and send a PR.
 
 1. Drop the photos into `"<Property Name>/Raw/"` and `"<Property Name>/Edited/"` inside the
-   **Personal Photo Editing Project** folder on the Desktop (it sits next to this repo).
+   **Personal Photo Editing Project** folder in `Desktop\Claude` (it sits next to this repo).
 2. From this repo run: `python scripts/publish_photos.py`
 
 That script pulls the latest `main`, rebuilds all galleries, commits, and pushes straight to

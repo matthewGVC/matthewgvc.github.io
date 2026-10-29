@@ -6,9 +6,11 @@ Print is the product. A tool or page is finished when its printed PDF is right, 
 
 | Surface | Sizes | Notes |
 |---|---|---|
-| Buyer package, seller pitch and CMA, brochure, destination guide | US Letter portrait, 8.5 x 11in | `builder.css` sets `@page{size:letter portrait;margin:0}` and `--pw`/`--ph` |
+| Buyer package, Seller Package, brochure, destination guide | US Letter portrait, 8.5 x 11in | `builder.css` sets `@page{size:letter portrait;margin:0}` and `--pw`/`--ph` |
 | Brochure half-letter variant | Half-letter | Brochure's `<style id="pagesize">` and `--print-scale` |
 | Showsheet | A5 and US Letter (toggle under the preview) | Fixed 11in-wide design canvas. A5 scales it down, Letter prints at full size. Test both |
+| Postcards | 9.21 x 6.21 in with bleed, or 9 x 6 in trim | `<style id="pagesize">`; `body.trim` switches to trim |
+| Signage | For Sale 24 x 30 in; Open House arrow 24.4 x 18.4 in | One PDF page per sign |
 | NJ footprint | Letter, 2 pages | Front = state map, back = Monmouth and Ocean town map |
 | New Development | PDF via its own print button | Internal builder |
 | Office screens | 4K landscape and portrait video | See `motion-and-screens.md` |

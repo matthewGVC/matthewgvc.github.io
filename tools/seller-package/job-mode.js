@@ -56,7 +56,7 @@
   }
 
   PM.start({
-    tool: 'seller', label: 'Seller pitch', prefix: 'Seller Pitch', owners: ['listing', 'pitch'], panel: '#editor', kitKey: 'pitch', map: true,
+    tool: 'seller', label: 'Seller Package', prefix: 'Seller Pitch', owners: ['listing', 'pitch'], panel: '#editor', kitKey: 'pitch', map: true,
     ready: function () { return B.ready(); },
     note: function (row) {
       return row.market === 'FL' ? 'Florida has no seller deck of its own yet: the New Jersey wording prints (its legal text is the same as Florida\'s), and the Videos page uses neutral copy with no films.' : '';

@@ -31,6 +31,7 @@ Plain Node, no install — each exits non-zero on a failure:
 - `check-tools.js` — every tool against the house conventions (head, fonts, SRI, panel,
   labels, homepage tile, test lists); `node scripts/check-tools.js <slug>` for one
 - `test-nj-footprint.js` — the NJ Footprint sales list (counties, agents, prices) and its totals
+- `test-namecase.js` — the roster's name casing (particles, II/III/IV, Jr/Sr, Mc, initials)
 
 Node + Playwright — `cd scripts && npm install`:
 
@@ -38,6 +39,8 @@ Node + Playwright — `cd scripts && npm install`:
 - `reshoot-gvc.js` — the same, for the GVC team site only
 - `make-png.js` — regenerate the monogram PNG favicons from `assets/logos/monogram.svg`
 - `check-svgs.js` — render-check the monogram and lockup SVGs
+- `baseline.js` — print every tool's reference pages to `exports/baseline/<date>/`;
+  `node scripts/baseline.js --compare <date>` fails if any printed page moved
 - `verify-local.js` — load every page on localhost:8080 and fail on console errors,
   uncaught errors, SRI blocks, missing files, missing chrome or sideways scroll.
   Needs `cd scripts && npm install` once; exits non-zero, so it is worth running
@@ -46,7 +49,7 @@ Node + Playwright — `cd scripts && npm install`:
   dropdowns, checkboxes, sliders, awkward text), print each to PDF, and fail on any error.
   `node scripts/interact-local.js brochure` runs one tool. A tool's own "text runs past the
   page" warning is listed, not failed
-- `dnd-local.js` — drag photos around the brochure, seller pitch, buyer package and showsheet with
+- `dnd-local.js` — drag photos around the brochure, Seller Package, buyer package and showsheet with
   real mouse events: tray to every slot, slot to slot by the grip, slot to tray, the X buttons and
   panning. Uses six solid-colour photos so it can tell which photo landed where, and fails if a
   photo ever shows in two places
@@ -178,8 +181,8 @@ the site.
 
 ## Docs
 
-- Design spec: `docs/superpowers/specs/2026-06-10-gvc-workspace-site-design.md`
-  (local only — `docs/` is gitignored, so it does not ship with a clone)
+- Working docs (status, to-do, decisions, folder standard) live in `docs/`, local only —
+  `docs/` is gitignored, so they do not ship with a clone.
 
 ## To-do tool
 

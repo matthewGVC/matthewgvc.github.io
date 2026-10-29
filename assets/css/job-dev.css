@@ -1,17 +1,50 @@
 /* ============================================================
-   JOB PAGE: a development's build cards (assets/js/job-page/build.js):
-   Needs attention, Schedule (Gantt + list) and Budget. Site tokens only.
+   JOB PAGE: a development's build (assets/js/job-page/build.js): the
+   overview figures, the Schedule by phase with Needs attention, Asana
+   suggestions and Next milestone beside it, then the Budget. Site tokens only.
    ============================================================ */
-#attnHost:not(:empty),#schedHost:not(:empty),#budgetHost:not(:empty){margin-top:24px}
+#ovHost:not(:empty),.dv-main,#budgetHost:not(:empty){margin-top:24px}
 
-/* Needs attention */
-.at-g + .at-g{margin-top:16px}
-.at-g h3,.pays summary{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);display:flex;gap:8px;align-items:center}
-.at-g h3 .n{font-family:var(--mono);letter-spacing:0;font-weight:400;font-size:11px;background:var(--paper-2);border-radius:999px;padding:1px 7px}
-.at{list-style:none;margin:6px 0 0;padding:0}
-.at li{display:grid;grid-template-columns:minmax(120px,220px) minmax(0,1fr);gap:4px 14px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
-.at li:last-child{border-bottom:0}
+/* Overview: the figures across the top */
+.ov{padding:0;overflow:hidden}
+.ov-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.ov-t{padding:20px 22px;border-left:1px solid var(--rule);min-width:0}
+.ov-t:first-child{border-left:0}
+.ov-t .k,.nx-k,.pays summary{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+.ov-t .v{font-family:var(--mono);font-size:28px;line-height:1.15;margin-top:8px;overflow-wrap:anywhere}
+.ov-t .s{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+.ov-t.over .v,.ov-t.over .s{color:var(--danger)}
+.ov-bar{display:block;height:5px;margin-top:10px;background:var(--paper-2);border-radius:3px;overflow:hidden}
+.ov-bar i{display:block;height:100%;background:var(--ink)}
+.ov-bar.over i{background:var(--danger)}
+
+/* the schedule beside the side column */
+.dv-main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.dv-side > * + *{margin-top:20px}
+.dv-side{position:sticky;top:calc(var(--mast-h) + 16px)}
+.dv-side .card{padding:20px}
+.dv-side .card-h h2{font-size:19px}
+.card-h h2 .n{font-family:var(--mono);font-size:12px;vertical-align:3px;margin-left:6px;background:var(--paper-2);border-radius:999px;padding:1px 8px}
+
+/* Needs attention: a count per kind, each opening its list */
+.at-d{border-top:1px solid var(--rule)}
+.at-d:last-of-type{border-bottom:1px solid var(--rule)}
+.at-d summary{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:10px 0;cursor:pointer;font-size:14px;list-style:none}
+.at-d summary::-webkit-details-marker{display:none}
+.at-d summary::before{content:"";flex:none;width:6px;height:6px;margin-right:-4px;border-right:1.5px solid var(--ink-soft);border-bottom:1.5px solid var(--ink-soft);transform:rotate(-45deg);align-self:center}
+.at-d[open] summary::before{transform:rotate(45deg)}
+.at-d summary span{flex:1}
+.at-d summary b{font-family:var(--mono);font-weight:400;font-size:13px;white-space:nowrap}
+.at-d summary b.warn{color:var(--danger)}
+.at-d summary:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.at{list-style:none;margin:0 0 10px;padding:0}
+.at li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:7px 0;border-top:1px solid var(--rule);font-size:13px}
 .at li span{color:var(--ink-soft);overflow-wrap:anywhere}
+
+/* Next milestone */
+.nx-v{font-family:var(--serif);font-size:20px;line-height:1.2;margin-top:8px}
+.nx-s{font-size:13px;color:var(--ink-soft);margin-top:4px}
+.nx-s.over{color:var(--danger)}
 
 /* Schedule */
 .sched-n{font-size:14px;margin:-4px 0 12px;color:var(--ink-soft)}
@@ -27,7 +60,21 @@
 .g-track{position:relative;min-height:36px}
 .g-body{position:relative}
 .g-today{position:absolute;top:0;bottom:0;left:calc(var(--name) + (100% - var(--name)) * var(--f, 0));width:0;border-left:2px solid var(--ink);z-index:1;pointer-events:none}
-.g-row{border-bottom:1px solid var(--rule)}
+.g-row,.g-ph{border-bottom:1px solid var(--rule)}
+.g-ph{display:grid;grid-template-columns:var(--name) minmax(0,1fr);background:var(--paper-2)}
+.g-ph .g-name{padding:7px 12px;min-width:0;overflow-wrap:anywhere}
+.g-tog{font:inherit;font-weight:600;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-align:left;display:flex;gap:8px;align-items:center}
+.g-tog::before{content:"";flex:none;width:6px;height:6px;border-right:1.5px solid var(--ink-soft);border-bottom:1.5px solid var(--ink-soft);transform:rotate(-45deg)}
+.g-tog[aria-expanded="true"]::before{transform:rotate(45deg)}
+.g-tog:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.g-ph small{padding-left:14px}
+.g-ph.done .g-span{background:var(--ink);opacity:.6}
+.g-ph small{display:block;font-weight:400;font-size:12px;color:var(--ink-soft)}
+.g-ph.late small{color:var(--danger)}
+.g-span{position:absolute;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--ink-soft);opacity:.45}
+.g-row.in .g-name{padding:5px 12px 5px 26px}
+.g-row.in .g-track{min-height:28px}
+.g-row.in small{display:inline;margin-left:8px}
 .g-row .g-name{padding:7px 12px;min-width:0;overflow-wrap:anywhere}
 .g-row .g-name a{color:var(--ink);text-decoration:none}
 .g-row .g-name a:hover{text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
@@ -46,17 +93,23 @@
 .g-key .k-today::before{width:0;height:12px;border-left:2px solid var(--ink);border-radius:0;background:none;vertical-align:-2px}
 .tbl small{display:block;font-size:12px;color:var(--ink-soft)}
 .tbl .m{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
-.tbl.sched td,.blines td,.pays td{padding:10px 14px}
+.tbl.sched td,.pays td{padding:10px 14px}
 .chip.s-done{background:var(--ink);border-color:var(--ink);color:var(--bone)}
 .chip.s-late{border-color:var(--danger);color:var(--danger)}
 
-/* Budget */
-.b-scope{margin-bottom:16px}
-.b-tiles{margin-bottom:18px}
-.blines tr.over td{color:var(--danger)}
-.bbar{display:block;height:4px;margin-top:6px;max-width:220px;background:var(--paper-2);border-radius:2px;overflow:hidden}
-.bbar i{display:block;height:100%;background:var(--cyan)}
-.over .bbar i{background:var(--danger)}
+/* Budget: each line's spending against its estimate */
+.b-scope{margin-bottom:14px}
+.b-sum{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);margin:0 0 12px}
+.b-sum span:first-child{font-family:var(--mono);color:var(--ink)}
+.blines{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 32px}
+.blines li{padding:10px 0;border-bottom:1px solid var(--rule);min-width:0}
+.bl-t{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:14px}
+.bl-n{min-width:0;overflow-wrap:anywhere}
+.bl-f{flex:none;font-family:var(--mono);font-size:12.5px;color:var(--ink-soft)}
+.bl-s{font-size:12px;color:var(--ink-soft);margin-top:4px}
+.blines .ov-bar{margin-top:7px;height:4px}
+.blines li.over .bl-f,.blines li.over .bl-s{color:var(--danger)}
+.bl-more{margin-top:14px}
 .pays{margin-top:16px}
 .pays summary{cursor:pointer;padding:6px 0;display:list-item}
 .pays .miss{color:var(--danger)}
@@ -66,8 +119,13 @@
 .blink > div{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
 .blink .inp{flex:1 1 260px}
 .blink .soft{font-size:13px}
+@media (max-width:1100px){ .dv-main{grid-template-columns:minmax(0,1fr)} .dv-side{position:static} }
 @media (max-width:640px){
-  .at li{grid-template-columns:minmax(0,1fr)}
+  .blines{grid-template-columns:minmax(0,1fr)}
+  .ov-t{border-left:0;border-top:1px solid var(--rule)}
+  .ov-g{grid-template-columns:1fr 1fr}
+  .ov-t:nth-child(-n+2){border-top:0}
+  .ov-t:nth-child(even){border-left:1px solid var(--rule)}
+  .ov-t .v{font-size:22px}
   .gantt{--name:150px}
-  .b-tiles{grid-template-columns:1fr 1fr}
 }

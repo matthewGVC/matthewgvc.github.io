@@ -371,23 +371,33 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
   p = t.page;
   check('build: no page errors', t.errors, []);
-  check('build: attention groups', await p.$$eval('#attnCard .at-g h3', e => e.map(h => h.firstChild.textContent.trim())),
-    ['Past target', 'Over estimate', 'Due in the next 14 days', 'No estimate yet', 'Sheet total', 'Receipts']);
+  check('build: attention groups, each a count', await p.$$eval('#attnCard .at-d summary', e => e.map(x => x.querySelector('span').textContent + ': ' + x.querySelector('b').textContent)),
+    ['Past target: 1 item', 'Over estimate: 1 line', 'Due in the next 14 days: 1 item', 'No estimate yet: 1 line', 'Sheet total: Differs', 'Receipts missing: 1 payment']);
+  check('build: overview figures', await p.$$eval('#ovCard .v', e => e.map(v => v.textContent)), ['$50,000', '$58,500', '−$8,500', '2 / 5']);
+  check('build: the header names the phase the build is in', await text(p, 'h1 .chip'), 'Construction: Site Work');
   check('build: the sheet total that is off', (await text(p, '#attnCard')).includes('The sheet says $60,000 spent; its lines add up to $58,500.'), true);
-  check('build: past target and over estimate', [(await text(p, '#attnCard .at-g')).includes('Roofing'), (await text(p, '#attnCard')).includes('$12,500 over (31.3%)')], [true, true]);
-  check('build: the work items, done count', [await p.$$eval('.g-row', e => e.length), await text(p, '.sched-n')], [5, '2 of 5 work items done in Asana']);
+  check('build: past target and over estimate', [(await text(p, '#attnCard .at-d')).includes('Roofing'), (await text(p, '#attnCard')).includes('$12,500 over (31.3%)')], [true, true]);
+  check('build: opens on construction, trades under their phase', [await p.$$eval('.g-row', e => e.length), await text(p, '.sched-n'),
+    await p.$$eval('.g-ph .g-tog', e => e.map(b => b.textContent)), await p.$$eval('.g-row.in', e => e.length)],
+    [4, '2 of 4 work items done in Asana · Construction', ['Site Work'], 3]);
+  await p.click('[data-phase="Site Work"]');
+  check('build: a phase folds', [await p.$$eval('.g-row', e => e.length), await p.$eval('[data-phase="Site Work"]', b => b.getAttribute('aria-expanded'))], [1, 'false']);
+  await p.click('[data-phase="Site Work"]');
   check('build: bars and the milestone', [await p.$$eval('.g-bar', e => e.length), await p.$$eval('.g-ms', e => e.length), await p.$$eval('.g-row.s-late', e => e.length)], [3, 1, 1]);
   await p.selectOption('#schedS', 'late');
   check('build: filter by status', await p.$$eval('.g-row', e => e.map(r => r.querySelector('.g-name').firstChild.textContent)), ['Roofing']);
   await p.selectOption('#schedS', 'all');
   await p.click('[data-view="list"]');
-  check('build: list view with what each waits on', await p.$$eval('.tbl.sched tbody tr', e => e.map(r => r.lastElementChild.textContent)), ['', '', 'Excavation', 'Roofing', '']);
+  check('build: list view with what each waits on', await p.$$eval('.tbl.sched tbody tr', e => e.map(r => r.lastElementChild.textContent)), ['', '', 'Excavation', 'Roofing']);
+  await p.selectOption('#schedSec', '');
+  check('build: every phase', await p.$$eval('.tbl.sched tbody tr', e => e.length), 5);
   await p.fill('#schedQ', 'stai');
   check('build: search keeps focus', [await p.$$eval('.tbl.sched tbody tr', e => e.length), await p.evaluate(() => document.activeElement.id)], [1, 'schedQ']);
-  check('build: budget tiles', await p.$$eval('#budgetCard .facts .v', e => e.map(v => v.textContent)), ['$50,000', '$58,500', '−$8,500', '2']);
+  check('build: budget lines, most spent first', await p.$$eval('.blines li', e => e.map(l => l.querySelector('.bl-n').textContent + ' ' + l.querySelector('.bl-f').textContent)),
+    ['Lumber $52,500 of $40,000', 'Architect $6,000 of $10,000', 'Landscaping No estimate']);
   await p.click('[data-up="1"]');
-  check('build: with upgrades', [await p.$eval('#budgetCard .facts .v', v => v.textContent), await p.$$eval('.blines tbody tr', e => e.length)], ['$80,000', 4]);
-  check('build: the over line is marked', await p.$$eval('.blines tr.over td:first-child', e => e.map(d => d.textContent)), ['Lumber']);
+  check('build: with upgrades, the overview follows', [await p.$eval('#ovCard .v', v => v.textContent), await p.$$eval('.blines li', e => e.length)], ['$80,000', 4]);
+  check('build: the over line is marked', await p.$$eval('.blines li.over .bl-n', e => e.map(d => d.textContent)), ['Lumber']);
   check('build: payments newest first, missing receipt shown', [await text(p, '.pays summary'), await p.$$eval('.pays tbody tr td:first-child', e => e.map(d => d.textContent)), await text(p, '.pays .miss')],
     ['2 payments', ['20 May 2026', '16 Dec 2025'], 'Missing']);
   await p.click('#budgetChange');
@@ -412,7 +422,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: first link is an insert', t.writes.some(w => /^POST dev_budgets .*"sheet_id":"1_brandNewSheetId0123456789"/.test(w)), true);
   await t.ctx.close();
   t = await open(browser, { rows: RB, path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
-  check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate')], [true, null, false]);
+  check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate'),
+    await t.page.$$eval('#ovCard .k', e => e.map(k => k.textContent))], [true, null, false, ['Work items', 'Next milestone', 'Past target']]);
   await t.ctx.close();
   t = await open(browser, { phone: true, path: '/workspace/job/?dev=619-example-ave' });
   check('build: no sideways page scroll on a phone', await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);

@@ -313,7 +313,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   /* the tiles across the top: what the job shows (facts card below), else DE's own */
   function tiles() {
     var r = state.row, j = state.job;
-    if (kind === 'dev') return JP.dev.html(ctx());
+    if (kind === 'dev') return '';   // a development's figures are the build overview (build.js)
     if (kind === 'pitch') {
       return '<div class="card"><div class="card-h"><div><h2>Pitch</h2></div>' +
         (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div><div class="facts">' +
@@ -399,24 +399,28 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var acts = '<div class="acts"><span id="rebuildHost"></span>' + links +
       '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
-      (kind !== 'dev' && j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div>';
+      (j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
+      (kind === 'dev' && state.budget ? '<a class="b" href="https://docs.google.com/spreadsheets/d/' + esc(state.budget.sheet_id) + '/edit" target="_blank" rel="noopener">' + I('arrow') + 'Budget sheet</a>' : '') + '</div>';
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
       '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
     if (kind === 'pitch') left.push(JP.kit.pitchHtml(c));
-    if (kind === 'dev') left.push(JP.posts.html(c));
-    left.push('<div id="logHost">' + JP.log.html(c) + '</div>');
+    if (kind === 'dev') left.push('<div id="msHost">' + JP.dev.html(c) + '</div>');
+    (kind === 'dev' ? right : left).push((kind === 'dev' ? JP.posts.html(c) : '') + '<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
     if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="folderHost">' + JP.folder.html(c) + '</div>');
     if (kind === 'listing') right.push(asanaCard());
-    page('<div class="hd"><div><h1>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.stage) + '</span></h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
+    // a development shows the phase its build is in (Asana's schedule), else its milestone stage
+    var phase = kind === 'dev' && window.GVC_DEVBUILD.currentPhase(r.schedule);
+    var stage = phase ? '<span class="chip">' + esc((phase.section ? window.GVC_DEVBUILD.sectionLabel(phase.section) + ': ' : '') + phase.name) + '</span>' : '<span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>';
+    page('<div class="hd"><div><h1>' + esc(j.name) + ' ' + stage + '</h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
       '<div class="path" style="margin-top:8px">' + (r.drive_folder ? esc(gPath()) + (r.folder_state === 'broken' ? ' <span class="chip stale">moved or renamed</span>' : '') : 'No Drive folder linked yet') + '</div>' +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' + (kind === 'dev' ? '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
-    if (kind === 'dev') { JP.dev.wire($('topHost'), c); JP.build.wire($('buildHost'), c); }
+    if (kind === 'dev') { JP.dev.wire($('msHost'), c); JP.build.wire($('buildHost'), c); }
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);
     JP.log.wire($('logHost'), c);

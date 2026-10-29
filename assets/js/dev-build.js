@@ -21,6 +21,11 @@
            late / soon  work items past their target / due within SOON_DAYS, not done
            sheetDiff    { field, sheet, sum } when the sheet's TOTAL row is off
                         by a dollar or more from its base lines, else null
+     GVC_DEVBUILD.currentPhase(schedule)
+         → { name, section } the first open top task in the construction section
+           (a section named "…Construction…"), else in the whole schedule; null
+           when every top task is done. Milestones are skipped: a phase is work.
+     GVC_DEVBUILD.sectionLabel('3. Construction') → 'Construction'
      GVC_DEVBUILD.csv(rows)  → the schedule rows as CSV text
    Dates are 'YYYY-MM-DD'; today is the caller's local day.
    ============================================================ */
@@ -93,6 +98,15 @@
     };
   }
 
+  var sectionLabel = function (s) { return String(s || '').replace(/^\s*\d+[.)]\s*/, '').trim(); };
+
+  function currentPhase(schedule) {
+    var top = ((schedule && schedule.tasks) || []).filter(function (t) { return !t.parentGid && !t.milestone; });
+    var build = top.filter(function (t) { return /construction/i.test(t.section || ''); });
+    var open = (build.length ? build : top).filter(function (t) { return !t.completed; })[0];
+    return open ? { name: open.name.trim(), section: open.section || null } : null;
+  }
+
   function csv(rows) {
     var cell = function (v) { var s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     return [['Work item', 'Section', 'Start', 'Target', 'Done', 'Milestone'].join(',')].concat(rows.map(function (t) {
@@ -100,5 +114,6 @@
     })).join('\r\n') + '\r\n';
   }
 
-  return { workItems: workItems, statusOf: statusOf, totals: totals, attention: attention, csv: csv, SOON_DAYS: SOON_DAYS };
+  return { workItems: workItems, statusOf: statusOf, totals: totals, attention: attention, currentPhase: currentPhase, sectionLabel: sectionLabel,
+    csv: csv, SOON_DAYS: SOON_DAYS };
 });

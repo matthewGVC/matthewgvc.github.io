@@ -10,6 +10,12 @@
      POST /piece        {propertyId, tool, state, paper}
                                                   → the showsheet PDF written into the job's
                                                     folder (helper/piece.js); body up to 40 MB
+                                                    (Map Studio's map; pieces from a job now go
+                                                    through the queue below)
+     POST /pieces/run   {}                        → the waiting piece requests start now (0017)
+     POST /job-tree     {folder}                  → {tree}: the job folder as the scan reads it
+     POST /job-file     {folder, file}            → {name, type, modified, data (base64)}: one
+                                                    picture under Floorplan, Photos or Marketing
 
    /pdf in Slice 0 accepts only the repo's sample files as inputs, and
    writes only inside the configured output roots (helper/pdf/guard.js).
@@ -150,4 +156,41 @@ route('POST', '/piece', require('./piece.js').pieceRoute({
   driveLink: (abs, isFolder) => require('./drive-link.js').driveLink(abs, isFolder)
 }), { maxBody: 40 * 1024 * 1024 });
 
-module.exports = { driveLinkRoute, openFolderRoute, asanaSyncRoute, syncRoute };
+/* 0017: "Make" / "Rebuild" asked on this desktop: the waiting piece requests start now instead of
+   at the next 15-second round (piece-build.js). The request itself is in the database already. */
+route('POST', '/pieces/run', () => require('./piece-build.js').poke());
+
+/* A piece opened from a job on this desktop reads its photos and plans through the helper, so the
+   browser never needs Drive connected (0017). Only a job folder under Shared drives with no paperwork
+   in its path; the tree is the nightly scan's (names, sizes, dates of allowed files only), and a file
+   is a picture under Floorplan\, Photos\ or Marketing\ (pdf/lay.js readJobFile), sent as base64. */
+function jobReadRoutes(o) {
+  const root = path.resolve(o.driveRoot);
+  const { isPaperworkFolder, hasPaperworkWord } = require('../assets/js/drive-rules.js');
+  const folderOf = body => {
+    const segs = String((body && body.folder) || '').split(/[\\/]+/).filter(Boolean);
+    if (segs.length < 2 || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?]/.test(s))) throw fail(400, 'That isn\'t a job folder the helper reads.');
+    if (segs.some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t read that folder.');
+    const abs = path.resolve(root, ...segs);
+    if (abs.indexOf(root + path.sep) !== 0) throw fail(400, 'That isn\'t a job folder the helper reads.');
+    return { abs, name: segs[segs.length - 1] };
+  };
+  return {
+    tree: async body => {
+      const f = folderOf(body);
+      if (!fs.existsSync(f.abs) || !fs.statSync(f.abs).isDirectory()) return { ok: true, tree: { name: f.name, kind: 'directory', broken: true } };
+      if (fs.realpathSync(f.abs).toLowerCase().indexOf(fs.realpathSync(root).toLowerCase() + path.sep) !== 0) throw fail(403, 'That folder points outside the shared drives.');
+      return { ok: true, tree: (o.treeOf || require('./scan.js').treeOf)(f.abs, 4) };
+    },
+    file: async body => {
+      const f = folderOf(body);
+      const x = require('./pdf/lay.js').readJobFile(f.abs, body.file);
+      return { ok: true, name: x.name, type: x.type, modified: x.modified, data: x.buf.toString('base64') };
+    }
+  };
+}
+const jobRead = jobReadRoutes({ driveRoot: 'G:\\Shared drives' });
+route('POST', '/job-tree', jobRead.tree);
+route('POST', '/job-file', jobRead.file);
+
+module.exports = { driveLinkRoute, openFolderRoute, asanaSyncRoute, syncRoute, jobReadRoutes };

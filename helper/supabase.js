@@ -19,6 +19,8 @@
      await db.count('properties')
      await db.listBucket('property-photos')  → every file path, folders walked
      await db.download('property-photos', path) → Buffer
+     await db.rpc('save_piece_build', { p_request, … })  → the function's answer (its first row)
+     await db.remove('piece_requests', { id })          → the rows deleted (never without a match)
 
    Errors carry .status (404 = the table doesn't exist yet).
    ============================================================ */
@@ -149,7 +151,21 @@ function createClient(cfg, opts) {
     return Buffer.from(await r.arrayBuffer());
   }
 
-  return { ready, select, insert, upsert, update, count, listBucket, download };
+  /* rows matching every key (0017: finished piece requests the helper clears) */
+  async function remove(table, match) {
+    if (!match || !Object.keys(match).length) throw new Error('The helper never deletes a whole table.');
+    const r = await request('DELETE', '/rest/v1/' + table + '?' + query(match), undefined, { prefer: 'return=representation' });
+    return r.json();
+  }
+
+  /* a database function (0017: save_piece_build); its error message (e.g. 'conflict') is kept */
+  async function rpc(name, args) {
+    const r = await request('POST', '/rest/v1/rpc/' + name, args || {});
+    const out = await r.json();
+    return Array.isArray(out) ? out[0] : out;
+  }
+
+  return { ready, select, insert, upsert, update, remove, count, listBucket, download, rpc };
 }
 
 module.exports = { createClient, ConflictError };

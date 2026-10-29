@@ -133,5 +133,8 @@ if (require.main === module) {
     runner = r;
     console.log(r ? 'Daily jobs on: DE 7:00, scan 2:00, backup 2:30' + (cfg.asanaToken ? ', Asana every 30 minutes (full 3:00, People 3:15).' : '; Asana off until its token is in the config.') : 'No helper account yet: daily jobs off.');
   }, e => console.log('Daily jobs failed to start: ' + e.message));
+  // 0017: the job pieces asked for on the job page, made here (piece-build.js)
+  try { console.log(require('./piece-build.js').startBuilder(cfg) ? 'Piece requests on: every 15 seconds.' : 'No helper account yet: piece requests off.'); }
+  catch (e) { console.log('Piece requests failed to start: ' + e.message); }
   startServer(cfg).then(() => console.log('GVC helper listening on http://127.0.0.1:' + cfg.port));
 }

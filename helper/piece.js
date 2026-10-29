@@ -1,9 +1,15 @@
 /* ============================================================
-   POST /piece — "Save PDF to Drive" on a job's piece (Slice 4 spec §2.3, §5;
-   Slice 5: every piece in pieces.js, owned by a listing or a pitch).
+   POST /piece — a piece drawn from a given state (or the map's ready PNG)
+   written into a job's folder (Slice 4 spec §2.3, §5; Slice 5: every piece in
+   pieces.js, owned by a listing or a pitch). Since 0017 the pieces made from a
+   job go through the helper's own queue (piece-build.js), which uses the same
+   two steps below; Map Studio still sends its map here.
 
      pieceRoute({ db, render, driveRoot, driveLink, today, sleep })
        → async (body, cfg) → { ok, path, name, size, modified, url, pages, archived, folderMade }
+     jobFolderOf(row, root, noun)      → the job folder's absolute path, checked (or throws)
+     writePiece({ jobAbs, spec, row, file, doc, today, driveLink, sleep })
+                                       → the file written, the older one archived, its link
 
    body: { propertyId | pitchId, tool, state | image, paper }. The helper reads
    the owner row itself (drive_folder, label, market, core) and the piece's
@@ -56,6 +62,55 @@ function pngOf(image) {
   return buf;
 }
 
+/* The job's folder on this computer, checked before anything is drawn: a folder linked, a path that
+   stays under the Drive root (junctions too), and no paperwork word or folder anywhere in it. */
+function jobFolderOf(row, root, noun) {
+  if (!row.drive_folder) throw fail(409, 'This ' + noun + ' has no Drive folder linked.');
+  const segs = String(row.drive_folder).split(/[\\/]+/).filter(Boolean);
+  if (segs.length < 2 || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?]/.test(s))) throw fail(400, 'The ' + noun + '\'s Drive folder isn\'t a path the helper writes to.');
+  if (segs.some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
+  const jobAbs = path.resolve(root, ...segs);
+  if (jobAbs.indexOf(root + path.sep) !== 0) throw fail(400, 'The ' + noun + '\'s Drive folder isn\'t a path the helper writes to.');
+  if (!fs.existsSync(jobAbs) || !fs.statSync(jobAbs).isDirectory()) throw fail(404, 'The ' + noun + '\'s Drive folder isn\'t on this computer.');
+  // the folder itself (or a folder on its way) may be a junction: it must still land under the Drive root
+  if (fs.realpathSync(jobAbs).toLowerCase().indexOf(fs.realpathSync(root).toLowerCase() + path.sep) !== 0) {
+    throw fail(403, 'The ' + noun + '\'s Drive folder points outside the shared drives.');
+  }
+  return jobAbs;
+}
+
+/* A drawn piece written into its folder (never overwriting), the helper's own older file moved into
+   Archive\, and its Drive link looked up. file = { pdf, label? }; doc = the piece's record { output, outputs }. */
+async function writePiece(o) {
+  const { jobAbs, spec } = o;
+  const { dir, made } = pieceDir(jobAbs, spec);
+  // a junction or link inside the job folder must not carry the write somewhere else
+  const realDir = fs.realpathSync(dir).toLowerCase(), realJob = fs.realpathSync(jobAbs).toLowerCase();
+  if (realDir.indexOf(realJob + path.sep) !== 0) {
+    throw fail(403, 'The job\'s ' + spec.words + ' folder points outside the job folder.');
+  }
+  const rel = abs => path.relative(jobAbs, abs).split(path.sep).join('/');
+  if (rel(dir).split('/').some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
+  const core = o.row.core || {};
+  const label = safeLabel([core.address, core.unit].filter(Boolean).join(' ')) || safeLabel(o.row.label) || safeLabel(o.file.label) || 'Job';
+  if (hasPaperworkWord(label)) throw fail(403, 'The workspace doesn\'t write a file with that name.');
+  const file = await savePdf(o.file.pdf, dir, spec.prefix, label, o.today(), spec.ext);
+  if (!insideJobPiece(file, jobAbs, dir)) throw fail(500, 'The helper wrote somewhere it shouldn\'t have: ' + file);
+
+  // the file is on Drive now: nothing after this may turn the answer into an error
+  const doc = o.doc || {};
+  let archived;
+  try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs, words: spec.words, ext: spec.ext }); }
+  catch (e) { archived = { left: doc.output && doc.output.path, why: 'older ' + spec.words + ' left in place: it couldn\'t be moved (' + (e.code || e.message) + ')' }; }
+  const st = fs.statSync(file);
+  let url = null;
+  for (let i = 0; i < 10 && !url; i++) {
+    try { url = o.driveLink(file, false); } catch (e) { url = null; }
+    if (!url && i < 9) await o.sleep(1000);
+  }
+  return { path: rel(file), name: path.basename(file), size: st.size, modified: st.mtime.toISOString(), url, archived, folderMade: made };
+}
+
 function pieceRoute(o) {
   const root = path.resolve(o.driveRoot);
   const today = o.today || (() => localDay(new Date()));
@@ -79,17 +134,7 @@ function pieceRoute(o) {
     const row = (await client.select(table, { id: hasQ ? body.pitchId : body.propertyId }, 'id,drive_folder,label,market,core'))[0];
     const noun = table === 'pitches' ? 'pitch' : 'job';
     if (!row) throw fail(404, 'No ' + noun + ' with that id.');
-    if (!row.drive_folder) throw fail(409, 'This ' + noun + ' has no Drive folder linked.');
-    const segs = String(row.drive_folder).split(/[\\/]+/).filter(Boolean);
-    if (segs.length < 2 || segs.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?]/.test(s))) throw fail(400, 'The ' + noun + '\'s Drive folder isn\'t a path the helper writes to.');
-    if (segs.some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
-    const jobAbs = path.resolve(root, ...segs);
-    if (jobAbs.indexOf(root + path.sep) !== 0) throw fail(400, 'The ' + noun + '\'s Drive folder isn\'t a path the helper writes to.');
-    if (!fs.existsSync(jobAbs) || !fs.statSync(jobAbs).isDirectory()) throw fail(404, 'The ' + noun + '\'s Drive folder isn\'t on this computer.');
-    // the folder itself (or a folder on its way) may be a junction: it must still land under the Drive root
-    if (fs.realpathSync(jobAbs).toLowerCase().indexOf(fs.realpathSync(root).toLowerCase() + path.sep) !== 0) {
-      throw fail(403, 'The ' + noun + '\'s Drive folder points outside the shared drives.');
-    }
+    const jobAbs = jobFolderOf(row, root, noun);
 
     const owner = table === 'pitches' ? { pitch_id: row.id, tool: body.tool } : { property_id: row.id, tool: body.tool };
     const doc = (await client.select('documents', owner, 'output,outputs'))[0] || {};
@@ -100,34 +145,10 @@ function pieceRoute(o) {
       r = await capped(o.render({ tool: body.tool, state: body.state, paper, siteBase: cfg.siteBase }), renderMs,
         'The ' + spec.words + ' took too long to draw. Nothing was saved; try again.');
     }
-
-    const { dir, made } = pieceDir(jobAbs, spec);
-    // a junction or link inside the job folder must not carry the write somewhere else
-    const realDir = fs.realpathSync(dir).toLowerCase(), realJob = fs.realpathSync(jobAbs).toLowerCase();
-    if (realDir.indexOf(realJob + path.sep) !== 0) {
-      throw fail(403, 'The job\'s ' + spec.words + ' folder points outside the job folder.');
-    }
-    const rel = abs => path.relative(jobAbs, abs).split(path.sep).join('/');
-    if (rel(dir).split('/').some(s => isPaperworkFolder(s) || hasPaperworkWord(s))) throw fail(403, 'The workspace doesn\'t write into that folder.');
-    const core = row.core || {};
-    const label = safeLabel([core.address, core.unit].filter(Boolean).join(' ')) || safeLabel(row.label) || safeLabel(r.label) || 'Job';
-    if (hasPaperworkWord(label)) throw fail(403, 'The workspace doesn\'t write a file with that name.');
-    const file = await savePdf(r.pdf, dir, spec.prefix, label, today(), spec.ext);
-    if (!insideJobPiece(file, jobAbs, dir)) throw fail(500, 'The helper wrote somewhere it shouldn\'t have: ' + file);
-
-    // the file is on Drive now: nothing after this may turn the answer into an error
-    let archived;
-    try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs, words: spec.words, ext: spec.ext }); }
-    catch (e) { archived = { left: doc.output && doc.output.path, why: 'older ' + spec.words + ' left in place: it couldn\'t be moved (' + (e.code || e.message) + ')' }; }
-    const st = fs.statSync(file);
-    let url = null;
-    for (let i = 0; i < 10 && !url; i++) {
-      try { url = o.driveLink(file, false); } catch (e) { url = null; }
-      if (!url && i < 9) await sleep(1000);
-    }
-    return { ok: true, path: rel(file), name: path.basename(file), size: st.size, modified: st.mtime.toISOString(),
-      url, pages: r.pages, archived, folderMade: made };
+    const w = await writePiece({ jobAbs, spec, row, file: r, doc, today, sleep, driveLink: o.driveLink });
+    return { ok: true, path: w.path, name: w.name, size: w.size, modified: w.modified, url: w.url, pages: r.pages,
+      archived: w.archived, folderMade: w.folderMade };
   };
 }
 
-module.exports = { pieceRoute, safeLabel, pngOf };
+module.exports = { pieceRoute, safeLabel, pngOf, jobFolderOf, writePiece, capped, fail, localDay, RENDER_MS, PAPERS };

@@ -106,7 +106,7 @@
   PM.start({
     tool: 'showsheet', label: 'Showsheet', prefix: 'Showsheet', owners: ['listing'], panel: '#editor', kitKey: 'showsheet', plans: true,
     ids: { bar: 'jobBar', facts: 'jobFacts', msg: 'jobMsg', photoMsg: 'jobPhotoMsg', save: 'btnSaveSheet', pdf: 'btnSavePdf',
-      state: 'jobState', banner: 'jobBanner', reconnect: 'jobReconnect' },
+      state: 'jobState', banner: 'jobBanner', reconnect: 'jobReconnect', pdfWhy: 'jobPdfWhy' },
     rules: {
       FIELDS: function (row, state) { return SJ.FIELDS(row, (state || SH.state || {}).ownership); },
       value: function (row, n) { return SJ.valueOf(row, n); },

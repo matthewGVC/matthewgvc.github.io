@@ -179,6 +179,7 @@
       b + ' .linkbtn{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}' +
       b + ' .jb-b{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}' + b + ' .jb-n{margin-top:8px;color:var(--ui-ink-soft)}' +
       b + ' .jb-r{margin-top:8px;font-weight:600}' +
+      b + ' .jb-why{align-self:center;color:var(--ui-ink-soft);font-size:12.5px}' + b + ' .btn:disabled{opacity:.45;cursor:not-allowed}' +
       '#' + ID.banner + '{margin-top:10px;padding:8px 10px;border:1px solid var(--ui-rule);background:var(--ui-paper, #fff)}#' + ID.banner + ' ul{margin:4px 0 0;padding-left:18px}' +
       '#' + ID.msg + '{margin:8px 0 0;min-height:1.2em}' +
       f + '{padding:12px 20px;border-bottom:1px solid var(--ui-rule);font-size:13px}' +
@@ -274,13 +275,19 @@
     if (max && ag.ids.length > max) {
       html += '<div class="jb-n">This ' + esc(lower()) + ' prints the first ' + max + ' of the ' + NOUN + '\'s ' + ag.ids.length + ' agents.</div>';
     }
-    var why = blocked();
+    var why = pdfWhy();
     if (M.canEdit || M.canAsk) {
+      // greyed out, with the reason beside it, not only after a click (quick wins)
       html += '<div class="jb-b">' + (M.canEdit ? '<button type="button" class="btn sm" id="' + ID.save + '">Save sheet</button>' : '') +
-        '<button type="button" class="btn sm" id="' + ID.pdf + '"' + (why ? ' disabled aria-describedby="' + ID.pdf + 'Why"' : '') + '>Make PDF</button></div>';
-      if (why) html += '<div class="jb-n" id="' + ID.pdf + 'Why">' + esc(why) + '</div>';
+        '<button type="button" class="btn sm" id="' + ID.pdf + '"' + (why ? ' disabled aria-describedby="' + ID.pdfWhy + '"' : '') + '>Make PDF</button>' +
+        (why ? '<span class="jb-why" id="' + ID.pdfWhy + '">' + esc(why) + '</span>' : '') + '</div>';
       if (!M.canEdit) html += '<div class="jb-n">Read only: only the owner account saves this ' + esc(lower()) + '\'s wording. Make PDF asks the helper to make it as last saved.</div>';
-    } else html += '<div class="jb-n">Read only: only the owner account saves this ' + esc(lower()) + '. Print still works.</div>';
+    } else {
+      // someone who may not ask the helper gets the PDF from Drive, or Matt: never a dead end
+      var pdf = M.doc && M.doc.output, got = pdf && /^https:\/\/drive\.google\.com\//.test(String(pdf.url || '')) ? pdf.url : null;
+      if (got) html += '<div class="jb-b"><a class="btn sm" data-get href="' + esc(got) + '" target="_blank" rel="noopener">Get PDF</a></div>';
+      html += '<div class="jb-n">Read only: only the owner account saves this ' + esc(lower()) + '.' + (got ? '' : ' Ask Matt for the PDF.') + ' Print still works.</div>';
+    }
     var rw = requestWords();
     if (rw) html += '<div class="jb-r" data-request="' + esc(M.request.status) + '">' + esc(rw) + '</div>';
     html += banner(s) + '<p id="' + ID.msg + '" role="status"></p>';
@@ -302,8 +309,10 @@
     M.busy = !!on;
     var b1 = el('save'), b2 = el('pdf');
     if (b1) b1.disabled = M.busy;
-    if (b2) b2.disabled = M.busy || !!blocked();
+    if (b2) b2.disabled = M.busy || !!pdfWhy();
   }
+  /* why Make PDF is greyed out now: the helper would refuse, or (the owner, who saves first) Drive is still reading */
+  function pdfWhy() { return blocked() || (M.canEdit ? canSaveNow() : null); }
 
   /* ---------- the facts block ---------- */
   function labelOf(name) {
@@ -428,7 +437,9 @@
       var D = global.GVC_DRIVE;
       // the browser has never held Drive here: the folder picker; it held it once: one click back
       D.state().then(function (st) { return st === 'needs-click' ? D.reconnect() : D.connect(); })
-        .then(function () { return readDrive(); }).then(drawAll, function (e) { setPhotoHtml(esc((e && e.message) || 'Drive wasn\'t connected.')); });
+        .then(function () { return readDrive(); }).then(drawAll, function (e) {
+          setPhotoHtml(e && e.name === 'AbortError' ? 'No folder was picked. Press Connect Drive to try again.' : esc((e && e.message) || 'Drive wasn\'t connected.'));
+        });
     };
   }
   function flat(node, base, out) {
@@ -441,7 +452,8 @@
   }
   function readDrive() {
     M.loading = true; M.driveFailed = false;
-    var done = function () { M.loading = false; };
+    if (M.row && ID) drawBar();   // "still reading" shows at once, not after the walk
+    var done = function () { M.loading = false; if (M.row) drawBar(); };   // the bar follows what Drive brought in
     return readDriveNow().then(done, function (e) { done(); throw e; });
   }
   function readDriveNow() {
@@ -717,7 +729,7 @@
     A = adapter;
     RU = rulesFor(A);
     ID = Object.assign({ bar: 'pieceBar', facts: 'pieceFacts', msg: 'pieceMsg', photoMsg: 'piecePhotoMsg', save: 'btnPieceSave', pdf: 'btnPiecePdf',
-      state: 'pieceState', banner: 'pieceBanner', reconnect: 'pieceReconnect' }, A.ids || {});
+      state: 'pieceState', banner: 'pieceBanner', reconnect: 'pieceReconnect', pdfWhy: 'piecePdfWhy' }, A.ids || {});
     hosts();
     if (A.owners.indexOf(kind) === -1) {
       fail('<div class="jb-t">' + esc(A.label) + ' isn\'t made from a ' + NOUN + '.</div><div class="jb-s"><a href="../../workspace/">Back to the overview</a></div>');

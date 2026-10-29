@@ -106,7 +106,10 @@ async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   const errors = [], saves = [], pieces = [], helper = [], asks = [];
+  // dialogs: none is expected any more (the print confirm went with print recording); any seen is kept
+  const dialog = { answer: 'accept', seen: [] };
   page.on('pageerror', e => errors.push(e.message));
+  page.on('dialog', d => { dialog.seen.push(d.message()); if (dialog.answer === 'dismiss') d.dismiss(); else d.accept(); });
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
   await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__pieceTimeoutMs = 300; window.__pieceRetryMs = 30; window.__piecePollMs = 60; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
@@ -173,7 +176,7 @@ async function open(browser, opts) {
   if (/[?&](listing|pitch)=/.test(opts.path) && !/map-studio/.test(opts.path))
     await page.waitForFunction(() => window.GVC_PIECEMODE && window.GVC_PIECEMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, asks, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, asks, ctx, T, dialog, printed: () => page.evaluate(() => window.__printed || 0) };
 }
 /* the helper finishes the newest request: the piece's record gets the file, the request is done */
 function helperMakes(o, tool, name) {
@@ -253,7 +256,8 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(500);
   check('brochure: helper away → asked all the same, no print, no record', [o.asks.length, await o.printed(), o.pieces.filter(x => x.p_output).length, /makes it on Matt's desktop/.test(await text(o.page, '#pieceMsg'))], [1, 0, 0, true]);
-  check('brochure: the bar says it waits', /Waiting for the helper on Matt's desktop \(asked .* by Matt Bloomfield\)/.test(await text(o.page, '#pieceBar')), true);
+  check('brochure: helper away → no print, so no "did the print finish" question', o.dialog.seen, []);
+  check('brochure: the bar says it waits',/Waiting for the helper on Matt's desktop \(asked .* by Matt Bloomfield\)/.test(await text(o.page, '#pieceBar')), true);
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(400);
   check('brochure: asking again joins the waiting request', [o.asks.length, o.T.piece_requests.length, /Waiting for the helper/.test(await text(o.page, '#pieceBar'))], [2, 1, true]);
@@ -285,7 +289,8 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   // no Drive folder linked: Make PDF is greyed out, with the reason
   const unlinked = rowsFor(); delete unlinked.properties[0].drive_folder;
   o = await open(browser, { path: BRO, rows: unlinked });
-  check('brochure: no folder → Make PDF off, the reason beside it', [await o.page.$eval('#btnPiecePdf', b => b.disabled), /Link the job's Drive folder on the job page first/.test(await text(o.page, '#pieceBar'))], [true, true]);
+  check('brochure: no folder → Make PDF off, the reason beside it', [await o.page.$eval('#btnPiecePdf', b => b.disabled), /Link the job's Drive folder on the job page first/.test(await text(o.page, '#piecePdfWhy'))], [true, true]);
+  check('brochure: a greyed Make PDF asks nothing', [o.asks.length, o.helper.filter(x => x.path === '/piece').length], [0, 0]);
   await o.ctx.close();
 
   // Drive never connected in this browser and no helper here: Connect Drive opens the picker
@@ -293,6 +298,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('brochure: never connected → Connect Drive', await text(o.page, '#pieceReconnect'), 'Connect Drive');
   await o.page.click('#pieceReconnect');
   await o.page.waitForTimeout(500);
+  check('brochure: Make PDF ready after Connect, no reason', [await o.page.$eval('#btnPiecePdf', e => e.disabled), await o.page.$('#piecePdfWhy')], [false, null]);
   check('brochure: Connect Drive asks for the folder, then the photos come in', [await o.page.evaluate(() => [window.__driveLog.connect || 0, window.__driveLog.reconnect || 0]), (await pstate(o.page)).images.length], [[1, 0], 3]);
   await o.ctx.close();
   o = await open(browser, { path: BRO, helperDown: true, drive: { state: 'needs-click' } });
@@ -321,7 +327,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
 
   // the team sees it read-only
   o = await open(browser, { path: BRO, members: [{ name: 'Team', initials: 'T', role: 'team' }] });
-  check('brochure: team read-only', [!!(await o.page.$('#btnPiecePdf')), /Read only/.test(await text(o.page, '#pieceBar'))], [false, true]);
+  check('brochure: team read-only, Get PDF or Ask Matt', [!!(await o.page.$('#btnPiecePdf')), /Read only/.test(await text(o.page, '#pieceBar')), /Get PDF|Ask Matt/.test(await text(o.page, '#pieceBar'))], [false, true, true]);
   await o.ctx.close();
   // the team's shared account may ask the helper (0017), never save the wording
   o = await open(browser, { path: BRO, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });

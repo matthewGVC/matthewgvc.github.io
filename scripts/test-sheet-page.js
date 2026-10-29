@@ -71,7 +71,7 @@ const FAKE_DRIVE = `(function () {
   window.GVC_DRIVE = {
     supported: function () { return true; },
     state: function () { return cfg.stateThrows ? Promise.reject(new Error('Drive went away.')) : Promise.resolve(cfg.state || 'connected'); },
-    connect: function () { return Promise.resolve([]); },
+    connect: function () { cfg.state = 'connected'; return Promise.resolve(['GVC - New York']); },
     reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
     tree: function () { log.tree++; return cfg.slowTree ? new Promise(function () {}) : Promise.resolve(JSON.parse(JSON.stringify(tree))); },
@@ -89,7 +89,10 @@ async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   const errors = [], saves = [], pieces = [], helper = [], asks = [];
+  // dialogs: none is expected any more (the print confirm went with print recording); any seen is kept
+  const dialog = { answer: 'accept', seen: [] };
   page.on('pageerror', e => errors.push(e.message));
+  page.on('dialog', d => { dialog.seen.push(d.message()); if (dialog.answer === 'dismiss') d.dismiss(); else d.accept(); });
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
   await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__pieceTimeoutMs = cfg.timeoutMs || 300; window.__pieceRetryMs = 30; window.__piecePollMs = 60; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
@@ -143,7 +146,7 @@ async function open(browser, opts) {
   await page.goto(BASE + (opts.path || '/tools/showsheet/?listing=100-example-st-4a'), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.GVC_SHEETMODE && window.GVC_SHEETMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, asks, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, asks, ctx, T, dialog, printed: () => page.evaluate(() => window.__printed || 0) };
 }
 const payload = t => t.page.evaluate(() => window.GVC_SHEETMODE.buildPayload());
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
@@ -240,6 +243,15 @@ const typeIn = async (page, field, value) => {
   check('Reconnect brings the photos in', (await st(t.page)).photos.length, 3);
   await t.ctx.close();
 
+  // no Drive folder saved in this browser at all, no helper here: Connect Drive (the picker), not Reconnect
+  t = await open(browser, { drive: { state: 'not-connected' }, helperDown: true });
+  check('not connected: Connect Drive, not Reconnect', await text(t.page, '#jobReconnect'), 'Connect Drive');
+  check('not connected: Make PDF still on (the helper reads Drive itself)', [await t.page.$eval('#btnSavePdf', e => e.disabled), await t.page.$('#jobPdfWhy')], [false, null]);
+  await t.page.click('#jobReconnect');
+  await t.page.waitForTimeout(800);
+  check('Connect Drive brings the photos in', (await st(t.page)).photos.length, 3);
+  await t.ctx.close();
+
   // a floorplan folder with only PDF / Illustrator files (S8)
   t = await open(browser, { drive: { pdfOnly: true } });
   check('PDF-only floorplan: says what to do', (await text(t.page, '#jobPlanMsg')), 'No floorplan image in Floorplan\\v2\\ (only PDF). Export a JPG there, or drop one here for this sheet.');
@@ -325,6 +337,12 @@ const typeIn = async (page, field, value) => {
   await savePdf(t);
   check('helper away: never printed, never marked made', [await t.printed(), t.pieces.filter(x => x.p_output).length, t.asks.length], [0, 0, 1]);
   check('helper away: the bar says it waits for the helper', (await text(t.page, '#jobBar')).includes('Waiting for the helper on Matt\'s desktop'), true);
+  check('helper away: no print, so no "did the print finish" question', t.dialog.seen, []);
+  await t.ctx.close();
+  // a teammate with a PDF in Drive gets it from the bar
+  const withPdf = rowsFor({ documents: [{ property_id: 'p1', tool: 'showsheet', version: 2, state: {}, output: { name: 's.pdf', url: 'https://drive.google.com/file/d/S1/view', via: 'helper', madeAt: '2026-10-22T10:00:00Z' } }] });
+  t = await open(browser, { rows: withPdf, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
+  check('team: Get PDF is the file in Drive', await t.page.$eval('#jobBar a[data-get]', a => a.href).catch(() => null), 'https://drive.google.com/file/d/S1/view');
   await t.ctx.close();
 
   // the helper couldn't: its sentence on the bar
@@ -343,7 +361,9 @@ const typeIn = async (page, field, value) => {
 
   // Drive still reading the folder: nothing saved yet
   t = await open(browser, { drive: { slowTree: true, timeoutMs: 60000 } });
-  await savePdf(t);
+  check('Drive still reading the folder: Make PDF greyed, the reason beside it', [await t.page.$eval('#btnSavePdf', b => b.disabled), (await text(t.page, '#jobPdfWhy')).includes('still reading')], [true, true]);
+  await t.page.evaluate(() => window.GVC_SHEETMODE.savePdf());   // pressed anyway (keyboard, a stale click): refused
+  await t.page.waitForTimeout(300);
   check('Drive still reading the folder: refused', [t.asks.length, t.pieces.length, (await text(t.page, '#jobMsg')).includes('still reading')], [0, 0, true]);
   await t.ctx.close();
   // the folder couldn't be read here: the helper reads it itself, so Make PDF still asks
@@ -364,12 +384,31 @@ const typeIn = async (page, field, value) => {
   // no Drive folder linked: Make PDF greyed out with the reason
   const unlinked = rowsFor({}); delete unlinked.properties[0].drive_folder;
   t = await open(browser, { rows: unlinked });
-  check('no folder: Make PDF off, with the reason', [await t.page.$eval('#btnSavePdf', b => b.disabled), (await text(t.page, '#jobBar')).includes('Link the job\'s Drive folder on the job page first')], [true, true]);
+  check('no folder: Make PDF off, with the reason beside it', [await t.page.$eval('#btnSavePdf', b => b.disabled), (await text(t.page, '#jobPdfWhy')).includes('Link the job\'s Drive folder on the job page first')], [true, true]);
+  await t.ctx.close();
+  // ready: no reason shown
+  t = await open(browser, {});
+  check('ready: Make PDF on, no reason', [await t.page.$eval('#btnSavePdf', b => b.disabled), await t.page.$('#jobPdfWhy')], [false, null]);
+  check('ready: the button says Make PDF', await text(t.page, '#btnSavePdf'), 'Make PDF');
+  // Print is a plain print: no question, nothing recorded, nothing asked of the helper
+  await t.page.click('#btnPrint');
+  await t.page.waitForTimeout(400);
+  check('Print: never asks "did it finish"', t.dialog.seen, []);
+  check('Print: nothing recorded, nothing asked', [t.pieces.length, t.asks.length], [0, 0]);
+  await t.ctx.close();
+
+  // the team's shared account: Make PDF asks the helper, never saves the wording
+  t = await open(browser, { members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+  check('shared: Make PDF, no Save sheet', [!!(await t.page.$('#btnSavePdf')), await t.page.$('#btnSaveSheet')], [true, null]);
+  await savePdf(t);
+  check('shared: asks the helper without saving anything', [t.asks.map(a => a.tool), t.saves.length, t.pieces.length], [['showsheet'], 0, 0]);
+  check('shared: the bar follows the request', (await text(t.page, '#jobBar')).includes('Waiting for the helper'), true);
   await t.ctx.close();
 
   // team role: read-only
   t = await open(browser, { members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('team: no save buttons', [await t.page.$('#btnSaveSheet'), await t.page.$('#btnSavePdf')], [null, null]);
+  check('team: Get PDF or Ask Matt, never a dead end', /Get PDF|Ask Matt/.test(await text(t.page, '#jobBar')), true);
   check('team: fields read-only, print stays', [await t.page.$eval('[data-field="price"]', e => e.readOnly || e.disabled), !!(await t.page.$('#btnPrint'))], [true, true]);
   await t.ctx.close();
 

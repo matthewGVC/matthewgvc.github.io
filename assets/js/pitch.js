@@ -278,7 +278,7 @@
 
   /* ---------- comparable sales editor ----------
      One row per comp: address, sold price, sq ft, bed/bath, date — the same
-     five fields the Seller Pitch's CMA and the Buyer Package both print, and
+     five fields the Seller Package's CMA and the Buyer Package both print, and
      the same shape in both, which is why they can share a property's comps.
      `host` is the list container, `comps` the array to edit in place. */
   function compsEditor(host, comps, onChange) {
@@ -444,7 +444,7 @@
     if (office) rows.push(['Tel', office, true]);
     if (mobile) rows.push(['Mobile', mobile, true]);
     if (a.email) rows.push(['Email', String(a.email).trim(), false]);
-    /* an agent's administrator, when the deck names one (the Seller Pitch does for Marli) */
+    /* an agent's administrator, when the deck names one (the Seller Package does for Marli) */
     if (a.admin) rows.push(['Admin', String(a.admin).trim(), false]);
     return '<div class="ag-person">' +
       '<div class="ag-shot"><img src="' + esc(headshotFor(a)) + '" alt=""></div>' +
@@ -500,7 +500,7 @@
   }
 
   /* The Social rows as one band across the page, under the "Thank you" (the
-     Seller Pitch, 2026-10-28: the socials are the priority on its back page). */
+     Seller Package, 2026-10-28: the socials are the priority on its back page). */
   function socialBand(rows) {
     return '<div class="ag-soc"><div class="ag-col-t">Social</div><div class="ag-soc-r">' +
       rows.map(([k, v]) => '<div class="ag-lrow"><span class="lk">' + esc(k) + '</span>' +
@@ -517,7 +517,7 @@
         '<div class="tt">Douglas Elliman Real Estate</div>' +
         '<div class="ct"><div><span class="k">Web</span><span class="v">gvcrealestateteam.com</span></div></div>' +
         '</div></div>';
-    /* o.social replaces the Social rows (Marli's copy of the Seller Pitch prints her
+    /* o.social replaces the Social rows (Marli's copy of the Seller Package prints her
        own account, not the team's); o.socialTop sets them as a band above the agents */
     const social = o.social || socialRows(list);
     return '<div class="ag' + (list.length === 1 ? ' solo' : '') + (o.socialTop ? ' soc-top' : '') + '">' +
@@ -568,7 +568,7 @@
 
 
   /* ---------- agent biography page (Meet Your Agent) ----------
-     Shared by the Buyer Package and the Seller Pitch. A compact name band,
+     Shared by the Buyer Package and the Seller Package. A compact name band,
      the roster copy (assets/js/bios.js) down the left and the agent's tall
      photograph on the right; with no photograph, the roster cut-out on navy.
      Returns the page body; the deck wraps it with page({cls:'nohead'}). */

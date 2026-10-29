@@ -1,6 +1,6 @@
 # The property library's database
 
-Three listing builders — Showsheet, Brochure and Seller Pitch — share one saved property each.
+Three listing builders — Showsheet, Brochure and Seller Package — share one saved property each.
 The Buyer Package does not use the library. This folder holds the schema for that shared store.
 
 - **Project:** `hoszxrrlfhzbbrzenqvp` (Supabase, free tier, region `us-west-2`)
@@ -39,7 +39,7 @@ that is the first thing to revisit.
 
 `tools/properties/` is the library's own page — every property including the archived ones,
 renaming, status, the photo storage read-out, and "Free up photos". The three builders that
-bind to a property — the Showsheet, the Brochure and the Seller Pitch — can only load and
+bind to a property — the Showsheet, the Brochure and the Seller Package — can only load and
 save; anything else is there. The Buyer Package is the fourth builder but has no property at
 all, so it never touches the library.
 

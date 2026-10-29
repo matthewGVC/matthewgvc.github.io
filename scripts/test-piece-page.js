@@ -345,7 +345,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   await o.ctx.close();
 
   /* ---------- the Seller pitch from a listing and from a pitch ---------- */
-  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Pitch' });
+  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Package' });
   s = await pstate(o.page);
   check('seller on a listing: the bar', /^Seller Package for 100 Example St · 4A/.test(await text(o.page, '#pieceBar .jb-t')), true);
   check('seller on a listing: subject facts, comps, market', [s.address, s.beds, s.sqft, s.city, s.comps.length, s.comps[0].address, s.market, s.agents],
@@ -364,8 +364,8 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   const PITCH = '/tools/seller-package/?pitch=12-sample-ln-2026-10-01';
   const mapDoc = { pitch_id: 'q1', tool: 'pitch-map', version: 1, state: {}, built_from: { v: 2, tool: 'pitch-map', facts: {} },
     output: { path: 'Marketing/Pitch/Map - 12 Sample Ln - 2026-10-20.png', name: 'Map - 12 Sample Ln - 2026-10-20.png', via: 'helper', modified: '2026-10-20T10:00:00.000Z' } };
-  o = await open(browser, { path: PITCH, documents: [mapDoc], prefix: 'Seller Pitch',
-    helperReply: { ok: true, path: 'Marketing/Pitch/Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', size: 1, modified: '2026-10-22T15:00:00.000Z', url: null, pages: 12, archived: null } });
+  o = await open(browser, { path: PITCH, documents: [mapDoc], prefix: 'Seller Package',
+    helperReply: { ok: true, path: 'Marketing/Pitch/Seller Package - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Package - 12 Sample Ln - 2026-10-22.pdf', size: 1, modified: '2026-10-22T15:00:00.000Z', url: null, pages: 12, archived: null } });
   s = await pstate(o.page);
   check('seller on a pitch: the bar points at the pitch page', [/^Seller Package for 12 Sample Ln/.test(await text(o.page, '#pieceBar .jb-t')), await o.page.$eval('#pieceBar [data-back]', a => a.getAttribute('href'))],
     [true, '../../workspace/job/?pitch=12-sample-ln-2026-10-01']);
@@ -446,7 +446,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
     ((o.pieces[0] || {}).p_state || {}).photos && o.pieces[0].p_state.photos.map(p => [p.path, p.x])],
     [['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg'], [['Photos/Edited/01.jpg', 11], ['Photos/Edited/02.jpg', 50]]]);
   await o.ctx.close();
-  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Pitch' });
+  o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Package' });
   await o.page.evaluate(() => { const s = JSON.parse(JSON.stringify(window.__piece.state)); s.photos[2].role = 'exclude'; window.__piece.set(s); });
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(700);

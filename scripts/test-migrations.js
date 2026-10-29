@@ -470,7 +470,7 @@ const USERS = {
     check('insert again is a conflict', await spoErr('matt', 'pitches', pitch, 'seller', null, { s: 2 }, null, null, null), 'conflict');
     check('stale version is a conflict', await spoErr('matt', 'pitches', pitch, 'seller', 9, { s: 2 }, null, null, null), 'conflict');
     const PBF = { v: 2, tool: 'seller', facts: { comps: [{ address: '14 Sample Ln' }], beds: 4 } };
-    const POUT = { path: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', size: 10, via: 'helper' };
+    const POUT = { path: 'Seller Package - 12 Sample Ln - 2026-10-22.pdf', name: 'Seller Package - 12 Sample Ln - 2026-10-22.pdf', size: 10, via: 'helper' };
     check('pitch build without output refused', await spoErr('matt', 'pitches', pitch, 'seller', 1, { s: 2 }, PBF, null, null), 'bad build');
     const pb = (await spo('matt', 'pitches', pitch, 'seller', 1, { s: 2 }, PBF, POUT, null)).rows[0].r;
     check('pitch build recorded', [pb.version, pb.output.name, pb.outputs.length, pb.built_by], [2, POUT.name, 1, id.matt]);

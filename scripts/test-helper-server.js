@@ -440,13 +440,13 @@ function req(method, p, headers, body) {
     o5 = await p5({ propertyId: 'l11', tool: 'postcard-sold', state: {} }, cfgP);
     check('postcard sold: beside it', o5.path, 'Marketing/Postcards/Just Sold Postcard - 11 Example St - 2026-10-22.pdf');
     o5 = await p5({ propertyId: 'l14', tool: 'seller', state: {} }, cfgP);
-    check('seller on a listing: Marketing\\Pitch made', [o5.path, o5.folderMade], ['Marketing/Pitch/Seller Pitch - 14 Example St - 2026-10-22.pdf', true]);
+    check('seller on a listing: Marketing\\Pitch made', [o5.path, o5.folderMade], ['Marketing/Pitch/Seller Package - 14 Example St - 2026-10-22.pdf', true]);
     const s1 = await p5({ pitchId: 'q12', tool: 'seller', state: {} }, cfgP);
-    check('seller on a pitch: Marketing/Pitch made in the pitch folder', [s1.path, s1.folderMade, asked.indexOf('pitches') !== -1], ['Marketing/Pitch/Seller Pitch - 12 Sample Ln - 2026-10-22.pdf', true, true]);
+    check('seller on a pitch: Marketing/Pitch made in the pitch folder', [s1.path, s1.folderMade, asked.indexOf('pitches') !== -1], ['Marketing/Pitch/Seller Package - 12 Sample Ln - 2026-10-22.pdf', true, true]);
     D5['q12|seller'] = { output: { path: s1.path, size: s1.size, modified: s1.modified, via: 'helper' }, outputs: [{ path: s1.path }] };
     const s2 = await p5({ pitchId: 'q12', tool: 'seller', state: {} }, cfgP);
     check('seller on a pitch: the older one into Marketing/Pitch/Archive', [s2.name, s2.archived],
-      ['Seller Pitch - 12 Sample Ln - 2026-10-22 (2).pdf', { from: s1.path, to: 'Marketing/Pitch/Archive/' + s1.name }]);
+      ['Seller Package - 12 Sample Ln - 2026-10-22 (2).pdf', { from: s1.path, to: 'Marketing/Pitch/Archive/' + s1.name }]);
     check('the pitch\'s own files untouched', fs.readFileSync(path.join(j5('2026-10-01 12 Sample Ln'), '12 Sample Ln.pdf'), 'utf8'), 'their own pitch');
 
     const m1 = await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP);

@@ -1814,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     label: 'Page',
     printName: () => {
       const addr = String(state.address || '').trim();
-      return addr ? 'Seller Pitch - ' + addr : 'Seller Pitch';
+      return addr ? 'Seller Package - ' + addr : 'Seller Package';
     },
     render: (page, i) => {
       page.innerHTML = RENDER[PAGES[i].key](i + 1, PAGES[i]);

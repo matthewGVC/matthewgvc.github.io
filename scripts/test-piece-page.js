@@ -2,9 +2,11 @@
    Browser tests for the Brochure, the Postcards, the Seller pitch and Map
    Studio opened from a job (Slice 5): /tools/<tool>/?listing=<slug> (or
    ?pitch=<slug>) opens filled from the job, reads its photos, floorplans and
-   map from Drive, and saves back through save_job, save_piece_of and the
-   helper's POST /piece. Supabase, Drive and the helper are mocked by request
-   interception (made-up rows and names; nothing real).
+   map from Drive (or through the helper), and saves back through save_job and
+   save_piece_of; Make PDF adds a piece request for the helper (0017) and
+   buildPayload() is what the helper's page would print. Map Studio still
+   sends its map to POST /piece. Supabase, Drive and the helper are mocked by
+   request interception (made-up rows and names; nothing real).
 
      BASE=http://localhost:8080 node scripts/test-piece-page.js
 
@@ -79,8 +81,8 @@ const FAKE_DRIVE = `(function () {
   window.GVC_DRIVE = {
     supported: function () { return true; },
     state: function () { return Promise.resolve(cfg.state || 'connected'); },
-    connect: function () { return Promise.resolve([]); },
-    reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
+    connect: function () { log.connect = (log.connect || 0) + 1; cfg.state = 'connected'; return Promise.resolve(['GVC - New Jersey']); },
+    reconnect: function () { log.reconnect = (log.reconnect || 0) + 1; cfg.state = 'connected'; return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
     tree: function (folder) { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(/Pitches/.test(folder) ? trees.pitch : trees.listing))); },
     listJob: function () { return Promise.resolve([]); },
@@ -92,20 +94,39 @@ const FAKE_DRIVE = `(function () {
   };
 })();`;
 
+const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const HELPER_TREE = { name: '100 Example St', kind: 'directory', looseCount: 1, otherCount: 0, children: [
+  { name: 'Floorplan', kind: 'directory', children: [{ name: 'v2', kind: 'directory', children: [
+    { name: 'Level 1 v2.jpg', kind: 'file', size: 1000, modified: '2026-10-09T10:00:00.000Z' }, { name: 'Level 2 v2.jpg', kind: 'file', size: 1000, modified: '2026-10-09T10:00:00.000Z' }] }] },
+  { name: 'Photos', kind: 'directory', children: [{ name: 'Edited', kind: 'directory', children: [
+    { name: '01.jpg', kind: 'file', size: 1000, modified: '2026-10-08T10:00:00.000Z' }, { name: '02.jpg', kind: 'file', size: 1000, modified: '2026-10-08T10:00:00.000Z' },
+    { name: '03.jpg', kind: 'file', size: 1000, modified: '2026-10-08T10:00:00.000Z' }] }] }] };
+
 async function open(browser, opts) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
-  const errors = [], saves = [], pieces = [], helper = [];
+  const errors = [], saves = [], pieces = [], helper = [], asks = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(() => localStorage.setItem('gvc.props.session', JSON.stringify({ access_token: 't', refresh_token: 'r', expires_at: Date.now() + 1e8 })));
   await page.addInitScript(() => localStorage.setItem('gvc.helper.pair', 'PAIR'));
-  await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__pieceTimeoutMs = 300; window.__pieceRetryMs = 30; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
+  await page.addInitScript(cfg => { window.__FAKE_DRIVE = cfg; window.__pieceTimeoutMs = 300; window.__pieceRetryMs = 30; window.__piecePollMs = 60; window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }, opts.drive || {});
   await page.route('**/assets/js/drive.js', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FAKE_DRIVE }));
   const T = opts.rows || rowsFor(opts);
+  T.piece_requests = T.piece_requests || opts.requests || [];
   await page.route('**/rest/v1/**', r => {
     const u = new URL(r.request().url()), table = u.pathname.split('/').pop(), m = r.request().method();
     const json = (status, body) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     if (table === 'members') return json(200, opts.members || [{ name: 'Matt Bloomfield', initials: 'MB', role: 'owner' }]);
+    if (table === 'piece_requests' && m === 'POST') {
+      const body = JSON.parse(r.request().postData() || '{}');
+      asks.push(body);
+      if (opts.askStatus) return json(opts.askStatus, { message: 'refused' });
+      const open = T.piece_requests.find(x => x.tool === body.tool && (x.property_id || x.pitch_id) === (body.property_id || body.pitch_id) && /waiting|working/.test(x.status));
+      if (open) return json(409, { code: '23505', message: 'duplicate key value violates unique constraint' });
+      const row = Object.assign({ id: 'req' + asks.length, status: 'waiting', asked_at: new Date().toISOString(), asked_name: 'Matt Bloomfield', message: null, result: null }, body);
+      T.piece_requests.unshift(row);
+      return json(201, [row]);
+    }
     if (table === 'save_job') {
       const body = JSON.parse(r.request().postData() || '{}');
       saves.push(body);
@@ -133,12 +154,18 @@ async function open(browser, opts) {
   await page.route('http://localhost:47610/**', r => {
     if (opts.helperDown) return r.abort();
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
-    const body = JSON.parse(r.request().postData() || '{}');
-    helper.push({ path: new URL(r.request().url()).pathname, body });
+    const body = JSON.parse(r.request().postData() || '{}'), where = new URL(r.request().url()).pathname;
+    helper.push({ path: where, body });
     const name = (opts.prefix || 'Brochure') + ' - 100 Example St 4A - 2026-10-22.pdf';
+    const send = (x, status) => r.fulfill({ status: status || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(x) });
+    if (where === '/health') return send({ ok: true, version: 't', paired: !opts.unpaired });
+    if (where === '/pieces/run') return send({ ok: true });
+    // the helper reading the job's folder for a browser that has no Drive (0017)
+    if (where === '/job-tree') return send({ ok: true, tree: HELPER_TREE });
+    if (where === '/job-file') return send({ ok: true, name: String(body.file).split('/').pop(), type: 'image/png', modified: '2026-10-08T10:00:00.000Z', data: PNG_B64 });
     const reply = opts.helperReply || { ok: true, path: 'Marketing/Brochure/' + name, name, size: 12345, modified: '2026-10-22T15:00:00.000Z',
       url: 'https://drive.google.com/file/d/NEW/view', pages: 5, archived: null };
-    r.fulfill({ status: opts.helperStatus || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(reply) });
+    send(reply, opts.helperStatus);
   });
   await page.goto(BASE + opts.path, { waitUntil: 'networkidle' });
   // only job-mode pages (?listing= / ?pitch= on a piece tool) ever set GVC_PIECEMODE;
@@ -146,8 +173,18 @@ async function open(browser, opts) {
   if (/[?&](listing|pitch)=/.test(opts.path) && !/map-studio/.test(opts.path))
     await page.waitForFunction(() => window.GVC_PIECEMODE && window.GVC_PIECEMODE.ready, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  return { page, errors, saves, pieces, helper, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
+  return { page, errors, saves, pieces, helper, asks, ctx, T, printed: () => page.evaluate(() => window.__printed || 0) };
 }
+/* the helper finishes the newest request: the piece's record gets the file, the request is done */
+function helperMakes(o, tool, name) {
+  const req = o.T.piece_requests.find(x => x.tool === tool) || {};
+  const doc = o.T.documents.find(d => d.tool === tool) || {};
+  const pay = o.lastPayload || {};
+  Object.assign(doc, { built_from: pay.builtFrom || { v: 2, tool, facts: {} }, version: (doc.version || 0) + 1,
+    output: { name, path: 'Marketing/' + name, via: 'helper', paper: pay.paper || null, madeAt: new Date().toISOString(), url: 'https://drive.google.com/file/d/NEW/view' } });
+  Object.assign(req, { status: 'done', result: { name } });
+}
+const payload = async o => (o.lastPayload = await o.page.evaluate(() => window.GVC_PIECEMODE.buildPayload()));
 const text = (page, sel) => page.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const pstate = page => page.evaluate(() => JSON.parse(JSON.stringify(window.__piece.state)));
 async function typeIn(page, sel, value) {
@@ -190,49 +227,85 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
     [true, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/03.jpg']]);
   check('brochure: the draft remembers the lists its wording came from', Object.keys(draft.p_state.listsFrom || {}).sort(), ['buildingFeatures', 'interiorFeatures']);
 
-  // Save PDF to Drive
+  // what the helper's page answers for this brochure (0017: it lays the piece the same way)
+  const bp = await payload(o);
+  check('brochure: what prints has the pictures inline, on its paper', [bp.why, bp.paper, bp.state.images.length, /data:image/.test(JSON.stringify(bp.state))], [undefined, 'letter', 3, true]);
+  check('brochure: built_from holds the facts, photos and plans it printed', [bp.builtFrom.v, bp.builtFrom.tool, bp.builtFrom.via, bp.builtFrom.facts.price, bp.builtFrom.photos.map(p => p.path), bp.builtFrom.plans.map(p => [p.path, p.version])],
+    [2, 'brochure', 'helper', 4400000, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/03.jpg'], [['Floorplan/v2/Level 1 v2.jpg', 2], ['Floorplan/v2/Level 2 v2.jpg', 2]]]);
+  check('brochure: what is kept holds paths, never pictures', noData(bp.storable), true);
+
+  // Make PDF: saves the sheet, then asks the helper; the browser never draws a PDF
   await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(700);
-  const h = o.helper[0] || { body: {} };
-  check('brochure: the helper is asked for the brochure', [h.path, h.body.tool, h.body.propertyId, h.body.paper, h.body.state && h.body.state.images.length], ['/piece', 'brochure', 'p1', 'letter', 3]);
-  check('brochure: the helper gets the pictures inline', /data:image/.test(JSON.stringify(h.body.state || {})), true);
-  const build = o.pieces[1] || {};
-  check('brochure: the build is recorded', [build.p_tool, build.p_built_from && build.p_built_from.v, build.p_built_from && build.p_built_from.tool, build.p_output && build.p_output.name],
-    ['brochure', 2, 'brochure', 'Brochure - 100 Example St 4A - 2026-10-22.pdf']);
-  check('brochure: built_from holds the facts, photos and plans it printed', [build.p_built_from.facts.price, build.p_built_from.photos.map(p => p.path), build.p_built_from.plans.map(p => [p.path, p.version])],
-    [4400000, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/03.jpg'], [['Floorplan/v2/Level 1 v2.jpg', 2], ['Floorplan/v2/Level 2 v2.jpg', 2]]]);
-  check('brochure: made today in the bar', /^Made today/.test(await text(o.page, '#pieceState')), true);
+  await o.page.waitForTimeout(500);
+  check('brochure: Make PDF saves, then asks the helper for the brochure', [o.pieces.length, o.pieces[1] && o.pieces[1].p_built_from, o.asks.length, o.asks[0] && o.asks[0].tool, o.asks[0] && o.asks[0].property_id],
+    [2, null, 1, 'brochure', 'p1']);
+  check('brochure: the helper on this desktop is told to start, never sent a PDF', [o.helper.filter(x => x.path === '/pieces/run').length, o.helper.filter(x => x.path === '/piece').length, await o.printed()], [1, 0, 0]);
+  check('brochure: the bar follows the request', /Waiting for the helper/.test(await text(o.page, '#pieceBar')), true);
+  helperMakes(o, 'brochure', 'Brochure - 100 Example St 4A - 2026-10-22.pdf');
+  await o.page.waitForTimeout(500);
+  check('brochure: made today once the helper is done, the file named', [/^Made today/.test(await text(o.page, '#pieceState')), /Made: Brochure - 100 Example St 4A/.test(await text(o.page, '#pieceMsg')),
+    /Waiting for the helper/.test(await text(o.page, '#pieceBar'))], [true, true, false]);
   check('brochure: no page errors', o.errors, []);
   await o.ctx.close();
 
-  // helper not running: print dialog, recorded by hand
+  // the helper isn't on this computer: the request still waits for it; nothing printed, nothing recorded
   o = await open(browser, { path: BRO, helperDown: true });
   await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(600);
-  check('brochure: helper down → print, recorded by hand', [await o.printed(), o.pieces[0] && o.pieces[0].p_output.via, o.pieces[0] && o.pieces[0].p_built_from.via], [1, 'print', 'print']);
-  await o.ctx.close();
-
-  // a helper refusal is said, nothing recorded
-  o = await open(browser, { path: BRO, helperStatus: 409, helperReply: { error: 'This job has no Drive folder linked.' } });
-  await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(500);
-  check('brochure: a refusal is shown, nothing recorded', [await text(o.page, '#pieceMsg'), o.pieces.length, await o.printed()], ['This job has no Drive folder linked.', 0, 0]);
+  check('brochure: helper away → asked all the same, no print, no record', [o.asks.length, await o.printed(), o.pieces.filter(x => x.p_output).length, /makes it on Matt's desktop/.test(await text(o.page, '#pieceMsg'))], [1, 0, 0, true]);
+  check('brochure: the bar says it waits', /Waiting for the helper on Matt's desktop \(asked .* by Matt Bloomfield\)/.test(await text(o.page, '#pieceBar')), true);
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(400);
+  check('brochure: asking again joins the waiting request', [o.asks.length, o.T.piece_requests.length, /Waiting for the helper/.test(await text(o.page, '#pieceBar'))], [2, 1, true]);
   await o.ctx.close();
 
-  // a conflict before the PDF: nothing drawn
+  // the helper couldn't: its reason on the bar, nothing recorded, nothing printed
+  o = await open(browser, { path: BRO, requests: [{ id: 'old', property_id: 'p1', tool: 'brochure', status: 'failed', asked_at: '2026-10-22T10:00:00Z', message: 'Drive hasn\'t downloaded 01.jpg on Matt\'s desktop yet.' }] });
+  check('brochure: a failed request says why', /The helper couldn't make it: Drive hasn't downloaded 01\.jpg/.test(await text(o.page, '#pieceBar')), true);
+  check('brochure: and nothing printed', await o.printed(), 0);
+  await o.ctx.close();
+
+  // a conflict before the request: nothing asked
   o = await open(browser, { path: BRO, conflict: true });
   await typeIn(o.page, '[data-field="price"]', '4,400,000');
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(500);
-  check('brochure: conflict → no PDF, said, the typed price kept', [o.helper.length, /changed a moment ago/.test(await text(o.page, '#pieceMsg')), (await pstate(o.page)).price], [0, true, '4,400,000']);
+  check('brochure: conflict → nothing asked, said, the typed price kept', [o.asks.length, /changed a moment ago/.test(await text(o.page, '#pieceMsg')), (await pstate(o.page)).price], [0, true, '4,400,000']);
   await o.ctx.close();
 
-  // a photo Drive hasn't downloaded
+  // a photo Drive hasn't downloaded in this browser: the helper reads Drive itself, so it is still asked
   o = await open(browser, { path: BRO, drive: { slow: 'Photos/Edited/01.jpg' } });
   check('brochure: a slow photo is named', /hasn't downloaded this yet: 01\.jpg/.test(await text(o.page, '#piecePhotoMsg')), true);
+  check('brochure: the helper\'s own page would refuse it, naming the photo', /hasn't downloaded 01\.jpg/.test((await payload(o)).why || ''), true);
   await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(300);
-  check('brochure: and Save PDF waits for it', [/01\.jpg yet/.test(await text(o.page, '#pieceMsg')), o.helper.length], [true, 0]);
+  await o.page.waitForTimeout(400);
+  check('brochure: Make PDF still asks the helper', o.asks.length, 1);
+  await o.ctx.close();
+
+  // no Drive folder linked: Make PDF is greyed out, with the reason
+  const unlinked = rowsFor(); delete unlinked.properties[0].drive_folder;
+  o = await open(browser, { path: BRO, rows: unlinked });
+  check('brochure: no folder → Make PDF off, the reason beside it', [await o.page.$eval('#btnPiecePdf', b => b.disabled), /Link the job's Drive folder on the job page first/.test(await text(o.page, '#pieceBar'))], [true, true]);
+  await o.ctx.close();
+
+  // Drive never connected in this browser and no helper here: Connect Drive opens the picker
+  o = await open(browser, { path: BRO, helperDown: true, drive: { state: 'not-connected' } });
+  check('brochure: never connected → Connect Drive', await text(o.page, '#pieceReconnect'), 'Connect Drive');
+  await o.page.click('#pieceReconnect');
+  await o.page.waitForTimeout(500);
+  check('brochure: Connect Drive asks for the folder, then the photos come in', [await o.page.evaluate(() => [window.__driveLog.connect || 0, window.__driveLog.reconnect || 0]), (await pstate(o.page)).images.length], [[1, 0], 3]);
+  await o.ctx.close();
+  o = await open(browser, { path: BRO, helperDown: true, drive: { state: 'needs-click' } });
+  await o.page.click('#pieceReconnect');
+  await o.page.waitForTimeout(500);
+  check('brochure: held once → Reconnect Drive, one click', [await o.page.evaluate(() => [window.__driveLog.connect || 0, window.__driveLog.reconnect || 0]), (await pstate(o.page)).images.length], [[0, 1], 3]);
+  await o.ctx.close();
+
+  // Drive not connected but the helper runs here: the photos come through the helper
+  o = await open(browser, { path: BRO, drive: { state: 'not-connected' } });
+  check('brochure: photos and plans through the helper', [(await pstate(o.page)).images.length, (await pstate(o.page)).floorplans.length, o.helper.filter(x => x.path === '/job-file').length, await o.page.evaluate(() => window.__driveLog.read.length)],
+    [3, 2, 5, 0]);
+  check('brochure: no Connect button then', await o.page.$('#pieceReconnect'), null);
   await o.ctx.close();
 
   // a saved brochure reopens with its own roles and ids; a rebuild lists what changed
@@ -249,6 +322,13 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   // the team sees it read-only
   o = await open(browser, { path: BRO, members: [{ name: 'Team', initials: 'T', role: 'team' }] });
   check('brochure: team read-only', [!!(await o.page.$('#btnPiecePdf')), /Read only/.test(await text(o.page, '#pieceBar'))], [false, true]);
+  await o.ctx.close();
+  // the team's shared account may ask the helper (0017), never save the wording
+  o = await open(browser, { path: BRO, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+  check('brochure: the shared account sees Make PDF, not Save sheet', [!!(await o.page.$('#btnPiecePdf')), !!(await o.page.$('#btnPieceSave')), /Make PDF asks the helper to make it as last saved/.test(await text(o.page, '#pieceBar'))], [true, false, true]);
+  await o.page.click('#btnPiecePdf');
+  await o.page.waitForTimeout(400);
+  check('brochure: the shared account asks without saving anything', [o.asks.length, o.saves.length, o.pieces.length], [1, 0, 0]);
   await o.ctx.close();
 
   // an unknown job, a hostile job, and the standalone tool
@@ -284,7 +364,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   await o.page.waitForTimeout(400);
   check('brochure: a plan Drive did not bring in keeps its saved label in the draft', ((o.pieces[0] || {}).p_state || {}).floorplans.map(f => [f.id, f.label]).sort(), [[5, 'Upper floor']]);
   await o.ctx.close();
-  o = await open(browser, { path: BRO, documents: [SAVED2], drive: { state: 'prompt' } });
+  o = await open(browser, { path: BRO, documents: [SAVED2], drive: { state: 'prompt' }, helperDown: true });
   await o.page.click('#btnPieceSave');
   await o.page.waitForTimeout(400);
   const kept = (o.pieces[0] || {}).p_state || {};
@@ -314,12 +394,12 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('postcard: its own words kept with the card, photos by path', [o.pieces[0] && o.pieces[0].p_tool, o.pieces[0] && o.pieces[0].p_state.headline, noData(o.pieces[0] && o.pieces[0].p_state),
     (o.pieces[0] && o.pieces[0].p_state.photos || []).map(p => p.path)], ['postcard-listed', 'Open Sunday', true, ['Photos/Edited/02.jpg', 'Photos/Edited/01.jpg']]);
   check('postcard: this browser\'s saved card untouched', await o.page.evaluate(() => localStorage.getItem('gvc.postcard.state')), JSON.stringify({ headline: 'From this browser' }));
+  const pcp = await payload(o);
+  check('postcard: what prints is the listed card with two inline photos', [pcp.state.photos.length, /data:image/.test(JSON.stringify(pcp.state))], [2, true]);
+  check('postcard: built_from', [pcp.builtFrom.tool, pcp.builtFrom.photos.length, pcp.builtFrom.facts.price], ['postcard-listed', 2, 4450000]);
   await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(700);
-  check('postcard: Save PDF asks for the listed card with two inline photos', [o.helper[0] && o.helper[0].body.tool, o.helper[0] && o.helper[0].body.state.photos.length,
-    o.helper[0] && /data:image/.test(JSON.stringify(o.helper[0].body.state))], ['postcard-listed', 2, true]);
-  check('postcard: built_from', [o.pieces[1] && o.pieces[1].p_built_from.tool, o.pieces[1] && o.pieces[1].p_built_from.photos.length, o.pieces[1] && o.pieces[1].p_built_from.facts.price],
-    ['postcard-listed', 2, 4450000]);
+  await o.page.waitForTimeout(500);
+  check('postcard: Make PDF asks for the listed card', o.asks.map(a => [a.tool, a.property_id]), [['postcard-listed', 'p1']]);
   check('postcard: no page errors', o.errors, []);
   await o.ctx.close();
 
@@ -376,10 +456,10 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(800);
   check('seller on a pitch: a fact saves to the pitch', o.saves.map(x => [x.p_table, x.p_id, x.p_changes.map(c => c.field)]), [['pitches', 'q1', ['beds']]]);
-  check('seller on a pitch: the helper is asked with the pitch', [o.helper[0] && o.helper[0].body.pitchId, o.helper[0] && o.helper[0].body.propertyId, o.helper[0] && o.helper[0].body.tool], ['q1', undefined, 'seller']);
-  const pb = o.pieces[0] || {};
-  check('seller on a pitch: recorded on the pitch with the map it printed', [pb.p_table, pb.p_id, pb.p_built_from && pb.p_built_from.map && pb.p_built_from.map.path, pb.p_built_from && pb.p_built_from.photos.length],
-    ['pitches', 'q1', 'Marketing/Pitch/Map - 12 Sample Ln - 2026-10-20.png', 2]);
+  check('seller on a pitch: the helper is asked with the pitch', o.asks.map(a => [a.pitch_id, a.property_id, a.tool]), [['q1', undefined, 'seller']]);
+  const pb = await payload(o);
+  check('seller on a pitch: built from the pitch with the map it prints', [pb.builtFrom.map && pb.builtFrom.map.path, pb.builtFrom.photos.length, !!pb.state.map],
+    ['Marketing/Pitch/Map - 12 Sample Ln - 2026-10-20.png', 2, true]);
   check('seller on a pitch: no page errors', o.errors, []);
   await o.ctx.close();
   // Florida: the New Jersey wording, said
@@ -442,15 +522,14 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   await o.page.evaluate(() => { const s = JSON.parse(JSON.stringify(window.__piece.state)); s.photos.reverse(); s.photos[0].x = 11; window.__piece.set(s); });
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(700);
-  check('postcard: Make main records the photos in their new order, crops on the right file', [(o.pieces[0] || {}).p_built_from && o.pieces[0].p_built_from.photos.map(p => p.path),
+  const mm = await payload(o);
+  check('postcard: Make main records the photos in their new order, crops on the right file', [mm.builtFrom.photos.map(p => p.path),
     ((o.pieces[0] || {}).p_state || {}).photos && o.pieces[0].p_state.photos.map(p => [p.path, p.x])],
     [['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg'], [['Photos/Edited/01.jpg', 11], ['Photos/Edited/02.jpg', 50]]]);
   await o.ctx.close();
   o = await open(browser, { path: '/tools/seller-package/?listing=100-example-st-4a', prefix: 'Seller Package' });
   await o.page.evaluate(() => { const s = JSON.parse(JSON.stringify(window.__piece.state)); s.photos[2].role = 'exclude'; window.__piece.set(s); });
-  await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(700);
-  check('seller: an unused photo is recorded, flagged', ((o.pieces[0] || {}).p_built_from || { photos: [] }).photos.map(p => !!p.excluded), [false, false, true]);
+  check('seller: an unused photo is recorded, flagged', (await payload(o)).builtFrom.photos.map(p => !!p.excluded), [false, false, true]);
   await o.ctx.close();
   const commaRows = rowsFor(); commaRows.pitches[0].core.comps = [{ address: '7 Elm St, Red Bank' }];
   o = await mapPage({ rows: commaRows });
@@ -469,10 +548,10 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('sign from a job: no photos read', await o.page.evaluate(() => window.__driveLog.read.length), 0);
   await o.page.click('#btnPiecePdf');
   await o.page.waitForTimeout(700);
-  const hs = o.helper[0] || { body: {} };
-  check('sign: Save PDF asks for the sign', [hs.body.tool, hs.body.propertyId, hs.body.state && hs.body.state.kind], ['signage', 'p1', 'for-sale']);
-  const bfs = ((o.pieces[0] || {}).p_built_from) || {};
-  check('sign: built_from holds the agents and link', [bfs.tool, bfs.agents, bfs.listingUrl, ((o.pieces[0] || {}).p_output || {}).name], ['signage', ['john-gasdaska'], 'https://www.elliman.com/new-jersey/100-example-st/9001', 'For Sale Sign - 100 Example St 4A - 2026-10-22.pdf']);
+  check('sign: Make PDF asks for the sign', o.asks.map(a => [a.tool, a.property_id]), [['signage', 'p1']]);
+  const sp = await payload(o);
+  check('sign: what prints, and built_from with the agents and link', [sp.state.kind, sp.builtFrom.tool, sp.builtFrom.agents, sp.builtFrom.listingUrl],
+    ['for-sale', 'signage', ['john-gasdaska'], 'https://www.elliman.com/new-jersey/100-example-st/9001']);
   check('sign: no page errors', o.errors, []);
   await o.ctx.close();
   o = await open(browser, { path: '/tools/signage/' });

@@ -64,6 +64,12 @@ check('nothing at all', B.attention(null, null, TODAY), { over: [], noEstimate: 
 check('csv quotes what needs it', B.csv([{ name: 'Roofing, siding "and" gutters', section: 'Construction', startOn: null, dueOn: '2026-10-14', completed: false, milestone: false }]),
   'Work item,Section,Start,Target,Done,Milestone\r\n"Roofing, siding ""and"" gutters",Construction,,2026-10-14,no,no\r\n');
 
+check('current phase: the first open construction task, milestones skipped', B.currentPhase(schedule), { name: 'Site Work', section: 'Construction' });
+check('current phase: every phase done', B.currentPhase({ tasks: [{ gid: 'a', name: 'Framing', section: '3. Construction', completed: true }] }), null);
+check('current phase: no construction section falls back to the whole schedule',
+  B.currentPhase({ tasks: [{ gid: 'a', name: 'Design ', section: 'Planning', completed: false }] }), { name: 'Design', section: 'Planning' });
+check('section label drops the number', [B.sectionLabel('3. Construction'), B.sectionLabel('Closeout'), B.sectionLabel(null)], ['Construction', 'Closeout', '']);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

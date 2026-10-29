@@ -1,16 +1,18 @@
 /* ============================================================
-   JOB PAGE: a development's build (D109–D114).
+   JOB PAGE: a development's build (D109–D114), laid out as an overview.
 
-     GVC_JP.build.html(ctx)       → the Needs attention, Schedule and Budget cards
+     GVC_JP.build.html(ctx)       → the overview figures, the Schedule by phase
+                                    with Needs attention / Asana suggestions /
+                                    Next milestone beside it, then the Budget
      GVC_JP.build.wire(host, ctx) → their controls
 
    ctx.row.schedule is the 🚧 project's tasks from Asana (D110); ctx.budget is
    the development's dev_budgets row, or null (none linked, or a teammate's
-   sign-in, which can't read budgets: then the Budget card and the budget
-   half of Needs attention are left out). The owner links the pro-forma sheet
-   here: a version-checked write of dev_budgets, then the change-log row.
-   Figures and dates come from dev-build.js; all schedule dates are Asana's
-   tentative targets.
+   sign-in, which can't read budgets: then the budget figures, the Budget card
+   and the budget half of Needs attention are left out). The owner links the
+   pro-forma sheet here: a version-checked write of dev_budgets, then the
+   change-log row. Figures and dates come from dev-build.js; all schedule
+   dates are Asana's tentative targets.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -18,44 +20,100 @@
   var B = global.GVC_DEVBUILD;
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var STATUS = { done: 'Done', late: 'Past target', soon: 'Due in 14 days', open: 'Open', undated: 'No target date' };
-  var view = { mode: 'gantt', status: 'all', section: '', q: '' };   // kept across redraws
-  var upgrades = false, linking = false;
+  var LINES_SHOWN = 10;   // the Budget card's lines before "Show all"
+  // kept across redraws; section null = not chosen yet (opens on the construction section)
+  // shut: phase name → folded; a phase with every trade done starts folded
+  var view = { mode: 'gantt', status: 'all', section: null, q: '', shut: {} };
+  var upgrades = false, linking = false, allLines = false;
 
   var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); };
   var day = function (W, s) { return s ? W.fmtDay(s) + ' ' + s.slice(0, 4) : ''; };
+  var pctOf = function (a, b) { return b ? Math.round(a / b * 1000) / 10 : null; };
+  var meter = function (pct, cls) { return '<span class="ov-bar' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct || 0)).toFixed(1) + '%"></i></span>'; };
+  var readable = function (ctx) { return ctx.budget && ctx.budget.budget; };
+  var scoped = function (b) { var up = (b.lines || []).some(function (l) { return l.upgrade; }); return B.totals(b, upgrades && up); };
 
-  /* ---------- Needs attention ---------- */
-  function attentionHtml(ctx) {
-    var W = ctx.W, esc = ctx.esc, b = ctx.budget && ctx.budget.budget;
-    if (!ctx.row.schedule && !b) return '';
-    var a = B.attention(ctx.row.schedule, b, W.today()), groups = [];
-    var group = function (title, rows) {
-      if (rows.length) groups.push('<div class="at-g"><h3>' + esc(title) + ' <span class="n">' + rows.length + '</span></h3><ul class="at">' + rows.join('') + '</ul></div>');
+  /* ---------- Overview: the figures across the top ---------- */
+  function overviewHtml(ctx) {
+    var W = ctx.W, esc = ctx.esc, j = ctx.job, b = readable(ctx), items = ctx.row.schedule ? B.workItems(ctx.row.schedule) : null, tiles = [];
+    var tile = function (k, v, s, bar, cls) {
+      return '<div class="ov-t' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div>' + (bar || '') + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
     };
-    var row = function (name, text) { return '<li><b>' + esc(name) + '</b><span>' + esc(text) + '</span></li>'; };
-    group('Past target', a.late.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '. Not done in Asana.'); }));
-    group('Over estimate', a.over.map(function (o) {
-      return row(o.name, W.money(o.by) + ' over' + (o.pct != null ? ' (' + o.pct + '%)' : '') + '. ' + W.money(o.actual) + ' spent against ' + W.money(o.estimate) + '.');
-    }));
-    group('Spending with no estimate', a.noEstimate.map(function (o) { return row(o.name, W.money(o.actual) + ' spent; the sheet has no estimate.'); }));
-    group('Due in the next ' + B.SOON_DAYS + ' days', a.soon.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '.'); }));
-    if (a.unestimated.length) group('No estimate yet', [row(plural(a.unestimated.length, 'line'), a.unestimated.join(', ') + '.')]);
-    if (a.sheetDiff) {
-      group('Sheet total', [row('TOTAL row differs', 'The sheet says ' + W.money(a.sheetDiff.sheet) + ' ' + (a.sheetDiff.field === 'actual' ? 'spent' : 'estimated') +
-        '; its lines add up to ' + W.money(a.sheetDiff.sum) + '. This page uses the lines.')]);
+    if (b) {
+      var t = scoped(b), spent = pctOf(t.actual, t.estimate), over = t.remaining < 0;
+      tiles.push(tile('Total budget', W.money(t.estimate), (upgrades ? 'with upgrades, ' : 'base build, ') + plural(t.lines.length, 'line')));
+      tiles.push(tile('Spent to date', W.money(t.actual), spent != null ? spent + '% of the budget' : '', meter(spent, over ? 'over' : '')));
+      tiles.push(tile('Remaining', (over ? '−' : '') + W.money(Math.abs(t.remaining)), over ? 'over the budget' : spent != null ? Math.round((100 - spent) * 10) / 10 + '% of the budget left' : '', '', over ? 'over' : ''));
     }
-    if (a.missingReceipts) group('Receipts', [row(plural(a.missingReceipts, 'payment'), 'No receipt linked on the Expense_Tracker tab.')]);
-    return '<div class="card" id="attnCard"><div class="card-h"><div><h2>Needs attention</h2><p>From Asana\'s schedule' + (b ? ' and the pro-forma' : '') +
-      '. Construction dates are tentative targets.</p></div></div>' + (groups.join('') || '<p class="soft">Nothing needs attention.</p>') + '</div>';
+    if (items) {
+      var done = items.filter(function (x) { return x.completed; }).length;
+      tiles.push(tile('Work items', done + ' / ' + items.length, 'done in Asana', meter(pctOf(done, items.length))));
+    }
+    if (!b) {
+      if (j.next) tiles.push(tile('Next milestone', j.next.label, j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : '', '', j.next.overdue ? 'over' : ''));
+      if (items) {
+        var late = items.filter(function (x) { return B.statusOf(x, W.today()) === 'late'; }).length;
+        tiles.push(tile('Past target', String(late), late ? 'work items not done in Asana' : 'nothing late', '', late ? 'over' : ''));
+      }
+    }
+    return tiles.length ? '<div class="card ov" id="ovCard" data-collapse="off"><div class="ov-g">' + tiles.join('') + '</div></div>' : '';
   }
 
-  /* ---------- Schedule ---------- */
+  /* ---------- Needs attention: a count per kind, each opening its list ---------- */
+  function attentionHtml(ctx) {
+    var W = ctx.W, esc = ctx.esc, b = readable(ctx);
+    if (!ctx.row.schedule && !b) return '';
+    var a = B.attention(ctx.row.schedule, b, W.today()), groups = [];
+    var group = function (title, count, rows, warn) {
+      if (rows.length) groups.push('<details class="at-d"><summary><span>' + esc(title) + '</span><b class="' + (warn ? 'warn' : '') + '">' + esc(count) + '</b></summary><ul class="at">' + rows.join('') + '</ul></details>');
+    };
+    var row = function (name, text) { return '<li><b>' + esc(name) + '</b><span>' + esc(text) + '</span></li>'; };
+    group('Past target', plural(a.late.length, 'item'), a.late.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '. Not done in Asana.'); }), true);
+    group('Over estimate', plural(a.over.length, 'line'), a.over.map(function (o) {
+      return row(o.name, W.money(o.by) + ' over' + (o.pct != null ? ' (' + o.pct + '%)' : '') + '. ' + W.money(o.actual) + ' spent against ' + W.money(o.estimate) + '.');
+    }), true);
+    group('Spending with no estimate', plural(a.noEstimate.length, 'line'), a.noEstimate.map(function (o) { return row(o.name, W.money(o.actual) + ' spent; the sheet has no estimate.'); }), true);
+    group('Due in the next ' + B.SOON_DAYS + ' days', plural(a.soon.length, 'item'), a.soon.map(function (t) { return row(t.name, 'Target ' + day(W, t.dueOn) + (t.parentName ? ' · ' + t.parentName : '') + '.'); }));
+    if (a.unestimated.length) group('No estimate yet', plural(a.unestimated.length, 'line'), [row(plural(a.unestimated.length, 'line'), a.unestimated.join(', ') + '.')]);
+    if (a.sheetDiff) {
+      group('Sheet total', 'Differs', [row('TOTAL row differs', 'The sheet says ' + W.money(a.sheetDiff.sheet) + ' ' + (a.sheetDiff.field === 'actual' ? 'spent' : 'estimated') +
+        '; its lines add up to ' + W.money(a.sheetDiff.sum) + '. This page uses the lines.')], true);
+    }
+    if (a.missingReceipts) group('Receipts missing', plural(a.missingReceipts, 'payment'), [row(plural(a.missingReceipts, 'payment'), 'No receipt linked on the Expense_Tracker tab.')]);
+    return '<div class="card" id="attnCard" data-open><div class="card-h"><div><h2>Needs attention</h2><p>From Asana\'s schedule' + (b ? ' and the pro-forma' : '') +
+      '. Open a line to see each item.</p></div></div>' + (groups.join('') || '<p class="soft">Nothing needs attention.</p>') + '</div>';
+  }
+
+  /* ---------- Next milestone ---------- */
+  function nextHtml(ctx) {
+    var W = ctx.W, esc = ctx.esc, j = ctx.job;
+    if (!j.next && !j.progress) return '';
+    return '<div class="card" id="nextCard" data-collapse="off"><div class="nx-k">Next milestone</div>' +
+      (j.next ? '<div class="nx-v">' + esc(j.next.label) + '</div><div class="nx-s' + (j.next.overdue ? ' over' : '') + '">' + esc(j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : 'No target date yet') + '</div>'
+        : '<div class="nx-s">None open.</div>') +
+      (j.progress ? '<div class="nx-s">' + esc(j.progress.done + ' of ' + j.progress.total + ' milestones confirmed') + '</div>' : '') + '</div>';
+  }
+
+  /* ---------- Schedule, grouped by phase ---------- */
   function shown(items, today) {
     var q = view.q.trim().toLowerCase();
     return items.filter(function (t) {
       return (view.status === 'all' || B.statusOf(t, today) === view.status) && (!view.section || t.section === view.section) &&
         (!q || (t.name + ' ' + (t.parentName || '')).toLowerCase().indexOf(q) !== -1);
     });
+  }
+  /* rows → [{ phase: name | null, rows }] in the order of each phase's own task in the schedule
+     (Asana lists the top tasks before their subtasks); a work item with no parent stands alone */
+  function phases(rows, tasks) {
+    var pos = {}, out = [], at = {};
+    tasks.forEach(function (t, i) { pos[t.gid] = i; });
+    rows.forEach(function (t) {
+      var k = t.parentName || null;
+      if (k == null) { out.push({ phase: null, rows: [t], at: pos[t.gid] }); return; }
+      if (!(k in at)) { at[k] = out.length; out.push({ phase: k, rows: [], at: t.parentGid in pos ? pos[t.parentGid] : pos[t.gid] }); }
+      out[at[k]].rows.push(t);
+    });
+    return out.sort(function (a, b) { return a.at - b.at; });
   }
 
   function gantt(ctx, rows, today) {
@@ -65,23 +123,41 @@
     // four days either side, so the first milestone and the last bar sit clear of the edges
     var t0 = Date.parse(dates[0]) - 4 * 864e5, t1 = Date.parse(dates[dates.length - 1]) + 5 * 864e5, span = t1 - t0;
     var at = function (d) { return ((Date.parse(d) - t0) / span * 100).toFixed(2) + '%'; };
+    var wide = function (from, to) { return 'calc(' + ((Date.parse(to) + 864e5 - Date.parse(from)) / span * 100).toFixed(2) + '% + 2px)'; };
     var ticks = [], m = new Date(t0);
     m.setUTCDate(1);
     for (m.setUTCMonth(m.getUTCMonth() + 1); m.getTime() < t1; m.setUTCMonth(m.getUTCMonth() + 1)) {
       var mo = m.getUTCMonth();
       ticks.push('<span style="left:' + at(m.toISOString().slice(0, 10)) + '">' + MON[mo] + (mo === 0 ? ' ' + m.getUTCFullYear() : '') + '</span>');
     }
+    var item = function (t, inPhase) {
+      var s = B.statusOf(t, today), from = t.startOn || t.dueOn, mark = '';
+      if (t.milestone && t.dueOn) mark = '<i class="g-ms" style="left:' + at(t.dueOn) + '"></i>';
+      else if (from && t.dueOn) mark = '<i class="g-bar" style="left:' + at(from) + ';width:' + wide(from, t.dueOn) + '"></i>';
+      var when = [t.startOn ? 'start ' + day(ctx.W, t.startOn) : '', t.dueOn ? 'target ' + day(ctx.W, t.dueOn) : ''].filter(Boolean).join(', ');
+      // a trade's status shows as its bar's colour (the key says which); only a trade with no bar gets a word
+      var sub = inPhase ? (s === 'undated' ? STATUS[s] : '') : [t.section ? B.sectionLabel(t.section) : '', STATUS[s]].filter(Boolean).join(' · ');
+      return '<div class="g-row s-' + s + (inPhase ? ' in' : '') + '" role="listitem"><div class="g-name">' + (/^https:\/\//.test(t.link || '') ? '<a href="' + esc(t.link) + '" target="_blank" rel="noopener">' + esc(t.name) + '</a>' : esc(t.name)) +
+        (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>' +
+        '<div class="g-track" title="' + esc(when || 'No dates in Asana') + '"><span class="sr">' + esc(when || 'No dates in Asana') + '</span>' + mark + '</div></div>';
+    };
+    var filtered = view.status !== 'all' || view.q.trim();   // a filter opens every phase it matches
+    var body = phases(rows, (ctx.row.schedule || {}).tasks || []).map(function (g) {
+      if (g.phase == null) return item(g.rows[0], false);
+      var ds = [], done = g.rows.filter(function (t) { return t.completed; }).length;
+      g.rows.forEach(function (t) { [t.startOn, t.dueOn].forEach(function (d) { if (d) ds.push(d); }); });
+      ds.sort();
+      var late = g.rows.filter(function (t) { return B.statusOf(t, today) === 'late'; }).length;
+      var shut = !filtered && (g.phase in view.shut ? view.shut[g.phase] : done === g.rows.length);
+      var note = done === g.rows.length ? 'All ' + g.rows.length + ' done' : done + ' of ' + g.rows.length + ' done' + (late ? ', ' + late + ' past target' : '');
+      return '<div class="g-ph' + (late ? ' late' : '') + (done === g.rows.length ? ' done' : '') + '" role="listitem"><div class="g-name"><button type="button" class="g-tog" data-phase="' + esc(g.phase) + '" aria-expanded="' + !shut + '">' +
+        esc(g.phase) + '</button><small>' + esc(note) + '</small></div>' +
+        '<div class="g-track">' + (ds.length ? '<i class="g-span" style="left:' + at(ds[0]) + ';width:' + wide(ds[0], ds[ds.length - 1]) + '"></i>' : '') + '</div></div>' +
+        (shut ? '' : g.rows.map(function (t) { return item(t, true); }).join(''));
+    }).join('');
     return '<div class="gantt-wrap"><div class="gantt" role="list" aria-label="Schedule, ' + plural(rows.length, 'work item') + '">' +
-      '<div class="g-head" aria-hidden="true"><span class="g-name">Work item</span><div class="g-track">' + ticks.join('') + '</div></div>' +
-      '<div class="g-body"><i class="g-today" style="--f:' + ((Date.parse(today) - t0) / span).toFixed(4) + '" aria-hidden="true"></i>' + rows.map(function (t) {
-        var s = B.statusOf(t, today), from = t.startOn || t.dueOn, mark = '';
-        if (t.milestone && t.dueOn) mark = '<i class="g-ms" style="left:' + at(t.dueOn) + '"></i>';
-        else if (from && t.dueOn) mark = '<i class="g-bar" style="left:' + at(from) + ';width:calc(' + ((Date.parse(t.dueOn) + 864e5 - Date.parse(from)) / span * 100).toFixed(2) + '% + 2px)"></i>';
-        var when = [t.startOn ? 'start ' + day(ctx.W, t.startOn) : '', t.dueOn ? 'target ' + day(ctx.W, t.dueOn) : ''].filter(Boolean).join(', ');
-        return '<div class="g-row s-' + s + '" role="listitem"><div class="g-name">' + (/^https:\/\//.test(t.link || '') ? '<a href="' + esc(t.link) + '" target="_blank" rel="noopener">' + esc(t.name) + '</a>' : esc(t.name)) +
-          '<small>' + esc([t.parentName || t.section, STATUS[s]].filter(Boolean).join(' · ')) + '</small></div>' +
-          '<div class="g-track" title="' + esc(when || 'No dates in Asana') + '"><span class="sr">' + esc(when || 'No dates in Asana') + '</span>' + mark + '</div></div>';
-      }).join('') + '</div></div></div>';
+      '<div class="g-head" aria-hidden="true"><span class="g-name">Phase and trade</span><div class="g-track">' + ticks.join('') + '</div></div>' +
+      '<div class="g-body"><i class="g-today" style="--f:' + ((Date.parse(today) - t0) / span).toFixed(4) + '" aria-hidden="true"></i>' + body + '</div></div></div>';
   }
 
   function list(ctx, rows, today) {
@@ -90,71 +166,73 @@
     return '<div class="tbl-wrap"><table class="tbl sched"><thead><tr><th>Work item</th><th>Start</th><th>Target</th><th>Status</th><th>Waits on</th></tr></thead><tbody>' +
       rows.map(function (t) {
         var s = B.statusOf(t, today);
-        return '<tr><td>' + esc(t.name) + '<small>' + esc(t.parentName || t.section || '') + '</small></td><td class="m">' + esc(day(W, t.startOn)) + '</td><td class="m">' + esc(day(W, t.dueOn)) +
+        return '<tr><td>' + esc(t.name) + '<small>' + esc(t.parentName || B.sectionLabel(t.section)) + '</small></td><td class="m">' + esc(day(W, t.startOn)) + '</td><td class="m">' + esc(day(W, t.dueOn)) +
           '</td><td><span class="chip s-' + s + '">' + esc(STATUS[s]) + '</span></td><td>' + esc((t.deps || []).map(function (g) { return names[g]; }).filter(Boolean).join(', ')) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
 
   function scheduleHtml(ctx) {
     var esc = ctx.esc, j = ctx.job, today = ctx.W.today();
-    var head = '<div class="card-h"><div><h2>Schedule</h2><p>From the 🚧 Asana project. Every date is a tentative target.</p></div>' +
+    var head = '<div class="card-h"><div><h2>Schedule</h2><p>Each phase with its trades, from the 🚧 Asana project. Every date is a tentative target.</p></div>' +
       (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open in Asana</a>' : '') + '</div>';
-    if (!ctx.row.schedule) return '<div class="card" id="schedCard">' + head + '<p class="soft">' + (ctx.row.asana_project_gid ? 'The next Asana read brings the schedule in.' : 'Link the development\'s 🚧 Asana project to see its schedule.') + '</p></div>';
-    var items = B.workItems(ctx.row.schedule), rows = shown(items, today), done = items.filter(function (t) { return t.completed; }).length;
+    if (!ctx.row.schedule) return '<div class="card" id="schedCard" data-open>' + head + '<p class="soft">' + (ctx.row.asana_project_gid ? 'The next Asana read brings the schedule in.' : 'Link the development\'s 🚧 Asana project to see its schedule.') + '</p></div>';
+    var items = B.workItems(ctx.row.schedule);
     var sections = items.map(function (t) { return t.section; }).filter(function (s, i, a) { return s && a.indexOf(s) === i; });
+    if (view.section === null) view.section = sections.filter(function (s) { return /construction/i.test(s); })[0] || '';
+    if (view.section && sections.indexOf(view.section) === -1) view.section = '';
+    var inSection = items.filter(function (t) { return !view.section || t.section === view.section; });
+    var rows = shown(items, today), done = inSection.filter(function (t) { return t.completed; }).length;
     var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; };
-    return '<div class="card" id="schedCard">' + head +
-      '<p class="sched-n"><b>' + done + '</b> of ' + plural(items.length, 'work item') + ' done in Asana</p>' +
+    return '<div class="card" id="schedCard" data-open>' + head +
+      '<p class="sched-n"><b>' + done + '</b> of ' + plural(inSection.length, 'work item') + ' done in Asana' + (view.section ? ' · ' + esc(B.sectionLabel(view.section)) : '') + '</p>' +
       '<div class="sched-f"><div class="seg" role="group" aria-label="View">' + ['gantt', 'list'].map(function (m) {
-        return '<button type="button" data-view="' + m + '" aria-pressed="' + (view.mode === m) + '">' + (m === 'gantt' ? 'Gantt' : 'List') + '</button>';
+        return '<button type="button" data-view="' + m + '" aria-pressed="' + (view.mode === m) + '">' + (m === 'gantt' ? 'Timeline' : 'List') + '</button>';
       }).join('') + '</div>' +
-      '<input class="inp" type="search" id="schedQ" placeholder="Find a work item" aria-label="Find a work item" value="' + esc(view.q) + '">' +
+      (sections.length > 1 ? '<select class="inp" id="schedSec" aria-label="Phase">' + opt('', 'Every phase', view.section) + sections.map(function (s) { return opt(s, B.sectionLabel(s), view.section); }).join('') + '</select>' : '') +
       '<select class="inp" id="schedS" aria-label="Status">' + opt('all', 'Every status', view.status) + Object.keys(STATUS).map(function (k) { return opt(k, STATUS[k], view.status); }).join('') + '</select>' +
-      (sections.length > 1 ? '<select class="inp" id="schedSec" aria-label="Section">' + opt('', 'Every section', view.section) + sections.map(function (s) { return opt(s, s, view.section); }).join('') + '</select>' : '') +
+      '<input class="inp" type="search" id="schedQ" placeholder="Find a trade" aria-label="Find a work item" value="' + esc(view.q) + '">' +
       '<button class="b sm" type="button" id="schedCsv">Export CSV</button></div>' +
       (rows.length ? (view.mode === 'gantt' ? gantt(ctx, rows, today) : list(ctx, rows, today)) : '<p class="soft">No work item matches.</p>') +
       (view.mode === 'gantt' && rows.length ? '<p class="g-key"><span class="k-done">Done</span><span class="k-open">Open</span><span class="k-late">Past target</span><span class="k-ms">Milestone</span><span class="k-today">Today</span></p>' : '') +
       '</div>';
   }
 
-  /* ---------- Budget ---------- */
+  /* ---------- Budget: each line's spending against its estimate ---------- */
   function linkForm(ctx, again) {
     return '<form class="blink" id="budgetLink"><label for="budgetSheet">Pro-forma sheet link</label><div><input class="inp" id="budgetSheet" type="text" inputmode="url" autocomplete="off" required placeholder="https://docs.google.com/spreadsheets/d/…"' +
       ' value="' + ctx.esc(again ? 'https://docs.google.com/spreadsheets/d/' + ctx.budget.sheet_id + '/edit' : '') + '">' +
       '<button class="b primary sm" type="submit">' + (again ? 'Save' : 'Link sheet') + '</button>' + (again ? '<button class="b sm" type="button" id="budgetCancel">Cancel</button>' : '') + '</div>' +
-      '<p class="soft">Share the sheet as Viewer with the helper\'s Google account first. Only the Hard Costs table and the Expense_Tracker tab are kept.</p>' +
+      '<p class="soft">The helper reads it signed in as Matt, so the sheet must open in Matt\'s Google account. Only the Hard Costs table and the Expense_Tracker tab are kept.</p>' +
       '<p class="fmsg" id="budgetMsg" role="alert"></p></form>';
   }
 
   function budgetHtml(ctx) {
     var W = ctx.W, esc = ctx.esc, row = ctx.budget, b = row && row.budget;
     if (!row && !ctx.canEdit) return '';
-    var head = '<div class="card-h"><div><h2>Budget</h2><p>' + (b && b.title ? 'From ' + esc(b.title) + '. ' : 'From the developer\'s pro-forma sheet. ') +
+    var head = '<div class="card-h"><div><h2>Budget</h2><p>' + (b && b.title ? 'Spent against estimate, line by line, from ' + esc(b.title) + '. ' : 'From the developer\'s pro-forma sheet. ') +
       'Seen by Matt and admins only.</p></div>' + (row ? '<a class="b sm" href="https://docs.google.com/spreadsheets/d/' + esc(row.sheet_id) + '/edit" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open sheet</a>' : '') + '</div>';
-    if (!row || linking) return '<div class="card" id="budgetCard">' + head + linkForm(ctx, !!row) + '</div>';
+    if (!row || linking) return '<div class="card" id="budgetCard" data-open>' + head + linkForm(ctx, !!row) + '</div>';
     var foot = '<p class="b-foot">' + (row.synced_at ? 'Read ' + esc(W.fmtWhen(row.synced_at)) : 'Linked; the helper reads it within the hour') +
       (ctx.canEdit ? ' · <button class="link" type="button" id="budgetChange">Change sheet</button>' : '') + '</p>';
     var err = row.error ? '<p class="fw" role="alert">' + esc(row.error) + (b ? ' Showing the last good read.' : '') + '</p>' : '';
-    if (!b) return '<div class="card" id="budgetCard">' + head + err + foot + '</div>';
-    var hasUp = (b.lines || []).some(function (l) { return l.upgrade; }), t = B.totals(b, upgrades && hasUp);
-    var tile = function (k, v, s) { return '<div><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>'; };
-    var pct = t.estimate ? Math.round(t.actual / t.estimate * 1000) / 10 : null;
-    var lines = t.lines.slice().sort(function (x, y) { return (Number(y.actual) || 0) - (Number(x.actual) || 0); });
-    return '<div class="card" id="budgetCard">' + head + err +
+    if (!b) return '<div class="card" id="budgetCard" data-open>' + head + err + foot + '</div>';
+    var hasUp = (b.lines || []).some(function (l) { return l.upgrade; }), t = scoped(b);
+    var num = function (v) { return Number(v) || 0; };
+    var lines = t.lines.slice().sort(function (x, y) { return num(y.actual) - num(x.actual) || num(y.estimate) - num(x.estimate); });
+    var shownLines = allLines ? lines : lines.slice(0, LINES_SHOWN);
+    return '<div class="card" id="budgetCard" data-open>' + head + err +
       (hasUp ? '<div class="seg b-scope" role="group" aria-label="Budget scope"><button type="button" data-up="0" aria-pressed="' + !upgrades + '">Base build</button>' +
         '<button type="button" data-up="1" aria-pressed="' + upgrades + '">With upgrades</button></div>' : '') +
-      '<div class="facts b-tiles">' + tile('Estimate', W.money(t.estimate), plural(t.lines.length, 'line')) + tile('Spent', W.money(t.actual), pct != null ? pct + '% of the estimate' : '') +
-      tile('Remaining', (t.remaining < 0 ? '−' : '') + W.money(Math.abs(t.remaining)), t.remaining < 0 ? 'over the estimate' : 'estimate less spent') +
-      tile('Payments', String(t.payments), t.missingReceipts ? t.missingReceipts + ' without a receipt' : 'all with receipts') + '</div>' +
-      '<div class="tbl-wrap"><table class="tbl blines"><thead><tr><th>Line</th><th class="r">Estimate</th><th class="r">Spent</th><th class="r">Remaining</th></tr></thead><tbody>' +
-      lines.map(function (l) {
-        var left = l.estimate != null ? l.estimate - (Number(l.actual) || 0) : null, over = left != null && left < 0;
-        var fill = l.estimate ? Math.min(100, (Number(l.actual) || 0) / l.estimate * 100) : 0;
-        return '<tr' + (over ? ' class="over"' : '') + '><td>' + esc(l.name) + (l.upgrade ? ' <span class="chip">Upgrade</span>' : '') +
-          (l.estimate ? '<span class="bbar" aria-hidden="true"><i style="width:' + fill.toFixed(1) + '%"></i></span>' : '') + '</td>' +
-          '<td class="r m">' + (l.estimate != null ? esc(W.money(l.estimate)) : '<span class="soft">None</span>') + '</td><td class="r m">' + esc(W.money(l.actual)) +
-          '</td><td class="r m">' + (left == null ? '' : esc((over ? '−' : '') + W.money(Math.abs(left)))) + '</td></tr>';
-      }).join('') + '</tbody></table></div>' +
+      '<p class="b-sum"><span>' + esc(W.money(t.actual)) + ' spent of ' + esc(W.money(t.estimate)) + '</span><span>' + esc(plural(t.lines.length, 'line')) + ', most spent first</span></p>' +
+      '<ul class="blines">' + shownLines.map(function (l) {
+        var spent = num(l.actual), left = l.estimate != null ? l.estimate - spent : null, over = left != null && left < 0;
+        var fig = l.estimate != null ? W.money(spent) + ' of ' + W.money(l.estimate) : spent ? W.money(spent) + ', no estimate' : 'No estimate';
+        var note = over ? W.money(-left) + ' over' : left != null ? (spent ? W.money(left) + ' left' : 'Nothing spent yet') : '';
+        return '<li' + (over ? ' class="over"' : '') + '><div class="bl-t"><span class="bl-n">' + esc(l.name) + (l.upgrade ? ' <span class="chip">Upgrade</span>' : '') + '</span>' +
+          '<span class="bl-f">' + esc(fig) + '</span></div>' + meter(l.estimate ? spent / l.estimate * 100 : 0, over ? 'over' : '') +
+          (note ? '<div class="bl-s">' + esc(note) + '</div>' : '') + '</li>';
+      }).join('') + '</ul>' +
+      (lines.length > LINES_SHOWN ? '<button class="b sm bl-more" type="button" id="budgetAll">' + (allLines ? 'Show the top ' + LINES_SHOWN : 'Show all ' + lines.length + ' lines') + '</button>' : '') +
       ((b.payments || []).length ? '<details class="pays"><summary>' + plural(b.payments.length, 'payment') + '</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Category</th><th>Vendor</th><th>Description</th><th class="r">Amount</th><th>Receipt</th></tr></thead><tbody>' +
         b.payments.slice().sort(function (x, y) { return (y.date || '') < (x.date || '') ? -1 : (y.date || '') > (x.date || '') ? 1 : 0; }).map(function (p) {
           return '<tr><td class="m">' + esc(day(W, p.date)) + '</td><td>' + esc(p.category || '') + '</td><td>' + esc(p.vendor || '') + '</td><td>' + esc(p.description || '') +
@@ -163,7 +241,10 @@
   }
 
   function html(ctx) {
-    return '<div id="attnHost">' + attentionHtml(ctx) + '</div><div id="schedHost">' + scheduleHtml(ctx) + '</div><div id="budgetHost">' + budgetHtml(ctx) + '</div>';
+    return '<div id="ovHost">' + overviewHtml(ctx) + '</div>' +
+      '<div class="dv-main"><div id="schedHost">' + scheduleHtml(ctx) + '</div>' +
+      '<div class="dv-side"><div id="attnHost">' + attentionHtml(ctx) + '</div><div id="hintsHost">' + JP.dev.hintsHtml(ctx) + '</div>' + nextHtml(ctx) + '</div></div>' +
+      '<div id="budgetHost">' + budgetHtml(ctx) + '</div>';
   }
 
   /* the sheet id from a pasted link (…/spreadsheets/d/<id>/…) or the id itself */
@@ -192,12 +273,20 @@
   function wire(host, ctx) {
     var $ = function (id) { return host.querySelector('#' + id); };
     var redrawSchedule = function () { $('schedHost').innerHTML = scheduleHtml(ctx); wireSchedule(); };
-    var redrawBudget = function () { $('budgetHost').innerHTML = budgetHtml(ctx); wireBudget(); };
+    // the overview's figures follow the Budget card's scope
+    var redrawBudget = function () { $('budgetHost').innerHTML = budgetHtml(ctx); $('ovHost').innerHTML = overviewHtml(ctx); wireBudget(); };
 
     function wireSchedule() {
       var card = $('schedCard');
       if (!card || !$('schedS')) return;
       card.querySelectorAll('[data-view]').forEach(function (b) { b.addEventListener('click', function () { view.mode = b.dataset.view; redrawSchedule(); }); });
+      card.querySelectorAll('[data-phase]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          view.shut[b.dataset.phase] = b.getAttribute('aria-expanded') === 'true'; redrawSchedule();
+          var again = card.ownerDocument.querySelector('#schedCard [data-phase="' + CSS.escape(b.dataset.phase) + '"]');
+          if (again) again.focus();
+        });
+      });
       $('schedS').addEventListener('change', function (e) { view.status = e.target.value; redrawSchedule(); });
       if ($('schedSec')) $('schedSec').addEventListener('change', function (e) { view.section = e.target.value; redrawSchedule(); });
       $('schedQ').addEventListener('input', function (e) {
@@ -218,6 +307,7 @@
       var card = $('budgetCard');
       if (!card) return;
       card.querySelectorAll('[data-up]').forEach(function (b) { b.addEventListener('click', function () { upgrades = b.dataset.up === '1'; redrawBudget(); }); });
+      if ($('budgetAll')) $('budgetAll').addEventListener('click', function () { allLines = !allLines; redrawBudget(); });
       if ($('budgetChange')) $('budgetChange').addEventListener('click', function () { linking = true; redrawBudget(); });
       if ($('budgetCancel')) $('budgetCancel').addEventListener('click', function () { linking = false; redrawBudget(); });
       var form = $('budgetLink');
@@ -232,6 +322,7 @@
 
     wireSchedule();
     wireBudget();
+    JP.dev.wireHints($('hintsHost'), ctx);
   }
 
   JP.build = { html: html, wire: wire };

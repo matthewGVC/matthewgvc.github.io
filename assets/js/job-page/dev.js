@@ -1,8 +1,10 @@
 /* ============================================================
    JOB PAGE: a development's milestones (spec §2.9, S10, D66, D67).
 
-     GVC_JP.dev.html(ctx)       → the Milestones card and Asana's suggestions
-     GVC_JP.dev.wire(host, ctx) → their clicks
+     GVC_JP.dev.html(ctx)            → the Milestones card
+     GVC_JP.dev.wire(host, ctx)      → its ticks
+     GVC_JP.dev.hintsHtml(ctx)       → Asana's suggestions (the build overview places it)
+     GVC_JP.dev.wireHints(host, ctx) → their ✓ / ✗
 
    D66's 18 milestones, each with its date and its slips ("re-dated 2 times,
    +9 days", from next_milestone.slips keyed by the Asana task gid). The
@@ -33,7 +35,7 @@
     if (j.next) nx.push('<span class="dmk planned' + (j.next.overdue ? ' over' : '') + '">' + esc('Next: ' + j.next.label + (j.next.on ? ', ' + W.fmtDay(j.next.on) : '') + (j.next.overdue ? ' (overdue)' : '')) + '</span>');
     if (j.slips) nx.push('<span>' + esc('Milestones re-dated ' + j.slips + ' time' + (j.slips === 1 ? '' : 's')) + '</span>');
     if (j.construction) nx.push('<span>' + esc('Construction ' + j.construction.done + ' of ' + j.construction.total) + '</span>');
-    return '<div class="card"><div class="card-h"><div><h2>Milestones</h2><p>Confirmed by Matt. What Asana suggests waits below until it is confirmed.' +
+    return '<div class="card" id="msCard"><div class="card-h"><div><h2>Milestones</h2><p>Confirmed by Matt. What Asana suggests waits under Asana suggestions until it is confirmed.' +
       (ctx.canEdit ? ' Tick one by hand with the day it happened.' : '') + '</p></div>' +
       (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') + '</div>' +
       '<div class="dates" id="devNext" style="margin:0 0 10px">' + (nx.join('') || '<span>No next milestone yet.</span>') + '</div>' +
@@ -56,14 +58,14 @@
         }
         return '<li data-ms="' + k + '"><span class="dt' + (x.done ? ' m' : '') + '"></span><div>' + esc(W.DEV_LABEL[k]) +
           sub.map(function (s) { return '<small>' + esc(s) + '</small>'; }).join('') + '</div><span class="mr"><span class="w">' + esc(w) + '</span>' + act + '</span></li>';
-      }).join('') + '</ul></div>' + hintsCard(ctx);
+      }).join('') + '</ul></div>';
   }
 
   /* S13 (Slice 2): Asana's suggestions, each confirmed or turned down by hand */
   function hintsCard(ctx) {
     var W = ctx.W, esc = ctx.esc, hs = ctx.row.milestone_hints || [];
     if (!hs.length || !ctx.canEdit) return '';                  // the owner reviews them
-    return '<div class="card" style="margin-top:24px"><div class="card-h"><div><h2>Suggested from Asana</h2><p>' + hs.length + ' milestone' + (hs.length === 1 ? '' : 's') + ' to review. ✓ makes it a milestone with this date; ✗ turns it down and Asana won\'t suggest it again.</p></div></div>' +
+    return '<div class="card" id="hintsCard"><div class="card-h"><div><h2>Asana suggestions <span class="n">' + hs.length + '</span></h2><p>' + hs.length + ' milestone' + (hs.length === 1 ? '' : 's') + ' to review. ✓ makes it a milestone with this date; ✗ turns it down and Asana won\'t suggest it again.</p></div></div>' +
       '<p id="hintMsg" role="alert" style="color:var(--danger);font-size:13px;min-height:1.2em;margin:0 0 6px"></p><ul class="log" id="hints">' + hs.map(function (h, i) {
         return '<li style="grid-template-columns:14px 1fr auto"><span class="dt"></span><div>' + esc(W.DEV_LABEL[h.key] || h.key) + ', ' + (h.approx ? 'about ' : '') + esc(W.fmtDay(h.date) + ' ' + String(h.date || '').slice(0, 4)) +
           '<small>' + esc(h.source || 'Asana') + '</small></div><span class="hint-b"><button class="b sm" type="button" data-ok="' + i + '" aria-label="Confirm ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✓</button>' +
@@ -110,14 +112,17 @@
     });
   }
 
-  function wire(host, ctx) {
-    var W = ctx.W, r = ctx.row;
-    var redraw = function () { host.innerHTML = html(ctx); wire(host, ctx); };
-    var hints = host.querySelector('#hints');
+  function wireHints(host, ctx) {
+    var hints = host && host.querySelector('#hints');
     if (hints) hints.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       if (b.dataset.ok != null) saveHint(ctx, +b.dataset.ok, true); else if (b.dataset.no != null) saveHint(ctx, +b.dataset.no, false);
     });
+  }
+
+  function wire(host, ctx) {
+    var W = ctx.W, r = ctx.row;
+    var redraw = function () { host.innerHTML = html(ctx); wire(host, ctx); };
     var msg = host.querySelector('#msMsg');
     var save = function (key, next, note) {
       host.querySelectorAll('#msList button').forEach(function (b) { b.disabled = true; });
@@ -154,5 +159,5 @@
     });
   }
 
-  JP.dev = { html: html, wire: wire, slipsOf: slipsOf };
+  JP.dev = { html: html, wire: wire, hintsHtml: hintsCard, wireHints: wireHints, slipsOf: slipsOf };
 })(window);

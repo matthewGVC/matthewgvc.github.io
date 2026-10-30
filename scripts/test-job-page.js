@@ -274,8 +274,9 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   s = t.saves[5] || {};
   check('note: a change with no field', [s.p_table, JSON.stringify(s.p_set), (s.p_changes || []).map(c => [c.field, c.note, c.asked_by])],
     ['properties', '{}', [[null, 'Katie says the price drops Friday', 'Katie Cook']]]);
-  // the header (tune-ups 3): Link Google Drive / Asana / DE, green Relink once linked; no Copy or Archive buttons
-  check('header: Open in Asana, no copy or archive buttons', [await p.$eval('#asanaLink', a => a.getAttribute('href')), await p.$$eval('#copyLink, #copy, #archive', e => e.length)], ['https://app.asana.com/0/1/1201', 0]);
+  // the header (tune-ups 3): Link Google Drive / Asana / DE, green Relink once linked; no Copy button; Archive is back (Matt, 10-30)
+  check('header: Open in Asana, no copy button, an Archive button', [await p.$eval('#asanaLink', a => a.getAttribute('href')), await p.$$eval('#copyLink, #copy', e => e.length), await text(p, '#archive')],
+    ['https://app.asana.com/0/1/1201', 0, 'Archive']);
   check('header: the three link buttons', await p.$$eval('.acts .lk', bs => bs.map(b => [b.id, b.textContent.trim(), b.classList.contains('ok')])),
     [['link', 'Relink Google Drive', true], ['linkAsana', 'Relink Asana', true], ['linkDe', 'Relink DE', true]]);
   check('facts: no page errors after saving', t.errors, []);
@@ -378,16 +379,26 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('dev: no ticks for a teammate', await t.page.$$eval('[data-tick], [data-untick]', e => e.length), 0);
   check('archive: no button for a teammate', await t.page.$('#archive'), null);
   await t.ctx.close();
-  /* ---------- archive (0018): a development, by archived_at; listings keep no header button (tune-ups 3) ---------- */
+  /* ---------- archive: a development by archived_at (0018), a listing by its stage; a click asks first ---------- */
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
   p = t.page;
-  check('archive: a development offers Archive', await text(p, '#archive'), 'Archive');
-  p.once('dialog', d => d.accept());
+  check('archive: a development offers Archive, with its icon', [await text(p, '#archive'), await p.$$eval('#archive svg', e => e.length)], ['Archive', 1]);
+  await p.click('#archive');
+  check('archive: the first click only asks', [await text(p, '#archive'), t.saves.length, (await text(p, '#actMsg')).startsWith('Click again to archive')], ['Confirm archive?', 0, true]);
   await p.click('#archive');
   await settle(p);
   s = t.saves[0] || {};
   check('archive: a development saves archived true, logged', [s.p_table, s.p_set, (s.p_changes || []).map(c => [c.field, c.old_value, c.new_value])],
     ['dev_projects', { archived: true }, [['archived', false, true]]]);
+  await t.ctx.close();
+  t = await open(browser, { path: LISTING });
+  p = t.page;
+  await p.click('#archive');
+  await p.click('#archive');
+  await settle(p);
+  s = t.saves[0] || {};
+  check('archive: a listing saves the Archived stage, logged', [s.p_table, s.p_set, (s.p_changes || []).map(c => [c.field, c.new_value])],
+    ['properties', { stage: 'Archived' }, [['stage', 'Archived']]]);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?pitch=90-pitch-st-11b' });
   check('archive: a pitch has no Archive button', await t.page.$('#archive'), null);

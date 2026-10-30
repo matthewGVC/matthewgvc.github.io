@@ -26,6 +26,14 @@ reads the job folder itself, lays the piece out with the piece's own page (`asse
 plus each tool's `job-mode.js` adapter) and saves it into the folder. Requests wait while the helper is
 off. Tests: `scripts/test-piece-build.js`, `test-piece-page.js`, `test-sheet-page.js`, `test-job-page.js`.
 
+**Archiving a job:** a listing's or development's page has Archive / Restore in its header (owner
+only; the first click asks "Confirm archive?"). A listing archives by its stage; a development by
+`dev_projects.archived_at` (migration 0018). Archived jobs leave the overview, the lists and the error
+count until "Show archived" is ticked.
+
+**The team roster:** Asana's 👋 People project is the master. `assets/js/roster.js` and
+`assets/js/bios.js` follow it (the helper's `asana-sync.js --people` copies it into `asana_people`).
+
 ## Deploy
 
 Push to `main`. GitHub Pages serves the repo root.

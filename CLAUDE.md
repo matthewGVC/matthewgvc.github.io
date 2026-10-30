@@ -208,6 +208,11 @@ helper claims it, lays the piece out and saves the PDF into the job's Drive fold
 pieces it can make is `helper/pieces.js`; the layout is `helper/piece-build.js` and `helper/pdf/lay.js`.
 Nothing is rebuilt by itself.
 
+### The team roster
+Agents' names, titles, phones and emails live in `assets/js/roster.js` (bios in `assets/js/bios.js`),
+but **Asana's 👋 People project is the master**: change a contact there first, then make the roster
+match. A new agent also needs a headshot at `assets/agents/<id>.png` (the roster's header says how).
+
 ### Adding a new tool
 Follow the project skill `.claude/skills/building-gvc-tools/` (Claude loads it automatically):
 questions to settle first, copy-exact templates, the wiring checklist, and

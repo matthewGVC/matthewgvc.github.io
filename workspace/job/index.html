@@ -477,8 +477,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
       (j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
       (kind === 'dev' && state.budget ? '<a class="b" href="https://docs.google.com/spreadsheets/d/' + esc(state.budget.sheet_id) + '/edit" target="_blank" rel="noopener">' + I('arrow') + 'Budget sheet</a>' : '') +
-      // a development is archived here (0018), the owner only; a listing's header keeps no archive button (tune-ups 3)
-      (JP.canEdit && kind === 'dev' ? '<button class="b" type="button" id="archive">' + (isArchived() ? 'Restore' : 'Archive') + '</button>' : '') + '</div>';
+      // archive a listing (its stage) or a development (0018), the owner only; a click asks "Confirm?" first
+      (JP.canEdit && kind !== 'pitch' ? '<button class="b" type="button" id="archive">' + archiveLabel(false) + '</button>' : '') + '</div>';
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
       '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
@@ -525,16 +525,39 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
     });
     if ($('archive')) $('archive').addEventListener('click', function () {
-      var was = isArchived();
-      if (!window.confirm(was ? 'Restore ' + j.name + '? It goes back on the overview and the lists.'
-                              : 'Archive ' + j.name + '? It leaves the overview, the lists and the error count. Tick "Show archived" on the overview to see it again.')) return;
-      this.disabled = true;
-      JP.save(TABLE, r, { archived: !was }, [{ field: 'archived', old_value: was, new_value: !was }]).then(function () { load(); },
-        function (e) { $('actMsg').textContent = e.message; if ($('archive')) $('archive').disabled = false; });
+      var btn = this, was = isArchived(), set, chg;
+      // the first click asks; a second within 5 seconds does it
+      if (!btn.dataset.armed) {
+        btn.dataset.armed = '1';
+        btn.innerHTML = archiveLabel(true);
+        $('actMsg').textContent = was ? 'Click again to put ' + j.name + ' back on the overview and the lists.'
+          : 'Click again to archive ' + j.name + '. It leaves the overview, the lists and the error count; tick "Show archived" on the overview to see it again.';
+        setTimeout(function () {
+          if (!btn.dataset.armed || btn.disabled) return;
+          delete btn.dataset.armed; btn.innerHTML = archiveLabel(false); $('actMsg').textContent = '';
+        }, 5000);
+        return;
+      }
+      if (kind === 'dev') {
+        set = { archived: !was };
+        chg = [{ field: 'archived', old_value: was, new_value: !was }];
+      } else {
+        // back from Archived goes to Asana's own stage (save_job allows only that), else Prep
+        var a = r.asana || {}, to = was ? (a.stageFromStatus || a.stageFromSection || 'Prep') : 'Archived';
+        set = { stage: to };
+        chg = [{ field: 'stage', old_value: r.stage, new_value: to }];
+      }
+      btn.disabled = true;
+      JP.save(TABLE, r, set, chg).then(function () { load(); },
+        function (e) { $('actMsg').textContent = e.message; delete btn.dataset.armed; btn.innerHTML = archiveLabel(false); btn.disabled = false; });
     });
   }
 
   function isArchived() { var r = state.row || {}; return kind === 'dev' ? !!r.archived_at : r.stage === 'Archived'; }
+  function archiveLabel(asking) {
+    var was = isArchived();
+    return I(was ? 'restore' : 'archive') + (asking ? (was ? 'Confirm restore?' : 'Confirm archive?') : (was ? 'Restore' : 'Archive'));
+  }
 
   if (P.signedIn()) load();
   else {

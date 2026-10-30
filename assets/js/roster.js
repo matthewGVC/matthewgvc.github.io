@@ -1,5 +1,6 @@
 /* ============================================================
-   GVC TEAM ROSTER — the single source of truth for agent profiles.
+   GVC TEAM ROSTER — the site's one list of agent profiles (it follows
+   Asana's 👋 People project, the master; see the note on office and email below).
 
    Every tool on the site (showsheet, brochure, seller and buyer
    packages, and whatever comes next) reads its agent list from here.

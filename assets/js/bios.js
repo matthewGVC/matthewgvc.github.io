@@ -31,6 +31,18 @@
    here.
    ============================================================ */
 window.GVC_BIOS = {
+  'elyse-gutman': {
+    role: 'Strategic Partner',
+    blurb: 'Elyse Gutman has served New York City’s residents as an expert real estate agent and broker since 1995. As a strategic partner of The GVC Team, she brings professionalism, determination and white-glove service to every client.',
+    facts: [['In real estate since', '1995'], ['Role', 'Strategic Partner, GVC Team'], ['Recognition', 'REBNY New York Residential Specialist']],
+    bio: [
+      'Since 1995, Elyse Gutman has served New York City’s residents as an expert real estate agent and broker. In 1998 she joined The Corcoran Group, and from 2004 to 2023, she and her husband, Steve, operated as The Gutman Team. In early 2024, Elyse became a strategic partner with The Gasdaska Conlon Team, combining their $1B+ in sales volume and 40+ years of experience with her professionalism and determination. Then, The Gasdaska Conlon Team transitioned from The Corcoran Group to Douglas Elliman, becoming The GVC Team. Elyse moved to Douglas Elliman with the team, ensuring her clients continue to receive the exceptional white-glove service that GVC provides.',
+      'Elyse is a distinguished New York City broker with a career marked by numerous accolades. In 2014, she was awarded the prestigious New York Residential Specialist designation by the Real Estate Board of New York (REBNY) and holds the certification of a Real Estate Negotiation Expert. In recent years, Elyse has successfully brokered transactions exceeding $100,000,000 in total sales, positioning her among the top 2% of sales associates at Anywhere Real Estate, Inc.',
+      'Elyse’s background in interior design and retail sales equip her with the expertise needed to seamlessly guide buyers and sellers through each stage of the transaction process, all while maintaining a keen focus on their individual needs and concerns. She is deeply committed to honesty and integrity, ensuring that the right property is matched with the right client. Her passion lies in the pursuit of finding not just any home, but the perfect home that aligns with a buyer’s preferences and requirements.',
+      'A native New Yorker, Elyse is a graduate of New York University and the New York School of Interior Design. After raising her two daughters in Great Neck with her husband, she relocated to Manhattan in 1991. Elyse and her husband, Steve, were both actively involved in the Young Presidents Organization and share a passion for travel, particularly enjoying their vacations in Italy.'
+    ]
+  },
+
   'john-gasdaska': {
     role: 'Co-Founder',
     blurb: 'John Gasdaska, a trusted real estate advisor with over 25 years of experience, is known for his expertise as a broker, mentor, and client-focused professional in the luxury market.',
@@ -82,11 +94,11 @@ window.GVC_BIOS = {
 
   'nicole-sobol': {
     role: 'New York',
-    blurb: 'Nicole Sobol, with over 15 years of experience, specializes in high-end rentals in Manhattan’s Midtown East, delivering exceptional client service with a well-informed perspective.',
-    facts: [['Market', 'New York'], ['Experience', '15+ years'], ['Focus', 'High-end rentals, Midtown East']],
+    blurb: 'Nicole Sobol, with more than a decade of experience, specializes in high-end rentals in Manhattan’s Midtown East, delivering exceptional client service with a well-informed perspective.',
+    facts: [['Market', 'New York'], ['Experience', '10+ years'], ['Focus', 'High-end rentals, Midtown East']],
     bio: [
-      'For more than 15 years, Nicole Sobol has been delivering customized experiences for her valued clients. Whether they’re looking to buy, rent, or sell a property, she consistently tailors each experience for the individual. Her focus on customer service, deep knowledge of the market combined with her expert negotiation skills, ensure she exceeds the outcome each client is looking for.',
-      'Working alongside investors, tenants, buyers, and sellers over the last 15 years, Nicole has built an incredible network of connections and unique insights. She has cultivated strong relationships throughout Manhattan with developers and management companies, which are now a significant benefit for her clients.',
+      'For more than a decade, Nicole Sobol has been delivering customized experiences for her valued clients. Whether they’re looking to buy, rent, or sell a property, she consistently tailors each experience for the individual. Her focus on customer service, deep knowledge of the market combined with her expert negotiation skills, ensure she exceeds the outcome each client is looking for.',
+      'Working alongside investors, tenants, buyers, and sellers over the last 10 years, Nicole has built an incredible network of connections and unique insights. She has cultivated strong relationships throughout Manhattan with developers and management companies, which are now a significant benefit for her clients.',
       'Nicole offers a promise of undivided attention and exceptional service. Her deep knowledge of the market, proven track record of impeccable customer service and successful transactions, have propelled her to consistently exceed client expectations.',
       'Born and raised in New Jersey, Nicole has been a resident of the Upper East Side for fifteen years. In her free time, she enjoys playing the piano and traveling the globe practicing yoga.'
     ]

@@ -16,6 +16,9 @@
         lowercase-hyphenated and matching the filename. `market` is
         NYC, NJ or FL ('' for the founders, who work every market).
 
+   `office` and `gvcEmail` mirror Asana's "Office Number" and "GVC Email"
+   fields. Asana's 👋 People project is the master for every contact detail.
+
    Bios, a short intro and the "at a glance" facts are NOT written here:
    they are in assets/js/bios.js, one block per person, and merged in below.
 
@@ -33,27 +36,34 @@
      show and roughly the order sheets get built in. */
   var PEOPLE = [
     /* Founders */
-    {market:'', id:'john-gasdaska',     name:'John Gasdaska',     title:'Licensed Associate Real Estate Broker', phone:'646.345.7350', mobile:'',    email:'john.gasdaska@elliman.com', instagram:''},
-    {market:'', id:'tj-verdiglione',    name:'TJ Verdiglione',    title:'Licensed Real Estate Salesperson',      phone:'732.425.7477', mobile:'',    email:'thomas.verdiglione@elliman.com', instagram:''},
-    {market:'', id:'jonathan-conlon',   name:'Jonathan Conlon',   title:'Licensed Associate Real Estate Broker', phone:'347.564.2440', mobile:'',    email:'jonathan.conlon@elliman.com', instagram:''},
+    {market:'', id:'john-gasdaska',     name:'John Gasdaska',     title:'Licensed Associate Real Estate Broker', phone:'646.345.7350', mobile:'',    email:'john.gasdaska@elliman.com', instagram:'', office:'212.891.7167', gvcEmail:'john@gvcrealestateteam.com'},
+    {market:'', id:'tj-verdiglione',    name:'TJ Verdiglione',    title:'Licensed Real Estate Salesperson',      phone:'732.425.7477', mobile:'',    email:'thomas.verdiglione@elliman.com', instagram:'', office:'561.245.2635', gvcEmail:'tj@gvcrealestateteam.com'},
+    {market:'', id:'jonathan-conlon',   name:'Jonathan Conlon',   title:'Licensed Associate Real Estate Broker', phone:'347.564.2440', mobile:'',    email:'jonathan.conlon@elliman.com', instagram:'', office:'212.891.7169', gvcEmail:'jonathan@gvcrealestateteam.com'},
+
+    /* Leadership */
+    {market:'', id:'karen-conlon',      name:'Karen Conlon',      title:'Director of Professional Development', phone:'646.299.3979', mobile:'', email:'', instagram:'', office:'', gvcEmail:'karen@gvcrealestateteam.com'},
 
     /* New York */
-    {market:'NYC', id:'katie-cook',        name:'Katie Cook',        title:'Licensed Real Estate Salesperson',      phone:'516.319.9732', mobile:'',    email:'katie.cook@elliman.com', instagram:''},
-    {market:'NYC', id:'nicole-sobol',      name:'Nicole Sobol',      title:'Licensed Real Estate Salesperson',      phone:'201.240.7544', mobile:'',    email:'nicole.sobol@elliman.com', instagram:''},
-    {market:'NYC', id:'gary-kasparov',     name:'Gary Kasparov',     title:'Licensed Real Estate Salesperson',      phone:'718.980.8777', mobile:'',    email:'gary.kasparov@elliman.com', instagram:''},
+    {market:'NYC', id:'katie-cook',        name:'Katie Cook',        title:'Licensed Real Estate Salesperson',      phone:'516.319.9732', mobile:'',    email:'katie.cook@elliman.com', instagram:'', office:'', gvcEmail:'katie@gvcrealestateteam.com'},
+    {market:'NYC', id:'nicole-sobol',      name:'Nicole Sobol',      title:'Licensed Real Estate Salesperson',      phone:'201.240.7544', mobile:'',    email:'nicole.sobol@elliman.com', instagram:'', office:'212.891.7000', gvcEmail:'nicole.sobol@gvcrealestateteam.com'},
+    {market:'NYC', id:'gary-kasparov',     name:'Gary Kasparov',     title:'Licensed Real Estate Salesperson',      phone:'718.980.8777', mobile:'',    email:'gary.kasparov@elliman.com', instagram:'', office:'', gvcEmail:''},
     /* Elyse's number is from the team's 2024 pitch template. */
-    {market:'NYC', id:'elyse-gutman',      name:'Elyse Gutman',      title:'Licensed Associate Real Estate Broker', phone:'917.796.3144', mobile:'',    email:'elyse.gutman@elliman.com', instagram:''},
-    {market:'NYC', id:'ayuen-gai',         name:'Ayuen Gai',         title:'Licensed Real Estate Salesperson',      phone:'315.679.0088', mobile:'',    email:'ayuen.gai@elliman.com', instagram:''},
+    {market:'NYC', id:'elyse-gutman',      name:'Elyse B. Gutman',   title:'Licensed Associate Real Estate Broker', phone:'917.796.3144', mobile:'',    email:'elyse.gutman@elliman.com', instagram:'', office:'212.891.7000', gvcEmail:''},
+    {market:'NYC', id:'ayuen-gai',         name:'Ayuen Gai',         title:'Licensed Real Estate Salesperson',      phone:'315.679.0088', mobile:'',    email:'ayuen.gai@elliman.com', instagram:'', office:'212.891.7000', gvcEmail:'ayuen@gvcrealestateteam.com'},
 
     /* New Jersey */
-    {market:'NJ', id:'marli-silver',      name:'Marli Silver',      title:'Licensed Real Estate Salesperson',      phone:'732.387.3807', mobile:'732.403.1174', email:'marli.silver@elliman.com', instagram:'@marlisilverrealestate'},
-    {market:'NJ', id:'george-putykewycz', name:'George Putykewycz', title:'Licensed Real Estate Salesperson',      phone:'732.546.7535', mobile:'',    email:'george.putykewycz@elliman.com', instagram:''},
-    {market:'NJ', id:'james-huber',       name:'James Huber',       title:'Licensed Real Estate Salesperson',      phone:'732.962.0683', mobile:'',    email:'james.huber@elliman.com', instagram:''},
+    {market:'NJ', id:'marli-silver',      name:'Marli Silver',      title:'Licensed Real Estate Salesperson',      phone:'732.403.1174', mobile:'', email:'marli.silver@elliman.com', instagram:'@marlisilverrealestate', office:'732.387.3807', gvcEmail:''},
+    {market:'NJ', id:'george-putykewycz', name:'George Putykewycz', title:'Licensed Real Estate Salesperson',      phone:'732.546.7375', mobile:'',    email:'george.putykewycz@elliman.com', instagram:'', office:'732.387.3807', gvcEmail:'george@gvcrealestateteam.com'},
+    {market:'NJ', id:'james-huber',       name:'James Huber',       title:'Licensed Real Estate Salesperson',      phone:'732.962.0683', mobile:'',    email:'james.huber@elliman.com', instagram:'', office:'732.387.3807', gvcEmail:'james@gvcrealestateteam.com'},
 
     /* Florida */
-    {market:'FL', id:'nicole-melveney',   name:'Nicole Melveney',   title:'Licensed Real Estate Sales Associate',  phone:'732.567.5375', mobile:'',    email:'nicole.melveney@elliman.com', instagram:''},
-    {market:'FL', id:'karl-brisard',      name:'Karl Brisard',      title:'Licensed Real Estate Sales Associate',  phone:'561.291.8861', mobile:'',    email:'karl.brisard@elliman.com', instagram:''}
+    {market:'FL', id:'nicole-melveney',   name:'Nicole Melveney',   title:'Licensed Real Estate Sales Associate',  phone:'732.567.5375', mobile:'',    email:'nicole.melveney@elliman.com', instagram:'', office:'561.245.2635', gvcEmail:'nicole@gvcrealestateteam.com'},
+    {market:'FL', id:'karl-brisard',      name:'Karl Brisard',      title:'FL Operations Manager',                 phone:'561.291.8861', mobile:'',    email:'karl.brisard@elliman.com', instagram:'', office:'561.245.2635', gvcEmail:'karl@gvcrealestateteam.com'}
   ];
+
+  /* Alexandra Lynch (NJ, Asana Partners) is INACTIVE for us. Kept here as a
+     note only, not in PEOPLE, so no picker offers her:
+       Alexandra Lynch · Licensed Salesperson · New Jersey · Asana section: Partners */
 
   /* Resolve headshots against this file's own location rather than the
      page's, so tools at any folder depth get a working path without

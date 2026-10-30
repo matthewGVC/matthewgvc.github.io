@@ -44,7 +44,7 @@ im.save(out)
 
 1. Check the picture's real pixel size, and use its pixel coordinates as plan units.
 2. **Lift the walls straight out of the picture; never trace them by hand.** Matt's plans keep each
-   source's own wall masses, thick where it is thick (his walls run from about 6 pt to 18 pt), with
+   source's own wall masses, thick where it is thick, with
    the windows and doors set into gaps in them. `trace-walls.py` gives exactly that:
    ```
    python -I scripts/floorplan/trace-walls.py "<picture>" tmp/walls.json --preview tmp/walls.png [--crop x0,y0,x1,y1] [--erase x0,y0,x1,y1] [--cut x0,y0,x1,y1]
@@ -111,10 +111,9 @@ The SVG is already a drawing, so read its geometry rather than the picture:
   - **footer and disclaimer text:** any text containing `CUBICASA`, `cubicasa`,
     `FLOOR PLAN CREATED BY`, `MEASUREMENTS DEEMED`, `EXCLUDED AREAS`, `sq. ft` or `TOTAL:`;
   - **dimension arrows:** the small `<polygon>`s whose `points` (spaces removed) contain
-    `-5,5,0,0,5,5`, `-5,-5,0,0,-5,5`, `-5,-5,0,0,5,-5` or `5,5,0,0,5,-5`, and the dimension lines
-    they end;
-  - **white blocks:** any element filled white (`#ffffff`, `#fff`, `white`) whose stroke is none,
-    transparent or white. These are Cubicasa's masks, not plan geometry.
+    `-5,5,0,0,5,5`, `-5,-5,0,0,-5,5`, `-5,-5,0,0,5,-5` or `5,5,0,0,5,-5` (the lines between them are left: delete those by hand);
+  - **white blocks:** any element filled white (`#ffffff`, `#fff`, `white`) whose stroke is missing, none,
+    transparent, white or at zero opacity. These are Cubicasa's masks, not plan geometry.
 - Render the SVG to a PNG and view it before and after, the same way as a picture.
 - **Doors:** Cubicasa draws a door as a plain gap, with no leaf or swing (its small triangles are
   dimension arrows, not doors). Draw every gap that is a door (a room's or a closet's entry) as a door

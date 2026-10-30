@@ -12,7 +12,6 @@ Print is the product. A tool or page is finished when its printed PDF is right, 
 | Postcards | 9.21 x 6.21 in with bleed, or 9 x 6 in trim | `<style id="pagesize">`; `body.trim` switches to trim |
 | Signage | For Sale 24 x 30 in; Open House arrow 24.4 x 18.4 in | One PDF page per sign |
 | NJ footprint | Letter, 2 pages | Front = state map, back = Monmouth and Ocean town map |
-| New Development | PDF via its own print button | Internal builder |
 | Office screens | 4K landscape and portrait video | See `motion-and-screens.md` |
 
 If you change page geometry, test every paper size the surface offers, through the toggle, not only the default.
@@ -41,7 +40,7 @@ When a change must not alter output (a refactor, a shared module, a parity pass)
 Serve the repo first: `python -m http.server 8080` from the repo root, or `preview_start` with `gvc-workspace`. Opening a tool as `file://` breaks the Word-document reader and image handling.
 
 ```bash
-node scripts/check-tools.js <slug>                 # conventions; must print "<slug>  ok"
+node scripts/check-tools.js <slug>                 # conventions: no FAIL lines ("<slug>  ok" with no warnings)
 node scripts/verify-local.js                       # every page loads, no console errors, SRI, no sideways scroll
 node scripts/interact-local.js <slug>              # clicks and types every control, prints each to PDF
 BROWSER=webkit node scripts/interact-local.js <slug>

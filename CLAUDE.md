@@ -197,8 +197,8 @@ verified locally on a branch (still never a force-push). That is an owner-only e
 teammates still follow §5 and send a PR.
 
 ### Setting up a job's Drive folder
-Every job folder follows one standard, by job type (resale, rental, sfh, newdev): see `docs/folder-standard.md`
-(kept in `assets/js/drive-rules.js`). To check or build one, run
+Every job folder follows one standard, by job type (resale, rental, sfh, newdev). The standard is
+`assets/js/drive-rules.js` (Matt's write-up, `docs/folder-standard.md`, is on his machine only). To check or build one, run
 `node scripts/job-folders.js <type> "<job folder>"` (add `--apply` to create what's missing). It only creates
 folders; it never moves, renames or deletes anything.
 
@@ -284,30 +284,3 @@ them: *"Let's check with Matt before we go further so we don't risk anyone's wor
 - **Pull Request (PR)** — a "please review and publish my changes" request that Matt approves.
 - **`main`** — the official branch. **It is the live website.** Treat it as untouchable except
   through reviewed Pull Requests.
-
----
-
-## 9. Quick reference — a normal session, start to finish
-
-```bash
-# 1. start fresh
-git checkout main
-git pull origin main
-
-# 2. make a sandbox branch
-git checkout -b showsheet-redesign
-
-# 3. (Claude edits files; start a local server and preview)
-python -m http.server 8080        # view at http://localhost:8080
-
-# 4. save the work
-git add -A
-git commit -m "showsheet: refreshed cover layout and typography"
-
-# 5. send it up and request review
-git push -u origin showsheet-redesign
-gh pr create --fill --base main
-# → tell the teammate it's been sent to Matt to review & publish.
-```
-
-When the PR is merged by Matt, the change is live at https://matthewgvc.github.io within ~1 min.

@@ -29,8 +29,8 @@ Save as version v<N>.
 Use the making-gvc-floorplans skill.
 ```
 
-`Address:` is the job's own address: copy it into `job.address` exactly (the header splits it at the
-first comma). When the prompt has no `Address:` line, write it out from the label (176 E71 4B is
+`Address:` is the job's own address: copy it into `job.address` exactly (when it is too wide for one line,
+the header splits it at the first comma). When the prompt has no `Address:` line, write it out from the label (176 E71 4B is
 176 East 71st Street, 4B) and say so in `uncertain`. `Facts:` goes to the maker's `--facts` as it is.
 
 He does not approve anything before you save, so the checks in step 7 are the only review the plan
@@ -231,4 +231,5 @@ current layout's `Design/plan.json` aside first, as `Design/plan-current.json`, 
 alternate's `Design/plan.json` with `"layout": "alternate"`. Run the maker with the same version
 number as the current layout and record it with `layout 'alternate'`. Then put the current plan back
 as `Design/plan.json`. Alternate files are named `<label> v<N> Alternate…`, and the maker never
-archives the current layout's files when it saves an alternate, or the reverse.
+archives the current layout's files when it saves an alternate, or the reverse. An alternate's run note is
+`Design/run-v<N> Alternate.md`.

@@ -45,9 +45,9 @@ Large text needs 3:1 minimum; body text needs 4.5:1. Verify any new pairing with
 
 | Role | Site face | Print face | Notes |
 |---|---|---|---|
-| Display / headings | Fraunces (`--serif` on site) | Playfair Display (`--serif` in builders) | Site uses optical-size Fraunces; printed packages use Playfair |
-| Labels, captions, buttons | Nunito Sans 800, caps, tracked (`--sans`) | Same | Typically 9–11px in UI, larger on print |
-| Body | Raleway (`--body`) | Raleway | |
+| Display / headings | Fraunces (`--serif` on site) | Playfair Display (`--serif` in builders) | Site uses Fraunces (static faces); printed packages use Playfair |
+| Labels, captions, buttons | Nunito Sans 800, caps, tracked (`--sans-display`) | Nunito Sans (`--sans` in builders) | Typically 9–11px in UI, larger on print |
+| Body | Raleway (`--sans-body`) | Raleway (`--body` in builders) | |
 | Meta, hints, code-like values | JetBrains Mono (`--mono`, `--ui-mono`) | Same | Labels only, never running text |
 
 Fonts load only from `assets/css/fonts.css`. That file uses static font faces, so Chrome embeds them when printing. Do not add a `fonts.googleapis.com` link to a tool page. Do not add a font family that is not in `fonts.css` without updating it.

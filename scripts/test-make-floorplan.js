@@ -173,6 +173,17 @@ function listAll(dir) {
     ok(fs.readFileSync(path.join(dir, 'Design', 'run-v3.md'), 'utf8').includes(a), 'new note lists the archived note');
   });
 
+  await t('an alternate run keeps the current layout\'s run note', async () => {
+    const dir = folder(planWith());
+    await make(dir, { version: 3, today: '2026-10-27' });
+    const current = fs.readFileSync(path.join(dir, 'Design', 'run-v3.md'));
+    fs.writeFileSync(path.join(dir, 'Design', 'plan.json'), JSON.stringify(planWith({ layout: 'alternate' })));
+    const r = await make(dir, { version: 3, today: '2026-10-27' });
+    eq(r.note, 'Design/run-v3 Alternate.md');
+    ok(!r.archived.some(f => /run-v3\.md$/.test(f)), r.archived.join('|'));
+    ok(fs.readFileSync(path.join(dir, 'Design', 'run-v3.md')).equals(current), 'current note changed');
+  });
+
   fs.rmSync(TMP_ROOT, { recursive: true, force: true });
   console.log('\n' + passed + ' passed, ' + failed + ' failed');
   process.exit(failed ? 1 : 0);

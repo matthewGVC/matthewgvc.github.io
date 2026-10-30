@@ -19,7 +19,7 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 
 - [ ] No owner or client personal data in any committed file (names, emails, phones on MLS rows). MLS exports (`.csv`, `textexport`) are not in git.
 - [ ] Saved state holds no client or visitor personal data. Property addresses are fine.
-- [ ] Sales or listing rows are filtered by the rules the surface states (for NJ: status C, rentals out, commercial under $50K out, one row per List Number). A changed filter is a data change, so check the count against the stated rule.
+- [ ] Sales or listing rows are filtered by the rules the surface states (for NJ: closed sales only, MLS status C; rentals out; commercial leases under $50K out; one row per List Number). A changed filter is a data change, so check the count against the stated rule.
 - [ ] A test or sample row is labelled as test data and not printed for a client.
 
 ## C. Brand and colour
@@ -32,7 +32,7 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 
 ## D. Type
 
-- [ ] Fonts come from `assets/css/fonts.css`. No Google Fonts link on a tool page (`diff-lint` ERROR `google-fonts`).
+- [ ] Fonts come from `assets/css/fonts.css`. No Google Fonts link on a tool page (`diff-lint` ERROR `google-fonts`), and none written by a tool's script (the lint can't see those).
 - [ ] Printed pages use the print serif and label face; site pages use the site display face. No third face appears.
 - [ ] Label caps are tracked and small; body is readable at print size; no text below the print minimum for the surface.
 - [ ] Figures in columns align; numerals are consistent.
@@ -64,12 +64,12 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 - [ ] No "Check License First" image is published. Never delete one.
 - [ ] Images have `alt` text (`diff-lint` WARN `img-no-alt`).
 - [ ] Photos dropped on the page land where dropped and never show twice (`dnd-local.js`).
-- [ ] Image files over 2 MB are justified (`why-nyc.png` is the known exception).
+- [ ] Image files over 2 MB are justified (none is over today).
 - [ ] Crops keep faces and the key subject at both paper sizes.
 
 ## H. Motion (loops and live animation)
 
-- [ ] Loops are seamless: the seam difference matches a normal frame-to-frame step (`seam.js`).
+- [ ] Loops are seamless: the seam difference matches a normal frame-to-frame step (`exports/office-screens/source/checks/seam.js`).
 - [ ] Every moving term completes a whole number of cycles per loop.
 - [ ] Motion is slow; particles drift; one move at a time; big shapes; no busy random patterns.
 - [ ] Landscape and portrait are composed separately, not one rotated.
@@ -80,7 +80,7 @@ Use this with `gvc-design-standards`. Each question has a pass condition. Record
 
 ## I. Repo and shipping
 
-- [ ] `check-tools.js <slug>` prints `ok` with no FAIL. Warnings are listed and either fixed or excused.
+- [ ] `check-tools.js <slug>` shows no FAIL lines (`<slug>  ok` when it has no warnings either). Warnings are listed and either fixed or excused.
 - [ ] Test lists updated: `verify-local.js` PAGES, `interact-local.js` ALL, `dnd-local.js` TOOLS (photo tools).
 - [ ] Listed on the workspace's Tools page in the right section; `README.md` section present.
 - [ ] CDN: pinned version in the URL and `integrity` plus `crossorigin="anonymous"`.

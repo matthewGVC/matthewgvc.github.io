@@ -1,45 +1,59 @@
 # The workspace's database
 
-It started as the property library (0001: three listing builders — Showsheet, Brochure and Seller
-Package — share one saved property each) and now holds the whole workspace: members and per-person
-sign-in (0004), jobs, pitches, developments, the change log and sync runs (0005 on), Asana (0006),
-the pieces made from a job (0009, 0010), the folder and facts locks (0012–0014), a development's
-schedule and budget (0015), the budget team read (0016) and the queue of pieces the desktop helper
-makes from a job, with `save_piece_build` (0017), and archiving a development (0018:
-`dev_projects.archived_at`, set or cleared through `save_job`). The Buyer Package does not use it.
+Everything the workspace knows about its jobs lives here: listings, pitches, developments, their pieces,
+the change log, the Asana and DE caches, and the queue of pieces the desktop helper makes. Files stay on
+Google Drive; the database keeps paths relative to `G:\Shared drives\`, never copies. It started as the
+property library (0001) behind the Showsheet, Brochure and Seller Package, whose property bar still
+uses it standalone. The Buyer Package does not use it.
 
 - **Project:** `hoszxrrlfhzbbrzenqvp` (Supabase, free tier, region `us-west-2`)
 - **Client config:** `assets/js/supabase-config.js` — the project URL and the publishable key,
   both of which are meant to be public.
-- **Migrations:** `migrations/*.sql`, applied in filename order.
+- **Migrations:** `migrations/*.sql`, applied in filename order. Each opens with a comment saying what
+  it adds; `node scripts/test-migrations.js` checks them. Back up the tables to
+  `exports/supabase-backup-<date>/` before running one.
 
 ## What is in it
 
-| Table | Holds |
-|---|---|
-| `properties` | One row per address. `core` is the facts every builder shares: address, city/state/zip, price, beds, baths, sqft, description, features, agents, comps. |
-| `documents` | One saved document per tool per property (`showsheet`, `brochure`, `seller`, `buyer`). `state` is stored verbatim and handed back untouched. |
-| `developments` | One row per developer pipeline for `tools/new-development/` (migration 0002). `data` is the whole printable document, stored verbatim; uploaded renderings go in the `property-photos` bucket under `developments/<slug>/`. |
-| `todos` | Matt's to-do list for `tools/todo/` (migration 0003). |
-| `photos` | The index of the photo shelf. The files themselves live in the private `property-photos` bucket; pages render them through short-lived signed URLs. |
-| `piece_requests` | The queue of pieces to make from a job (0017). Make or Rebuild adds a row; the desktop helper claims the oldest waiting row and marks it made or failed. |
+| Table | Holds | Since |
+|---|---|---|
+| `properties` | Listings: one row per address + unit. `core` (the facts the builders share, incl. `agentIds`), each fact's sources, stage, Drive folder, the Asana and DE snapshots, milestones, the Match result, the details doc last read. | 0001, grown by 0004–0007 |
+| `documents` | One saved piece per tool per listing or pitch (`tool` is any lower-case slug, 0009): its wording and settings (`state`), what it printed from the job (`built_from`) and the files it made (`output`, `outputs`). | 0001, 0009, 0010 |
+| `photos` | The property bar's photo shelf. The files live in the private `property-photos` bucket; pages render them through short-lived signed URLs. | 0001 |
+| `developments` | The archived New Development tool's documents (`data`, stored verbatim). | 0002 |
+| `todos` | Matt's to-do list behind `tools/todo/`, owner only (0008). | 0003 |
+| `members` | Who may sign in, and their role: `owner`, `admin`, `marketing`, `team`, `helper`, `shared`. | 0004, 0011 |
+| `pitches` | Seller pitches, linked to their Asana task; the outcome follows Asana (D55). | 0005 |
+| `dev_projects` | Developments: milestones, the 🚧 Asana link and hints, the schedule (0015), `archived_at` (0018). | 0005 |
+| `changes` | The change log: one row per change, with its source and who made it. | 0005 |
+| `floorplans` | Floorplan versions × layouts per listing. | 0005 |
+| `sync_runs` | Every run of the desktop helper (DE, Asana, People, budget, scan, backup). | 0005 |
+| `de_listings` | What the DE sync knows about each DE listing, incl. the GVC-listed check. | 0005 |
+| `asana_tasks` | The helper's read-only cache of Asana tasks (allowlisted fields only, D49). | 0006 |
+| `asana_people` | The allowlisted 👋 People fields (D71): roster drift and M16. | 0006 |
+| `match_claims` | Who claimed or fixed each error on the Errors page. | 0011 |
+| `dev_budgets` | A development's pro-forma sheet link and what the helper keeps of it (D112). | 0015 |
+| `piece_requests` | The queue of pieces to make from a job. Make or Rebuild adds a row; the desktop helper claims the oldest waiting row and marks it done or failed. | 0017 |
 
-A property may have no documents at all — core facts alone are a perfectly normal property, and
-whichever tool an agent opens first is the one that creates it.
+Saves go through database functions that check the row's `version` and write the change log in the
+same step: `save_job` (0007), `save_piece_of` (0010), `save_piece_build` (0017).
 
 ## Who can read it
 
-Nobody, unless they are signed in. Row level security is on for all three tables and the storage
-bucket, and every policy requires the `authenticated` role. This site is public, so an anonymous
-visitor hitting the API gets an empty list.
+Nobody, unless they are signed in. Row level security is on for every table and the storage bucket, and
+nothing is readable by an anonymous visitor: the site is public, so an anonymous request gets an empty
+list.
 
-The whole team shares one account, `team@gvcrealestateteam.com`. Agents type the password once and
-the browser holds the session. **The password is not in this repo and must not be** — change it
-from the Supabase dashboard under Authentication → Users.
+Sign-in is per person (D3): each person has their own Supabase account, public sign-up is off, and only
+an active row in `members` can read or write. Every write is stamped with who made it. The team's shared
+account, `team@gvcrealestateteam.com`, is a member with role `shared` so the standalone tools keep working;
+**its password is not in this repo and must not be.** Some writes are narrower than "any member":
 
-The trade-off that came with that decision: anyone who has the password can read every property,
-and nothing records who saved or archived what. If the library ever holds more than listing facts,
-that is the first thing to revisit.
+- Only owner, admin, marketing and the helper link or change a job's Drive folder (0012, 0013).
+- A plain `team` sign-in can't make a job or pitch, or change its facts by writing the table directly (0014).
+- Development budgets: owner, admin and the helper write them; the shared account may read them (0015, 0016).
+- Owner, admin, marketing and the shared account may ask for a piece (0017).
+- To-dos: Matt reads and writes, the helper reads for the backup (0008).
 
 ## Managing it
 

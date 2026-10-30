@@ -1,6 +1,6 @@
 ---
 name: gvc-design-standards
-description: Use when designing, restyling or building any GVC Workspace output: a tool under tools/, a printed listing sheet, brochure, buyer or seller package, showsheet, destination guide, NJ footprint, New Development page, office-screen loop, or any page or deck for GVC. Use before writing styling or layout, and when a request says make it look better, polish, redesign or match the brand.
+description: Use when designing, restyling or building any GVC Workspace output: a tool under tools/, a printed listing sheet, brochure, buyer or seller package, showsheet, signage, destination guide, NJ footprint, office-screen loop, a workspace page (workspace/), or any page or deck for GVC. Use before writing styling or layout, and when a request says make it look better, polish, redesign or match the brand.
 ---
 
 # GVC design standards
@@ -24,7 +24,7 @@ Each surface uses a different token set and different rules. Find the row first.
 | Office TV loop (canvas) | Same five GVC colours | Labels 7.5–10.5% of screen height | Not market-based | Landscape and portrait composed separately |
 | Frozen output | Do not restyle | | | See "Frozen and standing decisions" |
 
-Read `PRODUCT.md` once per session for the current facts. Read `references/palette-and-type.md` before choosing any colour or type size.
+Read `references/palette-and-type.md` before choosing any colour or type size.
 
 ## Non-negotiables
 
@@ -34,7 +34,7 @@ These are rules, not preferences. Each one exists because it broke something bef
 2. **Use all five GVC colours across a set.** Navy `#00273A`, Sky `#53C7DC`, Cyan `#00A1C4`, Bone `#E5E5E5`, Paper `#EFEDE8`. Earlier office-screen rounds leaned on Bone and Sky over Navy and read as one-note. A set gives Cyan real presence and includes at least one Paper-ground piece with Navy ink.
 3. **Contrast is a hard rule.** Sky is never text on Paper (1.7:1). Cyan is text only on Navy (5:1); on Paper it is decorative only. Body text on Paper uses Navy or `--ink-soft`.
 4. **Navy ink on paper, one accent.** Sky is for hairlines, hover and active states.
-5. **Fonts come from `assets/css/fonts.css` only.** Tools never link Google Fonts: variable fonts print as Type3 outlines and fail the embed check. The listing rules page and the 404, which never print, are the only exception.
+5. **Fonts come from `assets/css/fonts.css` only.** Tools never link Google Fonts: variable fonts print as Type3 outlines and fail the embed check. The listing rules page and the 404, which never print, are the only exception. (The old Cubicasa converter, `tools/floorplan/floorplan.js`, still writes a Google Fonts `@import` into the SVG it exports: a known leftover in an exported file, not a printed page.)
 6. **Real content only.** Names, figures, quotes, testimonials, referral partners, towns, regions, taglines and form fields come from a real source. If the source is missing, show a visible stamp (see `references/copy-and-content.md`). Never fill a gap with plausible sample data, and never present a Claude-made grouping as established.
 7. **Boilerplate is fixed.** The lockup, the Douglas Elliman legal footer and the team QR codes are never editable fields.
 8. **Images are verified.** No low-resolution images. Stock only when verifiably of the stated place, from Pexels or Unsplash with the photo ID in a code comment. Never publish a "Check License First" image. Where a real photo is needed and missing, stamp it; do not draw a stand-in that looks like a photo.
@@ -59,7 +59,7 @@ Refine a design in two passes at most. First make it correct and complete, then 
 
 These are settled. Do not re-propose them or restyle them unless Matt asks.
 
-- The showsheet's `.sheet` output is print- and pixel-verified and frozen.
+- The showsheet's `.sheet` output is print- and pixel-verified and frozen: change it only when Matt asks, and then diff it against the print baseline at A5 and Letter.
 - NYC's boxed cost tables in the seller and buyer packages stay.
 - The NJ seller deck uses NJ stock photos only, never specific home shots.
 - The NYC buyer packet keeps Don't Forget to Ask and the FAQs.
@@ -77,7 +77,7 @@ Ask before acting on anything that changes the live site's content for clients, 
 1. **Scope.** Name the surface (Step 1 table) and the markets it prints for.
 2. **Functional first.** Build the correct, complete version using existing tokens and components. Use `building-gvc-tools` for a new tool's wiring.
 3. **One elevation pass** against `references/elevation.md`.
-4. **Verify** with `references/print-and-verify.md`. For tools: `node scripts/check-tools.js <slug>` must print `<slug>  ok` (no FAIL lines), then the local checks. For printed output: PDF from Chromium at every paper size, a Safari print check by hand (Playwright cannot make a Safari PDF), and the other markets' PDFs diffed against `main` when a shared file moved. The `gvc-design-review` skill has the capture script.
+4. **Verify** with `references/print-and-verify.md`. For tools: `node scripts/check-tools.js <slug>` must show no FAIL lines (a new tool should print `<slug>  ok`, no warnings either), then the local checks. For printed output: PDF from Chromium at every paper size, a Safari print check by hand (Playwright cannot make a Safari PDF), and the other markets' PDFs diffed against `main` when a shared file moved. The `gvc-design-review` skill has the capture script.
 5. **Sweep** what you touched for dead CSS, dangling `getElementById` lookups and unreferenced files (see the standing dead-code practice in memory).
 6. **Report** what changed, the judgement calls made (one line each), and every open stamp.
 

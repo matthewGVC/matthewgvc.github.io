@@ -3,7 +3,8 @@
    unbranded and branded, and saves the PNG of each into <Floorplan folder>/Unbranded/ and /Branded/
    (only PNGs there, Matt 10-27) and its SVG master into Design/Unbranded/ and Design/Branded/.
    Anything it would overwrite, the same layout's files from other versions, and any SVG left in
-   Unbranded/ or Branded/ are moved first to Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md.
+   Unbranded/ or Branded/ are moved first to Design/archive/<date>/ (never deleted). Also writes Design/run-v<N>.md
+   (an alternate layout's is Design/run-v<N> Alternate.md).
 
      node scripts/make-floorplan.js "<Floorplan folder>" --version 3 [--facts '{"beds":2,"baths":2}']
    Several floors: the all-floors sheet's labels are fitted first (floorplan/fit-labels.js).
@@ -147,7 +148,7 @@ async function make(folder, opts) {
     written.push(svgRel, pngRel);
   }
 
-  const noteRel = 'Design/run-v' + version + '.md';
+  const noteRel = 'Design/run-v' + version + alt + '.md';   // an alternate's note never displaces the current layout's
   if (fs.existsSync(path.join(folder, noteRel))) archived.push(archive(noteRel));
 
   const list = (arr, none) => arr.length ? arr.map(x => '- ' + x).join('\n') : '- ' + none;
@@ -182,7 +183,7 @@ async function make(folder, opts) {
   ].join('\n');
   fs.writeFileSync(path.join(folder, noteRel), note);
 
-  return { written, archived, warnings };
+  return { written, archived, warnings, note: noteRel };
 }
 
 module.exports = { make, toPng };
@@ -204,6 +205,6 @@ if (require.main === module) {
     r.written.forEach(f => console.log('  ' + f));
     if (r.archived.length) { console.log('Moved ' + r.archived.length + ' older files to the archive:'); r.archived.forEach(f => console.log('  ' + f)); }
     if (r.warnings.length) { console.log('Things to look at:'); r.warnings.forEach(w => console.log('  ' + w)); }
-    console.log('A run note is in Design/run-v' + v + '.md');
+    console.log('A run note is in ' + r.note);
   })().catch(e => { console.error(e.message); process.exit(1); });
 }

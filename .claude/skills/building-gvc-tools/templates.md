@@ -28,7 +28,8 @@ Paths assume `tools/<slug>/index.html`.
 <link rel="stylesheet" href="../../assets/css/tokens.css">
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/builder.css">       <!-- plain page: components.css instead -->
-<!-- feature CSS here, only what you use: pitch.css, photo-dnd.css, property-bar.css ... -->
+<link rel="stylesheet" href="../../assets/css/pitch.css">         <!-- the .warn box in the Warnings section below -->
+<!-- other feature CSS here, only what you use: photo-dnd.css, property-bar.css ... -->
 <link rel="stylesheet" href="../../assets/css/panel-collapse.css"> <!-- last; omit on plain pages -->
 <style>
 /* tool styles: tokens only (var(--ink) etc.), sizes in in/pt on printed pages */
@@ -36,7 +37,7 @@ Paths assume `tools/<slug>/index.html`.
 </head>
 ```
 
-Internal-only pages (not for search, e.g. New Development): add
+Internal-only pages (not for search, e.g. the To-do list): add
 `<meta name="robots" content="noindex, nofollow">` and drop the og/twitter lines.
 
 ## Builder body (prints pages)
@@ -80,7 +81,11 @@ Internal-only pages (not for search, e.g. New Development): add
 </main>
 ```
 
-Property-library tools put `<div id="propBar"></div>` first inside `#editor`.
+`data-nav` is no longer read by `chrome.js` (the masthead's lockup links back to the Tools page);
+the existing tools still carry it and it does no harm.
+
+A piece tool's job bar and facts block are placed by piece mode at the top of the panel you name in
+its adapter (`panel: '#editor'`); nothing goes in the markup for them.
 
 ## Builder script tail
 
@@ -90,9 +95,7 @@ Property-library tools put `<div id="propBar"></div>` first inside `#editor`.
 <script src="../../assets/js/motion.js"></script>
 <script src="../../assets/js/builder.js"></script>
 <script src="../../assets/js/unsaved.js"></script>
-<!-- then only what you use, in this order:
-     library:  supabase-config.js, property-library.js (property-bar.js only once saving is allowed)
-     helpers:  roster.js, legal.js, qr.js, images.js, photo-dnd.js, pitch.js, icons.js -->
+<!-- then only what you use: roster.js, legal.js, qr.js, images.js, photo-dnd.js, pitch.js, icons.js -->
 <script>
 'use strict';
 const state = { /* everything the page renders from */ };
@@ -109,6 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
   GVC_UNSAVED.watch();
 });
 </script>
+<!-- piece tools only (opened from a job): window.__piece and window.__render go in the tool
+     script above (copy tools/signage/), then this line, which loads job mode only with ?listing= / ?pitch= -->
+<script src="../../assets/js/piece-loader.js" data-job="job-mode.js"></script>
 <script src="../../assets/js/panel-collapse.js"></script>
 <script src="../../assets/js/field-labels.js"></script>
 </body>
@@ -164,7 +170,7 @@ name says what it makes, in plain words, like the tool's own meta description.
 // scripts/dnd-local.js  TOOLS    — only if photos are dragged onto the page
 ```
 
-## Saved state
+## Saved state (standalone use only; from a job, piece mode saves with the job)
 
 ```js
 const KEY = 'gvc.<slug>.state';

@@ -25,7 +25,7 @@ const BASE = args.find(a => !a.startsWith('--')) || 'main';
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 
 /* in scope: the places the design rules govern */
-const IN_SCOPE = /^(tools\/|assets\/css\/|assets\/js\/|index\.html$|404\.html$)/;
+const IN_SCOPE = /^(tools\/|workspace\/|listing-rules\/|assets\/css\/|assets\/js\/|index\.html$|404\.html$|README\.md$)/;
 const TEXT = /\.(html|css|js|md)$/;
 const IMAGE = /\.(jpe?g|png)$/i;
 const isLineComment = line => /^\s*(\/\/|\/\*|\*)/.test(line);
@@ -34,7 +34,7 @@ const isLineComment = line => /^\s*(\/\/|\/\*|\*)/.test(line);
 function codeLines(file, text) {
   let src = text;
   if (/\.html$/.test(file)) src = src.replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' '));
-  if (/\.(css|js)$/.test(file)) src = src.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
+  if (/\.(css|js|html)$/.test(file)) src = src.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
   return src.split('\n');
 }
 
@@ -44,21 +44,21 @@ const RULES = [
   { sev: 'ERROR', id: 'google-fonts', why: 'tools load fonts from assets/css/fonts.css only (variable fonts print as Type3)',
     applies: f => f.startsWith('tools/') && /\.html$/.test(f),
     test: l => /fonts\.googleapis\.com/.test(l) },
-  { sev: 'ERROR', id: 'eyebrow', why: 'decorative eyebrow or "Tool ·" meta text is rejected (PRODUCT.md)',
+  { sev: 'ERROR', id: 'eyebrow', why: 'decorative eyebrow or "Tool ·" meta text is rejected (gvc-design-standards)',
     applies: f => /\.(html|js)$/.test(f),
     test: l => /GVC Real Estate\s*·|\bTool\s*·|·\s*Tool\b/.test(l) },
   { sev: 'ERROR', id: 'gradient-text', why: 'gradient text is rejected by the brand',
     applies: f => /\.(html|css|js)$/.test(f),
     test: l => /background-clip\s*:\s*text/.test(l) },
-  { sev: 'ERROR', id: 'cdn-no-sri', why: 'every external script or stylesheet needs a pinned version and an integrity hash',
+  { sev: 'ERROR', id: 'cdn-no-sri', why: 'every external script or stylesheet needs a pinned x.y.z version and an integrity hash',
     applies: f => f.startsWith('tools/') && /\.html$/.test(f),
     test: l => /<script\b[^>]*\bsrc=["']https:\/\/|<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']https:\/\//.test(l) &&
-      !/fonts\.googleapis\.com/.test(l) && !/integrity=/.test(l) },
+      !/fonts\.googleapis\.com/.test(l) && (!/integrity=/.test(l) || !/(src|href)=["']https:\/\/[^"']*[@/]v?\d+\.\d+\.\d+/.test(l)) },
   { sev: 'ERROR', id: 'bad-sri', why: 'an integrity value must be a real sha256/384/512 digest (base64), not a placeholder',
     applies: f => f.startsWith('tools/') && /\.html$/.test(f),
     test: l => /integrity=["'][^"']*["']/.test(l) && !/integrity=["']sha(256|384|512)-[A-Za-z0-9+/]{43,}={0,2}["']/.test(l) },
   { sev: 'WARN', id: 'hex-colour', why: 'use the surface tokens, not new hex (legacy hex is a known warning)',
-    applies: f => (f.startsWith('tools/') || f.startsWith('assets/css/') || f.startsWith('assets/js/')) &&
+    applies: f => (f.startsWith('tools/') || f.startsWith('workspace/') || f.startsWith('assets/css/') || f.startsWith('assets/js/')) &&
       /\.(html|css|js)$/.test(f) && f !== 'assets/css/tokens.css',
     test: l => /#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/.test(l) },
   { sev: 'WARN', id: 'sky-or-cyan-text', why: 'Sky is never text on Paper; Cyan is decorative on Paper. Confirm the surface is Navy',
@@ -69,12 +69,12 @@ const RULES = [
     test: l => /backdrop-filter\s*:/.test(l) },
   { sev: 'WARN', id: 'placeholder-text', why: 'invented or placeholder content: confirm it is test data kept out of the output',
     applies: f => /\.(html|js)$/.test(f),
-    test: l => /lorem ipsum|\bTODO\b|\bFIXME\b|John Doe|Jane Doe|123 Main St|example\.com/i.test(l) },
+    test: l => /lorem ipsum|John Doe|Jane Doe|123 Main St|example\.com/i.test(l) || /\bTODO\b|\bFIXME\b/.test(l) },
   { sev: 'WARN', id: 'img-no-alt', why: 'images need alt text (decorative images use alt="")',
     applies: f => /\.html$/.test(f),
     test: l => /<img\b/i.test(l) && !/\balt\s*=/.test(l) },
   { sev: 'WARN', id: 'claude-in-workspace', why: 'keep "Claude" out of workspace pages and docs (standing request)',
-    applies: f => f.startsWith('tools/') || f.startsWith('assets/') || f === 'index.html' || f === 'README.md',
+    applies: f => f.startsWith('tools/') || f.startsWith('workspace/') || f.startsWith('assets/') || f === 'index.html' || f === 'README.md',
     test: l => /\bClaude\b/.test(l) },
 ];
 
@@ -132,7 +132,7 @@ for (const file of files) {
   if (IMAGE.test(file)) {
     const size = fs.statSync(file).size;
     if (size > 2 * 1024 * 1024) report('WARN', file, 0, 'large-image',
-      'over 2 MB: confirm it is needed (why-nyc.png is the known one)', (size / 1048576).toFixed(1) + ' MB');
+      'over 2 MB: confirm it is needed (no site image is over today)', (size / 1048576).toFixed(1) + ' MB');
     continue;
   }
   if (!TEXT.test(file)) continue;
@@ -155,7 +155,7 @@ if (!ALL) {
   const diff = git('diff', '-U0', BASE, '--');
   let file = null;
   for (const raw of diff.split('\n')) {
-    if (raw.startsWith('+++ ')) { file = raw.slice(4).replace(/^b\//, ''); continue; }
+    if (raw.startsWith('+++ ')) { file = raw.slice(4).replace(/^b\//, ''); if (file === '/dev/null') file = null; continue; }
     if (raw.startsWith('--- ') || !file || !raw.startsWith('-') || !STAMP.test(raw)) continue;
     const label = raw.slice(1).trim();
     const still = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

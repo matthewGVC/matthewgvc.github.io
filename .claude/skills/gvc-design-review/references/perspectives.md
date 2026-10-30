@@ -6,7 +6,7 @@ The client lens is an informed proxy, not user research. Say so in the review. F
 
 ## Who reads what we make
 
-These are working roles from `PRODUCT.md`, not real people. Never fill them with invented names, incomes, ages or quotes.
+These are working roles, not real people. Never fill them with invented names, incomes, ages or quotes.
 
 | Reader | What they hold | What they need from it |
 |---|---|---|

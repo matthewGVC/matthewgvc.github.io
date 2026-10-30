@@ -1,7 +1,7 @@
 # The helper makes pieces from a job (design note, 2026-10-29)
 
 Overturns D89 (the open sheet is filled in the browser and one press there saves it) and D91 (the
-browser hands the helper a finished sheet; without the helper the print dialog still marks it made).
+helper writes the showsheet PDF into the linked folder; without the helper the print dialog still marks it made).
 
 ## What the helper does
 - Works through a queue of piece requests (table `piece_requests`, migration 0017), oldest first:

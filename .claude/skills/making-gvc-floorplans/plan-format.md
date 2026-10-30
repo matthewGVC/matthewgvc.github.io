@@ -16,8 +16,8 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
   coordinates, **at its real size** (open the file and check its width and height). A viewer may
   show the picture scaled down, so never read coordinates off a scaled view. Trace in those pixels
   and `scripts/floorplan/overlay.js` can lay the source over your plan to check it (SKILL step 7).
-- Each level is fitted on its own. Floors of a multi-level plan are therefore not drawn to one shared
-  scale.
+- Each floor's own sheet fits that level on its own, so those sheets are not at one shared scale.
+  The all-floors sheet is: it draws every level at one scale, using `unitsPerFoot` (below).
 
 ## Top level
 
@@ -28,7 +28,7 @@ The single source of truth is the validator in `scripts/floorplan/plan.js` (its 
 | `layout` | Leave it out for the current layout. `"alternate"` for an alternate: the branded sheet then says ALTERNATE, bottom right. |
 | `current` | `true` on the current layout of a job that also has an alternate: the sheet then says CURRENT. |
 | `sources` | One entry per reference used: `{ "file": "Design/<name>", "kind": "<cubicasa-svg, cubicasa-png, broker-plan, screenshot, architect-pdf, dwg, dxf, gvc-old-plan-jpg…>", "note": "<what you took from it, e.g. page 2 only>" }`. The maker needs this list. |
-| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **Every branded sheet carries the compass (Matt, 10-27).** When the source shows none, research the building's orientation (`sources.md`, "North, when the source has no compass"), set `north` from that and say so in the run note. Never guess it: when it can't be found, leave it `null` and list it in `missing`. |
+| `north` | Degrees clockwise from page-up that north points, read off the source's compass: **where its N letter sits** round the rose (a rose's star is symmetrical; the N is what says north). N above the rose is `0`, N to its right `90`, below `180`, left `270`; a tilted rose, the angle from page-up to its N. **Every branded sheet should carry the compass (Matt, 10-27); it is drawn only when `north` is set.** When the source shows none, research the building's orientation (`sources.md`, "North, when the source has no compass"), set `north` from that and say so in the run note. Never guess it: when it can't be found, leave it `null` and list it in `missing`. |
 | `levels` | One per floor (below). |
 | `sheet` | Several floors only, and only to overrule the drawer: `"row"` (side by side, bottoms lined up, as 225 E79) or `"stagger"` (two floors stepped from top left to bottom right, as 401 E89). Left out, it takes whichever draws the floors larger, preferring a row. |
 | `missing` | Plain sentences: what the source doesn't show, or what you left out. |
@@ -143,7 +143,7 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
   its right, 180 below, 270 to its left. Measure `at`, `w` and `h` so the fixture's edge lands on
   the wall face, not short of it or into it.
 - They draw in list order, so put a `counter` before the sink and range that sit on it.
-- **Draw every cabinet, closet and appliance box the source draws.** A box the list has no symbol for (a DW bay, a washer) is a `counter` or `lines` box
+- **Draw every cabinet, closet and appliance box the source draws.** A box the list has no symbol for (a DW bay, a laundry closet) is a `counter` or `lines` box
   with its small label.
 
 ### areas
@@ -198,7 +198,7 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
 
 ### labels
 
-`{ "text": "CL", "at": [x, y] }`: the small 6 pt words, such as CL, W/D, REF, DW, FP, UP, DN,
+`{ "text": "CL", "at": [x, y] }`: the small 7.2 pt words, such as CL, W/D, REF, DW, FP, UP, DN,
 BUILT-IN and LAUNDRY. Place each one inside its space, clear of walls and fixtures.
 
 ### lines

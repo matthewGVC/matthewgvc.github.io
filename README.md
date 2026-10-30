@@ -3,7 +3,7 @@
 GVC Workspace — the GVC Team's (Douglas Elliman) production workspace: every listing and new
 development with its facts, milestones and pieces, and the tools that make those pieces.
 
-Static site, no build step. GSAP via CDN on the tool pages.
+Static site, no build step. GSAP via CDN on the tool pages that animate.
 
 ## Local preview
 
@@ -15,7 +15,7 @@ Static site, no build step. GSAP via CDN on the tool pages.
 `/` forwards to `workspace/`. Its menu: **Overview** (every job's stage and milestones), **Resell**
 (listings, rentals and pitches), **New Dev** (developments),
 **Errors** (where Drive, Asana and DE disagree, `workspace/match/`) and **Tools** (`workspace/tools/`,
-the list of every tool below). A job's own page is `workspace/job/?listing=` / `?pitch=` / `?dev=`.
+the list of the tools below, all but Map Studio, which opens from a job). A job's own page is `workspace/job/?listing=` / `?pitch=` / `?dev=`.
 Sign-in is per person (Supabase); the desktop helper in `helper/` (see its README) syncs DE and Asana
 and writes PDFs into the job's Drive folder.
 
@@ -40,39 +40,29 @@ Push to `main`. GitHub Pages serves the repo root.
 
 ## Scripts
 
-Python — `pip install -r scripts/requirements.txt` (the floorplan scripts, film grain, phone mockup):
+Python: `pip install -r scripts/requirements.txt` (the floorplan scripts, film grain, phone mockup).
+Node: plain `node`, except the scripts that open pages, which need Playwright (`cd scripts && npm install`
+once) and the site served on :8080. Every check exits non-zero on a failure.
 
-- `sync_todo.py` — the SQL that mirrors `docs/todo.md` onto the live To-do page
-
-Plain Node, no install — each exits non-zero on a failure:
-
-- `test-property-model.js` — the shared property model (units, merges, resets)
-- `test-area-data.js` — the ranking claims in the area datasets ("fastest", "slowest") against their own figures
-- `test-destination-guide.js` — destination-guide POIs, source links, coordinates, and required page data
-- `test-listing.js` — the Showsheet's Word-document reader and its money math
-- `check-tools.js` — every tool against the house conventions (head, fonts, SRI, panel,
-  labels, listed on the Tools page, test lists); `node scripts/check-tools.js <slug>` for one
-- `test-nj-footprint.js` — the NJ Footprint sales list (counties, agents, prices) and its totals
-- `test-namecase.js` — the roster's name casing (particles, II/III/IV, Jr/Sr, Mc, initials)
-
-Node + Playwright — `cd scripts && npm install`:
-
-- `make-png.js` — regenerate the monogram PNG favicons from `assets/logos/monogram.svg`
-- `check-svgs.js` — render-check the monogram and lockup SVGs
+- `scripts/test-*.js` — one test per shared module or page (`test-job-facts.js`, `test-match-check.js`,
+  `test-piece-build.js`, `test-listing.js`…); run the ones for what you changed
+- `check-tools.js` — every tool against the house conventions (head, fonts, SRI, panel, labels, listed on
+  the Tools page, test lists); `node scripts/check-tools.js <slug>` for one
+- `verify-local.js` — load every page on localhost:8080 and fail on console errors, uncaught errors, SRI
+  blocks, missing files, missing chrome or sideways scroll; worth running before a publish
+- `interact-local.js` — click through every editor control on every tool (sections, buttons, dropdowns,
+  checkboxes, sliders, awkward text), print each to PDF, and fail on any error.
+  `node scripts/interact-local.js brochure` runs one tool. A tool's own "text runs past the page"
+  warning is listed, not failed
+- `dnd-local.js` — drag photos around the brochure, Seller Package, buyer package and showsheet with real
+  mouse events, and fail if a photo ever shows in two places
 - `baseline.js` — print every tool's reference pages to `exports/baseline/<date>/`;
   `node scripts/baseline.js --compare <date>` fails if any printed page moved
-- `verify-local.js` — load every page on localhost:8080 and fail on console errors,
-  uncaught errors, SRI blocks, missing files, missing chrome or sideways scroll.
-  Needs `cd scripts && npm install` once; exits non-zero, so it is worth running
-  before a publish
-- `interact-local.js` — click through every editor control on every tool (sections, buttons,
-  dropdowns, checkboxes, sliders, awkward text), print each to PDF, and fail on any error.
-  `node scripts/interact-local.js brochure` runs one tool. A tool's own "text runs past the
-  page" warning is listed, not failed
-- `dnd-local.js` — drag photos around the brochure, Seller Package, buyer package and showsheet with
-  real mouse events: tray to every slot, slot to slot by the grip, slot to tray, the X buttons and
-  panning. Uses six solid-colour photos so it can tell which photo landed where, and fails if a
-  photo ever shows in two places
+- `make-floorplan.js` — draw a job's floorplan from its `Floorplan\Design\plan.json` (the
+  `making-gvc-floorplans` skill)
+- `job-folders.js` — check or build a job's Drive folder against the standard in `assets/js/drive-rules.js`
+- `make-png.js` / `check-svgs.js` — regenerate and render-check the monogram favicons and lockup SVGs
+- `sync_todo.py` — the SQL that mirrors `docs/todo.md` onto the live To-do page
 
 ## Showsheet tool
 
@@ -130,7 +120,7 @@ The back keeps its lower right clear for the mail house. Tested by `node scripts
 `tools/brochure/` builds a property brochure, printed at 8.5 x 11 or 5.5 x 8.5 in (toggle under the
 preview). Photos are dragged onto the pages; the panel has the gallery layout and crops, the property
 facts, floor plans (two per page) and up to two agents. The property bar at the top of the panel saves
-the facts and the brochure, photos included, to the shared property library (team password) and loads
+the facts and the brochure, photos included, to the shared property library (signed in) and loads
 them back. Opened from a job (`?listing=<slug>`), `job-mode.js` fills it from the job instead.
 Print / Save PDF prints it.
 
@@ -163,6 +153,8 @@ pages; there is nothing to type and nothing is saved, but the page asks before y
 
 `tools/properties/` and `tools/cma/` are redirects only: Properties to the workspace's Resell list (every
 listing is a job now), the CMA to the Seller Package.
+`tools/new-development/` is archived: kept in the repo, off the Tools page and the checks (only `baseline.js` still prints it); developments
+live on the workspace's New Dev page.
 
 ## Floorplan Converter tool
 
@@ -199,9 +191,10 @@ the site.
 
 ## Docs
 
-- Working docs (status, to-do, decisions, folder standard) live in `docs/`, local only —
-  `docs/` is gitignored, so they do not ship with a clone.
+- Working docs (status, to-do, decisions, facts, folder standard) live in `docs/`, local only:
+  `docs/` is gitignored, so they do not ship with a clone. The one exception is
+  `docs/piece-helper-design.md`, which the code cites.
 
 ## To-do tool
 
-`tools/todo/` is Matt's to-do list (the team can see it; internal, not indexed). It mirrors `docs/todo.md` via `python scripts/sync_todo.py` (see the script). Rows live in the Supabase `todos` table (migration `0003_todos.sql`), behind the team sign-in. Tested by `node scripts/interact-local.js todo`.
+`tools/todo/` is Matt's to-do list (only Matt's sign-in reads or writes it, migration 0008; internal, not indexed). It mirrors `docs/todo.md` via `python scripts/sync_todo.py` (see the script). Rows live in the Supabase `todos` table (migration `0003_todos.sql`). Tested by `node scripts/interact-local.js todo`.

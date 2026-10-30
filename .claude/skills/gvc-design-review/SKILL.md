@@ -1,6 +1,6 @@
 ---
 name: gvc-design-review
-description: Use when reviewing GVC Workspace design work before it ships: a branch or diff touching tools/, assets/css, assets/js or index.html, a printed PDF, listing sheet, package, brochure, showsheet, NJ footprint, office-screen loop or any client-facing page. Use when asked to critique, audit, check brand or copy, or decide "is this ready to send" or "is this on brand".
+description: Use when reviewing GVC Workspace design work before it ships: a branch or diff touching tools/, workspace/, assets/css, assets/js or listing-rules/, a printed PDF, listing sheet, package, brochure, showsheet, NJ footprint, office-screen loop or any client-facing page. Use when asked to critique, audit, check brand or copy, or decide "is this ready to send" or "is this on brand".
 ---
 
 # GVC design review
@@ -31,7 +31,7 @@ Core principle: **evidence before opinion.** Every finding cites a file and line
 ```bash
 node .claude/skills/gvc-design-review/scripts/diff-lint.js            # added lines vs main
 node .claude/skills/gvc-design-review/scripts/diff-lint.js --all      # whole in-scope tree
-node scripts/check-tools.js <slug>                                    # tools: must print "<slug>  ok", no FAIL
+node scripts/check-tools.js <slug>                                    # tools: no FAIL lines ("<slug>  ok" when there are no warnings either)
 ```
 
 `diff-lint.js` is a grep, so every hit is a lead. For each one, read the line in context and decide: real defect, intentional (test data, a documented exception), or false positive. Report only the real ones and the ones you could not decide. Legacy hex in untouched lines is out of scope; `check-tools` already warns about it.
@@ -51,7 +51,7 @@ This writes `tmp/review/<slug>/desktop.png`, `mobile.png` and `print.pdf`, and r
 Check at minimum:
 - **Printed pages:** every page, both paper sizes the surface offers, no half-empty or overflowing page, text not cut at a page break, fonts embedded.
 - **Screens:** the first screen at desktop and at 375px; the masthead and footer; focus outlines on a Tab press.
-- **Motion:** for loops, `seam.js` output and a still from the start and end; for live pages, that nothing animates under reduced motion.
+- **Motion:** for loops, the output of `exports/office-screens/source/checks/seam.js` (untracked, local only) and a still from the start and end; for live pages, that nothing animates under reduced motion.
 
 WebKit cannot produce a PDF through Playwright. If the change touches print, say in the review that the Safari print check is outstanding unless someone has done it.
 
@@ -82,7 +82,9 @@ Walk `references/review-checklist.md`. Only record a failure you can point to. G
 - a stamp removed without its real data
 - a shared file changed so that another market or tool's output moved
 - Sky used as text on Paper; gradient text; glass panels; a decorative eyebrow
-- a Google Fonts link on a tool, or a CDN script without a pinned version and integrity hash
+- a Google Fonts link on a tool page, or a CDN script without a pinned version and integrity hash
+  (the lint reads tool HTML only: a font `@import` written by a tool's script, like the old SVG
+  converter's in `tools/floorplan/floorplan.js`, needs a look by eye)
 - client or owner personal data in a file or in saved state
 - a frozen output changed
 

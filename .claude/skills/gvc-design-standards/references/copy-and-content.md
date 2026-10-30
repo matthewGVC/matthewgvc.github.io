@@ -26,7 +26,7 @@ When real content is missing, show a stamp that a reader cannot miss. Existing s
 | "Work in progress" | Page is live but not cleaned up | NJ Meet Your Agent pages |
 | Red "CHECK" tag | Item needs confirmation with the agents | NJ 50 Things, via `NJ_FIFTY_CHECK` (empty since 2026-10-28: Marli's own list) |
 | Dashed "to be added" (editor only) | A vendor category has no name yet | Marli's Preferred Vendors, Useful Links page |
-| "Needs updating" | Map or image is a stand-in | NJ buyer why-page map |
+| "Check" (with the warning icon) | The NJ figures still need checking | NJ buyer costs page (editor only, never printed) |
 | "Draft" stamp | Draft status | Off for NJ Footprint since 2026-10-13 |
 
 Rules for stamps:
@@ -47,9 +47,9 @@ Rules for stamps:
 - **Stock only when verifiable.** Pexels or Unsplash, free licence, verifiably of the stated place. Record the photo ID in a code comment. The NJ seller deck uses NJ stock only.
 - **Stock Photos folder** (`G:/Shared drives/GVC - Marketing/02 - Assets/Stock Photos`): organised by place, with Destination Guide Photos holding every guide photo plus a sources and licences README. New stock goes in the matching folder named `Place - Subject - Source ID (Photographer)`.
 - **Check License First** images: third-party credit, an MLS watermark or an unknown source. Do not publish them. Never delete them.
-- **No low-res.** Print needs the high-resolution original. Recent exception: `why-nyc.png` is 2.0 MB and stays because it is in use.
+- **No low-res.** Print needs the high-resolution original, but keep site images under 2 MB (none is over today).
 - **No drawn stand-ins for photos.** A drawn camera or scene that stands in for a real photo looked fake; stamp the gap instead.
-- Photos in printed tools are dragged in through `photo-dnd.js`; check each photo lands where it was dropped and never shows twice (`dnd-local.js`).
+- Photos in printed tools are dragged in through `photo-dnd.js`; check each photo lands where it was dropped and never shows twice (`node scripts/dnd-local.js` tests it).
 
 ## Client data and privacy
 

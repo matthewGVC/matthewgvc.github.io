@@ -4,11 +4,11 @@ The office TVs play these loops for hours. Calm beats clever. Each piece must lo
 
 ## Pipeline (summary)
 
-Full detail: `docs/office-screens-handoff.md` and `exports/office-screens/source/README.md`.
+Full detail: `exports/office-screens/source/README.md` (the pieces, the source files, the 3D rules).
 
 1. Each renderer is a pure function `RENDER[name](ctx, W, H, p, portrait)` with `p` in [0,1) as loop phase, so frames are deterministic.
 2. Build the page from the template, then render through headless Chromium piped to ffmpeg: one continuous H.264 encode per video (High@5.1, CRF 15, 30 fps, yuv420p). Do not split a video into chunks; each join shows a bump.
-3. Finish, then run the checks in `exports/office-screens/source/checks/` (seam, stills, contact sheet, and overlap for any 3D piece). Run `seam.js` after every change.
+3. Finish, then run the checks in `exports/office-screens/source/checks/` (`seam.js`, the stills `shoot.js` / `shoot4k.js`, and the contact sheet `sweep.js`; for any 3D piece also `../overlap.js`). Run `seam.js` after every change.
 4. Output delivered as 4K. Matt wants only 4K files in the delivery folder: no test copies, no thumbnails cluttering `v03`.
 5. Site page `tools/office-screens/` plays all loops live. Regenerate `screens.js` with `site_build.py` when a renderer changes.
 

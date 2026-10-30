@@ -77,6 +77,8 @@
      M18  No folder is linked, but the nightly scan found one on Drive that looks
           like this job's (scan.candidate, helper/scan.js, the same matching as
           the Link folder suggestions). Takes M6's place; fix in the workspace.
+          A guess by the AI pass (scan.candidateBy 'ai', D123) says so, with the
+          model's reason (candidateWhy): check it before linking.
      M19  Probably the same listing: a DE listing at the job's building with no
           job (GVC-listed on DE, or any one when the job has no unit), while the
           job isn't on DE; or, for a job on DE, the same unit as the other kind
@@ -439,7 +441,11 @@
     if (PREP_ON.indexOf(stage) !== -1) {
       var cand = scan && typeof scan.candidate === 'string' && scan.candidate ? scan.candidate : null;
       if ((!job.drive_folder || job.folder_state === 'unlinked') && cand) {
-        add('M18', 'M18', 'A folder for this job is on Drive at ' + cand + '; link it.', { candidate: cand, stage: stage }, 'Matt');
+        if (scan.candidateBy === 'ai') {
+          var why = typeof scan.candidateWhy === 'string' ? scan.candidateWhy.replace(/\.\s*$/, '') : '';
+          add('M18', 'M18', 'AI guess, not a match: this job\'s folder may be ' + cand + (why ? ' (' + why + ')' : '') +
+            '. Check it before you link it.', { candidate: cand, stage: stage, by: 'ai', why: why }, 'Matt');
+        } else add('M18', 'M18', 'A folder for this job is on Drive at ' + cand + '; link it.', { candidate: cand, stage: stage }, 'Matt');
       } else if (!job.drive_folder || job.folder_state === 'unlinked') {
         add('M6', 'M6', 'No Drive folder is linked, and the job is ' + stagePhrase(stage) + '.', { folder: null, stage: stage }, 'Drive');
       } else if (job.folder_state === 'broken') {
@@ -706,7 +712,7 @@
     M15: 'The estimated listing date has passed while the job is still in Prep.',
     M16: 'The Point Person has left the team.',
     M17: 'A value you typed differs from DE\'s or Asana\'s.',
-    M18: 'A folder for this job\'s address is already on Drive. Link it on the job page; nothing on Drive moves.',
+    M18: 'A folder for this job\'s address is already on Drive, or, marked AI guess, one the AI thinks is the job\'s. Link it on the job page; nothing on Drive moves.',
     M19: 'DE has a listing at this building with no job; it is probably this one under another unit or as a rental. Fix the unit in Asana or link it.',
     M20: 'An old starter or library row is the same home as this job. Archive it.',
     M21: 'The deal has been in contract a long time, or its closing date has passed. Check where it stands.',

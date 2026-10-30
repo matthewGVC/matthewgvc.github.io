@@ -26,6 +26,16 @@
    suggestion only: nothing is linked here, and nothing on Drive is written. Paperwork folders and loose paperwork files
    are skipped entirely (assets/js/drive-rules.js). Nothing on Drive is
    ever changed (D7, D10).
+
+   The AI pass (D123, folder-ai.js), only when scanAll is given `ask` (the
+   config holds anthropicKey): a staged job (not Archived) still with no
+   folder and no candidate after the address matching gets one question to
+   Claude Haiku over the folder NAMES of its market and New Development. A
+   pick is kept as scan.candidate with candidateBy 'ai' and candidateWhy (the
+   model's one-line reason); every ask stamps candidateAiAt, and a job is
+   asked again only after AI_RETRY_DAYS. The guess stands until the address
+   matching finds a folder or the job is linked; it is never linked by
+   itself. Each ask logs the job and the path chosen, never the folder list.
    ============================================================ */
 'use strict';
 
@@ -37,6 +47,9 @@ const HEALTH = require('../assets/js/folder-health.js');
 const { driveLink } = require('./drive-link.js');
 const PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market'];   // match-check.js's, M18 (D88)
 const NYC_ROOT = 'GVC - New York/Building Information';
+const AI = require('./folder-ai.js');
+const AI_RETRY_DAYS = 7;
+const CAND_KEYS = ['candidate', 'candidateAt', 'candidateBy', 'candidateWhy', 'candidateAiAt'];
 
 /* folder names under the Drive root, as GVC_DRIVE.list gives them; read once per run */
 function driveLister(root) {
@@ -175,7 +188,8 @@ async function scanAll(o) {
   const now = o.now || new Date();
   const since = new Date(now.getTime() - 400 * 864e5).toISOString().slice(0, 10);   // the overview shows six months
   const run = (await client.insert('sync_runs', { kind: 'scan', started_at: now.toISOString() }))[0];
-  const out = { scanned: 0, broken: 0, candidates: 0 };
+  const out = { scanned: 0, broken: 0, candidates: 0, aiAsked: 0, aiGuesses: 0 };
+  const say = o.log || (m => console.log(m));
   // G: not mounted (Drive for Desktop not running): every folder would look gone
   if (!fs.existsSync(o.driveRoot)) {
     out.aborted = 'Google Drive isn\'t mounted (no ' + o.driveRoot + '), so nothing was scanned or marked.';
@@ -197,7 +211,7 @@ async function scanAll(o) {
       } else {
         const abs = path.join(o.driveRoot, ...r.drive_folder.split('/'));
         const keep = {};
-        ['candidate', 'candidateAt'].forEach(k => { if (r.scan && r.scan[k] !== undefined) keep[k] = r.scan[k]; });
+        CAND_KEYS.forEach(k => { if (r.scan && r.scan[k] !== undefined) keep[k] = r.scan[k]; });
         patch.scan = Object.assign({ weeks: s.weeks, found: s.found, scannedAt: now.toISOString() }, richScan(abs, treeOf(abs, 4), r), keep);
         if (r.folder_state === 'broken') { patch.folder_state = 'linked'; changes.push(log(owner, r.id, 'folder_state', 'broken', 'linked')); }
       }
@@ -213,9 +227,34 @@ async function scanAll(o) {
       let cand = null;
       try { cand = await candidateFor(D, r); } catch (e) { cand = null; }
       if (cand) out.candidates++;
-      if ((r.scan && r.scan.candidate || null) === cand) continue;
+      const prev = r.scan || {};
+      if (!cand && prev.candidateBy === 'ai') continue;   // the AI's guess stands until the matching finds one
+      if ((prev.candidate || null) === cand && prev.candidateBy !== 'ai') continue;
+      const next = Object.assign({}, prev, { candidate: cand, candidateAt: now.toISOString() });
+      delete next.candidateBy; delete next.candidateWhy;
       try {
-        await client.update(table, { id: r.id }, { scan: Object.assign({}, r.scan || {}, { candidate: cand, candidateAt: now.toISOString() }) }, { version: r.version });
+        await client.update(table, { id: r.id }, { scan: next }, { version: r.version });
+      } catch (e) { if (e.name !== 'ConflictError') throw e; }
+    }
+    if (!o.ask) continue;
+    // the AI pass: staged jobs the matching couldn't place (D123); read again, the loop above moved versions
+    const fresh = await client.select(table);
+    const taken = fresh.filter(x => x.drive_folder && x.folder_state !== 'unlinked').map(x => x.drive_folder);
+    const unplaced = fresh.filter(x => x.stage && x.stage !== 'Archived' && (!x.drive_folder || x.folder_state === 'unlinked') &&
+      !(x.scan && x.scan.candidate) && !(x.scan && Date.parse(x.scan.candidateAiAt) > now.getTime() - AI_RETRY_DAYS * 864e5));
+    for (const r of unplaced) {
+      const core = r.core || {};
+      const name = [core.address || r.label || r.id, core.unit].filter(Boolean).join(' ');
+      let g;
+      try {
+        g = await AI.guess({ ask: o.ask, row: r, paths: await AI.folderNames(D, r, { taken }) });
+      } catch (e) { say('AI folder guess: ' + name + ': failed (' + e.message + '); asked again next night.'); continue; }
+      out.aiAsked++;
+      if (g) out.aiGuesses++;
+      say('AI folder guess: ' + name + ' -> ' + (g ? g.path : 'none'));
+      const extra = g ? { candidate: g.path, candidateAt: now.toISOString(), candidateBy: 'ai', candidateWhy: g.why } : {};
+      try {
+        await client.update(table, { id: r.id }, { scan: Object.assign({}, r.scan || {}, extra, { candidateAiAt: now.toISOString() }) }, { version: r.version });
       } catch (e) { if (e.name !== 'ConflictError') throw e; }
     }
   }
@@ -230,6 +269,6 @@ if (require.main === module) {
   const { loadConfig } = require('./config.js');
   const cfg = loadConfig(), client = require('./supabase.js').createClient(cfg);
   if (!client.ready()) { console.log('No helper account yet.'); process.exit(1); }
-  scanAll({ client, driveRoot: 'G:\\Shared drives' }).then(o => console.log('Scanned ' + o.scanned + ', ' + o.broken + ' broken.'),
+  scanAll({ client, driveRoot: 'G:\\Shared drives', ask: AI.makeAsk(cfg) }).then(o => console.log('Scanned ' + o.scanned + ', ' + o.broken + ' broken.'),
     e => { console.log('Scan failed: ' + e.message); process.exit(1); });
 }

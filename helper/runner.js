@@ -108,7 +108,7 @@ async function startRunner(cfg) {
       de: () => require('./de-sync.js').syncNow({ cfg, client }),
       ...asanaJobs(cfg, client),
       ...budgetJobs(cfg, client),
-      scan: () => require('./scan.js').scanAll({ client, driveRoot: 'G:\\Shared drives' }),
+      scan: () => require('./scan.js').scanAll({ client, driveRoot: 'G:\\Shared drives', ask: require('./folder-ai.js').makeAsk(cfg) }),
       backup: async () => {
         const date = new Date().toISOString().slice(0, 10);
         await require('./backup.js').backup({ client, outDir: path.join(exportsDir, 'supabase-nightly-' + date) });

@@ -21,6 +21,10 @@
    Every NJ listing is too, with or without a development row (a TJ New Dev
    house such as "New Development/619 Bradley Ave"): the top level, and one
    level inside a development's folder ("New Development/Westwood/<house>").
+
+   The dialog also offers the nightly scan's candidate (row.scan.candidate)
+   first; one the AI pass picked (candidateBy 'ai', D123) is marked "AI
+   guess" with its reason, and is linked only if Matt picks it.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -154,8 +158,14 @@
           return;
         }
         return suggest(D, A, o.table, o.row).then(function (paths) {
+          var sc = o.row.scan || {}, note = {};
+          if (typeof sc.candidate === 'string' && sc.candidate) {
+            if (paths.indexOf(sc.candidate) === -1) paths = [sc.candidate].concat(paths);
+            if (sc.candidateBy === 'ai') note[sc.candidate] = 'AI guess' + (sc.candidateWhy ? ': ' + String(sc.candidateWhy).replace(/\.\s*$/, '') : '') + '. Check it before you pick it.';
+          }
           list.innerHTML = paths.length ? '<p class="lbl" style="margin:0 0 8px">Suggestions</p>' + paths.map(function (p, i) {
-            return '<button type="button" class="b" style="display:flex;width:100%;justify-content:flex-start;margin-bottom:6px;white-space:normal;text-align:left" data-i="' + i + '">' + esc(p) + '</button>';
+            return '<button type="button" class="b" style="display:flex;flex-direction:column;align-items:flex-start;width:100%;margin-bottom:6px;white-space:normal;text-align:left" data-i="' + i + '">' + esc(p) +
+              (note[p] ? '<span class="soft" style="font-size:12.5px;margin-top:2px">' + esc(note[p]) + '</span>' : '') + '</button>';
           }).join('') : '<p class="soft">No folder with this address turned up. Use Browse to pick it.</p>';
           list.querySelectorAll('button[data-i]').forEach(function (b) { b.addEventListener('click', function () { pick(paths[+b.dataset.i]); }); });
         });

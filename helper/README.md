@@ -17,6 +17,21 @@ every hour. A slot missed while the PC was off runs when the helper starts. They
 requests run only once the helper account (`helperEmail`, `helperPassword`) is in the config;
 until then the log says "No helper account yet".
 
+## The AI folder guess (D123, `folder-ai.js`)
+
+Off unless the config holds `anthropicKey`. After the nightly scan's address matching, each job
+with a stage (not Archived) that still has no folder and no candidate gets one question to Claude
+Haiku: here are the folder NAMES of the job's market (its resale or Building Information folders and
+its New Development, up to three levels down), which one is this job's, or none? Never file contents,
+never paperwork folders, never South Street Development Docs, never a folder already linked to
+another job. A pick shows on the Errors page as M18 "AI guess, not a match" with the model's reason,
+and first in the job page's Link folder dialog; nothing is ever linked by it. A job is asked again a
+week after a "none", and the next night after a failed call. Each ask is one line in the log (the
+job and the path chosen, never the list). Folder names can hold client surnames, and they go to the
+AI service: the key goes in only with Matt's OK.
+`node helper/folder-ai-dry.js "1000 Nixon" …` shows what would be sent for some jobs, with a stub;
+add `--ask` for a real answer. Neither writes anything.
+
 ## Pieces made from a job (migration 0017)
 
 Make / Rebuild on a job page (from any device) adds a row to `piece_requests`. The helper
@@ -49,7 +64,7 @@ exit ends it). Run it from the main repo folder.
 
 ## Where its files live
 
-- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`), pairing code, caches:
+- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`, `anthropicKey`), pairing code, caches:
   `%USERPROFILE%\.gvc-helper\` (never in this repo). Not under
   AppData: Windows gives the Claude desktop app its own private copy of AppData.
 - Log: `%USERPROFILE%\.gvc-helper\helper.log`.

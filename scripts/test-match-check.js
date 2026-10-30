@@ -345,6 +345,13 @@ const noFolder = { drive_folder: null, folder_state: 'unlinked' };
 let m18 = M.check(job(Object.assign({}, noFolder, { scan: { candidate: CAND, candidateAt: '2026-10-20T06:00:00Z' } })), ctx());
 check('M18: a folder found by the scan replaces M6, fix in the workspace', [has(m18, 'M6').length, has(m18, 'M18').map(m => [m.key, m.text, m.fixAt, m.values])],
   [0, [['M18', 'A folder for this job is on Drive at ' + CAND + '; link it.', 'Matt', { candidate: CAND, stage: 'Live' }]]]);
+const AIC = 'GVC - New Jersey/New Development/6A - Brickman';
+m18 = M.check(job(Object.assign({}, noFolder, { scan: { candidate: AIC, candidateBy: 'ai', candidateWhy: 'Brickman is the seller and 6A the unit.' } })), ctx());
+check('M18: an AI guess says so, with its reason, and asks for a check (D123)', [has(m18, 'M6').length, has(m18, 'M18').map(m => [m.text, m.fixAt, m.values])],
+  [0, [['AI guess, not a match: this job\'s folder may be ' + AIC + ' (Brickman is the seller and 6A the unit). Check it before you link it.', 'Matt',
+    { candidate: AIC, stage: 'Live', by: 'ai', why: 'Brickman is the seller and 6A the unit' }]]]);
+check('M18: an AI guess with no reason still says AI guess', has(M.check(job(Object.assign({}, noFolder, { scan: { candidate: AIC, candidateBy: 'ai' } })), ctx()), 'M18').map(m => m.text),
+  ['AI guess, not a match: this job\'s folder may be ' + AIC + '. Check it before you link it.']);
 check('M18: no candidate keeps M6', [has(M.check(job(noFolder), ctx()), 'M6').length, has(M.check(job(noFolder), ctx()), 'M18').length], [1, 0]);
 check('M18: a linked folder: nothing', has(M.check(job({ scan: { candidate: CAND } }), ctx()), 'M18').length, 0);
 check('M18: Off market: the folder found is offered too (D88)', has(M.check(job(Object.assign({}, noFolder, { stage: 'Off market', de_stage: null, de_listing_id: null, de: null, scan: { candidate: CAND },

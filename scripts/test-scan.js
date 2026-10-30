@@ -166,6 +166,78 @@ function file(root, rel, date) {
   await scanAll({ client: db2, driveRoot: root2, now: new Date('2026-10-22T02:00:00Z') });
   check('M18 scan: the same candidate again is not written again', writes2 - w2, 0);
 
+  /* ---------- D123: the AI pass, with a stubbed model (never a real call) ---------- */
+  {
+    const AI = require('../helper/folder-ai.js');
+    const rootA = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-ai-'));
+    const RS = 'GVC - New Jersey/1. Residential Sales/1. Resale', ND = 'GVC - New Jersey/New Development';
+    [RS + '/Edison/Nixon Estate', RS + '/Edison/Offers', RS + '/Edison/Linked Job', RS + '/Edison/Signed Contract Copies', RS + '/Wall Township/12 Elm St',
+      ND + '/6A - Brickman/Photos', ND + '/Seaside/Lot 4/Floorplan/Deep', 'GVC - New York/Building Information/9 Far Away St',
+      'South Street Development Docs/Budget', ND + '/South Street Development Docs/Budget'].forEach(d => fs.mkdirSync(path.join(rootA, ...d.split('/')), { recursive: true }));
+    const nj = (id, extra) => Object.assign({ id, slug: id, version: 1, market: 'NJ', stage: 'Live', drive_folder: null, folder_state: 'unlinked' }, extra);
+    const TA = { properties: [
+      nj('a1', { core: { address: '1000 Nixon Ln', city: 'Edison', state: 'NJ' } }),   // the AI picks a folder
+      nj('a2', { core: { address: '19 Sample Gait Ln' }, stage: 'Prep' }),              // the AI says none
+      nj('a3', { core: { address: '7 Gone Rd' }, stage: 'Archived' }),                  // archived: never asked
+      nj('a4', { core: { address: '8 Library Rd' }, stage: null }),                     // no stage: never asked
+      nj('a5', { core: { address: '12 Elm St' } }),                                     // the address matching places it
+      nj('a6', { core: { address: '1 Linked Rd' }, drive_folder: RS + '/Edison/Linked Job', folder_state: 'linked' }),
+      nj('a7', { core: { address: '3 Madeup Rd' } }),                                   // the AI names a folder not on the list
+      nj('a8', { core: { address: '4 Broken Rd' } })                                    // the call fails
+    ], pitches: [], changes: [], sync_runs: [] };
+    const dbA = {
+      ready: () => true,
+      select: async t => JSON.parse(JSON.stringify(TA[t])),
+      insert: async (t, rows) => [].concat(rows).map((r, i) => { const x = Object.assign({ id: t + TA[t].length + i }, r); TA[t].push(x); return x; }),
+      update: async (t, m, patch, opt) => { const r = TA[t].find(x => x.id === m.id); if (opt && opt.version !== r.version) { const e = new Error('c'); e.name = 'ConflictError'; throw e; }
+        Object.assign(r, patch, { version: r.version + 1 }); return [r]; }
+    };
+    const prompts = [], logs = [];
+    const ask = async prompt => {
+      prompts.push(prompt);
+      if (prompt.includes('1000 Nixon Ln')) return { folder: RS + '/Edison/Nixon Estate', reason: 'Nixon is the street and the folder is in Edison.' };
+      if (prompt.includes('3 Madeup Rd')) return { folder: RS + '/Edison/3 Madeup Rd', reason: 'made up' };
+      if (prompt.includes('4 Broken Rd')) throw new Error('network down');
+      return { folder: '', reason: 'Nothing fits.' };
+    };
+    const beforeA = tree(rootA);
+    const sc = id => TA.properties.find(p => p.id === id).scan || {};
+    await scanAll({ client: dbA, driveRoot: rootA, now: new Date('2026-10-30T02:00:00Z') });
+    check('AI pass: off without ask (no key): nothing asked, nothing stamped', [prompts.length, sc('a1').candidateAiAt || null], [0, null]);
+    const outA = await scanAll({ client: dbA, driveRoot: rootA, now: new Date('2026-10-31T02:00:00Z'), ask, log: m => logs.push(m) });
+    check('AI pass: asked once per unplaced staged job (not archived, not stageless, not placed, not linked)',
+      prompts.map(p => /Address: (.*)/.exec(p)[1]).sort(), ['1000 Nixon Ln', '19 Sample Gait Ln', '3 Madeup Rd', '4 Broken Rd']);
+    check('AI pass: the pick is kept as an AI candidate with its reason', [sc('a1').candidate, sc('a1').candidateBy, sc('a1').candidateWhy, sc('a1').candidateAiAt],
+      [RS + '/Edison/Nixon Estate', 'ai', 'Nixon is the street and the folder is in Edison.', '2026-10-31T02:00:00.000Z']);
+    check('AI pass: none: no candidate, the ask is stamped', [sc('a2').candidate || null, sc('a2').candidateAiAt], [null, '2026-10-31T02:00:00.000Z']);
+    check('AI pass: a path not on the list is no answer', [sc('a7').candidate || null, sc('a7').candidateBy || null], [null, null]);
+    check('AI pass: a failed call is not stamped, so it is asked again', sc('a8').candidateAiAt || null, null);
+    check('AI pass: the matching\'s own candidate is not marked AI', [sc('a5').candidate, sc('a5').candidateBy || null], [RS + '/Wall Township/12 Elm St', null]);
+    check('AI pass: counted', [outA.aiAsked, outA.aiGuesses], [3, 1]);
+    const p1 = prompts.find(p => p.includes('1000 Nixon Ln'));
+    check('AI pass: the prompt has the job, its town and the market\'s folders, three levels down', [p1.includes('Town: Edison, NJ'), p1.includes(ND + '/6A - Brickman'),
+      p1.includes(ND + '/Seaside/Lot 4/Floorplan'), p1.includes('Floorplan/Deep')], [true, true, true, false]);
+    check('AI pass: never paperwork, SSDG, another drive, or a folder linked to another job', ['Offers', 'Signed Contract', 'South Street', '9 Far Away', 'Linked Job'].filter(w => p1.includes(w)), []);
+    check('AI pass: the log names the job and the path chosen, never the folder list',
+      [logs.includes('AI folder guess: 1000 Nixon Ln -> ' + RS + '/Edison/Nixon Estate'), logs.includes('AI folder guess: 19 Sample Gait Ln -> none'),
+        logs.some(l => /4 Broken Rd: failed \(network down\)/.test(l)), logs.some(l => l.includes('Brickman'))], [true, true, true, false]);
+    check('AI pass: nothing linked by itself', TA.properties.filter(p => p.id !== 'a6' && p.drive_folder).length, 0);
+    prompts.length = 0;
+    await scanAll({ client: dbA, driveRoot: rootA, now: new Date('2026-11-01T02:00:00Z'), ask, log: m => logs.push(m) });
+    check('AI pass: next night only the failed one is asked again; the guess stands', [prompts.map(p => /Address: (.*)/.exec(p)[1]), sc('a1').candidate, sc('a1').candidateBy],
+      [['4 Broken Rd'], RS + '/Edison/Nixon Estate', 'ai']);
+    prompts.length = 0;
+    await scanAll({ client: dbA, driveRoot: rootA, now: new Date('2026-11-08T02:00:00Z'), ask, log: m => logs.push(m) });
+    check('AI pass: a none is asked again after a week', prompts.map(p => /Address: (.*)/.exec(p)[1]).sort(), ['19 Sample Gait Ln', '3 Madeup Rd', '4 Broken Rd']);
+    fs.mkdirSync(path.join(rootA, ...(RS + '/Edison/1000 Nixon Ln').split('/')), { recursive: true });
+    await scanAll({ client: dbA, driveRoot: rootA, now: new Date('2026-11-09T02:00:00Z'), ask, log: m => logs.push(m) });
+    check('AI pass: the matching finding a folder replaces the AI guess', [sc('a1').candidate, sc('a1').candidateBy || null, sc('a1').candidateWhy || null], [RS + '/Edison/1000 Nixon Ln', null, null]);
+    fs.rmdirSync(path.join(rootA, ...(RS + '/Edison/1000 Nixon Ln').split('/')));
+    check('AI pass: Drive left exactly as it was', JSON.stringify(tree(rootA)) === JSON.stringify(beforeA), true);
+    check('AI pass: off without a key', [AI.makeAsk(null), AI.makeAsk({}), typeof AI.makeAsk({ anthropicKey: 'k' })], [null, null, 'function']);
+    check('AI pass: the latest Haiku', AI.MODEL, 'claude-haiku-5-5');
+  }
+
   /* ---------- S15: the folder link, pieces with links, health notes; paperwork never kept ---------- */
   const root3 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-drive3-'));
   const JF = 'GVC - New York/Building Information/9 Sample Pl/2A';

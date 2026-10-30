@@ -308,6 +308,17 @@ const USERS = {
     const dv = await ver('dev_projects', devId);
     check('dev milestones saved', (await sj('matt', 'dev_projects', devId, dv, { milestones: { renders: { done: true } } }, [{ field: 'renders', new_value: true }])).rows[0].r.milestones, { renders: { done: true } });
     check('dev change row has its owner', await count('dev_project_id = $1 and field = $2', devId, 'renders'), 1);
+    if (UPTO >= '0018') {
+      // 0018: a development is archived and brought back, only by true or false, only by the owner
+      const av = await ver('dev_projects', devId);
+      check('team: dev archive refused', await sjErr('team', 'dev_projects', devId, av, { archived: true }, []), 'not allowed');
+      await sj('matt', 'dev_projects', devId, av, { archived: true }, [{ field: 'archived', old_value: false, new_value: true }]);
+      check('dev archived', (await db.query('select archived_at is not null as a from public.dev_projects where id = $1', [devId])).rows[0].a, true);
+      check('dev archive logged', await count('dev_project_id = $1 and field = $2', devId, 'archived'), 1);
+      check('dev archived takes only true or false', await sjErr('matt', 'dev_projects', devId, av + 1, { archived: 'yes' }, []), 'bad archived');
+      await sj('matt', 'dev_projects', devId, av + 1, { archived: false }, []);
+      check('dev brought back', (await db.query('select archived_at from public.dev_projects where id = $1', [devId])).rows[0].archived_at, null);
+    }
 
     // an empty set: only change rows, no version check, row returned as it is
     const e1 = (await sj('matt', 'properties', pid, 1, {}, [{ field: 'floorplan', new_value: 'v2' }, { note: 'called the agent' }])).rows[0].r;

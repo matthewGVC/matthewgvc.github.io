@@ -66,6 +66,11 @@ const J = id => jobs.find(j => j.id === id) || {};
 check('library rows without a stage stay off', jobs.some(j => j.id === 'p6'), false);
 check('archived hidden by default', jobs.some(j => j.id === 'p5'), false);
 check('archived on request', W.buildJobs({ properties: props, pitches, devProjects: devs, changes }, TODAY, { archived: true }).some(j => j.id === 'p5'), true);
+// 0018: an archived development, the same way
+const archDev = [{ id: 'da', slug: 'old-dev', label: 'Old Dev', market: 'NJ', milestones: {}, archived_at: '2026-10-30T14:00:00Z' }];
+check('archived development hidden by default', W.buildJobs({ properties: [], pitches: [], devProjects: archDev, changes: [] }, TODAY).length, 0);
+check('archived development on request, staged Archived', W.buildJobs({ properties: [], pitches: [], devProjects: archDev, changes: [] }, TODAY, { archived: true })
+  .map(j => [j.id, j.stage, j.archived]), [['da', 'Archived', true]]);
 check('won pitch folds into its listing', jobs.some(j => j.id === 'q2'), false);
 check('types', ['p1', 'p2', 'q1', 'd1'].map(id => J(id).type), ['listing', 'rental', 'pitch', 'development']);
 

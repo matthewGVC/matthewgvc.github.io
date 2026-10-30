@@ -217,12 +217,12 @@
       searchRows = Promise.all([
         ask('/properties?select=slug,label,kind,market,stage,core&stage=not.is.null'),
         ask('/pitches?select=slug,label,market,outcome'),
-        ask('/dev_projects?select=slug,label,market')
+        ask('/dev_projects?select=slug,label,market,archived_at')
       ]).then(function (r) {
         var out = [];
         r[0].forEach(function (x) { var c = x.core || {}; out.push({ name: x.label || c.address || 'Untitled listing', meta: [x.market, x.kind === 'rental' ? 'Rental' : '', x.stage], href: 'job/?listing=' + encodeURIComponent(x.slug), hay: [x.label, c.address, c.unit, c.city, c.town, x.market, x.stage].join(' ') }); });
         r[1].forEach(function (x) { out.push({ name: x.label || 'Pitch', meta: [x.market, 'Pitch'], href: 'job/?pitch=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'pitch'].join(' ') }); });
-        r[2].forEach(function (x) { out.push({ name: x.label || 'Development', meta: [x.market, 'Development'], href: 'job/?dev=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'development'].join(' ') }); });
+        r[2].forEach(function (x) { out.push({ name: x.label || 'Development', meta: [x.market, 'Development', x.archived_at ? 'Archived' : ''], href: 'job/?dev=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'development'].join(' ') }); });
         out.forEach(function (o) { o.hay = o.hay.toLowerCase(); });
         return out;
       });

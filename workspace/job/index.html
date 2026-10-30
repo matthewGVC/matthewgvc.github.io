@@ -476,7 +476,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
       (j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
-      (kind === 'dev' && state.budget ? '<a class="b" href="https://docs.google.com/spreadsheets/d/' + esc(state.budget.sheet_id) + '/edit" target="_blank" rel="noopener">' + I('arrow') + 'Budget sheet</a>' : '') + '</div>';
+      (kind === 'dev' && state.budget ? '<a class="b" href="https://docs.google.com/spreadsheets/d/' + esc(state.budget.sheet_id) + '/edit" target="_blank" rel="noopener">' + I('arrow') + 'Budget sheet</a>' : '') +
+      // a development is archived here (0018), the owner only; a listing's header keeps no archive button (tune-ups 3)
+      (JP.canEdit && kind === 'dev' ? '<button class="b" type="button" id="archive">' + (isArchived() ? 'Restore' : 'Archive') + '</button>' : '') + '</div>';
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
       '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
@@ -488,7 +490,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     if (kind === 'listing') right.push(asanaCard());
     // a development shows the phase its build is in (Asana's schedule), else its milestone stage
     var phase = kind === 'dev' && window.GVC_DEVBUILD.currentPhase(r.schedule);
-    var stage = phase ? '<span class="chip">' + esc((phase.section ? window.GVC_DEVBUILD.sectionLabel(phase.section) + ': ' : '') + phase.name) + '</span>' : '<span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>';
+    var stage = isArchived() ? '<span class="chip">Archived</span>' : phase ? '<span class="chip">' + esc((phase.section ? window.GVC_DEVBUILD.sectionLabel(phase.section) + ': ' : '') + phase.name) + '</span>' : '<span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>';
     page('<div class="hd"><div><h1>' + esc(j.name) + ' ' + stage + '</h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
       // the folder's path itself isn't shown (Open folder and the Drive links reach it); only a problem with it is
       (!r.drive_folder ? '<div class="path" style="margin-top:8px">No Drive folder linked yet</div>' : r.folder_state === 'broken' ? '<div class="path" style="margin-top:8px"><span class="chip stale">Drive folder moved or renamed</span></div>' : '') +
@@ -522,7 +524,17 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     if ($('link')) $('link').addEventListener('click', function () {
       GVC_LINK.open({ table: TABLE, row: r, job: j }).then(function (ok) { if (ok) load(); });
     });
+    if ($('archive')) $('archive').addEventListener('click', function () {
+      var was = isArchived();
+      if (!window.confirm(was ? 'Restore ' + j.name + '? It goes back on the overview and the lists.'
+                              : 'Archive ' + j.name + '? It leaves the overview, the lists and the error count. Tick "Show archived" on the overview to see it again.')) return;
+      this.disabled = true;
+      JP.save(TABLE, r, { archived: !was }, [{ field: 'archived', old_value: was, new_value: !was }]).then(function () { load(); },
+        function (e) { $('actMsg').textContent = e.message; if ($('archive')) $('archive').disabled = false; });
+    });
   }
+
+  function isArchived() { var r = state.row || {}; return kind === 'dev' ? !!r.archived_at : r.stage === 'Archived'; }
 
   if (P.signedIn()) load();
   else {

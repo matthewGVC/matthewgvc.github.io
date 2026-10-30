@@ -336,6 +336,8 @@
     });
 
     (rows.devProjects || []).forEach(function (d) {
+      // an archived development (0018) only when asked, like an Archived listing
+      if (d.archived_at && !archived) return;
       var ms = d.milestones || {}, idx = -1, flags = [], nm = d.next_milestone || null;
       DEV_KEYS.forEach(function (k, i) { if (ms[k] && ms[k].done) idx = i; });
       if (d.folder_state === 'unlinked') flags.push({ t: 'Link folder', k: 'link' });
@@ -360,8 +362,8 @@
       var B = buildApi(), ph = B && d.schedule ? B.currentPhase(d.schedule) : null;
       var phase = ph ? (ph.section ? B.sectionLabel(ph.section) + ': ' : '') + ph.name : null;
       jobs.push({
-        id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: idx >= 0 ? DEV[idx] : 'No milestones yet', phase: phase,
-        chip: 'pre', price: '', rooms: '', place: d.size_band ? d.size_band : '', folder: d.drive_folder || null, folderState: d.folder_state,
+        id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: d.archived_at ? 'Archived' : idx >= 0 ? DEV[idx] : 'No milestones yet', phase: phase,
+        archived: !!d.archived_at, chip: 'pre', price: '', rooms: '', place: d.size_band ? d.size_band : '', folder: d.drive_folder || null, folderState: d.folder_state,
         steps: DEV, stageIdx: idx, done: {}, milestones: ms, bars: [], ticks: dated, activity: {}, flags: flags,
         dates: [], match: match, mismatches: match.length, stale: [], stalePieces: [], asanaUrl: d.asana_project_gid && /^\d+$/.test(String(d.asana_project_gid)) ? 'https://app.asana.com/0/' + d.asana_project_gid : null, agents: [],
         next: next, slips: slips, progress: { done: DEV_KEYS.filter(function (k) { return ms[k] && ms[k].done; }).length, total: DEV_KEYS.length },

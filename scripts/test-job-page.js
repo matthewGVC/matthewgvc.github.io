@@ -376,6 +376,21 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('dev: no ticks for a teammate', await t.page.$$eval('[data-tick], [data-untick]', e => e.length), 0);
+  check('archive: no button for a teammate', await t.page.$('#archive'), null);
+  await t.ctx.close();
+  /* ---------- archive (0018): a development, by archived_at; listings keep no header button (tune-ups 3) ---------- */
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
+  p = t.page;
+  check('archive: a development offers Archive', await text(p, '#archive'), 'Archive');
+  p.once('dialog', d => d.accept());
+  await p.click('#archive');
+  await settle(p);
+  s = t.saves[0] || {};
+  check('archive: a development saves archived true, logged', [s.p_table, s.p_set, (s.p_changes || []).map(c => [c.field, c.old_value, c.new_value])],
+    ['dev_projects', { archived: true }, [['archived', false, true]]]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?pitch=90-pitch-st-11b' });
+  check('archive: a pitch has no Archive button', await t.page.$('#archive'), null);
   await t.ctx.close();
   /* ---------- a development's build: Needs attention, Schedule, Budget (D109 to D114) ---------- */
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });

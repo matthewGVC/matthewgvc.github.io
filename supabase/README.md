@@ -5,7 +5,8 @@ Package — share one saved property each) and now holds the whole workspace: me
 sign-in (0004), jobs, pitches, developments, the change log and sync runs (0005 on), Asana (0006),
 the pieces made from a job (0009, 0010), the folder and facts locks (0012–0014), a development's
 schedule and budget (0015), the budget team read (0016) and the queue of pieces the desktop helper
-makes from a job, with `save_piece_build` (0017). The Buyer Package does not use it.
+makes from a job, with `save_piece_build` (0017), and archiving a development (0018:
+`dev_projects.archived_at`, set or cleared through `save_job`). The Buyer Package does not use it.
 
 - **Project:** `hoszxrrlfhzbbrzenqvp` (Supabase, free tier, region `us-west-2`)
 - **Client config:** `assets/js/supabase-config.js` — the project URL and the publishable key,

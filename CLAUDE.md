@@ -202,6 +202,12 @@ Every job folder follows one standard, by job type (resale, rental, sfh, newdev)
 `node scripts/job-folders.js <type> "<job folder>"` (add `--apply` to create what's missing). It only creates
 folders; it never moves, renames or deletes anything.
 
+### Making a job's pieces through the desktop helper
+Make or Rebuild on a job page queues a row in `piece_requests` (migration 0017). Matt's desktop
+helper claims it, lays the piece out and saves the PDF into the job's Drive folder. The list of
+pieces it can make is `helper/pieces.js`; the layout is `helper/piece-build.js` and `helper/pdf/lay.js`.
+Nothing is rebuilt by itself.
+
 ### Adding a new tool
 Follow the project skill `.claude/skills/building-gvc-tools/` (Claude loads it automatically):
 questions to settle first, copy-exact templates, the wiring checklist, and
@@ -228,6 +234,8 @@ questions to settle first, copy-exact templates, the wiring checklist, and
 - The print layout is a fixed **11in-wide design canvas**; A5 prints it scaled down, Letter prints
   it at full size. If you change page geometry, test **both** paper sizes via the toggle, and use
   the browser's Print dialog → "Save as PDF" to confirm the printed result, not just the screen.
+- A sheet opened from a job runs on `assets/js/piece-mode.js`. `tools/showsheet/job-mode.js` is only
+  its adapter (its header says so).
 
 ---
 

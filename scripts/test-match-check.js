@@ -226,7 +226,7 @@ check('M13: all subtasks done → nothing', has(M.check(dev, ctx({ asana: { task
   { gid: 't3', name: 'Submit permit forms', completed: true, parentGid: 't2' }] } })), 'M13').length, 0);
 check('M13: ticked ahead of its date on a batch day', has(M.check(Object.assign({}, dev, { next_milestone: { early: [
   { gid: 't4', key: 'groundbreaking', name: 'Groundbreaking', dueOn: '2026-11-01', tickedOn: '2026-03-25' }] } }), ctx({ asana: { tasks: [] } })), 'M13').map(m => m.text),
-  ['Groundbreaking was ticked in Asana on 25 Mar, ahead of its due date of 1 Nov.']);
+  ['Groundbreaking was ticked done on 25 Mar, before its due date of 1 Nov. If it really happened, nothing to do; if not, untick it.']);
 
 /* ---------- M14: section vs Listing Status ---------- */
 const totm = { stage: 'Off market', de_stage: null, de_listing_id: null, de: null,
@@ -326,7 +326,7 @@ check('B2 M5: 3 days apart → nothing', has(M.check(soldDe('2026-10-10', '2026-
 /* ---------- tune-up B3: M12 for a task ticked ahead of its date ---------- */
 const earlyDev = Object.assign({}, dev, { next_milestone: { early: [{ gid: 't5', key: 'permits', name: 'Permits Filed', dueOn: '2026-10-01', tickedOn: '2026-09-02' }] } });
 const b3 = has(M.check(earlyDev, ctx({ asana: { tasks: [{ gid: 't5', name: 'Permits Filed', completed: true, dueOn: '2026-10-01', assignee: 'Ben Sample' }] } })), 'M12');
-check('B3 M12: ticked before its date says so', b3.map(m => m.text), ['Asana shows Permits Filed ticked before its date (1 Oct); check it really happened.']);
+check('B3 M12: ticked before its date says so', b3.map(m => m.text), ['Permits Filed was ticked done in Asana before its due date (1 Oct). If it really happened, nothing to do; if not, untick it.']);
 check('B3 M12: an open task keeps its wording', has(M.check(dev, ctx({ asana: { tasks: [devTask('2026-10-05')] } })), 'M12').map(m => m.text), ['Foundation Complete is open in Asana and was due on 5 Oct.']);
 
 /* ---------- tune-up B4: M16's key uses upper-cased initials ---------- */

@@ -97,7 +97,7 @@
           </div>
           <label class="search" style="min-width:220px;flex:1"><span id="si"></span><input id="wsSearch" placeholder="Search address, unit" aria-label="Search jobs"></label>
           <select class="inp" id="stg" aria-label="Stage"><option value="">All stages</option></select>
-          <select class="inp" id="srt" aria-label="Sort jobs"><option value="">Needs attention first</option><option value="last">Last activity</option><option value="name">Name, A to Z</option><option value="price">Price, high to low</option><option value="stage">Stage, Prep to Sold</option></select>
+          <select class="inp" id="srt" aria-label="Sort jobs"><option value="last">Last activity</option><option value="name">Name, A to Z</option><option value="price">Price, high to low</option><option value="stage">Stage, Prep to Sold</option></select>
           <label class="soft" style="font-size:13px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="arch"> Show archived</label>
         </div>
         <div id="jobs"></div>
@@ -148,7 +148,7 @@
 (function () {
   'use strict';
   var P = window.GVC_PROPS, W = window.GVC_WS, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
-  var f = { market: '', type: '', view: 'list', q: '', archived: false, stage: '', sort: '' };
+  var f = { market: '', type: '', view: 'list', q: '', archived: false, stage: '', sort: 'last' };
   var data = null, shell = null;
   var TODAY = new Date(), today = W.today(TODAY);
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -299,11 +299,10 @@
     $('chart').innerHTML = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Files touched per week">' + bars + '<line x1="0" x2="' + Wd + '" y1="' + H + '" y2="' + H + '" stroke="var(--rule)"/></svg>';
   }
 
-  /* the Jobs card's sort: none chosen = needs attention first (most flags), then last activity */
+  /* the Jobs card's sort: last activity first by default */
   var byLast = function (a, b) { return (b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0; };
   var money = function (s) { var n = Number(String(s || '').replace(/[^0-9.]/g, '')); return s && n ? n : null; };
   var SORTS = {
-    '': function (a, b) { return (b.flags.length - a.flags.length) || byLast(a, b); },
     last: byLast,
     name: function (a, b) { return String(a.name || '').localeCompare(String(b.name || '')) || byLast(a, b); },
     // no price set goes last
@@ -323,7 +322,7 @@
   }
   function render() {
     stageOptions();
-    var js = jobsNow().sort(SORTS[f.sort] || SORTS['']);
+    var js = jobsNow().sort(SORTS[f.sort] || byLast);
     stats(js); chart(js);
     $('jobs').innerHTML = f.view === 'list' ? list(js) : timeline(js);
   }

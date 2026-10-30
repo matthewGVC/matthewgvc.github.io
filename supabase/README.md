@@ -3,8 +3,9 @@
 It started as the property library (0001: three listing builders — Showsheet, Brochure and Seller
 Package — share one saved property each) and now holds the whole workspace: members and per-person
 sign-in (0004), jobs, pitches, developments, the change log and sync runs (0005 on), Asana (0006),
-the pieces made from a job (0009, 0010), the folder and facts locks (0012–0014) and a development's
-schedule and budget (0015). The Buyer Package does not use it.
+the pieces made from a job (0009, 0010), the folder and facts locks (0012–0014), a development's
+schedule and budget (0015), the budget team read (0016) and the queue of pieces the desktop helper
+makes from a job, with `save_piece_build` (0017). The Buyer Package does not use it.
 
 - **Project:** `hoszxrrlfhzbbrzenqvp` (Supabase, free tier, region `us-west-2`)
 - **Client config:** `assets/js/supabase-config.js` — the project URL and the publishable key,
@@ -20,6 +21,7 @@ schedule and budget (0015). The Buyer Package does not use it.
 | `developments` | One row per developer pipeline for `tools/new-development/` (migration 0002). `data` is the whole printable document, stored verbatim; uploaded renderings go in the `property-photos` bucket under `developments/<slug>/`. |
 | `todos` | Matt's to-do list for `tools/todo/` (migration 0003). |
 | `photos` | The index of the photo shelf. The files themselves live in the private `property-photos` bucket; pages render them through short-lived signed URLs. |
+| `piece_requests` | The queue of pieces to make from a job (0017). Make or Rebuild adds a row; the desktop helper claims the oldest waiting row and marks it made or failed. |
 
 A property may have no documents at all — core facts alone are a perfectly normal property, and
 whichever tool an agent opens first is the one that creates it.

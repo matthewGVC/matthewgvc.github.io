@@ -17,11 +17,11 @@ browser hands the helper a finished sheet; without the helper the print dialog s
 
 ## What the workspace does
 - Job page: one click per piece. Stale shows **Rebuild**, not made shows **Make**; "Rebuild n stale"
-  queues them all. The row then says waiting, making, made, or why it couldn't. Owner, admin,
+  queues them all. The button only shows when the job has a Drive folder linked; the remaining editor link is for the map only (Map Studio). The row then says waiting, making, made, or why it couldn't. Owner, admin,
   marketing and the team account may ask, from any device. **Open** still edits the piece.
 - Piece page: Save sheet as before. **Make PDF** saves, then asks the helper; it is greyed out with
   the reason when the helper would certainly refuse (no Drive folder linked). On Matt's desktop the
-  page reads photos through the helper, so the browser never needs Drive connected. Print is a plain
+  page reads photos through the browser's Drive when it is connected, otherwise through the helper. Print is a plain
   print and never marks a piece made.
 - A job change the piece doesn't print no longer blocks saving.
 

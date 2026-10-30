@@ -128,10 +128,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .fpm .ver{font-family:var(--serif);font-size:17px;overflow-wrap:anywhere;min-width:0}
 .fpm .ver small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
 .fpm .old{opacity:.6}
-.th{aspect-ratio:11.25/8.75;border-radius:6px;background:var(--paper-2);position:relative;overflow:hidden;color:var(--ink);min-width:0}
-.th .tg{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10px;background:var(--paper);border-radius:3px;padding:1px 5px}
-.th .tn{position:absolute;left:6px;right:6px;top:6px;font-size:11px;overflow-wrap:anywhere;max-height:60%;overflow:hidden}
-.th.empty{background:transparent;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--ink-soft)}
+.th{min-width:0;overflow-wrap:anywhere;font-size:12.5px;color:var(--ink)}
+.th .tg{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)}
+.th .tn{display:block;font-size:12px}
+.th.empty{color:var(--ink-soft)}
 .fpalt{font-size:13px;margin-top:10px;overflow-wrap:anywhere}
 .fpform{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
 .fpform #fpNote{flex:1 1 220px}
@@ -334,6 +334,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       });
     }, function (e) {
       $('actMsg').textContent = e && (e.status === 401 || e.status === 403) ? 'This account can\'t ask the helper to make pieces.' : (e && e.message) || 'The request didn\'t go through.';
+      // the button was greyed while asking: let the person try again
+      document.querySelectorAll('[data-build], button#rebuildStale').forEach(function (x) { x.disabled = false; });
     });
   }
   var following = null;

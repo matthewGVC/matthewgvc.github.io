@@ -2,7 +2,7 @@
 
 A small program that runs on Matt's desktop PC and does the jobs a browser can't
 (workspace v2 plan §4): it reads Douglas Elliman's team page for listing statuses,
-and it saves finished PDFs straight into Drive folders. The workspace reaches it at
+and it saves finished PDFs straight into Drive folders, and it makes a job's pieces on request. The workspace reaches it at
 `http://127.0.0.1:47610`. It answers only the workspace's own web address, and only
 from a browser that has been paired with it once.
 

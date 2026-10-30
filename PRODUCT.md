@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Plain static HTML, CSS and JavaScript. No build step, no installation. Shared chrome is injected by JS, GSAP comes from a CDN, the tools and the workspace use self-hosted static fonts (so printed PDFs embed them); the listing rules page and the 404 load variable Fraunces from Google Fonts, since they never print. Supabase (per-person sign-in) holds the jobs; a desktop helper on Matt's PC syncs DE and Asana and writes PDFs into each job's Drive folder. Published straight from `main` on GitHub Pages at matthewgvc.github.io.
+Plain static HTML, CSS and JavaScript. No build step, no installation. Shared chrome is injected by JS, GSAP comes from a CDN, the tools and the workspace use self-hosted static fonts (so printed PDFs embed them); the listing rules page and the 404 load variable Fraunces from Google Fonts, since they never print. Supabase (per-person sign-in) holds the jobs; a desktop helper on Matt's PC syncs DE and Asana and writes PDFs into each job's Drive folder, and makes a job's pieces on request. Published straight from `main` on GitHub Pages at matthewgvc.github.io.
 
 ## Users
 
@@ -27,7 +27,7 @@ Built in-house for GVC's own listings. Every builder is made for this team's exa
 ## Operating Context
 
 - The workspace lives under `workspace/` (Overview, Resell, New Dev, Errors, Tools, and each job's page); `/` forwards to it. Tools live under `tools/`: showsheet generator, brochure, postcards, signage, buyer package, Seller Package, destination guide, NJ footprint, agent info, calculator, floorplan converter, map studio (opened from a job), watermark, office screens, to-do; the workspace's Tools page lists them. New Development is archived (not listed); `tools/cma/` and `tools/properties/` are redirects.
-- Printed pages are fixed-size canvases (the packages are US Letter portrait), previewed on screen and printed or saved as PDF through the browser. Print output is checked in Chromium and WebKit, including a rasterized printed PDF.
+- Printed pages are fixed-size canvases (the packages are US Letter portrait), previewed on screen and printed or saved as PDF through the browser, or made by the desktop helper from a job's Make button. Print output is checked in Chromium and WebKit, including a rasterized printed PDF.
 - Markets are kept independent: New Jersey, New York City and Florida each have their own copy and page set, and a change for one must not alter another.
 - Copy for agents, bios, testimonials, preferred vendors and listings comes from real GVC sources; the shared drives hold headshots, stock and film originals.
 - Workflow: work on a branch, verify with `scripts/verify-local.js`, `interact-local.js` and `dnd-local.js`, then merge to `main`. Never force-push. The live site updates within about a minute of a merge.

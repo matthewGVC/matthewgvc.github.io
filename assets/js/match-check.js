@@ -588,7 +588,7 @@
       var due = day(t.dueOn);
       if ((t.completed && !earlyGid[t.gid]) || !due || days(due, now) <= GRACE_OVERDUE) return;
       if (t.completed) {   // ticked ahead of its date (a batch day): not open, but worth a look
-        add('M12', 'M12:' + t.gid, 'Asana shows ' + t.name + ' ticked before its date (' + fmtDay(due, now) + '); check it really happened.', { task: t.name, dueOn: due, ticked: true }, t.assignee);
+        add('M12', 'M12:' + t.gid, t.name + ' was ticked done in Asana before its due date (' + fmtDay(due, now) + '). If it really happened, nothing to do; if not, untick it.', { task: t.name, dueOn: due, ticked: true }, t.assignee);
         return;
       }
       add('M12', 'M12:' + t.gid, t.name + ' is open in Asana and was due on ' + fmtDay(due, now) + '.', { task: t.name, dueOn: due }, t.assignee);
@@ -599,7 +599,7 @@
       if (open) add('M13', 'M13:' + t.gid, t.name + ' is ticked in Asana while ' + open + ' of its subtasks ' + (open === 1 ? 'is' : 'are') + ' open.', { task: t.name, open: open }, t.assignee);
     });
     early.forEach(function (e) {
-      add('M13', 'M13:early:' + e.gid, e.name + ' was ticked in Asana on ' + fmtDay(e.tickedOn, now) + ', ahead of its due date of ' + fmtDay(e.dueOn, now) + '.',
+      add('M13', 'M13:early:' + e.gid, e.name + ' was ticked done on ' + fmtDay(e.tickedOn, now) + ', before its due date of ' + fmtDay(e.dueOn, now) + '. If it really happened, nothing to do; if not, untick it.',
         { task: e.name, tickedOn: e.tickedOn, dueOn: e.dueOn }, null);
     });
     return out;
@@ -688,8 +688,8 @@
     M9: 'The exclusive has expired while the listing is still Live.',
     M10: 'Asana is missing basics once Live: Listing Status, address or Listing Date.',
     M11: 'Asana\'s Point Person doesn\'t match the agents confirmed for the listing.',
-    M12: 'A development milestone is still open 14 days after its date, or was ticked before its date.',
-    M13: 'The listing task is ticked done in Asana while checklist steps are still open.',
+    M12: 'A development milestone is still open 14 days after its due date. Also flagged when it was ticked done before its due date, in case the tick came too early.',
+    M13: 'The listing task is ticked done in Asana while checklist steps are still open. Also flagged when it was ticked before its due date.',
     M14: 'The Asana section the task sits in contradicts its Listing Status.',
     M15: 'The estimated listing date has passed while the job is still in Prep.',
     M16: 'The Point Person has left the team.',

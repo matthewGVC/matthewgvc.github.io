@@ -548,16 +548,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const v5 = g.versions[5] || {};
     return [Object.keys(g.versions), (v5.branded || {}).path, (v5.unbranded || {}).path, !!v5.blank, g.alternates.length, (g.versions[4] || {}).branded && g.versions[4].branded.path];
   }), [['4', '5'], 'Floorplan/Branded/x v5.svg', 'Floorplan/Unbranded/x v5.svg', false, 0, 'Floorplan/v4/x v4.jpg']);
-  await p.click('#fpNew');
-  await p.fill('#fpNote', 'Swap the bedroom labels');
-  await p.selectOption('#fpWho', 'Katie Cook');
-  await p.click('#fpSave');
-  await settle(p);
-  const fpPost = t.writes.find(w => /^POST floorplans /.test(w)) || '';
-  check('floorplans: Record new version adds a floorplans row', JSON.parse(fpPost.slice('POST floorplans '.length) || '{}'),
-    { property_id: 'p1', version: 4, layout: 'current', note: 'Swap the bedroom labels', asked_by: 'Katie Cook' });
-  s = t.saves.find(x => (x.p_changes || []).some(c => c.field === 'floorplan')) || {};
-  check('floorplans: and a change-log row through save_job', [s.p_table, JSON.stringify(s.p_set), s.p_changes], ['properties', '{}', [{ field: 'floorplan', new_value: { version: 4, note: 'Swap the bedroom labels' }, asked_by: 'Katie Cook' }]]);
+  check('floorplans: no Record new version button', await p.$$eval('#fpNew', e => e.length), 0);
   /* Make Floorplan: the reason with no Design files, then the exact prompt with some */
   check('prompt: button present', await p.$$eval('#fpMake', e => e.length), 1);
   await p.click('#fpMake');

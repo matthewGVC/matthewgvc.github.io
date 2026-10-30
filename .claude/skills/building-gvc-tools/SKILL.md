@@ -63,6 +63,7 @@ lists it. Never copy a pattern from a tool that check-tools flags for it.
 - [ ] Listed on the workspace's Tools page (`workspace/tools/index.html`), in the right section
 - [ ] Test lists: `verify-local.js` `PAGES`, `interact-local.js` `ALL`, and `dnd-local.js` `TOOLS` (`'<slug>': '#fileInputId'`) if photos are dropped
 - [ ] `README.md`: a `## <Name> tool` section, 2–4 lines: what it makes, where its data lives, its test
+- [ ] A tool that makes a piece from a job: an entry in `helper/pieces.js` (the PIECES list, with its page), and its tool name allowed by migration 0017 (`piece_requests`)
 
 Reuse before you write: agents `roster.js` (`GVC_PICKER`), legal footer `legal.js`, QR `qr.js`,
 images `images.js`, photo drag `photo-dnd.js`, page furniture + overflow warnings `pitch.js`,
@@ -109,6 +110,10 @@ node scripts/verify-local.js            # server on :8080 first (preview_start "
 node scripts/interact-local.js <slug>
 BROWSER=webkit node scripts/interact-local.js <slug>   # PowerShell: $env:BROWSER='webkit'; node ...
 node scripts/dnd-local.js <slug>        # photo tools only
+node scripts/test-piece-build.js        # piece tools: the helper's piece build
+node scripts/test-piece-page.js         # piece tools: the piece page
+node scripts/test-sheet-page.js         # the showsheet page
+node scripts/test-job-page.js           # the job page
 ```
 
 check-tools can't see every control a script builds: if the page has inputs, load

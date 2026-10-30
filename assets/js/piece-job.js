@@ -58,7 +58,12 @@
 
   /* the same line GVC_PROPS.joinUnit prints (property-library.js) */
   function unitDisplay(u) { u = String(u || '').trim(); return !u ? '' : /^[\w-]{1,7}$/.test(u) ? 'Residence ' + u : u; }
-  function joinUnit(a, u) { return [String(a || '').trim(), unitDisplay(u)].filter(Boolean).join(', '); }
+  function joinUnit(a, u) {
+    var addr = String(a || '').trim(), unit = String(u || '').trim();
+    // the address may already name the unit ("1050 Fifth Avenue, Apt. 2E"): don't add it twice
+    if (unit && new RegExp('(^|[^A-Za-z0-9])' + unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^A-Za-z0-9])', 'i').test(addr)) return addr;
+    return [addr, unitDisplay(u)].filter(Boolean).join(', ');
+  }
 
   function core(row) { return (row && row.core) || {}; }
   /* the listing link a piece prints as a QR: the job's DE listing on elliman.com only. Any other

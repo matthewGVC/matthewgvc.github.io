@@ -148,6 +148,11 @@
     core = core || {};
     var a = String(core.address || '').trim(), u = String(core.unit || '').trim();
     if (!u) { var c = a.lastIndexOf(','); if (c !== -1) { u = a.slice(c + 1).trim().replace(/^residence\s+/i, ''); a = a.slice(0, c).trim(); } }
+    // the address may name the unit too ("1050 Fifth Avenue, Apt. 2E" with unit 2E): drop it there, so it shows once
+    else {
+      var esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      a = a.replace(new RegExp('[,\\s]+(?:(?:apt|apartment|unit|residence|ph)\\.?\\s*)?#?\\s*' + esc + '$', 'i'), '').trim();
+    }
     return { address: a, unit: u };
   }
 

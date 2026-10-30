@@ -558,10 +558,20 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('job: its mismatches', await jp.$$eval('#asanaCard .mm li', els => els.length), 3);
   check('job: DE listing link', await jp.$eval('a.b[href^="https://www.elliman.com"]', a => a.target), '_blank');
   check('job: folder path shown', (await text(jp, '.path')).includes('G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A'), true);
-  await jp.route('http://localhost:47610/open-folder', r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' }));
+  // Open folder: the folder on drive.google.com in a new tab (Matt, 10-30); File Explorer only without a Drive link
+  const helperJson = (body, status) => r => r.fulfill({ status: status || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body });
+  await t.ctx.route('https://drive.google.com/**', r => r.fulfill({ status: 200, contentType: 'text/html', body: '<title>Drive</title>' }));
+  await jp.route('http://localhost:47610/drive-link', helperJson('{"url":"https://drive.google.com/drive/folders/FOLDER4A"}'));
+  await jp.route('http://localhost:47610/open-folder', helperJson('{"ok":true}'));
+  const [tab] = await Promise.all([jp.waitForEvent('popup'), jp.click('#open')]);
+  await tab.waitForURL('https://drive.google.com/**').catch(() => {});
+  check('job: Open folder opens the Drive folder in a new tab', [tab.url(), await text(jp, '#actMsg')], ['https://drive.google.com/drive/folders/FOLDER4A', 'Opened the folder on Google Drive.']);
+  await tab.close();
+  await jp.unroute('http://localhost:47610/drive-link');
+  await jp.route('http://localhost:47610/drive-link', helperJson('{"error":"No Drive id beside this item"}', 404));
   await jp.click('#open');
-  await jp.waitForTimeout(200);
-  check('job: open folder through the helper', await text(jp, '#actMsg'), 'Opened in File Explorer.');
+  await jp.waitForTimeout(300);
+  check('job: no Drive link known → File Explorer', await text(jp, '#actMsg'), 'No Drive link known for it yet, so it opened in File Explorer.');
   check('job: no page errors', t.errors, []);
   await t.ctx.close();
 

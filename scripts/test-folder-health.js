@@ -126,5 +126,13 @@ tree = d('x', [
 r = H.health(tree, NYC);
 check('old and new names', Object.keys(r.pieces).map((k) => r.pieces[k].length), [1, 1, 1, 1, 1, 1, 1]);
 
+/* finished photos in Photos\Finals, or loose in Photos\ when there is no edited-photo folder (Matt, 10-30) */
+r = H.health(d('2 Example St 5B', [d('Photos', [d('Raws', [f('r.jpg')]), d('PS Files', [f('a.psd')]), d('Finals', [f('a.jpg', '2026-09-03T10:00:00Z')])])]), NYC);
+check('Photos\Finals counts as edited photos', r.pieces.photos.map((p) => p.path), ['Photos/Finals/a.jpg']);
+r = H.health(d('3 Example St 6C', [d('Photos', [f('Photo-1.jpg', '2026-09-03T10:00:00Z'), f('notes.txt'), d('Raws', [f('r.jpg')])])]), NYC);
+check('photos loose in Photos\ count when nothing else does', [r.pieces.photos.map((p) => p.path), codes(r).includes('noEdited')], [['Photos/Photo-1.jpg'], false]);
+r = H.health(d('4 Example St 7D', [d('Photos', [f('dump.jpg'), d('Edited', [f('e.jpg')])])]), NYC);
+check('an Edited folder wins over loose photos', r.pieces.photos.map((p) => p.path), ['Photos/Edited/e.jpg']);
+
 console.log((failures.length ? failures.join('\n') + '\n' : '') + pass + ' passed, ' + failures.length + ' failed');
 process.exit(failures.length ? 1 : 0);

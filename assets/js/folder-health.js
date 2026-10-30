@@ -39,7 +39,7 @@
   /* piece folder names, old and new (plan §9), tested on the lower-cased name */
   var FOLDER = {
     floorplan: /^(floorplan|floorplans|floor plan|floor plans)$/,
-    photos: /^(edited|edits|matt[- ]edits)$/,
+    photos: /^(edited|edits|edited photos|matt[- ]edits|finals?|final photos|selects)$/,
     showsheet: /^(showsheet|showsheets|show sheet)$/,
     brochure: /^(brochure|brochures)$/,
     postcard: /^(postcard|postcards)$/,
@@ -55,6 +55,9 @@
     signage: /^(signage|signs?)\b/i,
     video: /^(video|film)\b/i
   };
+  /* finished photos kept loose in the job's Photos folder (no Edited / Finals folder): Matt, 10-30 */
+  var PHOTOS_TOP = /^(photos?|pictures)$/;
+  var IMAGE = /\.(jpe?g|png|tiff?|heic|webp)$/i;
   var MARKET_DRIVE = { NYC: 'GVC - New York', NJ: 'GVC - New Jersey', FL: 'GVC - Florida' };
   var MARKET_NAME = { NYC: 'New York', NJ: 'New Jersey', FL: 'Florida' };
   /* pieces where two current files side by side is wrong (floorplans and photos
@@ -96,6 +99,7 @@
     var dirsByPiece = {};      // piece → [display path] of folders found by name
     var hasVersionDir = false;
     var photoCounts = out.counts.photos;
+    var loosePhotos = [];      // images straight inside Photos\, used only when no edited-photo folder exists
 
     function walk(node, segs, archived, piece) {
       (node.children || []).forEach(function (c) {
@@ -112,6 +116,9 @@
           var folders = path.slice(0, -1).map(low);
           ['staged', 'print', 'web', 'raw'].forEach(function (f) { if (folders.indexOf(f) !== -1) photoCounts[f]++; });
           if (piece === 'photos') photoCounts.edited++;
+          if (!piece && !archived && segs.length === 1 && PHOTOS_TOP.test(low(segs[0])) && IMAGE.test(c.name)) {
+            loosePhotos.push({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: false });
+          }
           if (piece) out.pieces[piece].push({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived });
         }
       });
@@ -132,6 +139,10 @@
       } else loose++;
     });
     walk(tree, [], false, null);
+    if (!out.pieces.photos.length && loosePhotos.length) {
+      out.pieces.photos = loosePhotos;
+      photoCounts.edited = loosePhotos.length;
+    }
     out.counts.looseTop = loose;
 
     /* ---- notes ---- */

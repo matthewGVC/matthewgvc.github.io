@@ -92,8 +92,21 @@
       return copy(gPath(row, file), 'No Drive link known yet, so the folder path was copied instead.', el);
     });
   }
+  /* open a folder on drive.google.com in a new tab (Matt, 10-30); File Explorer only when no Drive link is known.
+     The tab opens at the click, before the link is found, so the browser doesn't block it as a pop-up. */
+  function openWeb(row, say) {
+    var tab = global.open('about:blank', '_blank');
+    say('Finding the folder on Drive…');
+    return link(row, null, null).then(function (u) {
+      if (u && tab) { tab.location.href = u; say('Opened the folder on Google Drive.'); return; }
+      if (tab) tab.close();
+      return global.GVC_SHELL.helper('POST', '/open-folder', { folder: row.drive_folder }).then(function (x) {
+        say(x.ok ? 'No Drive link known for it yet, so it opened in File Explorer.' : (x.error || 'Couldn\'t open it.'));
+      });
+    }).catch(function (e) { if (tab) tab.close(); say(e.message); });
+  }
   JP.drive = { FAIL: FAIL, ms: ms, timed: timed, mode: mode, folder: folder, forget: forget, link: link, gPath: gPath,
-    copy: copy, copyLink: copyLink, day: day, msgs: msgs };
+    copy: copy, copyLink: copyLink, openWeb: openWeb, day: day, msgs: msgs };
 
   /* ---------- the card ---------- */
   function stat(node) {

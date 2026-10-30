@@ -511,10 +511,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       if ($(x[0])) JP[x[1]].wire($(x[0]), c);
     });
 
-    $('open').addEventListener('click', function () {
-      GVC_SHELL.helper('POST', '/open-folder', { folder: r.drive_folder }).then(function (x) { $('actMsg').textContent = x.ok ? 'Opened in File Explorer.' : (x.error || 'Couldn\'t open it.'); },
-        function (e) { $('actMsg').textContent = e.message; });
-    });
+    // Open folder: the folder on drive.google.com in a new tab, File Explorer only when no Drive link is known (Matt, 10-30)
+    $('open').addEventListener('click', function () { JP.drive.openWeb(r, function (t) { $('actMsg').textContent = t; }); });
     ['linkAsana', 'linkDe'].forEach(function (b) {
       if ($(b)) $(b).addEventListener('click', function () {
         window.GVC_MATCH_LINK.openForJob({ row: r, type: b === 'linkDe' ? 'de' : 'asana', name: j.name }).then(function (ok) { if (ok) load(); },

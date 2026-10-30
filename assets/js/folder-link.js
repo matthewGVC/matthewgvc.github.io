@@ -68,15 +68,29 @@
             return dirs(p + '/' + town).then(function (xs) { xs.filter(nameMatches).forEach(function (x) { out.push(p + '/' + town + '/' + x); }); });
           }));
         }
-        names.filter(table === 'dev_projects' ? function (n) { return n.replace(/^\d+\s*-\s*/, '').toLowerCase() === String(row.label).toLowerCase(); } : nameMatches)
-          .forEach(function (x) { out.push(p + '/' + x); });
-        if (devPlaces.indexOf(p) !== -1) {   // a house inside a development's folder; a house folder that matched is not looked into
-          return Promise.all(names.filter(function (n) { return !nameMatches(n); }).map(function (dev) {
-            return dirs(p + '/' + dev).then(function (xs) { xs.filter(nameMatches).forEach(function (x) { out.push(p + '/' + dev + '/' + x); }); });
-          }));
-        }
+        var hits = names.filter(table === 'dev_projects' ? function (n) { return n.replace(/^\d+\s*-\s*/, '').toLowerCase() === String(row.label).toLowerCase(); } : nameMatches);
+        var unitKey = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); };
+        return Promise.all(hits.map(function (x) {
+          // one address, several houses ("405 Old Bridge Rd/House 1"): the unit's own folder first (Matt, 10-30)
+          if (!(table === 'properties' && au.unit && devPlaces.indexOf(p) !== -1)) { out.push(p + '/' + x); return null; }
+          return dirs(p + '/' + x).then(function (xs) {
+            xs.filter(function (u) { return unitKey(u) === unitKey(au.unit); }).forEach(function (u) { out.push(p + '/' + x + '/' + u); });
+            out.push(p + '/' + x);
+          });
+        })).then(function () {
+          if (devPlaces.indexOf(p) !== -1) {   // a house inside a development's folder; a house folder that matched is not looked into
+            return Promise.all(names.filter(function (n) { return !nameMatches(n); }).map(function (dev) {
+              return dirs(p + '/' + dev).then(function (xs) { xs.filter(nameMatches).forEach(function (x) { out.push(p + '/' + dev + '/' + x); }); });
+            }));
+          }
+        });
       });
-    })).then(function () { return out.slice(0, 5); });
+    })).then(function () {
+      // filed on the wrong drive (3 Crosby Ln, NJ, sits in New York's Building Information): looked for there
+      // only when the job's own drive has nothing, and suggested where it is, never moved (Matt, 10-30)
+      if (out.length || table !== 'properties' || row.market === 'NYC') return null;
+      return dirs(NY).then(function (bs) { bs.filter(nameMatches).forEach(function (b) { out.push(NY + '/' + b); }); });
+    }).then(function () { return out.slice(0, 5); });
   }
 
   function save(table, row, folder) {

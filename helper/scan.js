@@ -67,7 +67,7 @@ async function candidateFor(D, row) {
 const PIECES = [
   ['floorplan', /^floor ?plans?$/i],
   ['showsheet', /^show ?sheets?$/i],
-  ['photos', /^(edited|edits|matt-edits)$/i],
+  ['photos', /^(edited|edits|edited photos|matt[- ]edits|finals?|final photos|selects)$/i],
   ['brochure', /^brochures?$/i]
 ];
 
@@ -81,6 +81,7 @@ function scanFolder(abs, opts) {
   if (!fs.existsSync(abs)) return { weeks: {}, found: {}, missing: true };
   const since = opts && opts.since ? new Date(opts.since + 'T00:00:00Z') : null;
   const weeks = {}, first = {};
+  let loosePhoto = null;   // finished photos loose in Photos\ (no Edited / Finals folder): Matt, 10-30
   (function walk(dir, trail) {
     let entries;
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
@@ -99,8 +100,10 @@ function scanFolder(abs, opts) {
       PIECES.forEach(([k, re]) => {
         if (trail.some(seg => re.test(seg)) && (!first[k] || day < first[k])) first[k] = day;
       });
+      if (trail.length === 1 && /^(photos?|pictures)$/i.test(trail[0]) && /\.(jpe?g|png|tiff?|heic|webp)$/i.test(e.name) && (!loosePhoto || day < loosePhoto)) loosePhoto = day;
     }
   })(abs, []);
+  if (!first.photos && loosePhoto) first.photos = loosePhoto;
   const found = {};
   PIECES.forEach(([k]) => { if (first[k]) found[k] = first[k]; });
   const sorted = {};

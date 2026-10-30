@@ -390,11 +390,7 @@
       });
       var dir = function () { return { drive_folder: r.drive_folder + '/' + photosDir(current.photos) }; };
       body.querySelectorAll('[data-open-dir]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          global.GVC_SHELL.helper('POST', '/open-folder', { folder: dir().drive_folder }).then(function (x) {
-            say(x.ok ? 'Opened the Photos folder in File Explorer.' : (x.error || 'The helper couldn\'t open it.'));
-          }, function (e) { say(e.message); });
-        });
+        b.addEventListener('click', function () { JP.drive.openWeb(dir(), say); });
       });
       body.querySelectorAll('[data-copy-dir]').forEach(function (b) {
         b.addEventListener('click', function () { JP.drive.copyLink(dir(), null, null, msg).then(function () { JP.drive.msgs.kit = msg.textContent; }); });

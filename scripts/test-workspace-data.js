@@ -272,6 +272,13 @@ const consJobs = W.buildJobs({ properties: [], pitches: [], devProjects: [{ id: 
   next_milestone: { key: null, construction: { done: '3', total: '12' } } }], changes: [] }, TODAY, {});
 check('development: construction counts coerced to numbers', consJobs[0].construction, { done: 3, total: 12 });
 
+/* a unit the address already names shows once (1050 Fifth Avenue, Apt. 2E; Matt 10-30) */
+const unitJobs = W.buildJobs({ properties: [
+  { id: 'u1', slug: 'u1', label: 'U1', stage: 'Live', core: { address: '1050 Fifth Avenue, Apt. 2E', unit: '2E' } },
+  { id: 'u2', slug: 'u2', label: 'U2', stage: 'Live', core: { address: '1006 Pheasant Lane #204', unit: '204' } },
+  { id: 'u3', slug: 'u3', label: 'U3', stage: 'Live', core: { address: '2 E 2nd St', unit: '2' } }], pitches: [], devProjects: [], changes: [] }, TODAY, {});
+check('names: a unit inside the address shows once', unitJobs.map(j => j.name), ['1050 Fifth Avenue 2E', '1006 Pheasant Lane 204', '2 E 2nd St 2']);
+
 /* lines with no job: DE-only listings (M2) and Asana tasks the last sync couldn't link */
 const MC = require('../assets/js/match-check.js');
 const loose = W.looseMatch({

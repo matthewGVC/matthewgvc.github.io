@@ -52,6 +52,14 @@ function file(root, rel, date) {
   check('not missing', s.missing, false);
   check('no file names kept', JSON.stringify(s).includes('.jpg') || JSON.stringify(s).includes('offer'), false);
   check('missing folder', scanFolder(path.join(job, 'nope'), {}).missing, true);
+  // finished photos loose in Photos\ (no Edited / Finals folder) count; Raws don't (Matt, 10-30)
+  const job2 = path.join(path.dirname(job), 'loose-photos-job');
+  file(job2, 'Photos/Raws/r.jpg', '2026-09-01');
+  file(job2, 'Photos/Photo-1.jpg', '2026-09-05');
+  check('photos loose in Photos count', scanFolder(job2, {}).found, { photos: '2026-09-05' });
+  const job3 = path.join(path.dirname(job), 'finals-job');
+  file(job3, 'Photos/Finals/a.jpg', '2026-09-06');
+  check('Photos/Finals counts', scanFolder(job3, {}).found, { photos: '2026-09-06' });
 
 
   /* ---------- scanAll writes the scan and breaks missing links; the stage is Asana's (D50, S8) ---------- */
@@ -140,6 +148,15 @@ function file(root, rel, date) {
     const LINK = require('../assets/js/folder-link.js'), ADDR = require('../assets/js/address-aliases.js');
     const got = await LINK.suggest(require('../helper/scan.js').driveLister(root2), ADDR, 'properties', T2.properties.find(p => p.id === 'b1'));
     check('Link suggestions: the house folder once, not the folders inside it', got, ['GVC - New Jersey/New Development/619 Bradley Ave']);
+    // Matt, 10-30: a house of several at one address, and an NJ job filed on the New York drive
+    const root3 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-link-'));
+    ['GVC - New Jersey/1. Residential Sales/1. Resale', 'GVC - New Jersey/New Development/405 Sample Rd/House 1',
+      'GVC - New Jersey/New Development/405 Sample Rd/House 2', NYB + '/3 Misfiled lane NJ'].forEach(d => fs.mkdirSync(path.join(root3, d), { recursive: true }));
+    const lister = require('../helper/scan.js').driveLister(root3);
+    check('Link suggestions: the house\'s own folder first', await LINK.suggest(lister, ADDR, 'properties', { market: 'NJ', core: { address: '405 Sample Rd', unit: 'House 1' } }),
+      ['GVC - New Jersey/New Development/405 Sample Rd/House 1', 'GVC - New Jersey/New Development/405 Sample Rd']);
+    check('Link suggestions: an NJ job filed on the New York drive is found there', await LINK.suggest(lister, ADDR, 'properties', { market: 'NJ', core: { address: '3 Misfiled Ln', unit: '' } }),
+      [NYB + '/3 Misfiled lane NJ']);
   }
   check('M18 scan: never for a row with no stage', T2.properties.find(p => p.id === 'x1').scan, undefined);
   check('M18 scan: an Off market job is looked for too (D88: prep happens while off market)', cand('o1'), NYB + '/100 Example St/4A');

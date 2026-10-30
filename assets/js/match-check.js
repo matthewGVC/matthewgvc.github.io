@@ -24,7 +24,7 @@
              deListings  de_listings rows (M19; the helper passes them, the page
                       doesn't, so the page never makes M19 itself)
              library  the workspace rows with no stage (M20; the helper's)
-       code    'M1' … 'M27'
+       code    'M1' … 'M28'
        key     what a dismissal is stored under: the code, or code:part where
                one job can have several (M5:closedOn, M7:drive, M8:showsheet,
                M12:<task gid>, M13:<task gid>, M17:price, M19:<DE id>, M20:<row id>)
@@ -98,6 +98,8 @@
      M26  Asana's Zip vs DE's (the DE snapshot's zip, else the one in DE's
           listing link).
      M27  Live and the exclusive ends within the next 14 days (M9 once passed).
+     M28  Sold or Rented while Asana's listing task is still open (Matt, 2026-10-30:
+          held until the team confirms each deal is finished, but listed meanwhile).
 
    Needs asana-map.js and job-facts.js (loaded first in the browser).
    Loads in the browser (window.GVC_MATCH) and in Node (require).
@@ -536,6 +538,12 @@
         if (open) add('M13', 'M13', 'The Asana task is ticked done while ' + open + ' checklist step' + (open === 1 ? ' is' : 's are') + ' open.', { open: open }, 'Asana');
       }
 
+      /* M28: Sold or Rented while the listing task is still open */
+      if ((stage === 'Sold' || stage === 'Rented') && !a.completed && !a.gone) {
+        add('M28', 'M28', stage + ' in Asana, but the listing task is still open. Tick it done once the team confirms the deal is finished.',
+          { stage: stage, completed: false }, 'Asana');
+      }
+
       /* M14: section vs Listing Status (D69) */
       if (sectionDisagrees(a.status, a.section, a.stageFromStatus, a.stageFromSection)) {
         add('M14', 'M14', 'Asana\'s section is ' + a.section + ' but its Listing Status is ' + a.status + '.', { section: a.section, status: a.status }, 'Asana');
@@ -703,7 +711,8 @@
     M24: 'The deal fell through but the accepted offer or contract date is still in Asana. Clear it.',
     M25: 'Asana has an accepted offer or contract, but the listing isn\'t on DE.',
     M26: 'Asana\'s zip code disagrees with DE\'s.',
-    M27: 'The exclusive ends within two weeks. Extend it in Asana if the listing carries on.'
+    M27: 'The exclusive ends within two weeks. Extend it in Asana if the listing carries on.',
+    M28: 'The listing is Sold or Rented but its Asana task is still open. Tick it done once the team confirms the deal is finished.'
   };
 
   return { check: check, checkDeListing: checkDeListing, statusSince: statusSince, sectionDisagrees: sectionDisagrees,

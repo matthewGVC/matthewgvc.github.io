@@ -1,5 +1,5 @@
 /* ============================================================
-   Tests for assets/js/match-check.js — the Match check, M1 to M27
+   Tests for assets/js/match-check.js — the Match check, M1 to M28
    (spec §5, plan §8b), the dismiss rule and roster drift (D71).
    Made-up jobs only.
 
@@ -490,14 +490,22 @@ check('M27: 15 days away: nothing', has(M.check(excl('2026-11-04'), ctx()), 'M27
 check('M27: already passed: M9, not M27', [has(M.check(excl('2026-10-19'), ctx()), 'M27').length, has(M.check(excl('2026-10-19'), ctx()), 'M9').length], [0, 1]);
 check('M27: not Live: nothing', has(M.check(Object.assign(excl('2026-11-03'), { stage: 'Prep', de_stage: null }), ctx()), 'M27').length, 0);
 
+/* ---------- M28: Sold or Rented while the listing task is still open ---------- */
+check('M28: Sold with the listing task open', has(M.check(job({ stage: 'Sold', de_stage: 'Sold' }), ctx()), 'M28').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M28', 'Sold in Asana, but the listing task is still open. Tick it done once the team confirms the deal is finished.', 'Asana', { stage: 'Sold', completed: false }]]);
+check('M28: Rented with the listing task open', has(M.check(job({ stage: 'Rented', de_stage: null }), ctx()), 'M28').length, 1);
+check('M28: Sold and ticked done: nothing', has(M.check(job({ stage: 'Sold', de_stage: 'Sold', asana: { completed: true } }), ctx()), 'M28').length, 0);
+check('M28: Live with the task open: nothing', has(M.check(job(), ctx()), 'M28').length, 0);
+check('M28: task gone from Asana: M2 only', has(M.check(job({ stage: 'Sold', de_stage: 'Sold', asana: { gone: NOW } }), ctx()), 'M28').length, 0);
+
 /* ---------- text: plain sentences, no em dashes ---------- */
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));
 check('no em dashes in any text', all.filter(m => /—/.test(m.text)).length, 0);
 
 /* ---------- the key the Match page shows ---------- */
 const keyCodes = Object.keys(M.KEY || {});
-const want = []; for (let n = 1; n <= 27; n++) want.push('M' + n);
-check('key: one plain line for every code M1 to M27', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 27]);
+const want = []; for (let n = 1; n <= 28; n++) want.push('M' + n);
+check('key: one plain line for every code M1 to M28', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 28]);
 check('key: plain sentences, no em or en dashes', keyCodes.some(c => /[–—]/.test(M.KEY[c])), false);
 
 if (failures.length) {

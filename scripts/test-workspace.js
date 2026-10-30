@@ -540,7 +540,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   let jp = t.page;
   check('job: its own name', (await text(jp, 'h1')).startsWith('100 Example St 4A'), true);
   check('job: facts from DE', (await text(jp, '.facts')).includes('$4,500,000'), true);
-  check('job: agent from the roster', (await text(jp, '#agentsCard')).includes('Elyse Gutman'), true);   // Slice 3: the Agents tile moved into the Agents card
+  check('job: agent from the roster', (await text(jp, '#agentsCard')).includes('Elyse B. Gutman'), true);   // Slice 3: the Agents tile moved into the Agents card
   check('job: current stage', await text(jp, '.step.cur'), '5In contract' + (await jp.$eval('.step.cur .d', e => e.textContent)));
   check('job: DE status in words', (await text(jp, '.facts')).includes('Contract signed'), true);
   check('job: skipped stages dashed', await jp.$$eval('.step.skip', els => els.map(e => e.childNodes[1].textContent.trim())), ['Pitch', 'Prep', 'Accepted offer']);
@@ -699,7 +699,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const g8 = (await text(t.page, '#groups')) || '';
   // asked of the database directly, so a long Asana outage (many failed runs) can't push the good run out of reach
   const runAsk = await t.page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name).filter(u => /sync_runs\?select=[^&]*totals.*kind=eq\.asana/.test(u)));
-  check('match: the key lists every code, open beside the cards', [await t.page.$$eval('#key li', li => li.length), await t.page.$eval('#key', d => d.tagName)], [27, 'ASIDE']);
+  check('match: the key lists every code, open beside the cards', [await t.page.$$eval('#key li', li => li.length), await t.page.$eval('#key', d => d.tagName)], [28, 'ASIDE']);
   check('match: a line\'s code says what it means on hover', await t.page.$$eval('#groups .mline .code[title]', els => els.length > 0), true);
   check('B8 match: only the newest ok run is asked for', [runAsk.length > 0, runAsk.every(u => /ok=is\.true/.test(u) && /limit=1(&|$)/.test(u))], [true, true]);
   check('B8 match: unlinked from the newest ok run, never a failed one', [g8.includes('70 Good Run Pl'), g8.includes('71 Failed Run Pl')], [true, false]);

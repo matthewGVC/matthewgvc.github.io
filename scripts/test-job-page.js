@@ -308,7 +308,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   // change the list: reorder, add someone from another market
   await p.click('#agChange');
   await p.click('#agentsCard [data-down="0"]');
-  check('agents: picker shows the job market first', [(await text(p, '.apick')).includes('Elyse Gutman'), (await text(p, '.apick')).includes('Marli Silver')], [true, false]);
+  check('agents: picker shows the job market first', [(await text(p, '.apick')).includes('Elyse B. Gutman'), (await text(p, '.apick')).includes('Marli Silver')], [true, false]);
   await p.click('#agAll');
   await p.click('#agentsCard [data-add="marli-silver"]');
   await p.fill('#agSearch', 'gut');

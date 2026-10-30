@@ -153,6 +153,29 @@ function fakeDb(T, o) {
   check('conflict: the request fails, naming the file already on Drive', [T2.piece_requests[0].status, T2.piece_requests[0].message],
     ['failed', 'Saved Showsheet - 100 Example St 4A - 2026-10-29.pdf to Drive, but the showsheet was saved somewhere else while the helper made it. Ask again.']);
 
+  // Drive for Desktop's stand-in id ("local-249850") until the upload lands: the helper waits for
+  // the real one (up to LINK_MS), so the record never carries a link that opens nothing
+  const { driveLink } = require('../helper/drive-link.js');
+  const { LINK_MS } = require('../helper/piece-build.js');
+  if (process.platform === 'win32') {
+    const f = put(root, 'stream-test.pdf', Buffer.from('%PDF'));
+    fs.writeFileSync(f + ':user.drive.id', 'local-249850');
+    check('drive-link: a stand-in local- id is no id yet', driveLink(f, false), null);
+    fs.writeFileSync(f + ':user.drive.id', '1WmlSw_rzYZVFuBlKo8rrRt3KITHEdk4x');
+    check('drive-link: the real id is the file link', driveLink(f, false), 'https://drive.google.com/file/d/1WmlSw_rzYZVFuBlKo8rrRt3KITHEdk4x/view');
+    fs.unlinkSync(f);
+  }
+  const T5 = JSON.parse(JSON.stringify(T)); T5.piece_requests = [{ id: 'l1', property_id: 'p1', tool: 'showsheet', status: 'waiting', asked_at: '2026-10-29T11:30:00Z' }];
+  let looks = 0, slept = 0;
+  const db5 = fakeDb(T5);
+  const b5 = createBuilder({ db: db5, driveRoot: root, siteBase: 'x', today: () => '2026-10-29', now: () => NOW, sleep: async ms => { slept += ms; }, treeOf,
+    layPiece: async () => ({ state: {}, storable: {}, builtFrom: { v: 1 }, paper: 'a5' }), render: async () => ({ pdf: Buffer.from('%PDF'), pages: 1 }),
+    driveLink: () => (++looks > 70 ? 'https://drive.google.com/file/d/REAL1234567/view' : null) });
+  await b5.runOne();
+  check('real link: waited past a minute for the real id, then recorded it', [T5.piece_requests[0].status, looks, slept, LINK_MS >= 2 * 60 * 1000],
+    ['done', 71, 70000, true]);
+  check('real link: recorded with the piece', db5.calls.rpc[0][1].p_output.url, 'https://drive.google.com/file/d/REAL1234567/view');
+
   // a helper that stopped mid-build: its request waits again; old finished ones are cleared
   const T3 = { piece_requests: [{ id: 'w1', status: 'working' }, { id: 'd1', status: 'done', finished_at: '2026-09-01T00:00:00Z' }, { id: 'd2', status: 'failed', finished_at: '2026-10-28T00:00:00Z' }] };
   const b3 = createBuilder({ db: fakeDb(T3), driveRoot: root, now: () => NOW, treeOf, layPiece: async () => ({}), render: async () => ({}) });

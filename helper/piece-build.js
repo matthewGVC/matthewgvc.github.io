@@ -28,6 +28,9 @@ const { jobFolderOf, writePiece, capped, fail, localDay, RENDER_MS } = require('
 const EVERY_MS = 15 * 1000;
 const KEEP_DAYS = 30;
 const LAY_MS = 2 * 60 * 1000;
+// a new file's real Drive id comes about a minute after it is written: wait for it, so the
+// record carries a link that opens (a piece with none after this is recorded without one)
+const LINK_MS = 3 * 60 * 1000;
 
 function createBuilder(o) {
   const db = o.db;
@@ -68,7 +71,7 @@ function createBuilder(o) {
     if (!lay || lay.why) throw fail(409, (lay && lay.why) || 'The ' + spec.words + ' couldn\'t be laid out.');
     const r = await capped(o.render({ tool: req.tool, state: lay.state, paper: lay.paper || null, siteBase: o.siteBase }), o.renderMs || RENDER_MS,
       'The ' + spec.words + ' took too long to draw. Nothing was saved; ask again.');
-    const w = await writePiece({ jobAbs, spec, row, file: r, doc, today, sleep, driveLink: o.driveLink });
+    const w = await writePiece({ jobAbs, spec, row, file: r, doc, today, sleep, driveLink: o.driveLink, linkMs: o.linkMs || LINK_MS });
     const output = { path: w.path, name: w.name, size: w.size, modified: w.modified, url: w.url || null, paper: lay.paper || null,
       madeAt: now().toISOString(), via: 'helper' };
     try {
@@ -168,4 +171,4 @@ function poke() {
   return current.poke();
 }
 
-module.exports = { createBuilder, startBuilder, poke, EVERY_MS, KEEP_DAYS };
+module.exports = { createBuilder, startBuilder, poke, EVERY_MS, KEEP_DAYS, LINK_MS };

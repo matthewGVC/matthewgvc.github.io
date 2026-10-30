@@ -67,13 +67,15 @@ Files beside this one:
    The preview shows no photos or plan when Drive isn't connected in the pane. That is fine: the
    helper reads them. **Save sheet**, and wait for "Saved."
 6. **Make PDF.** Wait for the bar to say "Made: <name> is in the job's folder." If it sits on
-   "Waiting for the helper" for more than a minute, see lessons (restart the helper).
-7. **Check the PDF and fix its link.** Render both pages (PyMuPDF, 110 dpi, scratchpad) and look at
-   them: header, price, beds/baths, photo, plan, numbers, agents, no overflow. Then read the file's
-   real Drive id from its `:user.drive.id` stream (PowerShell
-   `Get-Content -LiteralPath <file> -Stream user.drive.id`). If `documents.output.url` holds a
-   `local-…` id, set it to the real one (update only that row's `output.url`, and only where it
-   still says `local-`).
+   "Waiting for the helper" for more than a minute, see lessons (restart the helper). "The helper
+   is making it now" may last a minute or two: it waits for the new file's real Drive link.
+7. **Check the PDF and its link.** Render both pages (PyMuPDF, 110 dpi, scratchpad) and look at
+   them: header, price, beds/baths, photo, plan, numbers, agents, no overflow. The helper waits (up
+   to 3 minutes) for Drive's real id before it records the piece, so `documents.output.url` should
+   already be a real `drive.google.com/file/d/<id>/view` link. Check it: if it is empty or holds a
+   `local-…` id (an upload slower than that), read the real id from the file's `:user.drive.id`
+   stream (PowerShell `Get-Content -LiteralPath <file> -Stream user.drive.id`) and set it (update
+   only that row's `output.url`, and only where it is empty or still says `local-`).
 8. **Show Matt** the link and two pictures' worth of description, what you changed on the job, and
    every number you could not confirm. Wait for his verdict. Adjust and **Make PDF** again if he
    asks (the helper archives the older one). On "good to go", tick "Create Show Sheet" (a subtask

@@ -8,8 +8,9 @@
      pieceRoute({ db, render, driveRoot, driveLink, today, sleep })
        → async (body, cfg) → { ok, path, name, size, modified, url, pages, archived, folderMade }
      jobFolderOf(row, root, noun)      → the job folder's absolute path, checked (or throws)
-     writePiece({ jobAbs, spec, row, file, doc, today, driveLink, sleep })
+     writePiece({ jobAbs, spec, row, file, doc, today, driveLink, sleep, linkMs })
                                        → the file written, the older one archived, its link
+                                         (looked for once a second for linkMs, 10 s unless said)
 
    body: { propertyId | pitchId, tool, state | image, paper }. The helper reads
    the owner row itself (drive_folder, label, market, core) and the piece's
@@ -31,6 +32,7 @@ const { insideJobPiece } = require('./pdf/guard.js');
 const { savePdf } = require('./pdf/name.js');
 
 const RENDER_MS = 3 * 60 * 1000;
+const LINK_MS = 10 * 1000;
 const MAX_PNG = 20 * 1024 * 1024;
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const PAPERS = ['a5', 'letter', 'half'];
@@ -103,10 +105,12 @@ async function writePiece(o) {
   try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs, words: spec.words, ext: spec.ext }); }
   catch (e) { archived = { left: doc.output && doc.output.path, why: 'older ' + spec.words + ' left in place: it couldn\'t be moved (' + (e.code || e.message) + ')' }; }
   const st = fs.statSync(file);
+  // Drive for Desktop gives a new file its real id once the upload lands (until then a stand-in)
+  const tries = Math.max(1, Math.ceil((o.linkMs || LINK_MS) / 1000));
   let url = null;
-  for (let i = 0; i < 10 && !url; i++) {
+  for (let i = 0; i < tries && !url; i++) {
     try { url = o.driveLink(file, false); } catch (e) { url = null; }
-    if (!url && i < 9) await o.sleep(1000);
+    if (!url && i < tries - 1) await o.sleep(1000);
   }
   return { path: rel(file), name: path.basename(file), size: st.size, modified: st.mtime.toISOString(), url, archived, folderMade: made };
 }

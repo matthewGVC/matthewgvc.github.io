@@ -2,16 +2,28 @@
 
 A small program that runs on Matt's desktop PC and does the jobs a browser can't
 (workspace v2 plan §4): it reads Douglas Elliman's team page for listing statuses,
-and it saves finished PDFs straight into Drive folders, and it makes a job's pieces on request. The workspace reaches it at
-`http://127.0.0.1:47610`. It answers only the workspace's own web address, and only
-from a browser that has been paired with it once.
+it saves finished PDFs straight into Drive folders, it makes a job's pieces on request, and it
+runs the daily jobs below. The workspace reaches it at `http://127.0.0.1:47610`. It answers only
+the live workspace's address (and the local preview at `http://localhost:8080`), and only from a
+browser that has been paired with it once (`GET /health` excepted). Its routes are listed at the
+top of `helper/routes.js`.
+
+## Daily jobs (`schedule.js`, `runner.js`)
+
+DE sync 7:00, Drive folder scan 2:00, Supabase backup 2:30 (all tables, to
+`exports/supabase-nightly-<date>/`, newest 14 kept). With `asanaToken`: the Asana read every 30
+minutes, a full read at 3:00 and People at 3:15. With the Google sign-in: the development budgets
+every hour. A slot missed while the PC was off runs when the helper starts. They and the piece
+requests run only once the helper account (`helperEmail`, `helperPassword`) is in the config;
+until then the log says "No helper account yet".
 
 ## Pieces made from a job (migration 0017)
 
 Make / Rebuild on a job page (from any device) adds a row to `piece_requests`. The helper
 (`piece-build.js`) checks every 15 seconds, and at once when a paired browser here calls
 `POST /pieces/run`: it claims the oldest waiting request, reads the job and the piece's record,
-reads the job folder itself (Floorplan, Photos and Marketing only; never paperwork), opens the
+reads the job folder itself (only what the workspace may read: Floorplan, Photos, Marketing,
+their older names and the details .docx, `READABLE` in `assets/js/drive-rules.js`; never paperwork), opens the
 piece's own page in its hidden browser to lay it out (`pdf/lay.js`), draws it (`pdf/render.js`),
 writes it into the folder (never overwriting; its own older file to `Archive\`) and records it
 with `save_piece_build`. A request it can't make is marked failed with the reason, which the job
@@ -32,11 +44,13 @@ powershell -ExecutionPolicy Bypass -File install-task.ps1
 
 `pair.js` prints a six-digit code to type into the workspace's "Pair" box.
 `install-task.ps1` adds the Task Scheduler task **GVC Helper**, which starts the helper
-hidden at every log on and restarts it if it stops. Run it from the main repo folder.
+hidden at every log on (`start-hidden.vbs`, which starts it again a minute after a crash; a clean
+exit ends it). Run it from the main repo folder.
 
 ## Where its files live
 
-- Settings, pairing code, caches: `%USERPROFILE%\.gvc-helper\` (never in this repo). Not under
+- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`), pairing code, caches:
+  `%USERPROFILE%\.gvc-helper\` (never in this repo). Not under
   AppData: Windows gives the Claude desktop app its own private copy of AppData.
 - Log: `%USERPROFILE%\.gvc-helper\helper.log`.
 - DE dry-run reports: `exports/de-dry-run-<date>.md` (gitignored).

@@ -5,7 +5,9 @@ addresses and prices, so the repo's tests never hold real listing data (plan D2,
 Real recordings go in `helper/fixtures/recorded/<date>/` (gitignored).
 
 Files: `<feed>-p<n>.json`, feeds `featured-sale`, `featured-rental`, `transactions-sale`,
-`transactions-rental`. Each page is `{ data: [...], totalCount }`.
+`transactions-rental`. Each page is `{ data: [...], totalCount }`. Also `de-page-condo.txt`,
+`de-page-house.txt` and `de-page-nolot.txt`: made-up text of a DE listing page, for the page-facts
+parser (`helper/de/page-facts.js`).
 
 Field names that matter (from the recording):
 - paging: query `pageNumber`, `pageSize` (100 accepted), `listingTypeClass` 1 = sale, 0 = rental;

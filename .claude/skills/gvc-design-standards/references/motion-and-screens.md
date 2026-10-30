@@ -7,8 +7,8 @@ The office TVs play these loops for hours. Calm beats clever. Each piece must lo
 Full detail: `exports/office-screens/source/README.md` (the pieces, the source files, the 3D rules).
 
 1. Each renderer is a pure function `RENDER[name](ctx, W, H, p, portrait)` with `p` in [0,1) as loop phase, so frames are deterministic.
-2. Build the page from the template, then render through headless Chromium piped to ffmpeg: one continuous H.264 encode per video (High@5.1, CRF 15, 30 fps, yuv420p). Do not split a video into chunks; each join shows a bump.
-3. Finish, then run the checks in `exports/office-screens/source/checks/` (`seam.js`, the stills `shoot.js` / `shoot4k.js`, and the contact sheet `sweep.js`; for any 3D piece also `../overlap.js`). Run `seam.js` after every change.
+2. Build the page (`ambient/build.py` for the ambient loops, `build.py` from `template.html` for Places), then render through headless Chromium piped to ffmpeg: one continuous H.264 encode per video (High@5.1, CRF 15, 30 fps, yuv420p; the files read as yuvj420p, which is fine). Do not split a video into chunks; each join shows a bump.
+3. Finish, then run the checks. Ambient loops: `ambient/seam.js`, the contact sheet `ambient/shoot.js`, and the seam line `ambient/finish.py` prints. Places (3D): `checks/` (`seam.js`, the stills `shoot.js` / `shoot4k.js`, the contact sheet `sweep.js`) and `overlap.js`. Run the seam check after every change.
 4. Output delivered as 4K. Matt wants only 4K files in the delivery folder: no test copies, no thumbnails cluttering `v03`.
 5. Site page `tools/office-screens/` plays all loops live. Regenerate `screens.js` with `site_build.py` when a renderer changes.
 
@@ -45,4 +45,4 @@ Approved words only: the three state names (NY, NJ, FL), the capability labels, 
 - Start a set with 5–7 short treatments shown in a live concept preview in both orientations. Matt picks; then polish and render the picks only.
 - Matt's standing requests on sets: use all five colours; include a Paper-ground piece; keep the lockup intact; no busy random patterns.
 - Open items: which TVs (unknown; keep delivering H.264 4K30 plus 1080p and pre-rotated portrait test copies if asked).
-- Nothing from the office-screens project is committed to git; `exports/` is gitignored.
+- `exports/` (renderers, source, videos) is gitignored; only the site page `tools/office-screens/` (`index.html` and the generated `screens.js`) is committed.

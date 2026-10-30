@@ -167,6 +167,7 @@ function fakeDb(T, o) {
   /* ---------- the files a page may read ---------- */
   const rd = rel => { try { const f = readJobFile(jobAbs, rel); return [f.type, f.buf.length > 0]; } catch (e) { return [e.status, e.message]; } };
   check('read: a photo', rd('Photos/Edited/01.jpg'), ['image/jpeg', true]);
+  check('read: a plan in "Floor plans"', (put(jobAbs, 'Floor plans/10E.jpg'), rd('Floor plans/10E.jpg')), ['image/jpeg', true]);
   check('read: never paperwork', rd('Docs/Exclusive - Jane Client.pdf')[0], 403);
   check('read: never out of the job', rd('../4B/Photos/x.jpg')[0], 400);
   check('read: never a non-picture, even allowed', (put(jobAbs, 'Marketing/notes.txt', Buffer.from('x')), rd('Marketing/notes.txt'))[0], 403);

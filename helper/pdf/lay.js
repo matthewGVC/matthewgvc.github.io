@@ -38,9 +38,10 @@ function readJobFile(jobAbs, rel) {
   const name = inside[inside.length - 1] || '';
   const ext = (/\.([a-z0-9]+)$/i.exec(name) || [])[1];
   if (!inside.length || inside.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?\x00-\x1f]/.test(s))) throw fail(400, 'That isn\'t a path the helper reads.');
-  // only a piece's pictures: Floorplan, Photos or Marketing (after an optional "2026 - Sales" wrapper)
+  // only a piece's pictures: Floorplan (or "Floor plans", as folder-health.js names it), Photos or Marketing
+  // (after an optional "2026 - Sales" wrapper)
   const top = (inside.length > 1 && /^(19|20)\d{2}\s*[-–]\s*sales?$/i.test(inside[0]) ? inside[1] : inside[0]) || '';
-  const pictureFolder = /^(floorplans?|photos|marketing)$/i.test(top);
+  const pictureFolder = /^(floor ?plans?|photos|marketing)$/i.test(top);
   if (!pictureFolder || !RULES.allowedInJob(inside.join('/')) || inside.some(s => RULES.isPaperwork(s)) || RULES.isJunk(name)) throw fail(403, 'The workspace doesn\'t read that file.');
   if (!ext || !TYPES[ext.toLowerCase()]) throw fail(403, 'The helper only reads pictures for a piece.');
   const abs = path.resolve(jobAbs, ...inside);

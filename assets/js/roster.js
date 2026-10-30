@@ -115,6 +115,8 @@
   PEOPLE.forEach(function (a) { a.name = nameCase(a.name); });
 
   global.GVC_ROSTER = PEOPLE;
+  /* in Asana's People but kept off the roster on purpose (the Errors page's roster check skips them) */
+  global.GVC_ROSTER_INACTIVE = ['Alexandra Lynch'];
 
   /* INITIALS — Asana's "🧑‍💼 Point Person" field holds initials ("JG/KC"),
      and the workspace suggests agents from them (D53). Written out by hand

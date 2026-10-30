@@ -301,6 +301,16 @@ check('loose: an Asana line carries its market; a task linked by hand since the 
 const looseD = W.looseMatch({ deListings: [{ de_listing_id: '9301', kind: 'sale', gvc_listed: true, property_id: null }, { de_listing_id: '9302', kind: 'sale', gvc_listed: true, property_id: null }],
   linkedDeIds: ['9301'] }, MC);
 check('loose: a DE listing a job already holds is left out', looseD.map(l => l.item.link.id), ['9302']);
+// a development's units on DE are its units, never a line (dev-addresses.js, Matt 10-30)
+const DA = require('../assets/js/dev-addresses.js');
+const looseDev = W.looseMatch({ deListings: [
+    { de_listing_id: '9401', kind: 'sale', gvc_listed: true, property_id: null, raw: { street: '102 SE 5th Ave', unit: '2', state: 'FL' } },
+    { de_listing_id: '9402', kind: 'rental', gvc_listed: true, property_id: null, raw: { street: '298 WESTWOOD AVE.', unit: '205', state: 'NJ' } },
+    { de_listing_id: '9403', kind: 'sale', gvc_listed: true, property_id: null, raw: { street: '200 E Boca Raton Rd', unit: 'B', state: 'FL' } },
+    { de_listing_id: '9404', kind: 'sale', gvc_listed: true, property_id: null, raw: { street: '5801 N Ocean Blvd', unit: '204', state: 'FL' } }],
+  devStreets: DA.streets() }, MC);
+check('loose: DE listings at a development street are left out; others stay', looseDev.map(l => l.item.link.id), ['9404']);
+check('dev addresses: Casa Avenida, Le Reve, Westwood', DA.streets().map(s => s.slug), ['casa-avenida', 'le-reve', 'westwood']);
 // deepen M19: a DE line a job's "probably the same listing" line names says so (and keeps Link to a job / Not ours)
 const looseM19 = W.looseMatch({ deListings: [{ de_listing_id: '9302', kind: 'rental', gvc_listed: true, property_id: null, raw: { street: '52 E 4TH ST', unit: '10', state: 'NY' } }],
   claims: { '9302': '52 E4, 10FL' } }, MC);

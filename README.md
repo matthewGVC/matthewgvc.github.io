@@ -31,6 +31,10 @@ only; the first click asks "Confirm archive?"). A listing archives by its stage;
 `dev_projects.archived_at` (migration 0018). Archived jobs leave the overview, the lists and the error
 count until "Show archived" is ticked.
 
+**Development addresses:** `assets/js/dev-addresses.js` lists the street each development's
+units are listed at on DE, so the Errors page treats those DE listings as the development's units
+(add a development there when its units go on DE).
+
 **The team roster:** Asana's 👋 People project is the master. `assets/js/roster.js` and
 `assets/js/bios.js` follow it (the helper's `asana-sync.js --people` copies it into `asana_people`).
 

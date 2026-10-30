@@ -68,6 +68,7 @@
 <script src="../../assets/js/drive-rules.js"></script>
 <script src="../../assets/js/drive.js"></script>
 <script src="../../assets/js/address-aliases.js"></script>
+<script src="../../assets/js/dev-addresses.js"></script>
 <script src="../../assets/js/workspace-data.js"></script>
 <script src="../../assets/js/match-link.js"></script>
 <script src="../../assets/js/workspace-shell.js"></script>
@@ -127,7 +128,10 @@
         // a task or DE listing linked to a job by hand since is no longer "not linked", even when only the job's half saved
         loose: W.looseMatch({ deListings: r[3] || [], asanaRun: run, ignoredGids: (r[5] || []).map(function (t) { return t.gid; }),
           linkedGids: props.map(function (p) { return p.asana_gid; }).filter(Boolean),
-          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean), claims: claims }, M) };
+          linkedDeIds: props.map(function (p) { return p.de_listing_id; }).filter(Boolean), claims: claims,
+          // a development's units on DE (Casa Avenida, Le Reve, Westwood …) are never "On DE, not in Asana"
+          devStreets: window.GVC_DEV_ADDRESSES ? GVC_DEV_ADDRESSES.streets() : [],
+          sameStreet: window.GVC_ADDR && GVC_ADDR.sameStreet }, M) };
       data.claims = null;
       if (r[6]) { data.claims = {}; r[6].forEach(function (c) { data.claims[c.owner_table + '|' + c.owner_id + '|' + c.key] = c; }); }
       data.lastSync = (r[7] || []).reduce(function (m, x) { return x && x.started_at && Date.parse(x.started_at) > Date.parse(m || 0) ? x.started_at : m; }, '');
@@ -203,7 +207,7 @@
     var jobs = W.buildJobs({ properties: data.properties, pitches: [], devProjects: data.devProjects, changes: [] }, today);
     data.names = {};
     jobs.forEach(function (j) { data.names[j.id] = j.name; });
-    var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people) : [];
+    var drift = M && window.GVC_ROSTER ? M.rosterDrift(window.GVC_ROSTER, data.people, window.GVC_ROSTER_INACTIVE) : [];
     var loose = data.loose || [];
     // the jobs' errors first, the same count as the overview's; then what belongs to no job yet
     var groups = W.matchByJob(jobs, drift, loose), n = W.overviewStats(jobs).mismatches;

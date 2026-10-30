@@ -48,7 +48,10 @@
      merge(prevMatch, list, now) → { match: { list, dismissed, waiting? }, found, cleared, changed }
          the stored shape; since carried over; found / cleared keys for the log;
          waiting (list.waiting) kept only while there is some
-     rosterDrift(roster, people) → [{ name, text }]   D71, not per job
+     rosterDrift(roster, people, inactive) → [{ name, text }]   D71, not per job
+         inactive: names the roster keeps off on purpose (GVC_ROSTER_INACTIVE), never
+         "not on the roster"; a DE profile link is expected of agents only (Sales Agents,
+         Partners, or a licensed title), not of staff such as Karen Conlon (Matt, 10-30)
 
    M3 compares DE with Asana's Current Price only (never the Original Price
    fallback), and is skipped when the job's kind and Asana's Sale/Rent
@@ -654,12 +657,13 @@
   }
 
   /* ---------- roster drift (D71) ---------- */
-  function rosterDrift(roster, people) {
+  function rosterDrift(roster, people, inactive) {
     var ppl = (people || []).filter(Boolean);
     if (!ppl.length) return [];
     var byKey = {}, inRoster = {};
     ppl.forEach(function (p) { byKey[personKey(p.name)] = p; });
     (roster || []).forEach(function (r) { inRoster[personKey(r.name)] = true; });
+    (inactive || []).forEach(function (n) { inRoster[personKey(n)] = true; });
     var agentLike = function (p) {
       return ['Sales Agents', 'Partners'].indexOf(p.section) !== -1 || /licensed|salesperson|broker/i.test(p.title || '');
     };
@@ -676,7 +680,7 @@
     });
     (roster || []).forEach(function (r) {
       var p = byKey[personKey(r.name)];
-      if (p && !p.past && !(p.deBioUrl || p.deProfileUrl || p.de_bio_url || p.de_profile_url)) {
+      if (p && !p.past && agentLike(p) && !(p.deBioUrl || p.deProfileUrl || p.de_bio_url || p.de_profile_url)) {
         out.push({ name: r.name, text: r.name + ' has no DE profile link in Asana\'s People.' });
       }
     });

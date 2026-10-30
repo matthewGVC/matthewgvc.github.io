@@ -50,7 +50,10 @@
                            asanaUrl, paste, deUrl, fixAt, who } says where to fix it (Asana, DE,
                            Drive, Matt) and who Asana names. loose = looseMatch(...) lines, which
                            belong to no job; roster = drift.
-     looseMatch({ deListings, asanaRun, ignoredGids, linkedGids, linkedDeIds, claims }, GVC_MATCH) → [{ fixAt, who, item }]
+     looseMatch({ deListings, asanaRun, ignoredGids, linkedGids, linkedDeIds, claims, devStreets, sameStreet }, GVC_MATCH) → [{ fixAt, who, item }]
+                          devStreets [{ street, slug }] (GVC_DEV_ADDRESSES.streets()): a DE listing at a
+                          development's street is its unit, never a line; sameStreet (GVC_ADDR.sameStreet)
+                          compares, else the streets must match apart from case, dots and spacing
                           claims { DE id: job name }: a DE line a job's M19 ("probably the same
                           listing") names says which job, and keeps its Link / Not ours
                            de_listings rows GVC-listed on DE with no job (M2 "On DE, not
@@ -529,8 +532,11 @@
     var out = [], ign = {}, held = {}, claims = o.claims || {};   // claims: { DE id: job name } from the jobs' M19 lines
     (o.ignoredGids || []).concat(o.linkedGids || []).forEach(function (g) { ign[g] = true; });
     (o.linkedDeIds || []).forEach(function (id) { held[id] = true; });
+    var plain = function (s) { return String(s || '').toLowerCase().replace(/[.,]/g, '').replace(/\s+/g, ' ').trim(); };
+    var same = o.sameStreet || function (a, b) { return plain(a) === plain(b); };
+    var devUnit = function (street) { return !!street && (o.devStreets || []).some(function (d) { return d && d.street && same(street, d.street); }); };
     (o.deListings || []).forEach(function (r) {
-      var m = r && !r.ignored && !held[r.de_listing_id] && M && M.checkDeListing ? M.checkDeListing(r) : null;
+      var m = r && !r.ignored && !held[r.de_listing_id] && !devUnit((r.raw || {}).street) && M && M.checkDeListing ? M.checkDeListing(r) : null;
       if (!m) return;
       var raw = r.raw || {}, street = raw.street ? String(raw.street).trim() : null, unit = street && raw.unit ? String(raw.unit).trim() : null;
       out.push({ fixAt: m.fixAt, who: m.who || [], item: { job: (street ? readable(street) + (unit ? ' ' + unit : '') + ' · ' : '') + 'DE listing ' + r.de_listing_id, href: null, id: null, table: null, code: m.code, key: m.key,

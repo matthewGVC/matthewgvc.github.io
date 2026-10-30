@@ -287,9 +287,11 @@ check('drift: one line each way', drift, [
   { name: 'Dee Missing', text: 'Dee Missing is on the roster but not in Asana\'s People.' }]);
 check('drift: People missing a roster agent → one line', M.rosterDrift(ROSTER, people.slice(0, 2)).map(d => d.text), ['Cal Testing is on the roster but not in Asana\'s People.']);
 check('drift: past member still on the roster; no DE link', M.rosterDrift(ROSTER, [people[0], { name: 'Ben Sample', past: true, section: 'Past Team Members' },
-  { name: 'Cal Testing', section: 'Operations', past: false }]).map(d => d.text),
+  { name: 'Cal Testing', section: 'Operations', title: 'Licensed Real Estate Salesperson', past: false }]).map(d => d.text),
 ['Ben Sample has left the team but is still on the roster.', 'Cal Testing has no DE profile link in Asana\'s People.']);
 check('drift: People never read → nothing', M.rosterDrift(ROSTER, []), []);
+check('drift: someone kept off the roster on purpose is not "missing"', M.rosterDrift(ROSTER, people.concat([{ name: 'Eve Newcomer', section: 'Partners', title: 'Licensed Salesperson', past: false }]), ['Eve Newcomer']), []);
+check('drift: staff (not an agent) need no DE profile link', M.rosterDrift(ROSTER, [people[0], people[1], { name: 'Cal Testing', section: 'Leadership', title: 'Director of Professional Development', past: false }]), []);
 
 /* ---------- tune-up B1: no status date → grace from the day it was first found ---------- */
 const aoBare = { stage: 'Accepted offer', milestones: {}, asana: { status: 'Accepted Offer/Attorney Review', section: 'Accepted Offer/Attorney Review',

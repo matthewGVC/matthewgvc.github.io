@@ -51,3 +51,7 @@ Add a dated line after each job. Newest last.
   sale vs rental and prices didn't agree. When the job itself is unclear, ask, don't make.
 - **Agent order (Matt, 10-30): when it's John and Katie, John always goes first.** The sheet prints
   the job's agents in order; fix the order on the job page's Agents card (↑), then Make PDF again.
+- **Clearing the Errors line after a tick:** the 30-minute Asana sync only re-reads tasks changed
+  since the last run, and ticking a subtask doesn't count, so the M8 line stays until the 3:00 full
+  read. To clear it now: `node helper/asana-sync.js --write --full` (reads Asana, writes only the
+  workspace; about a minute).

@@ -6,7 +6,7 @@
    two steps below; Map Studio still sends its map here.
 
      pieceRoute({ db, render, driveRoot, driveLink, today, sleep })
-       → async (body, cfg) → { ok, path, name, size, modified, url, pages, archived, folderMade }
+       → async (body, cfg) → { ok, path, name, size, modified, url, pages, archived, swept, folderMade }
      jobFolderOf(row, root, noun)      → the job folder's absolute path, checked (or throws)
      writePiece({ jobAbs, spec, row, file, doc, today, driveLink, sleep, linkMs })
                                        → the file written, the older one archived, its link
@@ -27,7 +27,7 @@ const fs = require('fs'), path = require('path');
 const { isPaperworkFolder, hasPaperworkWord } = require('../assets/js/drive-rules.js');
 const { PIECES } = require('./pieces.js');
 const { pieceDir } = require('./pdf/piece-folder.js');
-const { archivePrevious } = require('./pdf/archive.js');
+const { archivePrevious, archiveOlder } = require('./pdf/archive.js');
 const { insideJobPiece } = require('./pdf/guard.js');
 const { savePdf } = require('./pdf/name.js');
 
@@ -104,6 +104,9 @@ async function writePiece(o) {
   let archived;
   try { archived = archivePrevious({ jobAbs, dir, prev: doc.output, outputs: doc.outputs, words: spec.words, ext: spec.ext }); }
   catch (e) { archived = { left: doc.output && doc.output.path, why: 'older ' + spec.words + ' left in place: it couldn\'t be moved (' + (e.code || e.message) + ')' }; }
+  // only the current version stays at the folder's top (Matt 11-02): older hand-made ones go to Archive\ too
+  let swept = [];
+  try { swept = archiveOlder({ jobAbs, dir, keep: file }); } catch (e) { swept = []; }
   const st = fs.statSync(file);
   // Drive for Desktop gives a new file its real id once the upload lands (until then a stand-in)
   const tries = Math.max(1, Math.ceil((o.linkMs || LINK_MS) / 1000));
@@ -112,7 +115,7 @@ async function writePiece(o) {
     try { url = o.driveLink(file, false); } catch (e) { url = null; }
     if (!url && i < tries - 1) await o.sleep(1000);
   }
-  return { path: rel(file), name: path.basename(file), size: st.size, modified: st.mtime.toISOString(), url, archived, folderMade: made };
+  return { path: rel(file), name: path.basename(file), size: st.size, modified: st.mtime.toISOString(), url, archived, swept, folderMade: made };
 }
 
 function pieceRoute(o) {
@@ -151,7 +154,7 @@ function pieceRoute(o) {
     }
     const w = await writePiece({ jobAbs, spec, row, file: r, doc, today, sleep, driveLink: o.driveLink });
     return { ok: true, path: w.path, name: w.name, size: w.size, modified: w.modified, url: w.url, pages: r.pages,
-      archived: w.archived, folderMade: w.folderMade };
+      archived: w.archived, swept: w.swept, folderMade: w.folderMade };
   };
 }
 

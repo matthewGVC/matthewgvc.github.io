@@ -378,6 +378,20 @@ function req(method, p, headers, body) {
     { from: 'Marketing/Showsheet/Old.pdf', to: 'Marketing/Showsheet/Archive/Old (2).pdf' });
   check('archive clash: the first one is untouched', fs.readFileSync(path.join(sheetDir, 'Archive', 'Old.pdf'), 'utf8'), 'already archived');
 
+  /* only the current version stays at the folder's top (Matt 11-02, 225 E79 PHA) */
+  const { archiveOlder } = require('../helper/pdf/archive.js');
+  const swJob = path.join(pRoot, 'GVC - Test', '9 Sweep St'), swDir = path.join(swJob, 'Show Sheet');
+  fs.mkdirSync(path.join(swDir, 'Archive'), { recursive: true });
+  const was = new Date('2026-06-12T12:00:00Z');
+  ['225 E 79 PHA.pdf', '225 E 79 PHA.ai', 'desktop.ini', 'Signed Contract.pdf'].forEach(n => { fs.writeFileSync(path.join(swDir, n), n); fs.utimesSync(path.join(swDir, n), was, was); });
+  fs.writeFileSync(path.join(swDir, 'Archive', '225 E 79 PHA.ai'), 'archived before');
+  fs.writeFileSync(path.join(swDir, 'Showsheet - new.pdf'), 'new');
+  const swept = archiveOlder({ jobAbs: swJob, dir: swDir, keep: path.join(swDir, 'Showsheet - new.pdf') });
+  check('sweep: older files at the top go to Archive, a taken name gets (2)', swept.map(m => m.from + ' → ' + m.to).sort(),
+    ['Show Sheet/225 E 79 PHA.ai → Show Sheet/Archive/225 E 79 PHA (2).ai', 'Show Sheet/225 E 79 PHA.pdf → Show Sheet/Archive/225 E 79 PHA.pdf']);
+  check('sweep: the new file, system files and paperwork stay', fs.readdirSync(swDir).filter(n => n !== 'Archive').sort(), ['Showsheet - new.pdf', 'Signed Contract.pdf', 'desktop.ini']);
+  check('sweep: nothing at the top older than the new file → nothing moves', archiveOlder({ jobAbs: swJob, dir: swDir, keep: path.join(swDir, 'Showsheet - new.pdf') }).length, 0);
+
   /* the write guard */
   const jA = job('1 Example St');
   check('guard: in the showsheet folder', insideJobPiece(path.join(sheetDir, 'a.pdf'), jA, sheetDir), true);

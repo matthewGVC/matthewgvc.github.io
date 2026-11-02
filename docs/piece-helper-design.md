@@ -11,7 +11,7 @@ helper writes the showsheet PDF into the linked folder; without the helper the p
 - It opens the piece's own page in its hidden browser, which lays the piece exactly as it does when
   opened from the job, then prints it with the existing drawing code, so the PDF is unchanged.
 - It saves the PDF into the job folder under the existing rules (never overwriting; its own older
-  file to Archive), records the piece as made, logs "<piece> made · Helper, asked by <name>", and
+  file and every other older file at that folder's top to Archive, D124), records the piece as made, logs "<piece> made · Helper, asked by <name>", and
   marks the request done, or failed with a plain reason.
 - Pieces: Showsheet, Brochure, both Postcards, Seller Package, Signage. The map stays in Map Studio.
 

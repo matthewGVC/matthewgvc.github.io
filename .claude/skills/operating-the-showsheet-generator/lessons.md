@@ -70,5 +70,8 @@ Add a dated line after each job. Newest last.
   and CURRENT tag painted white, margins cropped) and the sheet was made again.
 - **The job page's Floorplan row** showed only the newest file, which was the alternate. It now
   lists every plan with its own Open: each floor or unit, then each alternate (Matt 11-02).
+- **Old variants go to the archive** (Matt): Floorplans had the October plans beside the v2s, Show
+  Sheet had the June and August sheets and their .ai, Video had "draft 5". All moved into each
+  folder's own archive; now a hard rule in SKILL.md.
 - **Old "Showsheet details" doc was another listing's** (340 E23 5M), which is why the job's facts were
   empty. The August GVC sheet was the source for numbers.

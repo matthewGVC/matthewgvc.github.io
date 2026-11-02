@@ -22,8 +22,14 @@ Files beside this one:
 ## Hard rules
 
 - **Never type a password.** If the page shows a Sign in box, ask Matt to sign in on the browser pane.
-- **Drive:** never delete, move or rename anything. The helper writes the sheet; you only read
-  (`G:\Shared drives\...`). Deal paperwork (listing agreements, deal sheets, tax bills, anything
+- **Drive:** never delete or rename anything. The helper writes the sheet; you mostly read
+  (`G:\Shared drives\...`).
+- **Only the current version at a folder's top** (Matt 11-02). Whenever a job's piece folder
+  (Floorplan, Show Sheet, Video, Brochure…) holds an older variant beside the current one (an older
+  plan, last year's sheet, its Illustrator file, a draft video), move it into that folder's own
+  `Archive\` (or `archive\`, whichever is there; make `Archive\` if none). Never delete, never
+  overwrite: when a name is taken in the archive, add the file's date to the name. Name every move
+  to Matt. The workspace treats any folder named archive as archived. Deal paperwork (listing agreements, deal sheets, tax bills, anything
   `assets/js/drive-rules.js` calls paperwork) may be read, e.g. for a price or charges (Matt 10-30),
   but is never written, moved or changed.
 - **Asana is written only on Matt's OK for that job** (D77): tick that job's "Create Show Sheet"

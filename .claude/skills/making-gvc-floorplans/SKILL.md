@@ -56,8 +56,11 @@ Files beside this one:
   title block, "TOTAL sq ft" line, watermark, or old GVC header or compass. The branded frame comes
   from the script alone.
 - **Write only inside this job's Floorplan folder** (`Unbranded/`, `Branded/`, `Design/`). Never
-  move, rename or edit the files at the top of the Floorplan folder. They are Matt's past
-  Illustrator outputs. Reading deal paperwork is fine (Matt 10-30), but never write, move or change it (contracts, offers,
+  rename or edit the files at the top of the Floorplan folder. They are Matt's past Illustrator
+  outputs. **Only the current version stays at the top** (Matt 11-02): once a new version is
+  saved, move each older plan, alternate and Illustrator file at the top into the folder's
+  `archive/` (or `Archive/`, whichever is there), adding the file's date to a name the archive
+  already has, and name every move in the report. Reading deal paperwork is fine (Matt 10-30), but never write, move or change it (contracts, offers,
   exclusives, closings, anything `assets/js/drive-rules.js` treats as paperwork), and never write in the SSDG
   folder.
 - **Never delete or overwrite.** The maker moves anything it replaces to `Design/archive/<date>/`.

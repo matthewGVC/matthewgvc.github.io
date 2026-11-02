@@ -55,3 +55,15 @@ Add a dated line after each job. Newest last.
   since the last run, and ticking a subtask doesn't count, so the M8 line stays until the 3:00 full
   read. To clear it now: `node helper/asana-sync.js --write --full` (reads Asana, writes only the
   workspace; about a minute).
+
+## 2026-11-02, 225 E79 PHA (relist as "Penthouse")
+- **Unit name is the sheet's title.** "Residence PHA" comes from the job's Unit fact; changing it to
+  "Penthouse" on the Facts card makes the sheet print "Penthouse" (7 characters or fewer get "Residence " in front).
+- **An alternate plan was printed.** The picker skipped alternates only on a word boundary, so
+  `225E79 PHA_Alternate.jpg` (underscore) counted as a plan and, being newer, won. Fixed in
+  `assets/js/sheet-job.js` and `job-page/floorplans.js`. Read page 2 of every PDF for CURRENT/ALTERNATE.
+- **Label fixes on an old Illustrator plan** (no `Design/plan.json`): the alternate JPG had the right
+  labels at the same scale, so its label blocks were copied onto the regular JPG (offset 4,9 px) and
+  saved as new `… v2.jpg` files beside the old ones. The `.ai` master still has the old labels.
+- **Old "Showsheet details" doc was another listing's** (340 E23 5M), which is why the job's facts were
+  empty. The August GVC sheet was the source for numbers.

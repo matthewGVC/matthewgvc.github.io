@@ -130,6 +130,10 @@ check('standard plan wins even when the hand-made one is newer', (S.pickFloorpla
 check('Design files are never picked', S.pickFloorplan([{ path: 'Floorplan/Design/cubicasa.png', name: 'cubicasa.png', modified: '2026-10-26' }]), null);
 check('Design files never beat an old version', (S.pickFloorplan(fp.concat([{ path: 'Floorplan/Design/ref v9.jpg', name: 'ref v9.jpg' }])) || {}).path, 'Floorplan/v2/Unit 4A v2.jpg');
 check('standard: the highest Unbranded version', (S.pickFloorplan([{ path: 'Floorplan/Unbranded/x v2.svg', name: 'x v2.svg' }, { path: 'Floorplan/Unbranded/x v3.png', name: 'x v3.png' }]) || {}).path, 'Floorplan/Unbranded/x v3.png');
+check('an alternate joined by an underscore is never picked (225 E79 PHA)', (S.pickFloorplan([
+  { path: 'Floorplans/225E79 PHA_FP v2.jpg', name: '225E79 PHA_FP v2.jpg', modified: '2026-11-02T10:14:00Z' },
+  { path: 'Floorplans/225E79 PHA_Alternate v2.jpg', name: '225E79 PHA_Alternate v2.jpg', modified: '2026-11-02T10:15:00Z' }]) || {}).path, 'Floorplans/225E79 PHA_FP v2.jpg');
+check('a word that only contains alt is still a plan', (S.pickFloorplan([{ path: 'Floorplan/Halton v2.jpg', name: 'Halton v2.jpg' }]) || {}).path, 'Floorplan/Halton v2.jpg');
 check('svg is an image the picker takes', (S.pickFloorplan([{ path: 'Floorplan/v2/x v2.svg', name: 'x v2.svg' }]) || {}).path, 'Floorplan/v2/x v2.svg');
 check('planPlace: the subfolder under the floorplan folder',
   ['Floorplan/Unbranded/x v5.svg', 'Floor plans/BRANDED/x.png', 'Floorplan/Design/plan.json', 'Floorplan/Design/archive/x v1.svg', 'Floorplan/v2/x.jpg', 'Floorplan/Unbranded', 'Floorplan/x Unbranded.jpg', '', null, 'Floorplan/v2/Unbranded/x.jpg'].map(p => S.planPlace && S.planPlace(p)),

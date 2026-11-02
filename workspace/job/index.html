@@ -188,6 +188,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   <div class="crumb" id="crumb">&nbsp;</div><!-- filled once the job loads: Resell or New Dev -->
   <div id="page"><p class="soft" style="margin-top:20px">Loading the job…</p></div>
 </main>
+<script src="../../assets/js/markets.js"></script>
+<script src="../../assets/js/words.js"></script>
 <script src="../../assets/js/supabase-config.js"></script>
 <script src="../../assets/js/property-library.js"></script>
 <script src="../../assets/js/roster.js"></script>
@@ -308,7 +310,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
      makes them (at once when it runs on this computer, else when it next runs). Asking again for a
      piece already waiting joins that request. The page follows the requests and reloads once the
      helper has finished one, so the row shows the file it made. */
-  var ASKERS = ['owner', 'admin', 'marketing', 'shared'];
+  var ASKERS = ['owner', 'admin', 'marketing'];   // making pieces is marketing's: agents use them (Matt, 11-02; 0019)
   function requestsOf(row) {
     return rest('/piece_requests?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=asked_at.desc&limit=40').catch(function () { return []; });
   }

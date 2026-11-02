@@ -36,6 +36,7 @@
   else global.GVC_PIECEJOB = factory(global.GVC_FACTS, global.GVC_SHEETJOB);
 })(typeof window !== 'undefined' ? window : globalThis, function (F, S) {
   'use strict';
+  var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
 
   var TOOLS = ['brochure', 'postcard-listed', 'postcard-sold', 'seller', 'pitch-map', 'signage'];
   var LABEL = { brochure: 'Brochure', 'postcard-listed': 'Just Listed postcard', 'postcard-sold': 'Just Sold postcard', seller: 'Seller Package', 'pitch-map': 'Map',
@@ -174,7 +175,7 @@
       ['priceLow', 'priceMid', 'priceHigh'].forEach(function (k) { s[k] = text(c[k]); });
       s.recBand = c.recBand ? String(c.recBand) : (s.recBand || 'mid');
       // the deck speaks New York or New Jersey; Florida takes New Jersey's wording (D100)
-      s.market = row.market === 'NYC' ? 'nyc' : row.market === 'NJ' || row.market === 'FL' ? 'nj' : (s.market || 'nyc');
+      s.market = MK.deck(row.market) || s.market || 'nyc';
       if (a.ids.length) s.agents = a.ids;
     } else if (tool === 'signage') {
       s.kind = 'for-sale';

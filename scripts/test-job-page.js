@@ -206,6 +206,9 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
 
 (async () => {
   const browser = await chromium.launch();
+  // the pages' text as the code writes it; words.js's swaps have their own test (test-words.js)
+  const newContext0 = browser.newContext.bind(browser);
+  browser.newContext = async o => { const c = await newContext0(o); await c.addInitScript(() => { try { localStorage.setItem('gvc.words.raw', '1'); } catch (e) { /* about:blank */ } }); return c; };
   let t, p, s;
 
   /* ---------- facts ---------- */
@@ -890,10 +893,10 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
       await t.page.$$eval('#piecesCard [data-build]', e => e.length), await t.page.$$eval('#rebuildStale', e => e.length)],
       [['Get PDF', 'Open brochure'], ['Ask Matt', 'Open seller package', 'Ask Matt'], 0, 0]);
     await t.ctx.close();
-    // the team's shared account may ask the helper (0017)
+    // the team's shared account uses the pieces, it doesn't make them (0019, Matt 11-02)
     t = await open(browser, { rows: R2, path: LISTING, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
-    check('kit shared account: Rebuild and Rebuild n stale, Get PDF for the made file', [(await builds(t.page, 'brochure')).map(a => a[0]), await t.page.$$eval('#rebuildStale', els => els.map(a => a.textContent.trim())),
-      (await acts(t.page, 'brochure')).map(a => a[0])], [['Rebuild brochure'], ['Rebuild 2 stale'], ['Get PDF', 'Open brochure']]);
+    check('kit shared account: no Rebuild, Get PDF for the made file', [(await builds(t.page, 'brochure')).map(a => a[0]), await t.page.$$eval('#rebuildStale', els => els.length),
+      (await acts(t.page, 'brochure')).map(a => a[0])], [[], 0, ['Get PDF', 'Open brochure']]);
     await t.ctx.close();
     // a request the helper couldn't make says why, until a later build
     const RF2 = rowsFor(); RF2.documents = [v2('brochure', RF2.properties[0], { facts: { price: 1 } })];

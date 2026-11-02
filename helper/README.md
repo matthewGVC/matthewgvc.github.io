@@ -32,6 +32,14 @@ AI service: the key goes in only with Matt's OK.
 `node helper/folder-ai-dry.js "1000 Nixon" …` shows what would be sent for some jobs, with a stub;
 add `--ask` for a real answer. Neither writes anything.
 
+## The Sunday email (overhaul step 3, `weekly-report.js`)
+
+`node helper/weekly-report.js --preview [--market NJ]` writes `exports/weekly-report-<date>.html`
+from the database: For Monday (an agenda by rules), the numbers, closing soon, new developments,
+what changed this week, marketing. Preview only: nothing is scheduled or sent until Matt OKs the
+format, the recipients and Gmail send permission (`docs/overhaul-plan.md`, Decisions needed).
+Tests: `node scripts/test-weekly-report.js`.
+
 ## Pieces made from a job (migration 0017)
 
 Make / Rebuild on a job page (from any device) adds a row to `piece_requests`. The helper

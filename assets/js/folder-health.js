@@ -58,8 +58,7 @@
   /* finished photos kept loose in the job's Photos folder (no Edited / Finals folder): Matt, 10-30 */
   var PHOTOS_TOP = /^(photos?|pictures)$/;
   var IMAGE = /\.(jpe?g|png|tiff?|heic|webp)$/i;
-  var MARKET_DRIVE = { NYC: 'GVC - New York', NJ: 'GVC - New Jersey', FL: 'GVC - Florida' };
-  var MARKET_NAME = { NYC: 'New York', NJ: 'New Jersey', FL: 'Florida' };
+  var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
   /* pieces where two current files side by side is wrong (floorplans and photos
      hold many files on purpose; postcards come as listed and sold) */
   var ONE_CURRENT = ['showsheet', 'brochure'];
@@ -146,9 +145,9 @@
     out.counts.looseTop = loose;
 
     /* ---- notes ---- */
-    var root = String(opts.driveRoot || ''), want = MARKET_DRIVE[opts.market];
+    var root = String(opts.driveRoot || ''), want = (MK.get(opts.market) || {}).drive;
     if (root && want && low(root) !== low(want)) {
-      note('otherDrive', 'This folder is on the ' + root + ' drive, but the job is in ' + MARKET_NAME[opts.market] + '. The ' + MARKET_NAME[opts.market] + ' drive is ' + want + '.');
+      note('otherDrive', 'This folder is on the ' + root + ' drive, but the job is in ' + MK.name(opts.market) + '. The ' + MK.name(opts.market) + ' drive is ' + want + '.');
     }
     if (!out.detailsDoc) note('noDetails', 'There is no details document at the top of the folder.');
 

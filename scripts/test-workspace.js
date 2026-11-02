@@ -119,6 +119,9 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
 
 (async () => {
   const browser = await chromium.launch();
+  // the pages' text as the code writes it; words.js's swaps have their own test (test-words.js)
+  const newContext0 = browser.newContext.bind(browser);
+  browser.newContext = async o => { const c = await newContext0(o); await c.addInitScript(() => { try { localStorage.setItem('gvc.words.raw', '1'); } catch (e) { /* about:blank */ } }); return c; };
 
   /* signed out: sign-in only, nothing else */
   let t = await open(browser, { signedIn: false });
@@ -178,11 +181,11 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   }
   check('waiting on others', (await text(p, '#wait')).includes('Real headshot for an agent'), true);
   check('sync card ok', [await p.$eval('#deCard', e => e.className), (await text(p, '#deTitle'))], ['card health', 'DE sync ran']);
-  check('read-only banner without Drive', [(await text(p, '.banner')).includes('Read-only here'), await text(p, '#wsDrive')], [true, 'Read-only here']);
+  check('no Drive: the header pill says so, no banner (overhaul 2)', [await visible(p, '.banner'), await text(p, '#wsDrive')], [false, 'Read-only here']);
   check('avatar initials', await text(p, '#wsMe'), 'MB');
   check('nav: Overview, Resell, New Dev, Errors, Tools', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Resell', 'New Dev', 'Errors', 'Tools']);
   check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
-    [['Listing rules', './../listing-rules/'], ['Tasks', './#tasks']]);
+    [['Listing rules', './../listing-rules/'], ['Tasks', './#tasks'], ['Ask Matt', 'mailto:matthew@gvcrealestateteam.com']]);
   check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
   check('top bar: Asana pill beside DE, the time on hover', [await text(p, '#wsFootAsana'), (await p.$eval('#wsFootAsana', e => e.title)).startsWith('Asana last synced'), await p.$eval('#wsFootAsana', e => e.className)], ['Asana synced', true, 'pill-ok']);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
@@ -336,7 +339,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: roster drift uses the latest People read only', [(await text(mp, '.mg[data-kind="roster"]')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg[data-kind="roster"]')).includes('Old Person')], [true, false]);
   check('match: total in the header, the overview count', (await text(mp, '#lead')).startsWith('4 errors on jobs'), true);
   check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
-    ['/listing-rules/', '/workspace/#tasks']);
+    ['/listing-rules/', '/workspace/#tasks', 'mailto:matthew@gvcrealestateteam.com']);
   check('match: no Drive pill or read-only banner', [await visible(mp, '#wsDrive'), await visible(mp, '.banner')], [false, false]);
   await mp.click('.mline[data-key="M3"] [data-dismiss]');
   check('dismiss: asks for a reason', await visible(mp, '.mline[data-key="M3"] input.reason'), true);
@@ -806,6 +809,12 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   const sbOf = name => t.page.$$eval('.pj', (els, n) => { const e = els.find(x => x.querySelector('h3').textContent.indexOf(n) === 0); return e ? [...e.querySelectorAll('.sb')].map(b => b.className.replace('sb ', '') + ' ' + b.title) : null; }, name);
   check('overview badges: 12 Sample Lane (folder moved, not on DE while Live)', await sbOf('12 Sample Lane'),
     ['no Asana: No Asana task linked', 'no Drive: The Drive folder moved or was renamed', 'no DE: Not matched to a DE listing']);
+  // the team's plain words (overhaul 2): with words.js on, nothing banned shows, in the text or the hovers
+  check('plain words: nothing banned on the overview', await t.page.evaluate(() => {
+    localStorage.removeItem('gvc.words.raw'); GVC_WORDS.tidy(document.body);
+    const seen = [document.body.innerText].concat([...document.querySelectorAll('[title]')].map(e => e.title)).join('\n');
+    return [GVC_WORDS.BANNED.filter(b => b.test(seen)).map(String), /Not matched to an Elliman listing/.test(seen)];
+  }), [[], true]);
   await t.ctx.close();
 
   // folding: the Jobs list opens, Tasks starts folded, and a choice is remembered

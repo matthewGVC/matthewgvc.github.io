@@ -213,6 +213,14 @@ Agents' names, titles, phones and emails live in `assets/js/roster.js` (bios in 
 but **Asana's 👋 People project is the master**: change a contact there first, then make the roster
 match. A new agent also needs a headshot at `assets/agents/<id>.png` (the roster's header says how).
 
+### Plain words and the three markets
+The team aren't developers, so the workspace never shows "DE", "helper" or a bare check code.
+`assets/js/words.js` holds the swaps (DE → Elliman) and each Errors check's short name, and rewrites
+what the workspace pages show; add a new term there, not in each page. `assets/js/markets.js` holds
+everything that differs between NYC, NJ and FL (drive, signage, houses, the Seller Package's wording):
+ask it instead of testing `market === 'NYC'`. Both load before the other scripts on every workspace
+page, and `assets/js/piece-loader.js` loads markets.js for the tools.
+
 ### Adding a new tool
 Follow the project skill `.claude/skills/building-gvc-tools/` (Claude loads it automatically):
 questions to settle first, copy-exact templates, the wiring checklist, and

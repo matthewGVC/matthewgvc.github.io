@@ -223,8 +223,10 @@
     var card = function (t, ic, v, small, w, c) {
       return '<div class="card stat"><div class="top-l">' + t + I(ic) + '</div><div class="v">' + v + '<small>' + esc(small) + '</small></div><div class="bar"><i class="' + (c || '') + '" style="width:' + w + '%"></i></div></div>';
     };
-    $('stats').innerHTML = card('Live', 'arrow', s.live, 'listed and on the market', s.live / n * 100) +
-      card('In contract', 'file', s.contract, 'contract signed', s.contract / n * 100, 'c') +
+    // rentals count too, and the captions say so (overhaul 6)
+    var rent = function (st) { var k = js.filter(function (j) { return j.type === 'rental' && j.stage === st; }).length; return k ? ', ' + k + ' rental' + (k === 1 ? '' : 's') : ''; };
+    $('stats').innerHTML = card('Live', 'arrow', s.live, 'on the market' + rent('Live'), s.live / n * 100) +
+      card('In contract', 'file', s.contract, 'contract or lease signed' + rent('In contract'), s.contract / n * 100, 'c') +
       card('To link', 'link', s.toLink, 'folder or DE match missing', s.toLink / n * 100);
     $('lead').innerHTML = esc(s.total + ' job' + (s.total === 1 ? '' : 's') + (f.market ? ' in ' + f.market : '')) +
       (s.mismatches ? ' · <a class="link" id="mmTotal" href="match/">' + s.mismatches + ' error' + (s.mismatches === 1 ? '' : 's') + '</a>' : '');
@@ -258,7 +260,7 @@
       if (j.price) meta.push(j.price); if (j.rooms) meta.push(j.rooms); if (j.place) meta.push(j.place);
       var segs = j.steps.map(function (s, i) {
         var done = j.type === 'development' ? i <= j.stageIdx : (j.done[s] || i < j.stageIdx);
-        return '<i class="' + (i === j.stageIdx ? 'c' : done ? 'd' : '') + '" title="' + esc(s) + (j.done[s] ? ' · ' + esc(W.fmtDay(j.done[s])) : '') + '"></i>';
+        return '<i class="' + (i === j.stageIdx ? 'c' : done ? 'd' : '') + '" title="' + esc(W.stageWord(s, j.kind)) + (j.done[s] ? ' · ' + esc(W.fmtDay(j.done[s])) : '') + '"></i>';
       }).join('');
       var dates = (j.dates || []).length ? '<div class="dates">' + j.dates.map(function (d) {
         return '<span class="dmk' + (d.planned ? ' planned' : '') + '" title="' + (d.planned ? 'Planned' : 'Done') + '">' + esc(d.label + ' ' + W.fmtDay(d.on)) + '</span>';

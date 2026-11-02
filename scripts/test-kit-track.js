@@ -40,6 +40,7 @@ check('nothing yet', res.rows.filter((r) => ['notUsed', 'tracked'].indexOf(r.sta
 check('no checklist only', res.checklistOnly, []);
 
 /* NJ signage is a normal row */
+check('a rental: no postcard (overhaul 6)', row(K.track({ kind: 'rental', market: 'NJ', pieces: {}, checklist: [] }), 'postcard').state, 'notUsed');
 check('NJ signage not notUsed', row(K.track({ kind: 'sale', market: 'NJ', pieces: {}, checklist: [] }), 'signage').state, 'notStarted');
 
 /* rental: all rows present */

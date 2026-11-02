@@ -97,6 +97,7 @@
       var state;
       if (key === 'video') state = 'tracked';
       else if (key === 'signage' && !MK.signage(input.market)) state = 'notUsed';
+      else if (key === 'postcard' && input.kind === 'rental') state = 'notUsed';   // rentals get no postcard (the job page offers none; overhaul 6)
       else if (current && step) state = step.done ? 'done' : 'fileOpen';
       else if (current) state = 'done';
       else if (step && step.done) state = 'tickedNoFile';

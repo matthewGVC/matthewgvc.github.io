@@ -454,7 +454,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       j.steps.map(function (s, i) {
         var cls = i === j.stageIdx ? 'cur' : (j.done[s] || (s === 'Pitch' && j.pitchedOn)) ? 'done' : i < j.stageIdx ? 'skip' : '';
         var d = s === 'Pitch' ? (j.pitchedOn || j.done.Pitch) : j.done[s];
-        return '<div class="step ' + cls + '"><span class="dot">' + (cls === 'done' ? I('check') : (i + 1)) + '</span>' + esc(s) + '<span class="d">' + (d ? esc(W.fmtDay(d)) : '') + '</span></div>';
+        return '<div class="step ' + cls + '"><span class="dot">' + (cls === 'done' ? I('check') : (i + 1)) + '</span>' + esc(W.stageWord(s, j.kind)) + '<span class="d">' + (d ? esc(W.fmtDay(d)) : '') + '</span></div>';
       }).join('') + '</div></div></div>';
   }
 
@@ -492,7 +492,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     if (kind === 'listing') right.push(asanaCard());
     // a development shows the phase its build is in (Asana's schedule), else its milestone stage
     var phase = kind === 'dev' && window.GVC_DEVBUILD.currentPhase(r.schedule);
-    var stage = isArchived() ? '<span class="chip">Archived</span>' : phase ? (phase.section ? '<span class="chip" title="Now: ' + esc(phase.name) + '">' + esc(window.GVC_DEVBUILD.sectionLabel(phase.section)) + '</span>' : '<span class="chip">' + esc(phase.name) + '</span>') : '<span class="chip ' + j.chip + '">' + esc(j.stage) + '</span>';
+    var stage = isArchived() ? '<span class="chip">Archived</span>' : phase ? (phase.section ? '<span class="chip" title="Now: ' + esc(phase.name) + '">' + esc(window.GVC_DEVBUILD.sectionLabel(phase.section)) + '</span>' : '<span class="chip">' + esc(phase.name) + '</span>') : '<span class="chip ' + j.chip + '">' + esc(W.stageWord(j.stage, j.kind)) + '</span>';
     page('<div class="hd"><div><h1>' + esc(j.name) + ' ' + stage + '</h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
       // the folder's path itself isn't shown (Open folder and the Drive links reach it); only a problem with it is
       (!r.drive_folder ? '<div class="path" style="margin-top:8px">No Drive folder linked yet</div>' : r.folder_state === 'broken' ? '<div class="path" style="margin-top:8px"><span class="chip stale">Drive folder moved or renamed</span></div>' : '') +

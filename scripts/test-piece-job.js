@@ -153,6 +153,15 @@ const sets = J.planSets([
   { path: 'Floorplans/225E79 PHA.ai', name: '225E79 PHA.ai', modified: '2026-10-01' }]);
 check('planSets: the current plan and each alternate layout, newest version of each', [sets.current.map(x => x.path), sets.alternates.map(x => x.path)],
   [['Floorplans/225E79 PHA_FP v2.jpg'], ['Floorplans/225E79 PHA_Alternate v2.jpg']]);
+const std = J.planSets([
+  { path: 'Floorplans/Unbranded/225E79 PHA v2.jpg', name: '225E79 PHA v2.jpg' },
+  { path: 'Floorplans/Branded/225E79 PHA v2.jpg', name: '225E79 PHA v2.jpg' },
+  { path: 'Floorplans/Unbranded/225E79 PHA Alternate v2.jpg', name: '225E79 PHA Alternate v2.jpg' },
+  { path: 'Floorplans/Branded/225E79 PHA Alternate v2.jpg', name: '225E79 PHA Alternate v2.jpg' },
+  { path: 'Floorplans/225E79 PHA_FP v2.jpg', name: '225E79 PHA_FP v2.jpg' }]);
+check('planSets: the branded render of the current plan and of the alternate', [std.current.map(x => x.path), std.alternates.map(x => x.path)],
+  [['Floorplans/Branded/225E79 PHA v2.jpg'], ['Floorplans/Branded/225E79 PHA Alternate v2.jpg']]);
+check('the sheet still prints the unbranded plan', J.pickFloorplans(std.current.concat([{ path: 'Floorplans/Unbranded/225E79 PHA v2.jpg', name: '225E79 PHA v2.jpg' }])).map(x => x.path), ['Floorplans/Unbranded/225E79 PHA v2.jpg']);
 const units = J.planSets([1, 2, 3, 4, 5, 6].map(n => ({ path: 'Floorplan/Unbranded/Tower - Unit ' + n + 'A v1.png', name: 'Tower - Unit ' + n + 'A v1.png' })));
 check('planSets: every unit of a new development, not only four', [units.current.length, units.alternates.length], [6, 0]);
 const stdLevels = [

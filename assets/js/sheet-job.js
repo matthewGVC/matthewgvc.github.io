@@ -281,25 +281,21 @@
   var RENDER_RANK = { branded: 0, unbranded: 1, blank: 2 };
   function svgFirst(name) { return /\.svg$/i.test(name) ? 0 : 1; }
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
-  /* the files a picker chooses among: images, not Source/, not alternates, never Design/;
-     only the Unbranded/ ones when there are any (the standard plan wins over hand-made versions) */
-  function planFiles(files) {
+  /* the files a picker chooses among: images, not Source/, never Design/, alternates or not;
+     only the standard folder's ones when there are any (the standard plan wins over hand-made
+     versions): Unbranded/ for a piece that prints the plan, Unbranded/ and Branded/ with
+     { branded: true } for a link to the branded plan */
+  function candidates(files, alternates, opts) {
     var ok = (files || []).filter(function (f) {
       var name = nameOf(f);
-      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && !R.isAlternate(name) && planPlace(f.path) !== 'design';
+      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && R.isAlternate(name) === alternates && planPlace(f.path) !== 'design';
     });
-    var std = ok.filter(function (f) { return planPlace(f.path) === 'unbranded'; });
+    var std = ok.filter(function (f) { var p = planPlace(f.path); return p === 'unbranded' || (opts && opts.branded && p === 'branded'); });
     return std.length ? std : ok;
   }
+  function planFiles(files, opts) { return candidates(files, false, opts); }
   /* the same files, for the alternate layouts only */
-  function alternateFiles(files) {
-    var ok = (files || []).filter(function (f) {
-      var name = nameOf(f);
-      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && R.isAlternate(name) && planPlace(f.path) !== 'design';
-    });
-    var std = ok.filter(function (f) { return planPlace(f.path) === 'unbranded'; });
-    return std.length ? std : ok;
-  }
+  function alternateFiles(files, opts) { return candidates(files, true, opts); }
   function pickFloorplan(files) {
     var best = null;
     planFiles(files).forEach(function (f) {

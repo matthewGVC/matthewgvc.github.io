@@ -55,23 +55,34 @@
     return global.GVC_KIT.realFiles(list, key).filter(function (f) { return !f.archived; }).sort(function (a, b) { return ms(b.modified) - ms(a.modified); })[0] || null;
   }
 
-  /* a job with several floors has one floorplan file per level: the newest version's levels, each its own
-     way in, so Open never lands on whichever level was saved last. [] when there is one level or none. */
+  /* every plan a person may want to open: each level or unit of the newest version, then each
+     alternate layout, every one its own way in, so Open never lands on whichever was saved last.
+     [] when there is only one plan. */
   function planLevels(list) {
     var PJ = global.GVC_PIECEJOB;
-    if (!PJ || !PJ.pickFloorplans) return [];
+    if (!PJ || !PJ.planSets) return [];
     /* last night's scan keeps names and links, not paths: the name stands in for the path there */
     var files = global.GVC_KIT.realFiles(list, 'floorplan').filter(function (f) { return !f.archived && (f.path || f.name); })
       .map(function (f) { return f.path ? f : { name: f.name, path: f.name, modified: f.modified, url: f.url, scanned: true }; });
-    var picks = PJ.pickFloorplans(files);
-    if (picks.length < 2) return [];
-    return picks.map(function (p) {
+    var sets = PJ.planSets(files);
+    if (sets.current.length + sets.alternates.length < 2) return [];
+    function entry(p, label, alt) {
       var f = files.filter(function (x) { return x.path === p.path; })[0] || { path: p.path, name: p.path.split('/').pop() };
-      var base = String(f.name || p.path.split('/').pop()).replace(/\.[a-z0-9]+$/i, '');
-      return { path: f.scanned ? null : f.path, name: f.name || base, url: f.url, modified: f.modified, version: p.version,
-        label: (base.split(/\s+-\s+/).pop() || base).replace(/\b(unbranded|branded|mls)\b/gi, '').replace(/\s+/g, ' ').trim() };
+      return { path: f.scanned ? null : f.path, name: f.name || p.path.split('/').pop(), url: f.url, modified: f.modified, version: p.version, label: label, alternate: alt };
+    }
+    function words(name) {
+      var base = String(name).replace(/\.[a-z0-9]+$/i, '');
+      return (base.split(/\s+-\s+/).pop() || base).replace(/\b(unbranded|branded|mls|v\d+)\b/gi, '').replace(/[_\s]+/g, ' ').trim();
+    }
+    var cur = sets.current.map(function (p) {
+      return entry(p, sets.current.length > 1 ? words(p.path.split('/').pop()) : 'Current layout', false);
     });
+    var alts = sets.alternates.map(function (p) {
+      return entry(p, sets.alternates.length > 1 ? words(p.path.split('/').pop()) : 'Alternate layout', true);
+    });
+    return cur.concat(alts);
   }
+
 
   /* ---------- the Showsheet's record (Slice 4: S15, S20, S21) ----------
      judge(ctx, pieces, live) → GVC_STALE's { state, changes } for the showsheet, or null
@@ -324,7 +335,9 @@
         : x.file && NO_STEP.indexOf(x.key) !== -1 ? 'No Asana step for this piece' : '';
       var levels = x.key === 'floorplan' && cur ? planLevels(pieces.floorplan) : [], lv = '';
       if (levels.length) {
-        file = levels.length + ' floors' + (levels[0].version ? ' · v' + levels[0].version : '');
+        var nCur = levels.filter(function (l) { return !l.alternate; }).length, nAlt = levels.length - nCur;
+        file = [nCur > 1 ? nCur + ' plans' : nCur ? '1 plan' : '', nAlt ? nAlt + ' alternate' + (nAlt > 1 ? 's' : '') : ''].filter(Boolean).join(' + ') +
+          (levels[0].version ? ' · v' + levels[0].version : '');
         levels.forEach(function (l, i) {
           current['floorplan:' + i] = l;
           lv += '<div class="d" data-level style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px"><span>' + esc(l.label || l.name) +

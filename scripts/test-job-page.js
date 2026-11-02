@@ -542,7 +542,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('kit: showsheet file, Asana ticked (the track, no status word)', [(await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older'), (await kit('showsheet')).includes('Done')], [true, true, false]);
   check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
   check('kit: a multi-floor plan lists each floor with its own Open and Copy', await p.$$eval('#kitCard [data-kit="floorplan"] [data-level]', els => els.map(e => [e.textContent.includes('FLOOR'), e.querySelector('[data-copy]') !== null, e.querySelector('[data-open]') !== null])), [[true, true, true], [true, true, true]]);
-  check('kit: the multi-floor row names the floor count, not one file', (await kit('floorplan')).includes('2 floors · v2'), true);
+  check('kit: the multi-floor row names the floor count, not one file', (await kit('floorplan')).includes('2 plans · v2'), true);
   check('kit: brochure says there is no Asana step', (await kit('brochure')).includes('No Asana step for this piece'), true);
   check('kit: signage not used in NYC, video tracked', [(await kit('signage')).includes('Not used here'), (await kit('video')).includes('Tracked only')], [true, true]);
   check('kit: the video piece is the film, never its sidecar (tune-up 3)', [(await kit('video')).includes('GVC Video Clips.m4v ·'), /xmp|desktop\.ini/i.test(await kit('video'))], [true, false]);

@@ -43,6 +43,13 @@ Files beside this one:
 2. **Gather.** List the folder (names only). Read the old showsheet's wording (for a .docx:
    `word/document.xml`, tags stripped). Note the current price from the job, not the old sheet.
    Look at `Floorplan\` (an `Unbranded\` plan wins over a branded one; see lessons) and `Photos\`.
+   **The sheet's plan is the plan only** (Matt 11-02): the drawing, its room labels, the level
+   names and the compass. No header band or title, no "artist rendering" line, no CURRENT /
+   ALTERNATE tag, no logo. If the job has no such plan in `Floorplan\Unbranded\`, make one before
+   the sheet: for a `plan.json` job, run the making-gvc-floorplans maker; from an old Illustrator
+   export, copy it with the band, the note and the tag painted white and the margins cropped, and
+   save it as `Floorplan\Unbranded\<label> v<N>.jpg` (`<label> Alternate v<N>.jpg` for an
+   alternate). The picker takes an `Unbranded\` plan over every other.
 3. **Fix the job's facts on the job page** (`/workspace/job/?listing=<slug>`), Facts card:
    - Address: the full street ("15 East 69th Street"), as other jobs store it. The sheet prints the
      job's address; typing it on the sheet doesn't stick.
@@ -70,7 +77,8 @@ Files beside this one:
    "Waiting for the helper" for more than a minute, see lessons (restart the helper). "The helper
    is making it now" may last a minute or two: it waits for the new file's real Drive link.
 7. **Check the PDF and its link.** Render both pages (PyMuPDF, 110 dpi, scratchpad) and look at
-   them: header, price, beds/baths, photo, plan, numbers, agents, no overflow. The helper waits (up
+   them: header, price, beds/baths, photo, plan (the current layout, plan only: no band, title
+   or tag), numbers, agents, no overflow. The helper waits (up
    to 3 minutes) for Drive's real id before it records the piece, so `documents.output.url` should
    already be a real `drive.google.com/file/d/<id>/view` link. Check it: if it is empty or holds a
    `local-…` id (an upload slower than that), read the real id from the file's `:user.drive.id`

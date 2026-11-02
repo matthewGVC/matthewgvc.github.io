@@ -110,6 +110,10 @@ check('sidecar never the newest file, nor counted as older', [row(res, 'video').
 check('only junk is no file', [row(res, 'floorplan').file, row(res, 'floorplan').state], [null, 'notStarted']);
 res = K.track({ kind: 'sale', market: 'NJ', pieces: { floorplan: [{ path: 'Floorplans/Design/plans.pdf', name: 'plans.pdf', modified: '2026-10-01T00:00:00Z' }] }, checklist: [] });
 check('a reference in Floorplan/Design/ is not a floorplan', [row(res, 'floorplan').file, row(res, 'floorplan').state], [null, 'notStarted']);
+res = K.track({ kind: 'sale', market: 'NYC', pieces: { floorplan: [
+  { path: 'Floorplans/225E79 PHA_FP v2.jpg', name: '225E79 PHA_FP v2.jpg', modified: '2026-11-02T17:14:00Z' },
+  { path: 'Floorplans/225E79 PHA_Alternate v2.jpg', name: '225E79 PHA_Alternate v2.jpg', modified: '2026-11-02T17:15:00Z' }] }, checklist: [] });
+check('the current plan shows before a newer alternate (225 E79 PHA)', [row(res, 'floorplan').file.name, row(res, 'floorplan').older], ['225E79 PHA_FP v2.jpg', 1]);
 res = K.track({ kind: 'sale', market: 'NJ', pieces: { floorplan: [{ path: 'Floorplans/Design/plans.pdf', name: 'plans.pdf', modified: '2026-10-01T00:00:00Z' }, { path: 'Floorplans/Unbranded/x v1.svg', name: 'x v1.svg', modified: '2026-10-02T00:00:00Z' }] }, checklist: [] });
 check('the Unbranded plan is the floorplan', [row(res, 'floorplan').file.name, row(res, 'floorplan').state], ['x v1.svg', 'done']);
 

@@ -111,6 +111,8 @@
     var s = segs[1].toLowerCase();
     return PLACES.test(s) ? s : null;
   }
+  /* a floorplan file of an alternate layout, by its name: "x Alternate v2.jpg", "x_Alternate.jpg", "Alt.png", "Option B.pdf" */
+  function isAlternate(name) { return /(^|[^a-z0-9])(alt|alternate|option)([^a-z0-9]|$)/i.test(String(name == null ? '' : name)); }
   function isPaperwork(name) { return isPaperworkFolder(name) || hasPaperworkWord(name); }
 
   /* A job folder's listing cut down to what the workspace may show (plan §9):
@@ -212,6 +214,6 @@
   }
 
   return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
-    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace,
+    isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace, isAlternate: isAlternate,
     layout: layout, missingFolders: missingFolders, TYPES: Object.keys(TYPES) };
 });

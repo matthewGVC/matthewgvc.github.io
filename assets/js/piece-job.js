@@ -19,6 +19,8 @@
      GVC_PIECEJOB.pickFloorplans(files)  every image of the newest version, one per level (the files
                                          GVC_SHEETJOB.planFiles keeps: never Design/, only Unbranded/
                                          when it has any; .svg before .png)
+     GVC_PIECEJOB.planSets(files)        { current: every level or unit of the newest version,
+                                           alternates: each alternate layout's newest file }
      GVC_PIECEJOB.pitchPhotos(files)     a pitch folder's photos (its Photos/ folder), maps left out
      GVC_PIECEJOB.mapAddresses(row)      the subject, then each comp's address
      GVC_PIECEJOB.label(tool), note(tool), maxAgents(tool), joinUnit(a, u)
@@ -321,8 +323,9 @@
     return name.replace(/\.[a-z0-9]+$/i, '').replace(/\b(unbranded|branded|mls|blank|v\d+)\b/gi, ' ').replace(/[\s_-]+/g, ' ').trim().toLowerCase();
   }
   function ms(x) { var t = Date.parse(x); return isNaN(t) ? 0 : t; }
-  function pickFloorplans(files) {
-    var ok = S.planFiles(files).map(function (f) {
+  /* the best file of each level (or unit, or alternate), at the newest version among them */
+  function bestPerLevel(list) {
+    var ok = list.map(function (f) {
       var name = f.name || String(f.path || '').split('/').pop();
       return { version: S.versionOf(f), render: S.renderOfFile(f), path: f.path, modified: f.modified || null, level: levelOf(name) };
     });
@@ -334,8 +337,18 @@
       if (!b || RANK[x.render] < RANK[b.render] || (x.render === b.render && (svgFirst(x.path) < svgFirst(b.path) ||
           (svgFirst(x.path) === svgFirst(b.path) && ms(x.modified) > ms(b.modified))))) best[x.level] = x;
     });
-    return Object.keys(best).sort().map(function (k) { var x = best[k]; return { version: x.version, render: x.render, path: x.path, modified: x.modified }; }).slice(0, 4);
+    return Object.keys(best).sort().map(function (k) { var x = best[k]; return { version: x.version, render: x.render, path: x.path, modified: x.modified }; });
   }
+  function pickFloorplans(files) { return bestPerLevel(S.planFiles(files)).slice(0, 4); }
+  /* every plan a person may want to open: the current layout's levels or units (no limit), then
+     each alternate layout's newest file */
+  function planSets(files) {
+    var alts = S.alternateFiles(files), byLayout = {};
+    alts.forEach(function (f) { var k = levelOf(f.name || String(f.path || '').split('/').pop()); (byLayout[k] = byLayout[k] || []).push(f); });
+    return { current: bestPerLevel(S.planFiles(files)),
+             alternates: Object.keys(byLayout).sort().map(function (k) { return bestPerLevel(byLayout[k])[0]; }) };
+  }
+
 
   var MAP_FILE = /^(map\s+-\s+|gvc-3d-property-map)/i;
   function pitchPhotos(files) {
@@ -348,7 +361,7 @@
 
   return {
     TOOLS: TOOLS, FIELDS: FIELDS, value: value, fill: fill, factEdits: factEdits, applyEdits: applyEdits, builtFrom: builtFrom,
-    photosFor: photosFor, pickFloorplans: pickFloorplans, pitchPhotos: pitchPhotos, mapAddresses: mapAddresses,
+    photosFor: photosFor, pickFloorplans: pickFloorplans, planSets: planSets, pitchPhotos: pitchPhotos, mapAddresses: mapAddresses,
     label: function (t) { return LABEL[t] || t; }, note: function (t) { return NOTE[t]; }, maxAgents: function (t) { return MAX_AGENTS[t] || 0; },
     agents: agents, joinUnit: joinUnit, PITCH_FACTS: PITCH_FACTS, LINKED: LINKED, linkOf: linkOf
   };

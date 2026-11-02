@@ -286,7 +286,16 @@
   function planFiles(files) {
     var ok = (files || []).filter(function (f) {
       var name = nameOf(f);
-      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && !/(^|[^a-z0-9])(alt|alternate|option)([^a-z0-9]|$)/i.test(name) && planPlace(f.path) !== 'design';
+      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && !R.isAlternate(name) && planPlace(f.path) !== 'design';
+    });
+    var std = ok.filter(function (f) { return planPlace(f.path) === 'unbranded'; });
+    return std.length ? std : ok;
+  }
+  /* the same files, for the alternate layouts only */
+  function alternateFiles(files) {
+    var ok = (files || []).filter(function (f) {
+      var name = nameOf(f);
+      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && R.isAlternate(name) && planPlace(f.path) !== 'design';
     });
     var std = ok.filter(function (f) { return planPlace(f.path) === 'unbranded'; });
     return std.length ? std : ok;
@@ -305,6 +314,6 @@
 
   return { marketKey: marketKey, ownershipOf: ownershipOf, valueOf: valueOf, listingUrlOf: listingUrlOf, agentsOf: agentsOf,
            FIELDS: FIELDS, fill: fill, factEdits: factEdits, applyEdits: applyEdits, builtFrom: builtFrom,
-           photosOf: photosOf, pickFloorplan: pickFloorplan, planFiles: planFiles, planPlace: planPlace, versionOf: versionOf,
+           photosOf: photosOf, pickFloorplan: pickFloorplan, planFiles: planFiles, alternateFiles: alternateFiles, planPlace: planPlace, versionOf: versionOf,
            renderOfFile: renderOfFile, same: same };
 });

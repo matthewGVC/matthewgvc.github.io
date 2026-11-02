@@ -48,7 +48,7 @@
     (files || []).forEach(function (f) {
       var place = placeOf(f);
       if (!OUTPUT.test(f.name) || /(^|\/)source\//i.test(f.path || '') || place === 'design') return;
-      if (/(^|[^a-z0-9])(alt|alternate|option)([^a-z0-9]|$)/i.test(f.name)) { out.alternates.push(f); return; }
+      if (global.GVC_DRIVE_RULES.isAlternate(f.name)) { out.alternates.push(f); return; }
       var v = versionOf(f), r = place || renderOf(f.name), slot = out.versions[v] = out.versions[v] || {};
       if (!slot[r] || better(f, slot[r])) slot[r] = f;
       if (!slot.newest || ms(f.modified) > ms(slot.newest)) slot.newest = f.modified;

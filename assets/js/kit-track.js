@@ -62,6 +62,8 @@
     });
   }
 
+  /* the current layout's plan comes before an alternate's, however new the alternate is */
+  function isAlt(f, key) { var R = rules(); return key === 'floorplan' && R && R.isAlternate(f.name) ? 1 : 0; }
   function isTop(f) { return f.top === true || (f.path && String(f.path).indexOf('/') === -1) ? 1 : 0; }
 
   function flat(checklist) {
@@ -87,7 +89,7 @@
     var matchList = (input.match && input.match.list) || [];
     var rows = KEYS.map(function (key) {
       // a file in the piece's own folder beats one loose at the top of the job (often another job's copy), then newest first
-      var files = realFiles(input.pieces && input.pieces[key], key).sort(function (a, b) { return (isTop(a) - isTop(b)) || ms(b.modified) - ms(a.modified); });
+      var files = realFiles(input.pieces && input.pieces[key], key).sort(function (a, b) { return (isAlt(a, key) - isAlt(b, key)) || (isTop(a) - isTop(b)) || ms(b.modified) - ms(a.modified); });
       var current = files.filter(function (f) { return !f.archived; })[0] || null;
       var step = stepFor(key, steps);
       var m = matchList.filter(function (x) { return x.key === 'M8:' + key; })[0] || null;

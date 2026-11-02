@@ -145,6 +145,16 @@ const plans = [
 ];
 check('pickFloorplans: newest version, one per level, branded first', J.pickFloorplans(plans).map(p => p.path), ['Floorplan/v2/Level 1 v2.jpg', 'Floorplan/v2/Level 2 v2.png']);
 check('pickFloorplans: none', J.pickFloorplans([{ path: 'Floorplan/v1/x.pdf' }]), []);
+const sets = J.planSets([
+  { path: 'Floorplans/225E79 PHA_FP v2.jpg', name: '225E79 PHA_FP v2.jpg', modified: '2026-11-02' },
+  { path: 'Floorplans/225E79 PHA_FP.jpg', name: '225E79 PHA_FP.jpg', modified: '2026-10-01' },
+  { path: 'Floorplans/225E79 PHA_Alternate v2.jpg', name: '225E79 PHA_Alternate v2.jpg', modified: '2026-11-02' },
+  { path: 'Floorplans/225E79 PHA_Alternate.jpg', name: '225E79 PHA_Alternate.jpg', modified: '2026-10-01' },
+  { path: 'Floorplans/225E79 PHA.ai', name: '225E79 PHA.ai', modified: '2026-10-01' }]);
+check('planSets: the current plan and each alternate layout, newest version of each', [sets.current.map(x => x.path), sets.alternates.map(x => x.path)],
+  [['Floorplans/225E79 PHA_FP v2.jpg'], ['Floorplans/225E79 PHA_Alternate v2.jpg']]);
+const units = J.planSets([1, 2, 3, 4, 5, 6].map(n => ({ path: 'Floorplan/Unbranded/Tower - Unit ' + n + 'A v1.png', name: 'Tower - Unit ' + n + 'A v1.png' })));
+check('planSets: every unit of a new development, not only four', [units.current.length, units.alternates.length], [6, 0]);
 const stdLevels = [
   { path: 'Floorplan/v3/Level 1 v3.jpg', modified: '2026-10-01' },
   { path: 'Floorplan/Unbranded/12 Elm v2 - First Floor.png', modified: '2026-10-26' },

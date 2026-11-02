@@ -81,7 +81,7 @@ function createBuilder(o) {
       const why = /conflict/.test(e.message) ? 'the ' + spec.words + ' was saved somewhere else while the helper made it' : 'the ' + noun + ' didn\'t record it';
       throw fail(409, 'Saved ' + w.name + ' to Drive, but ' + why + '. Ask again.');
     }
-    return { name: w.name, archived: w.archived };
+    return { name: w.name, archived: w.archived, swept: w.swept };
   }
 
   async function runOne() {

@@ -989,8 +989,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     delete RN.properties[0].scan.pieces.showsheet;
     RN.documents = [];
     t = await open(browser, { rows: RN, path: LISTING });
-    check('kit none: Make showsheet (the helper), Open sheet, no header button', await sheetBits(t.page),
-      { state: 'Not made yet', made: null, acts: [['Open sheet', '../..' + SHEET]], build: ['Make showsheet'], header: [] });
+    check('kit none: Make showsheet (the helper), no Open sheet, no header button', await sheetBits(t.page),
+      { state: 'Not made yet', made: null, acts: [], build: ['Make showsheet'], header: [] });
     check('kit none: no page errors', t.errors, []);
     await t.ctx.close();
 
@@ -998,8 +998,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const RU = rowsFor();
     RU.documents = [];
     t = await open(browser, { rows: RU, path: LISTING });
-    check('kit untracked: not tracked, Open sheet', await sheetBits(t.page),
-      { state: 'Not tracked', made: null, acts: [['Open sheet', '../..' + SHEET]], build: [], header: [] });
+    check('kit untracked: not tracked, no Open sheet', await sheetBits(t.page),
+      { state: 'Not tracked', made: null, acts: [], build: [], header: [] });
     await t.ctx.close();
 
     // fresh
@@ -1007,8 +1007,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     RF.documents = [docFor(RF.properties[0])];
     t = await open(browser, { rows: RF, path: LISTING, drive: { state: 'not-connected' } });
     p = t.page;
-    check('kit fresh: up to date, made line with Open and Copy Drive link, Open sheet', await sheetBits(p),
-      { state: 'Up to date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [['Open sheet', '../..' + SHEET]], build: [], header: [] });
+    check('kit fresh: up to date, made line with Open and Copy Drive link, no Open sheet (Matt 11-02)', await sheetBits(p),
+      { state: 'Up to date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [], build: [], header: [] });
     check('kit fresh: Open is the recorded Drive link', await p.$eval(kitRow + ' [data-piece-made="showsheet"] a', a => a.getAttribute('href')), 'https://drive.google.com/file/d/NEW1/view');
     await p.click(kitRow + ' [data-piece-made="showsheet"] [data-piece-copy="showsheet"]');
     await settle(p);
@@ -1022,18 +1022,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     RS.documents = [docFor(RS.properties[0], { facts: { price: 2250000 } })];
     t = await open(browser, { rows: RS, path: LISTING });
     p = t.page;
-    check('kit stale: Out of date, Rebuild (the helper), Open sheet with what changed, header Rebuild 1 stale', await sheetBits(p),
-      { state: 'Out of date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [['Open sheet', '../..' + SHEET + '&rebuild=1']], build: ['Rebuild'],
+    check('kit stale: Out of date, Rebuild (the helper), no Open sheet, header Rebuild 1 stale', await sheetBits(p),
+      { state: 'Out of date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [], build: ['Rebuild'],
         header: [['Rebuild 1 stale', 'showsheet']] });
     check('kit stale: the documents read asks for this job\'s pieces (Slice 5: every piece)', await p.evaluate(() => performance.getEntriesByType('resource').map(e => e.name)
       .filter(u => /\/rest\/v1\/documents\?/.test(u)).map(u => /property_id=eq\.p1/.test(u))), [true]);
     check('kit stale: no page errors', t.errors, []);
     await t.ctx.close();
 
-    // a teammate: Open sheet (read-only there), never Make or Rebuild
+    // a teammate: Get PDF or Ask Matt, never the generator, Make or Rebuild
     for (const [name, rows, state, made, acts] of [['stale', RS, 'Out of date', 'Made 22 Oct · A5', [['Get PDF', 'https://drive.google.com/file/d/NEW1/view']]], ['none', RN, 'Not made yet', null, [['Ask Matt', null]]]]) {
       t = await open(browser, { rows, path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
-      check('kit team ' + name + ': Get PDF or Ask Matt, Open sheet, no Make or Rebuild', await sheetBits(t.page), { state, made, acts: acts.concat([['Open sheet', '../..' + SHEET]]), build: [], header: [] });
+      check('kit team ' + name + ': Get PDF or Ask Matt, no Open sheet, no Make or Rebuild', await sheetBits(t.page), { state, made, acts, build: [], header: [] });
       await t.ctx.close();
     }
 

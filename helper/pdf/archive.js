@@ -12,6 +12,13 @@
    Archive\ gets ' (2)'. Nothing is overwritten or deleted.
    Slice 5: the sentences name the piece (words, default 'showsheet'); ext is
    the file type it moves ('pdf', or 'png' for the map).
+
+     archiveOlder({ jobAbs, dir, keep }) → [{ from, to }]
+       Only the current version stays at a piece folder's top (Matt 11-02):
+       every other file there older than keep (the file just made), say an
+       older hand-made sheet or its Illustrator file, moves into
+       <dir>\Archive\ the same way. System files and anything named like
+       paperwork stay. Nothing is overwritten or deleted.
    ============================================================ */
 'use strict';
 
@@ -65,4 +72,24 @@ function archivePrevious(o) {
   return { from: relOf(o.jobAbs, abs), to: relOf(o.jobAbs, target) };
 }
 
-module.exports = { archivePrevious, sentences, CHANGED, GONE, UNKNOWN, LINKED };
+function archiveOlder(o) {
+  const { isJunk, hasPaperworkWord } = require('../../assets/js/drive-rules.js');
+  const archive = path.join(o.dir, 'Archive');
+  const linked = () => fs.realpathSync(archive).toLowerCase().indexOf(fs.realpathSync(o.dir).toLowerCase() + path.sep) !== 0;
+  if (fs.existsSync(archive) && linked()) return [];
+  const keep = fs.statSync(o.keep);
+  const older = fs.readdirSync(o.dir, { withFileTypes: true }).filter(d => d.isFile() && !isJunk(d.name) && !hasPaperworkWord(d.name))
+    .map(d => path.join(o.dir, d.name))
+    .filter(abs => !same(abs, o.keep) && fs.statSync(abs).mtimeMs < keep.mtimeMs);
+  if (!older.length) return [];
+  fs.mkdirSync(archive, { recursive: true });
+  if (linked()) return [];
+  return older.map(abs => {
+    const target = path.join(archive, freeName(archive, path.basename(abs)));
+    if (!insideJobPiece(abs, o.jobAbs, o.dir) || !insideJobPiece(target, o.jobAbs, o.dir)) return null;
+    fs.renameSync(abs, target);
+    return { from: relOf(o.jobAbs, abs), to: relOf(o.jobAbs, target) };
+  }).filter(Boolean);
+}
+
+module.exports = { archivePrevious, archiveOlder, sentences, CHANGED, GONE, UNKNOWN, LINKED };

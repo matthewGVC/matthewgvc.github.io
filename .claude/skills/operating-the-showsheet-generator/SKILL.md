@@ -10,8 +10,8 @@ description: Use when asked to make, remake or rebuild a job's showsheet in the 
 You operate the generator the way Matt would: in the built-in browser, signed in as Matt, from the
 job (`/tools/showsheet/?listing=<slug>`). You do not edit the tool's code, and you never make the
 PDF yourself: **Make PDF** queues a `piece_requests` row and the desktop helper lays the sheet out,
-draws it and saves it into the job's `Marketing\Showsheet\` folder (an older one of its own goes to
-`Archive\` there). Matt reviews every sheet before Asana is touched.
+draws it and saves it into the job's `Marketing\Showsheet\` folder (every older file at that folder's top,
+its own or hand-made, goes to `Archive\` there). Matt reviews every sheet before Asana is touched.
 
 Matt's rule (10-30): **any showsheet from before 2026 is out of date and is remade with the
 generator.** The old file stays where it is.

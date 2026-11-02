@@ -235,10 +235,11 @@
     if (HELPER_MAKES.indexOf(tool) !== -1) {
       // 0017: the helper makes it (one click, anyone who may ask); the piece's own page is where its wording changes
       var b = buildBits(ctx, tool, s, doc, tool === 'showsheet' ? '' : name);
-      var href = tool === 'showsheet' ? sheetHref(ctx, s.state === 'stale' && ctx.canAsk) : pieceHref(ctx, tool, s.state === 'stale' && ctx.canAsk);
       var ask = !ctx.canAsk && !get ? '<span class="soft" data-piece-ask="' + esc(tool) + '">Ask Matt</span>' : '';
-      return { lines: lines + b.line, act: b.btn + get + ask + '<a class="b sm ghost" data-piece="' + esc(tool) + '" href="' + esc(href) + '">' +
-        esc(tool === 'showsheet' ? 'Open sheet' : 'Open ' + name) + '</a>' };
+      // the showsheet's generator is Claude's to run (Matt 11-02): its row opens the sheet itself, never the tool
+      var open = tool === 'showsheet' ? '' : '<a class="b sm ghost" data-piece="' + esc(tool) + '" href="' +
+        esc(pieceHref(ctx, tool, s.state === 'stale' && ctx.canAsk)) + '">' + esc('Open ' + name) + '</a>';
+      return { lines: lines + b.line, act: b.btn + get + ask + open };
     }
     // the map: made by a person in Map Studio; a teammate gets the file or asks Matt
     if (!ctx.canEdit) return { lines: lines, act: get || '<span class="soft" data-piece-ask="' + esc(tool) + '">Ask Matt</span>' };

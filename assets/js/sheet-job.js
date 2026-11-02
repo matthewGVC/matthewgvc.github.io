@@ -286,7 +286,7 @@
   function planFiles(files) {
     var ok = (files || []).filter(function (f) {
       var name = nameOf(f);
-      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && !/\b(alt|alternate|option)\b/i.test(name) && planPlace(f.path) !== 'design';
+      return IMG.test(name) && !/(^|\/)source\//i.test(f.path || '') && !/(^|[^a-z0-9])(alt|alternate|option)([^a-z0-9]|$)/i.test(name) && planPlace(f.path) !== 'design';
     });
     var std = ok.filter(function (f) { return planPlace(f.path) === 'unbranded'; });
     return std.length ? std : ok;

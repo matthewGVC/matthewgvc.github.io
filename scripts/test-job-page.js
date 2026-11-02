@@ -471,7 +471,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await t.ctx.close();
   t = await open(browser, { rows: RB, path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate'),
-    await t.page.$$eval('#ovCard .k', e => e.map(k => k.textContent))], [true, null, false, ['Work items', 'Next milestone', 'Past target']]);
+    await t.page.$$eval('#ovCard .k', e => e.map(k => k.textContent))], [true, null, false, ['Work items', 'Next on the schedule', 'Past target']]);
   await t.ctx.close();
   t = await open(browser, { phone: true, path: '/workspace/job/?dev=619-example-ave' });
   check('build: no sideways page scroll on a phone', await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);

@@ -211,7 +211,7 @@ function req(method, p, headers, body) {
   check('/asana/sync from an unpaired origin is refused', r.status, 403);
 
   /* startRunner's pieces: token gate, last-run map, one shared Asana run */
-  const { asanaJobs, lastFromRuns, readLastRuns } = require('../helper/runner.js');
+  const { asanaJobs, lastFromRuns, readLastRuns, lastBackup } = require('../helper/runner.js');
   /* C1: startup reads only the newest run of each kind (and the newest full Asana read) */
   const runRows = [
     { kind: 'asana', started_at: '2026-10-18T03:00:00Z', totals: { full: true, unlinked: [] } },
@@ -247,6 +247,18 @@ function req(method, p, headers, body) {
     { kind: 'de', started_at: '2026-10-20T07:00:00Z' }]);
   check('last map: plain, full, people, de', [lf.asana.toISOString(), lf.asanaFull.toISOString(), lf.people.toISOString(), lf.de.toISOString()],
     ['2026-10-20T10:00:00.000Z', '2026-10-19T03:00:00.000Z', '2026-10-20T03:15:00.000Z', '2026-10-20T07:00:00.000Z']);
+  /* the last backup comes from the newest nightly folder that finished (has a manifest) */
+  {
+    const fsx = require('fs'), os = require('os'), px = require('path');
+    const tmp = fsx.mkdtempSync(px.join(os.tmpdir(), 'gvc-backup-'));
+    check('no exports folder: no last backup', lastBackup(px.join(tmp, 'none')), null);
+    fsx.mkdirSync(px.join(tmp, 'supabase-nightly-2026-11-01'));
+    fsx.writeFileSync(px.join(tmp, 'supabase-nightly-2026-11-01', 'manifest.json'), '{}');
+    fsx.mkdirSync(px.join(tmp, 'supabase-nightly-2026-11-02'));   // unfinished: no manifest
+    const was = fsx.statSync(px.join(tmp, 'supabase-nightly-2026-11-01', 'manifest.json')).mtime.getTime();
+    check('last backup skips an unfinished folder', (lastBackup(tmp) || new Date(0)).getTime(), was);
+    fsx.rmSync(tmp, { recursive: true, force: true });
+  }
   let n = 0, rel2;
   const g2 = new Promise(res => { rel2 = res; });
   const slowSync = async () => { n++; await g2; return { report: { ok: true }, changes: 1, created: 0, errors: [] }; };

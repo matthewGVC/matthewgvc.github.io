@@ -193,6 +193,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/supabase-config.js"></script>
 <script src="../../assets/js/property-library.js"></script>
 <script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/dev-addresses.js"></script>
 <script src="../../assets/js/address-aliases.js"></script>
 <script src="../../assets/js/drive-rules.js"></script>
 <script src="../../assets/js/drive.js"></script>
@@ -269,7 +270,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         // its budget (0015): owner, admin and the helper only, so anyone else reads none
         kind === 'dev' ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([]),
         // the pieces asked of the helper (0017); unreadable (0017 not run yet) means none
-        kind === 'listing' || kind === 'pitch' ? requestsOf(row) : Promise.resolve([])
+        kind === 'listing' || kind === 'pitch' ? requestsOf(row) : Promise.resolve([]),
+        // a development's own house listings: where it is and who sells it (overhaul 7a)
+        kind === 'dev' ? rest('/properties?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=core').catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
@@ -279,6 +282,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         state.budget = (r[6] || [])[0] || null;
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         state.requests = r[7] || [];
+        state.houses = r[8] || [];
         JP.canEdit = state.me.role === 'owner';
         JP.canAsk = ASKERS.indexOf(state.me.role) !== -1;
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
@@ -467,6 +471,17 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     $('crumb').innerHTML = (kind === 'dev' ? '<a href="../new-dev/">New Dev</a>' : '<a href="../jobs/">Resell</a>') + '<span>/</span><span>' + esc({ listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
     var sub = ['<span class="chip">' + esc(j.market || '?') + '</span>'];
     if (j.place) sub.push(esc(j.place));
+    // a development: its street and town, and its agents, from its house listings and its known street (overhaul 7a)
+    if (kind === 'dev') {
+      var hc = (state.houses || []).map(function (h) { return h.core || {}; });
+      var town = hc.map(function (c) { return c.city; }).filter(Boolean)[0] || '';
+      var street = (window.GVC_DEV_ADDRESSES && GVC_DEV_ADDRESSES.of ? GVC_DEV_ADDRESSES.of(r.slug) : [])[0] || '';
+      var where = [street, town].filter(Boolean).join(', ');
+      if (where) sub.push(esc(where));
+      var ids = []; hc.forEach(function (c) { (c.agentIds || []).forEach(function (a) { if (ids.indexOf(a) === -1) ids.push(a); }); });
+      var names = ids.map(function (a) { var x = window.GVC_AGENT && GVC_AGENT(a); return x ? x.name : a; });
+      if (names.length) sub.push('Agents: ' + esc(names.join(', ')));
+    }
     if (j.pitchedOn && kind !== 'pitch') sub.push('Pitched ' + esc(W.fmtDay(j.pitchedOn)));
     // red "Link …" until linked, green "Relink …" once linked; a folder that moved is red "Relink"
     var linkBtn = function (id, what, ok, again) {

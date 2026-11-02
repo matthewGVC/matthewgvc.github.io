@@ -60,7 +60,13 @@
       tiles.push(tile('Work items', done + ' / ' + items.length, 'done in Asana, all phases', meter(pctOf(done, items.length))));
     }
     if (!b) {
-      if (j.next) tiles.push(tile('Next milestone', j.next.label, j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : '', '', 'word' + (j.next.overdue ? ' over' : '')));
+      // the next thing on the real schedule, else the workspace's own milestone (Le Reve read "Construction, overdue"
+      // while its schedule had moved on: overhaul 7a)
+      var open = items ? items.filter(function (x) { return !x.completed && x.dueOn; }).sort(function (a, c) { return a.dueOn < c.dueOn ? -1 : a.dueOn > c.dueOn ? 1 : 0; }) : [];
+      if (open.length) {
+        var nx = open[0], late = nx.dueOn < W.today();
+        tiles.push(tile('Next on the schedule', nx.name, 'Target ' + W.fmtDay(nx.dueOn) + (late ? ', past target' : ''), '', 'word' + (late ? ' over' : '')));
+      } else if (j.next) tiles.push(tile('Next milestone', j.next.label, j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : '', '', 'word' + (j.next.overdue ? ' over' : '')));
       if (items) {
         var late = items.filter(function (x) { return B.statusOf(x, W.today()) === 'late'; }).length;
         tiles.push(tile('Past target', String(late), late ? 'work items not done in Asana' : 'nothing late', '', late ? 'over' : ''));

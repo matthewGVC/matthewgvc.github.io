@@ -32,5 +32,8 @@
     return out;
   }
 
-  return { BY_SLUG: BY_SLUG, streets: streets };
+  /* a development's streets, for its page's header (overhaul 7a) */
+  function of(slug) { return (BY_SLUG[slug] || []).slice(); }
+
+  return { BY_SLUG: BY_SLUG, streets: streets, of: of };
 });

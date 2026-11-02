@@ -14,6 +14,8 @@
 .ov-t .v{font-family:var(--mono);font-size:28px;line-height:1.15;margin-top:8px;overflow-wrap:anywhere}
 .ov-t .s{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
 .ov-t.over .v,.ov-t.over .s:not(.ov-n){color:var(--danger)}
+/* a name, not a figure (Next on the schedule): smaller, in the body face (overhaul 7a) */
+.ov-t.word .v{font-family:var(--sans-body,inherit);font-size:19px;line-height:1.3;overflow-wrap:normal}
 .ov-t .ov-n{margin-top:2px}
 .ov-bar{display:block;height:5px;margin-top:10px;background:var(--paper-2);border-radius:3px;overflow:hidden}
 .ov-bar i{display:block;height:100%;background:var(--ink)}

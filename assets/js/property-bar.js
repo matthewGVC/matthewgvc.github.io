@@ -46,6 +46,7 @@
     var name = el('button', 'plib-name');
     var mark = el('span', 'plib-mark');
     var pick = el('select', 'plib-pick');
+    var find = el('input', 'plib-find');
     var save = el('button', 'plib-save btn sm');
     var status = el('select', 'plib-status');
     var note = el('div', 'plib-note');
@@ -68,9 +69,12 @@
     var head = el('div', 'plib-head');
     var foot = el('div', 'plib-foot');
     head.append(name, mark);
+    find.type = 'search';
+    find.placeholder = 'Find a property';
+    find.setAttribute('aria-label', 'Find a property');
     line.append(pick, save);
     foot.append(status, more);
-    bar.append(title, head, line, foot, note);
+    bar.append(title, head, find, line, foot, note);
     host.append(bar);
 
     /* ---------------- saying what is going on ---------------- */
@@ -94,17 +98,24 @@
 
     /* ---------------- the dropdown ---------------- */
 
+    /* each row says where the listing really is (the workspace stage, synced from Asana)
+       and which tools have saved work for it (overhaul 1d) */
+    var TOOL_NAME = { showsheet: 'showsheet', brochure: 'brochure', seller: 'seller package' };
+    var all = [];
     function fillPick(rows) {
+      all = rows || all;
+      var t = find.value.trim().toLowerCase();
+      var shown = t ? all.filter(function (r) { return String(r.label).toLowerCase().indexOf(t) !== -1; }) : all;
       pick.replaceChildren();
-      pick.append(new Option(placeholder(rows.length), ''));
-      rows.forEach(function (r) {
-        var built = P.TOOLS.filter(function (t) { return r.has[t]; }).length;
-        var o = new Option(r.label + '  ·  ' + STATUS_LABEL[r.status] +
-                           (built ? '  ·  ' + built + ' doc' + (built > 1 ? 's' : '') : ''), r.id);
-        pick.append(o);
+      pick.append(new Option(t ? (shown.length ? shown.length + ' found, pick one…' : 'Nothing matches') : placeholder(all.length), ''));
+      shown.forEach(function (r) {
+        var saved = P.TOOLS.filter(function (x) { return r.has[x]; }).map(function (x) { return TOOL_NAME[x] || x; });
+        pick.append(new Option(r.label + '  ·  ' + (r.stage || STATUS_LABEL[r.status] || '') +
+                               (saved.length ? '  ·  ' + saved.join(', ') + ' saved' : ''), r.id));
       });
-      pick.value = current ? current.id : '';
+      pick.value = current && shown.some(function (r) { return r.id === current.id; }) ? current.id : '';
     }
+    find.addEventListener('input', function () { fillPick(null); });
 
     /* Signed out is the normal first state on a new machine, and "no saved
        properties" would be a lie — say what to do instead. */

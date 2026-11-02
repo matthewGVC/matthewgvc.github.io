@@ -329,15 +329,14 @@
            'Untitled property';
   }
 
-  /* The dropdown: active first, sold last, archived left out unless asked
-     for, and within a status the most recently touched at the top.
+  /* The dropdown: A to Z by address, archived left out unless asked for.
 
      withPhotos adds each property's photo sizes, which only the Properties
      page wants — asking for them here by default would pull every photo row
      in the library on every builder load. */
   function list(opts) {
     opts = opts || {};
-    var q = '/properties?select=id,slug,label,status,updated_at,documents(tool)' +
+    var q = '/properties?select=id,slug,label,status,stage,updated_at,documents(tool)' +
             (opts.withPhotos ? ',photos(bytes)' : '') +
             '&order=updated_at.desc';
     if (!opts.includeArchived) q += '&status=neq.archived';
@@ -345,7 +344,7 @@
       return (rows || []).map(function (r) {
         var has = {};
         (r.documents || []).forEach(function (d) { has[d.tool] = true; });
-        var row = { id: r.id, slug: r.slug, label: r.label, status: r.status,
+        var row = { id: r.id, slug: r.slug, label: r.label, status: r.status, stage: r.stage || null,
                     updated: r.updated_at, has: has };
         if (opts.withPhotos) {
           var ph = r.photos || [];
@@ -354,7 +353,8 @@
         }
         return row;
       }).sort(function (a, b) {
-        return STATUSES.indexOf(a.status) - STATUSES.indexOf(b.status);
+        // A to Z: people look for an address, not for the last one saved (overhaul 1d)
+        return String(a.label).localeCompare(String(b.label), 'en', { numeric: true, sensitivity: 'base' });
       });
     });
   }

@@ -358,7 +358,10 @@
       }
       /* M23: no date for the stage the job is at, 7 days from the status change */
       if (STAGE_FIELD[stage] && empty(f[STAGE_FIELD[stage][0]])) {
-        var t23 = 'Asana says ' + stage + ' but has no ' + STAGE_FIELD[stage][1] + '.';
+        // a rental's deal dates sit in the same Asana fields; say what they mean for a lease (overhaul 1a)
+        var t23 = job.kind === 'rental'
+          ? 'Asana says ' + stage + ' but has no ' + (stage === 'In contract' ? 'lease signed' : 'application accepted') + ' date (its ' + STAGE_FIELD[stage][1] + ' field).'
+          : 'Asana says ' + stage + ' but has no ' + STAGE_FIELD[stage][1] + '.';
         graced('M23', 'M23', a.statusSince || null, GRACE_STAGE_DATE, t23, t23, { stage: stage, missing: STAGE_FIELD[stage][1] }, 'Asana');
       }
       /* M21: the deal looks stuck (Closing Date gone by, or a long time with none) */
@@ -399,7 +402,8 @@
       var aKind = /sale/.test(srText) && !/rent/.test(srText) ? 'sale' : /rent/.test(srText) && !/sale/.test(srText) ? 'rental' : null;
       var kindClash = !!(aKind && job.kind && job.kind !== aKind);
       if (!kindClash && !empty(aCur) && !empty(de.price) && Number(aCur) !== Number(de.price)) {
-        add('M3', 'M3', 'Asana says ' + money(aCur) + '; DE says ' + money(de.price) + '.', { asana: aCur, de: de.price }, 'Asana');
+        var mo = job.kind === 'rental' ? '/mo' : '';
+        add('M3', 'M3', 'Asana says ' + money(aCur) + mo + '; DE says ' + money(de.price) + mo + '.', { asana: aCur, de: de.price }, 'Asana');
       }
       /* M4: beds / baths / sq ft */
       var diff = {}, aw = [], dw = [];

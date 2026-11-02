@@ -242,7 +242,7 @@ check('empty: no match groups', W.matchByJob(none, []), []);
 const devJobs = W.buildJobs({ properties: [{ id: 'p9', slug: '619-x', label: '619 X Ave', kind: 'sale', market: 'NJ', stage: 'Prep', core: {}, dev_project_id: 'd9' }], pitches: [],
   devProjects: [{ id: 'd9', slug: 'x', label: 'X', market: 'NJ', milestones: {}, schedule: { tasks: [{ gid: 'a', name: 'Framing', section: '3. Construction', completed: false }] } }], changes: [] }, TODAY);
 check('dev: the lists show the build phase; the listing knows its development', devJobs.map(x => [x.type, x.devProjectId || null, x.phase || null]),
-  [['listing', 'd9', null], ['development', null, 'Construction: Framing']]);
+  [['listing', 'd9', null], ['development', null, 'Construction']]);
 
 /* ---------- the Match page (S10) ---------- */
 const mg = W.matchByJob(jobs, [{ name: 'Alexandra Lynch', text: 'Alexandra Lynch is in Asana People but not on the roster.' }]);

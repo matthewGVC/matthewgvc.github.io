@@ -24,11 +24,12 @@
   var LINES_SHOWN = 10;   // the Budget card's lines before "Show all"
   // kept across redraws; section null = not chosen yet (opens on the construction section)
   // shut: phase name → folded; a phase with every trade done starts folded
-  var view = { mode: 'gantt', status: 'all', section: null, q: '', shut: {} };
+  // a phone opens on the list: the timeline needs about 720px (overhaul 1c)
+  var view = { mode: typeof window !== 'undefined' && window.innerWidth < 700 ? 'list' : 'gantt', status: 'all', section: null, q: '', shut: {} };
   var upgrades = false, linking = false, allLines = false;
 
   var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); };
-  var day = function (W, s) { return s ? W.fmtDay(s) + ' ' + s.slice(0, 4) : ''; };
+  var day = function (W, s) { return W.fmtDayYear(s); };
   var pctOf = function (a, b) { return b ? Math.round(a / b * 1000) / 10 : null; };
   var meter = function (pct, cls) { return '<span class="ov-bar' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct || 0)).toFixed(1) + '%"></i></span>'; };
   var readable = function (ctx) { return ctx.budget && ctx.budget.budget; };
@@ -50,15 +51,16 @@
         t.planned !== t.remaining ? W.money(t.planned) + ' still planned on open lines' : ''));
       // where the build is heading: what's spent, plus what every line under its estimate still plans
       var outlook = t.actual + t.planned, past = outlook - t.estimate;
+      // say what the outlook is made of (overhaul 1b)
       tiles.push(tile('Final cost outlook', W.money(outlook), Math.abs(past) < 1 ? 'on the budget' : W.money(Math.abs(past)) + (past > 0 ? ' over the budget' : ' under the budget'),
-        '', past >= 1 ? 'over' : ''));
+        '', past >= 1 ? 'over' : '', W.money(t.actual) + ' spent + ' + W.money(t.planned) + ' still planned'));
     }
     if (items) {
       var done = items.filter(function (x) { return x.completed; }).length;
-      tiles.push(tile('Work items', done + ' / ' + items.length, 'done in Asana, every phase', meter(pctOf(done, items.length))));
+      tiles.push(tile('Work items', done + ' / ' + items.length, 'done in Asana, all phases', meter(pctOf(done, items.length))));
     }
     if (!b) {
-      if (j.next) tiles.push(tile('Next milestone', j.next.label, j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : '', '', j.next.overdue ? 'over' : ''));
+      if (j.next) tiles.push(tile('Next milestone', j.next.label, j.next.on ? 'Target ' + W.fmtDay(j.next.on) + (j.next.overdue ? ', overdue' : '') : '', '', 'word' + (j.next.overdue ? ' over' : '')));
       if (items) {
         var late = items.filter(function (x) { return B.statusOf(x, W.today()) === 'late'; }).length;
         tiles.push(tile('Past target', String(late), late ? 'work items not done in Asana' : 'nothing late', '', late ? 'over' : ''));
@@ -191,7 +193,7 @@
     var rows = shown(items, today), done = inSection.filter(function (t) { return t.completed; }).length;
     var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; };
     return '<div class="card" id="schedCard" data-open>' + head +
-      '<p class="sched-n"><b>' + done + '</b> of ' + plural(inSection.length, 'work item') + ' done in Asana' + (view.section ? ' · ' + esc(B.sectionLabel(view.section)) : '') + '</p>' +
+      '<p class="sched-n"><b>' + done + '</b> of ' + plural(inSection.length, 'work item') + ' done in Asana' + (view.section ? ', ' + esc(B.sectionLabel(view.section)) + ' phase only' : '') + '</p>' +
       '<div class="sched-f"><div class="seg" role="group" aria-label="View">' + ['gantt', 'list'].map(function (m) {
         return '<button type="button" data-view="' + m + '" aria-pressed="' + (view.mode === m) + '">' + (m === 'gantt' ? 'Timeline' : 'List') + '</button>';
       }).join('') + '</div>' +
@@ -225,12 +227,14 @@
     if (!b) return '<div class="card" id="budgetCard" data-open>' + head + err + foot + '</div>';
     var hasUp = (b.lines || []).some(function (l) { return l.upgrade; }), t = scoped(b);
     var num = function (v) { return Number(v) || 0; };
-    var lines = t.lines.slice().sort(function (x, y) { return num(y.actual) - num(x.actual) || num(y.estimate) - num(x.estimate); });
+    // the lines driving an overrun first, the most over at the top; then the most spent (overhaul 1b)
+    var overBy = function (l) { return l.estimate != null ? Math.max(0, num(l.actual) - l.estimate) : 0; };
+    var lines = t.lines.slice().sort(function (x, y) { return overBy(y) - overBy(x) || num(y.actual) - num(x.actual) || num(y.estimate) - num(x.estimate); });
     var shownLines = allLines ? lines : lines.slice(0, LINES_SHOWN);
     return '<div class="card" id="budgetCard" data-open>' + head + err +
       (hasUp ? '<div class="seg b-scope" role="group" aria-label="Budget scope"><button type="button" data-up="0" aria-pressed="' + !upgrades + '">Base build</button>' +
         '<button type="button" data-up="1" aria-pressed="' + upgrades + '">With upgrades</button></div>' : '') +
-      '<p class="b-sum"><span>' + esc(W.money(t.actual)) + ' spent of ' + esc(W.money(t.estimate)) + '</span><span>' + esc(plural(t.lines.length, 'line')) + ', most spent first</span></p>' +
+      '<p class="b-sum"><span>' + esc(W.money(t.actual)) + ' spent of ' + esc(W.money(t.estimate)) + '</span><span>' + esc(plural(t.lines.length, 'line')) + ', most over first, then most spent</span></p>' +
       '<ul class="blines">' + shownLines.map(function (l) {
         var spent = num(l.actual), left = l.estimate != null ? l.estimate - spent : null, over = left != null && left < 0;
         var fig = l.estimate != null ? W.money(spent) + ' of ' + W.money(l.estimate) : spent ? W.money(spent) + ', no estimate' : 'No estimate';

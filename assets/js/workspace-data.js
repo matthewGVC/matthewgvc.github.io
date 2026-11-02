@@ -122,7 +122,13 @@
     t.setDate(Math.min(d.getDate(), last)); return t;
   }
   function mondayOf(s) { var d = new Date(day(s) + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); }
-  function fmtDay(s) { if (!s) return ''; var d = new Date(day(s) + 'T12:00:00'); return d.getDate() + ' ' + MON[d.getMonth()]; }
+  // a date outside this year says its year, so last December never reads as coming up (overhaul 1b)
+  function fmtDay(s) {
+    if (!s) return '';
+    var d = new Date(day(s) + 'T12:00:00');
+    return d.getDate() + ' ' + MON[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
+  }
+  function fmtDayYear(s) { if (!s) return ''; var d = new Date(day(s) + 'T12:00:00'); return d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear(); }
   function fmtWhen(iso) {
     var d = new Date(iso), h = d.getHours(), m = d.getMinutes();
     return DAY[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + ', ' + h + ':' + (m < 10 ? '0' : '') + m;
@@ -368,9 +374,10 @@
       var match = activeMatch(d.match);
       // what the lists show for a development: the phase its build is in (Asana's schedule), as its page does
       var B = buildApi(), ph = B && d.schedule ? B.currentPhase(d.schedule) : null;
-      var phase = ph ? (ph.section ? B.sectionLabel(ph.section) + ': ' : '') + ph.name : null;
+      // the chip says the phase in plain words; the Asana task it is on goes in the hover (overhaul 1b)
+      var phase = ph ? (ph.section ? B.sectionLabel(ph.section) : ph.name) : null, phaseNow = ph && ph.section ? ph.name : null;
       jobs.push({
-        id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: d.archived_at ? 'Archived' : idx >= 0 ? DEV[idx] : 'No milestones yet', phase: phase,
+        id: d.id, slug: d.slug, type: 'development', market: d.market || '', name: d.label, stage: d.archived_at ? 'Archived' : idx >= 0 ? DEV[idx] : 'No milestones yet', phase: phase, phaseNow: phaseNow,
         archived: !!d.archived_at, chip: 'pre', price: '', rooms: '', place: d.size_band ? d.size_band : '', folder: d.drive_folder || null, folderState: d.folder_state,
         steps: DEV, stageIdx: idx, done: {}, milestones: ms, bars: [], ticks: dated, activity: {}, flags: flags,
         dates: [], match: match, mismatches: match.length, stale: [], stalePieces: [], asanaUrl: d.asana_project_gid && /^\d+$/.test(String(d.asana_project_gid)) ? 'https://app.asana.com/0/' + d.asana_project_gid : null, agents: [],
@@ -605,6 +612,6 @@
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, matchByJob: matchByJob, looseMatch: looseMatch,
-    chipOf: chipOf, fmtDay: fmtDay, fmtWhen: fmtWhen, money: money, readable: readable,
+    chipOf: chipOf, fmtDay: fmtDay, fmtDayYear: fmtDayYear, fmtWhen: fmtWhen, money: money, readable: readable,
     changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf };
 });

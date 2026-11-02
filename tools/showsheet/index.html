@@ -144,6 +144,8 @@ body.is-dragging-photo .photo-secondary.is-empty{display:block;}
             flex-wrap:wrap;padding:10px 16px;}
   #stageBar .sp{flex-basis:100%;height:0;}
 }
+/* on a phone the stuck bar covered a third of the sheet: it sits after the sheet instead (overhaul 1c) */
+@media screen and (max-width:600px){ #stageBar{position:static;} }
 .pg-tag{margin:20px 0 8px 2px;}
 #sheets{padding:6px 26px 26px;display:flex;flex-wrap:wrap;justify-content:safe center;align-items:flex-start;column-gap:26px;}
 /* builder.css stacks a page column as a centred flex column; the sheets sit in plain blocks */

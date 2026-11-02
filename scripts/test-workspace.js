@@ -332,7 +332,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('match: its lines say where to fix each and who Asana names', [card100.lines, card100.text.includes('Fix in Asana'), card100.text.includes('Fix on DE'), card100.text.includes('Elyse Gutman')], [3, true, true, true]);
   check('match: Open in Asana on each line', await mp.$eval('.mg[data-kind="job"] .mline a.asana', a => [a.getAttribute('href'), a.target]), ['https://app.asana.com/0/1/1201', '_blank']);
   check('match: the codes explained beside the cards', [await visible(mp, 'aside#key'), (await mp.$$eval('#keyList li', l => l.length)) > 3], [true, true]);
-  check('match: M7 shows the link to paste', await mp.$$eval('.mline .paste', els => els.map(e => e.textContent.trim())), ['https://drive.google.com/drive/folders/abc']);
+  check('match: M7 offers the link to paste', await mp.$$eval('.mline button[data-copy]', els => els.map(e => e.dataset.copy)), ['https://drive.google.com/drive/folders/abc']);
   check('match: roster drift uses the latest People read only', [(await text(mp, '.mg[data-kind="roster"]')).includes('Eve Newcomer is in Asana'), (await text(mp, '.mg[data-kind="roster"]')).includes('Old Person')], [true, false]);
   check('match: total in the header, the overview count', (await text(mp, '#lead')).startsWith('4 errors on jobs'), true);
   check('match: footer links resolve from a sub-page', await mp.$$eval('.foot .foot-links a', els => els.map(e => e.href.replace(location.origin, ''))),
@@ -434,8 +434,10 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { path: '/workspace/match/', rows: handRows() });
   mp = t.page;
   await mp.click('.mline[data-key="M2:de:9201"] button[data-aside]').catch(() => {});
+  await mp.click('.mline[data-key="M2:de:9201"] button[data-aside]').catch(() => {});   // the first click asks (overhaul 1a)
   await mp.waitForTimeout(400);
   await mp.click('.mline[data-key="link:1600"] button[data-aside]').catch(() => {});
+  await mp.click('.mline[data-key="link:1600"] button[data-aside]').catch(() => {});   // the first click asks (overhaul 1a)
   await mp.waitForTimeout(400);
   check('not ours / ignore: ignored = true, no change row without an owner', t.writes,
     ['PATCH de_listings ?de_listing_id=eq.9201 {"ignored":true}', 'PATCH asana_tasks ?gid=eq.1600 {"ignored":true}']);
@@ -724,6 +726,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { path: '/workspace/match/', rows: handRows({ asana_tasks: [{ gid: '1600', ignored: false, property_id: null, pitch_id: 'q1' }] }), changeFails: true });
   const readsA2 = t.reads.length;
   await t.page.click('.mline[data-key="link:1600"] button[data-aside]').catch(() => {});
+  await t.page.click('.mline[data-key="link:1600"] button[data-aside]').catch(() => {});   // the first click asks (overhaul 1a)
   await t.page.waitForTimeout(500);
   check('A2 ignore, log failed: reloaded, then the message', [t.reads.length > readsA2, ((await text(t.page, '#lead')) || '').startsWith('Set aside, but the change log didn\'t save'), t.errors], [true, true, []]);
   await t.ctx.close();
@@ -841,7 +844,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     [...li.querySelectorAll('.meta button')].map(b => b.textContent)]).catch(() => null);
   check('errors: claimed', await lineOf('M3'), [false, 'Matt Bloomfield is on it', ['Mark fixed', 'Unclaim', 'Dismiss']]);
   const m7 = await lineOf('M7:drive');
-  check('errors: fixed since the last sync waits, with Undo', [m7[0], /^Fixed by Matt Bloomfield .+ · waiting for the next sync$/.test(m7[1]), m7[2]], [true, true, ['Copy', 'Undo', 'Dismiss']]);
+  check('errors: fixed since the last sync waits, with Undo', [m7[0], /^Fixed by Matt Bloomfield .+ · waiting for the next sync$/.test(m7[1]), m7[2]], [true, true, ['Copy the link to paste', 'Undo', 'Dismiss']]);
   check('errors: fixed before a later sync that still finds it', await lineOf('M5:closedOn'), [false, 'Still wrong after Matt Bloomfield marked it fixed ' + await t.page.evaluate(d => window.GVC_WS.fmtDay(d), iso(NOW - 2 * 3600e3)), ['Mark fixed', 'Dismiss']]);
   check('errors: an unclaimed line offers I\'m on it', (await lineOf('M12:g7'))[2], ["I'm on it", 'Dismiss']);
   await t.page.click('.mline[data-key="M12:g7"] [data-claim]');

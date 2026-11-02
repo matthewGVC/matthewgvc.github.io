@@ -108,7 +108,7 @@
       var ag = agentsOf[j.id] || [];
       return '<tr><td class="nm"><a href="../' + esc(j.href) + '">' + esc(j.name) + '</a><small>' + esc(j.place || (j.folder ? j.folder.split('/').slice(-2).join(' / ') : 'no folder linked')) + '</small><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></td>' +
         '<td>' + esc({ listing: 'Sale', rental: 'Rental', pitch: 'Pitch', development: 'Development' }[j.type]) + '</td><td>' + esc(j.market) + '</td>' +
-        '<td class="stg"><span class="chip ' + j.chip + '">' + esc(j.phase || j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
+        '<td class="stg"><span class="chip ' + j.chip + '"' + (j.phaseNow ? ' title="Now: ' + esc(j.phaseNow) + '"' : '') + '>' + esc(j.phase || j.stage) + '</span><div class="track"><i class="' + (j.chip === 'contract' ? 'c' : '') + '" style="width:' + pctv + '%"></i></div></td>' +
         '<td class="r price">' + (j.price ? esc(j.price) : j.type === 'development' ? '' : '<span class="soft">Not set</span>') + '</td><td>' + ((j.agentIds || []).length ? window.GVC_FACES(j.agentIds) : ag.length ? '<span class="soft">' + esc(ag.join(', ')) + ' (from Asana)</span>' : '<span class="soft">Not set</span>') + '</td>' +
         '<td class="r posts">' + (j.type === 'pitch' ? '' : postsCell(postsBy[j.id])) + '</td>' +
         '<td class="r">' + (W.deLabel(j.deStatus) || (j.type !== 'pitch' && j.type !== 'development') ? '<span class="chip">' + esc(W.deLabel(j.deStatus) || 'not on DE') + '</span>' : '') + '</td></tr>';

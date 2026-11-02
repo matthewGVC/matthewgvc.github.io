@@ -94,6 +94,17 @@ function lastFromRuns(runs) {
   return last;
 }
 
+/* backups aren't in sync_runs: the newest nightly folder with a manifest is the last run */
+function lastBackup(exportsDir) {
+  let dirs = [];
+  try { dirs = fs.readdirSync(exportsDir).filter(f => /^supabase-nightly-\d{4}-\d{2}-\d{2}$/.test(f)).sort().reverse(); }
+  catch (e) { return null; }
+  for (const d of dirs) {
+    try { return fs.statSync(path.join(exportsDir, d, 'manifest.json')).mtime; } catch (e) { /* unfinished: try the one before */ }
+  }
+  return null;
+}
+
 async function startRunner(cfg) {
   const client = require('./supabase.js').createClient(cfg);
   if (!client.ready()) return null;
@@ -102,6 +113,8 @@ async function startRunner(cfg) {
     last = lastFromRuns(await readLastRuns(client));
   } catch (e) { /* table not there yet: everything is due */ }
   const exportsDir = path.join(__dirname, '..', 'exports');
+  const backedUp = lastBackup(exportsDir);
+  if (backedUp) last.backup = backedUp;
   const runner = createRunner({
     last,
     jobs: {
@@ -121,4 +134,4 @@ async function startRunner(cfg) {
   return runner;
 }
 
-module.exports = { createRunner, startRunner, asanaJobs, budgetJobs, lastFromRuns, readLastRuns };
+module.exports = { createRunner, startRunner, asanaJobs, budgetJobs, lastFromRuns, readLastRuns, lastBackup };

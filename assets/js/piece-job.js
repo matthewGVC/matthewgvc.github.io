@@ -341,11 +341,11 @@
   }
   function pickFloorplans(files) { return bestPerLevel(S.planFiles(files)).slice(0, 4); }
   /* every plan a person may want to open: the current layout's levels or units (no limit), then
-     each alternate layout's newest file */
+     each alternate layout's newest file; the branded render of each where there is one */
   function planSets(files) {
-    var alts = S.alternateFiles(files), byLayout = {};
+    var alts = S.alternateFiles(files, { branded: true }), byLayout = {};
     alts.forEach(function (f) { var k = levelOf(f.name || String(f.path || '').split('/').pop()); (byLayout[k] = byLayout[k] || []).push(f); });
-    return { current: bestPerLevel(S.planFiles(files)),
+    return { current: bestPerLevel(S.planFiles(files, { branded: true })),
              alternates: Object.keys(byLayout).sort().map(function (k) { return bestPerLevel(byLayout[k])[0]; }) };
   }
 

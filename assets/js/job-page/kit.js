@@ -57,7 +57,7 @@
 
   /* every plan a person may want to open: each level or unit of the newest version, then each
      alternate layout, every one its own way in, so Open never lands on whichever was saved last.
-     [] when there is only one plan. */
+     The branded render of each, where there is one. */
   function planLevels(list) {
     var PJ = global.GVC_PIECEJOB;
     if (!PJ || !PJ.planSets) return [];
@@ -65,7 +65,7 @@
     var files = global.GVC_KIT.realFiles(list, 'floorplan').filter(function (f) { return !f.archived && (f.path || f.name); })
       .map(function (f) { return f.path ? f : { name: f.name, path: f.name, modified: f.modified, url: f.url, scanned: true }; });
     var sets = PJ.planSets(files);
-    if (sets.current.length + sets.alternates.length < 2) return [];
+    if (!sets.current.length && !sets.alternates.length) return [];
     function entry(p, label, alt) {
       var f = files.filter(function (x) { return x.path === p.path; })[0] || { path: p.path, name: p.path.split('/').pop() };
       return { path: f.scanned ? null : f.path, name: f.name || p.path.split('/').pop(), url: f.url, modified: f.modified, version: p.version, label: label, alternate: alt };
@@ -334,6 +334,11 @@
       var step = x.step ? 'Asana: ' + esc(x.step.name) + (x.step.done ? ', ticked' + (x.step.doneOn ? ' ' + esc(D.day(x.step.doneOn)) : '') + (x.step.who ? ' by ' + esc(x.step.who) : '') : ', open')
         : x.file && NO_STEP.indexOf(x.key) !== -1 ? 'No Asana step for this piece' : '';
       var levels = x.key === 'floorplan' && cur ? planLevels(pieces.floorplan) : [], lv = '';
+      if (levels.length === 1) {   // one plan: Open is that plan (its branded render), not the newest file
+        cur = current.floorplan = levels[0];
+        file = esc(cur.name) + (cur.modified ? ' · ' + esc(D.day(cur.modified)) : '') + (x.older ? ' · ' + x.older + ' older' : '');
+        levels = [];
+      }
       if (levels.length) {
         var nCur = levels.filter(function (l) { return !l.alternate; }).length, nAlt = levels.length - nCur;
         file = [nCur > 1 ? nCur + ' plans' : nCur ? '1 plan' : '', nAlt ? nAlt + ' alternate' + (nAlt > 1 ? 's' : '') : ''].filter(Boolean).join(' + ') +

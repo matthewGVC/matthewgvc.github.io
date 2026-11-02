@@ -66,7 +66,7 @@
     if (!hs.length || !ctx.canEdit) return '';                  // the owner reviews them
     return '<div class="card" id="hintsCard"><div class="card-h"><div><h2>Asana suggestions <span class="n">' + hs.length + '</span></h2><p>' + hs.length + ' milestone' + (hs.length === 1 ? '' : 's') + ' to review. ✓ makes it a milestone with this date; ✗ turns it down and Asana won\'t suggest it again.</p></div></div>' +
       '<p id="hintMsg" role="alert" style="color:var(--danger);font-size:13px;min-height:1.2em;margin:0 0 6px"></p><ul class="log" id="hints">' + hs.map(function (h, i) {
-        return '<li style="grid-template-columns:14px 1fr auto"><span class="dt"></span><div>' + esc(W.DEV_LABEL[h.key] || h.key) + ', ' + (h.approx ? 'about ' : '') + esc(W.fmtDay(h.date) + ' ' + String(h.date || '').slice(0, 4)) +
+        return '<li style="grid-template-columns:14px 1fr auto"><span class="dt"></span><div>' + esc(W.DEV_LABEL[h.key] || h.key) + ', ' + (h.approx ? 'about ' : '') + esc(W.fmtDayYear(h.date)) +
           '<small>' + esc(h.source || 'Asana') + '</small></div><span class="hint-b"><button class="b sm" type="button" data-ok="' + i + '" aria-label="Confirm ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✓</button>' +
           '<button class="b sm" type="button" data-no="' + i + '" aria-label="Turn down ' + esc(W.DEV_LABEL[h.key] || h.key) + '">✗</button></span></li>';
       }).join('') + '</ul></div>';

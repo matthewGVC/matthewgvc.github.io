@@ -31,6 +31,9 @@
 
 .plib-line{display:flex;gap:8px;margin-top:9px;}
 .plib-pick{flex:1;min-width:0;max-width:100%;}
+.plib-find{display:block;width:100%;box-sizing:border-box;margin-top:9px;border:1px solid var(--rule);border-radius:6px;background:#fff;
+  padding:7px 9px;font:400 12.5px var(--sans-body);color:var(--ink);}
+.plib-find:focus-visible{border-color:var(--sky);outline:2px solid var(--sky);outline-offset:1px;}
 .plib-save{flex:none;white-space:nowrap;}
 
 /* the status select and the way through to the Properties page share a row,

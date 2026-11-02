@@ -109,7 +109,7 @@ check('M3: For Rent in Asana on a sale job → nothing (a linking problem, 404 P
   has(M.check(job({ kind: 'sale', asana: { fields: m3f({ 'Sale/Rent': 'For Rent', '💵 Current Price': 12200 }) } }), ctx()), 'M3').length, 0);
 check('M3: rental job, For Rent, prices differ → fires (84 Diane)',
   has(M.check(job({ kind: 'rental', de: { price: 2400 }, asana: { fields: m3f({ 'Sale/Rent': 'For Rent', '💵 Current Price': 2600 }) } }), ctx()), 'M3').map(m => m.text),
-  ['Asana says $2,600; DE says $2,400.']);
+  ['Asana says $2,600/mo; DE says $2,400/mo.']);
 check('M3: For Sale or Rent on a rental job still compares',
   has(M.check(job({ kind: 'rental', de: { price: 17000 }, asana: { fields: m3f({ 'Sale/Rent': 'For Sale or Rent', '💵 Current Price': 16000 }) } }), ctx()), 'M3').length, 1);
 
@@ -459,6 +459,8 @@ check('M23: no status date: waits from the day first found', [has(M.check(aoNoDa
 const icNoCs = job({ stage: 'In contract', de_stage: 'In contract', asana: { status: 'In Contract', section: 'In Contract', stageFromStatus: 'In contract', stageFromSection: 'In contract', statusSince: '2026-09-01' } });
 check('M23: In contract with no CS Date', has(M.check(icNoCs, ctx()), 'M23').map(m => m.text), ['Asana says In contract but has no CS Date.']);
 check('M23: In contract with its CS Date: nothing', has(M.check(ic(), ctx()), 'M23').length, 0);
+check('M23: a rental names the lease date', has(M.check(Object.assign({}, icNoCs, { kind: 'rental' }), ctx()), 'M23').map(m => m.text),
+  ['Asana says In contract but has no lease signed date (its CS Date field).']);
 
 /* ---------- M24: AO / CS date left behind after the deal fell back to Live ---------- */
 const fellBack = (f, since) => job({ asana: { statusSince: since || '2026-09-16', fields: Object.assign({}, job().asana.fields, f) } });

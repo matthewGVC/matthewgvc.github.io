@@ -122,9 +122,15 @@
     'listing removed': 'Off market', 'totm': 'Off market', 'graveyard': 'Off market'
   };
 
+  /* "For Sale or Rent" is a rental when its price is a monthly rent: no sale is under $100,000
+     (52 E4 10FL, $17,000, read as a sale; overhaul 1f) */
+  var RENT_UNDER = 100000;
   function isRental(t) {
     var k = norm(field(t, 'Sale/Rent'));
-    return /rent/.test(k) && !/sale/.test(k);
+    if (!/rent/.test(k)) return false;
+    if (!/sale/.test(k)) return true;
+    var p = Number(field(t, '💵 Current Price')) || Number(field(t, '💵 Original Price')) || 0;
+    return p > 0 && p < RENT_UNDER;
   }
 
   function stageOf(t) {

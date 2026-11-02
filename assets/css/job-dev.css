@@ -128,5 +128,7 @@
   .ov-t:nth-child(-n+2){border-top:0}
   .ov-t:nth-child(even){border-left:1px solid var(--rule)}
   .ov-t .v{font-size:22px}
+  /* a word, not a figure: smaller, and never broken mid-word (overhaul 1c) */
+  .ov-t.word .v{font-size:17px;overflow-wrap:normal}
   .gantt{--name:150px}
 }

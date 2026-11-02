@@ -97,6 +97,8 @@ check('0 Current Price falls back to Original', M.factsOf(task({ fields: { '💵
 check('Studio (beds 0) stays', M.factsOf(task({ fields: { 'ℹ️ Property Stats': ['Studio', '1 Bath'] } })).beds, 0);
 check('kind rental', M.factsOf(task({ fields: { 'Sale/Rent': 'For Rent' } })).kind, 'rental');
 check('kind For Sale or Rent → sale', M.factsOf(task({ fields: { 'Sale/Rent': 'For Sale or Rent' } })).kind, 'sale');
+check('kind For Sale or Rent at a monthly rent → rental', M.factsOf(task({ fields: { 'Sale/Rent': 'For Sale or Rent', '💵 Current Price': 17000 } })).kind, 'rental');
+check('kind For Sale or Rent at a sale price → sale', M.factsOf(task({ fields: { 'Sale/Rent': 'For Sale or Rent', '💵 Current Price': 1750000 } })).kind, 'sale');
 check('NJ facts', M.factsOf(task({ fields: { '📍 County': 'Monmouth', '📍 Zip': '07700', '📍 MLS': 'MoreMLS', 'ℹ️ Acreage': 0.5,
   'Listing Copy': 'Light and bright.', 'Google Maps Link': 'https://maps.example/1', '🛜 Google Drive Link': 'https://drive.example/f/1' } })),
   { lotSize: 0.5, zip: '07700', county: 'Monmouth', mlsBoard: 'MoreMLS', description: 'Light and bright.',

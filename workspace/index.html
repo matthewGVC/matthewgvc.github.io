@@ -208,7 +208,9 @@
     });
   }
 
+  // a development's own house listing shows on its development, as on Resell and New Dev (overhaul 1f)
   function pass(j) {
+    if (j.devProjectId && f.type !== 'listing') return false;
     return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')) &&
       (!f.stage || j.stage === f.stage) && (!f.q || (j.name + ' ' + (j.place || '')).toLowerCase().indexOf(f.q) !== -1);
   }
@@ -265,7 +267,7 @@
         if (j.hints) dev += '<div class="dates"><span>' + j.hints + ' milestone' + (j.hints === 1 ? '' : 's') + ' suggested from Asana. Review them on the job page.</span></div>';
       }
       var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc((j.stalePieces || []).map(function (x) { return x.label + ' stale: ' + x.words.join(', '); }).join('; ')) + '">stale</span>' : '';
-      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '">' + esc(j.phase || j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
+      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '"' + (j.phaseNow ? ' title="Now: ' + esc(j.phaseNow) + '"' : '') + '>' + esc(j.phase || j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
         '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div>' + dates + dev + '</a>';
     }).join('') + '</div>';
   }

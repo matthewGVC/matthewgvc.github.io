@@ -52,6 +52,9 @@
       <h1>Errors</h1>
       <p id="lead">Loading the mismatches…</p>
     </div>
+    <div class="seg mkt" role="group" aria-label="Market" id="mkt">
+      <button type="button" aria-pressed="true" data-v="">All</button><button type="button" aria-pressed="false" data-v="NYC">NYC</button><button type="button" aria-pressed="false" data-v="NJ">NJ</button><button type="button" aria-pressed="false" data-v="FL">FL</button>
+    </div>
   </div>
   <div id="gate" hidden></div>
   <div id="board" hidden><div class="mx"><div id="groups"></div>
@@ -150,11 +153,16 @@
 
   function line(it, fix, inJob) {
     var meta = [];
-    if (fix !== 'Roster') meta.push('<span class="fix">' + esc(WHERE[it.fixAt] || 'Fix in the workspace') + '</span>' + (it.who && it.who.length ? '<span>' + esc(it.who.join(', ')) + '</span>' : ''));
+    // one link per place: "Fix in Asana" is the link itself, not a label beside an "Open in Asana" link (Matt, overhaul 1a)
+    var ext = function (cls, url, label) { return '<a class="link ' + cls + '" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label) + ' ↗</a>'; };
+    var fixUrl = fix === 'Asana' ? it.asanaUrl : fix === 'DE' ? it.deUrl : null;
+    if (fix !== 'Roster') meta.push((fixUrl ? ext(fix === 'Asana' ? 'asana fix' : 'de fix', fixUrl, WHERE[fix])
+      : '<span class="fix">' + esc(WHERE[it.fixAt] || 'Fix in the workspace') + '</span>') + (it.who && it.who.length ? '<span>' + esc(it.who.join(', ')) + '</span>' : ''));
     if (it.since) meta.push('<span class="when">Since ' + esc(W.fmtDay(it.since)) + '</span>');
-    if (it.asanaUrl && fix !== 'Roster') meta.push('<a class="link asana" href="' + esc(it.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>');
-    if (it.deUrl) meta.push('<a class="link de" href="' + esc(it.deUrl) + '" target="_blank" rel="noopener">Open on DE</a>');
-    if (it.paste) meta.push('<span>Paste: <span class="paste">' + esc(it.paste) + '</span></span><button class="lnk" type="button" data-copy="' + esc(it.paste) + '">Copy</button>');
+    if (it.asanaUrl && fix !== 'Roster' && fix !== 'Asana') meta.push(ext('asana', it.asanaUrl, 'Open in Asana'));
+    if (it.deUrl && fix !== 'DE') meta.push(ext('de', it.deUrl, 'Open on DE'));
+    // the long link stays off the line (it pushed Copy and Dismiss onto a row of their own); hover shows it
+    if (it.paste) meta.push('<button class="lnk" type="button" data-copy="' + esc(it.paste) + '" title="' + esc(it.paste) + '">Copy the link to paste</button>');
     var cl = claimOf(it), waiting = false;
     if (cl && cl.fixed_at && !(Date.parse(data.lastSync) > Date.parse(cl.fixed_at))) {
       waiting = true;
@@ -178,6 +186,17 @@
       (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +
       '<button class="b sm primary" type="button" data-confirm>Dismiss</button><button class="b sm" type="button" data-cancel>Cancel</button></div>' : '') + '<p class="msg" role="alert"></p></div></li>';
   }
+
+  var MKT_KEY = 'gvc.errors.market', market = '';
+  try { market = localStorage.getItem(MKT_KEY) || ''; } catch (e) { /* no storage */ }
+  function paintMarket() { $('mkt').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === market)); }); }
+  paintMarket();
+  $('mkt').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    market = b.dataset.v; paintMarket();
+    try { localStorage.setItem(MKT_KEY, market); } catch (x) { /* no storage */ }
+    if (data) render();
+  });
 
   function claimOf(it) { return it.id && data.claims ? data.claims[(it.table || 'properties') + '|' + it.id + '|' + it.key] || null : null; }
 
@@ -211,6 +230,28 @@
     var loose = data.loose || [];
     // the jobs' errors first, the same count as the overview's; then what belongs to no job yet
     var groups = W.matchByJob(jobs, drift, loose), n = W.overviewStats(jobs).mismatches;
+    // one market at a time (overhaul 1a): the jobs of that market only; what belongs to no job shows under All
+    if (market) {
+      var inMkt = {};
+      jobs.forEach(function (j) { if (j.market === market) inMkt[j.id] = true; });
+      groups = groups.filter(function (g) { return g.kind === 'job' && inMkt[g.id]; });
+      n = groups.reduce(function (t, g) { return t + g.items.length; }, 0);
+      loose = []; drift = [];
+    }
+    // a Point Person who has left shows once, with every job that still names them, not on each job (overhaul 1a)
+    var left = {};
+    groups.forEach(function (g) {
+      if (g.kind !== 'job') return;
+      g.items = g.items.filter(function (it) {
+        if (it.code !== 'M16') return true;
+        var who = (/ is (.+), who has left the team/.exec(it.text) || [])[1] || 'Someone';
+        // the card's heading already says who left; the line only needs the job
+        (left[who] = left[who] || []).push(Object.assign({}, it, { text: 'Needs a new Point Person.' }));
+        return false;
+      });
+    });
+    groups = groups.filter(function (g) { return g.kind !== 'job' || g.items.length; });
+    Object.keys(left).sort().forEach(function (who, i) { groups.splice(i, 0, { kind: 'left', who: who, items: left[who] }); });
     $('lead').textContent = (n ? n + ' error' + (n === 1 ? '' : 's') + ' on jobs' : 'No errors on jobs') +
       (loose.length ? ' · ' + loose.length + ' not linked to a job' : '') +
       (drift.length ? ' · ' + drift.length + ' roster note' + (drift.length === 1 ? '' : 's') : '');
@@ -218,6 +259,7 @@
     // one card per property (the most errors first), then what belongs to no job, then the roster
     $('groups').innerHTML = groups.map(function (g) {
       var head = g.kind === 'job' ? '<h2><a href="../' + esc(g.href) + '">' + esc(g.job) + '</a></h2>' + (g.who.length ? '<p>Asana names ' + esc(g.who.join(', ')) + '</p>' : '')
+        : g.kind === 'left' ? '<h2>' + esc(g.who) + ' has left the team</h2><p>Asana still names them as Point Person on ' + g.items.length + ' job' + (g.items.length === 1 ? '' : 's') + '. Change the Point Person in Asana.</p>'
         : g.kind === 'loose' ? '<h2>Not linked to a job</h2><p>Asana tasks and DE listings the workspace cannot tie to a job yet.</p>'
         : '<h2>Roster</h2><p>Update the roster by hand.</p>';
       return '<section class="card mg" data-kind="' + g.kind + '" data-collapse="off"><div class="card-h"><div>' + head + '</div><span class="chip made">' + g.items.length + '</span></div>' +
@@ -284,7 +326,16 @@
   $('groups').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
     if (b.hasAttribute('data-link')) { linkLine(b.closest('.mline')); return; }
-    if (b.hasAttribute('data-aside')) { asideLine(b.closest('.mline')); return; }
+    // Not ours / Ignore can't be undone here: the first click asks, the second does it (overhaul 1a)
+    if (b.hasAttribute('data-aside')) {
+      if (!b.dataset.sure) {
+        var was = b.textContent;
+        b.dataset.sure = '1'; b.textContent = 'Sure? Click again';
+        setTimeout(function () { if (b.isConnected && b.dataset.sure) { delete b.dataset.sure; b.textContent = was; } }, 5000);
+        return;
+      }
+      asideLine(b.closest('.mline')); return;
+    }
     var li = b.closest('.mline');
     if (b.hasAttribute('data-copy')) {
       var v = b.dataset.copy;

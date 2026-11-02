@@ -470,6 +470,11 @@ check('recent changes skip Asana milestone suggestions', W.recentChanges([{ at: 
   check('posts: none', W.postsOf(null), { posted: [], coming: [] });
 }
 
+/* a rental's stages in lease words, shown only (overhaul 6) */
+check('rental words', [W.stageWord('In contract', 'rental'), W.stageWord('Accepted offer', 'rental'), W.stageWord('In contract', 'sale'), W.stageWord('Live', 'rental')],
+  ['Lease signed', 'Application accepted', 'In contract', 'Live']);
+check('a rental in contract shows Lease signed on the lists', W.buildJobs({ properties: [{ id: 'r1', slug: 'r', label: 'R', kind: 'rental', market: 'NJ', stage: 'In contract', core: {} }], pitches: [], devProjects: [], changes: [] }, TODAY)[0].phase, 'Lease signed');
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

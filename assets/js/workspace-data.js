@@ -172,6 +172,10 @@
      stages it reached (a done deal date or a stage move says so), then Off
      market, so a listing taken off in Prep never reads as sold (D88). */
   var REACHED = [['Live', 'listedOn'], ['Accepted offer', 'acceptedOfferOn'], ['In contract', 'contractOn']];
+  /* a rental's stages in lease words, for showing only: the stage itself stays Asana's (overhaul 6, D132) */
+  var RENT_WORD = { 'Accepted offer': 'Application accepted', 'In contract': 'Lease signed' };
+  function stageWord(stage, kind) { return kind === 'rental' && RENT_WORD[stage] ? RENT_WORD[stage] : stage; }
+
   function stepsOf(kind, stage, ms, done) {
     if (stage === 'Off market') {
       var last = -1;
@@ -320,6 +324,7 @@
 
       jobs.push({
         id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '', devProjectId: p.dev_project_id || null,
+        phase: p.kind === 'rental' && RENT_WORD[p.stage] ? RENT_WORD[p.stage] : null,
         name: au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing'), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
         rooms: [beds != null ? beds + ' bd' : '', baths != null ? baths + ' ba' : ''].filter(Boolean).join(' · '),   // whatever is known
@@ -612,6 +617,6 @@
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, matchByJob: matchByJob, looseMatch: looseMatch,
-    chipOf: chipOf, fmtDay: fmtDay, fmtDayYear: fmtDayYear, fmtWhen: fmtWhen, money: money, readable: readable,
+    chipOf: chipOf, fmtDay: fmtDay, fmtDayYear: fmtDayYear, stageWord: stageWord, fmtWhen: fmtWhen, money: money, readable: readable,
     changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf };
 });

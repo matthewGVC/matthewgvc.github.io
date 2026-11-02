@@ -280,7 +280,7 @@
     if (ctx.kind === 'pitch') {
       rows = pieceRow(ctx, 'seller', 'Seller Package', ['seller'], {}, false) + pieceRow(ctx, 'pitch-map', 'Map', ['pitch-map'], {}, false);
     } else if (ctx.kind === 'listing') {
-      var rental = ctx.row.kind === 'rental', noSign = ctx.row.market === 'NYC' || rental;
+      var rental = ctx.row.kind === 'rental', noSign = !window.GVC_MARKETS.signage(ctx.row.market) || rental;
       rows = pieceRow(ctx, 'showsheet', 'Showsheet', ['showsheet'], pieces, live) +
         pieceRow(ctx, 'brochure', 'Brochure', ['brochure'], pieces, live) +
         (rental ? '' : pieceRow(ctx, 'postcard', 'Postcard', ['postcard-listed', 'postcard-sold'], pieces, live) +
@@ -288,7 +288,7 @@
         (noSign ? '' : pieceRow(ctx, 'signage', 'Signage', ['signage'], pieces, live));
     }
     if (!rows) return '';
-    return '<div class="card" id="piecesCard"><div class="card-h"><div><h2>Pieces</h2><p>Made from this job\'s facts and Drive picks. Each piece has one status.</p></div></div>' +
+    return '<div class="card" id="piecesCard"><div class="card-h"><div><h2>Marketing materials</h2><p>Made from this job: its facts and photos. One status each.</p></div></div>' +
       '<div class="kit">' + rows + '</div></div>';
   }
   /* the Copy Drive link buttons on the Pieces card (the card is repainted, so this runs after each paint) */

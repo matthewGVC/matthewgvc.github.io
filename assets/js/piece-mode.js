@@ -63,12 +63,11 @@
   var $$ = function (s, root) { return Array.prototype.slice.call((root || document).querySelectorAll(s)); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var IMG = /\.(jpe?g|png|webp)$/i;
-  var MARKET = { NYC: 'New York', NJ: 'New Jersey', FL: 'Florida' };
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var MONEY = ['price', 'rent', 'maintenance', 'commonCharges', 'taxesMonthly', 'closePrice', 'priceLow', 'priceMid', 'priceHigh'];
   var LABELS = { rent: 'Rent per month', city: 'Town', closePrice: 'Closing price', comps: 'Comps', priceLow: 'Low price', priceMid: 'Recommended price',
     priceHigh: 'High price', recBand: 'Recommended band', mapAddresses: 'Mapped addresses', features: 'Features', description: 'Description' };
-  var ASKERS = ['owner', 'admin', 'marketing', 'shared'];
+  var ASKERS = ['owner', 'admin', 'marketing'];   // making pieces is marketing's: agents use them (Matt, 11-02; 0019)
   var HELPER_MAKES = ['showsheet', 'brochure', 'postcard-listed', 'postcard-sold', 'seller', 'signage'];
 
   var M = global.GVC_PIECEMODE = { ready: false, row: null, doc: null, mapDoc: null, me: null, canEdit: false, canAsk: false, busy: false,
@@ -265,7 +264,7 @@
     var s = staleNow(), ag = SJ.agentsOf(r);
     var html = '<div class="jb-t">' + esc(A.label) + ' for ' + esc(c.address || r.label || slug) + (c.unit ? ' · ' + esc(c.unit) : '') +
       ' · <a data-back href="' + esc(jobHref()) + '">← ' + (kind === 'pitch' ? 'Pitch page' : 'Job page') + '</a></div>' +
-      '<div class="jb-s">' + esc(MARKET[r.market] || 'New York') + ' · <span id="' + ID.state + '">' + esc(stateWords(s)) + '</span>' + fileLinks() + '</div>';
+      '<div class="jb-s">' + esc((window.GVC_MARKETS && GVC_MARKETS.name(r.market)) || 'New York') + ' · <span id="' + ID.state + '">' + esc(stateWords(s)) + '</span>' + fileLinks() + '</div>';
     var note = A.note ? A.note(r) : '';
     if (note) html += '<div class="jb-n">' + esc(note) + '</div>';
     var max = RU.maxAgents;

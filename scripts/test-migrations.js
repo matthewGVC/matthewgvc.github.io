@@ -609,8 +609,10 @@ const USERS = {
     const pr = (await db.query(`insert into public.properties (slug, label, core) values ('17-piece-st', '17 Piece St', '{"address":"17 Piece St"}') returning id`)).rows[0].id;
     const ask = (who, tool, extra) => as(who, `insert into public.piece_requests (property_id, tool` + (extra ? ', status, message' : '') + `) values ($1, $2` + (extra ? `, 'done', 'x'` : '') + `) returning *`, [pr, tool]);
     const askErr = async (...a) => { try { await ask(...a); return null; } catch (e) { return e.message; } };
-    const r1 = (await ask('team', 'showsheet', true)).rows[0];
-    check('0017: the team account asks; it is waiting, in its own name, whatever it sent', [r1.status, r1.message, r1.asked_by, r1.asked_name], ['waiting', null, id.team, 'Team (shared)']);
+    // from 0019 only marketing and admins ask; the team account did in 0017
+    const r1 = (await ask(UPTO >= '0019' ? 'matt' : 'team', 'showsheet', true)).rows[0];
+    check('0017: an ask is waiting, in the name of whoever asked, whatever it sent', [r1.status, r1.message, r1.asked_by], ['waiting', null, UPTO >= '0019' ? id.matt : id.team]);
+    if (UPTO >= '0019') check('0019: the team account may not ask', !!(await askErr('team', 'signage')), true);
     check('0017: asking again for the same piece joins the open one (refused)', !!(await askErr('matt', 'showsheet')), true);
     check('0017: another piece may be asked at once', await askErr('matt', 'brochure'), null);
     check('0017: a plain team member may not ask', !!(await askErr('teamrole', 'signage')), true);
@@ -637,9 +639,9 @@ const USERS = {
     const done = (await db.query('select status, result, finished_at is not null f from public.piece_requests where id = $1', [r1.id])).rows[0];
     check('0017: the request is done, with the file', [done.status, done.result.name, done.result.url, done.f], ['done', OUT.name, OUT.url, true]);
     check('0017: the change log says the helper made it, asked by the team', (await db.query(`select note, source, asked_by from public.changes where property_id = $1 and field = 'piece:showsheet'`, [pr])).rows,
-      [{ note: 'Showsheet made', source: 'Helper', asked_by: 'Team (shared)' }]);
+      [{ note: 'Showsheet made', source: 'Helper', asked_by: UPTO >= '0019' ? 'Matt Bloomfield' : 'Team (shared)' }]);
     // a rebuild: the old file's archive move is kept on its entry, the version check holds
-    const r2 = (await ask('team', 'showsheet')).rows[0];
+    const r2 = (await ask(UPTO >= '0019' ? 'matt' : 'team', 'showsheet')).rows[0];
     await as('helper', `update public.piece_requests set status = 'working' where id = $1`, [r2.id]);
     check('0017: a stale version is a conflict', await spbErr('helper', r2.id, 9, { s: 2 }, BF, OUT, null), 'conflict');
     const d2 = (await spb('helper', r2.id, 1, { s: 2 }, BF, Object.assign({}, OUT, { name: 'B.pdf' }), { to: 'Marketing/Showsheet/Archive/x.pdf' })).rows[0].r;

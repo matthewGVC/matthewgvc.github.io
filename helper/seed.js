@@ -29,7 +29,7 @@ const P = require('../assets/js/property-library.js');
 
 const TYPE_WORD = /^(st|street|ave|avenue|av|blvd|dr|drive|ln|lane|rd|road|pl|place|ct|court|ter|terrace|pkwy|way)\.?$/i;
 const UNIT_LIKE = /^(\d+[a-z]*|[a-z]{1,2}\d+[a-z]?|ph[a-z0-9]*)$/i;
-const MARKET = { NY: 'NYC', NJ: 'NJ', FL: 'FL' };
+const MK = require('../assets/js/markets.js');
 const PITCHES_DIR = 'GVC - Marketing/02 - Assets/Pitches';
 const NYC_UNITS = 'GVC - New York/Building Information';
 const DEV_DIRS = { NJ: 'GVC - New Jersey/New Development', FL: 'GVC - Florida/New Development' };
@@ -97,7 +97,7 @@ function buildPlan(o) {
     const folder = liveFolder.get(r.id) || null;
     const ex = mergeFor.get(r.id);
     if (folder) used.add(folder);
-    listings.push({ source: 'DE', include: true, street: r.street, unit: r.unit, kind: r.kind, market: MARKET[r.state] || null,
+    listings.push({ source: 'DE', include: true, street: r.street, unit: r.unit, kind: r.kind, market: (MK.byState(r.state) || {}).code || null,
       stage: r.stage, deId: r.id, deStatus: r.status, price: r.price, beds: r.beds, baths: r.baths, state: r.state,
       folder, opened: folder ? createdOf.get(folder) || null : null, existingId: ex ? ex.id : null, existingLabel: ex ? ex.label : null });
   });

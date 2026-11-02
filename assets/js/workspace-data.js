@@ -103,7 +103,8 @@
   };
   var PIECE_LABEL = { floorplan: 'Floorplan', showsheet: 'Showsheet', photos: 'Photos', brochure: 'Brochure' };
   var FIX = ['Asana', 'DE', 'Drive', 'Matt'];
-  var MARKETS = ['NYC', 'NJ', 'FL'];
+  var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
+  var MARKETS = MK.CODES;
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -241,7 +242,7 @@
     (docs[p.id] || []).forEach(function (doc) {
       if (doc.tool !== 'showsheet' && !(doc.built_from && doc.built_from.v === 2)) return;
       // only the pieces the job page offers: no sign in New York or for a rental, no postcard for a rental
-      if (doc.tool === 'signage' && (p.market === 'NYC' || p.kind === 'rental')) return;
+      if (doc.tool === 'signage' && (!MK.signage(p.market) || p.kind === 'rental')) return;
       if ((/^postcard-/.test(doc.tool) || doc.tool === 'seller') && p.kind === 'rental') return;
       try {
         var pieces = (p.scan && p.scan.pieces) || {};
@@ -539,7 +540,6 @@
     'no street number': 'its name has no street number, so it is never guessed',
     'no job yet': 'no job is linked to it yet, so check whether it should be one'
   };
-  var STATE_MARKET = { NY: 'NYC', NJ: 'NJ', FL: 'FL' };
   function looseMatch(o, M) {
     var out = [], ign = {}, held = {}, claims = o.claims || {};   // claims: { DE id: job name } from the jobs' M19 lines
     (o.ignoredGids || []).concat(o.linkedGids || []).forEach(function (g) { ign[g] = true; });
@@ -555,7 +555,7 @@
         text: m.text + (claims[r.de_listing_id] ? ' Probably the same listing as ' + claims[r.de_listing_id] + ': see that job\'s line.' : '') +
           (r.courtesy ? ' DE shows: ' + r.courtesy + '.' : ''), since: m.since || null, asanaUrl: null, paste: null,
         deUrl: web(m.values && m.values.listingUrl),
-        link: { type: 'de', id: r.de_listing_id, kind: r.kind || null, market: STATE_MARKET[String(raw.state || '').toUpperCase()] || null, street: street, unit: unit } } });
+        link: { type: 'de', id: r.de_listing_id, kind: r.kind || null, market: (MK.byState(raw.state) || {}).code || null, street: street, unit: unit } } });
     });
     var run = o.asanaRun, list = run && run.totals && Array.isArray(run.totals.unlinked) ? run.totals.unlinked : [];
     list.forEach(function (u) {

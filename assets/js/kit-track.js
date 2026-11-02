@@ -31,6 +31,7 @@
   else global.GVC_KIT = api;
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
+  var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
 
   var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
   var LABELS = { floorplan: 'Floorplan', photos: 'Photos', showsheet: 'Showsheet', brochure: 'Brochure',
@@ -95,7 +96,7 @@
       var m = matchList.filter(function (x) { return x.key === 'M8:' + key; })[0] || null;
       var state;
       if (key === 'video') state = 'tracked';
-      else if (key === 'signage' && input.market === 'NYC') state = 'notUsed';
+      else if (key === 'signage' && !MK.signage(input.market)) state = 'notUsed';
       else if (current && step) state = step.done ? 'done' : 'fileOpen';
       else if (current) state = 'done';
       else if (step && step.done) state = 'tickedNoFile';

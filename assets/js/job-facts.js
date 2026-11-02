@@ -67,6 +67,7 @@
   else global.GVC_FACTS = api;
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
+  var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
 
   var RANK = ['DE', 'Matt', 'Asana', 'form', 'doc', 'legacy'];
 
@@ -208,7 +209,7 @@
   function labelFor(field, row) {
     if (field.name === 'commonCharges') {
       var t = typeOf(row), m = row && row.market;
-      if (t && HOUSES.indexOf(t) !== -1 && (m === 'NJ' || m === 'FL')) return 'HOA';
+      if (t && HOUSES.indexOf(t) !== -1 && MK.houses(m)) return 'HOA';
     }
     return field.label;
   }

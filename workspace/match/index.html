@@ -20,8 +20,8 @@
 .mx aside{position:sticky;top:calc(var(--mast-h) + 16px);padding:18px 20px}
 .mx aside h2{font-size:18px;margin-bottom:10px}
 #keyList{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:13px}
-#keyList li{display:grid;grid-template-columns:52px 1fr;gap:10px}
-#keyList .code{justify-self:start}
+#keyList li{display:grid;grid-template-columns:1fr;gap:3px}
+#keyList .code{font-weight:600;color:var(--ink)}
 @media (max-width:1100px){ .mx{grid-template-columns:minmax(0,1fr)} .mx aside{position:static;order:-1} }
 #groups > * + *{margin-top:20px}
 .mg .card-h h2 a{color:var(--ink);text-decoration:none}
@@ -58,9 +58,11 @@
   </div>
   <div id="gate" hidden></div>
   <div id="board" hidden><div class="mx"><div id="groups"></div>
-    <aside class="card" id="key" data-collapse="off"><h2>What the codes mean</h2><ul id="keyList"></ul></aside></div>
+    <aside class="card" id="key" data-collapse="off"><h2>What each check means</h2><ul id="keyList"></ul></aside></div>
   </div>
 </main>
+<script src="../../assets/js/markets.js"></script>
+<script src="../../assets/js/words.js"></script>
 <script src="../../assets/js/supabase-config.js"></script>
 <script src="../../assets/js/property-library.js"></script>
 <script src="../../assets/js/roster.js"></script>
@@ -82,7 +84,9 @@
   var P = window.GVC_PROPS, W = window.GVC_WS, M = window.GVC_MATCH, L = window.GVC_MATCH_LINK, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   // the key: every code in plain words (fixed text from match-check.js, still escaped)
   var KEY = (M && M.KEY) || {};
-  $('keyList').innerHTML = Object.keys(KEY).map(function (c) { return '<li><span class="code">' + esc(c) + '</span><span>' + esc(KEY[c]) + '</span></li>'; }).join('');
+  // each check by its short name; the code stays in the hover (overhaul 2)
+  var NAME = window.GVC_WORDS ? GVC_WORDS.check : function (c) { return c; };
+  $('keyList').innerHTML = Object.keys(KEY).map(function (c) { return '<li><span class="code" title="' + esc(c) + '">' + esc(NAME(c)) + '</span><span>' + esc(KEY[c]) + '</span></li>'; }).join('');
   var today = W.today(), data = null;
   var shell = GVC_SHELL.mount({ noDrive: true, onSynced: function () { load(); } });
   var WHERE = { Asana: 'Fix in Asana', DE: 'Fix on DE', Drive: 'Fix on Drive', Matt: 'Fix in the workspace', Roster: 'Update the roster by hand' };
@@ -180,7 +184,7 @@
     if (it.id) meta.push('<button class="lnk" type="button" data-dismiss>Dismiss</button>');
     // a line that belongs to no job: tie it to one, or set it aside (tune-up A)
     if (it.link && L) meta.push('<button class="lnk" type="button" data-link>Link to a job</button><button class="lnk" type="button" data-aside>' + (it.link.type === 'de' ? 'Not ours' : 'Ignore') + '</button>');
-    return '<li class="mline' + (waiting ? ' waiting' : '') + '" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code"' + (KEY[it.code] ? ' title="' + esc(KEY[it.code]) + '"' : '') + '>' + esc(it.code === 'roster' ? 'Roster' : it.code) + '</span><div>' +
+    return '<li class="mline' + (waiting ? ' waiting' : '') + '" data-key="' + esc(it.key) + '" data-id="' + esc(it.id || '') + '" data-table="' + esc(it.table || '') + '"><span class="code" title="' + esc(it.code + (KEY[it.code] ? ': ' + KEY[it.code] : '')) + '">' + esc(it.code === 'roster' ? 'Roster' : NAME(it.code)) + '</span><div>' +
       (inJob ? '' : it.href ? '<a class="job" href="../' + esc(it.href) + '">' + esc(it.job) + '</a>. ' : it.job && fix !== 'Roster' ? '<b>' + esc(it.job) + '</b>. ' : '') + esc(it.text) +
       (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
       (it.id ? '<div class="dz" hidden><input class="inp reason" maxlength="200" placeholder="One line: why this is fine" aria-label="Reason for dismissing">' +

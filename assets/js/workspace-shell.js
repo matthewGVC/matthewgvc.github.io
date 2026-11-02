@@ -120,11 +120,13 @@
 
     var foot = doc.createElement('footer');
     foot.className = 'foot';
-    foot.innerHTML = '<nav class="foot-links" aria-label="More"><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a></nav>' +
+    foot.innerHTML = '<nav class="foot-links" aria-label="More"><a href="' + root + '../listing-rules/">Listing rules</a><a href="' + root + '#tasks">Tasks</a><a href="mailto:matthew@gvcrealestateteam.com">Ask Matt</a></nav>' +
       '<span>The GVC Team · Douglas Elliman</span>';
     body.appendChild(foot);
 
     var shell = { readOnly: true };
+    // the team's plain words on everything this page shows, now and as it redraws (words.js)
+    if (global.GVC_WORDS) global.GVC_WORDS.tidy(body);
 
     /* ---------- Drive ---------- */
     var pill = doc.getElementById('wsDrive');
@@ -133,18 +135,17 @@
       var l = DRIVE_LABEL[s] || DRIVE_LABEL.error;
       pill.textContent = l[0]; pill.className = 'pill-ok' + (l[1] ? ' ' + l[1] : '');
       shell.readOnly = s !== 'connected';
-      banner.hidden = !shell.readOnly;
       banner.innerHTML = '';
-      if (shell.readOnly) {
+      // the banner is only for a computer that had Drive and lost it: one button, no second
+      // "Connect Drive" beside the header's (overhaul 2). Everyone else sees the header pill only.
+      banner.hidden = s !== 'needs-click';
+      if (s === 'needs-click') {
         var t = doc.createElement('span');
-        t.textContent = s === 'unsupported' ? 'Read-only here: this browser can\'t open Drive folders. Facts and the change log still show.'
-          : 'Read-only here: Drive isn\'t connected on this device.';
-        banner.appendChild(t);
-        if (s === 'needs-click' || s === 'not-connected') {
-          var b = doc.createElement('button'); b.type = 'button'; b.className = 'b sm';
-          b.textContent = s === 'needs-click' ? 'Reconnect Drive' : 'Connect Drive';
-          b.addEventListener('click', driveClick); banner.appendChild(b);
-        }
+        t.textContent = 'Drive needs one click to reconnect on this computer.';
+        var b = doc.createElement('button'); b.type = 'button'; b.className = 'b sm';
+        b.textContent = 'Reconnect Drive';
+        b.addEventListener('click', driveClick);
+        banner.append(t, b);
       }
       if (opts.onDrive) opts.onDrive(s);
     }

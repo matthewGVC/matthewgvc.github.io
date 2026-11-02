@@ -329,12 +329,9 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   o = await open(browser, { path: BRO, members: [{ name: 'Team', initials: 'T', role: 'team' }] });
   check('brochure: team read-only, Get PDF or Ask Matt', [!!(await o.page.$('#btnPiecePdf')), /Read only/.test(await text(o.page, '#pieceBar')), /Get PDF|Ask Matt/.test(await text(o.page, '#pieceBar'))], [false, true, true]);
   await o.ctx.close();
-  // the team's shared account may ask the helper (0017), never save the wording
+  // the team's shared account uses the pieces, it doesn't make them (0019, Matt 11-02)
   o = await open(browser, { path: BRO, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
-  check('brochure: the shared account sees Make PDF, not Save sheet', [!!(await o.page.$('#btnPiecePdf')), !!(await o.page.$('#btnPieceSave')), /Make PDF asks the helper to make it as last saved/.test(await text(o.page, '#pieceBar'))], [true, false, true]);
-  await o.page.click('#btnPiecePdf');
-  await o.page.waitForTimeout(400);
-  check('brochure: the shared account asks without saving anything', [o.asks.length, o.saves.length, o.pieces.length], [1, 0, 0]);
+  check('brochure: the shared account is read only, no Make PDF', [!!(await o.page.$('#btnPiecePdf')), !!(await o.page.$('#btnPieceSave')), /Read only/.test(await text(o.page, '#pieceBar'))], [false, false, true]);
   await o.ctx.close();
 
   // an unknown job, a hostile job, and the standalone tool

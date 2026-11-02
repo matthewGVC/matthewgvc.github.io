@@ -39,6 +39,7 @@
   } else global.GVC_SHEETJOB = factory(global.GVC_FACTS, global.GVC_LISTING, global.GVC_DRIVE_RULES);
 })(typeof window !== 'undefined' ? window : globalThis, function (F, L, R) {
   'use strict';
+  var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
 
   var HOUSES = ['Townhouse', 'Single family', 'Other'];
   var IMG = /\.(jpe?g|png|webp|svg)$/i;
@@ -70,7 +71,7 @@
     if (t === 'Co-op') return 'co-op';
     if (t === 'Condo' || t === 'Condop') return 'condo';
     if (t && HOUSES.indexOf(t) !== -1) return 'house';
-    return row && (row.market === 'NJ' || row.market === 'FL') ? 'house' : null;
+    return row && MK.houses(row.market) ? 'house' : null;
   }
 
   /* the shown value of a job fact (DE > Matt > Asana > …), else what core holds */

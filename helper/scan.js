@@ -7,8 +7,9 @@
                names alike: { floorplan, showsheet, photos (edited), brochure }
        missing the folder isn't there any more
      await scanAll({ client, driveRoot, now })
-       scans every linked listing and pitch (never developments, D30),
-       stores `scan` and marks a vanished folder 'broken'. It never moves the
+       scans every linked listing and pitch, stores `scan` and marks a
+       vanished folder 'broken'; and (7b-1, 0023) each linked development's
+       top folders as devScan(abs) sees them (never its stage, D30). It never moves the
        stage: that is Asana's (D50, S8); the pieces found feed Match's M8.
 
    Sidecar and system files (.xmp, .xmpses, desktop.ini, Thumbs.db, ~$ and
@@ -183,6 +184,45 @@ function richScan(abs, tree, r) {
   return { folderUrl: driveLink(abs, true), pieces, health: { notes: h.notes, counts: h.counts }, detailsDoc: h.detailsDoc };
 }
 
+/* A development's folder (overhaul 7b-1, 0023): they don't follow the job standard (Casa Avenida's
+   "0 - Approved Asset Collection", 619 Bradley's "FINAL RENDERS"), so the scan keeps the folder as it is:
+   each top folder with its Drive link, file count, newest date and newest five finished files (a PDF,
+   a picture, a video; working files like .ai or .c4d are counted, not listed). Paperwork folders and
+   names are skipped before they are read, like everywhere else; nothing is opened. */
+const FINISHED = /\.(pdf|jpe?g|png|gif|webp|mp4|mov)$/i;
+/* every teammate sees this card, and a development's folder also holds its money (Casa Avenida's wire
+   report): a name with a money word is skipped like paperwork; the budget has its own card (owner, admin, ops) */
+const DEV_MONEY = /(^|[^a-z])(wires?|invoices?|budgets?|payments?|draws?|loans?|banks?|financ\w*|pro ?formas?|escrows?|deposits?)([^a-z]|$)/i;
+const DEV_FILES_MAX = 3000;   // a 3D-assets folder can hold thousands of textures: count up to here
+function devScan(abs) {
+  const read = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; } };
+  const skip = e => e.name.startsWith('.') || RULES.isPaperwork(e.name) || DEV_MONEY.test(e.name) || (!e.isDirectory() && RULES.isJunk(e.name));
+  const groups = [];
+  let looseTop = 0;
+  read(abs).forEach(e => {
+    if (skip(e)) return;
+    if (!e.isDirectory()) { if (e.isFile()) looseTop++; return; }
+    const top = path.join(abs, e.name), files = [];
+    (function walk(dir, left) {
+      read(dir).forEach(c => {
+        if (skip(c) || files.length >= DEV_FILES_MAX) return;
+        const p = path.join(dir, c.name);
+        if (c.isDirectory()) { if (left > 1) walk(p, left - 1); return; }
+        if (!c.isFile()) return;
+        let modified = null;
+        try { modified = fs.statSync(p).mtime.toISOString(); } catch (err) { /* no date */ }
+        files.push({ name: c.name, abs: p, modified });
+      });
+    })(top, 4);
+    const newest = files.reduce((m, f) => (f.modified && f.modified > m ? f.modified : m), '');
+    const shown = files.filter(f => FINISHED.test(f.name)).sort((a, b) => String(b.modified).localeCompare(String(a.modified))).slice(0, 5)
+      .map(f => ({ name: f.name, modified: f.modified, url: driveLink(f.abs, false) }));
+    groups.push({ name: e.name, url: driveLink(top, true), count: files.length, newest: newest || null, files: shown });
+  });
+  groups.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return { folderUrl: driveLink(abs, true), groups, looseTop };
+}
+
 async function scanAll(o) {
   const { client } = o;
   const now = o.now || new Date();
@@ -258,12 +298,23 @@ async function scanAll(o) {
       } catch (e) { if (e.name !== 'ConflictError') throw e; }
     }
   }
+  // the developments' folders (0023): linked and not archived; a vanished folder is left for Match to report
+  let devs = [];
+  try { devs = await client.select('dev_projects'); } catch (e) { say('Development folders not scanned: ' + e.message); }
+  for (const r of (devs || []).filter(x => x.drive_folder && x.folder_state !== 'unlinked' && !x.archived_at)) {
+    const abs = path.join(o.driveRoot, ...r.drive_folder.split('/'));
+    if (!fs.existsSync(abs)) continue;
+    out.scanned++;
+    try {
+      await client.update('dev_projects', { id: r.id }, { scan: Object.assign({ scannedAt: now.toISOString() }, devScan(abs)) }, { version: r.version });
+    } catch (e) { if (e.name !== 'ConflictError') throw e; }
+  }
   await client.update('sync_runs', { id: run.id }, { finished_at: new Date().toISOString(), ok: true, changes: out.broken,
     rows_read: { jobs: out.scanned } });
   return out;
 }
 
-module.exports = { scanFolder, treeOf, scanAll, mondayOf, candidateFor, driveLister };
+module.exports = { scanFolder, treeOf, devScan, scanAll, mondayOf, candidateFor, driveLister };
 
 if (require.main === module) {
   const { loadConfig } = require('./config.js');

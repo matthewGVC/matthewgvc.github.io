@@ -106,7 +106,8 @@ const USERS = {
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
   check('tables', tables, ['asana_people', 'asana_tasks'].concat(UPTO >= '0021' ? ['asana_writes'] : [], ['changes', 'de_listings'], UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
-    .concat(UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches', 'properties', 'sync_runs', 'todos']));
+    .concat(UPTO >= '0022' ? ['google_tokens'] : [], UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches', 'properties', 'sync_runs', 'todos']));
+  if (UPTO >= '0023') check('0023: a development keeps its folder scan', (await db.query(`select data_type from information_schema.columns where table_name = 'dev_projects' and column_name = 'scan'`)).rows, [{ data_type: 'jsonb' }]);
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
     'drive_folder', 'folder_state', 'scan', 'photo_hero', 'photo_order', 'version', 'updated_by', 'from_pitch_id',

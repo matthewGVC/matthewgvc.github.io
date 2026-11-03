@@ -8,7 +8,7 @@
 'use strict';
 
 const fs = require('fs'), os = require('os'), path = require('path');
-const { scanFolder, mondayOf, scanAll, treeOf } = require('../helper/scan.js');
+const { scanFolder, mondayOf, scanAll, treeOf, devScan } = require('../helper/scan.js');
 const { due } = require('../helper/schedule.js');
 
 let pass = 0;
@@ -74,8 +74,21 @@ function file(root, rel, date) {
       { id: 'c', slug: 'c', version: 1, stage: 'Prep', stage_source: 'Matt', drive_folder: 'NY/GONE', folder_state: 'linked' },
       { id: 'd', slug: 'd', version: 1, stage: null, drive_folder: null, folder_state: 'unlinked' }
     ],
-    pitches: [], changes: [], sync_runs: []
+    pitches: [], changes: [], sync_runs: [],
+    dev_projects: [
+      { id: 'dv', version: 1, drive_folder: 'NJ/Dev', folder_state: 'linked' },
+      { id: 'dx', version: 1, drive_folder: 'NJ/Old', folder_state: 'linked', archived_at: '2026-10-01T00:00:00Z' }
+    ]
   };
+  file(root, 'NJ/Dev/FINAL RENDERS/front.jpg', '2026-10-03');
+  file(root, 'NJ/Dev/FINAL RENDERS/scene.c4d', '2026-10-04');
+  file(root, 'NJ/Dev/Floorplan/Plans/1ST.pdf', '2026-10-01');
+  file(root, 'NJ/Dev/Reporting/Wire Report_6.27.pdf', '2026-10-05');
+  file(root, 'NJ/Dev/Reporting/p1.jpg', '2026-10-02');
+  file(root, 'NJ/Dev/Contracts/sale.pdf', '2026-10-02');
+  file(root, 'NJ/Dev/Budget 2026/b.pdf', '2026-10-02');
+  file(root, 'NJ/Dev/notes.gdoc', '2026-10-02');
+  file(root, 'NJ/Old/Renders/a.jpg', '2026-10-02');
   const db = {
     ready: () => true,
     select: async t => JSON.parse(JSON.stringify(T[t])),
@@ -83,7 +96,14 @@ function file(root, rel, date) {
     update: async (t, m, patch) => { const r = T[t].find(x => x.id === m.id); Object.assign(r, patch); return [r]; }
   };
   const out = await scanAll({ client: db, driveRoot: root, now: new Date('2026-10-20T02:00:00Z') });
-  check('scanned the linked ones', out.scanned, 3);
+  check('scanned the linked ones and the development', out.scanned, 4);
+  const ds = T.dev_projects[0].scan;
+  check('development: its own top folders, paperwork and money never listed', ds.groups.map(g => g.name), ['FINAL RENDERS', 'Floorplan', 'Reporting']);
+  check('development: counts every file, lists finished ones only', ds.groups.map(g => [g.count, g.files.map(f => f.name)]),
+    [[2, ['front.jpg']], [1, ['1ST.pdf']], [1, ['p1.jpg']]]);
+  check('development: newest date and loose top files', [ds.groups[0].newest.slice(0, 10), ds.looseTop, !!ds.scannedAt], ['2026-10-04', 1, true]);
+  check('an archived development is not scanned', T.dev_projects[1].scan, undefined);
+  check('devScan reads names only', JSON.stringify(devScan(path.join(root, 'NJ', 'Dev'))).indexOf('Wire'), -1);
   check('scan stored', Object.keys(T.properties[0].scan.weeks), ['2026-09-28']);
   check('the folder never moves the stage', [T.properties[0].stage, T.properties[0].stage_source, 'folderStage' in require('../helper/scan.js')], ['Prep', 'Asana', false]);
   check('pieces found are kept in the scan', T.properties[0].scan.found, { floorplan: '2026-10-01' });
@@ -126,7 +146,7 @@ function file(root, rel, date) {
       { id: 'x1', slug: 'x1', version: 1, stage: null, market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'o1', slug: 'o1', version: 1, stage: 'Off market', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' }
     ],
-    pitches: [], changes: [], sync_runs: []
+    pitches: [], changes: [], sync_runs: [], dev_projects: []
   };
   let writes2 = 0;
   const db2 = {
@@ -184,7 +204,7 @@ function file(root, rel, date) {
       nj('a6', { core: { address: '1 Linked Rd' }, drive_folder: RS + '/Edison/Linked Job', folder_state: 'linked' }),
       nj('a7', { core: { address: '3 Madeup Rd' } }),                                   // the AI names a folder not on the list
       nj('a8', { core: { address: '4 Broken Rd' } })                                    // the call fails
-    ], pitches: [], changes: [], sync_runs: [] };
+    ], pitches: [], changes: [], sync_runs: [], dev_projects: [] };
     const dbA = {
       ready: () => true,
       select: async t => JSON.parse(JSON.stringify(TA[t])),
@@ -279,7 +299,7 @@ function file(root, rel, date) {
   const T3 = { properties: [
     { id: 'p', slug: 'p', version: 1, stage: 'Live', market: 'NYC', drive_folder: JF, folder_state: 'linked',
       scan: { candidate: 'GVC - New York/Somewhere', candidateAt: '2026-10-01T02:00:00Z', weeks: { old: 1 } } }
-  ], pitches: [], changes: [], sync_runs: [] };
+  ], pitches: [], changes: [], sync_runs: [], dev_projects: [] };
   const db3 = {
     ready: () => true,
     select: async t => JSON.parse(JSON.stringify(T3[t])),

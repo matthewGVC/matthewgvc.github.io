@@ -500,7 +500,24 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
   check('units: a development with no known street has no Units card', await t.page.$('#unitsCard'), null);
   await t.ctx.close();
-  t = await open(browser, { phone: true, path: '/workspace/job/?dev=619-example-ave' });
+  /* overhaul 7b-1: a development's Marketing materials, from the nightly scan of its folder (0023) */
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
+  check('dev files: no card before the first scan', await t.page.$('#devFilesCard'), null);
+  await t.ctx.close();
+  const RF = rowsFor();
+  RF.dev_projects[0].scan = { scannedAt: '2026-11-03T07:00:00Z', folderUrl: 'https://drive.google.com/drive/folders/root1', looseTop: 2, groups: [
+    { name: 'FINAL RENDERS', url: 'https://drive.google.com/drive/folders/f1', count: 29, newest: '2026-10-19T12:00:00Z',
+      files: [{ name: 'Left_Front.jpg', modified: '2026-10-19T12:00:00Z', url: 'https://drive.google.com/file/d/a1/view' }, { name: 'odd.png', modified: '2026-10-18T12:00:00Z', url: 'javascript:alert(1)' }] },
+    { name: 'Site Plan', url: null, count: 1, newest: '2026-05-15T12:00:00Z', files: [] }] };
+  t = await open(browser, { rows: RF, path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Karl Brisard', initials: 'KB', role: 'ops' }] });
+  check('dev files: each folder, its count and newest files; a teammate opens, never makes', [await text(t.page, '#devFilesCard p'),
+    await t.page.$$eval('#devFilesCard [data-dev-folder]', rs => rs.map(r => r.dataset.devFolder + ' | ' + r.querySelector('.d').textContent + ' | ' + r.querySelectorAll('a').length)),
+    await t.page.$$eval('#devFilesCard a', as => as.map(a => a.getAttribute('href'))),
+    /Make|Rebuild/.test(await text(t.page, '#devFilesCard')), t.errors],
+    ['What is in its Drive folder, read each night (3 Nov).', ['FINAL RENDERS | 29 files · newest 19 Oct | 2', 'Site Plan | 1 file · newest 15 May | 0'],
+      ['https://drive.google.com/file/d/a1/view', 'https://drive.google.com/drive/folders/f1'], false, []]);
+  await t.ctx.close();
+  t = await open(browser, { phone: true, rows: RF, path: '/workspace/job/?dev=619-example-ave' });
   check('build: no sideways page scroll on a phone', await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   await t.ctx.close();
 

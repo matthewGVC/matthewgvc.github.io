@@ -8,6 +8,49 @@ scripts are not lessons: they live in the code and its tests.
 (Pruned 2026-10-30: lessons already moved into the other files, fixed in the scripts, or overruled by
 a later one were taken out.)
 
+## 2026-11-03: 806 Riverview Dr v2 (Matt: "first floor is missing a ton")
+- **A house's plan includes its whole site's hardscape.** v1 drew only the house and left out the decks,
+  the pool, the paths, the outdoor kitchen, the pergola and the fire-pit patio as "landscape". Matt wanted
+  them all, and the roofs below on the upper floor too.
+  - Leave out only planting: lawn, trees, hedges, shrubs and mulch beds.
+  - Crop the floor's picture to the whole site, not the house.
+  - On an upper floor, draw each roof below as a `roof` area, with the hips, ridges and caps the source
+    draws. Draw a pergola seen from above as its girders and rafters (closed `lines`).
+- **Surfaces:**
+  - A wood deck is a plain `terrace`; brick is `brick-patio`; stone coping is `pavers`.
+  - The house style has no water, so a pool's water is a `floor` with the `tile` swatch, outlined with an
+    open line.
+  - Cut the house out of each terrace (its walls plus its openings, unioned and closed:
+    `first_out.house_outline` in the 806 job's `gen/`), so the terrace's edge runs under the outer walls.
+- **Many small pieces (stepping stones, pavers):** lift them from the picture with a colour mask
+  (low-saturation grey) and a `minimum_rotated_rectangle` per piece. Don't measure each one.
+- **A curved mass that the clean-up squared off** (a curved fireplace wall with cubbies): fit its circle
+  to the inner edge, then replace everything traced in that sector with the source's own black pixels
+  (contours, `simplify(0.9)`), added after `C.clean`. Concentric site pieces (a round patio, its bench)
+  then share the fitted centre.
+- **Moving a level onto a new crop:** shift every coordinate, including `walls` entries (`a`/`b`). A
+  sliding panel on a `walls` entry was left behind once.
+- **A label over a patterned terrace:** make it a room with `"backing": true`. The joints check rings
+  brick-pattern cells that meet a wall face; those are not gaps.
+
+## 2026-11-03: 806 Riverview Dr (NJ architect PDF, three floors, a big page)
+
+- **`trace-walls.py` drops any piece under 4% of the picture's width.** On a page this size (about 5,000 px)
+  that is 200 px, so the short solid wall stubs between windows and the closet returns vanished. Trace with a
+  copy whose small-piece rule keeps short solid stubs (the job's `gen/trace806.py`), on the black-only picture,
+  which is already clean of text.
+- **Windows drawn over a solid wall:** some of the architect's windows are a thin frame laid across (or on the
+  face of) an unbroken black wall, so the trace has no gap there. Cut a box the window's length out of the
+  solids, then draw the window across the cut.
+- **`clean_solids.clean` steps a curved wall.** It squares near-level edges, so a traced arc comes back as
+  facets and stairs. Put the arc back on its circle *after* the clean (fit a circle to the ring's points in the
+  curve and resample it), both faces.
+- **Lines don't count when a sheet is fitted** (second time; 366 N 3rd was the first): the basement's garage-slab
+  outline, drawn as dashed lines, fell off its sheet. A `floor` area under it keeps it on.
+- **A room narrower than its name:** small labels can't turn, so put the name in the space at its door (LAUNDRY
+  in the hall). Three floors in a row make a small all-floors sheet: set `allSheet.textScale` (0.45 here), then
+  set the names fit-labels still lists by hand with `allScale` and `allLock`.
+
 ## 2026-10-28: 366 N 3rd v3, Matt's markups on v2 (pink = wrong or missing, red circle = joint, red tick = good)
 
 - **Arcs outside a wall are doors, not casements.** The first floor's west wall had swing arcs outside

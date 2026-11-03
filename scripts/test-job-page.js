@@ -473,6 +473,22 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate'),
     await t.page.$$eval('#ovCard .k', e => e.map(k => k.textContent))], [true, null, false, ['Work items', 'Next on the schedule', 'Past target']]);
   await t.ctx.close();
+  /* overhaul 7b: a development's units, from Elliman's listings at its street */
+  const RU = rowsFor();
+  RU.dev_projects.push({ id: 'd2', slug: 'le-reve', label: 'Le Reve', market: 'FL', version: 1, milestones: {}, asana_map: {}, milestone_hints: [] });
+  const de = (id, unit, status, price) => ({ de_listing_id: id, raw: { street: '200 E Boca Raton Rd', unit, city: 'Boca Raton', beds: 4, baths: 4, halfBaths: 1, sqft: 4200, price, status,
+    listingUrl: 'https://www.elliman.com/listing/x/' + id } });
+  RU.de_listings = [de('1', 'E', 'Active', 5550000), de('2', 'C', 'Pending', 4499000), de('3', 'B', 'Active', 4799000),
+    { de_listing_id: '4', raw: { street: '12 Other St', unit: '1', status: 'Active', price: 1 } }];
+  t = await open(browser, { rows: RU, path: '/workspace/job/?dev=le-reve' });
+  check('units: Elliman\'s units at its street, for sale first, in plain words', [await text(t.page, '#unitsCard p'),
+    await t.page.$$eval('#unitsCard tbody tr', rs => rs.map(r => r.cells[0].textContent + ' ' + r.cells[3].textContent + ' ' + r.cells[4].textContent)),
+    (await text(t.page, '.hd .sub')).includes('200 E Boca Raton Rd, Boca Raton'), t.errors],
+    ['2 for sale · 1 in contract. As listed on Elliman, read each morning.', ['B $4,799,000 For sale', 'E $5,550,000 For sale', 'C $4,499,000 In contract'], true, []]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
+  check('units: a development with no known street has no Units card', await t.page.$('#unitsCard'), null);
+  await t.ctx.close();
   t = await open(browser, { phone: true, path: '/workspace/job/?dev=619-example-ave' });
   check('build: no sideways page scroll on a phone', await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   await t.ctx.close();

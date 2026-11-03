@@ -208,6 +208,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/agents.js"></script>
 <script src="../../assets/js/job-page/log.js"></script>
 <script src="../../assets/js/job-page/dev.js"></script>
+<script src="../../assets/js/job-page/units.js"></script>
 <script src="../../assets/js/dev-build.js"></script>
 <script src="../../assets/js/job-page/build.js"></script>
 <!-- Drive cards: the folder tree and health, the marketing track, floorplans, photos, the details doc.
@@ -272,7 +273,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         // the pieces asked of the helper (0017); unreadable (0017 not run yet) means none
         kind === 'listing' || kind === 'pitch' ? requestsOf(row) : Promise.resolve([]),
         // a development's own house listings: where it is and who sells it (overhaul 7a)
-        kind === 'dev' ? rest('/properties?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=core').catch(function () { return []; }) : Promise.resolve([])
+        kind === 'dev' ? rest('/properties?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=core').catch(function () { return []; }) : Promise.resolve([]),
+        // a development's units as Elliman lists them, at its street (overhaul 7b)
+        kind === 'dev' && GVC_DEV_ADDRESSES.of(row.slug).length ? rest('/de_listings?gvc_listed=is.true&ignored=is.false&select=de_listing_id,raw').catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
@@ -283,6 +286,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         state.requests = r[7] || [];
         state.houses = r[8] || [];
+        state.units = JP.units.of(r[9], row.slug);
         JP.canEdit = state.me.role === 'owner';
         JP.canAsk = ASKERS.indexOf(state.me.role) !== -1;
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
@@ -306,7 +310,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, canAsk: JP.canAsk, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, onSheet: paintRebuild };
+      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, onSheet: paintRebuild };
   }
 
   /* ---------- 0017: the helper makes the pieces (overturns D89, D91) ----------
@@ -474,7 +478,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     // a development: its street and town, and its agents, from its house listings and its known street (overhaul 7a)
     if (kind === 'dev') {
       var hc = (state.houses || []).map(function (h) { return h.core || {}; });
-      var town = hc.map(function (c) { return c.city; }).filter(Boolean)[0] || '';
+      var town = hc.map(function (c) { return c.city; }).concat((state.units || []).map(function (u) { return u.city; })).filter(Boolean)[0] || '';
       var street = (window.GVC_DEV_ADDRESSES && GVC_DEV_ADDRESSES.of ? GVC_DEV_ADDRESSES.of(r.slug) : [])[0] || '';
       var where = [street, town].filter(Boolean).join(', ');
       if (where) sub.push(esc(where));
@@ -515,7 +519,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<div id="topHost">' + tiles() + '</div>' +
       // the pieces made from the job sit near the top, under the facts (Slice 5, S16)
       (kind === 'listing' || kind === 'pitch' ? '<div id="piecesHost">' + JP.kit.piecesHtml(c, (r.scan && r.scan.pieces) || {}, false) + '</div>' : '') +
-      (kind === 'dev' ? '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
+      (kind === 'dev' ? JP.units.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
     if ($('piecesHost')) JP.kit.wirePieces(c);

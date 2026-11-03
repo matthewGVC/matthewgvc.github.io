@@ -192,11 +192,12 @@ function richScan(abs, tree, r) {
 const FINISHED = /\.(pdf|jpe?g|png|gif|webp|mp4|mov)$/i;
 /* every teammate sees this card, and a development's folder also holds its money (Casa Avenida's wire
    report): a name with a money word is skipped like paperwork; the budget has its own card (owner, admin, ops) */
-const DEV_MONEY = /(^|[^a-z])(wires?|invoices?|budgets?|payments?|draws?|loans?|banks?|financ\w*|pro ?formas?|escrows?|deposits?)([^a-z]|$)/i;
+const DEV_MONEY = /(^|[^a-z])(wires?|invoices?|budgets?|payments?|draws?|loans?|banks?|financ\w*|pro ?formas?|escrows?|deposits?|proposals?)([^a-z]|$)/i;
 const DEV_FILES_MAX = 3000;   // a 3D-assets folder can hold thousands of textures: count up to here
 function devScan(abs) {
   const read = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; } };
-  const skip = e => e.name.startsWith('.') || RULES.isPaperwork(e.name) || DEV_MONEY.test(e.name) || (!e.isDirectory() && RULES.isJunk(e.name));
+  // "6 - Documents": a development numbers its folders, so the paperwork rule reads past the number
+  const skip = e => e.name.startsWith('.') || RULES.isPaperwork(e.name) || RULES.isPaperwork(e.name.replace(/^\d+\s*[-.)]\s*/, '')) || DEV_MONEY.test(e.name) || (!e.isDirectory() && RULES.isJunk(e.name));
   const groups = [];
   let looseTop = 0;
   read(abs).forEach(e => {

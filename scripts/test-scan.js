@@ -88,6 +88,8 @@ function file(root, rel, date) {
   file(root, 'NJ/Dev/Contracts/sale.pdf', '2026-10-02');
   file(root, 'NJ/Dev/Budget 2026/b.pdf', '2026-10-02');
   file(root, 'NJ/Dev/notes.gdoc', '2026-10-02');
+  file(root, 'NJ/Dev/6 - Documents/scope.pdf', '2026-10-02');
+  file(root, 'NJ/Dev/Floorplan/Project Proposal.pdf', '2026-10-09');
   file(root, 'NJ/Old/Renders/a.jpg', '2026-10-02');
   const db = {
     ready: () => true,

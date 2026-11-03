@@ -4,7 +4,7 @@
      node helper/weekly-report.js --preview [--market NJ] [--date 2026-11-08]
        reads the jobs and writes exports/weekly-report-<date>[-<market>].html.
      node helper/weekly-report.js --send
-       sends this week's email now, from helper@gvcrealestateteam.com.
+       sends this week's email now, from Matt's Google account (helper/mail/).
 
    The helper sends it itself on Sundays at 18:00 (schedule.js) once its
    Gmail sign-in is saved (helper/mail/sign-in.js). It goes to weeklyTo in the

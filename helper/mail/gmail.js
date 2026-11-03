@@ -1,6 +1,8 @@
 /* ============================================================
-   GMAIL — the helper sends the Sunday email as helper@gvcrealestateteam.com
-   (overhaul step 3, docs/overhaul-plan.md).
+   GMAIL — the helper sends the Sunday email from Matt's Google account
+   (overhaul step 3, docs/overhaul-plan.md). helper@ is only the helper's
+   database login, not a mailbox (11-03); mailFrom in the helper's config
+   names another account if one is made.
 
    `node helper/mail/sign-in.js` stores a refresh token for one permission,
    gmail.send ("Send email on your behalf"), in the helper's home
@@ -20,7 +22,8 @@ const fs = require('fs'), path = require('path');
 const SCOPE = 'https://www.googleapis.com/auth/gmail.send';
 const SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const FROM = 'GVC Workspace <helper@gvcrealestateteam.com>';
+const SENDER = 'matthew@gvcrealestateteam.com';   // the account signed in by sign-in.js
+const FROM = 'GVC Workspace <' + SENDER + '>';
 const REPLY_TO = 'matthew@gvcrealestateteam.com';   // a reply reaches Matt, not the helper's mailbox
 
 function mailFile(cfg) { return cfg.googleMailFile || path.join(cfg.home || '', 'google-mail.json'); }
@@ -57,11 +60,11 @@ function createMail(cfg, opts) {
   }
   async function send(m) {
     const r = await call(SEND_URL, { method: 'POST', headers: { authorization: 'Bearer ' + await signIn(), 'content-type': 'application/json' },
-      body: JSON.stringify({ raw: b64url(mime(m)) }) });
+      body: JSON.stringify({ raw: b64url(mime(Object.assign({ from: cfg.mailFrom ? 'GVC Workspace <' + cfg.mailFrom + '>' : FROM }, m))) }) });
     if (!r.ok) throw new Error('Gmail answered ' + r.status + ' when sending');
     return (await r.json()).id;
   }
   return { ready, send };
 }
 
-module.exports = { createMail, mime, mailFile, SCOPE, FROM };
+module.exports = { createMail, mime, mailFile, SCOPE, FROM, SENDER };

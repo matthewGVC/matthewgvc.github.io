@@ -24,7 +24,7 @@ check('notes under What changed; pieces made under Marketing', [/What changed th
 /* sending: the raw message, the Sunday slot, and one send to Matt */
 const G = require('../helper/mail/gmail.js');
 const raw = G.mime({ to: ['matthew@gvcrealestateteam.com'], subject: 'GVC week to 8 Nov · New Jersey', html: '<p>Hi</p>' });
-check('the message: from the helper, replies to Matt, the subject encoded', [/^From: GVC Workspace <helper@gvcrealestateteam.com>/.test(raw), /Reply-To: matthew@gvcrealestateteam.com/.test(raw),
+check('the message: from GVC Workspace at Matt address, replies to Matt, the subject encoded', [/^From: GVC Workspace <matthew@gvcrealestateteam.com>/.test(raw), /Reply-To: matthew@gvcrealestateteam.com/.test(raw),
   /Subject: =\?UTF-8\?B\?/.test(raw), Buffer.from(raw.split('\r\n\r\n')[1], 'base64').toString()], [true, true, true, '<p>Hi</p>']);
 const { due } = require('../helper/schedule.js');
 const at = s => new Date(s), ran = { de: at('2026-11-08T07:00:00'), scan: at('2026-11-08T02:00:00'), backup: at('2026-11-08T02:30:00') };

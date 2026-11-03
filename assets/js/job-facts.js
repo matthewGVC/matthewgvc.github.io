@@ -149,7 +149,8 @@
 
   /* ---------- the fields the job page shows (facts dictionary §1-§5) ---------- */
 
-  var BADGE = { DE: 'DE', Matt: 'Matt', Asana: 'Asana', form: 'form', doc: 'doc', legacy: 'earlier tool' };
+  // 'Matt' is the team's own value, typed in the workspace by anyone since overhaul 4b; it shows as Team
+  var BADGE = { DE: 'DE', Matt: 'Team', Asana: 'Asana', form: 'form', doc: 'doc', legacy: 'earlier tool' };
 
   var TYPES = ['Co-op', 'Condo', 'Condop', 'Townhouse', 'Single family', 'Other'];
   var HOUSES = ['Townhouse', 'Single family', 'Other'];

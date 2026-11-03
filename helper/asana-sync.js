@@ -1,6 +1,7 @@
 /* ============================================================
-   ASANA SYNC — reads Asana (read-only, D77) and writes it into the workspace.
-   Nothing is ever written to Asana, and nothing here touches Drive.
+   ASANA SYNC — reads Asana and writes it into the workspace. It never writes
+   to Asana (the team's edits go out through asana-write.js, migration 0021),
+   and nothing here touches Drive.
 
      node helper/asana-sync.js --whoami
      node helper/asana-sync.js --dry-run [--record]

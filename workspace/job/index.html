@@ -288,6 +288,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         state.houses = r[8] || [];
         state.units = JP.units.of(r[9], row.slug);
         JP.canEdit = state.me.role === 'owner';
+        // the facts are everyone's to edit, each person signed in as themselves (overhaul 4b, 0020); the shared sign-in only reads
+        JP.canFacts = EDITORS.indexOf(state.me.role) !== -1;
         JP.canAsk = ASKERS.indexOf(state.me.role) !== -1;
         var data = { properties: [], pitches: [], devProjects: [], changes: state.changes };
         if (kind === 'listing') { data.properties = [row]; data.pitches = r[1] || []; }
@@ -310,7 +312,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, canAsk: JP.canAsk, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, onSheet: paintRebuild };
+      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, canFacts: JP.canFacts, onSheet: paintRebuild };
   }
 
   /* ---------- 0017: the helper makes the pieces (overturns D89, D91) ----------
@@ -319,6 +321,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
      piece already waiting joins that request. The page follows the requests and reloads once the
      helper has finished one, so the row shows the file it made. */
   var ASKERS = ['owner', 'admin', 'marketing'];   // making pieces is marketing's: agents use them (Matt, 11-02; 0019)
+  var EDITORS = ['owner', 'admin', 'marketing', 'ops', 'team'];   // who edits the facts (0020)
   function requestsOf(row) {
     return rest('/piece_requests?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=asked_at.desc&limit=40').catch(function () { return []; });
   }

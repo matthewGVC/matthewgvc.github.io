@@ -35,6 +35,7 @@ const STUBS = `
   create role anon nologin; create role authenticated nologin;
   create schema auth;
   create table auth.users (id uuid primary key default gen_random_uuid(), email text unique);
+  create table auth.identities (user_id uuid references auth.users(id), provider text, email text);
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
@@ -104,8 +105,8 @@ const USERS = {
 
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
-  check('tables', tables, ['asana_people', 'asana_tasks', 'changes', 'de_listings'].concat(UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
-    .concat(UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches', 'properties', 'sync_runs', 'todos']));
+  check('tables', tables, ['asana_people', 'asana_tasks'].concat(UPTO >= '0021' ? ['asana_writes'] : [], ['changes', 'de_listings'], UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
+    .concat(UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches', 'properties', 'sync_runs', 'todos']));
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
     'drive_folder', 'folder_state', 'scan', 'photo_hero', 'photo_order', 'version', 'updated_by', 'from_pitch_id',
@@ -325,8 +326,9 @@ const USERS = {
     check('empty set ignores a stale version and changes nothing', [e1.version, await ver('properties', pid)], [v, v]);
     check('empty set still logs both rows', await count('property_id = $1 and (field = $2 or note = $3)', pid, 'floorplan', 'called the agent'), 2);
 
-    // roles: team (role 'team' and the old 'shared' account) may only add notes
-    for (const who of ['teamrole', 'team']) {
+    // roles: team (role 'team' and the old 'shared' account) may only add notes; from 0021 a named
+    // team member edits the facts (checked under 0021), so only the shared account is left here
+    for (const who of UPTO >= '0021' ? ['team'] : ['teamrole', 'team']) {
       const n0 = await count('property_id = $1', pid);
       check(who + ': fact change refused', await sjErr(who, 'properties', pid, v, { core: { price: 9 } }, [{ field: 'price', new_value: 9 }]), 'not allowed');
       check(who + ': stage refused', await sjErr(who, 'properties', pid, v, { stage: 'Archived' }, []), 'not allowed');
@@ -566,12 +568,14 @@ const USERS = {
     }
     if (UPTO >= '0014') {
       const LOCK = "Only Marketing can change a listing's details.";
-      check("0014: a plain team member can't change a job's facts", [
+      // from 0020 everyone edits the facts (overhaul 4b): the lock keeps out only a non-member
+      const L14 = UPTO >= '0020' ? null : LOCK;
+      check(UPTO >= '0020' ? '0020: a plain team member edits the facts' : "0014: a plain team member can't change a job's facts", [
         await folderErr('teamrole', `update public.properties set core = '{"price": 1}' where id = $1`, [fp]),
         await folderErr('teamrole', `update public.properties set label = 'Elsewhere' where id = $1`, [fp]),
         await folderErr('teamrole', `update public.properties set asana_gid = 'x1' where id = $1`, [fp]),
         await folderErr('teamrole', `insert into public.properties (slug, label) values ('14-facts-st', '14 Facts St')`),
-        await folderErr('teamrole', `insert into public.pitches (slug, label) values ('p-14', 'P 14')`)], [LOCK, LOCK, LOCK, LOCK, LOCK]);
+        await folderErr('teamrole', `insert into public.pitches (slug, label) values ('p-14', 'P 14')`)], [L14, L14, L14, L14, L14]);
       check('0014: a plain team member still saves the rest of the row', await folderErr('teamrole', `update public.properties set folder_state = 'linked' where id = $1`, [fp]), null);
       check('0014: the shared sign-in still saves facts (standalone tools)', await folderErr('team', `update public.properties set core = '{"price": 2}', label = '12 Folder St' where id = $1`, [fp]), null);
       check('0014: Matt and the helper still save facts', [
@@ -654,10 +658,55 @@ const USERS = {
     check('0017: the change log still refuses a made-up source', await fails('matt', `insert into public.changes (property_id, field, source) values ($1, 'x', 'Robot')`, [pr]), true);
   }
 
+  /* ---------- 0020: everyone signs in as themselves, with Google on the team domain ---------- */
+  if (UPTO >= '0020') {
+    const user = async (email, provider) => {
+      const u = (await db.query('insert into auth.users (email) values ($1) returning id', [email])).rows[0].id;
+      if (provider) await db.query('insert into auth.identities (user_id, provider, email) values ($1, $2, $3)', [u, provider, email]);
+      return u;
+    };
+    id.karl = await user('karl@gvcrealestateteam.com', 'google');
+    id.fake = await user('james@gvcrealestateteam.com', 'email');            // a password sign-up with someone's email
+    id.stranger = await user('someone@gmail.com', 'google');
+    check('0020: a Google sign-in on the invite list becomes that person', (await as('karl', 'select public.claim_member() r')).rows[0].r, { role: 'ops' });
+    check("0020: with the invite's name, role and market", (await db.query('select name, role, market, email from public.members where user_id = $1', [id.karl])).rows[0],
+      { name: 'Karl Brisard', role: 'ops', market: 'FL', email: 'karl@gvcrealestateteam.com' });
+    check('0020: claiming again changes nothing', (await as('karl', 'select public.claim_member() r')).rows[0].r, { role: 'ops' });
+    check("0020: a password account with a teammate's email claims nothing", [(await as('fake', 'select public.claim_member() r')).rows[0].r,
+      (await db.query('select count(*)::int n from public.members where user_id = $1', [id.fake])).rows[0].n], [null, 0]);
+    check('0020: a Google account not on the list claims nothing', (await as('stranger', 'select public.claim_member() r')).rows[0].r, null);
+    check('0020: an ops manager reads the jobs and edits facts', [(await as('karl', 'select count(*)::int n from public.properties')).rows[0].n > 0,
+      (await as('karl', 'select public.may_edit_facts() r')).rows[0].r, (await as('karl', 'select public.may_read_budgets() r')).rows[0].r], [true, true, true]);
+    check('0020: only Matt reads the invite list', [(await as('karl', 'select count(*)::int n from public.invites')).rows[0].n,
+      (await as('matt', 'select count(*)::int n from public.invites')).rows[0].n > 10], [0, true]);
+    check('0020: an ops manager may not make pieces', (await as('karl', 'select public.may_ask_piece() r')).rows[0].r, false);
+  }
+
+  /* ---------- 0021: the team edits the facts, and each edit is queued for Asana ---------- */
+  if (UPTO >= '0021') {
+    const ap = (await db.query(`insert into public.properties (slug, label, asana_gid, core) values ('21-asana-st', '21 Asana St', 'task21', '{"price": 100}') returning id, version`)).rows[0];
+    const save = (who, set, changes, v) => as(who, 'select public.save_job($1, $2, $3, $4, $5) r', ['properties', ap.id, v, JSON.stringify(set), JSON.stringify(changes)]);
+    const r1 = (await save('karl', { core: { price: 200 } }, [{ field: 'price', old_value: 100, new_value: 200 }], ap.version)).rows[0].r;
+    check('0021: an ops manager saves a fact', r1.core.price, 200);
+    const q = (await db.query('select task_gid, field, asana_field, value, asked_by, status from public.asana_writes where property_id = $1', [ap.id])).rows;
+    check('0021: the edit waits for Asana, in their name', q, [{ task_gid: 'task21', field: 'price', asana_field: '💵 Current Price', value: 200, asked_by: 'Karl Brisard', status: 'waiting' }]);
+    await save('karl', { core: { price: 250 } }, [{ field: 'price', old_value: 200, new_value: 250 }], r1.version);
+    check('0021: a newer edit replaces the one still waiting', (await db.query('select value from public.asana_writes where property_id = $1', [ap.id])).rows, [{ value: 250 }]);
+    check('0021: the team may not change the stage', await fails('karl', 'select public.save_job($1, $2, $3, $4, $5)', ['properties', ap.id, r1.version + 1, '{"stage":"Live"}', '[]']), true);
+    check('0021: the shared sign-in still only adds notes', await fails('team', 'select public.save_job($1, $2, $3, $4, $5)', ['properties', ap.id, r1.version + 1, '{"core":{"price":1}}', '[]']), true);
+    await db.query(`insert into public.changes (property_id, field, new_value, source) values ($1, 'sqft', '900', 'Asana')`, [ap.id]);
+    await db.query(`insert into public.changes (property_id, field, new_value, source) values ($1, 'beds', '3', 'Matt')`, [ap.id]);
+    check('0021: what Asana said, and facts Asana has no field for, are not queued', (await db.query('select field from public.asana_writes where property_id = $1', [ap.id])).rows.map(r => r.field), ['price']);
+    check('0021: a page cannot add a write itself', await fails('matt', `insert into public.asana_writes (property_id, task_gid, field, asana_field) values ($1, 'x', 'price', 'p')`, [ap.id]), true);
+    check('0021: the helper marks it done; nobody else can', [await fails('karl', `update public.asana_writes set status = 'done'`),
+      (await as('helper', `update public.asana_writes set status = 'done', done_at = now() where property_id = $1 returning status`, [ap.id])).rows.length], [false, 1]);
+    check('0021: …and the team reads it', (await as('karl', 'select status from public.asana_writes where property_id = $1', [ap.id])).rows, [{ status: 'done' }]);
+  }
+
   /* ---------- the switch: the shared account stops ---------- */
   await db.query(`update public.members set active = false where role = 'shared'`);
   check('shared account switched off', (await as('team', 'select count(*)::int n from public.properties')).rows[0].n, 0);
-  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0017' ? 8 : UPTO >= '0012' ? 7 : UPTO >= '0009' ? 6 : UPTO >= '0007' ? 5 : 3);
+  check('matt unaffected', (await as('matt', 'select count(*)::int n from public.properties')).rows[0].n, UPTO >= '0021' ? 10 : UPTO >= '0020' ? 9 : UPTO >= '0017' ? 8 : UPTO >= '0012' ? 7 : UPTO >= '0009' ? 6 : UPTO >= '0007' ? 5 : 3);
 
   /* ---------- run before the accounts exist: refuse rather than lock everyone out ---------- */
   if (fresh.length) {

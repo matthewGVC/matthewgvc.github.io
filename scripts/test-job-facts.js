@@ -106,7 +106,7 @@ check('sale shows price, not rent', [names(coop).includes('price'), names(coop).
 check('core list has original price and MLS board', ['originalPrice', 'mlsBoard'].every(n => F.FIELDS.find(x => x.name === n && x.tier === 'core')), true);
 check('extras are tiered', F.FIELDS.filter(x => x.tier === 'extra').map(x => x.name).includes('ceilingHeight'), true);
 check('baths is its own kind', F.FIELDS.find(x => x.name === 'baths').kind, 'baths');
-check('BADGE', F.BADGE, { DE: 'DE', Matt: 'Matt', Asana: 'Asana', form: 'form', doc: 'doc', legacy: 'earlier tool' });
+check('BADGE', F.BADGE, { DE: 'DE', Matt: 'Team', Asana: 'Asana', form: 'form', doc: 'doc', legacy: 'earlier tool' });
 check('no dashes in labels', F.FIELDS.some(x => /[–—]/.test(x.label)), false);
 
 /* shown */
@@ -117,7 +117,7 @@ check('empty field: no badge', [get(sh, 'zip').value, get(sh, 'zip').badge], [nu
 let fx = F.applyFact({}, 'price', 'Asana', 2300000).facts;
 fx = F.applyFact(fx, 'price', 'Matt', 2250000).facts;
 sh = F.shown({ price: 2250000, facts: fx }, njHouse);
-check('shown: Matt badge', [get(sh, 'price').source, get(sh, 'price').badge], ['Matt', 'Matt']);
+check('shown: Matt badge', [get(sh, 'price').source, get(sh, 'price').badge], ['Matt', 'Team']);
 check('shown: others lists Asana', get(sh, 'price').others, [{ source: 'Asana', badge: 'Asana', value: 2300000 }]);
 check('shown: warn from warnOf', get(sh, 'price').warn, { source: 'Asana', value: 2300000 });
 fx = F.applyFact(F.applyFact({}, 'price', 'DE', 2400000).facts, 'price', 'Matt', 2250000).facts;

@@ -82,6 +82,25 @@
 
   function signOut() { me = null; keepSession(null); }
 
+  /* Sign in with Google (overhaul 4b, migration 0020): Supabase sends the person to
+     Google and back to this page with the session in the address's #fragment.
+     takeGoogleReturn() keeps it and clears the address; whoAmI() then claims the
+     person's place on the team (claim_member) the first time. */
+  function googleSignIn() {
+    var here = global.location.origin + global.location.pathname + global.location.search;
+    global.location.assign(CFG.url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(here));
+  }
+  function takeGoogleReturn() {
+    var h = String((global.location && global.location.hash) || '');
+    if (h.indexOf('access_token=') === -1) return false;
+    var q = new URLSearchParams(h.slice(1));
+    if (!q.get('access_token') || !q.get('refresh_token')) return false;
+    keepSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: +q.get('expires_in') || 3600 });
+    try { global.history.replaceState(null, '', global.location.pathname + global.location.search); } catch (e) { /* the address keeps the fragment */ }
+    return true;
+  }
+  try { takeGoogleReturn(); } catch (e) { /* not a page */ }
+
   /* Who is signed in: { email, name, initials, role } from the members table
      (migration 0004). For an account that isn't a member yet, the email
      stands in for the name and role is null. When the members table can't be
@@ -97,10 +116,15 @@
       }).then(function (r) { return r.json(); });
     }).then(function (u) {
       var fallback = { email: u.email, name: u.email, initials: (String(u.email || '').split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2) || '?').toUpperCase(), role: null };
-      return rest('/members?user_id=eq.' + encodeURIComponent(u.id) + '&select=name,initials,role')
+      var read = function () { return rest('/members?user_id=eq.' + encodeURIComponent(u.id) + '&select=name,initials,role,market'); };
+      var asWho = function (m) { return { email: u.email, name: m.name, initials: m.initials, role: m.role, market: m.market || null }; };
+      return read()
         .then(function (rows) {
-          var m = rows && rows[0];
-          return m ? { email: u.email, name: m.name, initials: m.initials, role: m.role } : fallback;
+          if (rows && rows[0]) return asWho(rows[0]);
+          // a first Google sign-in: take the person's place on the team (0020), then read again
+          return call('/rest/v1/rpc/claim_member', { method: 'POST', body: '{}' }).then(function (r) {
+            return r ? read().then(function (again) { return again && again[0] ? asWho(again[0]) : fallback; }) : fallback;
+          }, function () { return fallback; });
         }, function () { return Object.assign({}, fallback, { checkFailed: true }); });
     }).then(function (who) { if (!who.checkFailed) me = who; return who; });
   }
@@ -122,6 +146,8 @@
         '<form method="dialog" style="display:grid;gap:12px">' +
           '<h2 id="gvcSigninH" style="margin:0;font:400 22px/1.2 var(--serif,Georgia,serif)">Sign in</h2>' +
           '<p class="gvc-signin-why" style="margin:0;color:var(--ink-soft,#4a5a63);font-size:13.5px"></p>' +
+          '<button type="button" class="btn gvc-signin-google" style="justify-content:center">Sign in with Google</button>' +
+          '<p style="margin:2px 0 0;color:var(--ink-soft,#4a5a63);font-size:12.5px">Use your @gvcrealestateteam.com account. Or the team password:</p>' +
           '<label style="display:grid;gap:4px;font-size:13px">Email<input type="email" name="email" autocomplete="username" ' +
             'placeholder="Leave empty for the team password" style="font:inherit;padding:8px 10px;border:1px solid var(--rule,#c9c4b8);border-radius:6px;background:#fff;color:inherit"></label>' +
           '<label style="display:grid;gap:4px;font-size:13px">Password<input type="password" name="password" autocomplete="current-password" required ' +
@@ -138,6 +164,7 @@
       try { email.value = global.localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { /* no storage */ }
       var done = function (ok) { d.close(); d.remove(); resolve(ok); };
       d.querySelector('button[value=cancel]').addEventListener('click', function () { done(false); });
+      d.querySelector('.gvc-signin-google').addEventListener('click', function () { msg.textContent = 'Opening Google…'; googleSignIn(); });
       d.addEventListener('cancel', function (e) { e.preventDefault(); done(false); });
       d.querySelector('form').addEventListener('submit', function (e) {
         e.preventDefault();
@@ -165,7 +192,7 @@
       .then(function (r) {
         if (!r.ok || !r.body.access_token) {
           keepSession(null);
-          throw new Error('The library signed you out. Enter the team password again.');
+          throw new Error('You were signed out. Sign in again.');
         }
         return keepSession(r.body);
       });
@@ -754,7 +781,7 @@
 
   global.GVC_PROPS = {
     TOOLS: TOOLS, STATUSES: STATUSES,
-    signIn: signIn, signOut: signOut, signedIn: signedIn, whoAmI: whoAmI, askSignIn: askSignIn,
+    signIn: signIn, signOut: signOut, signedIn: signedIn, whoAmI: whoAmI, askSignIn: askSignIn, googleSignIn: googleSignIn, takeGoogleReturn: takeGoogleReturn,
     list: list, load: load, create: create, findByAddress: findByAddress,
     saveCore: saveCore, mergeCore: mergeCore, saveDoc: saveDoc, saveDocument: saveDocument,
     hydrate: hydrate, retokenize: retokenize, docSavedAt: docSavedAt,

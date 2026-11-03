@@ -3,8 +3,9 @@
 
      due(now, last, opts) → the job names that should run now
        last = { de, scan, backup, asana, asanaFull, people: Date } (latest start of each)
-       opts.asana = true adds the three Asana jobs; without a token the runner
-       leaves it off, so they are never due.
+       opts.asana = true adds the three Asana jobs, and asanaWrite each minute
+       (the team's edits going to Asana, overhaul step 5); without a token the
+       runner leaves it off, so they are never due.
        opts.budget = true adds the hourly budget read (D113); without a
        Google sign-in the runner leaves it off.
        opts.weekly = true adds the Sunday email (Sundays 18:00, overhaul step
@@ -21,6 +22,7 @@ const TIMES = { de: [7, 0], scan: [2, 0], backup: [2, 30] };
 const ASANA_TIMES = { asanaFull: [3, 0], people: [3, 15] };   // nightly full read, then People
 const ASANA_EVERY_MS = 30 * 60 * 1000;                        // the plain read, all day
 const BUDGET_EVERY_MS = 60 * 60 * 1000;                       // the pro-forma sheets, all day
+const ASANA_WRITE_EVERY_MS = 55 * 1000;                       // the team's edits to Asana, each minute
 const WEEKLY_TIME = [0, 18, 0];                               // the Sunday email: Sunday 18:00
 
 function lastSlot(now, h, m) {
@@ -45,6 +47,8 @@ function due(now, last, opts) {
     return !(last && last[k]) || new Date(last[k]) < slot;
   });
   if (withAsana && (!(last && last.asana) || now - new Date(last.asana) >= ASANA_EVERY_MS)) out.push('asana');
+  // the team's edits to Asana: every minute (a tick is a minute; the slack keeps a slow tick from skipping one)
+  if (withAsana && (!(last && last.asanaWrite) || now - new Date(last.asanaWrite) >= ASANA_WRITE_EVERY_MS)) out.push('asanaWrite');
   if (opts && opts.budget && (!(last && last.budget) || now - new Date(last.budget) >= BUDGET_EVERY_MS)) out.push('budget');
   // a week's email only on its own Sunday: a PC that was off all Sunday skips it rather than sending it on Wednesday
   if (opts && opts.weekly) {
@@ -54,4 +58,4 @@ function due(now, last, opts) {
   return out;
 }
 
-module.exports = { due, lastWeekly, TIMES, ASANA_TIMES, ASANA_EVERY_MS, BUDGET_EVERY_MS, WEEKLY_TIME };
+module.exports = { due, lastWeekly, TIMES, ASANA_TIMES, ASANA_EVERY_MS, ASANA_WRITE_EVERY_MS, BUDGET_EVERY_MS, WEEKLY_TIME };

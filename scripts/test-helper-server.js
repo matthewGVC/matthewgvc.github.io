@@ -148,7 +148,8 @@ function req(method, p, headers, body) {
   const at = s => new Date(s);
   const quiet = { de: at('2026-10-20T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
     asanaFull: at('2026-10-20T03:00:05'), people: at('2026-10-20T03:15:05') };
-  const dueA = (now, last) => due(at(now), last, { asana: true });
+  // the every-minute Asana write (overhaul step 5) is checked on its own below
+  const dueA = (now, last) => due(at(now), last, { asana: true }).filter(k => k !== 'asanaWrite');
   check('asana: 29 minutes since the last read is not due', dueA('2026-10-20T10:29:00', Object.assign({ asana: at('2026-10-20T10:00:00') }, quiet)), []);
   check('asana: 30 minutes is due', dueA('2026-10-20T10:30:00', Object.assign({ asana: at('2026-10-20T10:00:00') }, quiet)), ['asana']);
   const off = dueA('2026-10-20T08:00:00', { de: at('2026-10-19T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
@@ -234,7 +235,11 @@ function req(method, p, headers, body) {
     ['2026-10-20T10:00:00.000Z', '2026-10-19T03:00:00.000Z', '2026-10-20T03:15:00.000Z', '2026-10-20T07:00:00.000Z', '2026-10-20T06:00:00.000Z']);
   check('startup reads: every one newest first, limit 1, never the totals', runCalls.length > 0 && runCalls.every(c => c.t === 'sync_runs' && c.o && c.o.order === 'started_at.desc' && c.o.limit === 1 && !/totals/.test(c.cols || '*') && (c.cols || '*') !== '*'), true);
   check('no token: no Asana jobs', Object.keys(asanaJobs({}, {})), []);
-  check('token: asana, asanaFull, people jobs', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaFull', 'people']);
+  check('token: asana, asanaFull, people jobs, and the edits to Asana', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaFull', 'asanaWrite', 'people']);
+  check('the edits to Asana: each minute, never without a token', [
+    due(at('2026-10-20T10:01:00'), Object.assign({ asana: at('2026-10-20T10:00:00'), asanaWrite: at('2026-10-20T10:00:00') }, quiet), { asana: true }),
+    due(at('2026-10-20T10:00:30'), Object.assign({ asana: at('2026-10-20T10:00:00'), asanaWrite: at('2026-10-20T10:00:00') }, quiet), { asana: true }),
+    due(at('2026-10-20T10:01:00'), Object.assign({}, quiet), {}).includes('asanaWrite')], [['asanaWrite'], [], false]);
   const seen = [];
   const jobs = asanaJobs({ asanaToken: 'x' }, { c: 1 }, async o => { seen.push([!!o.full, o.kind || null, o.client.c]); return { report: { ok: true } }; });
   await jobs.asana(); await jobs.asanaFull(); await jobs.people();

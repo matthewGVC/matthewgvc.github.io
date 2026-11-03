@@ -30,7 +30,7 @@ function createRunner(o) {
     busy = true;
     try {
       const at = now || new Date();
-      const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people);
+      const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people || o.jobs.asanaWrite);
       for (const k of due(at, last, { asana: withAsana, budget: !!o.jobs.budget, weekly: !!o.jobs.weekly })) {
         if (!o.jobs[k]) continue;
         // the nightly full read already covers the plain read that is due beside it
@@ -63,7 +63,13 @@ function asanaJobs(cfg, client, syncNow) {
   if (!cfg.asanaToken) return {};
   const sync = syncNow || (o => require('./asana-sync.js').syncNow(o));
   const go = (kind, extra) => () => require('./inflight.js').runAsana(kind, () => sync(Object.assign({ cfg, client }, extra)));
-  return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }) };
+  // the team's edits to Asana (0021): a write left half-done when the helper stopped is tried again
+  let first = true;
+  const asanaWrite = async () => {
+    if (first) { first = false; await client.update('asana_writes', { status: 'working' }, { status: 'waiting' }).catch(() => {}); }
+    return require('./asana-write.js').writeWaiting({ db: client, cfg });
+  };
+  return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }), asanaWrite };
 }
 
 /* the budget job, only once the helper holds a Google sign-in (D113) */

@@ -217,7 +217,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('facts: no page errors', t.errors, []);
   check('facts: warning sign, DE says', await text(p, 'tr[data-fact="price"] .fw'), 'DE says $2,250,000');
   check('facts: the other source on a quiet line', await text(p, 'tr[data-fact="price"] .fo'), 'Asana says $2,300,000');
-  check('facts: badges', [await text(p, 'tr[data-fact="price"] .chip'), await text(p, 'tr[data-fact="sqft"] .chip')], ['Matt', 'Asana']);
+  check('facts: badges', [await text(p, 'tr[data-fact="price"] .chip'), await text(p, 'tr[data-fact="sqft"] .chip')], ['Team', 'Asana']);
   check('facts: the tile shows the job\'s price with its warning', [(await text(p, '.facts')).includes('$2,400,000'), (await text(p, '.facts')).includes('DE says $2,250,000')], [true, true]);
   check('facts: extras closed with a count', [await p.$eval('details.fx', d => d.open), (await text(p, 'details.fx summary'))], [false, 'Extras · 0 filled']);
   await p.click('tr[data-fact="price"] [data-edit]');
@@ -334,7 +334,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   /* ---------- a teammate: read-only, note box ---------- */
   t = await open(browser, { path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
   p = t.page;
-  check('team: no edit controls', [await p.$$eval('[data-edit], #agConfirm, #agChange, #archive, [data-drop]', e => e.length)], [0]);
+  // a teammate signed in as themselves edits the facts (0020, 0021); the rest stays the owner's
+  check('team: edits the facts, nothing else', [await p.$$eval('[data-edit]', e => e.length) > 0, await p.$$eval('#agConfirm, #agChange, #archive, [data-drop]', e => e.length)], [true, 0]);
   check('team: note box present', await p.$$eval('#noteText', e => e.length), 1);
   await p.fill('#noteText', 'Seller asked about Friday');
   await p.click('#noteAdd');
@@ -913,6 +914,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { rows: R2, path: LISTING, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
     check('kit shared account: no Rebuild, Get PDF for the made file', [(await builds(t.page, 'brochure')).map(a => a[0]), await t.page.$$eval('#rebuildStale', els => els.length),
       (await acts(t.page, 'brochure')).map(a => a[0])], [[], 0, ['Get PDF', 'Open brochure']]);
+    check('shared account: reads the facts, never edits them (0021: edits go out in a name)', await t.page.$$eval('[data-edit]', e => e.length), 0);
     await t.ctx.close();
     // a request the helper couldn't make says why, until a later build
     const RF2 = rowsFor(); RF2.documents = [v2('brochure', RF2.properties[0], { facts: { price: 1 } })];

@@ -751,7 +751,7 @@
     M26: 'Asana\'s zip code disagrees with DE\'s.',
     M27: 'The exclusive ends within two weeks. Extend it in Asana if the listing carries on.',
     M28: 'The listing is Sold or Rented but its Asana task is still open. Tick it done once the team confirms the deal is finished.',
-    M29: 'A listing and a development are at the same address, so one job shows twice. Matt makes them one job (the development keeps the house).'
+    M29: 'A listing and a development are at the same address, so one job shows twice. A single-family new development is one job: Matt makes them one (the development keeps the house). Only a development of several houses (House 1, House 2) has its houses as units.'
   };
 
   return { check: check, checkDeListing: checkDeListing, statusSince: statusSince, sectionDisagrees: sectionDisagrees,

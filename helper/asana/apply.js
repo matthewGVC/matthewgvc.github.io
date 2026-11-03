@@ -31,7 +31,9 @@
      theirs; every key asana-map.js factsOf gives, State as its two-letter
      code included, so an existing job gains it on the next sync), core.suggestedAgentIds, dev_project_id for a TJ New Dev house.
    - a new listing with no unit at a development's street (its name, or dev-addresses.js) joins
-     that development rather than standing beside it (D141); the Errors page's M29 then asks
+     that development rather than standing beside it (D141); when the development has no house
+     yet it is a single-family new development and the house becomes it (house_listing_id): one
+     job. A second house there with no unit is left to Matt: the Errors page's M29 asks
      Matt to make the two one job.
      Every changed value is one `changes` row, source 'Asana'.
    - which tasks become rows: on the plan run, the ticked rows (unticked ones
@@ -277,6 +279,11 @@ async function writeRun(o, sr, out, now) {
       .concat(Object.keys(f0).map(k => log(own, k, null, core[k])));
     if (atDev) changes.push(log(own, 'dev_project_id', null, atDev.id, 'Joined the development ' + atDev.label + ' (the same address)'));
     await client.insert('changes', changes);
+    // a single-family new development (no house listing of its own yet) is this house: one job (D141)
+    if (atDev && !atDev.house_listing_id && !props.some(p => p.id !== made.id && p.dev_project_id === atDev.id && p.stage !== 'Archived')) {
+      await save('dev_projects', atDev, { house_listing_id: made.id },
+        [log({ dev_project_id: atDev.id }, 'house_listing_id', null, made.id, 'Made one job: this development is the single-family house ' + (made.label || a.street))]);
+    }
     out.created++; out.changes += changes.length;
     return made;
   }

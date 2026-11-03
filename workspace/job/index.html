@@ -392,12 +392,14 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     var K = JP.kit, c = ctx();
     var made = stale.filter(function (x) { return K.HELPER_MAKES.indexOf(x.tool) !== -1 && !K.openRequest(c, x.tool); });
     if (JP.canAsk && made.length && state.row.drive_folder) {
-      host.innerHTML = '<button class="b primary" type="button" id="rebuildStale" data-tools="' + esc(made.map(function (x) { return x.tool; }).join(',')) + '">Rebuild ' + made.length + ' stale</button>';
+      host.innerHTML = '<button class="b primary" type="button" id="rebuildStale" data-tools="' + esc(made.map(function (x) { return x.tool; }).join(',')) + '">' + esc(updateWord(made)) + '</button>';
       return;
     }
     var byHand = stale.filter(function (x) { return K.HELPER_MAKES.indexOf(x.tool) === -1; });
-    host.innerHTML = byHand.length && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="' + esc(byHand[0].href) + '">Rebuild ' + byHand.length + ' stale</a>' : '';
+    host.innerHTML = byHand.length && JP.canEdit ? '<a class="b primary" id="rebuildStale" href="' + esc(byHand[0].href) + '">' + esc(updateWord(byHand)) + '</a>' : '';
   }
+  // plain words for the pieces made before the job last changed: "Update showsheet", "Update 2 out-of-date pieces"
+  function updateWord(list) { return list.length === 1 ? 'Update ' + JP.kit.nameOf(list[0].tool) : 'Update ' + list.length + ' out-of-date pieces'; }
 
   function tile(k, v, s, badge) {
     return '<div><div class="k">' + esc(k) + '</div><div class="v">' + (v ? esc(v) : '<span class="soft">Not set</span>') + (badge ? ' <span class="chip de">' + esc(badge) + '</span>' : '') + '</div>' +

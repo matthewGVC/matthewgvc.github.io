@@ -10,23 +10,24 @@
                                       the Pieces card: one row per piece made from the job.
                                       Each piece has ONE status word: Not made yet · Up to date ·
                                       Out of date (its reason on its own line) · Not tracked.
-                                      0017: Make / Rebuild ask the helper in one click
+                                      0017: Make / Update ask the helper in one click
                                       ([data-build], ctx.canAsk), the newest request's state
-                                      ([data-build-state], ctx.requests), and Open, the piece's
-                                      own page. Owner: Copy Drive link. Others: Get PDF when a
-                                      PDF is in Drive; one who may not ask: "Ask Matt" otherwise.
+                                      ([data-build-state], ctx.requests), and Edit (View for one
+                                      who may not ask), the piece's own page. A PDF in Drive:
+                                      Open and Copy Drive link for everyone, the same buttons as
+                                      the track's; one who may not ask: "Ask Matt" otherwise.
      GVC_JP.kit.wire(host, ctx)       the track's controls; the Pieces card repaints when Drive is read
      GVC_JP.kit.wirePieces(ctx)       the Pieces card's Copy Drive link buttons (after each paint)
 
    The track: state done (file and tick) · fileOpen (file, Asana open) · tickedNoFile ·
    notStarted · notUsed (signage in NYC) · tracked (video, tracked only). Live from Drive
-   when it is connected here, else from last night's scan. Open shows the file from Drive
-   (desktop); Copy Drive link asks the helper (POST /drive-link), else uses the scan's stored
+   when it is connected here, else from last night's scan. Open goes to the file's own page
+   on drive.google.com when Drive is read through Google, else shows it from Drive (desktop); Copy Drive link asks the helper (POST /drive-link), else uses the scan's stored
    link, else copies the G: path. A piece with a file but no Asana step to match (brochure,
    signage) says so. Under the rows: the checklist-only steps (Advertising Spots, NYC's Just
    Listed Email).
    ctx.doc is the showsheet's documents row; ctx.onSheet(result) hears each judgement (the
-   page's Rebuild n stale button).
+   page's Update button: "Update showsheet", "Update 2 out-of-date pieces").
    ============================================================ */
 (function (global) {
   'use strict';
@@ -42,6 +43,7 @@
   // one status word per piece: word, and the chip's class
   var WORD = { none: ['Not made yet', ''], untracked: ['Not tracked', ''], fresh: ['Up to date', 'made'], stale: ['Out of date', 'stale'] };
   var current = {};   // kit key → the newest current piece { path?, name, url? } of the last draw
+  var lastTree = null;   // the folder as Drive was last read live here: its folders' Drive links (Drive through Google)
   /* what Open may show as a blob: types that never run script (no svg, no html) */
   var SAFE_EXT = /\.(pdf|jpe?g|png|webp|gif|mp4|mov|m4v|webm)$/i;
   var SAFE_TYPE = /^(application\/pdf|image\/(jpeg|png|webp|gif)|video\/[a-z0-9.+-]+)$/i;
@@ -146,7 +148,7 @@
       out.line += '<div class="d" data-build-state="' + esc(tool) + '">Link the Drive folder so the helper can make it.</div>';
       return out;
     }
-    var label = open ? (open.status === 'working' ? 'Making…' : 'Waiting for the helper') : s.state === 'stale' ? 'Rebuild' + (name ? ' ' + name : '') : 'Make ' + (name || 'showsheet');
+    var label = open ? (open.status === 'working' ? 'Making…' : 'Waiting for the helper') : s.state === 'stale' ? 'Update ' + (name || 'showsheet') : 'Make ' + (name || 'showsheet');
     out.btn = '<button class="b sm primary" type="button" data-build="' + esc(tool) + '"' + (open ? ' disabled' : '') + '>' + esc(label) + '</button>';
     return out;
   }
@@ -193,6 +195,14 @@
     for (var i = 0; i < segs.length; i++) if (/^photos$/i.test(segs[i])) return segs.slice(0, i + 1).join('/');
     return segs.length ? segs.join('/') : 'Photos';
   }
+  /* a folder's Drive link in the live tree ('Photos/Edits'), or null */
+  function dirUrl(tree, rel) {
+    var node = tree;
+    String(rel || '').split('/').filter(Boolean).forEach(function (n) {
+      node = node && (node.children || []).filter(function (c) { return c.kind === 'directory' && c.name === n; })[0];
+    });
+    return node && node !== tree && DRIVE_LINK.test(node.url || '') ? node.url : null;
+  }
   function pieceHref(ctx, tool, rebuild) {
     var q = (ctx.kind === 'pitch' ? 'pitch' : 'listing') + '=' + encodeURIComponent(ctx.row.slug);
     if (tool === 'postcard-sold') q += '&card=sold';
@@ -226,27 +236,28 @@
       var made = ['Made' + (when ? ' ' + esc(when) : '')];
       if (out.paper) made.push(esc(String(out.paper).toUpperCase()));
       if (out.via === 'print') made.push('printed by hand, file not tracked');
-      else if (got && ctx.canEdit) made.push('<a class="link" href="' + esc(got) + '" target="_blank" rel="noopener">Open</a>',
-        '<button class="link" type="button" data-piece-copy="' + esc(tool) + '">Copy Drive link</button>');
       lines += '<div class="d" data-piece-made="' + esc(tool) + '">' + made.join(' · ') + '</div>';
     }
-    var get = got && (s.state === 'fresh' || s.state === 'stale') && !ctx.canEdit
-      ? '<a class="b sm ghost" data-piece-get="' + esc(tool) + '" href="' + esc(got) + '" target="_blank" rel="noopener">Get PDF</a>' : '';
+    // the made PDF: Open and Copy Drive link, the same two buttons as the Marketing track's files, for everyone
+    var get = got && (s.state === 'fresh' || s.state === 'stale') && out.via !== 'print'
+      ? '<a class="b sm ghost" data-piece-get="' + esc(tool) + '" href="' + esc(got) + '" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open</a>' +
+        '<button class="b sm ghost" type="button" data-piece-copy="' + esc(tool) + '">' + ctx.I('copy') + 'Copy Drive link</button>' : '';
     if (HELPER_MAKES.indexOf(tool) !== -1) {
       // 0017: the helper makes it (one click, anyone who may ask); the piece's own page is where its wording changes
       var b = buildBits(ctx, tool, s, doc, tool === 'showsheet' ? '' : name);
       var ask = !ctx.canAsk && !get ? '<span class="soft" data-piece-ask="' + esc(tool) + '">Ask Matt</span>' : '';
       // the showsheet's generator is Claude's to run (Matt 11-02): its row opens the sheet itself, never the tool
+      // its own page, where the wording changes: Edit for whoever may make it, View for everyone else
       var open = tool === 'showsheet' ? '' : '<a class="b sm ghost" data-piece="' + esc(tool) + '" href="' +
-        esc(pieceHref(ctx, tool, s.state === 'stale' && ctx.canAsk)) + '">' + esc('Open ' + name) + '</a>';
+        esc(pieceHref(ctx, tool, s.state === 'stale' && ctx.canAsk)) + '">' + esc((ctx.canAsk ? 'Edit ' : 'View ') + name) + '</a>';
       return { lines: lines + b.line, act: b.btn + get + ask + open };
     }
     // the map: made by a person in Map Studio; a teammate gets the file or asks Matt
     if (!ctx.canEdit) return { lines: lines, act: get || '<span class="soft" data-piece-ask="' + esc(tool) + '">Ask Matt</span>' };
     var a, verb = tool === 'pitch-map' ? 'Make the map' : 'Make ' + name;
-    a = s.state === 'fresh' || s.state === 'untracked' ? ['Open ' + (tool === 'pitch-map' ? 'map' : name), false, 'ghost']
-      : s.state === 'stale' ? ['Rebuild ' + name, true, 'primary'] : [verb, false, 'primary'];
-    return { lines: lines, act: '<a class="b sm ' + a[2] + '" data-piece="' + esc(tool) + '" href="' + esc(pieceHref(ctx, tool, a[1])) + '">' + esc(a[0]) + '</a>' };
+    a = s.state === 'fresh' || s.state === 'untracked' ? ['Edit ' + (tool === 'pitch-map' ? 'map' : name), false, 'ghost']
+      : s.state === 'stale' ? ['Update ' + name, true, 'primary'] : [verb, false, 'primary'];
+    return { lines: lines, act: get + '<a class="b sm ' + a[2] + '" data-piece="' + esc(tool) + '" href="' + esc(pieceHref(ctx, tool, a[1])) + '">' + esc(a[0]) + '</a>' };
   }
   /* every piece of the job with its judgement, for the header's Rebuild n stale */
   function judgeAll(ctx, pieces, live) {
@@ -409,15 +420,23 @@
       });
       var dir = function () { return { drive_folder: r.drive_folder + '/' + photosDir(current.photos) }; };
       body.querySelectorAll('[data-open-dir]').forEach(function (b) {
-        b.addEventListener('click', function () { JP.drive.openWeb(dir(), say); });
+        b.addEventListener('click', function () {
+          var u = dirUrl(lastTree, photosDir(current.photos));
+          if (u) { global.open(u, '_blank', 'noopener'); say(''); return; }
+          JP.drive.openWeb(dir(), say);
+        });
       });
       body.querySelectorAll('[data-copy-dir]').forEach(function (b) {
-        b.addEventListener('click', function () { JP.drive.copyLink(dir(), null, null, msg).then(function () { JP.drive.msgs.kit = msg.textContent; }); });
+        b.addEventListener('click', function () {
+          JP.drive.copyLink(dir(), null, dirUrl(lastTree, photosDir(current.photos)), msg).then(function () { JP.drive.msgs.kit = msg.textContent; });
+        });
       });
       body.querySelectorAll('[data-open]').forEach(function (b) {
         b.addEventListener('click', function () {
           var cur = current[b.dataset.open];
           if (!cur || !cur.path) return;
+          // Drive through Google knows the file's own page: open that, never a downloaded copy
+          if (DRIVE_LINK.test(cur.url || '')) { global.open(cur.url, '_blank', 'noopener'); say(''); return; }
           // a blob: URL runs with this site's origin, so only types that can't run script open inline
           if (!SAFE_EXT.test(cur.name)) { elsewhere(cur); return; }
           say('Opening ' + cur.name + '…');
@@ -439,6 +458,7 @@
     }
     if (JP.drive.mode(ctx) !== 'live') { hook(); return; }
     JP.drive.folder(ctx).then(function (x) {
+      lastTree = x.tree;
       var out = rowsHtml(x.health.pieces, ctx, true);
       body.innerHTML = out.html;
       paintPieces(ctx, x.health.pieces, true);
@@ -450,5 +470,7 @@
     });
   }
 
-  JP.kit = { html: html, wire: wire, judge: judge, judgeAll: judgeAll, piecesHtml: piecesHtml, wirePieces: wirePieces, HELPER_MAKES: HELPER_MAKES, openRequest: openRequest };
+  /* a piece's name in plain words, for the header's Update button */
+  function nameOf(tool) { return tool === 'showsheet' ? 'showsheet' : NAME[tool] || tool; }
+  JP.kit = { nameOf: nameOf, html: html, wire: wire, judge: judge, judgeAll: judgeAll, piecesHtml: piecesHtml, wirePieces: wirePieces, HELPER_MAKES: HELPER_MAKES, openRequest: openRequest };
 })(window);

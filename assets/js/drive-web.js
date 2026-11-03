@@ -20,6 +20,9 @@
    each hour, so nobody clicks again. The pass lives in this tab's
    sessionStorage for its hour, never in a log. localStorage 'gvc.drive.local' = '1' turns the test
    off on one computer (the local folder again).
+
+   Each file and folder object also carries its real Drive link (url), so the
+   job page opens a file or folder on drive.google.com, never a downloaded copy.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -110,7 +113,7 @@
     return { next: function () { return list().then(function (xs) { return i < xs.length ? { value: xs[i++], done: false } : { value: undefined, done: true }; }); } };
   }
   function fileHandle(f, path) {
-    return { kind: 'file', name: f.name, _path: path,
+    return { kind: 'file', name: f.name, _path: path, url: 'https://drive.google.com/file/d/' + encodeURIComponent(f.id) + '/view',
       meta: { size: f.size == null ? undefined : +f.size, modified: f.modifiedTime },
       getFile: function () {
         return get('/files/' + encodeURIComponent(f.id), { alt: 'media', supportsAllDrives: 'true' }).then(function (b) {
@@ -118,13 +121,13 @@
         });
       } };
   }
-  function dirHandle(name, path, list) {
+  function dirHandle(name, path, list, id) {
     var cache = null;
     var kids = function () { return cache || (cache = list().catch(function (e) { cache = null; throw e; })); };
     var find = function (n, kind) {
       return kids().then(function (xs) { var h = xs.filter(function (x) { return x.name === n && x.kind === kind; })[0]; if (!h) throw notFound(n); return h; });
     };
-    return { kind: 'directory', name: name, _path: path,
+    return { kind: 'directory', name: name, _path: path, url: id ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(id) : undefined,
       values: function () { return iterate(kids); },
       getDirectoryHandle: function (n) { return find(n, 'directory'); },
       getFileHandle: function (n) { return find(n, 'file'); } };
@@ -137,7 +140,7 @@
           return x.mimeType === FOLDER ? folderOf(x, p, driveId) : fileHandle(x, p);
         });
       });
-    });
+    }, f.id);
   }
   var top = null;
   function root() {

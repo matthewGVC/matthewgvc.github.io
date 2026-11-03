@@ -107,6 +107,8 @@ const FAKE_DRIVE = `(function () {
   if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
   if (cfg.design) tree.children.filter(function (c) { return c.name === 'Floorplan'; })[0].children.push(d('Design', [f('cubicasa.png', '20'), f('architect.pdf', '22'), f('Signed contract plan.pdf', '22')]));
   if (cfg.html) tree.children.push(d('Signage', [f('Signage - 100 Example St 4A.html', '11')]));
+  // Drive through Google: every file and folder carries its real Drive link
+  if (cfg.web) (function link(n) { n.url = 'https://drive.google.com/' + (n.kind === 'directory' ? 'drive/folders/' : 'file/d/') + encodeURIComponent(n.name) + (n.kind === 'directory' ? '' : '/view'); (n.children || []).forEach(link); })(tree);
   var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
   function find(path) {
     var node = tree;
@@ -682,6 +684,29 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('drive cards: no page errors', t.errors, []);
   await t.ctx.close();
 
+  /* Drive through Google (Matt 11-03): Open goes to the file's own Drive page, never a blob; the Photos
+     row's Open folder is the Photos folder on Drive, without the helper */
+  t = await open(browser, { path: LISTING, drive: { web: true } });
+  p = t.page;
+  await p.evaluate(() => {
+    window.__opened = []; window.__blobs = []; window.__helper = [];
+    const mk = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = b => { window.__blobs.push(b.type); return mk(b); };
+    window.open = (u, n, f) => { window.__opened.push([String(u), n, f]); return null; };
+    const h = GVC_SHELL.helper;
+    GVC_SHELL.helper = function (m, path) { window.__helper.push(path); return h.apply(this, arguments); };
+  });
+  await p.waitForSelector('#kitCard [data-kit="showsheet"] [data-open]');
+  await p.click('#kitCard [data-kit="showsheet"] [data-open]');
+  await p.click('#kitCard [data-kit="photos"] [data-open-dir]');
+  await settle(p);
+  check('Drive through Google: Open is the file on Drive, Open folder the Photos folder, no blob, no helper',
+    [await p.evaluate(() => window.__opened), await p.evaluate(() => window.__blobs.length), await p.evaluate(() => window.__helper.filter(x => /drive-link|open-folder/.test(x)))],
+    [[['https://drive.google.com/file/d/Showsheet%20-%20100%20Example%20St%204A%20-%202026-10-12.pdf/view', '_blank', 'noopener'],
+      ['https://drive.google.com/drive/folders/Photos', '_blank', 'noopener']], 0, []]);
+  check('Drive through Google: no page errors', t.errors, []);
+  await t.ctx.close();
+
   /* Open: a PDF opens as a blob with noopener; an .html piece is never opened as a blob */
   t = await open(browser, { path: LISTING, drive: { html: true } });
   p = t.page;
@@ -877,17 +902,17 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     check('track rows carry no status chip of their own for the pieces', await p.$$eval('#kitCard [data-kit="brochure"] .chip, #kitCard [data-kit="showsheet"] .chip', e => e.length), 0);
     check('pieces card: one status word per piece', await p.$$eval('#piecesCard [data-piece-state]', e => e.map(x => x.dataset.pieceState)),
       ['showsheet', 'brochure', 'postcard-listed', 'seller', 'pitch-map']);
-    check('kit: the brochure is out of date on its price: the reason, Rebuild (the helper) and Open', [await line(p, 'brochure'), await text(p, '#piecesCard [data-piece-why="brochure"]'), await builds(p, 'brochure'), await acts(p, 'brochure')],
-      ['Out of date', 'Changed on the job since it was made: price', [['Rebuild brochure', 'brochure', false]], [['Open brochure', '../../tools/brochure/?listing=100-example-st-4a&rebuild=1']]]);
-    check('kit: the brochure made line', await text(p, '#piecesCard [data-piece-made="brochure"]'), 'Made 22 Oct · LETTER · Open · Copy Drive link');
+    check('kit: the brochure is out of date on its price: the reason, Update (the helper), Open the PDF and Edit', [await line(p, 'brochure'), await text(p, '#piecesCard [data-piece-why="brochure"]'), await builds(p, 'brochure'), await acts(p, 'brochure')],
+      ['Out of date', 'Changed on the job since it was made: price', [['Update brochure', 'brochure', false]], [['Open', 'https://drive.google.com/file/d/brochure/view'], ['Edit brochure', '../../tools/brochure/?listing=100-example-st-4a&rebuild=1']]]);
+    check('kit: the brochure made line', await text(p, '#piecesCard [data-piece-made="brochure"]'), 'Made 22 Oct · LETTER');
     check('kit: Just Listed up to date, Just Sold once sold', [await line(p, 'postcard-listed'), await line(p, 'postcard-sold')],
       ['Just Listed postcard: Up to date', 'Just Sold postcard: once the job is sold']);
-    check('kit: the postcard row opens the listed card', await acts(p, 'postcard'), [['Open Just Listed postcard', '../../tools/postcard/?listing=100-example-st-4a']]);
+    check('kit: the postcard row opens the listed card', await acts(p, 'postcard'), [['Open', 'https://drive.google.com/file/d/postcardlisted/view'], ['Edit Just Listed postcard', '../../tools/postcard/?listing=100-example-st-4a']]);
     check('kit: the seller pitch and its map, not made yet', [await line(p, 'seller'), await line(p, 'pitch-map'), await builds(p, 'seller'), await acts(p, 'seller')],
       ['Not made yet', 'Map: Not made yet', [['Make seller package', 'seller', false]],
-        [['Open seller package', '../../tools/seller-package/?listing=100-example-st-4a'], ['Make the map', '../../tools/map-studio/?listing=100-example-st-4a']]]);
-    check('kit: Rebuild n stale counts every stale piece the helper makes, one click', await p.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.tagName, a.dataset.tools])),
-      [['Rebuild 1 stale', 'BUTTON', 'brochure']]);
+        [['Edit seller package', '../../tools/seller-package/?listing=100-example-st-4a'], ['Make the map', '../../tools/map-studio/?listing=100-example-st-4a']]]);
+    check('kit: Update counts every stale piece the helper makes, one click', await p.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.tagName, a.dataset.tools])),
+      [['Update brochure', 'BUTTON', 'brochure']]);
     // one click: a request for the helper; the row follows it, and the page reloads once it is made
     await p.click('#piecesCard [data-build="brochure"]');
     await settle(p);
@@ -925,7 +950,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const R2 = rowsFor();
     R2.documents = [v2('brochure', R2.properties[0], { facts: { price: 1 } }), v2('postcard-listed', R2.properties[0], { facts: { price: 1 } })];
     t = await open(browser, { rows: R2, path: LISTING });
-    check('kit: two stale pieces, Rebuild 2 stale', await t.page.$$eval('#rebuildStale', els => els.map(a => a.textContent.trim())), ['Rebuild 2 stale']);
+    check('kit: two stale pieces, Update 2 out-of-date pieces', await t.page.$$eval('#rebuildStale', els => els.map(a => a.textContent.trim())), ['Update 2 out-of-date pieces']);
     await t.page.click('#rebuildStale');
     await settle(t.page);
     check('kit: Rebuild 2 stale asks for both in one click', t.writes.filter(w => /^POST piece_requests/.test(w)).map(w => JSON.parse(w.slice('POST piece_requests '.length)).tool),
@@ -935,12 +960,12 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { rows: R2, path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
     check('kit team: Get PDF or Ask Matt, Open, never makes or rebuilds', [(await acts(t.page, 'brochure')).map(a => a[0]), (await acts(t.page, 'seller')).map(a => a[0]),
       await t.page.$$eval('#piecesCard [data-build]', e => e.length), await t.page.$$eval('#rebuildStale', e => e.length)],
-      [['Get PDF', 'Open brochure'], ['Ask Matt', 'Open seller package', 'Ask Matt'], 0, 0]);
+      [['Open', 'View brochure'], ['Ask Matt', 'View seller package', 'Ask Matt'], 0, 0]);
     await t.ctx.close();
     // the team's shared account uses the pieces, it doesn't make them (0019, Matt 11-02)
     t = await open(browser, { rows: R2, path: LISTING, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
     check('kit shared account: no Rebuild, Get PDF for the made file', [(await builds(t.page, 'brochure')).map(a => a[0]), await t.page.$$eval('#rebuildStale', els => els.length),
-      (await acts(t.page, 'brochure')).map(a => a[0])], [[], 0, ['Get PDF', 'Open brochure']]);
+      (await acts(t.page, 'brochure')).map(a => a[0])], [[], 0, ['Open', 'View brochure']]);
     check('shared account: reads the facts, never edits them (0021: edits go out in a name)', await t.page.$$eval('[data-edit]', e => e.length), 0);
     await t.ctx.close();
     // a request the helper couldn't make says why, until a later build
@@ -949,7 +974,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { rows: RF2, path: LISTING });
     check('kit: the helper\'s reason on the row, Rebuild again, still one status word', [await text(t.page, '#piecesCard [data-build-state="brochure"]'), (await builds(t.page, 'brochure')).map(a => [a[0], a[2]]),
       await t.page.$$eval('#piecesCard [data-piece-state="brochure"]', e => e.length)],
-      ['The helper couldn\'t make it: Drive hasn\'t downloaded 03.jpg on Matt\'s desktop yet.', [['Rebuild brochure', false]], 1]);
+      ['The helper couldn\'t make it: Drive hasn\'t downloaded 03.jpg on Matt\'s desktop yet.', [['Update brochure', false]], 1]);
     await t.ctx.close();
     // no Drive folder: no button, the reason
     const RNF = rowsFor(); delete RNF.properties[0].drive_folder; RNF.properties[0].folder_state = 'unlinked'; RNF.documents = [];
@@ -970,8 +995,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     check('pitch page: the seller pitch out of date, Rebuild; the map not made', [await text(p, '#piecesCard [data-piece-state="seller"]'),
       await p.$$eval('#piecesCard [data-build]', els => els.map(b => b.textContent.trim())),
       await p.$$eval('#piecesCard [data-piece]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]))],
-      ['Out of date', ['Rebuild seller package'], [['Open seller package', '../../tools/seller-package/?pitch=90-pitch-st-11b&rebuild=1'], ['Make the map', '../../tools/map-studio/?pitch=90-pitch-st-11b']]]);
-    check('pitch page: Rebuild 1 stale in the header', await p.$$eval('#rebuildStale', els => els.map(a => a.textContent.trim())), ['Rebuild 1 stale']);
+      ['Out of date', ['Update seller package'], [['Edit seller package', '../../tools/seller-package/?pitch=90-pitch-st-11b&rebuild=1'], ['Make the map', '../../tools/map-studio/?pitch=90-pitch-st-11b']]]);
+    check('pitch page: Rebuild 1 stale in the header', await p.$$eval('#rebuildStale', els => els.map(a => a.textContent.trim())), ['Update seller package']);
     await p.click('#piecesCard [data-build="seller"]');
     await settle(p);
     check('pitch page: Rebuild asks for the pitch\'s seller package', t.writes.filter(w => /^POST piece_requests/.test(w)).map(w => JSON.parse(w.slice('POST piece_requests '.length))),
@@ -992,7 +1017,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { rows: RO, path: LISTING });
     let p = t.page;
     check('kit: the sign not made, Make sign (NJ)', [await line(p, 'signage'), await p.$$eval('#piecesCard [data-kit="signage"] [data-build]', els => els.map(b => b.textContent.trim())), await acts(p, 'signage')],
-      ['Not made yet', ['Make sign'], [['Open sign', '../../tools/signage/?listing=100-example-st-4a']]]);
+      ['Not made yet', ['Make sign'], [['Edit sign', '../../tools/signage/?listing=100-example-st-4a']]]);
     check('kit: no open house flyer row', await p.$$eval('#kitCard [data-kit="openHouse"], #kitCard [data-piece-line="open-house"]', e => e.length), 0);
     check('kit slice 6: no page errors', t.errors, []);
     await t.ctx.close();
@@ -1058,10 +1083,9 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     RF.documents = [docFor(RF.properties[0])];
     t = await open(browser, { rows: RF, path: LISTING, drive: { state: 'not-connected' } });
     p = t.page;
-    check('kit fresh: up to date, made line with Open and Copy Drive link, no Open sheet (Matt 11-02)', await sheetBits(p),
-      { state: 'Up to date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [], build: [], header: [] });
-    check('kit fresh: Open is the recorded Drive link', await p.$eval(kitRow + ' [data-piece-made="showsheet"] a', a => a.getAttribute('href')), 'https://drive.google.com/file/d/NEW1/view');
-    await p.click(kitRow + ' [data-piece-made="showsheet"] [data-piece-copy="showsheet"]');
+    check('kit fresh: up to date, Open (the recorded Drive link) and Copy Drive link buttons, no Open sheet (Matt 11-02)', await sheetBits(p),
+      { state: 'Up to date', made: 'Made 22 Oct · A5', acts: [['Open', 'https://drive.google.com/file/d/NEW1/view']], build: [], header: [] });
+    await p.click(kitRow + ' [data-piece-copy="showsheet"]');
     await settle(p);
     check('kit fresh: Copy Drive link copies the recorded link', [await text(p, '#kitMsg'), await p.evaluate(() => navigator.clipboard.readText())],
       ['Drive link copied.', 'https://drive.google.com/file/d/NEW1/view']);
@@ -1073,16 +1097,16 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     RS.documents = [docFor(RS.properties[0], { facts: { price: 2250000 } })];
     t = await open(browser, { rows: RS, path: LISTING });
     p = t.page;
-    check('kit stale: Out of date, Rebuild (the helper), no Open sheet, header Rebuild 1 stale', await sheetBits(p),
-      { state: 'Out of date', made: 'Made 22 Oct · A5 · Open · Copy Drive link', acts: [], build: ['Rebuild'],
-        header: [['Rebuild 1 stale', 'showsheet']] });
+    check('kit stale: Out of date, Update (the helper), no Open sheet, header Update showsheet', await sheetBits(p),
+      { state: 'Out of date', made: 'Made 22 Oct · A5', acts: [['Open', 'https://drive.google.com/file/d/NEW1/view']], build: ['Update showsheet'],
+        header: [['Update showsheet', 'showsheet']] });
     check('kit stale: the documents read asks for this job\'s pieces (Slice 5: every piece)', await p.evaluate(() => performance.getEntriesByType('resource').map(e => e.name)
       .filter(u => /\/rest\/v1\/documents\?/.test(u)).map(u => /property_id=eq\.p1/.test(u))), [true]);
     check('kit stale: no page errors', t.errors, []);
     await t.ctx.close();
 
     // a teammate: Get PDF or Ask Matt, never the generator, Make or Rebuild
-    for (const [name, rows, state, made, acts] of [['stale', RS, 'Out of date', 'Made 22 Oct · A5', [['Get PDF', 'https://drive.google.com/file/d/NEW1/view']]], ['none', RN, 'Not made yet', null, [['Ask Matt', null]]]]) {
+    for (const [name, rows, state, made, acts] of [['stale', RS, 'Out of date', 'Made 22 Oct · A5', [['Open', 'https://drive.google.com/file/d/NEW1/view']]], ['none', RN, 'Not made yet', null, [['Ask Matt', null]]]]) {
       t = await open(browser, { rows, path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
       check('kit team ' + name + ': Get PDF or Ask Matt, no Open sheet, no Make or Rebuild', await sheetBits(t.page), { state, made, acts, build: [], header: [] });
       await t.ctx.close();
@@ -1104,7 +1128,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { rows: RL, path: LISTING, drive: {} });
     await t.page.waitForTimeout(800);
     const live = await sheetBits(t.page);
-    check('kit live: front photo file updated on Drive is out of date, header follows', [live.state, live.header.map(h => h[0])], ['Out of date', ['Rebuild 1 stale']]);
+    check('kit live: front photo file updated on Drive is out of date, header follows', [live.state, live.header.map(h => h[0])], ['Out of date', ['Update showsheet']]);
     check('kit live: no page errors', t.errors, []);
     await t.ctx.close();
 
@@ -1133,7 +1157,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     await t.ctx.close();
 
     // phone: the state and the helper's one-click buttons (0017: any device may ask), never the piece's own page, no sideways scroll (S20)
-    for (const [name, rows, shown] of [['stale', RS, ['Rebuild 1 stale', 'Rebuild']], ['none', RN, ['Make showsheet']]]) {
+    for (const [name, rows, shown] of [['stale', RS, ['Update showsheet', 'Update showsheet']], ['none', RN, ['Make showsheet']]]) {
       t = await open(browser, { rows, path: LISTING, phone: true });
       p = t.page;
       check('375 px kit ' + name + ': state shown, the helper\'s buttons, no Open', [await p.isVisible(kitRow + ' [data-piece-state="showsheet"]'),

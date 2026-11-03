@@ -13,7 +13,7 @@
   var me = document.currentScript, q = new URLSearchParams(location.search);
   if (!q.has('listing') && !q.has('pitch')) return;
   var A = '../../assets/js/';
-  var files = ['markets.js', 'drive-rules.js', 'drive.js', 'folder-health.js', 'job-facts.js', 'sheet-job.js', 'piece-job.js', 'piece-stale.js', 'workspace-shell.js']
+  var files = ['markets.js', 'drive-rules.js', 'drive-web.js', 'drive.js', 'folder-health.js', 'job-facts.js', 'sheet-job.js', 'piece-job.js', 'piece-stale.js', 'workspace-shell.js']
     .map(function (f) { return A + f; });
   if (!window.GVC_IMAGES) files.push(A + 'images.js');
   // the sign-in and the job's rows come through the property library (the Postcard doesn't load it itself)

@@ -28,6 +28,10 @@
 
    Paths are relative to G:\Shared drives\, with "/" or "\".
    Needs assets/js/drive-rules.js loaded first.
+
+   Drive through Google (overhaul 9, assets/js/drive-web.js, loaded before
+   this file): for its testers the root is Google Drive itself, over the web,
+   and connecting is a Google sign-in; everything below works the same.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -53,7 +57,14 @@
       });
     });
   }
+  // a tester of Drive through Google gets the shared drives over the web as the one root
+  function web() { return global.GVC_DRIVE_WEB ? global.GVC_DRIVE_WEB.active() : Promise.resolve(false); }
   function roots() {
+    return web().then(function (on) {
+      return on ? global.GVC_DRIVE_WEB.root().then(function (r) { var o = {}; o[TOP] = r; return o; }) : localRoots();
+    });
+  }
+  function localRoots() {
     return db().then(function (d) {
       return new Promise(function (res, rej) {
         var all = {}, c = d.transaction(STORE).objectStore(STORE).openCursor();
@@ -67,13 +78,17 @@
     });
   }
 
+  // the local folder picker (this computer's G: drive); Drive through Google needs none (state() says)
   function supported() { return typeof global.showDirectoryPicker === 'function'; }
 
   /* 'error' when the browser won't open its storage (blocked site data, a
      private window): the page says so instead of waiting forever. */
   function state() {
-    if (!supported()) return Promise.resolve('unsupported');
-    return roots().then(function (all) {
+    return web().then(function (on) { return on ? global.GVC_DRIVE_WEB.state() : localState(); });
+  }
+  function localState() {
+    if (typeof global.showDirectoryPicker !== 'function') return Promise.resolve('unsupported');
+    return localRoots().then(function (all) {
       var hs = Object.keys(all).map(function (k) { return all[k]; });
       if (!hs.length) return 'not-connected';
       return Promise.all(hs.map(function (h) { return h.queryPermission({ mode: 'read' }); }))
@@ -84,7 +99,10 @@
   }
 
   function connect() {
-    if (!supported()) return Promise.reject(new Error('This browser can\'t open Drive folders. Use Chrome or Edge on the desktop.'));
+    return web().then(function (on) { return on ? global.GVC_DRIVE_WEB.connect() : localConnect(); });
+  }
+  function localConnect() {
+    if (typeof global.showDirectoryPicker !== 'function') return Promise.reject(new Error('This browser can\'t open Drive folders. Use Chrome or Edge on the desktop.'));
     return global.showDirectoryPicker({ id: 'gvc-drive', mode: 'read' }).then(function (h) {
       return tx('readwrite', function (s) { s.put(h, h.name); });
     }).then(function () { return roots(); }).then(Object.keys);
@@ -92,7 +110,12 @@
 
   /* true only when every root is back; a refused one is false, not an error */
   function reconnect() {
-    return roots().then(function (all) {
+    return web().then(function (on) {
+      return on ? global.GVC_DRIVE_WEB.connect().then(function () { return true; }, function () { return false; }) : localReconnect();
+    });
+  }
+  function localReconnect() {
+    return localRoots().then(function (all) {
       return Promise.all(Object.keys(all).map(function (k) {
         return all[k].requestPermission({ mode: 'read' }).catch(function () { return 'denied'; });
       }));
@@ -171,6 +194,8 @@
   }
   /* size and date of an allowed file; a file Drive won't serve in time just has none */
   function fileNode(h, ms) {
+    // Drive through Google already knows size and date: no download for them
+    if (h.meta) return Promise.resolve(h.meta.modified ? { name: h.name, kind: 'file', size: h.meta.size, modified: new Date(h.meta.modified).toISOString() } : { name: h.name, kind: 'file' });
     return withTimeout(h.getFile(), ms, SLOW).then(function (f) {
       return { name: h.name, kind: 'file', size: f.size, modified: new Date(f.lastModified).toISOString() };
     }, function () { return { name: h.name, kind: 'file' }; });
@@ -249,6 +274,7 @@
   }
 
   function relPathOf(handle) {
+    if (handle && typeof handle._path === 'string') return Promise.resolve(handle._path || null);
     return roots().then(function (all) {
       var names = Object.keys(all);
       return names.reduce(function (p, k) {

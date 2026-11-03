@@ -247,10 +247,17 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   'use strict';
   var P = window.GVC_PROPS, W = window.GVC_WS, F = window.GVC_FACTS, JP = window.GVC_JP, I = window.GVC_ICON, esc = window.GVC_ESC, $ = function (id) { return document.getElementById(id); };
   var q = new URLSearchParams(location.search);
-  var kind = q.has('listing') ? 'listing' : q.has('pitch') ? 'pitch' : q.has('dev') ? 'dev' : null;
-  var slug = kind ? q.get(kind) : '';
-  var TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[kind];
-  var OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[kind];
+  var urlKind = q.has('listing') ? 'listing' : q.has('pitch') ? 'pitch' : q.has('dev') ? 'dev' : null;
+  var slug = urlKind ? q.get(urlKind) : '';
+  var kind, TABLE, OWNER;
+  // a development that is one house (D141) is drawn as its house listing with the development's own cards:
+  // kind is then 'listing' on ?dev=, and state.dev holds the development
+  function setKind(k) {
+    kind = k;
+    TABLE = { listing: 'properties', pitch: 'pitches', dev: 'dev_projects' }[k];
+    OWNER = { listing: 'property_id', pitch: 'pitch_id', dev: 'dev_project_id' }[k];
+  }
+  setKind(urlKind);
   var today = W.today();
   var state = { row: null, job: null, changes: [], won: null, me: null, drive: null, doc: null, budget: null };
   var shell = GVC_SHELL.mount({ onDrive: function (s) { var was = state.drive; state.drive = s; if (state.row && s !== was) render(); } });
@@ -267,10 +274,32 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   }
 
   function load() {
+    setKind(urlKind); state.dev = null; state.devJob = null;
     if (!TABLE || !slug) return Promise.resolve(missing());
     return rest('/' + TABLE + '?slug=eq.' + encodeURIComponent(slug) + '&select=*').then(function (rows) {
       var row = rows && rows[0];
       if (!row) return missing();
+      // D141: a house listing that is its development opens as the development, its only page
+      if (kind === 'listing' && row.dev_project_id) {
+        return rest('/dev_projects?house_listing_id=eq.' + encodeURIComponent(row.id) + '&select=slug').then(function (d) {
+          if (d && d[0]) { location.replace('?dev=' + encodeURIComponent(d[0].slug)); return; }
+          return withRow(row);
+        }, function () { return withRow(row); });
+      }
+      // ...and that development's page draws the house: its facts, pieces, agents, Asana card and log
+      if (kind === 'dev' && row.house_listing_id) {
+        return rest('/properties?id=eq.' + encodeURIComponent(row.house_listing_id) + '&select=*').then(function (h) {
+          if (h && h[0]) { state.dev = row; setKind('listing'); }
+          return withRow(h && h[0] ? h[0] : row);
+        }, function () { return withRow(row); });
+      }
+      return withRow(row);
+    }, function (e) {
+      page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
+    });
+  }
+  function withRow(row) {
+    var dv = state.dev;
       return Promise.all([
         rest('/changes?' + OWNER + '=eq.' + encodeURIComponent(row.id) + '&select=*&order=at.desc&limit=500'),
         kind === 'listing' ? rest('/pitches?won_property_id=eq.' + encodeURIComponent(row.id) + '&select=*') : Promise.resolve([]),
@@ -289,14 +318,18 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         // a development's own house listings: where it is and who sells it (overhaul 7a)
         kind === 'dev' ? rest('/properties?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=slug,label,stage,core').catch(function () { return []; }) : Promise.resolve([]),
         // a development's units as Elliman lists them, at its street (overhaul 7b)
-        kind === 'dev' && GVC_DEV_ADDRESSES.of(row.slug).length ? rest('/de_listings?gvc_listed=is.true&ignored=is.false&select=de_listing_id,raw').catch(function () { return []; }) : Promise.resolve([])
+        kind === 'dev' && GVC_DEV_ADDRESSES.of(row.slug).length ? rest('/de_listings?gvc_listed=is.true&ignored=is.false&select=de_listing_id,raw').catch(function () { return []; }) : Promise.resolve([]),
+        // a development that is one house (D141): the development's own log, posts and budget too
+        dv ? rest('/changes?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&select=*&order=at.desc&limit=500').catch(function () { return []; }) : Promise.resolve([]),
+        dv ? rest('/asana_tasks?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([]),
+        dv ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
-        state.changes = (r[0] || []).slice().sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
+        state.changes = (r[0] || []).concat(r[10] || []).sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
         state.me = r[3];
         state.docs = r[4] || [];
-        state.posts = r[5] || [];
-        state.budget = (r[6] || [])[0] || null;
+        state.posts = (r[5] || []).concat(r[11] || []);
+        state.budget = (r[6] || [])[0] || (r[12] || [])[0] || null;
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         state.requests = r[7] || [];
         state.houses = r[8] || [];
@@ -313,6 +346,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         if (kind === 'pitch') data.pitches = [Object.assign({}, row, { won_property_id: null })];   // show the pitch itself even when won
         if (kind === 'dev') data.devProjects = [row];
         state.job = W.buildJobs(data, today, { archived: true })[0];
+        if (dv && state.job) {
+          state.devJob = W.buildJobs({ properties: [], pitches: [], devProjects: [dv], changes: r[10] || [] }, today, { archived: true })[0];
+          state.job.name = dv.label;
+        }
         state.won = (r[2] || [])[0] || null;
         if (!state.job) return missing();   // a listing with no stage yet
         render();
@@ -322,9 +359,6 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       }).catch(function (e) {
         page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
       });
-    }, function (e) {
-      page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
-    });
   }
   JP.reload = load;
   JP.redraw = function () { if (state.row) render(); };
@@ -332,6 +366,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, canAsk: JP.canAsk, drive: state.drive, W: W, I: I, esc: esc,
       doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, unitsFrom: state.unitsFrom, canFacts: JP.canFacts, onSheet: paintRebuild };
+  }
+  // the development's own cards on a development that is one house (D141)
+  function devCtx() {
+    return Object.assign(ctx(), { kind: 'dev', table: 'dev_projects', row: state.dev, job: state.devJob, units: [] });
   }
 
   /* ---------- 0017: the helper makes the pieces (overturns D89, D91) ----------
@@ -496,7 +534,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   function render() {
     var r = state.row, j = state.job, c = ctx();
     document.title = j.name + ' · GVC Workspace';
-    $('crumb').innerHTML = (kind === 'dev' ? '<a href="../new-dev/">New Dev</a>' : '<a href="../jobs/">Resell</a>') + '<span>/</span><span>' + esc({ listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
+    var dv = state.dev, dc = dv ? devCtx() : null;
+    $('crumb').innerHTML = (kind === 'dev' || dv ? '<a href="../new-dev/">New Dev</a>' : '<a href="../jobs/">Resell</a>') + '<span>/</span><span>' + esc(dv ? 'Developments' : { listing: j.type === 'rental' ? 'Rentals' : 'Listings', pitch: 'Pitches', dev: 'Developments' }[kind]) + '</span><span>/</span><span>' + esc(j.name) + '</span>';
     var sub = ['<span class="chip">' + esc(j.market || '?') + '</span>'];
     if (j.place) sub.push(esc(j.place));
     // a development: its street and town, and its agents, from its house listings and its known street (overhaul 7a)
@@ -521,20 +560,22 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<button class="b" type="button" id="open"' + (r.drive_folder && r.folder_state === 'linked' ? '' : ' disabled') + '>' + I('folder') + 'Open folder</button>' +
       (j.listingUrl && /^https:\/\//.test(j.listingUrl) ? '<a class="b" href="' + esc(j.listingUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'DE listing</a>' : '') +
       (j.asanaUrl ? '<a class="b" id="asanaLink" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open in Asana</a>' : '') +
-      (kind === 'dev' && state.budget ? '<a class="b" href="https://docs.google.com/spreadsheets/d/' + esc(state.budget.sheet_id) + '/edit" target="_blank" rel="noopener">' + I('arrow') + 'Budget sheet</a>' : '') +
+      (dv && state.devJob && state.devJob.asanaUrl ? '<a class="b" href="' + esc(state.devJob.asanaUrl) + '" target="_blank" rel="noopener">' + I('arrow') + 'Asana project</a>' : '') +
+      ((kind === 'dev' || dv) && state.budget ? '<a class="b" href="https://docs.google.com/spreadsheets/d/' + esc(state.budget.sheet_id) + '/edit" target="_blank" rel="noopener">' + I('arrow') + 'Budget sheet</a>' : '') +
       // archive a listing (its stage) or a development (0018), the owner only; a click asks "Confirm?" first
       (JP.canEdit && kind !== 'pitch' ? '<button class="b" type="button" id="archive">' + archiveLabel(false) + '</button>' : '') + '</div>';
     var right = [], left = [];
     if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
       '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
     if (kind === 'dev') left.push('<div id="msHost">' + JP.dev.html(c) + '</div>');
+    if (dv) left.unshift('<div id="msHost">' + JP.dev.html(dc) + '</div>');
     (kind === 'dev' ? right : left).push((kind === 'dev' ? JP.posts.html(c) : '') + '<div id="logHost">' + JP.log.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="agentsHost">' + JP.agents.html(c) + '</div>');
     if (kind === 'listing') right.push('<div id="docHost">' + JP.doc.html(c) + '</div>');
     if (kind !== 'dev') right.push('<div id="folderHost">' + JP.folder.html(c) + '</div>');
     if (kind === 'listing') right.push(asanaCard());
     // a development shows the phase its build is in (Asana's schedule), else its milestone stage
-    var phase = kind === 'dev' && window.GVC_DEVBUILD.currentPhase(r.schedule);
+    var phase = (kind === 'dev' || dv) && window.GVC_DEVBUILD.currentPhase((dv || r).schedule);
     var stage = isArchived() ? '<span class="chip">Archived</span>' : phase ? (phase.section ? '<span class="chip" title="Now: ' + esc(phase.name) + '">' + esc(window.GVC_DEVBUILD.sectionLabel(phase.section)) + '</span>' : '<span class="chip">' + esc(phase.name) + '</span>') : '<span class="chip ' + j.chip + '">' + esc(W.stageWord(j.stage, j.kind)) + '</span>';
     page('<div class="hd"><div><h1>' + esc(j.name) + ' ' + stage + '</h1><div class="sub">' + sub.join(' · ') + '</div>' + (JP.canEdit ? '' : '<div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div>') +
       // the folder's path itself isn't shown (Open folder and the Drive links reach it); only a problem with it is
@@ -543,11 +584,13 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<div id="topHost">' + tiles() + '</div>' +
       // the pieces made from the job sit near the top, under the facts (Slice 5, S16)
       (kind === 'listing' || kind === 'pitch' ? '<div id="piecesHost">' + JP.kit.piecesHtml(c, (r.scan && r.scan.pieces) || {}, false) + '</div>' : '') +
-      (kind === 'dev' ? JP.glance.html(c) + JP.units.html(c) + JP.devFiles.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
+      (kind === 'dev' ? JP.glance.html(c) + JP.units.html(c) + JP.devFiles.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') +
+      (dv ? JP.glance.html(dc) + JP.devFiles.html(dc) + '<div id="buildHost">' + JP.build.html(dc) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
     if ($('piecesHost')) JP.kit.wirePieces(c);
     if (kind === 'dev') { JP.dev.wire($('msHost'), c); JP.build.wire($('buildHost'), c); }
+    if (dv) { JP.dev.wire($('msHost'), dc); JP.build.wire($('buildHost'), dc); }
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);
     JP.log.wire($('logHost'), c);
@@ -581,9 +624,15 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         }, 5000);
         return;
       }
-      if (kind === 'dev') {
+      if (kind === 'dev' || dv) {
         set = { archived: !was };
         chg = [{ field: 'archived', old_value: was, new_value: !was }];
+        // a development that is one house: Archive archives the development (D141)
+        if (dv) {
+          btn.disabled = true;
+          return JP.save('dev_projects', dv, set, chg).then(function () { load(); },
+            function (e) { $('actMsg').textContent = e.message; delete btn.dataset.armed; btn.innerHTML = archiveLabel(false); btn.disabled = false; });
+        }
       } else {
         // back from Archived goes to Asana's own stage (save_job allows only that), else Prep
         var a = r.asana || {}, to = was ? (a.stageFromStatus || a.stageFromSection || 'Prep') : 'Archived';
@@ -596,7 +645,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     });
   }
 
-  function isArchived() { var r = state.row || {}; return kind === 'dev' ? !!r.archived_at : r.stage === 'Archived'; }
+  function isArchived() { var r = state.row || {}; return state.dev ? !!state.dev.archived_at : kind === 'dev' ? !!r.archived_at : r.stage === 'Archived'; }
   function archiveLabel(asking) {
     var was = isArchived();
     return I(was ? 'restore' : 'archive') + (asking ? (was ? 'Confirm restore?' : 'Confirm archive?') : (was ? 'Restore' : 'Archive'));

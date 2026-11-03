@@ -476,6 +476,20 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate'),
     await t.page.$$eval('#ovCard .k', e => e.map(k => k.textContent))], [true, null, false, ['Work items', 'Next on the schedule', 'Past target']]);
   await t.ctx.close();
+  /* D141: a development that is one house is one page: the house's cards on the development's address */
+  const R1H = rowsFor();
+  R1H.dev_projects[0].house_listing_id = 'p1';
+  R1H.properties[0].dev_project_id = 'd1';
+  t = await open(browser, { rows: R1H, path: '/workspace/job/?dev=619-example-ave' });
+  check('one house: the development page draws the house', [(await text(t.page, 'h1')).startsWith('619 Example Ave'), !!(await t.page.$('#factsHost')),
+    !!(await t.page.$('#agentsHost')), !!(await t.page.$('#asanaCard')), !!(await t.page.$('#piecesHost')),
+    await t.page.$$eval('#msList li', e => e.length), await t.page.$('#unitsCard'), (await text(t.page, '#crumb')).startsWith('New Dev'), t.errors],
+    [true, true, true, true, true, 18, null, true, []]);
+  await t.ctx.close();
+  t = await open(browser, { rows: R1H, path: '/workspace/job/?listing=100-example-st-4a' });
+  await t.page.waitForURL(/[?]dev=619-example-ave/);
+  check('one house: the listing address opens the development', [new URL(t.page.url()).search, t.errors], ['?dev=619-example-ave', []]);
+  await t.ctx.close();
   /* overhaul 8: every step of the listing page's tour is on the page, for an editor and for the shared sign-in */
   t = await open(browser, { path: LISTING });
   check('tour: every job-page step is on the page (owner)', await t.page.evaluate(() => GVC_WALK.missing('job', { role: 'owner' })), []);

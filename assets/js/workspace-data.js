@@ -6,7 +6,10 @@
          A won pitch folds into its listing (its date shows as pitchedOn).
          Library rows without a stage (old tool saves) stay off; Archived
          jobs only when asked. agentName(id) → name (default: roster.js's
-         GVC_AGENT when the page loaded it).
+         GVC_AGENT when the page loaded it). A development that is one house
+         (dev_projects.house_listing_id, D141) is one job: its house listing
+         folds into it, bringing its errors (each still the listing's own,
+         owner { id, table }), agents and price.
          Every job also has:
            dates      [{ key, label, on, planned }]  deal dates from
                       properties.milestones, date order; planned = after today (S7)
@@ -392,6 +395,18 @@
         last: dated.length ? dated.map(function (x) { return x.d; }).sort().pop() : null, href: 'job/?dev=' + encodeURIComponent(d.slug), version: d.version
       });
     });
+    // a development that is one house (D141): the house listing folds into it, so the job shows once
+    (rows.devProjects || []).forEach(function (d) {
+      if (!d.house_listing_id) return;
+      var dj = jobs.filter(function (j) { return j.type === 'development' && j.id === d.id; })[0];
+      var hi = -1; jobs.forEach(function (j, i) { if (j.id === d.house_listing_id && j.type !== 'development') hi = i; });
+      if (!dj || hi === -1) return;
+      var h = jobs.splice(hi, 1)[0];
+      dj.match = dj.match.concat(h.match.map(function (m) { return Object.assign({}, m, { owner: { id: h.id, table: 'properties' } }); }));
+      dj.mismatches = dj.match.length;
+      dj.agents = h.agents; dj.agentIds = h.agentIds; dj.price = dj.price || h.price; dj.place = dj.place || h.place;
+      dj.asanaUrl = dj.asanaUrl || h.asanaUrl; dj.house = { id: h.id, slug: h.slug, href: h.href };
+    });
     jobs.forEach(function (j) { j.sync = syncOf(j); });
     return jobs;
   }
@@ -485,6 +500,7 @@
     if (c.field === 'de_stage') return c.new_value ? 'DE stage moved to ' + c.new_value : 'DE stage cleared';
     if (c.field === 'asana_gid' || c.field === 'asana_project_gid') return c.new_value ? 'Linked to Asana' : 'Asana link removed';
     if (c.field === 'dev_project_id') return c.new_value ? 'Joined a development' : 'Left its development';
+    if (c.field === 'house_listing_id') return c.new_value ? 'Made one job with its house listing' : 'Its house listing is a job of its own again';
     if (c.field === 'from_pitch_id') return 'Made from a won pitch';
     if (!c.field) return c.note || 'Changed';
     var F = factsApi(), f = factField(c.field), label = fieldLabel(c.field);
@@ -577,7 +593,8 @@
     var out = [];
     jobs.forEach(function (j) {
       var items = (j.match || []).map(function (m) {
-        return { job: j.name, href: j.href, id: j.id, table: j.type === 'development' ? 'dev_projects' : j.type === 'pitch' ? 'pitches' : 'properties',
+        // a folded house's line stays the house listing's own (D141): it is dismissed there
+        return { job: j.name, href: j.href, id: m.owner ? m.owner.id : j.id, table: m.owner ? m.owner.table : j.type === 'development' ? 'dev_projects' : j.type === 'pitch' ? 'pitches' : 'properties',
           code: m.code, key: m.key || m.code, text: m.text, since: m.since || null, asanaUrl: j.asanaUrl || null,
           paste: m.values && typeof m.values.paste === 'string' ? m.values.paste : null,
           fixAt: FIX.indexOf(m.fixAt) === -1 ? 'Matt' : m.fixAt, who: (m.who || []).slice() };

@@ -24,10 +24,11 @@
              deListings  de_listings rows (M19; the helper passes them, the page
                       doesn't, so the page never makes M19 itself)
              library  the workspace rows with no stage (M20; the helper's)
-       code    'M1' … 'M28'
+             devs     dev_projects rows (M29; the helper's)
+       code    'M1' … 'M29'
        key     what a dismissal is stored under: the code, or code:part where
                one job can have several (M5:closedOn, M7:drive, M8:showsheet,
-               M12:<task gid>, M13:<task gid>, M17:price, M19:<DE id>, M20:<row id>)
+               M12:<task gid>, M13:<task gid>, M17:price, M19:<DE id>, M20:<row id>, M29:<dev id>)
        text    one plain sentence
        values  the sources' values: a dismissal holds while these stay the same
        fixAt   'Asana' | 'DE' | 'Drive' | 'Matt'
@@ -105,6 +106,10 @@
      M27  Live and the exclusive ends within the next 14 days (M9 once passed).
      M28  Sold or Rented while Asana's listing task is still open (Matt, 2026-10-30:
           held until the team confirms each deal is finished, but listed meanwhile).
+     M29  Listed twice (Matt, 11-03, D141): a listing with no unit at a development's
+          street (its name, or GVC_DEV_ADDRESSES), unless the development is that one
+          house (dev_projects.house_listing_id, 0024). A House 1 / House 2 listing is a
+          unit, never a line; archived jobs and developments are left out. Key M29:<dev id>.
 
    Needs asana-map.js and job-facts.js (loaded first in the browser).
    Loads in the browser (window.GVC_MATCH) and in Node (require).
@@ -114,8 +119,8 @@
   'use strict';
   if (typeof module === 'object' && module.exports) {
     module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), require('./kit-track.js'), global,
-      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js') }; });
-  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS }; });
+      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js') }; });
+  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES }; });
 })(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, KIT, global, libs) {
   'use strict';
 
@@ -280,6 +285,19 @@
       if (!o.address || !A.sameStreet(o.address, mine.address)) return false;
       var ua = A.unitKey(mine.unit), ub = A.unitKey(o.unit);
       return !ua || !ub || ua === ub;
+    });
+  }
+
+  /* ---------- M29: a development at the job's street (the same job twice) ---------- */
+  function devTwins(job, devs) {
+    var L = libs ? libs() : {}, A = L.A, P = L.P, D = L.D;
+    if (!Array.isArray(devs) || !devs.length || !A || !P || job.stage === 'Archived') return [];
+    var mine = addrOf(P, job.core);
+    if (!mine.address || A.unitKey(mine.unit)) return [];
+    return devs.filter(function (d) {
+      if (!d || d.archived_at || d.house_listing_id === job.id) return false;
+      var streets = (D && D.of ? D.of(d.slug) : []).concat(/^\d/.test(d.label || '') ? [d.label] : []);
+      return streets.some(function (s) { return A.sameStreet(s, mine.address); });
     });
   }
 
@@ -509,6 +527,12 @@
       add('M20', 'M20:' + r.id, 'Another workspace row, ' + label + ', is at this address with no stage and no Asana link. Archive it if it is the same home.', { other: r.id, label: label }, 'Matt');
     });
 
+    /* M29: a development at this address: the same job shows twice */
+    devTwins(job, ctx.devs).forEach(function (d) {
+      add('M29', 'M29:' + d.id, 'The development ' + (d.label || d.slug) + ' is at this address too, so the job shows twice. Ask Matt to make them one job.',
+        { dev: d.id, label: d.label || null }, 'Matt');
+    });
+
     if (a) {
       /* M10: no Listing Status, no address, no Listing Date once Live */
       var missing = [];
@@ -726,7 +750,8 @@
     M25: 'Asana has an accepted offer or contract, but the listing isn\'t on DE.',
     M26: 'Asana\'s zip code disagrees with DE\'s.',
     M27: 'The exclusive ends within two weeks. Extend it in Asana if the listing carries on.',
-    M28: 'The listing is Sold or Rented but its Asana task is still open. Tick it done once the team confirms the deal is finished.'
+    M28: 'The listing is Sold or Rented but its Asana task is still open. Tick it done once the team confirms the deal is finished.',
+    M29: 'A listing and a development are at the same address, so one job shows twice. Matt makes them one job (the development keeps the house).'
   };
 
   return { check: check, checkDeListing: checkDeListing, statusSince: statusSince, sectionDisagrees: sectionDisagrees,

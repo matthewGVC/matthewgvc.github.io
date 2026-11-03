@@ -22,7 +22,8 @@ const FILES = {   // folder id → its children
   f4: [{ id: 'c1', name: 'contract.pdf', mimeType: 'application/pdf', size: '5' }]
 };
 
-async function page(browser, who, token) {
+// server: what the drive-token function answers for a fresh pass (409: no permission kept)
+async function page(browser, who, token, server) {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
   const asked = [];
@@ -36,10 +37,13 @@ async function page(browser, who, token) {
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ files: FILES[parent] || [] }) });
   });
   await p.goto(BASE + '/tools/todo/', { waitUntil: 'domcontentloaded' });
-  await p.evaluate(([w, t]) => {
-    window.GVC_PROPS = { signedIn: () => true, whoAmI: () => Promise.resolve(w) };
+  await p.evaluate(([w, t, sv]) => {
+    window.__passes = 0; window.__signIns = [];
+    window.GVC_PROPS = { signedIn: () => true, whoAmI: () => Promise.resolve(w),
+      drivePass: () => { window.__passes++; return Promise.resolve(new Response(JSON.stringify(sv ? sv.body : { need: 'consent' }), { status: sv ? sv.status : 409 })); },
+      googleSignIn: o => window.__signIns.push(o) };
     if (t) sessionStorage.setItem('gvc.drive.web.token', JSON.stringify({ value: t, until: Date.now() + 3600e3 }));
-  }, [who, token]);
+  }, [who, token, server]);
   for (const f of ['drive-rules.js', 'drive-web.js', 'drive.js']) await p.addScriptTag({ url: BASE + '/assets/js/' + f });
   return { p, ctx, asked };
 }
@@ -62,11 +66,22 @@ async function page(browser, who, token) {
   check('Google is only ever asked to read', t.asked.every(a => !/POST|PATCH|DELETE/.test(a)), true);
   await t.ctx.close();
 
-  t = await page(browser, MATT, null);
-  check('a tester without a token: one click', await t.p.evaluate(() => GVC_DRIVE.state()), 'needs-click');
+  // 9b: the hour runs out, the server hands a fresh pass, nobody clicks
+  const FRESH = { status: 200, body: { access_token: 'tok', expires_in: 3600 } };
+  t = await page(browser, MATT, null, FRESH);
+  check('no pass in this tab: a fresh one from the server, connected, no click', [await t.p.evaluate(() => GVC_DRIVE.state()),
+    await t.p.evaluate(() => GVC_DRIVE.list('GVC - New York').then(x => x.length)), await t.p.evaluate(() => window.__passes), await t.p.evaluate(() => window.__signIns.length)], ['connected', 1, 1, 0]);
   await t.ctx.close();
-  t = await page(browser, MATT, 'expired-or-wrong');
-  check('a token Google refuses: says reconnect', await t.p.evaluate(() => GVC_DRIVE.list('GVC - New York').then(() => 'ok', e => e.message)), 'Drive needs one click to reconnect.');
+  t = await page(browser, MATT, 'expired-or-wrong', FRESH);
+  check('a pass Google refuses: one fresh pass and it carries on', await t.p.evaluate(() => GVC_DRIVE.list('GVC - New York').then(x => x.length, e => e.message)), 1);
+  await t.ctx.close();
+  t = await page(browser, MATT, null);
+  check('no permission kept: one click, which signs in with Google showing its page', [await t.p.evaluate(() => GVC_DRIVE.state()),
+    await t.p.evaluate(async () => { GVC_DRIVE.connect(); await new Promise(r => setTimeout(r, 100)); return window.__signIns; })], ['needs-click', [{ consent: true }]]);
+  await t.ctx.close();
+  t = await page(browser, MATT, null, { status: 503, body: { error: 'Drive through Google isn\'t set up yet (the server key is missing).' } });
+  check('the server key not set yet: an error, not an endless click', [await t.p.evaluate(() => GVC_DRIVE.state()),
+    await t.p.evaluate(() => GVC_DRIVE.list('GVC - New York').then(() => 'ok', e => e.message))], ['error', 'Drive through Google isn\'t set up yet (the server key is missing).']);
   await t.ctx.close();
 
   t = await page(browser, { email: 'katie@gvcrealestateteam.com', role: 'team' }, 'tok');

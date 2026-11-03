@@ -134,9 +134,16 @@ const P = require('../assets/js/property-library.js');
     await Promise.all([p3.waitForURL('**/auth/v1/authorize**', { timeout: 5000 }).catch(() => {}), p3.click('dialog.gvc-signin .gvc-signin-google').catch(() => {})]);
     const go = new URL(p3.url());
     check('Google: to Supabase\'s Google door, coming back to the same page', [go.pathname, go.searchParams.get('provider'), new URL(go.searchParams.get('redirect_to') || 'x:').pathname], ['/auth/v1/authorize', 'google', '/tools/todo/']);
-    await p3.goto(BASE + '/tools/todo/#access_token=ga&refresh_token=gr&expires_in=3600&token_type=bearer', { waitUntil: 'networkidle' });
+    check('9b: the sign-in asks for read-only Drive, lasting, without forcing Google\'s page', [go.searchParams.get('scopes'), go.searchParams.get('access_type'), go.searchParams.get('prompt')],
+      ['https://www.googleapis.com/auth/drive.readonly', 'offline', null]);
+    const kept = [];
+    await p3.route('**/functions/v1/drive-token', r => { kept.push({ auth: r.request().headers().authorization, body: JSON.parse(r.request().postData()) }); r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+    await p3.goto(BASE + '/tools/todo/#access_token=ga&refresh_token=gr&expires_in=3600&token_type=bearer&provider_token=pt&provider_refresh_token=prt', { waitUntil: 'networkidle' });
+    check('9b: Google\'s lasting permission goes to the server, this hour\'s pass stays in the tab', [kept, JSON.parse(await p3.evaluate(() => sessionStorage.getItem('gvc.drive.web.token')) || '{}').value],
+      [[{ auth: 'Bearer ga', body: { action: 'store', refresh_token: 'prt' } }], 'pt']);
     check('Google return: the session kept, the tokens gone from the address', [JSON.parse(await p3.evaluate(() => localStorage.getItem('gvc.props.session')) || '{}').access_token,
       new URL(p3.url()).hash], ['ga', '']);
+    check('9b: nothing of Google\'s left in the address or local storage', await p3.evaluate(() => JSON.stringify(localStorage).includes('prt') || location.href.includes('prt')), false);
     await p3.close();
     /* cancel resolves false and leaves the page usable */
     const p2 = await browser.newPage();

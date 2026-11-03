@@ -7,7 +7,7 @@
        ctx.me       { name, role } (any team member may add a note)
 
    Each line is worded by GVC_WS.changeTitle (shared with the overview),
-   with its note, who asked and "Typo, no rebuild". The "What changed, who
+   with its note, who asked and "Only a typo". The "What changed, who
    asked" box saves a change row with no field through save_job. Entries
    are never edited or deleted.
    ============================================================ */
@@ -23,7 +23,7 @@
       var t = W.changeTitle(c), small = [];
       if (c.note && c.field && c.note !== t) small.push(c.note);
       if (c.asked_by) small.push('Asked by ' + c.asked_by + '.');
-      if (c.no_rebuild) small.push('Typo, no rebuild.');
+      if (c.no_rebuild) small.push('Only a typo, so the made pieces stayed up to date.');
       return '<li><span class="dt ' + cls + '"></span><div>' + esc(t) + small.map(function (s) { return '<small>' + esc(s) + '</small>'; }).join('') +
         '</div><span class="w">' + esc(W.fmtDay(c.at) + ' · ' + c.source) + '</span></li>';
     });

@@ -19,7 +19,7 @@
      floorplan version or a newer file of the same version.
      What doesn't: sheet-only wording (it isn't in built_from), paper and
      bleed, how it was made, a plan dropped by hand, and anything changed
-     with "Typo, no rebuild" (save_job wrote the new value into built_from).
+     with "Only a typo" (save_job wrote the new value into built_from).
      No built_from: 'untracked' when a file exists ("made before the
      workspace kept track", never stale), else 'none'.
 

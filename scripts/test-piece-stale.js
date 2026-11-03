@@ -43,7 +43,7 @@ check('fresh when Drive is unknown', ST.stale(d0, r0, {}), { state: 'fresh', cha
 const r1 = job({ facts: { price: 2100000 } });
 check('price changed', ST.stale(d0, r1, {}), { state: 'stale', changes: [{ field: 'price', label: 'Price', was: 2250000, now: 2100000 }] });
 
-// "Typo, no rebuild": save_job wrote the new value into built_from too
+// "Only a typo": save_job wrote the new value into built_from too
 const dTypo = JSON.parse(JSON.stringify(d0)); dTypo.built_from.facts.price = 2100000;
 check('typo-ticked change flags nothing', ST.stale(dTypo, r1, {}).state, 'fresh');
 

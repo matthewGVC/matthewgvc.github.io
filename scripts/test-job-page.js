@@ -244,7 +244,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await p.click('#fSave');
   await settle(p);
   s = t.saves[1] || {};
-  check('facts: Typo, no rebuild', (s.p_changes || []).map(c => [c.field, c.new_value, c.no_rebuild]), [['sqft', 1550, true]]);
+  check('facts: Only a typo', (s.p_changes || []).map(c => [c.field, c.new_value, c.no_rebuild]), [['sqft', 1550, true]]);
   // baths: 3.5 is 3 baths and 1 half
   await p.click('tr[data-fact="baths"] [data-edit]');
   await p.fill('#fIn', '3.5');
@@ -270,7 +270,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   // change log words
   check('log: worded by changeTitle, newest first', await p.$$eval('#changeLog li > div', els => els.map(e => e.childNodes[0].textContent)),
     ['Agents: Katie Cook', 'Katie says the price drops Friday', 'Beds 3 → 4']);
-  check('log: who asked and the typo mark', [(await text(p, '#changeLog')).includes('Asked by Katie Cook.'), (await text(p, '#changeLog')).includes('Typo, no rebuild.')], [true, true]);
+  check('log: who asked and the typo mark', [(await text(p, '#changeLog')).includes('Asked by Katie Cook.'), (await text(p, '#changeLog')).includes('Only a typo, so the made pieces stayed up to date.')], [true, true]);
   // a note
   await p.fill('#noteText', 'Katie says the price drops Friday');
   await p.selectOption('#noteWho', 'Katie Cook');

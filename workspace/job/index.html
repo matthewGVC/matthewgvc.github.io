@@ -210,6 +210,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/log.js"></script>
 <script src="../../assets/js/job-page/dev.js"></script>
 <script src="../../assets/js/job-page/units.js"></script>
+<script src="../../assets/js/job-page/devfiles.js"></script>
 <script src="../../assets/js/walkthrough.js"></script>
 <script src="../../assets/js/dev-build.js"></script>
 <script src="../../assets/js/job-page/build.js"></script>
@@ -526,7 +527,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       '<div id="topHost">' + tiles() + '</div>' +
       // the pieces made from the job sit near the top, under the facts (Slice 5, S16)
       (kind === 'listing' || kind === 'pitch' ? '<div id="piecesHost">' + JP.kit.piecesHtml(c, (r.scan && r.scan.pieces) || {}, false) + '</div>' : '') +
-      (kind === 'dev' ? JP.units.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
+      (kind === 'dev' ? JP.units.html(c) + JP.devFiles.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
     if ($('piecesHost')) JP.kit.wirePieces(c);

@@ -500,7 +500,21 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     ['2 for sale · 1 in contract. As listed on Elliman, read each morning.', ['B $4,799,000 For sale', 'E $5,550,000 For sale', 'C $4,499,000 In contract'], true, []]);
   await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
-  check('units: a development with no known street has no Units card', await t.page.$('#unitsCard'), null);
+  check('units: a development with no known street and no houses has no Units card', await t.page.$('#unitsCard'), null);
+  await t.ctx.close();
+  /* overhaul 7b-2: no units on Elliman, so its own house listings, each opening its page */
+  const RHU = rowsFor();
+  RHU.properties.push(
+    { id: 'h2', slug: '619-example-ave-house-2', label: '619 Example Ave, House 2', stage: 'Prep', kind: 'sale', dev_project_id: 'd1', core: { address: '619 Example Ave', unit: 'House 2', price: 2500000 } },
+    { id: 'h1', slug: '619-example-ave-house-1', label: '619 Example Ave, House 1', stage: 'Live', kind: 'sale', dev_project_id: 'd1', core: { address: '619 Example Ave', unit: 'House 1', price: 2400000, beds: 4, baths: 3, halfBaths: 1, sqft: 3100 } },
+    { id: 'h3', slug: '619-example-ave-house-3', label: 'Old house', stage: 'Archived', kind: 'sale', dev_project_id: 'd1', core: { unit: 'House 3' } });
+  t = await open(browser, { rows: RHU, path: '/workspace/job/?dev=619-example-ave' });
+  check('units: the development’s own houses, for sale first, each opening its page', [await text(t.page, '#unitsCard p'),
+    await t.page.$$eval('#unitsCard tbody tr', rs => rs.map(r => [...r.cells].map(c => c.textContent.trim()).join(' | '))),
+    await t.page.$$eval('#unitsCard tbody a', as => as.map(a => a.getAttribute('href'))), t.errors],
+    ['1 for sale · 1 not listed yet. From its listings here; each opens its page.',
+      ['House 1 | 4 bd / 3 + 1 half ba | 3,100 sq ft | $2,400,000 | For sale | Open', 'House 2 |  |  | $2,500,000 | Not listed yet | Open'],
+      ['../job/?listing=619-example-ave-house-1', '../job/?listing=619-example-ave-house-2'], []]);
   await t.ctx.close();
   /* overhaul 7b-1: a development's Marketing materials, from the nightly scan of its folder (0023) */
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });

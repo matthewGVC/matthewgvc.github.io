@@ -205,7 +205,7 @@
   function staleOpts() {
     var o = { fileFound: M.fileFound || !!((((M.row.scan || {}).pieces || {})[A.kitKey]) || []).length };
     if (M.files) {
-      o.files = M.files; o.editedPaths = M.editedPaths; o.plans = M.plans;
+      o.files = M.files; o.editedPaths = M.editedPaths; o.plans = M.plans; o.clock = M.clock;
       if (kind === 'pitch') o.photoPaths = M.pitchPhotos;
     }
     if (M.mapNow) o.map = M.mapNow;
@@ -445,7 +445,7 @@
     (node && node.children || []).forEach(function (c) {
       var p = base ? base + '/' + c.name : c.name;
       if (c.kind === 'directory') { if (!/^archive$/i.test(c.name)) flat(c, p, out); }
-      else out.push({ path: p, name: c.name, modified: c.modified || null });
+      else out.push(Object.assign({ path: p, name: c.name, modified: c.modified || null }, c.clock === 'google' ? { clock: 'google' } : {}));
     });
     return out;
   }
@@ -484,6 +484,7 @@
         var all = flat(tree, '', []);
         M.files = {};
         photos.concat(plans).forEach(function (f) { M.files[f.path] = { modified: f.modified }; });
+        M.clock = photos.concat(plans).some(function (f) { return f.clock === 'google'; }) ? 'google' : 'disk';
         M.editedPaths = kind === 'listing' ? photos.map(function (f) { return f.path; }) : null;
         M.pitchPhotos = kind === 'pitch' ? J.pitchPhotos(photos) : null;
         M.plans = J.pickFloorplans(plans);
@@ -704,7 +705,7 @@
     return {
       state: A.printable(),
       storable: storable(),
-      builtFrom: RU.builtFrom(A.state(), M.row, Object.assign({}, A.builtCtx(), { via: 'helper', paper: A.paper() || null })),
+      builtFrom: RU.builtFrom(A.state(), M.row, Object.assign({}, A.builtCtx(), { via: 'helper', paper: A.paper() || null, clock: M.clock })),
       paper: A.paper() || null
     };
   };

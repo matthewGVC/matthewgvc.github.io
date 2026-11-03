@@ -294,12 +294,12 @@
     var facts = {};
     FIELDS(tool, row).forEach(function (n) { facts[n] = value(tool, row, n); });
     var a = agents(tool, row);
-    return {
+    return Object.assign({
       v: 2, tool: tool, market: row.market || 'NYC', kind: rental(row) ? 'rental' : 'sale',
       facts: facts, agents: a.ids, agentsConfirmed: a.confirmed, listingUrl: LINKED.indexOf(tool) !== -1 ? linkOf(row) : null,
       photos: ctx.photos || [], plans: ctx.plans || [], map: ctx.map || null,
       print: { paper: state.paper || null, bleed: state.bleed || null }, via: ctx.via || 'helper'
-    };
+    }, ctx.clock === 'google' ? { clock: 'google' } : {});   // its file dates are Google's, not G:'s
   }
 
   /* ---------- files ---------- */

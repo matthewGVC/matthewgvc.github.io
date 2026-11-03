@@ -194,8 +194,9 @@
   }
   /* size and date of an allowed file; a file Drive won't serve in time just has none */
   function fileNode(h, ms) {
-    // Drive through Google already knows size and date: no download for them
-    if (h.meta) return Promise.resolve(Object.assign(h.meta.modified ? { name: h.name, kind: 'file', size: h.meta.size, modified: new Date(h.meta.modified).toISOString() } : { name: h.name, kind: 'file' },
+    // Drive through Google already knows size and date: no download for them. Its date is
+    // Google's modifiedTime, another clock than G:'s file date (clock: 'google', see GVC_STALE)
+    if (h.meta) return Promise.resolve(Object.assign(h.meta.modified ? { name: h.name, kind: 'file', size: h.meta.size, modified: new Date(h.meta.modified).toISOString(), clock: 'google' } : { name: h.name, kind: 'file' },
       h.url ? { url: h.url } : {}));   // and its real Drive link
     return withTimeout(h.getFile(), ms, SLOW).then(function (f) {
       return { name: h.name, kind: 'file', size: f.size, modified: new Date(f.lastModified).toISOString() };

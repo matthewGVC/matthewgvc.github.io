@@ -9,7 +9,9 @@
        opts  { fileFound?   a showsheet file is in the folder (scan or live)
                files?       { '<path in job folder>': { modified } } known file dates
                editedPaths? the edited photos, when Drive or the scan says (else unknown)
-               floorplan?   the newest floorplan now: { version, render, path, modified } }
+               floorplan?   the newest floorplan now: { version, render, path, modified }
+               clock?       whose dates opts.files and the plans carry: 'google' (Drive read
+                            through Google: its modifiedTime) or 'disk' (G:'s file date, the default) }
              A key left out is unknown and never judged: a phone or a desktop
              without Drive still sees every fact, agent and link change.
 
@@ -22,6 +24,11 @@
      with "Only a typo" (save_job wrote the new value into built_from).
      No built_from: 'untracked' when a file exists ("made before the
      workspace kept track", never stale), else 'none'.
+     Two clocks: G: shows a file's own saved date, Google's modifiedTime also
+     moves when Drive touches the file's details (225 E79, 11-03: G: 2 Dec,
+     Google 4 Dec, the same photo). A date is only compared with one from the
+     same clock (built_from.clock, else 'disk': the helper reads G:); across
+     clocks a file's date is not judged, its path and version still are.
 
      GVC_STALE.words(changes) → 'price, agents'
 
@@ -59,6 +66,8 @@
   function blank(v) { return v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length); }
   function same(a, b) { return (blank(a) && blank(b)) || S.same(a, b); }
   function ms(v) { var t = Date.parse(v); return isNaN(t) ? 0 : t; }
+  // the build's file dates and the read's are on the same clock (see the header)
+  function sameClock(bf, opts) { return (bf.clock || 'disk') === (opts.clock || 'disk'); }
 
   /* ---------- Slice 5 pieces (built_from v2) ---------- */
   function paths(list) { return (Array.isArray(list) ? list : []).map(function (p) { return p && p.path || null; }).filter(Boolean); }
@@ -86,7 +95,7 @@
     if (now && heroOnly) { now = now.slice(0, 1); was = was.slice(0, 1); }
     if (now && tool !== 'pitch-map' && (was.length || now.length)) {
       if (JSON.stringify(was) !== JSON.stringify(now.slice(0, Math.max(was.length, now.length)))) add('photos', 'Photos', was, now);
-      else if (opts.files && (bf.photos || []).some(function (p) {
+      else if (opts.files && sameClock(bf, opts) && (bf.photos || []).some(function (p) {
         var f = p && p.path && opts.files[p.path];
         return f && p.modified && f.modified && ms(f.modified) !== ms(p.modified);
       })) add('photos', 'Photos', was, 'file updated on Drive');
@@ -100,14 +109,14 @@
       var nv = Math.max.apply(null, [0].concat(np.map(function (p) { return p.version || 0; })));
       if (nv > bv) add('floorplan', 'Floorplan', 'v' + bv, 'v' + nv);
       else if (JSON.stringify(paths(bp).sort()) !== JSON.stringify(paths(np).sort()) && nv === bv) add('floorplan', 'Floorplan', paths(bp), paths(np));
-      else if (bp.some(function (p) {
+      else if (sameClock(bf, opts) && bp.some(function (p) {
         var n = np.filter(function (x) { return x.path === p.path; })[0];
         return n && ms(n.modified) > ms(p.modified);
       })) add('floorplan', 'Floorplan', paths(bp), 'file updated on Drive');
     }
     // the map: a newer file than the one printed (a dropped map never counts; no dates, not judged)
     var bm = bf.map, nm = opts.map;
-    if (bm && !bm.dropped && nm && nm.path && ms(nm.modified)) {
+    if (bm && !bm.dropped && nm && nm.path && ms(nm.modified) && sameClock(bf, opts)) {
       if (nm.path !== bm.path ? ms(nm.modified) >= ms(bm.modified) : ms(nm.modified) > ms(bm.modified)) {
         add('map', 'Map', bm.path, nm.path === bm.path ? 'file updated on Drive' : nm.path);
       }
@@ -146,14 +155,14 @@
         var was = (bf.photos || {})[p[0]] || null, path = now[p[0]] || null;
         if ((was && was.path || null) !== path) { add('photos.' + p[0], p[1], was && was.path || null, path); return; }
         var f = path && opts.files && opts.files[path];
-        if (f && was && was.modified && f.modified && ms(f.modified) !== ms(was.modified)) add('photos.' + p[0], p[1], path, 'file updated on Drive');
+        if (f && was && was.modified && f.modified && sameClock(bf, opts) && ms(f.modified) !== ms(was.modified)) add('photos.' + p[0], p[1], path, 'file updated on Drive');
       });
     }
 
     var fp = bf.floorplan, fn = opts.floorplan;
     if (fp && !fp.dropped && fn) {
       if (fn.version > fp.version) add('floorplan', 'Floorplan', 'v' + fp.version, 'v' + fn.version);
-      else if (fn.version === fp.version) {
+      else if (fn.version === fp.version && sameClock(bf, opts)) {
         if (fn.path !== fp.path && ms(fn.modified) > ms(fp.modified)) add('floorplan', 'Floorplan', fp.path, fn.path);
         else if (fn.path === fp.path && ms(fn.modified) > ms(fp.modified)) add('floorplan', 'Floorplan', fp.path, 'file updated on Drive');
       }

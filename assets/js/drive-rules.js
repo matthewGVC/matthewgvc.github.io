@@ -133,6 +133,7 @@
       var f = { name: c.name, kind: 'file' };
       if (c.size != null) f.size = c.size;
       if (c.modified != null) f.modified = c.modified;
+      if (c.clock === 'google') f.clock = 'google';   // the date is Google's, not G:'s
       if (DRIVE_URL.test(c.url || '')) f.url = c.url;   // Drive through Google: the file's real link
       return f;
     }

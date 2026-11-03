@@ -93,6 +93,8 @@
      they're unknown. A file found live or in last night's scan counts, as in the sheet's bar. */
   var IMG = /\.(jpe?g|png|webp)$/i;
   var DRIVE_LINK = /^https:\/\/drive\.google\.com\//;
+  // the clock the read's file dates are on: Google's (Drive through Google) or G:'s
+  function clockOf(files) { return files.some(function (f) { return f.clock === 'google'; }) ? 'google' : 'disk'; }
   function judge(ctx, pieces, live) {
     var ST = global.GVC_STALE;
     if (!ST || ctx.kind !== 'listing') return null;
@@ -106,6 +108,7 @@
       opts.files = {};
       photos.concat(plans).forEach(function (f) { opts.files[f.path] = { modified: f.modified }; });
       opts.editedPaths = photos.map(function (f) { return f.path; });
+      opts.clock = clockOf(photos.concat(plans));
       opts.floorplan = global.GVC_SHEETJOB.pickFloorplan(plans);
     }
     try { return ST.stale(ctx.doc || null, ctx.row, opts); }
@@ -183,6 +186,7 @@
       opts.files = {};
       photos.concat(plans).forEach(function (f) { opts.files[f.path] = { modified: f.modified }; });
       opts.editedPaths = photos.map(function (f) { return f.path; });
+      opts.clock = clockOf(photos.concat(plans));
       opts.plans = PJ.pickFloorplans(plans);
     }
     try { return ST.stale(docOf(ctx, tool), ctx.row, opts); }

@@ -241,12 +241,12 @@
     var facts = {};
     FIELDS(row, state.ownership).forEach(function (n) { facts[n] = valueOf(row, n); });
     var ag = agentsOf(row);
-    return {
+    return Object.assign({
       v: 1, market: row.market || 'NYC', kind: row.kind === 'rental' ? 'rental' : 'sale', ownership: state.ownership || null,
       facts: facts, agents: ag.ids, agentsConfirmed: ag.confirmed, listingUrl: listingUrlOf(row),
       photos: ctx.photos || { front: null, back: null }, floorplan: ctx.floorplan || null,
       print: { paper: state.paper || 'a5', bleed: !!state.bleed }, via: ctx.via || 'helper'
-    };
+    }, ctx.clock === 'google' ? { clock: 'google' } : {});
   }
 
   /* ---------- photos and floorplan (S7) ---------- */

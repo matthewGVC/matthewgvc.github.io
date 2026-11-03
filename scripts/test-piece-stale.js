@@ -64,6 +64,21 @@ check('same version, newer file', ST.stale(d0, r0, { floorplan: Object.assign({}
 check('same version, another file', ST.stale(d0, r0, { floorplan: Object.assign({}, plan1, { path: 'Floorplan/v1/Plan v1 new.jpg', modified: '2026-10-09T10:00:00Z' }) }).changes.map(c => c.field), ['floorplan']);
 check('floorplan unknown: not judged', ST.stale(d0, r0, { floorplan: undefined }).state, 'fresh');
 const dDrop = JSON.parse(JSON.stringify(d0)); dDrop.built_from.floorplan = { dropped: true };
+// 225 E79 PHA (11-03): the helper built from G:'s dates; Google's modifiedTime for the same photos is
+// two days later (Drive touched their details), so Drive through Google said "front photo, back photo"
+const googleDates = { 'Photos/Edited/01.jpg': { modified: '2026-10-03T15:23:36.810Z' }, 'Photos/Edited/02.jpg': { modified: '2026-10-03T15:23:43.514Z' } };
+check('G: build, read through Google: dates from two clocks are not compared',
+  ST.stale(d0, r0, { files: googleDates, floorplan: Object.assign({}, plan1, { modified: '2026-10-05T10:00:00Z' }), clock: 'google' }), { state: 'fresh', changes: [] });
+check('G: build, read through Google: a new front photo still counts',
+  ST.stale(d0, job({ row: { photo_hero: 'Photos/Edited/02.jpg', photo_order: ['Photos/Edited/02.jpg', 'Photos/Edited/03.jpg'] } }), { files: googleDates, clock: 'google' }).changes.map(c => c.field), ['photos.front', 'photos.back']);
+check('G: build, read through Google: a newer floorplan version still counts',
+  ST.stale(d0, r0, { files: googleDates, floorplan: { version: 2, render: 'branded', path: 'Floorplan/v2/Plan v2.jpg', modified: '2026-10-09' }, clock: 'google' }).changes.map(c => c.field), ['floorplan']);
+check('G: build, read from G:: a new date still counts', ST.stale(d0, r0, { files: googleDates, clock: 'disk' }).changes.map(c => c.now), ['file updated on Drive', 'file updated on Drive']);
+const dGoogle = JSON.parse(JSON.stringify(d0)); dGoogle.built_from.clock = 'google';
+check('Google build, read through Google: a new date counts', ST.stale(dGoogle, r0, { files: googleDates, clock: 'google' }).changes.map(c => c.field), ['photos.front', 'photos.back']);
+check('Google build, read from G:: not compared', ST.stale(dGoogle, r0, { files, clock: 'disk' }).state, 'fresh');
+check('builtFrom records a Google clock, and only that',
+  [S.builtFrom(state, r0, { clock: 'google' }).clock, 'clock' in S.builtFrom(state, r0, { clock: 'disk' })], ['google', false]);
 check('a plan dropped by hand never goes stale', ST.stale(dDrop, r0, { floorplan: { version: 5, path: 'x.jpg', modified: '2026-12-01' } }).state, 'fresh');
 
 check('NYC sheet ignores sq ft', ST.stale(d0, job({ facts: { sqft: 1500 } }), {}).state, 'fresh');
@@ -169,6 +184,10 @@ const sgJob = (over) => job(Object.assign({ facts: { city: 'New York', state: 'N
 const sgDoc = v2('signage', sgJob({ row: { market: 'NYC' } }));
 check('sign: a market move counts (the office line changes)', ST.stale(sgDoc, sgJob({ row: { market: 'NJ' } }), {}).changes.map(c => c.field), ['market']);
 check('sign: an outside link never counts as the listing link', ST.stale(sgDoc, sgJob({ row: { market: 'NYC' }, core: { listingUrl: 'https://evil.example/x' } }), {}).state, 'fresh');
+const bGoogle = { built_from: J.builtFrom('brochure', {}, brochureRow, { via: 'helper', photos: ['01', '02'].map(n => ({ path: 'Photos/Edited/' + n + '.jpg', modified: '2026-10-01T10:00:00Z' })) }) };
+check('brochure: G: build, read through Google: dates not compared',
+  ST.stale(bGoogle, brochureRow, { files: googleDates, editedPaths: Object.keys(googleDates), clock: 'google' }).state, 'fresh');
+check('brochure: the same, read from G:: a new date counts', ST.stale(bGoogle, brochureRow, { files: googleDates, editedPaths: Object.keys(googleDates) }).changes.map(c => c.now), ['file updated on Drive']);
 console.log('\n  ' + pass + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : ''));
 if (failures.length) {
   console.log('\n  ' + failures.join('\n\n  ') + '\n');

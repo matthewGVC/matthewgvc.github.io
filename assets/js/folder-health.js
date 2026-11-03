@@ -66,7 +66,8 @@
   function low(s) { return String(s || '').toLowerCase(); }
   function isDir(n) { return !!n && n.kind === 'directory'; }
   // a piece keeps its file's real Drive link when the tree has one (Drive through Google)
-  function withUrl(f, c) { if (/^https:\/\/drive\.google\.com\//.test(c.url || '')) f.url = c.url; return f; }
+  // (and says when its date is Google's, not G:'s: GVC_STALE never compares the two clocks)
+  function withUrl(f, c) { if (/^https:\/\/drive\.google\.com\//.test(c.url || '')) f.url = c.url; if (c.clock === 'google') f.clock = 'google'; return f; }
   function ms(v) { var t = typeof v === 'number' ? v : Date.parse(v); return isNaN(t) ? 0 : t; }
   function fmt(v) { var d = new Date(ms(v)); return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }
   function folderKey(name) {

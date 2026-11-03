@@ -200,6 +200,8 @@ wall above, 90 a wall to the right, 180 below, 270 to the left.
 
 `{ "text": "CL", "at": [x, y] }`: the small 7.2 pt words, such as CL, W/D, REF, DW, FP, UP, DN,
 BUILT-IN and LAUNDRY. Place each one inside its space, clear of walls and fixtures.
+`"backing": true` puts a white box behind one, as on a room, where it can only sit over linework (a
+void's crossed lines, a patterned terrace).
 
 ### lines
 

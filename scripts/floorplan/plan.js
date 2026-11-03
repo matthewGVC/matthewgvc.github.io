@@ -31,7 +31,7 @@
                       "backing": true optional — a white box behind the label, over linework (an elevator's X),
                       "box": [x0,y0,x1,y1] optional — the room's extent in plan units;
                       only when present is the "label wider than its room" warning checked }],
-       "labels":   [{ "text", "at": [x,y] }],   rooms and labels also take "allAt": [x,y], "allScale" and "allLock" (fit-labels.js leaves it), where and how big the
+       "labels":   [{ "text", "at": [x,y], "backing": true optional (as rooms) }],   rooms and labels also take "allAt": [x,y], "allScale" and "allLock" (fit-labels.js leaves it), where and how big the
                     all-floors sheet sets them (it draws each floor smaller); top level "allSheet": { "textScale" }
        "lines":    [{ "pts": [[x,y], ...], "closed": bool, "dash": bool, "arrow": bool }]   thin linework the fixed set doesn't cover:
                                                                cabinet and built-in outlines, stair winders

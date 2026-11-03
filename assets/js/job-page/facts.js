@@ -9,7 +9,7 @@
    values on a quiet line, and the warning sign while Matt's value differs
    from DE's (else Asana's). The owner clicks a value to edit it inline:
    Save keeps it as Matt's (GVC_FACTS.applyFact), Clear drops Matt's value
-   (the next source shows), empty text means Clear. "Typo, no rebuild"
+   (the next source shows), empty text means Clear. "Only a typo"
    marks the change-log row. What was typed survives a conflict reload.
    ============================================================ */
 (function (global) {
@@ -55,7 +55,7 @@
              : '<input class="inp" id="fIn" aria-label="' + esc(f.label) + '" value="' + esc(open.text) + '">') +
         (hint ? '<div class="fo">' + esc(hint) + '</div>' : '') +
         (deHas ? '<div class="fo">DE has this. Yours holds until DE\'s own value changes, with a warning meanwhile.</div>' : '') +
-        '<label class="ftypo"><input type="checkbox" id="fTypo"' + (open.typo ? ' checked' : '') + '> Typo, no rebuild</label>' +
+        '<label class="ftypo"><input type="checkbox" id="fTypo"' + (open.typo ? ' checked' : '') + '> Only a typo: the made pieces stay up to date</label>' +
         '<div class="fbtn"><button class="b primary sm" type="button" id="fSave">Save</button><button class="b sm" type="button" id="fCancel">Cancel</button>' +
         (f.source === 'Matt' ? '<button class="b sm" type="button" id="fClear">Clear</button>' : '') + '</div>' +
         '<p class="fmsg" id="fMsg" role="alert">' + esc(open.msg || '') + '</p></div>';

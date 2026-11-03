@@ -340,7 +340,7 @@
       });
       if (edits[n] && M.canEdit) {
         out += '<div class="jfe">' + esc(A.editedWords || 'Changed here: yours, saves to the ' + NOUN) +
-          '<label><input type="checkbox" data-typo="' + esc(n) + '"' + (M.noRebuild[n] ? ' checked' : '') + '> Typo, no rebuild</label></div>';
+          '<label><input type="checkbox" data-typo="' + esc(n) + '"' + (M.noRebuild[n] ? ' checked' : '') + '> Only a typo: the made pieces stay up to date</label></div>';
       }
       return out + '</div>';
     }).join('');

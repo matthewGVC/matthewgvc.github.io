@@ -14,7 +14,7 @@
        (money as numbers, baths whole + halfBaths). Address and unit never.
      GVC_SHEETJOB.applyEdits(row, edits, { noRebuild }) → { set: { core }, changes }
        The save_job arguments for those edits (Matt's values, logged
-       "on the Showsheet", ticked "Typo, no rebuild" where asked).
+       "on the Showsheet", ticked "Only a typo" where asked).
      GVC_SHEETJOB.builtFrom(state, row, { photos, floorplan, via }) → snapshot
        What a build printed from the job (plan §10): every printed fact as
        the job held it, agents, listing link, market, photos and floorplan.

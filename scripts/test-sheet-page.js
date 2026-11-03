@@ -204,7 +204,7 @@ const typeIn = async (page, field, value) => {
   await p.check('[data-typo="beds"]');
   await p.click('#btnSaveSheet');
   await p.waitForTimeout(600);
-  check('Typo, no rebuild', ((t.saves[1] || {}).p_changes || []).map(c => [c.field, c.no_rebuild]), [['beds', true]]);
+  check('Only a typo', ((t.saves[1] || {}).p_changes || []).map(c => [c.field, c.no_rebuild]), [['beds', true]]);
   check('second draft uses the saved version', (t.pieces[1] || {}).p_version, 1);
   check('job mode: no page errors after saves', t.errors, []);
   await t.ctx.close();

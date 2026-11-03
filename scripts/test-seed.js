@@ -170,6 +170,13 @@ check('content subfolders: the building is the job', plan4.listings.map(l => [l.
   const gone = await applyPlan({ client: db2, now: new Date('2026-10-23T12:00:00Z'), plan: { listings: [{ include: true, existingId: 'nope', street: '7 C St', unit: '3', stage: 'Live', kind: 'sale', market: 'NYC' }], pitches: [], devs: [] } });
   check('missing library row: added, run finished', [gone.listings, T2.properties.some(p => p.core && p.core.address === '7 C St'), T2.sync_runs[T2.sync_runs.length - 1].ok], [1, true, true]);
 
+  // a development folder where a listing already stands at that street: never made (D141, the same job twice)
+  T2.properties.push({ id: 'h366', slug: '366-n-3rd-st', label: '366 N 3rd St, Surf City', stage: 'Prep', core: { address: '366 N 3rd St', unit: '' } });
+  const twin = await applyPlan({ client: db2, now: new Date('2026-10-24T12:00:00Z'), plan: { listings: [], pitches: [],
+    devs: [{ include: true, label: '366 North 3rd Street', market: 'NJ', folder: 'n' }, { include: true, label: '1 Other Rd', market: 'NJ', folder: 'o' }] } });
+  check('a development where a listing stands: skipped and named', [twin.devs, twin.devsSkipped, T2.dev_projects.map(d => d.label)],
+    [1, ['366 North 3rd Street (already the listing 366 N 3rd St, Surf City)'], ['1 Other Rd']]);
+
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');
     failures.forEach(f => console.log('  FAIL ' + f));

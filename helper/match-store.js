@@ -6,11 +6,12 @@
          the new `match` ({ list, dismissed }, since carried over) and one
          `changes` row (source 'match') per mismatch found or cleared;
          null when the stored result is already this one
-     await storeMatches({ client, rows, now, runId, roster?, initials?, people?, skip?, deListings? })
+     await storeMatches({ client, rows, now, runId, roster?, initials?, people?, skip?, deListings?, devs? })
          runs GVC_MATCH.check on every staged listing in `rows` (the run's
          in-memory rows, already updated) and writes `match` where it changed,
          with `rows`' stageless ones as the library (M20) and the de_listings
          rows (M19: `deListings` when the run has them, else read once here),
+         the developments (M29: `devs`, else read once here),
          version-checked: a row someone changed meanwhile is skipped, and one
          row failing (a network blip) is noted while the rest are stored.
          skip: a Set of row ids that already conflicted in this run (left alone).
@@ -42,6 +43,11 @@ async function latestPeople(client) {
   return rows.filter(r => (r.seen_at || '') === latest);
 }
 
+/* the developments M29 looks at: a failed read leaves M29 out, never the run */
+async function devRows(client) {
+  try { return (await client.select('dev_projects', null, 'id,slug,label,archived_at,house_listing_id')) || []; } catch (e) { return []; }
+}
+
 /* the DE listings M19 looks at: a failed read leaves M19 out, never the run */
 async function deRows(client) {
   try { return (await client.select('de_listings', null, 'de_listing_id,feed,kind,gvc_listed,property_id,ignored,courtesy,raw')) || []; } catch (e) { return []; }
@@ -53,11 +59,12 @@ async function storeMatches(o) {
   const initials = o.initials || require('./roster.js').rosterInitials();
   const people = o.people || await latestPeople(client);
   const deListings = o.deListings || await deRows(client);
+  const devs = o.devs || await devRows(client);
   const library = rows.filter(r => !r.stage);
   const out = { stored: 0, errors: [] };
   for (const p of rows) {
     if (!p.stage || (o.skip && o.skip.has(p.id))) continue;   // library rows aren't jobs
-    const u = matchUpdate(p, M.check(p, { roster, initials, people, now, deListings, library }), now, { property_id: p.id }, runId);
+    const u = matchUpdate(p, M.check(p, { roster, initials, people, now, deListings, library, devs }), now, { property_id: p.id }, runId);
     if (!u) continue;
     try {
       const r = await client.update('properties', { id: p.id }, { match: u.match }, { version: p.version });

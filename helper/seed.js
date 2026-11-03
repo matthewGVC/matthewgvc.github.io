@@ -18,7 +18,9 @@
      any year that matches a proposed listing (won, linked both ways). A
      folder named after a person is never stored: it's listed for Matt;
    - development folders, listed unticked (D30: not scanned), skipping
-     templates, archives and admin folders.
+     templates, archives and admin folders. A ticked one is never made where a
+     listing with no unit already stands at its street (D141: that would be
+     the same job twice); it is named in the result's `devsSkipped` instead.
    Reads folder names and dates only.
    ============================================================ */
 'use strict';
@@ -169,7 +171,7 @@ async function applyPlan(o) {
   // safe to run again after ticking more: a job already in the database is skipped, never added twice
   const first = async (table, where) => (await client.select(table, where))[0];
   const run = (await client.insert('sync_runs', { kind: 'seed', started_at: now }))[0];
-  const out = { listings: 0, pitches: 0, devs: 0 };
+  const out = { listings: 0, pitches: 0, devs: 0, devsSkipped: [] };
   const ids = new Map();
   const key = (s, u) => A.normalize(s) + '|' + A.unitKey(u);
   const hist = (owner, id, at, field, newV, note) => ({ [owner]: id, at, field, old_value: null, new_value: newV, note, source: 'seed', run_id: run.id });
@@ -222,8 +224,12 @@ async function applyPlan(o) {
     out.pitches++;
   }
 
+  const staged = (await client.select('properties')).filter(p => p.stage && p.stage !== 'Archived');
   for (const d of plan.devs.filter(x => x.include)) {
     if (await first('dev_projects', { slug: P.slugOf(d.label) })) continue;
+    // a listing already at this street is the same job: link it to a development by hand, with Matt (D141)
+    const twin = /^\d/.test(d.label) && staged.find(p => { const u = P.unitOf(p.core || {}); return u.address && !A.unitKey(u.unit) && A.sameStreet(u.address, d.label); });
+    if (twin) { out.devsSkipped.push(d.label + ' (already the listing ' + (twin.label || twin.slug) + ')'); continue; }
     await client.insert('dev_projects', { slug: P.slugOf(d.label), label: d.label, market: d.market, drive_folder: d.folder, folder_state: 'linked' });
     out.devs++;
   }

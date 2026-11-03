@@ -218,14 +218,16 @@
       if (!P || !P.signedIn()) return Promise.resolve([]);
       var ask = function (path) { return P.call('/rest/v1' + path).then(function (r) { return r || []; }, function () { return []; }); };
       searchRows = Promise.all([
-        ask('/properties?select=slug,label,kind,market,stage,core&stage=not.is.null'),
+        ask('/properties?select=id,slug,label,kind,market,stage,core&stage=not.is.null'),
         ask('/pitches?select=slug,label,market,outcome'),
-        ask('/dev_projects?select=slug,label,market,archived_at')
+        ask('/dev_projects?select=slug,label,market,archived_at,house_listing_id')
       ]).then(function (r) {
-        var out = [];
-        r[0].forEach(function (x) { var c = x.core || {}; out.push({ name: x.label || c.address || 'Untitled listing', meta: [x.market, x.kind === 'rental' ? 'Rental' : '', x.stage], href: 'job/?listing=' + encodeURIComponent(x.slug), hay: [x.label, c.address, c.unit, c.city, c.town, x.market, x.stage].join(' ') }); });
+        var out = [], house = {};
+        // a development that is one house (D141) is found by the house's address too, and shows once
+        r[2].forEach(function (x) { if (x.house_listing_id) house[x.house_listing_id] = x; });
+        r[0].forEach(function (x) { var c = x.core || {}; if (house[x.id]) { house[x.id].hay = [c.address, c.city, c.town].join(' '); return; } out.push({ name: x.label || c.address || 'Untitled listing', meta: [x.market, x.kind === 'rental' ? 'Rental' : '', x.stage], href: 'job/?listing=' + encodeURIComponent(x.slug), hay: [x.label, c.address, c.unit, c.city, c.town, x.market, x.stage].join(' ') }); });
         r[1].forEach(function (x) { out.push({ name: x.label || 'Pitch', meta: [x.market, 'Pitch'], href: 'job/?pitch=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'pitch'].join(' ') }); });
-        r[2].forEach(function (x) { out.push({ name: x.label || 'Development', meta: [x.market, 'Development', x.archived_at ? 'Archived' : ''], href: 'job/?dev=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'development'].join(' ') }); });
+        r[2].forEach(function (x) { out.push({ name: x.label || 'Development', meta: [x.market, 'Development', x.archived_at ? 'Archived' : ''], href: 'job/?dev=' + encodeURIComponent(x.slug), hay: [x.label, x.market, 'development', x.hay || ''].join(' ') }); });
         out.forEach(function (o) { o.hay = o.hay.toLowerCase(); });
         return out;
       });

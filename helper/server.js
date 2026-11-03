@@ -131,7 +131,7 @@ if (require.main === module) {
   const cfg = loadConfig();
   require('./runner.js').startRunner(cfg).then(r => {
     runner = r;
-    console.log(r ? 'Daily jobs on: DE 7:00, scan 2:00, backup 2:30' + (cfg.asanaToken ? ', Asana every 30 minutes (full 3:00, People 3:15), the team's edits to Asana every minute' : '; Asana off until its token is in the config') +
+    console.log(r ? 'Daily jobs on: DE 7:00, scan 2:00, backup 2:30' + (cfg.asanaToken ? ', Asana every 30 minutes (full 3:00, People 3:15), edits to Asana every minute' : '; Asana off until its token is in the config') +
       (require('./mail/gmail.js').createMail(cfg).ready() ? ', the Sunday email 18:00.' : '; the Sunday email off until node helper/mail/sign-in.js.') : 'No helper account yet: daily jobs off.');
   }, e => console.log('Daily jobs failed to start: ' + e.message));
   // 0017: the job pieces asked for on the job page, made here (piece-build.js)

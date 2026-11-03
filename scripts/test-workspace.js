@@ -889,7 +889,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     await t.page.click('.walk [data-w=next]');
     check('tour: Next moves on', await t.page.$eval('.walk-of', e => e.textContent), 'Step 2 of 7');
     await t.page.click('.walk [data-w=skip]');
-    check('tour: Skip closes it and it stays seen', [await t.page.$('.walk'), await t.page.evaluate(() => localStorage.getItem('gvc.walk.overview'))], [null, String(1)]);
+    check('tour: Skip closes it and it stays seen', [await t.page.$('.walk'), await t.page.evaluate(() => localStorage.getItem('gvc.walk.overview'))], [null, String(await t.page.evaluate(() => GVC_WALK.VERSION))]);
     await t.page.click('#wsMe');
     check('tour: Show me around is in the account menu', await t.page.$$eval('#wsMenu button', b => b.map(x => x.textContent)), ['Show me around', 'Sign out']);
     await t.page.click('#wsMenu button');

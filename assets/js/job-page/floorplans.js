@@ -12,7 +12,8 @@
    The floorplan process's folders: Floorplan/Branded/ fills the Branded
    column and Floorplan/Unbranded/ the Unbranded one, one entry per version
    (the .svg before the .png); Floorplan/Design/ is never a plan
-   (GVC_SHEETJOB.planPlace).
+   (GVC_SHEETJOB.planPlace). A cell says when its file was saved and what
+   kind it is (Drawing, PDF, Picture), never the file's name (Matt, 11-03).
 
    ============================================================ */
 (function (global) {
@@ -72,12 +73,13 @@
       if (note && (note.note || note.asked_by)) small += (note.note ? ' · ' + note.note : '') + (note.asked_by ? ' · asked by ' + note.asked_by : '');
       var cells = RENDERS.map(function (r) {
         var f = slot && slot[r[0]];
-        return f ? '<div class="th" title="' + esc(f.name) + '"><span class="tg">' + esc(f.modified ? D.day(f.modified) : 'found') + '</span><span class="tn">' + esc(f.name) + '</span></div>'
+        return f ? '<div class="th"><span class="tg">' + esc(f.modified ? 'Updated ' + D.day(f.modified) : 'On Drive') + '</span><span class="tn">' + esc(/\.svg$/i.test(f.name) ? 'Drawing' : /\.pdf$/i.test(f.name) ? 'PDF' : 'Picture') + '</span></div>'
           : '<div class="th empty">Not made</div>';
       }).join('');
       return '<div class="ver' + (i ? ' old' : '') + '" data-ver="' + n + '">' + esc(label) + (i ? '' : ' · current') + '<small>' + esc(small) + '</small></div>' + cells;
     }).join('');
-    var alts = g.alternates.length ? '<p class="fpalt"><b>Alternate layouts:</b> ' + g.alternates.map(function (f) { return esc(f.name); }).join(', ') + '</p>' : '';
+    var alts = g.alternates.length ? '<p class="fpalt"><b>Alternate layouts:</b> ' + g.alternates.length + ' file' + (g.alternates.length === 1 ? '' : 's') +
+      ', newest ' + esc(D.day(g.alternates.map(function (f) { return f.modified; }).sort().pop())) + '</p>' : '';
     return '<div class="fpm">' + head + rows + '</div>' + alts;
   }
 

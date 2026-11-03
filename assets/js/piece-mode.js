@@ -640,7 +640,7 @@
             M.request = r;
             if (r && r.status === 'done') {
               return reloadDoc().then(function () {
-                say('Made: ' + ((r.result && r.result.name) || 'the PDF') + ' is in the ' + NOUN + '\'s folder.');
+                say('Made: the PDF is in the ' + NOUN + '\'s folder.');
                 M.request = null; drawAll(); done(r);
               });
             }

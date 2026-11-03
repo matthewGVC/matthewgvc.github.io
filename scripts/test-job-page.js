@@ -106,7 +106,7 @@ const FAKE_DRIVE = `(function () {
   ]);
   if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
   if (cfg.design) tree.children.filter(function (c) { return c.name === 'Floorplan'; })[0].children.push(d('Design', [f('cubicasa.png', '20'), f('architect.pdf', '22'), f('Signed contract plan.pdf', '22')]));
-  if (cfg.html) tree.children.push(d('Signage', [f('Signage - 100 Example St 4A.html', '11')]));
+  if (cfg.html) tree.children.filter(function (c) { return c.name === 'Video'; })[0].children.push(f('Video page - 100 Example St 4A.html', '12'));
   // Drive through Google: every file and folder carries its real Drive link
   if (cfg.web) (function link(n) { n.url = 'https://drive.google.com/' + (n.kind === 'directory' ? 'drive/folders/' : 'file/d/') + encodeURIComponent(n.name) + (n.kind === 'directory' ? '' : '/view'); (n.children || []).forEach(link); })(tree);
   var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
@@ -482,9 +482,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   R1H.properties[0].dev_project_id = 'd1';
   t = await open(browser, { rows: R1H, path: '/workspace/job/?dev=619-example-ave' });
   check('one house: the development page draws the house', [(await text(t.page, 'h1')).startsWith('619 Example Ave'), !!(await t.page.$('#factsHost')),
-    !!(await t.page.$('#agentsHost')), !!(await t.page.$('#asanaCard')), !!(await t.page.$('#piecesHost')),
+    !!(await t.page.$('#agentsHost')), !!(await t.page.$('#asanaCard')), !!(await t.page.$('#kitCard')),
     await t.page.$$eval('#msList li', e => e.length), await t.page.$('#unitsCard'), (await text(t.page, '#crumb')).startsWith('New Dev'), t.errors],
     [true, true, true, true, true, 18, null, true, []]);
+  await t.ctx.close();
+  // one marketing card: the development's own folder is a section inside it, never a second card (Matt, 11-03)
+  R1H.dev_projects[0].scan = { scannedAt: '2026-11-03T07:00:00Z', groups: [{ name: 'FINAL RENDERS', url: 'https://drive.google.com/drive/folders/f1', count: 29, newest: '2026-10-19T12:00:00Z',
+    files: [{ name: 'Left_Front.jpg', modified: '2026-10-19T12:00:00Z', url: 'https://drive.google.com/file/d/a1/view' }] }] };
+  t = await open(browser, { rows: R1H, path: '/workspace/job/?dev=619-example-ave' });
+  check('one house: one marketing card, the development folder inside it, no file names', [await t.page.$$eval('h2', e => e.filter(x => x.textContent === 'Marketing materials').length),
+    await t.page.$$eval('#kitCard #devFilesCard h2', e => e.map(x => x.textContent)), await t.page.$$eval('#devFilesCard [data-dev-newest]', e => e.map(a => a.textContent.trim())),
+    /Left_Front|\.jpg/.test(await text(t.page, '#kitCard')), t.errors],
+    [1, ['More in the Drive folder'], ['Open newest'], false, []]);
   await t.ctx.close();
   t = await open(browser, { rows: R1H, path: '/workspace/job/?listing=100-example-st-4a' });
   await t.page.waitForURL(/[?]dev=619-example-ave/);
@@ -629,19 +638,22 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('folder: health note from the tree', (await text(p, '#folderBody [data-note="pieceAtTop"]')) || '', 'A brochure file sits loose at the top of the folder. The standard keeps it in its own folder.');
   check('folder: the tree is read once for every card', await p.evaluate(() => window.__driveLog.tree), 1);
   /* the marketing track */
-  check('kit: seven track rows; the pieces have their own card', await p.$$eval('#kitCard .kr', e => e.length), 7);
-  const kit = async key => text(p, '#kitCard [data-kit="' + key + '"]');
-  check('kit: a piece not made yet says so once, not also Not started / No file found', await p.$$eval('#piecesCard .kr', rows => rows.filter(r => r.textContent.includes('Not made yet'))
+  check('kit: one card, one row per piece (no sign in NYC)', await p.$$eval('#kitCard .kr', e => e.map(x => x.dataset.kit)), ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'seller', 'video']);
+  check('kit: no second marketing card', await p.$$eval('#piecesCard, #devFilesCard', e => e.length), 0);
+  const kit = async key => (await text(p, '#kitCard [data-kit="' + key + '"]')) || '';
+  check('kit: a piece not made yet says so once, not also Not started / No file found', await p.$$eval('#kitCard .kr', rows => rows.filter(r => r.textContent.includes('Not made yet'))
     .some(r => /Not started|No file found/.test(r.textContent))), false);
-  check('kit: showsheet file, Asana ticked (the track, no status word)', [(await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older'), (await kit('showsheet')).includes('Done')], [true, true, false]);
+  check('kit: showsheet: Asana ticked, its older versions, one status word', [(await kit('showsheet')).includes('Asana: Create Show Sheet, ticked 12 Oct by Ayuen'), (await kit('showsheet')).includes('1 older version'),
+    await p.$$eval('#kitCard [data-kit="showsheet"] .chip', e => e.length)], [true, true, 1]);
+  check('kit: no file name on the card', /\.(pdf|jpe?g|png|m4v|docx?)/i.test(await text(p, '#kitCard .kit')), false);
   check('kit: floorplan file, Asana open', [(await kit('floorplan')).includes('File, Asana open'), (await kit('floorplan')).includes('Asana: Brand Floor Plan, open')], [true, true]);
   check('kit: a multi-floor plan lists each floor with its own Open and Copy', await p.$$eval('#kitCard [data-kit="floorplan"] [data-level]', els => els.map(e => [e.textContent.includes('FLOOR'), e.querySelector('[data-copy]') !== null, e.querySelector('[data-open]') !== null])), [[true, true, true], [true, true, true]]);
   check('kit: the multi-floor row names the floor count, not one file', (await kit('floorplan')).includes('2 plans · v2'), true);
   check('kit: brochure says there is no Asana step', (await kit('brochure')).includes('No Asana step for this piece'), true);
-  check('kit: signage not used in NYC, video tracked', [(await kit('signage')).includes('Not used here'), (await kit('video')).includes('Tracked only')], [true, true]);
-  check('kit: the video piece is the film, never its sidecar (tune-up 3)', [(await kit('video')).includes('GVC Video Clips.m4v ·'), /xmp|desktop\.ini/i.test(await kit('video'))], [true, false]);
+  check('kit: video tracked', (await kit('video')).includes('Tracked only'), true);
+  check('kit: the video piece is the film, never its sidecar (tune-up 3)', [/Updated \d+ \w+/.test(await kit('video')), /xmp|desktop\.ini|GVC Video Clips/i.test(await kit('video'))], [true, false]);
   check('kit: checklist only', await p.$$eval('#kitCard .ck-block li', els => els.map(e => e.textContent.replace(/\d+ \w+$/, '').trim())), ['Advertising Spots', 'Send Just Listed Email']);
-  check('kit: count', await text(p, '#kitCount'), '3 of 5 done');
+  check('kit: count, the seller package counted too', await text(p, '#kitCount'), '3 of 6 done');
   const links = [];
   await p.route('http://localhost:47610/drive-link', r => { links.push(JSON.parse(r.request().postData())); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"url":"https://drive.google.com/file/d/SS1live/view"}' }); });
   await p.click('#kitCard [data-kit="showsheet"] [data-copy]');
@@ -653,8 +665,9 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('floorplans: a recorded version with no file yet', (await text(p, '#fpCard .ver[data-ver="3"]')).includes('no file yet'), true);
   check('floorplans: v2 branded and unbranded, no blank sheet', await p.evaluate(() => {
     const cells = [...document.querySelectorAll('#fpCard .fpm > *')], i = cells.findIndex(c => c.dataset && c.dataset.ver === '2');
-    return cells.slice(i + 1, i + 4).map(c => c.classList.contains('empty') ? 'none' : c.title);
-  }), ['Floorplan - 100 Example St 4A v2.pdf', 'Floorplan unbranded v2.pdf', 'none']);
+    return cells.slice(i + 1, i + 4).map(c => c.classList.contains('empty') ? 'none' : c.querySelector('.tn').textContent);
+  }), ['PDF', 'PDF', 'none']);
+  check('floorplans: no file name in the grid', /\.(pdf|png|jpe?g|svg)/i.test(await text(p, '#fpCard')), false);
   check('floorplans: MLS-safe label', (await text(p, '#fpCard .fpm')).includes('Unbranded (MLS-safe)'), true);
   check('floorplans: Unbranded and Branded folders fill their columns, Design skipped', await p.evaluate(() => {
     const F = (path, modified) => ({ path, name: path.split('/').pop(), modified });
@@ -698,7 +711,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('slow file times out on its own tile', [await text(p, '#phGrid [data-ph="Photos/Edited/05.jpg"] .pi'), await p.$$eval('#phGrid img', e => e.length)],
     ['Drive hasn\'t downloaded this yet.', 5]);
   check('photos: the hero and a pick missing on Drive', [await text(p, '#phPicks .phh'), (await text(p, '#phPicks [data-pk="Photos/Edited/99.jpg"]')).includes('Missing on Drive'),
-    (await text(p, '#phPicks [data-pk="Photos/Edited/03.jpg"]')).includes('Missing')], ['Hero: 03.jpg', true, false]);
+    (await text(p, '#phPicks [data-pk="Photos/Edited/03.jpg"]')).includes('Missing')], ['Hero: Photo 3', true, false]);
   await p.click('#phGrid [data-ph="Photos/Edited/01.jpg"] [data-pick]');
   await p.click('#phGrid [data-ph="Photos/Edited/02.jpg"] [data-hero]');
   await p.click('#phPicks [data-up="2"]');
@@ -765,8 +778,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const st = window.setTimeout;
     window.setTimeout = function (fn, ms) { if (ms === 60000) { window.__later.push(fn); return 0; } return st.apply(window, arguments); };
   });
-  await p.waitForSelector('#kitCard [data-kit="signage"] [data-open]');
-  await p.click('#kitCard [data-kit="signage"] [data-open]');
+  await p.waitForSelector('#kitCard [data-kit="video"] [data-open]');
+  await p.click('#kitCard [data-kit="video"] [data-open]');
   await settle(p);
   check('Open: an .html piece is never opened as a blob', [await p.evaluate(() => window.__blobs), await p.evaluate(() => window.__opened),
     await p.evaluate(() => window.__driveLog.read.filter(x => /html$/.test(x)).length), await text(p, '#kitMsg')], [[], [], 0, 'Open it from the folder in File Explorer.']);
@@ -833,12 +846,12 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   t = await open(browser, { path: LISTING, drive: { state: 'not-connected' } });
   p = t.page;
   check('scan: no last-night scan lines (Matt, 10-29: visual only)', (await text(p, 'main')).includes('last night'), false);
-  check('scan: kit from the stored pieces', [await text(p, '#piecesCard [data-piece-state="showsheet"]'), await p.$eval('#kitCard [data-kit="showsheet"] a', a => a.getAttribute('href')).catch(() => null)],
+  check('scan: kit from the stored pieces', [await text(p, '#kitCard [data-piece-state="showsheet"]'), await p.$eval('#kitCard [data-kit="showsheet"] a', a => a.getAttribute('href')).catch(() => null)],
     ['Not tracked', 'https://drive.google.com/file/d/SS1/view']);
   check('scan: health notes and counts', [(await text(p, '#folderBody')).includes('brochure file sits loose'), (await text(p, '#folderBody')).includes('edited 6 · raws 2')], [true, true]);
   check('scan: floorplans from the stored names', await p.$$eval('#fpCard .ver', els => els.map(e => e.dataset.ver)), ['3', '2']);
-  check('scan: picks as names', [await text(p, '#phPicks .phh'), await p.$$eval('#phPicks [data-pk]', els => els.length)], ['Hero: 03.jpg', 2]);
-  check('scan: doc card says when it was last read', (await text(p, '#docRec')).startsWith('Last read 11 Oct from 100 Example St 4A details.docx'), true);
+  check('scan: picks as names', [await text(p, '#phPicks .phh'), await p.$$eval('#phPicks [data-pk]', els => els.length)], ['Hero: Edited photo', 2]);
+  check('scan: doc card says when it was last read', (await text(p, '#docRec')).startsWith('Last read 11 Oct from the details doc'), true);
   check('scan: Drive never touched', await p.evaluate(() => [window.__driveLog.tree, window.__driveLog.read.length]), [0, 0]);
   links.length = 0;
   await p.route('http://localhost:47610/drive-link', r => r.abort());
@@ -909,7 +922,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
       ['Sq ft is blank on DE', 'MLS number set to 123456', 'DE stage moved to In contract', 'Exclusive date set to 27 May', 'Sale or rental set to Sale', 'Linked to Asana']);
     check('tune-up: DE\'s 0 sq ft is Not set in the tile and the facts list', [await text(p, '.facts > div:nth-child(3)'), await text(p, 'tr[data-fact="sqft"] td')], ['Sq ftNot set', 'Not set']);
     check('tune-up: no neighborhood shows the city under City', await text(p, '.facts > div:nth-child(5)'), 'CityPoint Pleasant Beach');
-    check('tune-up: kit video from the scan is the film, not its sidecar', [(await text(p, '#kitCard [data-kit="video"]')).includes('GVC Video Clips.m4v ·'), /xmp/.test(await text(p, '#kitCard [data-kit="video"]'))], [true, false]);
+    check('tune-up: kit video from the scan is the film, not its sidecar', [(await text(p, '#kitCard [data-kit="video"]')).includes('Updated 5 Oct'), /xmp|14 Oct/.test(await text(p, '#kitCard [data-kit="video"]'))], [true, false]);
     check('tune-up: US spelling only', /neighbour/i.test(await p.evaluate(() => document.body.innerText)), false);
     check('tune-up: no page errors', t.errors, []);
     await t.ctx.close();
@@ -927,28 +940,26 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
       return { property_id: row.id, tool, version: 2, built_from: bf, built_at: '2026-10-22T14:00:00.000Z',
         output: { name: tool + '.pdf', url: 'https://drive.google.com/file/d/' + tool.replace(/-/g, '') + '/view', paper: 'letter', madeAt: '2026-10-22T14:00:00.000Z', via: 'helper' } };
     };
-    const line = (pg, tool) => text(pg, '#piecesCard [data-piece-line="' + tool + '"]');
-    const acts = (pg, kit) => pg.$$eval('#piecesCard [data-kit="' + kit + '"] [data-piece], #piecesCard [data-kit="' + kit + '"] [data-piece-get], #piecesCard [data-kit="' + kit + '"] [data-piece-ask]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]));
-    const builds = (pg, kit) => pg.$$eval('#piecesCard [data-kit="' + kit + '"] [data-build]', els => els.map(b => [b.textContent.trim(), b.dataset.build, b.disabled]));
+    const line = (pg, tool) => text(pg, '#kitCard [data-piece-line="' + tool + '"]');
+    const acts = (pg, kit) => pg.$$eval('#kitCard [data-kit="' + kit + '"] [data-piece], #kitCard [data-kit="' + kit + '"] [data-piece-get], #kitCard [data-kit="' + kit + '"] [data-piece-ask]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]));
+    const builds = (pg, kit) => pg.$$eval('#kitCard [data-kit="' + kit + '"] [data-build]', els => els.map(b => [b.textContent.trim(), b.dataset.build, b.disabled]));
 
     const RA = rowsFor();
     delete RA.properties[0].scan.pieces.showsheet;
     RA.documents = [v2('brochure', RA.properties[0], { facts: { price: 2250000 } }), v2('postcard-listed', RA.properties[0])];
     t = await open(browser, { rows: RA, path: LISTING });
     let p = t.page;
-    check('kit: the track keeps its seven rows', await p.$$eval('#kitCard .kr', e => e.map(x => x.dataset.kit)),
-      ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video']);
-    check('pieces card: the pieces at the top, Seller pitch with them', await p.$$eval('#piecesCard .kr', e => e.map(x => x.dataset.kit)),
-      ['showsheet', 'brochure', 'postcard', 'seller']);
-    check('pieces card sits at the top, above the Stages', await p.evaluate(() => { const a = document.getElementById('piecesCard'), b = document.querySelector('.steps-wrap'); return !!a && !!b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0; }), true);
-    check('track rows carry no status chip of their own for the pieces', await p.$$eval('#kitCard [data-kit="brochure"] .chip, #kitCard [data-kit="showsheet"] .chip', e => e.length), 0);
-    check('pieces card: one status word per piece', await p.$$eval('#piecesCard [data-piece-state]', e => e.map(x => x.dataset.pieceState)),
+    check('kit: one card, every piece with the track rows, the seller package after the postcards', await p.$$eval('#kitCard .kr', e => e.map(x => x.dataset.kit)),
+      ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'seller', 'video']);
+    check('kit: the card sits at the top, above the Stages', await p.evaluate(() => { const a = document.getElementById('kitCard'), b = document.querySelector('.steps-wrap'); return !!a && !!b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0; }), true);
+    check('kit: a piece row has its one status word, no track word beside it', await p.$$eval('#kitCard [data-kit="brochure"] .chip, #kitCard [data-kit="showsheet"] .chip', e => e.length), 2);
+    check('kit: one status word per piece', await p.$$eval('#kitCard [data-piece-state]', e => e.map(x => x.dataset.pieceState)),
       ['showsheet', 'brochure', 'postcard-listed', 'seller', 'pitch-map']);
-    check('kit: the brochure is out of date on its price: the reason, Update (the helper), Open the PDF and Edit', [await line(p, 'brochure'), await text(p, '#piecesCard [data-piece-why="brochure"]'), await builds(p, 'brochure'), await acts(p, 'brochure')],
+    check('kit: the brochure is out of date on its price: the reason, Update (the helper), Open the PDF and Edit', [await line(p, 'brochure'), await text(p, '#kitCard [data-piece-why="brochure"]'), await builds(p, 'brochure'), await acts(p, 'brochure')],
       ['Out of date', 'Changed on the job since it was made: price', [['Update brochure', 'brochure', false]], [['Open', 'https://drive.google.com/file/d/brochure/view'], ['Edit brochure', '../../tools/brochure/?listing=100-example-st-4a&rebuild=1']]]);
-    check('kit: the brochure made line', await text(p, '#piecesCard [data-piece-made="brochure"]'), 'Made 22 Oct · LETTER');
+    check('kit: the brochure made line', await text(p, '#kitCard [data-piece-made="brochure"]'), 'Made 22 Oct · LETTER');
     check('kit: Just Listed up to date, Just Sold once sold', [await line(p, 'postcard-listed'), await line(p, 'postcard-sold')],
-      ['Just Listed postcard: Up to date', 'Just Sold postcard: once the job is sold']);
+      ['Just Listed postcard: Done', 'Just Sold postcard: once the job is sold']);
     check('kit: the postcard row opens the listed card', await acts(p, 'postcard'), [['Open', 'https://drive.google.com/file/d/postcardlisted/view'], ['Edit Just Listed postcard', '../../tools/postcard/?listing=100-example-st-4a']]);
     check('kit: the seller pitch and its map, not made yet', [await line(p, 'seller'), await line(p, 'pitch-map'), await builds(p, 'seller'), await acts(p, 'seller')],
       ['Not made yet', 'Map: Not made yet', [['Make seller package', 'seller', false]],
@@ -956,18 +967,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     check('kit: Update counts every stale piece the helper makes, one click', await p.$$eval('#rebuildStale', els => els.map(a => [a.textContent.trim(), a.tagName, a.dataset.tools])),
       [['Update brochure', 'BUTTON', 'brochure']]);
     // one click: a request for the helper; the row follows it, and the page reloads once it is made
-    await p.click('#piecesCard [data-build="brochure"]');
+    await p.click('#kitCard [data-build="brochure"]');
     await settle(p);
     check('kit: Rebuild asks the helper for the brochure, on this job', t.writes.filter(w => /^POST piece_requests/.test(w)).map(w => JSON.parse(w.slice('POST piece_requests '.length))),
       [{ tool: 'brochure', property_id: 'p1' }]);
-    check('kit: the row says it waits, the button with it', [/Waiting for the helper on Matt's desktop \(asked .* by Matt Bloomfield\)/.test(await text(p, '#piecesCard [data-build-state="brochure"]')),
+    check('kit: the row says it waits, the button with it', [/Waiting for the helper on Matt's desktop \(asked .* by Matt Bloomfield\)/.test(await text(p, '#kitCard [data-build-state="brochure"]')),
       await builds(p, 'brochure'), /Asked\. The helper makes it on Matt's desktop/.test(await text(p, '#actMsg'))], [true, [['Waiting for the helper', 'brochure', true]], true]);
     check('kit: and the header no longer counts it', await p.$$eval('#rebuildStale', e => e.length), 0);
     const made = Object.assign(v2('brochure', t.T.properties[0]), { built_at: new Date().toISOString() });
     t.T.documents = t.T.documents.filter(d => d.tool !== 'brochure').concat([made]);
     t.T.piece_requests[0].status = 'done';
     await p.waitForTimeout(900);
-    check('kit: once the helper made it, the page shows it up to date', [await line(p, 'brochure'), await builds(p, 'brochure')], ['Up to date', []]);
+    check('kit: once the helper made it, the page shows it up to date', [await line(p, 'brochure'), await builds(p, 'brochure')], ['Done', []]);
     check('kit: the documents read asks for this job\'s pieces (again after the helper made one)', await p.evaluate(() => performance.getEntriesByType('resource').map(e => e.name)
       .filter(u => /\/rest\/v1\/documents\?/.test(u)).map(u => /property_id=eq\.p1/.test(u) && !/tool=eq/.test(u))), [true, true]);
     check('kit slice 5: no page errors', t.errors, []);
@@ -985,7 +996,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const RR = rowsFor();
     RR.properties[0].kind = 'rental'; RR.documents = [];
     t = await open(browser, { rows: RR, path: LISTING });
-    check('kit rental: no postcard or seller pitch offered', [(await acts(t.page, 'postcard')).length, await t.page.$$eval('#piecesCard [data-kit="seller"]', e => e.length)], [0, 0]);
+    check('kit rental: no postcard or seller pitch offered', [(await acts(t.page, 'postcard')).length, await t.page.$$eval('#kitCard [data-kit="seller"]', e => e.length)], [0, 0]);
     await t.ctx.close();
 
     // the team opens, never makes; two stale pieces count two
@@ -1001,7 +1012,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     delete R2.piece_requests;   // the next pages open with nothing asked
     t = await open(browser, { rows: R2, path: LISTING, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });
     check('kit team: Get PDF or Ask Matt, Open, never makes or rebuilds', [(await acts(t.page, 'brochure')).map(a => a[0]), (await acts(t.page, 'seller')).map(a => a[0]),
-      await t.page.$$eval('#piecesCard [data-build]', e => e.length), await t.page.$$eval('#rebuildStale', e => e.length)],
+      await t.page.$$eval('#kitCard [data-build]', e => e.length), await t.page.$$eval('#rebuildStale', e => e.length)],
       [['Open', 'View brochure'], ['Ask Matt', 'View seller package', 'Ask Matt'], 0, 0]);
     await t.ctx.close();
     // the team's shared account uses the pieces, it doesn't make them (0019, Matt 11-02)
@@ -1014,15 +1025,15 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const RF2 = rowsFor(); RF2.documents = [v2('brochure', RF2.properties[0], { facts: { price: 1 } })];
     RF2.piece_requests = [{ id: 'x1', property_id: 'p1', tool: 'brochure', status: 'failed', asked_at: '2026-10-29T10:00:00.000Z', message: 'Drive hasn\'t downloaded 03.jpg on Matt\'s desktop yet.' }];
     t = await open(browser, { rows: RF2, path: LISTING });
-    check('kit: the helper\'s reason on the row, Rebuild again, still one status word', [await text(t.page, '#piecesCard [data-build-state="brochure"]'), (await builds(t.page, 'brochure')).map(a => [a[0], a[2]]),
-      await t.page.$$eval('#piecesCard [data-piece-state="brochure"]', e => e.length)],
+    check('kit: the helper\'s reason on the row, Rebuild again, still one status word', [await text(t.page, '#kitCard [data-build-state="brochure"]'), (await builds(t.page, 'brochure')).map(a => [a[0], a[2]]),
+      await t.page.$$eval('#kitCard [data-piece-state="brochure"]', e => e.length)],
       ['The helper couldn\'t make it: Drive hasn\'t downloaded 03.jpg on Matt\'s desktop yet.', [['Update brochure', false]], 1]);
     await t.ctx.close();
     // no Drive folder: no button, the reason
     const RNF = rowsFor(); delete RNF.properties[0].drive_folder; RNF.properties[0].folder_state = 'unlinked'; RNF.documents = [];
     t = await open(browser, { rows: RNF, path: LISTING });
-    check('kit: no folder linked, no Make, the reason', [await t.page.$$eval('#piecesCard [data-build]', e => e.length),
-      (await t.page.$$eval('#piecesCard [data-build-state]', els => els.map(e => e.textContent.trim()))).every(s => s === 'Link the Drive folder so the helper can make it.')], [0, true]);
+    check('kit: no folder linked, no Make, the reason', [await t.page.$$eval('#kitCard [data-build]', e => e.length),
+      (await t.page.$$eval('#kitCard [data-build-state]', els => els.map(e => e.textContent.trim()))).every(s => s === 'Link the Drive folder so the helper can make it.')], [0, true]);
     await t.ctx.close();
 
     // a pitch's own page: Pieces, its seller pitch and map
@@ -1051,14 +1062,14 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
 
   /* ---------- Slice 6: the Signage row ---------- */
   {
-    const line = (pg, tool) => text(pg, '#piecesCard [data-piece-line="' + tool + '"]');
-    const acts = (pg, kit) => pg.$$eval('#piecesCard [data-kit="' + kit + '"] [data-piece], #piecesCard [data-kit="' + kit + '"] [data-piece-get], #piecesCard [data-kit="' + kit + '"] [data-piece-ask]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]));
+    const line = (pg, tool) => text(pg, '#kitCard [data-piece-line="' + tool + '"]');
+    const acts = (pg, kit) => pg.$$eval('#kitCard [data-kit="' + kit + '"] [data-piece], #kitCard [data-kit="' + kit + '"] [data-piece-get], #kitCard [data-kit="' + kit + '"] [data-piece-ask]', els => els.map(a => [a.textContent.trim(), a.getAttribute('href')]));
 
     const RO = rowsFor();
     RO.properties[0].market = 'NJ'; RO.documents = [];
     t = await open(browser, { rows: RO, path: LISTING });
     let p = t.page;
-    check('kit: the sign not made, Make sign (NJ)', [await line(p, 'signage'), await p.$$eval('#piecesCard [data-kit="signage"] [data-build]', els => els.map(b => b.textContent.trim())), await acts(p, 'signage')],
+    check('kit: the sign not made, Make sign (NJ)', [await line(p, 'signage'), await p.$$eval('#kitCard [data-kit="signage"] [data-build]', els => els.map(b => b.textContent.trim())), await acts(p, 'signage')],
       ['Not made yet', ['Make sign'], [['Edit sign', '../../tools/signage/?listing=100-example-st-4a']]]);
     check('kit: no open house flyer row', await p.$$eval('#kitCard [data-kit="openHouse"], #kitCard [data-piece-line="open-house"]', e => e.length), 0);
     check('kit slice 6: no page errors', t.errors, []);
@@ -1067,13 +1078,13 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const RN = rowsFor();
     RN.properties[0].market = 'NYC'; RN.documents = [];
     t = await open(browser, { rows: RN, path: LISTING });
-    check('kit: no sign offered in New York', await t.page.$$eval('#piecesCard [data-kit="signage"] [data-piece]', e => e.length), 0);
+    check('kit: no sign offered in New York', await t.page.$$eval('#kitCard [data-kit="signage"] [data-piece]', e => e.length), 0);
     await t.ctx.close();
 
     const RR = rowsFor();
     RR.properties[0].kind = 'rental'; RR.properties[0].market = 'NJ'; RR.documents = [];
     t = await open(browser, { rows: RR, path: LISTING });
-    check('kit: no sign offered for a rental', await t.page.$$eval('#piecesCard [data-kit="signage"] [data-piece]', e => e.length), 0);
+    check('kit: no sign offered for a rental', await t.page.$$eval('#kitCard [data-kit="signage"] [data-piece]', e => e.length), 0);
     await t.ctx.close();
   }
 
@@ -1089,7 +1100,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
         output: Object.assign({ path: 'Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-22.pdf', name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf',
           url: 'https://drive.google.com/file/d/NEW1/view', paper: 'a5', madeAt: '2026-10-22T14:00:00.000Z', via: 'helper' }, over.output || {}) };
     };
-    const kitRow = '#piecesCard [data-kit="showsheet"]';
+    const kitRow = '#kitCard [data-kit="showsheet"]';
     const sheetBits = async pg => ({
       state: await text(pg, kitRow + ' [data-piece-state="showsheet"]'),
       made: await text(pg, kitRow + ' [data-piece-made="showsheet"]'),
@@ -1126,7 +1137,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     t = await open(browser, { rows: RF, path: LISTING, drive: { state: 'not-connected' } });
     p = t.page;
     check('kit fresh: up to date, Open (the recorded Drive link) and Copy Drive link buttons, no Open sheet (Matt 11-02)', await sheetBits(p),
-      { state: 'Up to date', made: 'Made 22 Oct · A5', acts: [['Open', 'https://drive.google.com/file/d/NEW1/view']], build: [], header: [] });
+      { state: 'Done', made: 'Made 22 Oct · A5', acts: [['Open', 'https://drive.google.com/file/d/NEW1/view']], build: [], header: [] });
     await p.click(kitRow + ' [data-piece-copy="showsheet"]');
     await settle(p);
     check('kit fresh: Copy Drive link copies the recorded link', [await text(p, '#kitMsg'), await p.evaluate(() => navigator.clipboard.readText())],
@@ -1165,7 +1176,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     const RL = rowsFor();
     RL.documents = [docFor(RL.properties[0], { photos: { front: { path: 'Photos/Edited/03.jpg', modified: '2026-10-01T10:00:00.000Z' }, back: { path: 'Photos/Edited/99.jpg' } } })];
     t = await open(browser, { rows: RL, path: LISTING });
-    check('kit scan: a photo date is unknown, so fresh', (await sheetBits(t.page)).state, 'Up to date');
+    check('kit scan: a photo date is unknown, so fresh', (await sheetBits(t.page)).state, 'Done');
     await t.ctx.close();
     t = await open(browser, { rows: RL, path: LISTING, drive: {} });
     await t.page.waitForTimeout(800);

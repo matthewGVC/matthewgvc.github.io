@@ -81,7 +81,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .b.lk.ok{background:#E4F2E8;border-color:#2E7D4F;color:#1E5A36}
 .b.lk.ok:hover{background:#D5EBDC}
 .b.lk:not(.ok){border-color:var(--danger);color:var(--danger)}
-/* Floorplans, Photos and Social posts inside the Marketing track */
+/* Floorplans, Photos and Social posts inside the Marketing materials card */
 #kitCard .mt-sub{margin-top:18px;padding-top:4px;border-top:1px solid var(--rule)}
 #kitCard .mt-sub > .card{border:0;background:none;box-shadow:none;padding:12px 0 0;margin:0}
 #postsCard .ph3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:12px 0 4px;font-weight:600}
@@ -108,8 +108,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .mr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .mtick{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .mtick .inp{width:auto}
-/* the Pieces card sits under the facts, above the Stages */
-#piecesCard{margin-top:24px}
+/* the Marketing materials card (a pitch's Pieces card) sits under the facts, above the Stages */
+#piecesCard,#kitCard{margin-top:24px}
 /* a development at a glance: phones only, where the overview is too long to scan (overhaul 7b-4) */
 #glanceCard{display:none;margin-top:16px}
 @media (max-width:700px){#glanceCard{display:block}}
@@ -163,6 +163,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .picks{margin:0 0 6px;padding-left:22px;font-size:13.5px}
 .picks li{padding:4px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .picks .pn{overflow-wrap:anywhere;min-width:0}
+.pkt{display:inline-block;width:40px;height:30px;border-radius:4px;background:var(--paper-2);overflow:hidden;flex:none;vertical-align:middle;margin-right:6px}
+.pkt img{width:100%;height:100%;object-fit:cover;display:block}
+.pkt:empty{display:none}
 .picks .pa{display:flex;gap:4px;margin-left:auto}
 .hl{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper-2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:14px}
 .hl .x{display:flex;align-items:center;gap:10px;min-width:0;overflow-wrap:anywhere}
@@ -174,10 +177,6 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 .trd summary .x{overflow-wrap:anywhere;min-width:0}
 .trd summary .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
 .tri{padding-left:14px}
-.trf{list-style:none;margin:0;padding:2px 0 6px}
-.trf li{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0}
-.trf li span:first-child{overflow-wrap:anywhere;min-width:0}
-.trf .k{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
 .troff{font-size:13px;color:var(--ink-soft);opacity:.7;margin-top:8px}
 .docl{font-size:14px;overflow-wrap:anywhere}
 #docNow{font-size:13px;margin-top:6px;overflow-wrap:anywhere}
@@ -565,8 +564,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       // archive a listing (its stage) or a development (0018), the owner only; a click asks "Confirm?" first
       (JP.canEdit && kind !== 'pitch' ? '<button class="b" type="button" id="archive">' + archiveLabel(false) + '</button>' : '') + '</div>';
     var right = [], left = [];
-    if (kind === 'listing') left.push('<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
-      '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>') + '</div>', '<div id="factsHost">' + JP.facts.html(c) + '</div>');
+    if (kind === 'listing') left.push('<div id="factsHost">' + JP.facts.html(c) + '</div>');
     if (kind === 'dev') left.push('<div id="msHost">' + JP.dev.html(c) + '</div>');
     if (dv) left.unshift('<div id="msHost">' + JP.dev.html(dc) + '</div>');
     (kind === 'dev' ? right : left).push((kind === 'dev' ? JP.posts.html(c) : '') + '<div id="logHost">' + JP.log.html(c) + '</div>');
@@ -582,10 +580,14 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       (!r.drive_folder ? '<div class="path" style="margin-top:8px">No Drive folder linked yet</div>' : r.folder_state === 'broken' ? '<div class="path" style="margin-top:8px"><span class="chip stale">Drive folder moved or renamed</span></div>' : '') +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
       '<div id="topHost">' + tiles() + '</div>' +
-      // the pieces made from the job sit near the top, under the facts (Slice 5, S16)
-      (kind === 'listing' || kind === 'pitch' ? '<div id="piecesHost">' + JP.kit.piecesHtml(c, (r.scan && r.scan.pieces) || {}, false) + '</div>' : '') +
+      // one Marketing materials card near the top, under the facts: every piece, its status and its files (Matt, 11-03);
+      // a development that is one house adds what else its own folder holds
+      (kind === 'listing' ? '<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +
+        '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>' +
+        (dv ? '<div class="mt-sub">' + JP.devFiles.html(dc, true) + '</div>' : '')) + '</div>' : '') +
+      (kind === 'pitch' ? '<div id="piecesHost">' + JP.kit.piecesHtml(c) + '</div>' : '') +
       (kind === 'dev' ? JP.glance.html(c) + JP.units.html(c) + JP.devFiles.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') +
-      (dv ? JP.glance.html(dc) + JP.devFiles.html(dc) + '<div id="buildHost">' + JP.build.html(dc) + '</div>' : '') + steps() +
+      (dv ? JP.glance.html(dc) + '<div id="buildHost">' + JP.build.html(dc) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
     if ($('piecesHost')) JP.kit.wirePieces(c);

@@ -246,7 +246,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('brochure: the bar follows the request', /Waiting for the helper/.test(await text(o.page, '#pieceBar')), true);
   helperMakes(o, 'brochure', 'Brochure - 100 Example St 4A - 2026-10-22.pdf');
   await o.page.waitForTimeout(500);
-  check('brochure: made today once the helper is done, the file named', [/^Made today/.test(await text(o.page, '#pieceState')), /Made: Brochure - 100 Example St 4A/.test(await text(o.page, '#pieceMsg')),
+  check('brochure: made today once the helper is done, no file name', [/^Made today/.test(await text(o.page, '#pieceState')), /Made: the PDF is in the /.test(await text(o.page, '#pieceMsg')),
     /Waiting for the helper/.test(await text(o.page, '#pieceBar'))], [true, true, false]);
   check('brochure: no page errors', o.errors, []);
   await o.ctx.close();

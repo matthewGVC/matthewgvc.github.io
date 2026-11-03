@@ -158,7 +158,7 @@ node scripts/dnd-local.js <slug>        # photo tools only
 node scripts/test-piece-page.js         # piece tools: the piece opened from a job
 node scripts/test-piece-build.js        # piece tools: the helper's build of it
 node scripts/test-pdf-render.js         # piece tools: __render for each market
-node scripts/test-job-page.js           # piece tools: the job page's Pieces card
+node scripts/test-job-page.js           # piece tools: the job page's Marketing materials card
 ```
 
 check-tools can't see every control a script builds: if the page has inputs, load

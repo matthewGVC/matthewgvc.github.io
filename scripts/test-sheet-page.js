@@ -320,7 +320,7 @@ const typeIn = async (page, field, value) => {
   Object.assign(t.T.piece_requests[0], { status: 'done', result: { name: 'Showsheet - 100 Example St 4A - 2026-10-22.pdf' } });
   await p.waitForTimeout(500);
   check('PDF: the bar says made today, with Open and Copy Drive link', [(await text(p, '#jobBar')).includes('Made today'), await p.$eval('#jobBar a[data-open]', a => a.href).catch(() => null), !!(await p.$('#jobBar [data-copy]')),
-    (await text(p, '#jobMsg')).startsWith('Made: Showsheet - 100 Example St 4A')], [true, 'https://drive.google.com/file/d/NEW/view', true, true]);
+    (await text(p, '#jobMsg')).startsWith('Made: the PDF is in the ')], [true, 'https://drive.google.com/file/d/NEW/view', true, true]);
   check('PDF: no page errors', t.errors, []);
   await t.ctx.close();
 

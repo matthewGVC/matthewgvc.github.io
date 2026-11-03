@@ -87,7 +87,7 @@
     var d = ctx.row.details_doc;
     if (!d || !d.file) return 'Not read yet.';
     var n = (d.found || []).length;
-    return 'Last read ' + JP.drive.day(d.readAt) + ' from ' + d.file + ' (' + n + ' fact' + (n === 1 ? '' : 's') + ' found).';
+    return 'Last read ' + JP.drive.day(d.readAt) + ' from the details doc (' + n + ' fact' + (n === 1 ? '' : 's') + ' found).';
   }
 
   function html(ctx) {

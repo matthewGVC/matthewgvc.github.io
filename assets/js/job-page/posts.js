@@ -1,5 +1,5 @@
 /* ============================================================
-   JOB PAGE: Social posts, inside a listing's Marketing track and on a development's
+   JOB PAGE: Social posts, inside a listing's Marketing materials card and on a development's
    page (Matt's notes, 10-22; developments 10-26).
 
      GVC_JP.posts.html(ctx)    ctx.posts: the job's asana_tasks rows of kind 'post'

@@ -17,7 +17,7 @@
      GVC_JP.folder.html(ctx) / wire(host, ctx)   the card
 
    The tree shows readable folders only (two levels open), each with its
-   file count and newest date; loose top files as a count; paperwork as one
+   file count and newest date, never a file's name (Matt, 11-03); loose top files as a count; paperwork as one
    greyed "Docs\ · never read" line. No paperwork name is ever shown.
    ============================================================ */
 (function (global) {
@@ -121,19 +121,12 @@
   }
   function treeHtml(node, level, esc) {
     var dirs = (node.children || []).filter(function (c) { return c.kind === 'directory' && !c.skipped; });
-    var files = (node.children || []).filter(function (c) { return c.kind === 'file'; });
     var out = dirs.map(function (d) {
       var s = stat(d);
       var k = s.n + ' file' + (s.n === 1 ? '' : 's') + (s.newest ? ' · newest ' + day(s.newest) : '');
       return '<details class="trd"' + (level < 2 ? ' open' : '') + '><summary><span class="x">' + esc(d.name) + '\\</span><span class="k">' + esc(k) + '</span></summary>' +
         '<div class="tri">' + treeHtml(d, level + 1, esc) + '</div></details>';
     }).join('');
-    if (level > 0 && files.length) {
-      var shown = files.slice(0, 12);
-      out += '<ul class="trf">' + shown.map(function (f) {
-        return '<li><span>' + esc(f.name) + '</span><span class="k">' + esc(day(f.modified)) + '</span></li>';
-      }).join('') + (files.length > shown.length ? '<li class="soft">and ' + (files.length - shown.length) + ' more</li>' : '') + '</ul>';
-    }
     return out;
   }
 

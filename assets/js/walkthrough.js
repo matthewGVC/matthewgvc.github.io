@@ -18,7 +18,7 @@
    ============================================================ */
 (function (global) {
   'use strict';
-  var VERSION = 1;
+  var VERSION = 2;
   var EDITORS = ['owner', 'admin', 'marketing', 'ops', 'team'];
 
   var STEPS = {
@@ -35,7 +35,7 @@
       { id: 'stages', target: '.steps-wrap', title: 'Where it stands', text: 'The job\'s stages, with the date each one happened.' },
       { id: 'facts', target: '#factsHost', title: 'The facts', roles: EDITORS, text: 'Click a value to change it. The change goes to Asana too, in your name.' },
       { id: 'factsRead', target: '#factsHost', title: 'The facts', roles: ['shared'], text: 'Price, size and the rest, from Asana, Elliman and the team.' },
-      { id: 'kit', target: '#kitHost', title: 'Marketing', text: 'What has been made for this job. Get PDF downloads it.' },
+      { id: 'kit', target: '#kitHost', title: 'Marketing materials', text: 'Every piece for this job on one card: whether it is made and up to date, and its buttons to make, open or share it.' },
       { id: 'notes', target: '#logHost', title: 'Notes', text: 'Add a note for the team. Every change made here is listed below it.' }
     ]
   };

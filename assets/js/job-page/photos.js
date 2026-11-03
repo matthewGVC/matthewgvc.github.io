@@ -14,8 +14,10 @@
    paths inside the job folder ("Photos/Edited/03.jpg") in photo_hero and
    photo_order; Save picks writes both and one change-log line (owner
    only). Nothing picked = every edited photo in name order. A pick whose
-   file is gone shows "Missing on Drive" and stays until removed. Without
-   Drive here the picks show as names.
+   file is gone shows "Missing on Drive" and stays until removed. A photo is
+   never shown by its file name (Matt, 11-03): "Photo 3" is its place in its
+   folder in name order (the order the pieces use), with its thumbnail;
+   without Drive here, "Edited photo".
    ============================================================ */
 (function (global) {
   'use strict';
@@ -32,8 +34,24 @@
   var lists = {};        // folder/dir → Promise<entries>
   var missing = {};      // path → true once its folder was read without it
   var ctxNow = null;
+  var nums = {};         // path → its place in its folder, in name order ("Photo 3")
 
   function base(p) { return String(p || '').split('/').pop(); }
+  /* a photo in plain words: its place in its folder once read, else the folder it is in */
+  function label(path) {
+    if (nums[path]) return 'Photo ' + nums[path];
+    var dir = String(path || '').split('/').slice(-2, -1)[0];
+    return dir && !/^photos$/i.test(dir) ? dir.charAt(0).toUpperCase() + dir.slice(1).toLowerCase() + ' photo' : 'Photo';
+  }
+  function number(dir, entries) {
+    entries.filter(function (e) { return e.kind === 'file' && IMG.test(e.name); }).map(function (e) { return e.name; })
+      .sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); })
+      .forEach(function (n, i) { nums[dir + '/' + n] = i + 1; });
+  }
+  function thumbHtml(path, esc) {
+    var t = thumbs[path];
+    return '<span class="pkt" data-pkt="' + esc(path) + '">' + (t && t.url ? '<img alt="" src="' + esc(t.url) + '">' : '') + '</span>';
+  }
   function picks(row) {
     if (draft) return draft;
     return { hero: row.photo_hero || null, order: (row.photo_order || []).slice(), msg: '' };
@@ -71,8 +89,13 @@
       if (el.dataset.ph !== path || !t) return;
       var box = el.querySelector('.pi');
       if (t.url) {
-        if (!box.querySelector('img')) { var im = global.document.createElement('img'); im.alt = base(path); im.src = t.url; box.textContent = ''; box.appendChild(im); }
+        if (!box.querySelector('img')) { var im = global.document.createElement('img'); im.alt = label(path); im.src = t.url; box.textContent = ''; box.appendChild(im); }
       } else { box.textContent = t.fail; box.classList.add('pfail'); }
+    });
+    // the same photo in the picks list
+    if (t && t.url) global.document.querySelectorAll('[data-pkt]').forEach(function (el) {
+      if (el.dataset.pkt !== path || el.querySelector('img')) return;
+      var im = global.document.createElement('img'); im.alt = ''; im.src = t.url; el.appendChild(im);
     });
   }
   function pump() {
@@ -107,7 +130,7 @@
   }
 
   function tile(path, ctx, p) {
-    var esc = ctx.esc, name = base(path), hero = p.hero === path, picked = p.order.indexOf(path) !== -1, t = thumbs[path];
+    var esc = ctx.esc, name = label(path), hero = p.hero === path, picked = p.order.indexOf(path) !== -1, t = thumbs[path];
     var inner = t && t.url ? '<img alt="' + esc(name) + '" src="' + esc(t.url) + '">' : t ? esc(t.fail) : '';
     var btns = ctx.canEdit ? '<span class="pb"><button class="b sm' + (hero ? ' primary' : '') + '" type="button" data-hero="' + esc(path) + '" aria-pressed="' + hero + '" aria-label="Make ' + esc(name) + ' the hero">★</button>' +
       '<button class="b sm" type="button" data-pick="' + esc(path) + '" aria-pressed="' + picked + '">' + (picked ? 'Picked' : 'Pick') + '</button></span>' : '';
@@ -117,14 +140,14 @@
   function picksHtml(ctx) {
     var esc = ctx.esc, r = ctx.row, p = picks(r), out = '';
     var miss = function (path) { return missing[path] ? ' <span class="chip stale">Missing on Drive</span>' : ''; };
-    out += '<p class="phh">' + (p.hero ? 'Hero: ' + esc(base(p.hero)) + miss(p.hero) : 'No hero picked.') + '</p>';
+    out += '<p class="phh">' + (p.hero ? 'Hero: ' + thumbHtml(p.hero, esc) + esc(label(p.hero)) + miss(p.hero) : 'No hero picked.') + '</p>';
     if (!p.order.length) out += '<p class="soft" style="font-size:13px">Nothing picked: every piece uses every edited photo in name order.</p>';
     else out += '<ol class="picks">' + p.order.map(function (path, i) {
-      return '<li data-pk="' + esc(path) + '"><span class="pn">' + esc(base(path)) + '</span>' + (p.hero === path ? ' <span class="chip made">Hero</span>' : '') + miss(path) +
-        (ctx.canEdit ? '<span class="pa"><button class="b sm" type="button" data-up="' + i + '" aria-label="Move ' + esc(base(path)) + ' up"' + (i ? '' : ' disabled') + '>↑</button>' +
-          '<button class="b sm" type="button" data-down="' + i + '" aria-label="Move ' + esc(base(path)) + ' down"' + (i < p.order.length - 1 ? '' : ' disabled') + '>↓</button>' +
-          '<button class="b sm" type="button" data-star="' + i + '" aria-label="Make ' + esc(base(path)) + ' the hero">★</button>' +
-          '<button class="b sm" type="button" data-drop="' + i + '" aria-label="Remove ' + esc(base(path)) + '">×</button></span>' : '') + '</li>';
+      return '<li data-pk="' + esc(path) + '">' + thumbHtml(path, esc) + '<span class="pn">' + esc(label(path)) + '</span>' + (p.hero === path ? ' <span class="chip made">Hero</span>' : '') + miss(path) +
+        (ctx.canEdit ? '<span class="pa"><button class="b sm" type="button" data-up="' + i + '" aria-label="Move ' + esc(label(path)) + ' up"' + (i ? '' : ' disabled') + '>↑</button>' +
+          '<button class="b sm" type="button" data-down="' + i + '" aria-label="Move ' + esc(label(path)) + ' down"' + (i < p.order.length - 1 ? '' : ' disabled') + '>↓</button>' +
+          '<button class="b sm" type="button" data-star="' + i + '" aria-label="Make ' + esc(label(path)) + ' the hero">★</button>' +
+          '<button class="b sm" type="button" data-drop="' + i + '" aria-label="Remove ' + esc(label(path)) + '">×</button></span>' : '') + '</li>';
     }).join('') + '</ol>';
     if (ctx.canEdit && (changed(r) || (draft && draft.msg))) out += '<div class="fbtn"><button class="b primary sm" type="button" id="phSave"' + (changed(r) ? '' : ' disabled') + '>Save picks</button>' +
       '<button class="b sm" type="button" id="phUndo">Undo</button></div>';
@@ -154,6 +177,7 @@
     });
     Object.keys(dirs).forEach(function (d) {
       listing(ctx, d).then(function (xs) {
+        number(d, xs);
         var names = xs.map(function (x) { return x.name; });
         dirs[d].forEach(function (path) { if (names.indexOf(base(path)) === -1) missing[path] = true; });
       }, function (e) {
@@ -229,6 +253,8 @@
       var g = host.querySelector('#phGrid');
       if (!g) return;
       var p = picks(ctx.row);
+      number(cur.path, xs[0]);
+      if (edited && cur.key === 'staged') number(edited.path, xs[1]);
       var files = xs[0].filter(function (e) { return e.kind === 'file' && IMG.test(e.name); });
       if (!files.length) { g.innerHTML = '<p class="soft">No JPG, PNG or WebP photos in this folder.</p>'; return; }
       var originals = {};

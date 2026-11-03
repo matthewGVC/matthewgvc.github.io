@@ -10,18 +10,19 @@
    workspace can't change anything in Drive this way.
 
      await GVC_DRIVE_WEB.active()   → this person is a tester (and hasn't turned it off)
-     await GVC_DRIVE_WEB.state()    → 'connected' | 'needs-click'
-     await GVC_DRIVE_WEB.connect()  → from a click: Google asks once, then just signs in
+     await GVC_DRIVE_WEB.state()    → 'connected' | 'needs-click' | 'error'
+     await GVC_DRIVE_WEB.connect()  → signs in with Google again, asking for Drive (a page change)
      await GVC_DRIVE_WEB.root()     → the "Shared drives" folder object
 
-   The Google token lives in this tab's sessionStorage for its hour, never in
-   the database or a log. localStorage 'gvc.drive.local' = '1' turns the test
+   Drive comes with the Google sign-in (9b, Matt 11-03): the sign-in asks for
+   read-only Drive, the drive-token server function keeps Google's lasting
+   permission (0022, no page can read it) and hands this file a fresh pass
+   each hour, so nobody clicks again. The pass lives in this tab's
+   sessionStorage for its hour, never in a log. localStorage 'gvc.drive.local' = '1' turns the test
    off on one computer (the local folder again).
    ============================================================ */
 (function (global) {
   'use strict';
-  var CLIENT_ID = '537755129990-08phgja5558aa7lifp0mo15c711go2jp.apps.googleusercontent.com';   // public: the GVC Helper web client
-  var SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
   var API = 'https://www.googleapis.com/drive/v3';
   var TESTERS = ['matthew@gvcrealestateteam.com', 'ilin@gvcrealestateteam.com', 'sydney@gvcrealestateteam.com'];
   var TOKEN_KEY = 'gvc.drive.web.token', FOLDER = 'application/vnd.google-apps.folder';
@@ -38,45 +39,43 @@
     try { var t = JSON.parse(global.sessionStorage.getItem(TOKEN_KEY) || 'null'); return t && t.until > Date.now() + 60000 ? t.value : null; }
     catch (e) { return null; }
   }
-  function state() { return Promise.resolve(saved() ? 'connected' : 'needs-click'); }
-
-  var gis = null;
-  function loadGis() {
-    if (global.google && global.google.accounts && global.google.accounts.oauth2) return Promise.resolve();
-    if (gis) return gis;
-    gis = new Promise(function (res, rej) {
-      var s = global.document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
-      s.onload = function () { res(); }; s.onerror = function () { gis = null; rej(new Error('Google couldn\'t be reached.')); };
-      global.document.head.appendChild(s);
-    });
-    return gis;
+  function keep(t, secs) {
+    try { global.sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ value: t, until: Date.now() + (secs || 3600) * 1000 })); } catch (e) { /* this tab only */ }
+    return t;
   }
-  // from a click: Google's window asks the first time, and only signs in after that
-  function connect() {
-    return Promise.all([loadGis(), global.GVC_PROPS.whoAmI()]).then(function (x) {
-      return new Promise(function (res, rej) {
-        var c = global.google.accounts.oauth2.initTokenClient({
-          client_id: CLIENT_ID, scope: SCOPE, hint: x[1] && x[1].email,
-          callback: function (r) {
-            if (!r || r.error || !r.access_token) return rej(new Error(r && r.error === 'access_denied' ? 'Drive access was declined.' : 'Drive didn\'t connect. Try again.'));
-            try { global.sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ value: r.access_token, until: Date.now() + (+r.expires_in || 3600) * 1000 })); } catch (e) { /* this tab only */ }
-            res(['Shared drives']);
-          },
-          error_callback: function () { rej(new Error('The Google window was closed before Drive connected.')); }
-        });
-        c.requestAccessToken({ prompt: '' });
+  function drop() { try { global.sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* gone */ } }
+  // this hour's pass: the one this tab holds, else a fresh one from the server; e.consent when it holds no permission
+  var asking = null;
+  function pass() {
+    var t = saved();
+    if (t) return Promise.resolve(t);
+    if (asking) return asking;
+    asking = global.GVC_PROPS.drivePass().then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.ok && j.access_token) return keep(j.access_token, j.expires_in);
+        var e = new Error(r.status === 409 ? 'Drive needs one click to reconnect.' : (j.error || 'Drive couldn\'t connect.'));
+        e.consent = r.status === 409;
+        throw e;
       });
     });
+    asking.then(function () { asking = null; }, function () { asking = null; });
+    return asking;
+  }
+  function state() {
+    return pass().then(function () { return 'connected'; }, function (e) { return e.consent ? 'needs-click' : 'error'; });
+  }
+  // sign in with Google again with Google's page shown, so it gives the lasting permission (the page reloads)
+  function connect() {
+    global.GVC_PROPS.googleSignIn({ consent: true });
+    return new Promise(function () {});
   }
 
   /* ---------- the Drive API ---------- */
-  function get(path, q) {
-    var t = saved();
-    if (!t) return Promise.reject(new Error('Drive isn\'t connected. Click Connect Drive.'));
+  function get(path, q, again) {
     var u = API + path + (q ? '?' + new URLSearchParams(q).toString() : '');
-    return fetch(u, { headers: { authorization: 'Bearer ' + t } }).then(function (r) {
-      if (r.status === 401) { try { global.sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* gone */ } throw new Error('Drive needs one click to reconnect.'); }
+    return pass().then(function (t) { return fetch(u, { headers: { authorization: 'Bearer ' + t } }); }).then(function (r) {
+      // a pass Google no longer takes: one fresh pass, then give up
+      if (r.status === 401) { drop(); if (!again) return get(path, q, true); throw new Error('Drive needs one click to reconnect.'); }
       if (r.status === 403) return r.json().then(function (j) { throw new Error(/has not been used|disabled/.test((j.error || {}).message || '') ? 'The Drive service is switched off in the GVC Helper Google project.' : 'Google Drive refused that folder.'); });
       if (!r.ok) throw new Error('Google Drive answered ' + r.status + '.');
       return q && q.alt === 'media' ? r.blob() : r.json();
@@ -142,7 +141,6 @@
   }
   var top = null;
   function root() {
-    if (!saved()) return Promise.reject(new Error('Drive isn\'t connected. Click Connect Drive.'));
     top = top || dirHandle('Shared drives', '', function () {
       return drives().then(function (ds) { return ds.map(function (d) { return folderOf({ id: d.id, name: d.name }, d.name, d.id); }); });
     });

@@ -86,9 +86,19 @@
      Google and back to this page with the session in the address's #fragment.
      takeGoogleReturn() keeps it and clears the address; whoAmI() then claims the
      person's place on the team (claim_member) the first time. */
-  function googleSignIn() {
+  /* Drive comes with it (overhaul 9b, Matt 11-03): read-only Drive is asked for at sign-in, and
+     Google's long-lasting permission is kept by the drive-token server function (0022), which
+     hands drive-web.js a fresh pass each hour. { consent: true } asks Google to show its page
+     again, for when that permission is missing. */
+  var DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+  function googleSignIn(opts) {
     var here = global.location.origin + global.location.pathname + global.location.search;
-    global.location.assign(CFG.url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(here));
+    global.location.assign(CFG.url + '/auth/v1/authorize?provider=google&scopes=' + encodeURIComponent(DRIVE_SCOPE) +
+      '&access_type=offline' + (opts && opts.consent ? '&prompt=consent' : '') + '&redirect_to=' + encodeURIComponent(here));
+  }
+  function driveToken(body, access) {
+    return fetch(CFG.url + '/functions/v1/drive-token', { method: 'POST',
+      headers: { apikey: CFG.publishableKey, authorization: 'Bearer ' + access, 'content-type': 'application/json' }, body: JSON.stringify(body) });
   }
   function takeGoogleReturn() {
     var h = String((global.location && global.location.hash) || '');
@@ -96,6 +106,11 @@
     var q = new URLSearchParams(h.slice(1));
     if (!q.get('access_token') || !q.get('refresh_token')) return false;
     keepSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: +q.get('expires_in') || 3600 });
+    // Drive's pass for this hour, and the long-lasting permission for the server to keep
+    if (q.get('provider_token')) {
+      try { global.sessionStorage.setItem('gvc.drive.web.token', JSON.stringify({ value: q.get('provider_token'), until: Date.now() + 3500 * 1000 })); } catch (e) { /* this tab only */ }
+    }
+    if (q.get('provider_refresh_token')) driveToken({ action: 'store', refresh_token: q.get('provider_refresh_token') }, q.get('access_token')).catch(function () { /* asked again next time */ });
     try { global.history.replaceState(null, '', global.location.pathname + global.location.search); } catch (e) { /* the address keeps the fragment */ }
     return true;
   }
@@ -782,6 +797,7 @@
   global.GVC_PROPS = {
     TOOLS: TOOLS, STATUSES: STATUSES,
     signIn: signIn, signOut: signOut, signedIn: signedIn, whoAmI: whoAmI, askSignIn: askSignIn, googleSignIn: googleSignIn, takeGoogleReturn: takeGoogleReturn,
+    drivePass: function () { return fresh().then(function (s) { return driveToken({ action: 'mint' }, s.access_token); }); },
     list: list, load: load, create: create, findByAddress: findByAddress,
     saveCore: saveCore, mergeCore: mergeCore, saveDoc: saveDoc, saveDocument: saveDocument,
     hydrate: hydrate, retokenize: retokenize, docSavedAt: docSavedAt,

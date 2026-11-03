@@ -213,6 +213,11 @@ Agents' names, titles, phones and emails live in `assets/js/roster.js` (bios in 
 but **Asana's 👋 People project is the master**: change a contact there first, then make the roster
 match. A new agent also needs a headshot at `assets/agents/<id>.png` (the roster's header says how).
 
+### Sign-in, roles and Asana
+Everyone signs in with Google on their GVC email (`invites`, migration 0020; roles owner, admin,
+marketing, ops, team). A fact changed on a job page also goes to that listing's Asana task through
+the desktop helper (`helper/asana-write.js`, migration 0021). Making pieces stays marketing's and admin's.
+
 ### Plain words and the three markets
 The team aren't developers, so the workspace never shows "DE", "helper" or a bare check code.
 `assets/js/words.js` holds the swaps (DE → Elliman) and each Errors check's short name, and rewrites

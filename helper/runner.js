@@ -31,7 +31,7 @@ function createRunner(o) {
     try {
       const at = now || new Date();
       const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people);
-      for (const k of due(at, last, { asana: withAsana, budget: !!o.jobs.budget })) {
+      for (const k of due(at, last, { asana: withAsana, budget: !!o.jobs.budget, weekly: !!o.jobs.weekly })) {
         if (!o.jobs[k]) continue;
         // the nightly full read already covers the plain read that is due beside it
         if (k === 'asana' && last.asana && last.asana >= at) continue;
@@ -71,6 +71,13 @@ function budgetJobs(cfg, client) {
   const { createSheets } = require('./budget/sheets.js');
   const sheets = createSheets(cfg);
   return sheets.ready() ? { budget: () => require('./budget-sync.js').syncNow({ cfg, client, sheets }) } : {};
+}
+
+/* the Sunday email, only once the helper holds its Gmail sign-in (helper/mail/sign-in.js) */
+function weeklyJobs(cfg, client) {
+  const { createMail } = require('./mail/gmail.js');
+  const mail = createMail(cfg);
+  return mail.ready() ? { weekly: () => require('./weekly-report.js').sendWeekly({ cfg, client, mail }) } : {};
 }
 
 /* startup: only the newest run of each kind, and the newest full Asana read (C1) */
@@ -115,12 +122,15 @@ async function startRunner(cfg) {
   const exportsDir = path.join(__dirname, '..', 'exports');
   const backedUp = lastBackup(exportsDir);
   if (backedUp) last.backup = backedUp;
+  const sent = require('./weekly-report.js').lastSent(cfg);
+  if (sent) last.weekly = sent;
   const runner = createRunner({
     last,
     jobs: {
       de: () => require('./de-sync.js').syncNow({ cfg, client }),
       ...asanaJobs(cfg, client),
       ...budgetJobs(cfg, client),
+      ...weeklyJobs(cfg, client),
       scan: () => require('./scan.js').scanAll({ client, driveRoot: 'G:\\Shared drives', ask: require('./folder-ai.js').makeAsk(cfg) }),
       backup: async () => {
         const date = new Date().toISOString().slice(0, 10);
@@ -134,4 +144,4 @@ async function startRunner(cfg) {
   return runner;
 }
 
-module.exports = { createRunner, startRunner, asanaJobs, budgetJobs, lastFromRuns, readLastRuns, lastBackup };
+module.exports = { createRunner, startRunner, asanaJobs, budgetJobs, weeklyJobs, lastFromRuns, readLastRuns, lastBackup };

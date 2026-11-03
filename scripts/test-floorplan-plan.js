@@ -74,6 +74,10 @@ lp = clone(studio); lp.levels[0].rooms[0].backing = true;
   const svg = (p) => { const d = draw(p, 0); return typeof d === 'string' ? d : d.svg || d.unbranded; };
   const label = (p) => svg(p).split('data-label="' + p.levels[0].rooms[0].name + '"')[1].split('</g>')[0];
   check('a room with backing draws a white box behind its label, and only then', [validate(lp).errors, /<rect fill="#ffffff"/.test(label(lp)), /<rect/.test(label(studio))], [[], true, false]);
+  const small = (p) => svg(p).split('data-label="CL" data-small="1"')[1].split('</g>')[0];
+  const sl = clone(studio); sl.levels[0].labels = [{ text: 'CL', at: [50, 50] }];
+  const sb = clone(sl); sb.levels[0].labels[0].backing = true;
+  check('a small label with backing draws a white box behind it, and only then', [validate(sb).errors, /<rect fill="#ffffff"/.test(small(sb)), /<rect/.test(small(sl))], [[], true, false]);
 }
 lp = clone(studio); lp.levels[0].rooms[0].name = 'PRIMARY CLOSET';
 check('a closet is CL, never CLOSET (Matt, 10-27)', validate(lp).warnings.some((w) => /write CL, never CLOSET/.test(w)), true);

@@ -8,6 +8,19 @@ scripts are not lessons: they live in the code and its tests.
 (Pruned 2026-10-30: lessons already moved into the other files, fixed in the scripts, or overruled by
 a later one were taken out.)
 
+## 2026-11-03: 806 Riverview Dr v3 (Matt: "100% accurate and LOOK good")
+- **Review the overlay in tiles at full size** (about 1,400 x 1,000 px each, every one), not a shrunk whole sheet.
+  The scaled-down views hid a roof bar drawn hollow and a 5 px step in an edge.
+- **Then read the Unbranded PNG quarter by quarter for looks.** In v2 almost every miss was a label sitting on
+  something: furniture, a door's swing, a void's X, or brick. The fixes:
+  - Where the source itself sets the label over linework, back it (`"backing": true`). Small labels take it now
+    too.
+  - Otherwise, move it to the clear spot beside the linework.
+  - A word too wide for a narrow room (PANTRY) goes upright (`rot` 90).
+- **Change labels after a level's coordinates shift with a lookup by name and old place** (`fix()` in the 806 job's
+  `gen/first_out.py`), not by editing the list where it was first written. A name used twice (BATH, UP,
+  SHELVING) needs its old place to pick the right one.
+
 ## 2026-11-03: 806 Riverview Dr v2 (Matt: "first floor is missing a ton")
 - **A house's plan includes its whole site's hardscape.** v1 drew only the house and left out the decks,
   the pool, the paths, the outdoor kitchen, the pergola and the fire-pit patio as "landscape". Matt wanted

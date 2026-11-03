@@ -639,7 +639,13 @@ function drawRooms(level, T, k0 = 1, all = false) {
     const { SMALL } = styles(kOf(t));
     const c = T(AT(t));
     const d = outline(t.text, { ...SMALL, x: c[0], y: c[1] + capHeight(SMALL) / 2, anchor: 'middle' });
-    out.push('<g data-label="' + esc(t.text) + '" data-small="1" fill="' + STYLE.NAVY + '"><path d="' + d + '"/></g>');
+    /* "backing", as on a room: a white box behind a small label that sits over linework (a void's X, a patterned terrace) */
+    let box = '';
+    if (t.backing) {
+      const wide = measure(t.text, SMALL), cap = capHeight(SMALL), pad = 1.2;
+      box = '<rect fill="#ffffff" x="' + r2(c[0] - wide / 2 - pad) + '" y="' + r2(c[1] - cap / 2 - pad) + '" width="' + r2(wide + 2 * pad) + '" height="' + r2(cap + 2 * pad) + '"/>';
+    }
+    out.push('<g data-label="' + esc(t.text) + '" data-small="1" fill="' + STYLE.NAVY + '">' + box + '<path d="' + d + '"/></g>');
   });
   return out.join('');
 }

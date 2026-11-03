@@ -61,7 +61,12 @@ function createMail(cfg, opts) {
   async function send(m) {
     const r = await call(SEND_URL, { method: 'POST', headers: { authorization: 'Bearer ' + await signIn(), 'content-type': 'application/json' },
       body: JSON.stringify({ raw: b64url(mime(Object.assign({ from: cfg.mailFrom ? 'GVC Workspace <' + cfg.mailFrom + '>' : FROM }, m))) }) });
-    if (!r.ok) throw new Error('Gmail answered ' + r.status + ' when sending');
+    if (!r.ok) {
+      // Google's own sentence says what to fix (an API switched off, a permission missing)
+      let why = ''; try { why = ((await r.json()).error || {}).message || ''; } catch (e) { /* not JSON */ }
+      if (/has not been used|is disabled/.test(why)) throw new Error('Gmail is switched off in the GVC Helper Google project: enable the Gmail API there, then try again.');
+      throw new Error('Gmail answered ' + r.status + ' when sending' + (why ? ': ' + why.split('. ')[0] : ''));
+    }
     return (await r.json()).id;
   }
   return { ready, send };

@@ -130,7 +130,8 @@
       .sort(function (a, b) { return a.asked_at < b.asked_at ? 1 : a.asked_at > b.asked_at ? -1 : 0; })[0] || null;
   }
   function openRequest(ctx, tool) { var r = requestOf(ctx, tool); return r && (r.status === 'waiting' || r.status === 'working') ? r : null; }
-  function clockOf(v) {
+  // a request's time of day (named apart from clockOf: a second declaration would replace it)
+  function timeOf(v) {
     var d = new Date(v);
     if (isNaN(d)) return '';
     var t = ((d.getHours() % 12) || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + ' ' + (d.getHours() < 12 ? 'am' : 'pm');
@@ -143,7 +144,7 @@
     var r = requestOf(ctx, tool), open = openRequest(ctx, tool);
     var builtAt = Date.parse((doc && doc.built_at) || ((doc && doc.output) || {}).madeAt || 0) || 0;
     if (open && open.status === 'working') out.line = 'The helper is making it now…';
-    else if (open) out.line = 'Waiting for the helper on Matt\'s desktop (asked ' + clockOf(open.asked_at) + (open.asked_name ? ' by ' + open.asked_name : '') + ')';
+    else if (open) out.line = 'Waiting for the helper on Matt\'s desktop (asked ' + timeOf(open.asked_at) + (open.asked_name ? ' by ' + open.asked_name : '') + ')';
     else if (r && r.status === 'failed' && (Date.parse(r.asked_at) || 0) > builtAt) out.line = 'The helper couldn\'t make it: ' + (r.message || 'it stopped.');
     if (out.line) out.line = '<div class="d" data-build-state="' + esc(tool) + '">' + esc(out.line) + '</div>';
     if (s.state !== 'stale' && s.state !== 'none') return out;

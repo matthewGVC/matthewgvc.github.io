@@ -67,7 +67,7 @@
 @media (max-width:720px){ .tl-row,.tl-ax{grid-template-columns:110px 1fr} .tl-wrap{overflow-x:auto} .tl{min-width:640px} }
 </style>
 </head>
-<body data-nav="overview" data-root="./">
+<body data-nav="overview" data-root="./" data-walk="overview">
 <main class="wrap">
   <div class="page-h">
     <div>
@@ -99,6 +99,7 @@
           <select class="inp" id="stg" aria-label="Stage"><option value="">All stages</option></select>
           <select class="inp" id="srt" aria-label="Sort jobs"><option value="last">Last activity</option><option value="name">Name, A to Z</option><option value="price">Price, high to low</option><option value="stage">Stage, Prep to Sold</option></select>
           <label class="soft" style="font-size:13px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="arch"> Show archived</label>
+          <label class="soft" id="mineL" hidden style="font-size:13px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="mine"> Only my jobs</label>
         </div>
         <div id="jobs"></div>
         <div class="chart">
@@ -145,6 +146,7 @@
 <script src="../assets/js/dev-build.js"></script>
 <script src="../assets/js/workspace-data.js"></script>
 <script src="../assets/js/workspace-shell.js"></script>
+<script src="../assets/js/walkthrough.js"></script>
 <script defer src="../assets/js/ws-collapse.js"></script>
 <script>
 (function () {
@@ -187,7 +189,7 @@
   function read() {
     // personal to-dos are only read for the owner's own sign-in, never for the team's shared one
     var personal = false;
-    var mine = P.whoAmI().then(function (w) { personal = !!(w && w.role === 'owner'); return personal; }, function () { return false; });
+    var mine = P.whoAmI().then(function (w) { who = w; personal = !!(w && w.role === 'owner'); return personal; }, function () { return false; });
     return Promise.all([
       rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,dev_project_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
       rest('/pitches?select=*'),
@@ -201,8 +203,9 @@
       rest('/documents?select=property_id,pitch_id,tool,built_from,output').catch(function () { return rest('/documents?select=property_id,tool,built_from,output'); }).catch(function () { return []; })
     ]).then(function (r) {
       data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null, personal: personal, documents: r[7] || [] };
-      try { render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
+      try { home(); render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
       $('gate').hidden = true; $('board').hidden = false;
+      if (window.GVC_WALK) setTimeout(function () { GVC_WALK.offer('overview', who); }, 400);
     }, function (e) {
       if (e.status === 404 || e.status === 400 || /does not exist|schema cache/i.test(e.message)) {
         gate('The workspace tables aren\'t set up yet', 'Migrations 0004 and 0005 haven\'t been applied to the database. Nothing is lost; the overview fills in once they are.');
@@ -210,9 +213,24 @@
     });
   }
 
+  /* each person's home (overhaul 8): an ops manager or agent opens on their market, an agent on
+     "Only my jobs"; once per visit, so a filter they change stays changed. Then the tour, first time only. */
+  var who = null, homed = false;
+  function home() {
+    if (homed || !who) return;
+    homed = true;
+    var me = (window.GVC_ROSTER || []).filter(function (p) { return p.name === who.name; })[0];
+    if (me) { f.myId = me.id; $('mineL').hidden = false; if (who.role === 'team') { f.mine = true; $('mine').checked = true; } }
+    if (who.market && !f.market) {
+      f.market = who.market;
+      $('mkt').querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === who.market); });
+    }
+  }
+
   // a development's own house listing shows on its development, as on Resell and New Dev (overhaul 1f)
   function pass(j) {
     if (j.devProjectId && f.type !== 'listing') return false;
+    if (f.mine && f.myId && (j.agentIds || []).indexOf(f.myId) === -1) return false;
     return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')) &&
       (!f.stage || j.stage === f.stage) && (!f.q || (j.name + ' ' + (j.place || '')).toLowerCase().indexOf(f.q) !== -1);
   }
@@ -381,6 +399,7 @@
   seg('mkt', 'market'); seg('typ', 'type'); seg('view', 'view');
   $('wsSearch').addEventListener('input', function () { f.q = this.value.trim().toLowerCase(); if (data) render(); });
   $('arch').addEventListener('change', function () { f.archived = this.checked; if (data) render(); });
+  $('mine').addEventListener('change', function () { f.mine = this.checked; if (data) render(); });
   $('stg').addEventListener('change', function () { f.stage = this.value; if (data) render(); });
   $('srt').addEventListener('change', function () { f.sort = this.value; if (data) render(); });
   $('tlist').addEventListener('click', function (e) {

@@ -183,7 +183,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 @media (max-width:640px){ .steps{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));row-gap:18px} .step::before{display:none} }
 </style>
 </head>
-<body data-nav="job" data-root="../">
+<body data-nav="job" data-root="../" data-walk="job">
 <main class="wrap">
   <div class="crumb" id="crumb">&nbsp;</div><!-- filled once the job loads: Resell or New Dev -->
   <div id="page"><p class="soft" style="margin-top:20px">Loading the job…</p></div>
@@ -209,6 +209,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/log.js"></script>
 <script src="../../assets/js/job-page/dev.js"></script>
 <script src="../../assets/js/job-page/units.js"></script>
+<script src="../../assets/js/walkthrough.js"></script>
 <script src="../../assets/js/dev-build.js"></script>
 <script src="../../assets/js/job-page/build.js"></script>
 <!-- Drive cards: the folder tree and health, the marketing track, floorplans, photos, the details doc.
@@ -300,6 +301,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         if (!state.job) return missing();   // a listing with no stage yet
         render();
         follow();
+        // the first-day tour, on a listing's page (overhaul 8)
+        if (kind === 'listing' && window.GVC_WALK) setTimeout(function () { GVC_WALK.offer('job', state.me); }, 400);
       }).catch(function (e) {
         page('<div class="card empty" style="margin-top:20px"><b>The job couldn\'t load</b>' + esc(e.message) + '</div>');
       });

@@ -245,3 +245,17 @@ button.pill-ok{cursor:pointer;font:inherit;font-family:var(--mono);font-size:11p
 .mm li:last-child{border-bottom:0}
 .mm li > :last-child{min-width:0;overflow-wrap:anywhere}
 .mm .code{font-family:var(--mono);font-size:10.5px;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:1px 7px;align-self:start;margin-top:1px}
+
+/* the first-day tour (assets/js/walkthrough.js, overhaul 8) */
+.walk{position:fixed;inset:0;z-index:200}
+.walk-hole{position:fixed;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,25,38,.58);outline:2px solid var(--cyan,#2bb3c0);transition:all .2s ease;pointer-events:none}
+.walk-n{position:absolute;top:-14px;left:-14px;width:28px;height:28px;border-radius:50%;background:var(--cyan,#2bb3c0);color:#fff;font:600 14px/28px var(--sans);text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.walk-tip{position:fixed;background:var(--paper);color:var(--ink);border-radius:10px;padding:16px 18px 14px;box-shadow:0 12px 32px rgba(0,25,38,.3)}
+.walk-tip h3{margin:2px 0 6px;font:400 20px/1.2 var(--serif)}
+.walk-tip p{margin:0 0 14px;font-size:14.5px;line-height:1.45}
+.walk-of{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.walk-b{display:flex;gap:8px;align-items:center}
+.walk-arrow{position:absolute;top:-8px;width:16px;height:16px;background:var(--paper);transform:rotate(45deg)}
+.walk-tip.above .walk-arrow{top:auto;bottom:-8px}
+@media (prefers-reduced-motion:reduce){.walk-hole{transition:none}}
+#mineL[hidden]{display:none!important}   /* Only my jobs: for people on the roster (overhaul 8) */

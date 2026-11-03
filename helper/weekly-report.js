@@ -16,9 +16,11 @@
      build({ properties, pitches, devProjects, changes, documents }, { today, market })
        → { subject, html, counts }   pure: no fetch, no file, no clock
 
-   One email, in this order, each section only when it has something:
-     For Monday (the agenda, by rules), The numbers, Closing soon,
+   One email: a navy head with the four figures (live, in contract, closed
+   this week, errors open), then, each section only when it has something:
+     For Monday (the agenda, by rules), Deal dates (the next two weeks),
      New developments, What changed this week, Marketing.
+   A deal date is in one place only, Deal dates: the agenda doesn't repeat it.
    Bosses get every market; an ops manager's edition is one market. No budget
    figures, and no client names (D2): job names are addresses, and notes are
    the team's own change-log lines.
@@ -39,8 +41,14 @@ function addDays(d, n) { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDat
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 function plain(s) { return WORDS.plain(s); }
 
+/* the email's colours: the five GVC colours plus the site's soft ink, rule and danger (tokens.css); an email can't
+   read tokens, so they are written out here once */
+const C = { navy: '#00273A', sky: '#53C7DC', cyan: '#00A1C4', bone: '#E5E5E5', paper: '#EFEDE8', white: '#FFFFFF',
+  soft: '#33525F', rule: '#D3D4D0', danger: '#8C3A2B' };
+const SERIF = "Georgia,'Times New Roman',serif", SANS = 'Arial,Helvetica,sans-serif';
+
 function build(rows, opts) {
-  const today = opts.today, market = opts.market || '', weekAgo = addDays(today, -7), soon = addDays(today, 14), week = addDays(today, 7);
+  const today = opts.today, market = opts.market || '', weekAgo = addDays(today, -7), soon = addDays(today, 14);
   const all = W.buildJobs({ properties: rows.properties || [], pitches: rows.pitches || [], devProjects: rows.devProjects || [],
     changes: rows.changes || [], documents: rows.documents || [] }, today);
   const jobs = all.filter(j => !j.archived && j.stage !== 'Archived' && (!market || j.market === market));
@@ -48,71 +56,132 @@ function build(rows, opts) {
   const devs = jobs.filter(j => j.type === 'development');
   const devRow = {}; (rows.devProjects || []).forEach(d => { devRow[d.id] = d; });
 
-  /* deals with a date coming up */
+  /* deal dates in the next 14 days (a date is planned until its day passes) */
   const upcoming = [];
   listings.forEach(j => (j.dates || []).forEach(d => {
     if (d.planned && DEAL_KEYS.includes(d.key) && d.on <= soon) upcoming.push({ job: j, label: d.label, on: d.on });
   }));
-  upcoming.sort((a, b) => a.on < b.on ? -1 : 1);
+  upcoming.sort((a, b) => a.on < b.on ? -1 : a.on > b.on ? 1 : 0);
 
   /* closed in the last week */
   const closed = listings.filter(j => (j.stage === 'Sold' || j.stage === 'Rented') &&
     (j.dates || []).some(d => d.key === 'closedOn' && !d.planned && d.on >= weekAgo));
 
-  /* developments: late work and what is due */
+  /* developments: late work (oldest target first) and what is due; the ones with no schedule go on one line */
   const devLines = devs.map(j => {
     const sched = (devRow[j.id] || {}).schedule, items = sched ? B.workItems(sched) : [];
-    const late = items.filter(t => B.statusOf(t, today) === 'late'), due = items.filter(t => B.statusOf(t, today) === 'soon');
-    return { job: j, done: items.filter(t => t.completed).length, total: items.length, late, due };
+    const late = items.filter(t => B.statusOf(t, today) === 'late').sort((a, b) => a.dueOn < b.dueOn ? -1 : 1);
+    return { job: j, done: items.filter(t => t.completed).length, total: items.length, late, due: items.filter(t => B.statusOf(t, today) === 'soon') };
   });
+  const scheduled = devLines.filter(d => d.total).sort((a, b) => b.late.length - a.late.length || (a.job.name < b.job.name ? -1 : 1));
+  const unscheduled = devLines.filter(d => !d.total);
 
-  /* the agenda, by rules: late development work, deals this week, deals and exclusives needing a decision, old errors */
-  // one line per topic, the jobs named in it, so the list reads as an agenda rather than a log
+  /* errors: one count for every job in this edition, and how many are over a week old */
+  const errors = jobs.reduce((n, j) => n + (j.match || []).length, 0);
+  const oldErrors = jobs.reduce((n, j) => n + (j.match || []).filter(m => m.since && m.since <= weekAgo).length, 0);
+
+  /* the agenda, by rules: what needs a decision on Monday. Deal dates are their own section, not repeated here */
   const agenda = [];
-  devLines.filter(d => d.late.length).forEach(d => agenda.push({ head: d.job, text: d.late.length + ' work item' + (d.late.length === 1 ? '' : 's') + ' past target, the oldest ' + d.late.map(t => t.name).slice(0, 2).join(', ') }));
-  const thisWeek = upcoming.filter(u => u.on <= week);
-  if (thisWeek.length) agenda.push({ title: 'This week', jobs: thisWeek.map(u => ({ job: u.job, note: u.label.toLowerCase() + ' ' + W.fmtDay(u.on) })) });
   AGENDA_CHECKS.forEach(code => {
     const hit = listings.filter(j => (j.match || []).some(m => m.code === code));
     if (hit.length) agenda.push({ title: WORDS.check(code), jobs: hit.map(j => ({ job: j })) });
   });
-  const oldErrors = jobs.reduce((n, j) => n + (j.match || []).filter(m => m.since && m.since <= weekAgo).length, 0);
-  if (oldErrors) agenda.push({ text: oldErrors + ' error' + (oldErrors === 1 ? '' : 's') + ' open for more than a week on the Errors page' });
+  const lateDevs = scheduled.filter(d => d.late.length);
+  if (lateDevs.length) agenda.push({ title: 'Development work past target', jobs: lateDevs.map(d => ({ job: d.job, note: String(d.late.length) })) });
+  if (oldErrors) agenda.push({ title: 'Errors open over a week', text: oldErrors + ' of the ' + errors + ' on the Errors page' });
 
   /* what changed this week, by job */
-  // what a boss reads: notes, stage and price moves, deal dates, joining a development; pieces made go under Marketing
+  // what a boss reads: notes, stage and price moves, deal dates, joining a development; pieces made go under Marketing.
+  // A development move shows its title alone: its note is the team's housekeeping, not news
   const KEEP = c => !c.field || ['stage', 'price', 'originalPrice', 'dev_project_id', 'milestones'].includes(c.field) || DEAL_KEYS.concat(['listedOn', 'exclusiveOn', 'exclusiveExpiresOn']).includes(c.field);
   const week7 = (rows.changes || []).filter(c => c.at >= weekAgo);
-  const changes = W.recentChanges(week7.filter(KEEP), jobs, 200);
+  const changes = W.recentChanges(week7.filter(KEEP).map(c => c.field === 'dev_project_id' ? Object.assign({}, c, { note: null }) : c), jobs, 200);
   const made = {};
   W.recentChanges(week7.filter(c => /^piece:/.test(c.field || '')), jobs, 200).forEach(c => { made[c.job] = made[c.job] || { href: c.href }; });
   const byJob = {};
-  changes.forEach(c => { (byJob[c.job] = byJob[c.job] || { href: c.href, lines: [] }).lines.push(c.title + (c.note ? ': ' + c.note : '')); });
+  changes.forEach(c => {
+    const g = byJob[c.job] = byJob[c.job] || { href: c.href, lines: [] }, line = plain(c.title + (c.note ? ': ' + c.note : ''));
+    if (!g.lines.includes(line)) g.lines.push(line);
+  });
 
   const stale = listings.filter(j => (j.stalePieces || []).length);
   const s = W.overviewStats(listings);
-  const counts = { live: s.live, contract: s.contract, closed: closed.length, upcoming: upcoming.length, agenda: agenda.length, errors: s.mismatches };
+  const counts = { live: s.live, contract: s.contract, closed: closed.length, upcoming: upcoming.length, agenda: agenda.length, errors };
 
-  /* the email: inline styles, a plain table, the team's colours */
-  const link = j => j ? '<a href="' + esc(SITE + j.href) + '" style="color:#00273a;font-weight:600">' + esc(j.name) + '</a>' : '';
-  const sec = (title, body) => body ? '<h2 style="font:400 20px Georgia,serif;color:#00273a;margin:28px 0 8px;border-bottom:1px solid #c9c4b8;padding-bottom:6px">' + esc(title) + '</h2>' + body : '';
-  const ul = items => items.length ? '<ul style="margin:0;padding-left:18px">' + items.map(i => '<li style="margin:4px 0">' + i + '</li>').join('') + '</ul>' : '';
-  const where = market ? MK.name(market) : 'every market';
-  const html = '<!doctype html><html><body style="margin:0;background:#f4f1ea"><div style="max-width:640px;margin:0 auto;padding:24px;font:15px/1.5 Arial,sans-serif;color:#00273a">' +
-    '<p style="font:12px Arial;letter-spacing:.12em;text-transform:uppercase;color:#4a5a63;margin:0">The GVC Team · week to ' + esc(W.fmtDay(today)) + '</p>' +
-    '<h1 style="font:400 28px Georgia,serif;margin:6px 0 4px">Your week, ' + esc(where) + '</h1>' +
-    sec('For Monday', ul(agenda.map(a => a.title ? '<b>' + esc(a.title) + '</b>: ' + a.jobs.map(x => link(x.job) + (x.note ? ' (' + esc(x.note) + ')' : '')).join(', ')
-      : (a.head ? link(a.head) + ': ' : '') + esc(a.text)))) +
-    sec('The numbers', '<p style="margin:0">' + [s.live + ' live', s.contract + ' in contract', closed.length + ' closed this week', s.mismatches + ' errors open'].join(' · ') + '</p>') +
-    sec('Closing soon', ul(upcoming.map(u => esc(W.fmtDay(u.on)) + ': ' + link(u.job) + ', ' + esc(u.label.toLowerCase())))) +
-    sec('New developments', ul(devLines.map(d => link(d.job) + ': ' + (d.total ? d.done + ' of ' + d.total + ' work items done' : 'no schedule linked') +
-      (d.late.length ? ', <b style="color:#9b2c2c">' + d.late.length + ' past target</b>' : '') + (d.due.length ? ', ' + d.due.length + ' due in 14 days' : '')))) +
-    sec('What changed this week', ul(Object.keys(byJob).sort().map(n => '<a href="' + esc(SITE + byJob[n].href) + '" style="color:#00273a;font-weight:600">' + esc(n) + '</a>: ' +
-      esc(plain(byJob[n].lines.slice(0, 4).join('; ')) + (byJob[n].lines.length > 4 ? '; and ' + (byJob[n].lines.length - 4) + ' more' : ''))))) +
-    sec('Marketing', ul((Object.keys(made).length ? ['<b>Made this week</b>: ' + Object.keys(made).sort().map(n => '<a href="' + esc(SITE + made[n].href) + '" style="color:#00273a;font-weight:600">' + esc(n) + '</a>').join(', ')] : [])
-      .concat(stale.map(j => link(j) + ': out of date, ' + esc(j.stalePieces.join(', ')))))) +
-    '<p style="margin:32px 0 0;font-size:12px;color:#4a5a63"><a href="' + SITE + '" style="color:#4a5a63">Open the workspace</a> · Questions: reply to Matt</p>' +
-    '</div></body></html>';
+  /* the email: tables and inline styles only, so Gmail and Outlook lay it out the same */
+  const link = j => j ? '<a href="' + esc(SITE + j.href) + '" style="color:' + C.navy + ';font-weight:bold;text-decoration:none;border-bottom:1px solid ' + C.sky + '">' + esc(j.name) + '</a>' : '';
+  const muted = t => '<span style="color:' + C.soft + '">' + t + '</span>';
+  const sec = (title, body, note) => body ? '<tr><td style="padding:32px 40px 0">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+    '<td style="font:normal 22px/1.2 ' + SERIF + ';color:' + C.navy + ';padding-bottom:8px;border-bottom:2px solid ' + C.navy + '">' + esc(title) + '</td>' +
+    '<td align="right" style="font:11px/1.2 ' + SANS + ';letter-spacing:.08em;text-transform:uppercase;color:' + C.soft + ';padding-bottom:10px;border-bottom:2px solid ' + C.navy + '">' + (note ? esc(note) : '') + '</td>' +
+    '</tr></table>' + body + '</td></tr>' : '';
+  // a list of rows: a narrow left cell (a date, a count) and the line itself, with hairlines between
+  const rowsOf = items => items.length ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + items.map((i, n) =>
+    '<tr><td valign="top" width="' + (i.lead == null ? 0 : 84) + '" style="padding:10px 0;' + (n ? 'border-top:1px solid ' + C.rule + ';' : '') +
+    'font:bold 12px/1.5 ' + SANS + ';letter-spacing:.04em;text-transform:uppercase;color:' + C.soft + '">' + (i.lead == null ? '' : i.lead) + '</td>' +
+    '<td valign="top" style="padding:10px 0;' + (n ? 'border-top:1px solid ' + C.rule + ';' : '') + 'font:15px/1.5 ' + SANS + ';color:' + C.navy + '">' + i.body + '</td></tr>').join('') + '</table>' : '';
+  const bar = (done, total) => {
+    const w = Math.max(1, Math.round(done / total * 100));
+    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 2px"><tr>' +
+      '<td width="' + w + '%" height="6" style="background:' + C.cyan + ';font-size:0;line-height:0">&nbsp;</td>' +
+      (w < 100 ? '<td height="6" style="background:' + C.bone + ';font-size:0;line-height:0">&nbsp;</td>' : '') + '</tr></table>';
+  };
+  const where = market ? MK.name(market) : 'Every market';
+  const figure = (n, label, warn) => '<td width="25%" valign="top" style="padding:16px 0 0">' +
+    '<div style="font:normal 34px/1 ' + SERIF + ';color:' + (warn ? C.sky : C.paper) + '">' + n + '</div>' +
+    '<div style="font:11px/1.4 ' + SANS + ';letter-spacing:.08em;text-transform:uppercase;color:' + C.sky + ';padding-top:6px">' + label + '</div></td>';
+
+  // the inbox preview line: the week in a phrase, so the email is worth opening before it is opened
+  const preview = [upcoming.length ? upcoming.length + ' deal date' + (upcoming.length === 1 ? '' : 's') + ' in the next two weeks' : 'No deal dates in the next two weeks',
+    agenda.length ? agenda.length + ' topic' + (agenda.length === 1 ? '' : 's') + ' for Monday' : null, closed.length ? closed.length + ' closed' : null].filter(Boolean).join(' · ');
+
+  const agendaBody = rowsOf(agenda.map(a => ({ body: '<b>' + esc(a.title) + '</b><br>' + (a.text ? muted(esc(a.text)) :
+    a.jobs.map(x => link(x.job) + (x.note ? ' ' + muted('(' + esc(x.note) + ')') : '')).join(', ')) })));
+  const dealsBody = rowsOf(upcoming.map(u => ({ lead: esc(W.fmtDay(u.on)), body: link(u.job) + ' ' + muted('· ' + esc(u.label)) })));
+  const devBody = scheduled.length || unscheduled.length ? rowsOf(scheduled.map(d => ({ body: link(d.job) +
+    '<span style="float:right;font:13px ' + SANS + ';color:' + C.soft + '">' + d.done + ' of ' + d.total + ' done</span>' + bar(d.done, d.total) +
+    '<span style="font-size:13px;color:' + C.soft + '">' + [d.late.length ? '<b style="color:' + C.danger + '">' + d.late.length + ' past target</b>, oldest ' +
+      esc(d.late.slice(0, 2).map(t => t.name.trim() + ' (' + W.fmtDay(t.dueOn) + ')').join(', ')) : null,
+    d.due.length ? d.due.length + ' due in the next two weeks' : null, !d.late.length && !d.due.length ? 'nothing due in the next two weeks' : null].filter(Boolean).join(' · ') + '</span>' }))
+      .concat(unscheduled.length ? [{ body: '<b>No schedule linked yet</b><br>' + unscheduled.map(d => link(d.job)).join(', ') }] : [])) : '';
+  // jobs with the very same change (four houses joining developments) share one row
+  const sameText = {};
+  Object.keys(byJob).sort().forEach(n => {
+    const t = byJob[n].lines.slice(0, 4).join('; ') + (byJob[n].lines.length > 4 ? '; and ' + (byJob[n].lines.length - 4) + ' more' : '');
+    (sameText[t] = sameText[t] || []).push(n);
+  });
+  const jobLink = n => '<a href="' + esc(SITE + byJob[n].href) + '" style="color:' + C.navy + ';font-weight:bold;text-decoration:none;border-bottom:1px solid ' + C.sky + '">' + esc(n) + '</a>';
+  const changedBody = rowsOf(Object.keys(sameText).sort((x, y) => sameText[x][0] < sameText[y][0] ? -1 : 1).map(t => ({ body: sameText[t].map(jobLink).join(', ') + '<br>' + muted(esc(t)) })));
+  const marketingBody = rowsOf((Object.keys(made).length ? [{ body: '<b>Made this week</b><br>' + Object.keys(made).sort().map(n => link({ href: made[n].href, name: n })).join(', ') }] : [])
+    .concat(stale.length ? [{ body: '<b>Out of date</b><br>' + stale.map(j => link(j) + ' ' + muted('(' + esc(j.stalePieces.join(', ')) + ')')).join(', ') }] : []));
+
+  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<meta name="color-scheme" content="light only"><title>' + esc('Week to ' + W.fmtDay(today)) + '</title></head>' +
+    '<body style="margin:0;padding:0;background:' + C.bone + '">' +
+    '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:' + C.bone + '">' + esc(preview) + '</div>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:' + C.bone + '"><tr><td align="center" style="padding:24px 12px">' +
+    '<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background:' + C.paper + '">' +
+    /* the navy head: the team, the week, the four figures */
+    '<tr><td style="background:' + C.navy + ';padding:28px 40px 28px">' +
+    '<div style="font:bold 12px/1 ' + SANS + ';letter-spacing:.24em;text-transform:uppercase;color:' + C.paper + '">The GVC Team</div>' +
+    '<div style="height:1px;background:' + C.cyan + ';margin:14px 0 18px;font-size:0;line-height:0">&nbsp;</div>' +
+    '<div style="font:12px/1 ' + SANS + ';letter-spacing:.08em;text-transform:uppercase;color:' + C.cyan + '">' + esc(where) + '</div>' +
+    '<h1 style="margin:8px 0 0;font:normal 34px/1.15 ' + SERIF + ';color:' + C.paper + '">The week to ' + esc(W.fmtDay(today)) + '</h1>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px"><tr>' +
+    figure(s.live, 'Live') + figure(s.contract, 'In contract') + figure(closed.length, 'Closed this week') + figure(errors, 'Errors open', errors > 0) +
+    '</tr></table></td></tr>' +
+    sec('For Monday', agendaBody, agenda.length ? agenda.length + ' topic' + (agenda.length === 1 ? '' : 's') : '') +
+    sec('Deal dates', dealsBody, 'next two weeks') +
+    sec('New developments', devBody, devs.length + ' in work') +
+    sec('What changed this week', changedBody) +
+    sec('Marketing', marketingBody) +
+    (agendaBody || dealsBody || devBody || changedBody || marketingBody ? '' : '<tr><td style="padding:32px 40px 0;font:15px/1.5 ' + SANS + ';color:' + C.soft + '">A quiet week: nothing to report.</td></tr>') +
+    '<tr><td style="padding:36px 40px 32px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
+    '<td style="background:' + C.navy + ';padding:12px 22px"><a href="' + SITE + '" style="font:bold 13px/1 ' + SANS + ';letter-spacing:.06em;text-transform:uppercase;color:' + C.paper + ';text-decoration:none">Open the workspace</a></td>' +
+    '</tr></table>' +
+    '<p style="margin:18px 0 0;font:12px/1.5 ' + SANS + ';color:' + C.soft + '">Sent every Sunday evening. Questions or something wrong? Reply to this email and it reaches Matt.</p>' +
+    '</td></tr></table></td></tr></table></body></html>';
   return { subject: 'GVC week to ' + W.fmtDay(today) + (market ? ' · ' + MK.name(market) : ''), html, counts };
 }
 

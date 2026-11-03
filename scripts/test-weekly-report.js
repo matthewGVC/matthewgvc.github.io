@@ -14,7 +14,9 @@ const prop = (o) => Object.assign({ id: 'p1', slug: '1-test-st', label: '1 Test 
 const empty = R.build({}, { today: '2026-11-08' });
 check('empty: a subject and zero counts', [empty.subject, empty.counts], ['GVC week to 8 Nov', { live: 0, contract: 0, closed: 0, upcoming: 0, agenda: 0, errors: 0 }]);
 const one = R.build({ properties: [prop()] }, { today: '2026-11-02' });
-check('a closing this week is on the agenda and in Closing soon', [one.counts.contract, one.counts.upcoming, /This week.*1 Test St.*closing 4 Nov/.test(one.html)], [1, 1, true]);
+check('a closing this week is under Deal dates, once, not on the agenda', [one.counts.contract, one.counts.upcoming, /Deal dates[\s\S]*4 Nov[\s\S]*1 Test St[\s\S]*Closing/.test(one.html), one.html.split('>1 Test St<').length - 1], [1, 1, true, 1]);
+const errs = R.build({ properties: [prop({ match: { list: [{ code: 'M3', key: 'M3', text: 'x', since: '2026-10-01' }, { code: 'M4', key: 'M4', text: 'y' }] } })] }, { today: '2026-11-02' });
+check('one error count: the head figure and the agenda line agree', [errs.counts.errors, /1 of the 2 on the Errors page/.test(errs.html)], [2, true]);
 check('another market\'s edition leaves it out', R.build({ properties: [prop()] }, { today: '2026-11-02', market: 'NYC' }).counts.contract, 0);
 check('no banned words', /\bDE\b|helper/.test(R.build({ properties: [prop({ match: { list: [{ code: 'M3', key: 'M3', text: 'Asana says $1; DE says $2.' }] } })] }, { today: '2026-11-02' }).html), false);
 const n = R.build({ properties: [prop()], changes: [{ property_id: 'p1', at: '2026-11-01T10:00:00Z', field: null, note: 'Buyer\'s lender asked for the appraisal' },

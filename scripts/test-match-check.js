@@ -1,5 +1,5 @@
 /* ============================================================
-   Tests for assets/js/match-check.js — the Match check, M1 to M28
+   Tests for assets/js/match-check.js — the Match check, M1 to M29
    (spec §5, plan §8b), the dismiss rule and roster drift (D71).
    Made-up jobs only.
 
@@ -509,14 +509,29 @@ check('M28: Sold and ticked done: nothing', has(M.check(job({ stage: 'Sold', de_
 check('M28: Live with the task open: nothing', has(M.check(job(), ctx()), 'M28').length, 0);
 check('M28: task gone from Asana: M2 only', has(M.check(job({ stage: 'Sold', de_stage: 'Sold', asana: { gone: NOW } }), ctx()), 'M28').length, 0);
 
+/* ---------- M29: a listing and a development at the same street (D141) ---------- */
+const house29 = o => job(Object.assign({ id: 'h1', stage: 'Prep', de_stage: null, de_listing_id: null }, o, { core: Object.assign({ address: '366 N 3rd St', unit: '' }, (o || {}).core) }));
+const DEV = { id: 'd1', slug: '366-north-3rd-street', label: '366 North 3rd Street', archived_at: null, house_listing_id: null };
+check('M29: a house at the street of a development', has(M.check(house29(), ctx({ devs: [DEV] })), 'M29').map(m => [m.key, m.text, m.fixAt, m.values]),
+  [['M29:d1', 'The development 366 North 3rd Street is at this address too, so the job shows twice. Ask Matt to make them one job.', 'Matt', { dev: 'd1', label: '366 North 3rd Street' }]]);
+check('M29: the development is that one house: nothing', has(M.check(house29(), ctx({ devs: [Object.assign({}, DEV, { house_listing_id: 'h1' })] })), 'M29').length, 0);
+check('M29: a House 1 unit at the street: nothing', has(M.check(house29({ core: { address: '315 Foreman Ave', unit: 'House 1' } }),
+  ctx({ devs: [{ id: 'd2', slug: '315-foreman-ave', label: '315 Foreman Ave' }] })), 'M29').length, 0);
+check('M29: another street: nothing', has(M.check(house29({ core: { address: '366 N 4th St' } }), ctx({ devs: [DEV] })), 'M29').length, 0);
+check('M29: an archived development: nothing', has(M.check(house29(), ctx({ devs: [Object.assign({}, DEV, { archived_at: NOW })] })), 'M29').length, 0);
+check('M29: an archived listing: nothing', has(M.check(house29({ stage: 'Archived' }), ctx({ devs: [DEV] })), 'M29').length, 0);
+check('M29: a named development, its street from dev-addresses.js', has(M.check(house29({ core: { address: '298 Westwood Ave' } }),
+  ctx({ devs: [{ id: 'd3', slug: 'westwood', label: 'Westwood' }] })), 'M29').length, 1);
+check('M29: no developments passed: nothing', has(M.check(house29(), ctx()), 'M29').length, 0);
+
 /* ---------- text: plain sentences, no em dashes ---------- */
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));
 check('no em dashes in any text', all.filter(m => /—/.test(m.text)).length, 0);
 
 /* ---------- the key the Match page shows ---------- */
 const keyCodes = Object.keys(M.KEY || {});
-const want = []; for (let n = 1; n <= 28; n++) want.push('M' + n);
-check('key: one plain line for every code M1 to M28', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 28]);
+const want = []; for (let n = 1; n <= 29; n++) want.push('M' + n);
+check('key: one plain line for every code M1 to M29', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 29]);
 check('key: plain sentences, no em or en dashes', keyCodes.some(c => /[–—]/.test(M.KEY[c])), false);
 
 if (failures.length) {

@@ -475,6 +475,16 @@ check('rental words', [W.stageWord('In contract', 'rental'), W.stageWord('Accept
   ['Lease signed', 'Application accepted', 'In contract', 'Live']);
 check('a rental in contract shows Lease signed on the lists', W.buildJobs({ properties: [{ id: 'r1', slug: 'r', label: 'R', kind: 'rental', market: 'NJ', stage: 'In contract', core: {} }], pitches: [], devProjects: [], changes: [] }, TODAY)[0].phase, 'Lease signed');
 
+/* a development that is one house (D141): its house listing folds into it */
+const oneHouse = W.buildJobs({ properties: [{ id: 'h1', slug: '366-n-3rd-st', label: '366 N 3rd St', kind: 'sale', market: 'NJ', stage: 'Prep', dev_project_id: 'd1',
+    core: { address: '366 N 3rd St', city: 'Surf City', price: 3500000, agentIds: ['agent-x'] }, match: { list: [{ code: 'M6', key: 'M6', text: 'No folder.' }], dismissed: {} } }],
+  pitches: [], devProjects: [{ id: 'd1', slug: '366-north-3rd-street', label: '366 North 3rd Street', market: 'NJ', milestones: {}, house_listing_id: 'h1' }], changes: [] }, TODAY);
+check('one house: one job, the development', oneHouse.map(j => [j.type, j.name]), [['development', '366 North 3rd Street']]);
+check('one house: the house brings its price, agents and errors', [oneHouse[0].price, oneHouse[0].agentIds, oneHouse[0].mismatches, oneHouse[0].house.slug], ['$3,500,000', ['agent-x'], 1, '366-n-3rd-st']);
+check('one house: its error line stays on the listing row', W.matchByJob(oneHouse, []).map(g => g.items.map(i => [i.job, i.table, i.id])), [[['366 North 3rd Street', 'properties', 'h1']]]);
+check('a house with no mark stays its own job', W.buildJobs({ properties: [{ id: 'h2', slug: 'x', label: 'X', kind: 'sale', market: 'NJ', stage: 'Prep', dev_project_id: 'd2', core: { address: '610 Agnes Ave' } }],
+  pitches: [], devProjects: [{ id: 'd2', slug: '610-agnes', label: '610 Agnes', market: 'NJ', milestones: {} }], changes: [] }, TODAY).length, 2);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

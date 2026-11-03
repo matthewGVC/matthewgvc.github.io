@@ -30,6 +30,9 @@
      facts at Asana's rank through GVC_FACTS (a fact DE or Matt holds stays
      theirs; every key asana-map.js factsOf gives, State as its two-letter
      code included, so an existing job gains it on the next sync), core.suggestedAgentIds, dev_project_id for a TJ New Dev house.
+   - a new listing with no unit at a development's street (its name, or dev-addresses.js) joins
+     that development rather than standing beside it (D141); the Errors page's M29 then asks
+     Matt to make the two one job.
      Every changed value is one `changes` row, source 'Asana'.
    - which tasks become rows: on the plan run, the ticked rows (unticked ones
      are cached as ignored and never come back by themselves); after that, an
@@ -79,6 +82,7 @@ const L = require('./link.js');
 const GM = require('../../assets/js/match-check.js');
 const { matchUpdate, storeMatches } = require('../match-store.js');
 const { looseNeedles, namesOne } = require('./read.js');
+const DA = require('../../assets/js/dev-addresses.js');
 
 const ACTIVE = L.ACTIVE;
 const WON = ACTIVE.concat(['Sold', 'Rented']);
@@ -245,8 +249,13 @@ async function writeRun(o, sr, out, now) {
   /* ---------- listings ---------- */
   const factsOf = t => { const f = MAP.factsOf(t); delete f.kind; return f; };
 
+  // a development at this street: a house with no unit there is that development's (D141)
+  const devAt = street => devs.find(d => !d.archived_at && DA.of(d.slug).concat(/^\d/.test(d.label || '') ? [d.label] : [])
+    .some(s => A.sameStreet(s, street)));
+
   async function createListing(t, stage, pitch, entry) {
     const a = L.addrOf(t.name);
+    const atDev = !devOfListing[t.gid] && !A.unitKey(a.unit) && a.street ? devAt(a.street) : null;
     const core = { address: a.street, unit: a.unit || '' };
     let facts = {};
     const f0 = factsOf(t);
@@ -258,7 +267,7 @@ async function writeRun(o, sr, out, now) {
     const kind = MAP.factsOf(t).kind || 'sale';
     const row = { slug: slugFor('properties', core, t.gid), label: P.labelOf(core), core, kind, market: t.market || null, stage,
       stage_source: 'Asana', units: core.unit ? [core.unit] : [], asana_gid: t.gid, asana: snapshotOf(t), milestones: MAP.datesOf(t, t.history, now),
-      folder_state: 'unlinked', dev_project_id: devOfListing[t.gid] || null };
+      folder_state: 'unlinked', dev_project_id: devOfListing[t.gid] || (atDev && atDev.id) || null };
     if (pitch) row.from_pitch_id = pitch.id;
     const made = (await client.insert('properties', row))[0];
     props.push(made);
@@ -266,6 +275,7 @@ async function writeRun(o, sr, out, now) {
     const own = { property_id: made.id };
     const changes = [log(own, null, null, null, pitch ? 'Pitch won in Asana' : 'Found in Asana'), log(own, 'stage', null, stage), log(own, 'kind', null, kind)]
       .concat(Object.keys(f0).map(k => log(own, k, null, core[k])));
+    if (atDev) changes.push(log(own, 'dev_project_id', null, atDev.id, 'Joined the development ' + atDev.label + ' (the same address)'));
     await client.insert('changes', changes);
     out.created++; out.changes += changes.length;
     return made;
@@ -495,7 +505,7 @@ async function writeRun(o, sr, out, now) {
   }
 
   /* ---------- Match, from the rows as they now stand (spec §5) ---------- */
-  const ms = await storeMatches({ client, rows: props, now, runId: sr.id, roster, initials, skip: conflicted });
+  const ms = await storeMatches({ client, rows: props, now, runId: sr.id, roster, initials, skip: conflicted, devs });
   out.errors.push(...ms.errors);
 
   /* ---------- the cache: one row per task (a listing row wins over the same task in a 🚧 project),

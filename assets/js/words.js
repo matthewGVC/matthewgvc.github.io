@@ -41,7 +41,7 @@
     M12: 'Late work', M13: 'Checklist open', M14: 'Asana section', M15: 'Listing date passed', M16: 'Point Person',
     M17: 'Your value', M18: 'Folder found', M19: 'Maybe the same listing', M20: 'Old record', M21: 'Deal stuck',
     M22: 'Original price', M23: 'Missing date', M24: 'Old deal date', M25: 'Not on Elliman', M26: 'Zip code',
-    M27: 'Exclusive ending', M28: 'Closed, task open'
+    M27: 'Exclusive ending', M28: 'Closed, task open', M29: 'Listed twice'
   };
 
   function plain(text) {

@@ -474,6 +474,16 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('build: a teammate sees the schedule, never a budget', [!!(await t.page.$('#schedCard')), await t.page.$('#budgetCard'), (await text(t.page, '#attnCard')).includes('estimate'),
     await t.page.$$eval('#ovCard .k', e => e.map(k => k.textContent))], [true, null, false, ['Work items', 'Next on the schedule', 'Past target']]);
   await t.ctx.close();
+  /* overhaul 8: every step of the listing page's tour is on the page, for an editor and for the shared sign-in */
+  t = await open(browser, { path: LISTING });
+  check('tour: every job-page step is on the page (owner)', await t.page.evaluate(() => GVC_WALK.missing('job', { role: 'owner' })), []);
+  await t.page.evaluate(() => GVC_WALK.start('job', { role: 'owner' }));
+  check('tour: the editor is told an edit goes to Asana', (await t.page.$eval('.walk', e => e.textContent)).includes('Step 1 of 4'), true);
+  await t.ctx.close();
+  t = await open(browser, { path: LISTING, members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
+  check('tour: every job-page step is on the page (shared sign-in)', await t.page.evaluate(() => GVC_WALK.missing('job', { role: 'shared' })), []);
+  await t.ctx.close();
+
   /* overhaul 7b: a development's units, from Elliman's listings at its street */
   const RU = rowsFor();
   RU.dev_projects.push({ id: 'd2', slug: 'le-reve', label: 'Le Reve', market: 'FL', version: 1, milestones: {}, asana_map: {}, milestone_hints: [] });

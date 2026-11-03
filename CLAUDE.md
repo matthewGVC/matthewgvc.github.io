@@ -218,6 +218,13 @@ Everyone signs in with Google on their GVC email (`invites`, migration 0020; rol
 marketing, ops, team). A fact changed on a job page also goes to that listing's Asana task through
 the desktop helper (`helper/asana-write.js`, migration 0021). Making pieces stays marketing's and admin's.
 
+### The first-day tour — keep it current
+`assets/js/walkthrough.js` holds the numbered tour for the Overview and a listing's page, and each
+role's home (an agent opens on their market and their own jobs). **When you move, rename or remove
+something a step points at, change that step in the same commit**: `scripts/test-workspace.js` and
+`scripts/test-job-page.js` fail while a step's target is missing. Bump its `VERSION` when the tour
+changes enough that everyone should see it again.
+
 ### Plain words and the three markets
 The team aren't developers, so the workspace never shows "DE", "helper" or a bare check code.
 `assets/js/words.js` holds the swaps (DE → Elliman) and each Errors check's short name, and rewrites

@@ -873,6 +873,36 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('errors: before 0011, no claim buttons and nothing breaks', [(await lineOf('M3'))[2], t.errors], [['Dismiss'], []]);
   await t.ctx.close();
 
+  /* overhaul 8: each person's home, and the first-day tour */
+  {
+    const RH = rowsFor(); RH.properties[0].core.agentIds = ['katie-cook'];
+    t = await open(browser, { rows: RH, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team', market: 'NYC' }] });
+    check('agent home: their market, only their jobs', [await t.page.$eval('#mkt [aria-pressed="true"]', e => e.dataset.v), await t.page.$eval('#mine', e => e.checked),
+      await t.page.$$eval('.pj h3', els => els.map(e => e.childNodes[0].textContent.trim()))], ['NYC', true, ['100 Example St 4A']]);
+    await t.page.uncheck('#mine');
+    check('agent home: untick to see the whole team', (await t.page.$$eval('.pj h3', els => els.length)) > 1, true);
+    check('tour: every step of the Overview tour is on the page', await t.page.evaluate(() => GVC_WALK.missing('overview', { role: 'team' })), []);
+    check('tour: not by itself under a test browser', await t.page.$('.walk'), null);
+    await t.page.evaluate(() => GVC_WALK.start('overview', { role: 'team' }));
+    check('tour: numbered, with a pointer', [await t.page.$eval('.walk-of', e => e.textContent), await t.page.$eval('.walk-n', e => e.textContent), await t.page.$eval('.walk h3', e => e.textContent)],
+      ['Step 1 of 7', '1', 'Your market']);
+    await t.page.click('.walk [data-w=next]');
+    check('tour: Next moves on', await t.page.$eval('.walk-of', e => e.textContent), 'Step 2 of 7');
+    await t.page.click('.walk [data-w=skip]');
+    check('tour: Skip closes it and it stays seen', [await t.page.$('.walk'), await t.page.evaluate(() => localStorage.getItem('gvc.walk.overview'))], [null, String(1)]);
+    await t.page.click('#wsMe');
+    check('tour: Show me around is in the account menu', await t.page.$$eval('#wsMenu button', b => b.map(x => x.textContent)), ['Show me around', 'Sign out']);
+    await t.page.click('#wsMenu button');
+    check('tour: …and starts it again', !!(await t.page.$('.walk')), true);
+    await t.ctx.close();
+    t = await open(browser, { members: [{ name: 'Karl Brisard', initials: 'KB', role: 'ops', market: 'FL' }] });
+    check('ops home: their market, the whole team (not only theirs)', [await t.page.$eval('#mkt [aria-pressed="true"]', e => e.dataset.v), await t.page.$eval('#mine', e => e.checked)], ['FL', false]);
+    await t.ctx.close();
+    t = await open(browser, {});
+    check('owner home: every market, no "only mine" (not on the roster)', [await t.page.$eval('#mkt [aria-pressed="true"]', e => e.dataset.v), await t.page.$eval('#mineL', e => e.hidden)], ['', true]);
+    await t.ctx.close();
+  }
+
   await browser.close();
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

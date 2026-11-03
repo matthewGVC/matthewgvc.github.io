@@ -298,7 +298,15 @@
         if (P.signedIn()) { if (global.confirm('Sign out of the workspace on this device?')) { P.signOut(); global.location.reload(); } }
         else P.askSignIn('Sign in to open the workspace.').then(function (ok) { if (ok) global.location.reload(); });
       });
-      m.appendChild(p); m.appendChild(b); top.appendChild(m);
+      m.appendChild(p);
+      // the first-day tour, again (overhaul 8): only on a page that has one
+      var walkPage = doc.body.getAttribute('data-walk');
+      if (walkPage && global.GVC_WALK && global.GVC_WALK.has(walkPage)) {
+        var t = doc.createElement('button'); t.type = 'button'; t.textContent = 'Show me around';
+        t.addEventListener('click', function () { closeMenu(false); global.GVC_WALK.start(walkPage, shell.me); });
+        m.appendChild(t);
+      }
+      m.appendChild(b); top.appendChild(m);
       me.setAttribute('aria-expanded', 'true');
       doc.addEventListener('keydown', onKey); doc.addEventListener('click', onOutside, true);
     });

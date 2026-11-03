@@ -79,7 +79,11 @@ exit ends it). Run it from the main repo folder.
   AppData: Windows gives the Claude desktop app its own private copy of AppData.
 - Log: `%USERPROFILE%\.gvc-helper\helper.log`.
 - DE dry-run reports: `exports/de-dry-run-<date>.md` (gitignored).
-- Asana (read-only, never written to): `node helper/asana-sync.js --plan` writes the first link plan,
+- Asana writes (D77 lifted 11-03, migration 0021): a fact changed on a job page is queued in
+  `asana_writes`; `asana-write.js` writes it to the listing's Asana field each minute, only the
+  fields in its list, and marks it done or failed. Nothing else in the helper changes Asana
+  (`scripts/test-asana-write.js` checks it).
+- Asana reads: `node helper/asana-sync.js --plan` writes the first link plan,
   `exports/asana-link-plan-<date>.md`, for Matt to tick; `--apply-plan <that file>` makes the jobs;
   `--write` is one sync after that. Needs `asanaToken` in the helper's config.
 - Development budgets (read-only, D113): the helper reads each linked pro-forma sheet every hour as

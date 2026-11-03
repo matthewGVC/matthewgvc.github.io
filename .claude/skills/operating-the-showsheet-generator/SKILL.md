@@ -32,7 +32,8 @@ Files beside this one:
   to Matt. The workspace treats any folder named archive as archived. Deal paperwork (listing agreements, deal sheets, tax bills, anything
   `assets/js/drive-rules.js` calls paperwork) may be read, e.g. for a price or charges (Matt 10-30),
   but is never written, moved or changed.
-- **Asana is written only on Matt's OK for that job** (D77): tick that job's "Create Show Sheet"
+- **Claude writes to Asana by hand only on Matt's OK for that job** (the workspace's own edits go
+  through the helper since D77 was lifted, 11-03; a Claude session still asks first): tick that job's "Create Show Sheet"
   subtask and nothing else, then log it in `docs/workspace-v2-status.md` under "One-off Asana
   writes" straight away (account swaps lose chat).
 - **Never invent a number.** A price, charge, tax or assessment you can't confirm is left as found

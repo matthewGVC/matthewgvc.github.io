@@ -2,8 +2,9 @@
    ASANA CLIENT — the helper's read-only door into Asana.
 
    It can only ask (GET). Nothing in this folder sends, changes or deletes
-   anything in Asana (D77), and scripts/test-asana-allow.js fails if a
-   write verb ever appears here. The token (asanaToken in the helper's
+   anything in Asana, and scripts/test-asana-allow.js fails if a write verb
+   ever appears here. The one writer is helper/asana-write.js (the team's
+   edits, D77 lifted 11-03, migration 0021). The token (asanaToken in the helper's
    config) goes in one header and is never logged or put in an error.
 
      const asana = createAsana(cfg, { fetch, sleep? })    // cfg from loadConfig()

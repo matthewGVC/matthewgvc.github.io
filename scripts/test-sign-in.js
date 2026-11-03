@@ -39,11 +39,13 @@ global.fetch = (url, opts) => {
     return reply(200, { access_token: 'tok-' + body.email, refresh_token: 'r', expires_in: 3600 });
   }
   if (/\/auth\/v1\/user/.test(url)) return reply(200, { id: 'u-1', email: 'matt@example.com' });
+  if (/\/rest\/v1\/rpc\/claim_member/.test(url)) { const c = claimReply; if (c && c.after) membersReply = c.after; return reply(200, c ? c.r : null); }
   if (/\/rest\/v1\/members/.test(url) && membersReply === 'fail') return reply(400, { message: 'could not read' });
   if (/\/rest\/v1\/members/.test(url)) return membersReply === 404 ? reply(404, { message: 'relation "members" does not exist' }) : reply(200, membersReply);
   return reply(404, {});
 };
 
+let claimReply = null;   // what claim_member answers (0020); .after: the members read once claimed
 const P = require('../assets/js/property-library.js');
 
 (async () => {
@@ -59,7 +61,7 @@ const P = require('../assets/js/property-library.js');
   check('wrong password says why', err, 'Invalid login credentials');
 
   await P.signIn('matt@example.com', 'right');
-  check('who am I', await P.whoAmI(), { email: 'matt@example.com', name: 'Matt Bloomfield', initials: 'MB', role: 'owner' });
+  check('who am I', await P.whoAmI(), { email: 'matt@example.com', name: 'Matt Bloomfield', initials: 'MB', role: 'owner', market: null });
   membersReply = [];
   P.signOut(); await P.signIn('matt@example.com', 'right');
   check('not a member yet', await P.whoAmI(), { email: 'matt@example.com', name: 'matt@example.com', initials: 'MA', role: null });
@@ -80,6 +82,16 @@ const P = require('../assets/js/property-library.js');
   await P.signIn('m.1@example.com', 'right');
   check('initials are letters only', (await P.whoAmI()).initials, 'M');
   check('askSignIn exists', typeof P.askSignIn, 'function');
+
+  /* 0020: a first Google sign-in claims the person's place on the team, then reads it */
+  global.fetch = ((orig) => (url, o) => /auth\/v1\/user/.test(url) ? reply(200, { id: 'u-3', email: 'karl@gvcrealestateteam.com' }) : orig(url, o))(global.fetch);
+  membersReply = []; claimReply = { r: { role: 'ops' }, after: [{ name: 'Karl Brisard', initials: 'KB', role: 'ops', market: 'FL' }] };
+  P.signOut(); await P.signIn('karl@gvcrealestateteam.com', 'right');
+  check('first sign-in: claimed, then the member is read', await P.whoAmI(), { email: 'karl@gvcrealestateteam.com', name: 'Karl Brisard', initials: 'KB', role: 'ops', market: 'FL' });
+  membersReply = []; claimReply = { r: null };
+  P.signOut(); await P.signIn('karl@gvcrealestateteam.com', 'right');
+  check('not on the invite list: not a member', (await P.whoAmI()).role, null);
+  claimReply = null;
 
   /* ---------- part 2: the dialog, in a real tool ---------- */
   const BASE = process.env.BASE;
@@ -112,6 +124,20 @@ const P = require('../assets/js/property-library.js');
       check('person sign-in sent', seen.slice(-1)[0], 'matt@example.com');
       check('email remembered', await page.evaluate(() => localStorage.getItem('gvc.signin.email')), 'matt@example.com');
     }
+    /* 0020: Sign in with Google goes to Supabase's Google door, and back here keeps the session */
+    const p3 = await browser.newPage();
+    await p3.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+    await p3.route('**/auth/v1/authorize**', r => r.fulfill({ status: 200, contentType: 'text/html', body: 'google' }));
+    await p3.goto(BASE + '/tools/todo/', { waitUntil: 'networkidle' });
+    await p3.click('#btnSignIn');
+    await p3.locator('dialog.gvc-signin').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await Promise.all([p3.waitForURL('**/auth/v1/authorize**', { timeout: 5000 }).catch(() => {}), p3.click('dialog.gvc-signin .gvc-signin-google').catch(() => {})]);
+    const go = new URL(p3.url());
+    check('Google: to Supabase\'s Google door, coming back to the same page', [go.pathname, go.searchParams.get('provider'), new URL(go.searchParams.get('redirect_to') || 'x:').pathname], ['/auth/v1/authorize', 'google', '/tools/todo/']);
+    await p3.goto(BASE + '/tools/todo/#access_token=ga&refresh_token=gr&expires_in=3600&token_type=bearer', { waitUntil: 'networkidle' });
+    check('Google return: the session kept, the tokens gone from the address', [JSON.parse(await p3.evaluate(() => localStorage.getItem('gvc.props.session')) || '{}').access_token,
+      new URL(p3.url()).hash], ['ga', '']);
+    await p3.close();
     /* cancel resolves false and leaves the page usable */
     const p2 = await browser.newPage();
     await p2.route('**/rest/v1/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));

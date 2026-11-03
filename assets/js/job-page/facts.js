@@ -3,7 +3,7 @@
 
      GVC_JP.facts.html(ctx)       → the card's HTML
      GVC_JP.facts.wire(host, ctx) → its clicks
-       ctx = { kind, table, row, job, canEdit, W, I, esc }
+       ctx = { kind, table, row, job, canFacts, W, I, esc }   canFacts: anyone on the team (overhaul 4b)
 
    Each fact: its value, its source badge, the other sources' different
    values on a quiet line, and the warning sign while Matt's value differs
@@ -42,7 +42,7 @@
       if (f.warn && o.source === f.warn.source) return;
       lines += '<div class="fo">' + esc(o.badge + ' says ' + words(f.kind, o.value, W)) + '</div>';
     });
-    var cell = ctx.canEdit && !editing
+    var cell = ctx.canFacts && !editing
       ? '<button class="fe" type="button" data-edit="' + esc(f.name) + '" aria-label="Edit ' + esc(f.label) + '">' + shown + '</button>' + badge
       : shown + badge;
     var ed = '';

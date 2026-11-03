@@ -195,7 +195,8 @@
   /* size and date of an allowed file; a file Drive won't serve in time just has none */
   function fileNode(h, ms) {
     // Drive through Google already knows size and date: no download for them
-    if (h.meta) return Promise.resolve(h.meta.modified ? { name: h.name, kind: 'file', size: h.meta.size, modified: new Date(h.meta.modified).toISOString() } : { name: h.name, kind: 'file' });
+    if (h.meta) return Promise.resolve(Object.assign(h.meta.modified ? { name: h.name, kind: 'file', size: h.meta.size, modified: new Date(h.meta.modified).toISOString() } : { name: h.name, kind: 'file' },
+      h.url ? { url: h.url } : {}));   // and its real Drive link
     return withTimeout(h.getFile(), ms, SLOW).then(function (f) {
       return { name: h.name, kind: 'file', size: f.size, modified: new Date(f.lastModified).toISOString() };
     }, function () { return { name: h.name, kind: 'file' }; });
@@ -210,6 +211,7 @@
   function treeOf(root, opts) {
     var depth = (opts && opts.depth) || 3, ms = (opts && opts.timeoutMs) || 20000;
     var top = { name: root.name, kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
+    if (root.url) top.url = root.url;
     function walkDir(dir, segs, left, node) {
       return entries(dir, ms).then(function (hs) {
         return Promise.all(hs.map(function (h) {
@@ -231,6 +233,7 @@
           }
           if (RULES.isPaperwork(h.name)) return null;            // "Marketing/Docs": never listed, never opened
           var d = { name: h.name, kind: 'directory', children: [] };
+          if (h.url) d.url = h.url;
           if (left <= 1) { d.more = true; return d; }
           return walkDir(h, path, left - 1, d);
         })).then(function (kids) {

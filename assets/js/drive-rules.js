@@ -124,17 +124,21 @@
          GVC_HEALTH counts or reports as a piece at the top);
        - below the top, anything allowedInJob refuses is dropped entirely.
      The input is not changed; running it twice gives the same tree. */
+  var DRIVE_URL = /^https:\/\/drive\.google\.com\//;
   function jobTree(raw) {
     if (!raw || raw.kind !== 'directory' || raw.broken) return raw;
     var out = { name: raw.name, kind: 'directory', children: [], looseCount: +raw.looseCount || 0, otherCount: +raw.otherCount || 0 };
+    if (DRIVE_URL.test(raw.url || '')) out.url = raw.url;
     function file(c) {
       var f = { name: c.name, kind: 'file' };
       if (c.size != null) f.size = c.size;
       if (c.modified != null) f.modified = c.modified;
+      if (DRIVE_URL.test(c.url || '')) f.url = c.url;   // Drive through Google: the file's real link
       return f;
     }
     function inside(node, segs) {
       var d = { name: node.name, kind: 'directory', children: [] };
+      if (DRIVE_URL.test(node.url || '')) d.url = node.url;
       if (node.more) d.more = true;
       (node.children || []).forEach(function (c) {
         if (!c || c.skipped || (c.kind !== 'directory' && isJunk(c.name))) return;

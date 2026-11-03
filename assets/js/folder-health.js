@@ -65,6 +65,8 @@
 
   function low(s) { return String(s || '').toLowerCase(); }
   function isDir(n) { return !!n && n.kind === 'directory'; }
+  // a piece keeps its file's real Drive link when the tree has one (Drive through Google)
+  function withUrl(f, c) { if (/^https:\/\/drive\.google\.com\//.test(c.url || '')) f.url = c.url; return f; }
   function ms(v) { var t = typeof v === 'number' ? v : Date.parse(v); return isNaN(t) ? 0 : t; }
   function fmt(v) { var d = new Date(ms(v)); return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }
   function folderKey(name) {
@@ -116,9 +118,9 @@
           ['staged', 'print', 'web', 'raw'].forEach(function (f) { if (folders.indexOf(f) !== -1) photoCounts[f]++; });
           if (piece === 'photos') photoCounts.edited++;
           if (!piece && !archived && segs.length === 1 && PHOTOS_TOP.test(low(segs[0])) && IMAGE.test(c.name)) {
-            loosePhotos.push({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: false });
+            loosePhotos.push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: false }, c));
           }
-          if (piece) out.pieces[piece].push({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived });
+          if (piece) out.pieces[piece].push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived }, c));
         }
       });
     }
@@ -133,7 +135,7 @@
       }
       var key = topPieceKey(c.name);
       if (key) {
-        out.pieces[key].push({ path: c.name, name: c.name, modified: c.modified || null, archived: false });
+        out.pieces[key].push(withUrl({ path: c.name, name: c.name, modified: c.modified || null, archived: false }, c));
         note('pieceAtTop', 'A ' + LABEL[key] + ' file sits loose at the top of the folder. The standard keeps it in its own folder.');
       } else loose++;
     });

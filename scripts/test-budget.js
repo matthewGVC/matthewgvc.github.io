@@ -120,7 +120,7 @@ const PAID = [
     { client_id: 'cid', client_secret: 'csecret', refresh_token: 'new-rtok' });
   check('the exchange sends the verifier', new URLSearchParams(log[0].body).get('code_verifier'), 'ver');
   check('a wider permission than read-only Sheets is refused', await exchange({ client, code: 'wide', verifier: 'v', redirect: 'r', fetch: google }).then(() => null, e => e.message),
-    'Google gave a different permission than read-only Sheets. Try again and allow it.');
+    'Google gave a different permission than the one asked for. Try again and allow it.');
 
   /* ---------- the sync ---------- */
   const T = { dev_budgets: [{ dev_project_id: 'd1', sheet_id: 'sheet1', budget: null, version: 1 }, { dev_project_id: 'd2', sheet_id: 'locked', budget: { lines: [] }, version: 4 }], sync_runs: [] };

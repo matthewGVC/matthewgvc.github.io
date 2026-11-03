@@ -3,8 +3,15 @@
 
      node helper/weekly-report.js --preview [--market NJ] [--date 2026-11-08]
        reads the jobs and writes exports/weekly-report-<date>[-<market>].html.
-       Nothing is sent: sending waits for Matt's OK on the format and on Gmail
-       send permission (overhaul plan, Decisions needed 3).
+     node helper/weekly-report.js --send
+       sends this week's email now, from helper@gvcrealestateteam.com.
+
+   The helper sends it itself on Sundays at 18:00 (schedule.js) once its
+   Gmail sign-in is saved (helper/mail/sign-in.js). It goes to weeklyTo in the
+   helper's config, Matt alone until he adds the team (11-03).
+
+     sendWeekly({ cfg, client, mail, today? }) → { to, subject, id }
+     lastSent(cfg) → when the last one went (weekly-sent.json in the helper's home)
 
      build({ properties, pitches, devProjects, changes, documents }, { today, market })
        → { subject, html, counts }   pure: no fetch, no file, no clock
@@ -109,20 +116,44 @@ function build(rows, opts) {
   return { subject: 'GVC week to ' + W.fmtDay(today) + (market ? ' · ' + MK.name(market) : ''), html, counts };
 }
 
-async function main(argv) {
-  const fs = require('fs'), path = require('path');
-  if (!argv.includes('--preview')) { console.log('Only --preview for now: nothing is sent until Matt OKs the format and Gmail sending.'); return; }
-  const arg = k => { const i = argv.indexOf(k); return i !== -1 ? argv[i + 1] : null; };
-  const market = arg('--market'), today = arg('--date') || W.today();
-  if (market && !MK.get(market)) { console.log('Unknown market ' + market + ': use ' + MK.CODES.join(', ')); return; }
-  const cfg = require('./config.js').loadConfig();
-  const db = require('./supabase.js').createClient(cfg);
-  if (!db.ready()) { console.log('No helper account yet.'); return; }
+const MATT = 'matthew@gvcrealestateteam.com';
+const sentFile = cfg => require('path').join(cfg.home || '', 'weekly-sent.json');
+function lastSent(cfg) { try { return new Date(JSON.parse(require('fs').readFileSync(sentFile(cfg), 'utf8')).at); } catch (e) { return null; } }
+
+async function readRows(db) {
   const [properties, pitches, devProjects, changes, documents] = await Promise.all([
     db.select('properties'), db.select('pitches'), db.select('dev_projects'),
     db.select('changes', null, '*', { order: 'at.desc', limit: 2000 }), db.select('documents').catch(() => [])
   ]);
-  const r = build({ properties: properties.filter(p => p.stage), pitches, devProjects, changes, documents }, { today, market });
+  return { properties: properties.filter(p => p.stage), pitches, devProjects, changes, documents };
+}
+
+// every market in one email for now; an ops manager's one-market edition waits on their logins (overhaul step 4b)
+async function sendWeekly(o) {
+  const to = [].concat(o.cfg.weeklyTo || MATT);
+  const r = build(await readRows(o.client), { today: o.today || W.today() });
+  const id = await o.mail.send({ to, subject: r.subject, html: r.html });
+  require('fs').writeFileSync(sentFile(o.cfg), JSON.stringify({ at: new Date().toISOString(), to, subject: r.subject }));
+  return { to, subject: r.subject, id };
+}
+
+async function main(argv) {
+  const fs = require('fs'), path = require('path');
+  const cfg = require('./config.js').loadConfig();
+  const db = require('./supabase.js').createClient(cfg);
+  if (!db.ready()) { console.log('No helper account yet.'); return; }
+  if (argv.includes('--send')) {
+    const mail = require('./mail/gmail.js').createMail(cfg);
+    if (!mail.ready()) { console.log('No Gmail sign-in yet: run node helper/mail/sign-in.js'); return; }
+    const s = await sendWeekly({ cfg, client: db, mail });
+    console.log('Sent "' + s.subject + '" to ' + s.to.join(', '));
+    return;
+  }
+  if (!argv.includes('--preview')) { console.log('Use --preview (writes a file) or --send (emails it now).'); return; }
+  const arg = k => { const i = argv.indexOf(k); return i !== -1 ? argv[i + 1] : null; };
+  const market = arg('--market'), today = arg('--date') || W.today();
+  if (market && !MK.get(market)) { console.log('Unknown market ' + market + ': use ' + MK.CODES.join(', ')); return; }
+  const r = build(await readRows(db), { today, market });
   const out = path.join(__dirname, '..', 'exports', 'weekly-report-' + today + (market ? '-' + market : '') + '.html');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, r.html);
@@ -130,4 +161,4 @@ async function main(argv) {
 }
 
 if (require.main === module) main(process.argv.slice(2)).catch(e => { console.error(e.message); process.exit(1); });
-module.exports = { build };
+module.exports = { build, sendWeekly, lastSent };

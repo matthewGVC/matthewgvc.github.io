@@ -36,8 +36,10 @@ add `--ask` for a real answer. Neither writes anything.
 
 `node helper/weekly-report.js --preview [--market NJ]` writes `exports/weekly-report-<date>.html`
 from the database: For Monday (an agenda by rules), the numbers, closing soon, new developments,
-what changed this week, marketing. Preview only: nothing is scheduled or sent until Matt OKs the
-format, the recipients and Gmail send permission (`docs/overhaul-plan.md`, Decisions needed).
+what changed this week, marketing. `--send` emails it now. The helper sends it itself on Sundays
+at 18:00, from helper@gvcrealestateteam.com (replies go to Matt), once its Gmail sign-in is saved:
+`node helper/mail/sign-in.js`, signed in as helper@, allowing "Send email" only (token in
+`google-mail.json` in the helper's home). It goes to `weeklyTo` in the config, Matt alone by default.
 Tests: `node scripts/test-weekly-report.js`.
 
 ## Pieces made from a job (migration 0017)

@@ -23,8 +23,8 @@ const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const b64url = buf => buf.toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
 
 function authUrl(o) {
-  return AUTH_URL + '?' + new URLSearchParams({ client_id: o.clientId, redirect_uri: o.redirect, response_type: 'code', scope: SCOPE,
-    access_type: 'offline', prompt: 'consent', code_challenge: o.challenge, code_challenge_method: 'S256', state: o.state }).toString();
+  return AUTH_URL + '?' + new URLSearchParams(Object.assign({ client_id: o.clientId, redirect_uri: o.redirect, response_type: 'code', scope: o.scope || SCOPE,
+    access_type: 'offline', prompt: 'consent', code_challenge: o.challenge, code_challenge_method: 'S256', state: o.state }, o.hint ? { login_hint: o.hint } : {})).toString();
 }
 
 async function exchange(o) {
@@ -33,7 +33,7 @@ async function exchange(o) {
       client_id: o.client.client_id, client_secret: o.client.client_secret }).toString() });
   const j = await r.json();
   if (!r.ok || !j.refresh_token) throw new Error('Google didn\'t give the helper a sign-in. Try again.');
-  if (j.scope && j.scope.split(' ').indexOf(SCOPE) === -1) throw new Error('Google gave a different permission than read-only Sheets. Try again and allow it.');
+  if (j.scope && j.scope.split(' ').indexOf(o.scope || SCOPE) === -1) throw new Error('Google gave a different permission than the one asked for. Try again and allow it.');
   return { client_id: o.client.client_id, client_secret: o.client.client_secret, refresh_token: j.refresh_token };
 }
 
@@ -77,4 +77,4 @@ if (require.main === module) {
   main(process.argv[2]).catch(e => { console.log(e.message); process.exit(1); });
 }
 
-module.exports = { authUrl, exchange };
+module.exports = { authUrl, exchange, listen };

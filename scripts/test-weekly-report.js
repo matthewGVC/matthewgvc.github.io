@@ -20,5 +20,27 @@ check('no banned words', /\bDE\b|helper/.test(R.build({ properties: [prop({ matc
 const n = R.build({ properties: [prop()], changes: [{ property_id: 'p1', at: '2026-11-01T10:00:00Z', field: null, note: 'Buyer\'s lender asked for the appraisal' },
   { property_id: 'p1', at: '2026-11-01T11:00:00Z', field: 'piece:showsheet', new_value: 'x.pdf', note: 'Showsheet made' }] }, { today: '2026-11-02' });
 check('notes under What changed; pieces made under Marketing', [/What changed this week[\s\S]*appraisal/.test(n.html), /Made this week[\s\S]*1 Test St/.test(n.html), /x\.pdf/.test(n.html)], [true, true, false]);
-console.log('\n' + pass + ' passed' + (fail ? ', ' + fail + ' failed' : ''));
-process.exit(fail ? 1 : 0);
+
+/* sending: the raw message, the Sunday slot, and one send to Matt */
+const G = require('../helper/mail/gmail.js');
+const raw = G.mime({ to: ['matthew@gvcrealestateteam.com'], subject: 'GVC week to 8 Nov · New Jersey', html: '<p>Hi</p>' });
+check('the message: from the helper, replies to Matt, the subject encoded', [/^From: GVC Workspace <helper@gvcrealestateteam.com>/.test(raw), /Reply-To: matthew@gvcrealestateteam.com/.test(raw),
+  /Subject: =\?UTF-8\?B\?/.test(raw), Buffer.from(raw.split('\r\n\r\n')[1], 'base64').toString()], [true, true, true, '<p>Hi</p>']);
+const { due } = require('../helper/schedule.js');
+const at = s => new Date(s), ran = { de: at('2026-11-08T07:00:00'), scan: at('2026-11-08T02:00:00'), backup: at('2026-11-08T02:30:00') };
+check('Sunday 18:00: the email is due once, and not before, nor on Monday', [
+  due(at('2026-11-08T17:59:00'), ran, { weekly: true }), due(at('2026-11-08T18:01:00'), ran, { weekly: true }),
+  due(at('2026-11-08T18:30:00'), Object.assign({ weekly: at('2026-11-08T18:01:00') }, ran), { weekly: true }),
+  due(at('2026-11-09T19:00:00'), Object.assign({}, ran, { de: at('2026-11-09T07:00:00'), scan: at('2026-11-09T02:00:00'), backup: at('2026-11-09T02:30:00') }), { weekly: true }),
+  due(at('2026-11-08T18:01:00'), ran, {})], [[], ['weekly'], [], [], []]);
+(async () => {
+  const fs = require('fs'), os = require('os'), path = require('path');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'weekly-')), sent = [];
+  const db = { select: async t => t === 'properties' ? [prop()] : [] };
+  const r = await R.sendWeekly({ cfg: { home }, client: db, mail: { send: async m => { sent.push(m); return 'id1'; } }, today: '2026-11-02' });
+  check('sendWeekly: one email, to Matt alone, and the time kept', [sent.length, sent[0].to, /1 Test St/.test(sent[0].html), r.id, !!R.lastSent({ home })], [1, ['matthew@gvcrealestateteam.com'], true, 'id1', true]);
+  await R.sendWeekly({ cfg: { home, weeklyTo: ['a@x.com', 'b@x.com'] }, client: db, mail: { send: async m => { sent.push(m); return 'id2'; } }, today: '2026-11-02' });
+  check('weeklyTo in the config adds people', sent[1].to, ['a@x.com', 'b@x.com']);
+  console.log('\n' + pass + ' passed' + (fail ? ', ' + fail + ' failed' : ''));
+  process.exit(fail ? 1 : 0);
+})();

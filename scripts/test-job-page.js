@@ -533,6 +533,20 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     ['What is in its Drive folder, read each night (3 Nov).', ['FINAL RENDERS | 29 files · newest 19 Oct | 2', 'Site Plan | 1 file · newest 15 May | 0'],
       ['https://drive.google.com/file/d/a1/view', 'https://drive.google.com/drive/folders/f1'], false, []]);
   await t.ctx.close();
+  /* overhaul 7b-4: TJ's phone view, at the top: next up, past target, the outlook, units left */
+  t = await open(browser, { phone: true, rows: RHU, path: '/workspace/job/?dev=619-example-ave' });
+  check('glance: on a phone, the four things TJ looks for, first on the page', [await t.page.$$eval('#glanceCard li', ls => ls.map(l => [...l.children].map(c => c.textContent).join(' | '))),
+    await t.page.$$eval('#glanceCard li.warn .v', e => e.map(x => x.textContent)),
+    await t.page.evaluate(() => { const g = document.getElementById('glanceCard'), u = document.getElementById('unitsCard'); return !!(g && u && (g.compareDocumentPosition(u) & Node.DOCUMENT_POSITION_FOLLOWING)); }),
+    await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), t.errors],
+    [['Next up | Roofing | Target ' + await t.page.evaluate(d => GVC_WS.fmtDay(d), ymd(NOW - 5 * 864e5)) + ', past target',
+      ' | Stairs | Target ' + await t.page.evaluate(d => GVC_WS.fmtDay(d), ymd(NOW + 9 * 864e5)),
+      'Past target | 1 | work items not done in Asana', 'Final cost outlook | $62,500 | $12,500 over the budget', 'Units left | 2 of 2 | not sold or in contract'],
+      ['Roofing', '1', '$62,500'], true, true, []]);
+  await t.ctx.close();
+  t = await open(browser, { rows: RHU, path: '/workspace/job/?dev=619-example-ave' });
+  check('glance: a computer has the full overview instead', await t.page.$eval('#glanceCard', e => getComputedStyle(e).display), 'none');
+  await t.ctx.close();
   t = await open(browser, { phone: true, rows: RF, path: '/workspace/job/?dev=619-example-ave' });
   check('build: no sideways page scroll on a phone', await t.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   await t.ctx.close();

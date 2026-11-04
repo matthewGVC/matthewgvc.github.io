@@ -1,7 +1,8 @@
 /* ============================================================
    DRIVE THROUGH GOOGLE — the shared drives read over the web, no G: drive
-   needed (overhaul step 9). A test for TESTERS only (Matt, 11-03: Matt, Ilin,
-   Sydney); everyone else keeps the local folder (drive.js).
+   needed (overhaul step 9). On for everyone who signs in with Google on their
+   GVC email (Matt, 11-04; a tester-only trial before that). The shared team
+   password has no Google account, so it keeps the local folder (drive.js).
 
    drive.js asks this file for its root when it is on, and gets folder and
    file objects that act like the browser's own folder handles, so every
@@ -9,7 +10,7 @@
    applies unchanged. The permission is read-only (drive.readonly): the
    workspace can't change anything in Drive this way.
 
-     await GVC_DRIVE_WEB.active()   → this person is a tester (and hasn't turned it off)
+     await GVC_DRIVE_WEB.active()   → signed in with a GVC Google account (and hasn't turned it off)
      await GVC_DRIVE_WEB.state()    → 'connected' | 'needs-click' | 'error'
      await GVC_DRIVE_WEB.connect()  → signs in with Google again, asking for Drive (a page change)
      await GVC_DRIVE_WEB.root()     → the "Shared drives" folder object
@@ -18,7 +19,7 @@
    read-only Drive, the drive-token server function keeps Google's lasting
    permission (0022, no page can read it) and hands this file a fresh pass
    each hour, so nobody clicks again. The pass lives in this tab's
-   sessionStorage for its hour, never in a log. localStorage 'gvc.drive.local' = '1' turns the test
+   sessionStorage for its hour, never in a log. localStorage 'gvc.drive.local' = '1' turns it
    off on one computer (the local folder again).
 
    Each file and folder object also carries its real Drive link (url), so the
@@ -27,14 +28,17 @@
 (function (global) {
   'use strict';
   var API = 'https://www.googleapis.com/drive/v3';
-  var TESTERS = ['matthew@gvcrealestateteam.com', 'ilin@gvcrealestateteam.com', 'sydney@gvcrealestateteam.com'];
+  var DOMAIN = '@gvcrealestateteam.com';   // a person's own Google sign-in, never the shared account
   var TOKEN_KEY = 'gvc.drive.web.token', FOLDER = 'application/vnd.google-apps.folder';
 
   function active() {
     try { if (global.localStorage.getItem('gvc.drive.local') === '1') return Promise.resolve(false); } catch (e) { /* no storage */ }
     var P = global.GVC_PROPS;
     if (!P || !P.signedIn()) return Promise.resolve(false);
-    return P.whoAmI().then(function (w) { return TESTERS.indexOf(String((w && w.email) || '').toLowerCase()) !== -1; }, function () { return false; });
+    return P.whoAmI().then(function (w) {
+      var email = String((w && w.email) || '').toLowerCase();
+      return !!w && w.role !== 'shared' && email.length > DOMAIN.length && email.slice(-DOMAIN.length) === DOMAIN;
+    }, function () { return false; });
   }
 
   /* ---------- the token ---------- */
@@ -150,5 +154,5 @@
     return Promise.resolve(top);
   }
 
-  global.GVC_DRIVE_WEB = { active: active, state: state, connect: connect, root: root, TESTERS: TESTERS };
+  global.GVC_DRIVE_WEB = { active: active, state: state, connect: connect, root: root };
 })(window);

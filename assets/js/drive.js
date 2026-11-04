@@ -30,7 +30,7 @@
    Needs assets/js/drive-rules.js loaded first.
 
    Drive through Google (overhaul 9, assets/js/drive-web.js, loaded before
-   this file): for its testers the root is Google Drive itself, over the web,
+   this file): for anyone signed in with Google the root is Google Drive itself, over the web,
    and connecting is a Google sign-in; everything below works the same.
    ============================================================ */
 (function (global) {
@@ -57,7 +57,7 @@
       });
     });
   }
-  // a tester of Drive through Google gets the shared drives over the web as the one root
+  // anyone on Drive through Google gets the shared drives over the web as the one root
   function web() { return global.GVC_DRIVE_WEB ? global.GVC_DRIVE_WEB.active() : Promise.resolve(false); }
   function roots() {
     return web().then(function (on) {

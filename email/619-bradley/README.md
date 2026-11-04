@@ -1,0 +1,1 @@
+Temporary: images for the 619 Bradley open house e-invite test sends (2026-11-04). Master copies are in the job's Drive folder (Marketing/Open House/E-invite draft/images). Remove once the email is set up in Rechat.

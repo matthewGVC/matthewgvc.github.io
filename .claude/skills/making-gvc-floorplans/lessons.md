@@ -5,15 +5,14 @@ What earlier runs learned that `SKILL.md`, `plan-format.md` and `sources.md` don
 a third time, move it into `SKILL.md` or `sources.md` and delete it here. Fixes that went into the
 scripts are not lessons: they live in the code and its tests.
 
-(Pruned 2026-10-30: lessons already moved into the other files, fixed in the scripts, or overruled by
-a later one were taken out.)
+(Pruned 2026-10-30 and 2026-11-04: lessons already moved into the other files, fixed in the scripts, or
+overruled by a later one were taken out. Since 11-03 the maker counts `lines` in a floor's size, so linework
+past the walls no longer needs a `floor` area under it.)
 
 ## 2026-11-03: 806 Riverview Dr v5 (a fresh look at the branded sheets)
 
 - Look at every BRANDED sheet, not only the unbranded ones and the overlays. v3 passed the overlay check, but its
   second-floor trellis ran up through the address in the header.
-- The cause: a floor's size on the sheet came from its walls, solids and areas only, so linework past the walls (a
-  trellis's rafters) was left out of the fit. plan.js levelPoints now counts lines too (test-floorplan-plan.js).
 - When a room is too small for its name and size at the sheet's text size, back the label with white rather than
   squeeze it against a door swing or a counter.
 
@@ -67,8 +66,6 @@ a later one were taken out.)
 - **`clean_solids.clean` steps a curved wall.** It squares near-level edges, so a traced arc comes back as
   facets and stairs. Put the arc back on its circle *after* the clean (fit a circle to the ring's points in the
   curve and resample it), both faces.
-- **Lines don't count when a sheet is fitted** (second time; 366 N 3rd was the first): the basement's garage-slab
-  outline, drawn as dashed lines, fell off its sheet. A `floor` area under it keeps it on.
 - **A room narrower than its name:** small labels can't turn, so put the name in the space at its door (LAUNDRY
   in the hall). Three floors in a row make a small all-floors sheet: set `allSheet.textScale` (0.45 here), then
   set the names fit-labels still lists by hand with `allScale` and `allLock`.
@@ -163,7 +160,6 @@ Matt: "scale and move them, they should fit nicely". `fit-labels.js` does it; wh
 - **`trace-walls.py` drops big parts of a plan when thin grid lines or dimension ticks join the wall masses** (its small-bump trim then removes real walls). Fix: make a copy of the render keeping only dark runs at least 9 px thick (`skimage.morphology.opening`), then trace that copy. Light-grey partitions (value about 196) need `--dark 222`; shadows are about 242.
 - Columns drawn as a square with a round post are dropped by the tracer; add them as a square plus a round hole.
 - Casement windows are drawn as a thin V or triangle outside the wall; French doors as arc-and-leaf pairs. Do not mix them up.
-- Lines are not counted when the all-floors sheet is laid out: an exterior stair drawn as `lines` ran off its floor's canvas and under the title. Add a `floor` area (no pattern) over it.
 
 ## 2026-10-26: real-plan test, round 1 (six of Matt's jobs)
 

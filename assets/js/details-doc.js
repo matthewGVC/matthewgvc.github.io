@@ -3,7 +3,7 @@
 
    The Showsheet's reader (tools/showsheet/listing.js) already turns the Word
    document into the sheet's own field names. This file renames those to the
-   job's fact names (docs/workspace-v2-facts.md) and picks which file in a job
+   job's fact names (docs/job-facts.md) and picks which file in a job
    folder is the details doc:
 
      GVC_DOC.toFacts(readResult)  → { <fact name>: value }

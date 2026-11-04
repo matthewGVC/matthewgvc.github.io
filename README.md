@@ -16,12 +16,15 @@ Static site, no build step. GSAP via CDN on the tool pages that animate.
 (listings, rentals and pitches), **New Dev** (developments),
 **Errors** (where Drive, Asana and DE disagree, `workspace/match/`) and **Tools** (`workspace/tools/`,
 the list of the tools below, all but Map Studio, which opens from a job). A job's own page is `workspace/job/?listing=` / `?pitch=` / `?dev=`.
-Sign-in is per person (Supabase); the desktop helper in `helper/` (see its README) syncs DE and Asana
-and writes PDFs into the job's Drive folder.
+Everyone signs in with Google on their GVC email (`invites`, migration 0020; roles owner, admin, marketing,
+ops, team); the team's old shared password still works until everyone is in. The desktop helper in `helper/`
+(see its README) syncs Elliman and Asana, writes the team's fact edits back to Asana, and writes PDFs into the
+job's Drive folder.
 
 **Pieces made from a job** (Showsheet, Brochure, Postcards, Seller Package, Signage): the helper makes
-them. Make / Rebuild on a job page (any device, owner, admin, marketing or the team account), Rebuild
-n stale, or Make PDF on the piece's own page add a row to `piece_requests` (migration 0017); the helper
+them. Make / Update on a job page's Marketing materials card (any device; owner, admin and marketing only,
+migration 0019), the card's "Update n out-of-date pieces", or Make PDF on the piece's own page add a row to
+`piece_requests` (migration 0017); the helper
 reads the job folder itself, lays the piece out with the piece's own page (`assets/js/piece-mode.js`
 plus each tool's `job-mode.js` adapter) and saves it into the folder. Requests wait while the helper is
 off. Tests: `scripts/test-piece-build.js`, `test-piece-page.js`, `test-sheet-page.js`, `test-job-page.js`.
@@ -195,9 +198,11 @@ the site.
 
 ## Docs
 
-- Working docs (status, to-do, decisions, facts, folder standard) live in `docs/`, local only:
-  `docs/` is gitignored, so they do not ship with a clone. The one exception is
-  `docs/piece-helper-design.md`, which the code cites.
+- Working docs live in `docs/`, local only (`docs/` is gitignored, so they do not ship with a clone):
+  `status.md` (start here), `overhaul-plan.md` (the current work), `todo.md`, `workspace-plan.md` (how it
+  works and the decisions register, D1–D141), `job-facts.md`, `folder-standard.md`, and `archive/` for
+  superseded docs. The one exception is `docs/piece-helper-design.md`, which the code cites and git keeps.
+- In git: this file, `CLAUDE.md`, `helper/README.md`, `supabase/README.md` and the skills in `.claude/skills/`.
 
 ## To-do tool
 

@@ -1,6 +1,6 @@
 /* ============================================================
    REGRESSION BASELINE — pictures of every printed tool, to compare
-   against after a shared file changes (workspace v2 plan §11).
+   against after a shared file changes (docs/workspace-plan.md §11).
 
      python -m http.server 8080            (from the repo root)
      node scripts/baseline.js              render → exports/baseline/<date>/ (--force replaces it)

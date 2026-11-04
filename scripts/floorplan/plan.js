@@ -73,7 +73,7 @@ function arcOf(a, b, via) {
 }
 const arcPoint = (arc, t) => [arc.c[0] + arc.r * Math.cos(arc.a0 + arc.sweep * t), arc.c[1] + arc.r * Math.sin(arc.a0 + arc.sweep * t)];
 
-/* every point a level draws: wall ends, solid corners, area corners */
+/* every point a level draws: wall ends, solid corners, area corners, line points, outside door swings */
 function levelPoints(level) {
   const pts = [];
   (level.walls || []).forEach((w) => {

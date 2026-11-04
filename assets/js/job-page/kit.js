@@ -94,6 +94,8 @@
      they're unknown. A file found live or in last night's scan counts, as in the sheet's bar. */
   var IMG = /\.(jpe?g|png|webp)$/i;
   var DRIVE_LINK = /^https:\/\/drive\.google\.com\//;
+  // open Drive in the signed-in person's own Google account, not the browser's first one (GVC_PROPS.asMe)
+  var asMe = function (u) { return global.GVC_PROPS && global.GVC_PROPS.asMe ? global.GVC_PROPS.asMe(u) : u; };
   // the clock the read's file dates are on: Google's (Drive through Google) or G:'s
   function clockOf(files) { return files.some(function (f) { return f.clock === 'google'; }) ? 'google' : 'disk'; }
   function judge(ctx, pieces, live) {
@@ -459,7 +461,7 @@
         var same = ((((r.scan || {}).pieces || {})[keyOf(cur)]) || []).filter(function (x) { return x.name === cur.name; })[0];
         if (same && /^https:\/\/drive\.google\.com\//.test(same.url || '')) stored = same.url;
       }
-      if (stored) { global.open(stored, '_blank', 'noopener'); say(''); }
+      if (stored) { global.open(asMe(stored), '_blank', 'noopener'); say(''); }
       else say('Open it from the folder in File Explorer.');
     };
     var hook = function () {
@@ -474,7 +476,7 @@
       body.querySelectorAll('[data-open-dir]').forEach(function (b) {
         b.addEventListener('click', function () {
           var u = dirUrl(lastTree, photosDir(current.photos));
-          if (u) { global.open(u, '_blank', 'noopener'); say(''); return; }
+          if (u) { global.open(asMe(u), '_blank', 'noopener'); say(''); return; }
           JP.drive.openWeb(dir(), say);
         });
       });
@@ -488,7 +490,7 @@
           var cur = current[b.dataset.open];
           if (!cur || !cur.path) return;
           // Drive through Google knows the file's own page: open that, never a downloaded copy
-          if (DRIVE_LINK.test(cur.url || '')) { global.open(cur.url, '_blank', 'noopener'); say(''); return; }
+          if (DRIVE_LINK.test(cur.url || '')) { global.open(asMe(cur.url), '_blank', 'noopener'); say(''); return; }
           // a blob: URL runs with this site's origin, so only types that can't run script open inline
           if (!SAFE_EXT.test(cur.name)) { elsewhere(cur); return; }
           say('Opening the file…');

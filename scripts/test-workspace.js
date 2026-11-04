@@ -873,6 +873,33 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('errors: before 0011, no claim buttons and nothing breaks', [(await lineOf('M3'))[2], t.errors], [['Dismiss'], []]);
   await t.ctx.close();
 
+  /* Drive links open in the signed-in person's own Google account, not the browser's first one (Matt, 11-04) */
+  {
+    const DRIVE = 'https://drive.google.com/file/d/abc/view';
+    const asWho = async (email, members) => {
+      const x = await open(browser, { members });
+      await x.page.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'u1', email }) }));
+      await x.page.reload({ waitUntil: 'networkidle' });
+      await x.page.evaluate(() => GVC_PROPS.whoAmI());
+      return x;
+    };
+    t = await asWho('katie@gvcrealestateteam.com', [{ name: 'Katie Cook', initials: 'KC', role: 'team', market: 'NYC' }]);
+    check('drive links: a teammate opens them as themselves', await t.page.evaluate(u => GVC_PROPS.asMe(u), DRIVE), DRIVE + '?authuser=katie%40gvcrealestateteam.com');
+    check('drive links: a Docs sheet too, keeping its own address', await t.page.evaluate(() => GVC_PROPS.asMe('https://docs.google.com/spreadsheets/d/s/edit')), 'https://docs.google.com/spreadsheets/d/s/edit?authuser=katie%40gvcrealestateteam.com');
+    check('drive links: anything else is left alone', await t.page.evaluate(() => [GVC_PROPS.asMe('https://www.elliman.com/x'), GVC_PROPS.asMe('blob:x'), GVC_PROPS.asMe('')]), ['https://www.elliman.com/x', 'blob:x', '']);
+    check('drive links: a plain link on the page gets it at the click', await t.page.evaluate(u => {
+      const a = document.createElement('a'); a.href = u; a.textContent = 'Open'; document.body.appendChild(a);
+      a.addEventListener('click', e => e.preventDefault()); a.click(); return a.href;
+    }, DRIVE), DRIVE + '?authuser=katie%40gvcrealestateteam.com');
+    await t.ctx.close();
+    t = await asWho('team@gvcrealestateteam.com', [{ name: 'GVC Team', initials: 'GT', role: 'shared', market: null }]);
+    check('drive links: the shared account leaves them plain', await t.page.evaluate(u => GVC_PROPS.asMe(u), DRIVE), DRIVE);
+    await t.ctx.close();
+    t = await asWho('someone@example.com', [{ name: 'Someone', initials: 'S', role: 'team', market: 'NYC' }]);
+    check('drive links: an address outside the team leaves them plain', await t.page.evaluate(u => GVC_PROPS.asMe(u), DRIVE), DRIVE);
+    await t.ctx.close();
+  }
+
   /* overhaul 8: each person's home, and the first-day tour */
   {
     const RH = rowsFor(); RH.properties[0].core.agentIds = ['katie-cook'];

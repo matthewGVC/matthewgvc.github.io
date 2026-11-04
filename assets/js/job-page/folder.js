@@ -98,7 +98,7 @@
     var tab = global.open('about:blank', '_blank');
     say('Finding the folder on Drive…');
     return link(row, null, null).then(function (u) {
-      if (u && tab) { tab.location.href = u; say('Opened the folder on Google Drive.'); return; }
+      if (u && tab) { tab.location.href = global.GVC_PROPS && global.GVC_PROPS.asMe ? global.GVC_PROPS.asMe(u) : u; say('Opened the folder on Google Drive.'); return; }
       if (tab) tab.close();
       return global.GVC_SHELL.helper('POST', '/open-folder', { folder: row.drive_folder }).then(function (x) {
         say(x.ok ? 'No Drive link known for it yet, so it opened in File Explorer.' : (x.error || 'Couldn\'t open it.'));

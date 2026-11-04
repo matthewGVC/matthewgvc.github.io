@@ -54,7 +54,7 @@ async function page(browser, who, token, server) {
 
   let t = await page(browser, MATT, 'tok');
   const p = t.p;
-  check('a tester: Drive through Google, connected', [await p.evaluate(() => GVC_DRIVE_WEB.active()), await p.evaluate(() => GVC_DRIVE.state())], [true, 'connected']);
+  check('Matt: Drive through Google, connected', [await p.evaluate(() => GVC_DRIVE_WEB.active()), await p.evaluate(() => GVC_DRIVE.state())], [true, 'connected']);
   check('list a shared drive folder', await p.evaluate(() => GVC_DRIVE.list('GVC - New York/ACTIVE LISTINGS & DEALS')), [{ name: '1 Test St', kind: 'directory' }]);
   const tree = await p.evaluate(() => GVC_DRIVE.tree('GVC - New York/ACTIVE LISTINGS & DEALS/1 Test St'));
   check('the job tree: photos with size and date, paperwork never opened', [JSON.stringify(tree).includes('"a.jpg"'), JSON.stringify(tree).includes('2026-11-01'),
@@ -85,11 +85,17 @@ async function page(browser, who, token, server) {
   await t.ctx.close();
 
   t = await page(browser, { email: 'katie@gvcrealestateteam.com', role: 'team' }, 'tok');
-  check('not a tester: the local folder, as before', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
+  check('everyone on a GVC Google sign-in gets Drive through Google', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), true);
+  await t.ctx.close();
+  t = await page(browser, { email: null, name: 'Team (shared)', role: 'shared' }, 'tok');
+  check('the shared team password: the local folder, as before', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
+  await t.ctx.close();
+  t = await page(browser, { email: 'someone@gmail.com', role: null }, 'tok');
+  check('a Google account outside GVC: the local folder', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
   await t.ctx.close();
   t = await page(browser, MATT, 'tok');
   await t.p.evaluate(() => localStorage.setItem('gvc.drive.local', '1'));
-  check('a tester can turn it off on one computer', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
+  check('anyone can turn it off on one computer', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
   await t.ctx.close();
 
   await browser.close();

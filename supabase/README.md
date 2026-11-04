@@ -22,9 +22,9 @@ uses it standalone. The Buyer Package does not use it.
 | `photos` | The property bar's photo shelf. The files live in the private `property-photos` bucket; pages render them through short-lived signed URLs. | 0001 |
 | `developments` | The archived New Development tool's documents (`data`, stored verbatim). | 0002 |
 | `todos` | Matt's to-do list behind `tools/todo/`, owner only (0008). | 0003 |
-| `members` | Who may sign in, and their role: `owner`, `admin`, `marketing`, `team`, `helper`, `shared`. | 0004, 0011 |
+| `members` | Who may sign in, and their role: `owner`, `admin`, `marketing`, `ops`, `team`, `helper`, `shared`; and their market. | 0004, 0011, 0020 |
 | `pitches` | Seller pitches, linked to their Asana task; the outcome follows Asana (D55). | 0005 |
-| `dev_projects` | Developments: milestones, the 🚧 Asana link and hints, the schedule (0015), `archived_at` (0018). | 0005 |
+| `dev_projects` | Developments: milestones, the 🚧 Asana link and hints, the schedule (0015), `archived_at` (0018), the nightly folder `scan` (0023), `house_listing_id` for a development that is one house (0024). | 0005 |
 | `changes` | The change log: one row per change, with its source and who made it. | 0005 |
 | `floorplans` | Floorplan versions × layouts per listing. | 0005 |
 | `sync_runs` | Every run of the desktop helper (DE, Asana, People, budget, scan, backup). | 0005 |
@@ -33,7 +33,10 @@ uses it standalone. The Buyer Package does not use it.
 | `asana_people` | The allowlisted 👋 People fields (D71): roster drift and M16. | 0006 |
 | `match_claims` | Who claimed or fixed each error on the Errors page. | 0011 |
 | `dev_budgets` | A development's pro-forma sheet link and what the helper keeps of it (D112). | 0015 |
-| `piece_requests` | The queue of pieces to make from a job. Make or Rebuild adds a row; the desktop helper claims the oldest waiting row and marks it done or failed. | 0017 |
+| `piece_requests` | The queue of pieces to make from a job. Make or Update adds a row; the desktop helper claims the oldest waiting row and marks it done or failed. | 0017 |
+| `invites` | Who may sign in with Google: GVC email, name, role and market (from the roster). `claim_member()` turns a first sign-in into a `members` row. | 0020 |
+| `asana_writes` | The queue of the team's fact edits for Asana; the helper writes each and marks it done or failed. | 0021 |
+| `google_tokens` | The lasting Drive permission from each Google sign-in. Row security on and no rule: only the `drive-token` edge function reads it. | 0022 |
 
 Saves go through database functions that check the row's `version` and write the change log in the
 same step: `save_job` (0007), `save_piece_of` (0010), `save_piece_build` (0017).
@@ -44,15 +47,18 @@ Nobody, unless they are signed in. Row level security is on for every table and 
 nothing is readable by an anonymous visitor: the site is public, so an anonymous request gets an empty
 list.
 
-Sign-in is per person (D3): each person has their own Supabase account, public sign-up is off, and only
-an active row in `members` can read or write. Every write is stamped with who made it. The team's shared
+Sign-in is per person (D3, D134): everyone signs in with Google on their GVC email, a first sign-in on the
+team domain that matches a row in `invites` becomes a `members` row (only a Google identity can claim, never
+a password account), and only an active row in `members` can read or write. Every write is stamped with who made it. The team's shared
 account, `team@gvcrealestateteam.com`, is a member with role `shared` so the standalone tools keep working;
 **its password is not in this repo and must not be.** Some writes are narrower than "any member":
 
 - Only owner, admin, marketing and the helper link or change a job's Drive folder (0012, 0013).
 - A plain `team` sign-in can't make a job or pitch, or change its facts by writing the table directly (0014).
 - Development budgets: owner, admin and the helper write them; the shared account may read them (0015, 0016).
-- Owner, admin, marketing and the shared account may ask for a piece (0017).
+- Only owner, admin and marketing may ask for a piece (0019; 0017 also let the shared account).
+- Admin, marketing, ops and team change a listing's facts through `save_job`; each fact Asana has a field for
+  is queued in `asana_writes` (0021). The shared account only reads facts.
 - To-dos: Matt reads and writes, the helper reads for the backup (0008).
 
 ## Managing it

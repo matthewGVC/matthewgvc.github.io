@@ -203,7 +203,7 @@ Every job folder follows one standard, by job type (resale, rental, sfh, newdev)
 folders; it never moves, renames or deletes anything.
 
 ### Making a job's pieces through the desktop helper
-Make or Rebuild on a job page queues a row in `piece_requests` (migration 0017). Matt's desktop
+Make or Update on a job page's Marketing materials card queues a row in `piece_requests` (migration 0017). Matt's desktop
 helper claims it, lays the piece out and saves the PDF into the job's Drive folder. The list of
 pieces it can make is `helper/pieces.js`; the layout is `helper/piece-build.js` and `helper/pdf/lay.js`.
 Nothing is rebuilt by itself.

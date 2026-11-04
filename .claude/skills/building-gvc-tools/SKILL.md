@@ -125,8 +125,9 @@ piece stale.
 - **The property bar** (`property-bar.js`, saving to the property library from a standalone tool) is
   the pre-workspace way and is used only by the Showsheet, Brochure and Seller Package
   (`TOOLS` in `property-library.js`). A new tool gets its job data through piece mode, not the bar.
-- **Sign-in:** `GVC_PROPS.signIn(email, password)` (per person); an empty email is the team account.
-  Test signed-in paths by mocking `GVC_PROPS.call`; never type a password.
+- **Sign-in:** people sign in with Google (`GVC_PROPS.googleSignIn()`, migration 0020); `GVC_PROPS.signIn(email,
+  password)` remains for the shared team account (an empty email) until it is switched off. Test signed-in
+  paths by mocking `GVC_PROPS.call`; never type a password.
 - **Class names:** check `components.css` before naming a class. Watermark once inherited a retired homepage tile's border and padding by reusing its class name.
 - **Other tools' folders:** don't load another tool's files; move shared data to `assets/js/`.
 - **`data-foot="none"`** on full-height tools, or chrome.js adds the site footer under the app and the page scrolls.

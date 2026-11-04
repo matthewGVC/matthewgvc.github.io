@@ -12,7 +12,7 @@
    11-03): the date says which. Development folders
    don't follow the listing layout, so the folders are shown as they are named.
    Paperwork and money files are never in the scan. Making pieces for a
-   development comes later (docs/dev-pages-7b-plan.md); this only shows them.
+   development comes later (docs/overhaul-plan.md, 7b-1); this only shows them.
    ============================================================ */
 (function (global) {
   'use strict';

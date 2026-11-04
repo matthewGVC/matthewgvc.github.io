@@ -1,4 +1,4 @@
-# The helper makes pieces from a job (design note, 2026-10-29)
+# The helper makes pieces from a job (design note, 2026-10-29; checked against the code 2026-11-04)
 
 Overturns D89 (the open sheet is filled in the browser and one press there saves it) and D91 (the
 helper writes the showsheet PDF into the linked folder; without the helper the print dialog still marks it made).
@@ -16,9 +16,12 @@ helper writes the showsheet PDF into the linked folder; without the helper the p
 - Pieces: Showsheet, Brochure, both Postcards, Seller Package, Signage. The map stays in Map Studio.
 
 ## What the workspace does
-- Job page: one click per piece. Stale shows **Rebuild**, not made shows **Make**; "Rebuild n stale"
-  queues them all. The button only shows when the job has a Drive folder linked; the remaining editor link is for the map only (Map Studio). The row then says waiting, making, made, or why it couldn't. Owner, admin,
-  marketing and the team account may ask, from any device. **Open** still edits the piece.
+- Job page, Marketing materials card (`assets/js/job-page/kit.js`): one click per piece. Not made shows
+  **Make**, out of date shows **Update**; the header's "Update n out-of-date pieces" (or "Update showsheet")
+  queues them all. The button only shows when the job has a Drive folder linked; the remaining editor link
+  is for the map only (Map Studio). The row then says waiting, making, made, or why it couldn't. Only owner,
+  admin and marketing may ask (D129, migration 0019; 0017 also let the team account), from any device.
+  **Edit** opens the piece itself.
 - Piece page: Save sheet as before. **Make PDF** saves, then asks the helper; it is greyed out with
   the reason when the helper would certainly refuse (no Drive folder linked). On Matt's desktop the
   page reads photos through the browser's Drive when it is connected, otherwise through the helper. Print is a plain
@@ -30,5 +33,5 @@ Requests wait ("Waiting for the helper on Matt's desktop, asked 3:12 pm"). When 
 helper works through them, each from the job as it is then. Asking again joins the waiting request.
 
 ## How a rebuild is triggered
-Only by a person: Make, Rebuild, Rebuild n stale, or Make PDF. A changed fact makes a piece stale;
-it never rebuilds by itself.
+Only by a person: Make, Update, the header's Update button, or Make PDF. A changed fact makes a piece
+out of date; it never rebuilds by itself.

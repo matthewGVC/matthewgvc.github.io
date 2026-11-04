@@ -1,7 +1,7 @@
 # GVC helper
 
 A small program that runs on Matt's desktop PC and does the jobs a browser can't
-(workspace v2 plan §4): it reads Douglas Elliman's team page for listing statuses,
+(`docs/workspace-plan.md` §4): it reads Douglas Elliman's team page for listing statuses,
 it saves finished PDFs straight into Drive folders, it makes a job's pieces on request, and it
 runs the daily jobs below. The workspace reaches it at `http://127.0.0.1:47610`. It answers only
 the live workspace's address (and the local preview at `http://localhost:8080`), and only from a
@@ -10,10 +10,11 @@ top of `helper/routes.js`.
 
 ## Daily jobs (`schedule.js`, `runner.js`)
 
-DE sync 7:00, Drive folder scan 2:00, Supabase backup 2:30 (all tables, to
-`exports/supabase-nightly-<date>/`, newest 14 kept). With `asanaToken`: the Asana read every 30
-minutes, a full read at 3:00 and People at 3:15. With the Google sign-in: the development budgets
-every hour. A slot missed while the PC was off runs when the helper starts. They and the piece
+DE sync 7:00, Drive folder scan 2:00 (listings, and each linked development's folder into
+`dev_projects.scan`, 0023), Supabase backup 2:30 (all tables, to `exports/supabase-nightly-<date>/`,
+newest 14 kept). With `asanaToken`: the Asana read every 30 minutes, a full read at 3:00, People at
+3:15, and the team's fact edits written to Asana each minute (below). With the Google sign-in: the
+development budgets every hour. With the Gmail sign-in: the Sunday email at 18:00. A slot missed while the PC was off runs when the helper starts. They and the piece
 requests run only once the helper account (`helperEmail`, `helperPassword`) is in the config;
 until then the log says "No helper account yet".
 
@@ -68,7 +69,8 @@ node pair.js
 powershell -ExecutionPolicy Bypass -File install-task.ps1
 ```
 
-`pair.js` prints a six-digit code to type into the workspace's "Pair" box.
+`pair.js` prints a six-digit code. On the workspace, click the sync button in the header (it says the
+browser isn't paired) and type the code.
 `install-task.ps1` adds the Task Scheduler task **GVC Helper**, which starts the helper
 hidden at every log on (`start-hidden.vbs`, which starts it again a minute after a crash; a clean
 exit ends it). Run it from the main repo folder.

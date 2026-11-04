@@ -69,7 +69,7 @@ const mul = (a, s) => [a[0] * s, a[1] * s];
 const len = (a) => Math.hypot(a[0], a[1]);
 const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 
-/* the same points fitScale measures: wall ends and curves, solid corners, area corners */
+/* the same points fitScale measures: wall ends and curves, solid corners, area corners, line points, outside door swings */
 function bounds(level) {
   const pts = levelPoints(level);
   if (!pts.length) return { x0: 0, y0: 0, x1: 0, y1: 0 };

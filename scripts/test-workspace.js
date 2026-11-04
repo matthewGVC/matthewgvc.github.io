@@ -191,8 +191,9 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
   check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 errors'), true);
   check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 errors', 'match/']);
-  check('development row: next, slips, construction, hints', [(await text(p, 'a.pj[href*="619"]')).includes('Next: Permits / zoning'), !(await text(p, 'a.pj[href*="619"]')).includes('re-dated'),
-    await p.$$eval('a.pj[href*="619"] .cons', els => els.length), (await text(p, 'a.pj[href*="619"]')).includes('2 milestones suggested from Asana')], [true, true, 1, true]);
+  // the Asana suggestions card was retired (11-04), so the row no longer sends anyone to review them
+  check('development row: next, slips, construction, no suggestions line', [(await text(p, 'a.pj[href*="619"]')).includes('Next: Permits / zoning'), !(await text(p, 'a.pj[href*="619"]')).includes('re-dated'),
+    await p.$$eval('a.pj[href*="619"] .cons', els => els.length), (await text(p, 'a.pj[href*="619"]')).includes('suggested from Asana')], [true, true, 1, false]);
 
   /* filters */
   await p.click('#mkt button[data-v="NJ"]');
@@ -594,29 +595,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
   check('development page: D66\'s 18 milestones', await t.page.$$eval('#msList li', els => els.length), 18);
   check('development page: its social posts', [await text(t.page, '#postsCount'), await t.page.$$eval('#postsCard .pn', els => els.map(e => e.textContent))], ['1 posted', ['Construction update reel']]);
-  check('development page: hints listed with ✓ and ✗', [await t.page.$$eval('#hints li', els => els.length), await t.page.$$eval('#hints [data-ok]', els => els.length), await t.page.$$eval('#hints [data-no]', els => els.length)], [2, 2, 2]);
   check('development page: next milestone and slips', [(await text(t.page, '#devNext')).includes('Permits / zoning'), !(await text(t.page, '#devNext')).includes('Milestones re-dated')], [true, true]);
-  await t.page.click('#hints [data-ok="0"]');
-  await t.page.waitForTimeout(400);
-  let dp = t.writes.find(w => /^PATCH dev_projects/.test(w)) || '';
-  let dbody = JSON.parse(dp.slice(dp.indexOf('{')) || '{}');
-  check('hint ✓: version-checked update', [/id=eq\.d1/.test(dp), /version=eq\.2/.test(dp)], [true, true]);
-  check('hint ✓: moved into milestones', [dbody.milestones && dbody.milestones.renders && dbody.milestones.renders.done, dbody.milestones && dbody.milestones.renders.on, dbody.milestones && dbody.milestones.renders.asanaGid,
-    !!(dbody.milestones && dbody.milestones.renders.confirmedBy), dbody.milestones && dbody.milestones.agreement && dbody.milestones.agreement.done], [true, '2026-05-21', '777', true, true]);
-  check('hint ✓: off the hint list, into asana_map', [(dbody.milestone_hints || []).map(h => h.key), dbody.asana_map && dbody.asana_map.renders], [['finishes'], ['777']]);
-  check('hint ✓: logged', t.writes.some(w => /^POST changes .*"dev_project_id":"d1".*"field":"milestones"/.test(w)), true);
-  await t.ctx.close();
-  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
-  await t.page.click('#hints [data-no="1"]');
-  await t.page.waitForTimeout(400);
-  dp = t.writes.find(w => /^PATCH dev_projects/.test(w)) || '';
-  dbody = JSON.parse(dp.slice(dp.indexOf('{')) || '{}');
-  check('hint ✗: turned down, remembered, not a milestone', [(dbody.milestone_hints || []).map(h => h.key), dbody.asana_map && dbody.asana_map.dismissed && dbody.asana_map.dismissed.finishes, 'milestones' in dbody], [['renders'], ['778'], false]);
-  await t.ctx.close();
-  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', conflict: true });
-  await t.page.click('#hints [data-ok="0"]');
-  await t.page.waitForTimeout(400);
-  check('hint: conflict refused, not overwritten', [(await text(t.page, '#hintMsg')).includes('Someone changed'), t.writes.some(w => /^POST changes/.test(w))], [true, false]);
   await t.ctx.close();
 
   /* ---------- linking a folder ---------- */

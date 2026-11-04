@@ -484,8 +484,31 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('one house: the development page draws the house', [(await text(t.page, 'h1')).startsWith('619 Example Ave'), !!(await t.page.$('#factsHost')),
     !!(await t.page.$('#agentsHost')), !!(await t.page.$('#asanaCard')), !!(await t.page.$('#kitCard')),
     await t.page.$$eval('#msList li', e => e.length), await t.page.$('#unitsCard'), (await text(t.page, '#crumb')).startsWith('New Dev'), t.errors],
-    [true, true, true, true, true, 18, null, true, []]);
+    [true, true, true, true, true, 5, null, true, []]);
   await t.ctx.close();
+  // the single-house cut: the sale's milestones, no Stages, one Asana and one budget link, a short schedule, payments as a line
+  R1H.properties[0].asana.section = 'Active Listings';
+  t = await open(browser, { rows: R1H, path: '/workspace/job/?dev=619-example-ave' });
+  p = t.page;
+  check('one house: only the sale milestones', await p.$$eval('#msList li', e => e.map(l => l.dataset.ms)), ['listingAgreement', 'showingAssets', 'listedUnits', 'contractsSales', 'closedOut']);
+  check('one house: no Stages bar, no Section line, no suggestions card', [await p.$$eval('.steps-wrap', e => e.length), (await text(p, '#asanaCard')).includes('Section:'), await p.$$eval('#hintsCard, #hints', e => e.length)], [0, false, 0]);
+  check('one house: Open in Asana only in the header', [await p.$$eval('a', e => e.filter(a => /Open in Asana/.test(a.textContent)).map(a => a.id)), await p.$$eval('#asanaCard a.b, #msCard a.b, #schedCard .card-h a', e => e.length)], [['asanaLink'], 0]);
+  check('one house: one budget sheet button, in the header', [await p.$$eval('.acts a', e => e.filter(a => /Budget sheet/.test(a.textContent)).length), await p.$$eval('#budgetCard .card-h a', e => e.length)], [1, 0]);
+  check('one house: no Remaining tile', await p.$$eval('#ovCard .k', e => e.map(k => k.textContent)), ['Total budget', 'Spent to date', 'Final cost outlook', 'Work items']);
+  check('one house: payments as a line to the sheet, receipts missing kept', [await p.$$eval('.pays table', e => e.length), await text(p, '#paysLine'),
+    await p.$eval('#paysLine a', a => a.getAttribute('href')), (await text(p, '#attnCard')).includes('Receipts missing')],
+    [0, '2 payments · Receipts missing: 1 payment · See them in the budget sheet', 'https://docs.google.com/spreadsheets/d/1_exampleSheetId0123456789/edit', true]);
+  check('one house: one Show late filter in place of the schedule controls', [await p.$$eval('#schedLate', e => e.length), await p.$$eval('#schedS, #schedSec, #schedQ, #schedCsv, [data-view]', e => e.length)], [1, 0]);
+  const rowsShown = () => p.$$eval('#schedCard .g-row, #schedCard .tbl.sched tbody tr', e => e.length);
+  const allRows = await rowsShown();
+  await p.click('#schedLate');
+  check('one house: Show late keeps only what is past target', [await p.$eval('#schedLate', b => b.getAttribute('aria-pressed')), await rowsShown(), (await text(p, '#schedCard')).includes('Roofing')], ['true', 1, true]);
+  await p.click('#schedLate');
+  check('one house: Show late again shows every phase', [await rowsShown(), allRows > 1], [allRows, true]);
+  check('one house: the Elliman tile has no internal id', (await text(p, '#topHost')).includes('9001'), false);
+  check('one house: no page errors', t.errors, []);
+  await t.ctx.close();
+  delete R1H.properties[0].asana.section;
   // one marketing card: the development's own folder is a section inside it, never a second card (Matt, 11-03)
   R1H.dev_projects[0].scan = { scannedAt: '2026-11-03T07:00:00Z', groups: [{ name: 'FINAL RENDERS', url: 'https://drive.google.com/drive/folders/f1', count: 29, newest: '2026-10-19T12:00:00Z',
     files: [{ name: 'Left_Front.jpg', modified: '2026-10-19T12:00:00Z', url: 'https://drive.google.com/file/d/a1/view' }] }] };
@@ -608,11 +631,11 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('timeline phone: years clear of each other and the months', [phoneYears.clash, phoneYears.onJan, phoneYears.monthsOnly], [0, true, true]);
   await t.ctx.close();
 
-  /* final review 3: Asana's suggestions and the folder link are the owner's */
+  /* final review 3: the folder link is the owner's; Asana's suggestions have no card any more (11-04) */
   const RH = rowsFor();
   RH.dev_projects[0].milestone_hints = [{ key: 'permits', date: '2026-10-01', source: 'Asana', asanaGid: 'g9' }];
   t = await open(browser, { rows: RH, path: '/workspace/job/?dev=619-example-ave' });
-  check('owner: suggestion buttons and folder link', await t.page.$$eval('#hints [data-ok], #hints [data-no], #link', e => e.length), 3);
+  check('owner: folder link, no suggestions card', [await t.page.$$eval('#link', e => e.length), await t.page.$$eval('#hintsCard, [data-ok], [data-no]', e => e.length)], [1, 0]);
   await t.ctx.close();
   for (const path of ['/workspace/job/?dev=619-example-ave', LISTING]) {
     t = await open(browser, { rows: RH, path, members: [{ name: 'Katie Cook', initials: 'KC', role: 'team' }] });

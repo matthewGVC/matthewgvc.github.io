@@ -197,7 +197,10 @@
     { name: 'yearBuilt', label: 'Year built', kind: 'number', tier: 'extra' },
     { name: 'stories', label: 'Stories', kind: 'number', tier: 'extra' },
     { name: 'parking', label: 'Parking', kind: 'text', tier: 'extra' },
-    { name: 'headline', label: 'Headline', kind: 'text', tier: 'extra' }
+    { name: 'headline', label: 'Headline', kind: 'text', tier: 'extra' },
+    // a new-development house's (D141): the New Development tool prints these from the job, not its own copy
+    { name: 'completion', label: 'Estimated completion', kind: 'text', tier: 'extra', rental: false },
+    { name: 'basementSqft', label: 'Basement sq ft', kind: 'number', tier: 'extra', rental: false }
   ];
 
   function typeOf(row) {

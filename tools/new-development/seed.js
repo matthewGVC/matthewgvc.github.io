@@ -22,6 +22,10 @@
      image     'seed:<file>' (in seed/) or 'store:<path>' (uploaded); high-res only
      imageNote the caption under the picture
      site      homes sharing a site are one subdivision, shown side by side
+     job       the home's job (a listing's slug): its price, done, beds, baths,
+               living and basement come from that job's facts (price,
+               completion, beds, baths + halfBaths, sqft, basementSqft) every
+               time the tool loads, over any copy saved here
    ============================================================ */
 window.GVC_DEV_SEED = {
   slug: 'south-street',
@@ -37,9 +41,9 @@ window.GVC_DEV_SEED = {
   disclaimer: 'Preliminary information only. Pricing, plans, timing, specifications, and availability are subject to change.',
 
   homes: [
-    { address: '619 Bradley Ave', town: 'Brielle, New Jersey', status: 'construction',
-      price: '$1,895,000', done: 'Q1 2027', beds: '4', baths: '4.5',
-      living: '2,550 sq. ft.', basement: '694 sq. ft.',
+    /* price, completion, beds, baths, living and basement are the job's facts (619-bradley-ave):
+       the tool reads them from the job, so they are typed in one place, the job page */
+    { address: '619 Bradley Ave', town: 'Brielle, New Jersey', status: 'construction', job: '619-bradley-ave',
       note: 'Currently under construction in Brielle. Request the latest plans, specifications, and construction update.',
       image: 'seed:619-bradley-2400.webp', imageNote: 'Exterior rendering - subject to change' },
 

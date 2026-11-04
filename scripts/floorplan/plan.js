@@ -84,6 +84,8 @@ function levelPoints(level) {
   });
   (level.solids || []).forEach((s) => (s || []).forEach((p) => { if (isPt(p)) pts.push(p); else if (Array.isArray(p)) p.forEach((q) => { if (isPt(q)) pts.push(q); }); }));
   (level.areas || []).forEach((a) => ((a && a.poly) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
+  /* linework past the walls (a trellis's rafters, a roof's edge drawn as a line) is part of the drawing too */
+  (level.lines || []).forEach((l) => ((l && l.pts) || []).forEach((p) => { if (isPt(p)) pts.push(p); }));
   /* a door to the outside stands fully open, often past the walls: its swing is part of the drawing */
   (level.openings || []).forEach((o0) => {
     const w = o0 && isPt(o0.a) && isPt(o0.b) ? { a: o0.a, b: o0.b } : (level.walls || [])[o0 && o0.wall], o = resolveDoor(o0, w);

@@ -89,6 +89,12 @@ check('a single chair (a stool at an island) is a fixture', validate(lp).errors,
   const panes = (svg) => (svg.match(/stroke-width="0.3" d="M[^"]*"/g) || []).length;
   check('a glazed French door draws a pane in each leaf, over a plain one', panes(door(true)) - panes(door(false)), 2);
 }
+{
+  const { levelPoints } = require('./floorplan/plan.js');
+  const q = clone(studio); q.levels[0].lines = [{ pts: [[-500, -400], [-450, -400]] }];
+  const ys = (l) => Math.min(...levelPoints(l).map((p) => p[1]));
+  check('lines past the walls count in the size of the floor (the 806 Riverview trellis ran into the header)', ys(q.levels[0]), -400);
+}
 
 if (failures.length) {
   console.log(failures.join('\n'));

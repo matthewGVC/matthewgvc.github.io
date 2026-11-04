@@ -171,7 +171,7 @@
     { name: 'maintenance', label: 'Maintenance', kind: 'money', tier: 'core', types: ['Co-op', 'Condop'] },
     { name: 'commonCharges', label: 'Common charges', kind: 'money', tier: 'core', types: ['Condo'].concat(HOUSES) },
     { name: 'taxesMonthly', label: 'Taxes per month', kind: 'money', tier: 'core' },
-    { name: 'maxFinancing', label: 'Max financing (%)', kind: 'number', tier: 'core', markets: ['NYC'], types: ['Co-op', 'Condop'], rental: false },
+    { name: 'maxFinancing', label: 'Max financing (%)', kind: 'number', tier: 'core', markets: ['NYC'], types: ['Co-op', 'Condop', 'Condo'], rental: false },   // condos too since the cheat sheet (11-04)
     { name: 'flipTax', label: 'Flip tax', kind: 'text', tier: 'core', markets: ['NYC'], types: ['Co-op', 'Condop'], rental: false },
     { name: 'assessments', label: 'Assessments', kind: 'text', tier: 'core' },
     { name: 'lotSize', label: 'Lot size', kind: 'text', tier: 'core', markets: ['NJ', 'FL'], types: HOUSES },
@@ -200,7 +200,46 @@
     { name: 'headline', label: 'Headline', kind: 'text', tier: 'extra' },
     // a new-development house's (D141): the New Development tool prints these from the job, not its own copy
     { name: 'completion', label: 'Estimated completion', kind: 'text', tier: 'extra', rental: false },
-    { name: 'basementSqft', label: 'Basement sq ft', kind: 'number', tier: 'extra', rental: false }
+    { name: 'basementSqft', label: 'Basement sq ft', kind: 'number', tier: 'extra', rental: false },
+    { name: 'exteriorSqft', label: 'Outdoor sq ft', kind: 'number', tier: 'extra' },
+    /* the agents' cheat sheet (Ayuen's Notion "CheatSheets", 11-04): every field is here even when
+       most jobs leave it empty. group = its own closed section on the job page (GROUPS below). */
+    { name: 'petPolicy', label: 'Pets', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'subletPolicy', label: 'Subletting', kind: 'long', tier: 'extra', group: 'rules' },
+    { name: 'piedATerre', label: 'Pied-à-terre', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'piedATerreTax', label: 'Pied-à-terre tax', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'llcPurchase', label: 'LLC purchases', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'trustPurchase', label: 'Trust purchases', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'guarantors', label: 'Guarantors', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'gifting', label: 'Gifting', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'coPurchasing', label: 'Co-purchasing', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'parentPurchase', label: 'Parents buying for a child', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'postClosingLiquidity', label: 'Post-closing liquidity', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'debtToIncome', label: 'Debt-to-income', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'boardInterview', label: 'Board interview', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'washerDryer', label: 'Washer/dryer', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'alterationRules', label: 'Renovations', kind: 'long', tier: 'extra', group: 'rules' },
+    { name: 'moveFees', label: 'Move-in fees', kind: 'text', tier: 'extra', group: 'rules' },
+    { name: 'assessmentBreakdown', label: 'Assessment breakdown', kind: 'long', tier: 'extra', group: 'money' },
+    { name: 'assessmentPurpose', label: 'Assessment for', kind: 'text', tier: 'extra', group: 'money' },
+    { name: 'maintenanceSurcharge', label: 'Surcharge', kind: 'text', tier: 'extra', group: 'money' },
+    { name: 'taxDeduction', label: 'Tax deductible', kind: 'text', tier: 'extra', group: 'money' },
+    { name: 'amenityFee', label: 'Amenity fee', kind: 'text', tier: 'extra', group: 'money' },
+    { name: 'utilities', label: 'Utilities', kind: 'text', tier: 'extra', group: 'money' },
+    { name: 'buildingUnits', label: 'Units in the building', kind: 'number', tier: 'extra', group: 'building' },
+    { name: 'buildingStaff', label: 'Staff', kind: 'text', tier: 'extra', group: 'building' },
+    { name: 'storage', label: 'Storage', kind: 'long', tier: 'extra', group: 'building' },
+    { name: 'schoolDistrict', label: 'School district', kind: 'text', tier: 'extra', group: 'building' },
+    { name: 'keys', label: 'Keys', kind: 'text', tier: 'extra', group: 'building' },
+    { name: 'managementContacts', label: 'Management', kind: 'long', tier: 'extra', group: 'building' },
+    { name: 'buildingNotes', label: 'Notes', kind: 'long', tier: 'extra', group: 'building' }
+  ];
+
+  /* the job page's closed sections for grouped extras, in order (an extra with no group is under Extras) */
+  var GROUPS = [
+    { key: 'rules', label: 'Board and building rules' },
+    { key: 'money', label: 'More on the money' },
+    { key: 'building', label: 'Building, keys and management' }
   ];
 
   function typeOf(row) {
@@ -245,7 +284,7 @@
         rec = forgetIn(rec, 'DE');
         legacyOk = false;                                              // core still holds that 0
       }
-      var out = { name: f.name, label: f.label, kind: f.kind, tier: f.tier, others: [] };
+      var out = { name: f.name, label: f.label, kind: f.kind, tier: f.tier, group: f.group || null, others: [] };
       if (rec && !empty(rec.value)) {
         out.value = rec.value; out.source = rec.source; out.badge = BADGE[rec.source] || rec.source;
         var by = rec.bySource || {};
@@ -322,5 +361,5 @@
   }
 
   return { RANK: RANK, rankOf: rankOf, applyFact: applyFact, warnOf: warnOf, adoptEdit: adoptEdit, deBlank: deBlank,
-           BADGE: BADGE, FIELDS: FIELDS, fieldsFor: fieldsFor, shown: shown, clear: clear, forget: forget, parseValue: parseValue };
+           BADGE: BADGE, FIELDS: FIELDS, GROUPS: GROUPS, fieldsFor: fieldsFor, shown: shown, clear: clear, forget: forget, parseValue: parseValue };
 });

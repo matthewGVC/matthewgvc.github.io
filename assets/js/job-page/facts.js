@@ -3,6 +3,8 @@
 
      GVC_JP.facts.html(ctx)       → the card's HTML
      GVC_JP.facts.wire(host, ctx) → its clicks
+     The header links to the agents' cheat sheet (tools/cheat-sheet/?listing=<slug>). Grouped extras
+     (GVC_FACTS.GROUPS: board rules, money, building) each get their own closed section after Extras.
        ctx = { kind, table, row, job, canFacts, W, I, esc }   canFacts: anyone on the team (overhaul 4b)
 
    Each fact: its value, its source badge, the other sources' different
@@ -63,15 +65,23 @@
     return '<tr data-fact="' + esc(f.name) + '"><th>' + esc(f.label) + '</th><td>' + cell + lines + ed + '</td></tr>';
   }
 
+  function section(cls, title, list, ctx) {
+    var filled = list.filter(function (f) { return f.value !== null && f.value !== undefined && f.value !== ''; }).length;
+    var isOpen = open && list.some(function (f) { return f.name === open.name; });
+    return '<details class="' + cls + '"' + (isOpen ? ' open' : '') + '><summary>' + ctx.esc(title) + ' · ' + filled + ' filled</summary><table class="ft"><tbody>' +
+      list.map(function (f) { return row(f, ctx); }).join('') + '</tbody></table></details>';
+  }
+
   function html(ctx) {
     var list = F().shown(ctx.row.core || {}, ctx.row);
-    var core = list.filter(function (f) { return f.tier === 'core'; }), extra = list.filter(function (f) { return f.tier !== 'core'; });
-    var filled = extra.filter(function (f) { return f.value !== null && f.value !== undefined && f.value !== ''; }).length;
-    var extraOpen = open && extra.some(function (f) { return f.name === open.name; });
-    return '<div class="card" id="factsCard"><div class="card-h"><div><h2>Facts</h2></div></div>' +
+    var core = list.filter(function (f) { return f.tier === 'core'; }), extra = list.filter(function (f) { return f.tier !== 'core' && !f.group; });
+    var groups = (F().GROUPS || []).map(function (g) {
+      var mine = list.filter(function (f) { return f.tier !== 'core' && f.group === g.key; });
+      return mine.length ? section('fx fg', g.label, mine, ctx).replace('<details ', '<details data-group="' + g.key + '" ') : '';
+    }).join('');
+    return '<div class="card" id="factsCard"><div class="card-h"><div><h2>Facts</h2></div>' + '<a class="b sm" id="cheatLink" target="_blank" rel="noopener" href="../../tools/cheat-sheet/?listing=' + encodeURIComponent(ctx.row.slug) + '">Cheat sheet</a>' + '</div>' +
       '<table class="ft"><tbody>' + core.map(function (f) { return row(f, ctx); }).join('') + '</tbody></table>' +
-      '<details class="fx"' + (extraOpen ? ' open' : '') + '><summary>Extras · ' + filled + ' filled</summary><table class="ft"><tbody>' +
-      extra.map(function (f) { return row(f, ctx); }).join('') + '</tbody></table></details></div>';
+      section('fx', 'Extras', extra, ctx) + groups + '</div>';
   }
 
   /* the new core with Matt's value for one field (and half baths when the baths text gave one) */

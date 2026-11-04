@@ -136,6 +136,8 @@
     if (s.ownership === 'co-op' && s.market === 'nyc') { s.commonCharges = ''; s.taxesMonthly = ''; }
     else s.maintenance = '';
     var mf = v('maxFinancing');
+    // an NYC co-op's line only, as FIELDS says: a condo's max financing (since the cheat sheet, 11-04) stays off the sheet
+    if (!(s.ownership === 'co-op' && s.market === 'nyc')) mf = null;
     s.maxFinancing = mf === null ? '' : (numOf(mf) !== null ? numOf(mf) + '%' : String(mf));
     s.flipTax = text(v('flipTax'));
     s.assessments = text(v('assessments'));

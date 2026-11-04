@@ -2,9 +2,14 @@
    JOB PAGE: a development's build (D109–D114), laid out as an overview.
 
      GVC_JP.build.html(ctx)       → the overview figures, the Schedule by phase
-                                    with Needs attention and Asana suggestions
-                                    beside it, then the Budget
+                                    with Needs attention beside it, then the Budget
      GVC_JP.build.wire(host, ctx) → their controls
+
+   ctx.sfh: a development that is one house (D141) draws a shorter cut: no
+   Remaining tile (the outlook says it), one "Show late" filter in place of the
+   schedule's view, phase, status, search and CSV controls, no Open in Asana or
+   Open sheet buttons (the page header has both), and the payments as a count
+   and a link to the sheet instead of the table.
 
    ctx.row.schedule is the 🚧 project's tasks from Asana (D110); ctx.budget is
    the development's dev_budgets row, or null (none linked, or a sign-in that
@@ -46,7 +51,7 @@
       var t = scoped(b), spent = pctOf(t.actual, t.estimate), over = t.remaining < 0;
       tiles.push(tile('Total budget', W.money(t.estimate), (upgrades ? 'with upgrades, ' : 'base build, ') + plural(t.lines.length, 'line')));
       tiles.push(tile('Spent to date', W.money(t.actual), spent != null ? spent + '% of the budget' : '', meter(spent, over ? 'over' : '')));
-      tiles.push(tile('Remaining', (over ? '−' : '') + W.money(Math.abs(t.remaining)), over ? 'over the budget' : spent != null ? Math.round((100 - spent) * 10) / 10 + '% of the budget left' : '', '', over ? 'over' : '',
+      if (!ctx.sfh) tiles.push(tile('Remaining', (over ? '−' : '') + W.money(Math.abs(t.remaining)), over ? 'over the budget' : spent != null ? Math.round((100 - spent) * 10) / 10 + '% of the budget left' : '', '', over ? 'over' : '',
         // the sheet's way: lines that went over count $0, so this only differs when a line ran over
         t.planned !== t.remaining ? W.money(t.planned) + ' still planned on open lines' : ''));
       // where the build is heading: what's spent, plus what every line under its estimate still plans
@@ -189,9 +194,12 @@
   function scheduleHtml(ctx) {
     var esc = ctx.esc, j = ctx.job, today = ctx.W.today();
     var head = '<div class="card-h"><div><h2>Schedule</h2><p>Each phase with its trades, from the 🚧 Asana project. Every date is a tentative target.</p></div>' +
-      (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open in Asana</a>' : '') + '</div>';
+      (j.asanaUrl && !ctx.sfh ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open in Asana</a>' : '') + '</div>';
     if (!ctx.row.schedule) return '<div class="card" id="schedCard" data-open>' + head + '<p class="soft">' + (ctx.row.asana_project_gid ? 'The next Asana read brings the schedule in.' : 'Link the development\'s 🚧 Asana project to see its schedule.') + '</p></div>';
     var items = B.workItems(ctx.row.schedule);
+    // a single house: every phase, no search; "Show late" is the one filter (Needs attention may still open "soon",
+    // and the same button then reads "Show all")
+    if (ctx.sfh) { view.section = ''; view.q = ''; }
     var sections = items.map(function (t) { return t.section; }).filter(function (s, i, a) { return s && a.indexOf(s) === i; });
     if (view.section === null) view.section = sections.filter(function (s) { return /construction/i.test(s); })[0] || '';
     if (view.section && sections.indexOf(view.section) === -1) view.section = '';
@@ -200,13 +208,14 @@
     var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; };
     return '<div class="card" id="schedCard" data-open>' + head +
       '<p class="sched-n"><b>' + done + '</b> of ' + plural(inSection.length, 'work item') + ' done in Asana' + (view.section ? ', ' + esc(B.sectionLabel(view.section)) + ' phase only' : '') + '</p>' +
+      (ctx.sfh ? '<div class="sched-f"><button class="b sm" type="button" id="schedLate" aria-pressed="' + (view.status !== 'all') + '">' + (view.status === 'all' ? 'Show late' : 'Show all') + '</button></div>' :
       '<div class="sched-f"><div class="seg" role="group" aria-label="View">' + ['gantt', 'list'].map(function (m) {
         return '<button type="button" data-view="' + m + '" aria-pressed="' + (view.mode === m) + '">' + (m === 'gantt' ? 'Timeline' : 'List') + '</button>';
       }).join('') + '</div>' +
       (sections.length > 1 ? '<select class="inp" id="schedSec" aria-label="Phase">' + opt('', 'Every phase', view.section) + sections.map(function (s) { return opt(s, B.sectionLabel(s), view.section); }).join('') + '</select>' : '') +
       '<select class="inp" id="schedS" aria-label="Status">' + opt('all', 'Every status', view.status) + Object.keys(STATUS).map(function (k) { return opt(k, STATUS[k], view.status); }).join('') + '</select>' +
       '<input class="inp" type="search" id="schedQ" placeholder="Find a trade" aria-label="Find a work item" value="' + esc(view.q) + '">' +
-      '<button class="b sm" type="button" id="schedCsv">Export CSV</button></div>' +
+      '<button class="b sm" type="button" id="schedCsv">Export CSV</button></div>') +
       (rows.length ? (view.mode === 'gantt' ? gantt(ctx, rows, today) : list(ctx, rows, today)) : '<p class="soft">No work item matches.</p>') +
       (view.mode === 'gantt' && rows.length ? '<p class="g-key"><span class="k-done">Done</span><span class="k-open">Open</span><span class="k-late">Past target</span><span class="k-ms">Milestone</span><span class="k-today">Today</span></p>' : '') +
       '</div>';
@@ -225,7 +234,7 @@
     var W = ctx.W, esc = ctx.esc, row = ctx.budget, b = row && row.budget;
     if (!row && !ctx.canEdit) return '';
     var head = '<div class="card-h"><div><h2>Budget</h2><p>' + (b && b.title ? 'Spent against estimate, line by line, from ' + esc(b.title) + '. ' : 'From the developer\'s pro-forma sheet. ') +
-      'Seen only when signed in to the team.</p></div>' + (row ? '<a class="b sm" href="https://docs.google.com/spreadsheets/d/' + esc(row.sheet_id) + '/edit" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open sheet</a>' : '') + '</div>';
+      'Seen only when signed in to the team.</p></div>' + (row && !ctx.sfh ? '<a class="b sm" href="https://docs.google.com/spreadsheets/d/' + esc(row.sheet_id) + '/edit" target="_blank" rel="noopener">' + ctx.I('arrow') + 'Open sheet</a>' : '') + '</div>';
     if (!row || linking) return '<div class="card" id="budgetCard" data-open>' + head + linkForm(ctx, !!row) + '</div>';
     var foot = '<p class="b-foot">' + (row.synced_at ? 'Read ' + esc(W.fmtWhen(row.synced_at)) : 'Linked; the helper reads it within the hour') +
       (ctx.canEdit ? ' · <button class="link" type="button" id="budgetChange">Change sheet</button>' : '') + '</p>';
@@ -250,17 +259,25 @@
           (note ? '<div class="bl-s">' + esc(note) + '</div>' : '') + '</li>';
       }).join('') + '</ul>' +
       (lines.length > LINES_SHOWN ? '<button class="b sm bl-more" type="button" id="budgetAll">' + (allLines ? 'Show the top ' + LINES_SHOWN : 'Show all ' + lines.length + ' lines') + '</button>' : '') +
-      ((b.payments || []).length ? '<details class="pays"><summary>' + plural(b.payments.length, 'payment') + '</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Category</th><th>Vendor</th><th>Description</th><th class="r">Amount</th><th>Receipt</th></tr></thead><tbody>' +
+      // a single house: the payments are the sheet's (its Expense_Tracker tab); the page keeps only their count
+      ((b.payments || []).length && ctx.sfh ? paymentsLine(ctx, b.payments, row.sheet_id) :
+      (b.payments || []).length ? '<details class="pays"><summary>' + plural(b.payments.length, 'payment') + '</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Category</th><th>Vendor</th><th>Description</th><th class="r">Amount</th><th>Receipt</th></tr></thead><tbody>' +
         b.payments.slice().sort(function (x, y) { return (y.date || '') < (x.date || '') ? -1 : (y.date || '') > (x.date || '') ? 1 : 0; }).map(function (p) {
           return '<tr><td class="m">' + esc(day(W, p.date)) + '</td><td>' + esc(p.category || '') + '</td><td>' + esc(p.vendor || '') + '</td><td>' + esc(p.description || '') +
             '</td><td class="r m">' + esc(W.money(p.amount)) + '</td><td>' + (p.receipt ? 'Yes' : '<span class="miss">Missing</span>') + '</td></tr>';
         }).join('') + '</tbody></table></div></details>' : '') + foot + '</div>';
   }
 
+  function paymentsLine(ctx, pays, sheetId) {
+    var esc = ctx.esc, miss = pays.filter(function (p) { return !p.receipt; }).length;
+    return '<p class="pays" id="paysLine">' + esc(plural(pays.length, 'payment')) + (miss ? ' · <span class="miss">Receipts missing: ' + esc(plural(miss, 'payment')) + '</span>' : '') +
+      ' · <a class="link" href="https://docs.google.com/spreadsheets/d/' + esc(sheetId) + '/edit" target="_blank" rel="noopener">See them in the budget sheet</a></p>';
+  }
+
   function html(ctx) {
     return '<div id="ovHost">' + overviewHtml(ctx) + '</div>' +
       '<div class="dv-main"><div id="schedHost">' + scheduleHtml(ctx) + '</div>' +
-      '<div class="dv-side"><div id="attnHost">' + attentionHtml(ctx) + '</div><div id="hintsHost">' + JP.dev.hintsHtml(ctx) + '</div></div></div>' +
+      '<div class="dv-side"><div id="attnHost">' + attentionHtml(ctx) + '</div></div></div>' +
       '<div id="budgetHost">' + budgetHtml(ctx) + '</div>';
   }
 
@@ -295,8 +312,7 @@
 
     function wireSchedule() {
       var card = $('schedCard');
-      if (!card || !$('schedS')) return;
-      card.querySelectorAll('[data-view]').forEach(function (b) { b.addEventListener('click', function () { view.mode = b.dataset.view; redrawSchedule(); }); });
+      if (!card) return;
       card.querySelectorAll('[data-phase]').forEach(function (b) {
         b.addEventListener('click', function () {
           view.shut[b.dataset.phase] = b.getAttribute('aria-expanded') === 'true'; redrawSchedule();
@@ -304,6 +320,9 @@
           if (again) again.focus();
         });
       });
+      if ($('schedLate')) $('schedLate').addEventListener('click', function () { view.status = view.status === 'all' ? 'late' : 'all'; redrawSchedule(); });
+      if (!$('schedS')) return;
+      card.querySelectorAll('[data-view]').forEach(function (b) { b.addEventListener('click', function () { view.mode = b.dataset.view; redrawSchedule(); }); });
       $('schedS').addEventListener('change', function (e) { view.status = e.target.value; redrawSchedule(); });
       if ($('schedSec')) $('schedSec').addEventListener('change', function (e) { view.section = e.target.value; redrawSchedule(); });
       $('schedQ').addEventListener('input', function (e) {
@@ -340,13 +359,12 @@
     // Needs attention → the schedule: every phase, that status, scrolled into view
     host.addEventListener('click', function (e) {
       var b = e.target.closest('[data-show]'); if (!b) return;
-      view.status = b.dataset.show; view.section = ''; view.q = ''; view.mode = 'gantt';
+      view.status = b.dataset.show; view.section = ''; view.q = ''; if (!ctx.sfh) view.mode = 'gantt';
       redrawSchedule();
       $('schedCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     wireSchedule();
     wireBudget();
-    JP.dev.wireHints($('hintsHost'), ctx);
   }
 
   JP.build = { html: html, wire: wire };

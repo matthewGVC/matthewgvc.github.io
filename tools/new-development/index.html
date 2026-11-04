@@ -231,7 +231,7 @@ function load(slug) {
     if (!rows || !rows[0]) return false;
     doc = Object.assign(BLANK(), rows[0].data, { slug });
     saved = true;
-    return signAll().then(() => {
+    return fromJobs().then(() => signAll()).then(() => {
       paintAll(); redraw(); GVC_UNSAVED.clear(); paintLib(); fillPick();
       say('Loaded. Last saved ' + new Date(rows[0].updated_at).toLocaleString() + '.', 'ok');
       return true;
@@ -273,7 +273,36 @@ function startLibrary() {
     const target = rows.find(r => r.slug === doc.slug) ? doc.slug : (rows[0] && rows[0].slug);
     if (target) return load(target);
     say('Not in the library yet. Save to keep it for the team.');
+    return fromJobs().then(() => { paintAll(); redraw(); });
   }).catch(e => say(explain(e), 'warn'));
+}
+
+/* A home with a job (seed.js: job, else the seed's home at the same address, so a copy saved before
+   the link has it too) prints that job's facts: price, completion, beds, baths, living and basement
+   are typed once, on the job page, never kept here as a second copy. A fact the job doesn't have yet
+   prints blank. Unreadable jobs leave the homes as they are. */
+const JOB_AT = {};
+(window.GVC_DEV_SEED.homes || []).forEach(h => { if (h.job) JOB_AT[h.address] = h.job; });
+function fromJobs() {
+  const homes = doc.homes.filter(h => h && (h.job || JOB_AT[h.address]));
+  if (!homes.length || !P.signedIn()) return Promise.resolve();
+  homes.forEach(h => { h.job = h.job || JOB_AT[h.address]; });
+  const slugs = homes.map(h => h.job).filter((s, i, a) => a.indexOf(s) === i);
+  return P.call('/rest/v1/properties?slug=in.(' + slugs.map(encodeURIComponent).join(',') + ')&select=slug,core').then(rows => {
+    const has = v => v !== null && v !== undefined && v !== '';
+    const num = v => Number(v).toLocaleString('en-US');
+    homes.forEach(h => {
+      const row = (rows || []).find(r => r.slug === h.job);
+      if (!row) return;
+      const c = row.core || {};
+      h.price = has(c.price) ? '$' + num(c.price) : '';
+      h.done = has(c.completion) ? String(c.completion) : '';
+      h.beds = has(c.beds) ? String(c.beds) : '';
+      h.baths = has(c.baths) ? String(c.baths) + (+c.halfBaths ? '.5' : '') : '';
+      h.living = has(c.sqft) ? num(c.sqft) + ' sq. ft.' : '';
+      h.basement = has(c.basementSqft) ? num(c.basementSqft) + ' sq. ft.' : '';
+    });
+  }).catch(() => {});
 }
 
 $('btnSave').addEventListener('click', save);

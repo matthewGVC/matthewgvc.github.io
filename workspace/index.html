@@ -287,7 +287,6 @@
       var dev = '';
       if (j.type === 'development') {
         if (j.construction) dev += '<div class="prog" style="margin-top:10px"><span>Construction</span><span>' + j.construction.done + ' of ' + j.construction.total + '</span></div><div class="cons"><i style="width:' + (j.construction.done / j.construction.total * 100) + '%"></i></div>';
-        if (j.hints) dev += '<div class="dates"><span>' + j.hints + ' milestone' + (j.hints === 1 ? '' : 's') + ' suggested from Asana. Review them on the job page.</span></div>';
       }
       var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc((j.stalePieces || []).map(function (x) { return x.label + ' stale: ' + x.words.join(', '); }).join('; ')) + '">stale</span>' : '';
       return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '"' + (j.phaseNow ? ' title="Now: ' + esc(j.phaseNow) + '"' : '') + '>' + esc(j.phase || j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +

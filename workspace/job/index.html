@@ -55,8 +55,6 @@
 .as-st{font-size:13.5px;color:var(--ink-soft);margin-top:4px}
 .as-mm{margin-top:14px}
 .as-mm h3{font-family:var(--sans-display);font-weight:800;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
-.hint-b{display:flex;gap:6px}
-.hint-b .b{min-width:38px;justify-content:center}
 /* facts table (mockup .ft) */
 .ft{width:100%;border-collapse:collapse;table-layout:fixed}
 .ft th{text-align:left;vertical-align:top;font-family:var(--sans-display);font-weight:800;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft);padding:11px 8px 9px 0;border-bottom:1px solid var(--rule);width:36%}
@@ -310,7 +308,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         // its social posts from Asana (0012); unreadable means none
         kind === 'listing' || kind === 'dev' ? rest('/asana_tasks?' + (kind === 'dev' ? 'dev_project_id' : 'property_id') + '=eq.' + encodeURIComponent(row.id) +
           '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([]),
-        // its budget (0015): owner, admin and the helper only, so anyone else reads none
+        // its budget (0015): may_read_budgets() lets owner, admin, ops, the helper and the shared team login read it (0020); anyone else reads none
         kind === 'dev' ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([]),
         // the pieces asked of the helper (0017); unreadable (0017 not run yet) means none
         kind === 'listing' || kind === 'pitch' ? requestsOf(row) : Promise.resolve([]),
@@ -366,9 +364,10 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, canAsk: JP.canAsk, drive: state.drive, W: W, I: I, esc: esc,
       doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, unitsFrom: state.unitsFrom, canFacts: JP.canFacts, onSheet: paintRebuild };
   }
-  // the development's own cards on a development that is one house (D141)
+  // the development's own cards on a development that is one house (D141); sfh: the cards draw the
+  // single-house cut (the sale milestones, one Asana and one budget link, no payments table)
   function devCtx() {
-    return Object.assign(ctx(), { kind: 'dev', table: 'dev_projects', row: state.dev, job: state.devJob, units: [] });
+    return Object.assign(ctx(), { kind: 'dev', table: 'dev_projects', row: state.dev, job: state.devJob, units: [], sfh: true });
   }
 
   /* ---------- 0017: the helper makes the pieces (overturns D89, D91) ----------
@@ -482,7 +481,8 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       tile(r.kind === 'rental' ? 'Rent' : 'Price', money.v != null ? W.money(money.v) + (r.kind === 'rental' ? '/mo' : '') : '', warn, money.badge) +
       tile('Beds · baths', [beds.v != null ? beds.v + ' bd' : '', baths.v != null ? baths.v + ' ba' : ''].filter(Boolean).join(' · '), half.v ? half.v + ' half' : '', beds.badge || baths.badge) +
       tile('Sq ft', sqft.v != null ? Number(sqft.v).toLocaleString('en-US') + ' approx.' : '', '', sqft.badge) +
-      tile('DE status', W.deLabel(j.deStatus), r.de_listing_id ? 'DE id ' + r.de_listing_id : 'not matched to DE yet') +
+      // a single-house development's tile leaves out Elliman's internal listing id
+      tile('DE status', W.deLabel(j.deStatus), r.de_listing_id ? (state.dev ? '' : 'DE id ' + r.de_listing_id) : 'not matched to DE yet') +
       ((r.core || {}).neighborhood || !(r.core || {}).city ? tile('Neighborhood', (r.core || {}).neighborhood || '') : tile('City', r.core.city)) +
       '</div></div>';
   }
@@ -490,15 +490,16 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
   /* the read-only Asana card on a listing (Slice 2, spec §7) */
   var BLOCK = { prep: 'Prep', 'price change': 'Price change', contract: 'Contract', 'post-closing': 'Post-closing' };
   function asanaCard() {
-    var r = state.row, j = state.job, a = r.asana;
+    var r = state.row, j = state.job, a = r.asana, one = !!state.dev;
+    // a single-house development opens Asana from the header only
     var head = '<div class="card-h"><div><h2>Asana</h2></div>' +
-      (j.asanaUrl ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>' : '') + '</div>';
+      (j.asanaUrl && !one ? '<a class="b sm" href="' + esc(j.asanaUrl) + '" target="_blank" rel="noopener">Open in Asana</a>' : '') + '</div>';
     if (!a && !r.asana_gid) return '<div class="card" id="asanaCard">' + head + '<p class="soft">Not linked to an Asana task yet.</p></div>';
     a = a || {};
     var stage = a.stageFromStatus || a.stageFromSection || r.stage;
     var st = [];
     if (a.status) st.push('Listing Status: ' + a.status);
-    if (a.section) st.push('Section: ' + a.section);
+    if (a.section && !one) st.push('Section: ' + a.section);
     var dates = (j.dates || []).length ? '<div class="dates">' + j.dates.map(function (d) {
       return '<span class="dmk' + (d.planned ? ' planned' : '') + '" title="' + (d.planned ? 'Planned' : 'Done') + '">' + esc(d.label + ' ' + W.fmtDay(d.on)) + '</span>';
     }).join('') + '</div>' : '<p class="soft" style="font-size:13px;margin-top:8px">No deal dates in Asana yet.</p>';
@@ -518,7 +519,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function steps() {
     var j = state.job;
-    if (kind === 'dev') return '';
+    if (kind === 'dev' || state.dev) return '';   // a single-house development's sale shows in its milestones (D141)
     return '<div class="card" data-collapse="off" style="margin-top:24px"><div class="card-h"><div><h2>Stages</h2></div></div><div class="steps-wrap"><div class="steps">' +
       j.steps.map(function (s, i) {
         var cls = i === j.stageIdx ? 'cur' : (j.done[s] || (s === 'Pitch' && j.pitchedOn)) ? 'done' : i < j.stageIdx ? 'skip' : '';

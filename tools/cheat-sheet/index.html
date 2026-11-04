@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listing Cheat Sheet · GVC Workspace</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="A one-page cheat sheet for the agents on a listing: the money, the board rules, the building, the keys and who manages it.">
+<link rel="icon" href="../../assets/logos/monogram.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/logos/monogram-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/logos/apple-touch-icon-180.png">
+<!-- Self-hosted STATIC fonts. Chrome turns VARIABLE fonts into Type3 outlines when
+     printing to PDF, which validators reject as "fonts not embedded". Do not put a
+     fonts.googleapis.com link back on this page. See assets/css/fonts.css. -->
+<link rel="stylesheet" href="../../assets/css/fonts.css">
+<link rel="stylesheet" href="../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/builder.css">
+<link rel="stylesheet" href="../../assets/css/pitch.css">
+<link rel="stylesheet" href="../../assets/css/panel-collapse.css">
+<style>
+/* the printed page: navy ink on white, one accent; --cs-scale shrinks the type when a full job runs long */
+.cs{--cs-scale:1;position:absolute;inset:0;padding:.5in .55in .45in;display:flex;flex-direction:column;color:var(--navy);font:400 calc(8.6pt * var(--cs-scale))/1.38 var(--body);}
+.cs-head{display:flex;justify-content:space-between;align-items:flex-end;gap:.3in;border-bottom:1.2pt solid var(--navy);padding-bottom:.12in;}
+.cs-head h2{margin:0;font:400 calc(21pt * var(--cs-scale))/1.1 var(--serif);}
+.cs-sub{margin-top:.05in;font:700 calc(8pt * var(--cs-scale)) var(--sans);letter-spacing:.12em;text-transform:uppercase;}
+.cs-team{text-align:right;font:400 calc(8pt * var(--cs-scale))/1.45 var(--body);}
+.cs-team b{font:700 calc(8.2pt * var(--cs-scale)) var(--sans);}
+.cs-only{margin-top:.04in;font:800 calc(7pt * var(--cs-scale)) var(--sans);letter-spacing:.16em;text-transform:uppercase;}
+.cs-body{flex:1;columns:2;column-gap:.32in;margin-top:.16in;}
+.cs-sec{break-inside:avoid;margin-bottom:.16in;}
+.cs-sec h3{margin:0 0 .05in;padding-bottom:.03in;border-bottom:.6pt solid var(--ui-rule);font:800 calc(8pt * var(--cs-scale)) var(--sans);letter-spacing:.14em;text-transform:uppercase;}
+.cs-sec dl{margin:0;display:grid;grid-template-columns:1.25in 1fr;gap:.035in .12in;}
+.cs-sec dt{font:700 calc(7.8pt * var(--cs-scale))/1.45 var(--sans);}
+.cs-sec dd{margin:0;white-space:pre-line;overflow-wrap:anywhere;}
+.cs-sec dd.blank{border-bottom:.5pt solid var(--ui-rule);min-height:1.1em;}
+.cs-foot{display:flex;justify-content:space-between;margin-top:.1in;padding-top:.06in;border-top:.6pt solid var(--ui-rule);font:400 calc(7pt * var(--cs-scale)) var(--body);}
+.cs-empty{margin:auto;text-align:center;font:400 12pt/1.5 var(--body);max-width:5in;}
+.cs-empty b{display:block;font:400 18pt var(--serif);margin-bottom:.1in;}
+#jobLink{display:inline-block;margin-top:8px;font:700 11px var(--sans);color:var(--ink);}
+.cs-check{display:flex;gap:8px;align-items:center;font:400 12px var(--sans);color:var(--ink);margin-top:10px;}
+</style>
+</head>
+<body data-root="../../" data-nav="tools" data-foot="none">
+<main>
+<h1 class="visually-hidden">Listing Cheat Sheet</h1>
+
+<div id="app">
+  <aside id="editor">
+    <div class="ed-body">
+      <details class="ed-sec" open>
+        <summary>Listing <span class="hint">from the job's facts</span></summary>
+        <div class="sec-in">
+          <div class="field">
+            <label>Listing</label>
+            <select id="pick"><option value="">Sign in to see the listings</option></select>
+          </div>
+          <label class="cs-check"><input type="checkbox" id="blanks"> Print the empty lines, to fill in by hand</label>
+          <a id="jobLink" hidden>Change a fact on the job page</a>
+          <div class="sec-note">Every line comes from the job's Facts card. Change it there and this sheet follows.</div>
+        </div>
+      </details>
+      <details class="ed-sec">
+        <summary>Warnings</summary>
+        <div class="sec-in"><div class="warn" id="warnGeneral" hidden></div></div>
+      </details>
+    </div>
+  </aside>
+
+  <div id="stage"><div id="pages"></div></div>
+
+  <div id="stageBar">
+    <div class="sp"></div>
+    <span class="zlab" id="zoomInfo"></span>
+    <button type="button" class="btn sm ghost" id="btnZoom">Zoom 100%</button>
+    <button type="button" class="btn lg" id="btnPrint" title="In the print dialog: Destination 'Save as PDF' &middot; Paper 'Letter' &middot; Margins 'None' &middot; enable 'Background graphics'.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" integrity="sha384-HOvlOYPIs/zjoIkWUGXkVmXsjr8GuZLV+Q+rcPwmJOVZVpvTSXQChiN4t9Euv9Vc" crossorigin="anonymous"></script>
+<script src="../../assets/js/chrome.js"></script>
+<script src="../../assets/js/motion.js"></script>
+<script src="../../assets/js/builder.js"></script>
+<script src="../../assets/js/unsaved.js"></script>
+<script src="../../assets/js/markets.js"></script>
+<script src="../../assets/js/job-facts.js"></script>
+<script src="../../assets/js/roster.js"></script>
+<script src="../../assets/js/supabase-config.js"></script>
+<script src="../../assets/js/property-library.js"></script>
+<script>
+'use strict';
+/* LISTING CHEAT SHEET (11-04, from Ayuen's Notion "CheatSheets"): one Letter page for the agents on a
+   listing, drawn live from the job's facts (GVC_FACTS.shown), so it is never out of date and nothing is
+   saved. Opened from the job page's Facts card (?listing=<slug>) or picked here. Team only: it prints
+   the keys and the managing agent's contacts. Empty facts are left off unless "Print the empty lines".
+   window.__render(job) draws a given job with no network (tests). */
+const F = window.GVC_FACTS, P = window.GVC_PROPS;
+const SECTIONS = [
+  { title: 'The apartment', names: ['price', 'rent', 'beds', 'baths', 'sqft', 'exteriorSqft', 'outdoorSpace', 'rooms', 'layoutType', 'floor', 'exposures', 'views', 'ceilingHeight'] },
+  { title: 'The money', names: ['maintenance', 'commonCharges', 'taxesMonthly', 'maxFinancing', 'flipTax', 'assessments', 'assessmentBreakdown', 'assessmentPurpose', 'maintenanceSurcharge', 'taxDeduction', 'amenityFee', 'utilities'] },
+  { title: 'Board and building rules', group: 'rules' },
+  { title: 'The building', names: ['propertyType', 'yearBuilt', 'stories', 'buildingUnits', 'buildingStaff', 'storage', 'parking', 'schoolDistrict', 'buildingFeatures'] },
+  { title: 'Keys and management', names: ['keys', 'managementContacts', 'buildingNotes', 'openHouses'] }
+];
+const KEY = 'gvc.cheat-sheet.blanks';
+const state = { job: null, blanks: (() => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } })(), msg: '' };
+let builder = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const empty = v => v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length);
+
+function words(f, core) {
+  const v = f.value;
+  if (empty(v)) return '';
+  if (f.kind === 'money') return '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  if (f.name === 'maxFinancing') return v + '%';
+  if (f.name === 'baths') return String(v) + (core.halfBaths ? ' + ' + core.halfBaths + ' half' : '');
+  if ((f.name === 'sqft' || f.name === 'exteriorSqft') && !Number(v)) return '';   // a 0 sq ft is "not known" (co-ops)
+  if (f.name === 'sqft' || f.name === 'exteriorSqft') return Number(v).toLocaleString('en-US') + ' sq ft';
+  if (Array.isArray(v)) return f.kind === 'list' && f.name !== 'buildingFeatures' && f.name !== 'openHouses' ? v.join(', ') : v.join('\n');
+  return String(v);
+}
+
+function agentsOf(core) {
+  const ids = core.agentIds || [];
+  return ids.map(id => (window.GVC_ROSTER || []).find(p => p.id === id)).filter(Boolean);
+}
+
+function sheet(job) {
+  if (!job) {
+    return '<div class="cs"><div class="cs-empty"><b>Pick a listing</b>' + esc(state.msg || 'Choose one in the panel, or open the cheat sheet from a job\'s Facts card.') + '</div></div>';
+  }
+  const core = job.core || {};
+  const list = F.shown(core, job).filter(f => f.name !== 'halfBaths');
+  const byName = {}; list.forEach(f => { byName[f.name] = f; });
+  const secs = SECTIONS.map(s => {
+    const fields = s.group ? list.filter(f => f.group === s.group) : s.names.map(n => byName[n]).filter(Boolean);
+    const rows = fields.map(f => {
+      const w = words(f, core);
+      if (!w && !state.blanks) return '';
+      return '<dt>' + esc(f.label.replace(' (%)', '')) + '</dt><dd' + (w ? '' : ' class="blank"') + '>' + esc(w) + '</dd>';
+    }).join('');
+    return rows ? '<section class="cs-sec"><h3>' + esc(s.title) + '</h3><dl>' + rows + '</dl></section>' : '';
+  }).join('');
+  const place = [core.neighborhood, core.city && core.city !== core.neighborhood ? core.city : null, job.market].filter(Boolean).join(' · ');
+  const team = agentsOf(core).map(a => '<div><b>' + esc(a.name) + '</b> ' + esc(a.mobile || a.phone || '') + '</div>').join('');
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return '<div class="cs"><header class="cs-head"><div><h2>' + esc(job.label || core.address || job.slug) + '</h2>' +
+    '<div class="cs-sub">' + esc([place, job.stage].filter(Boolean).join(' · ')) + '</div></div>' +
+    '<div class="cs-team">' + team + '<div class="cs-only">For the team only</div></div></header>' +
+    '<div class="cs-body">' + (secs || '<p>No facts on this job yet. Fill them in on its Facts card.</p>') + '</div>' +
+    '<footer class="cs-foot"><span>The GVC Team · Douglas Elliman</span><span>As of ' + esc(today) + '</span></footer></div>';
+}
+
+/* shrink the type until the page holds everything (not below 78%), else say so */
+function fit(page) {
+  const cs = page.querySelector('.cs'), body = page.querySelector('.cs-body');
+  const warn = $('warnGeneral');
+  if (!cs || !body) { warn.hidden = true; return; }
+  let s = 1;
+  const over = () => body.scrollWidth > body.clientWidth + 2 || body.scrollHeight > body.clientHeight + 2;
+  cs.style.setProperty('--cs-scale', s);
+  while (over() && s > 0.78) { s = Math.round((s - 0.04) * 100) / 100; cs.style.setProperty('--cs-scale', s); }
+  const still = over();
+  warn.hidden = !still;
+  warn.textContent = still ? 'Too much for one page: the last lines run past the page edge. Shorten the longest facts on the job page.' : '';
+}
+
+function draw() { if (builder) builder.rebuild(); }
+
+function load(slug) {
+  if (!slug) { state.job = null; draw(); return Promise.resolve(); }
+  state.msg = 'Loading…'; state.job = null; draw();
+  return P.call('/rest/v1/properties?slug=eq.' + encodeURIComponent(slug) + '&select=slug,label,market,kind,stage,core')
+    .then(rows => {
+      state.job = rows && rows[0] ? rows[0] : null;
+      state.msg = state.job ? '' : 'That listing isn\'t in the workspace.';
+      const a = $('jobLink');
+      a.hidden = !state.job;
+      if (state.job) a.href = '../../workspace/job/?listing=' + encodeURIComponent(slug);
+      draw();
+    }, e => { state.msg = e.message; draw(); });
+}
+
+function fillPicker(current) {
+  return P.call('/rest/v1/properties?select=slug,label,market,stage&stage=neq.Archived&order=label').then(rows => {
+    const pick = $('pick');
+    pick.innerHTML = '<option value="">Pick a listing</option>' + (rows || []).map(r =>
+      '<option value="' + esc(r.slug) + '"' + (r.slug === current ? ' selected' : '') + '>' + esc(r.label + (r.market ? ' (' + r.market + ')' : '')) + '</option>').join('');
+  });
+}
+
+window.__render = job => { state.job = job; state.msg = ''; draw(); window.__rendered = true; };
+
+document.addEventListener('DOMContentLoaded', () => {
+  builder = Builder.init({
+    pages: 1, label: 'Page',
+    printName: () => 'Cheat Sheet - ' + (state.job ? (state.job.label || state.job.slug) : 'Listing'),
+    render: page => { page.innerHTML = sheet(state.job); requestAnimationFrame(() => fit(page)); }
+  });
+  $('blanks').checked = state.blanks;
+  $('blanks').addEventListener('change', e => {
+    state.blanks = e.target.checked;
+    try { localStorage.setItem(KEY, state.blanks ? '1' : '0'); } catch (x) { /* private window */ }
+    draw();
+  });
+  $('pick').addEventListener('change', e => {
+    const slug = e.target.value, u = new URL(location.href);
+    if (slug) u.searchParams.set('listing', slug); else u.searchParams.delete('listing');
+    history.replaceState(null, '', u);
+    load(slug);
+  });
+  const slug = new URLSearchParams(location.search).get('listing') || '';
+  if (window.__noNetwork) return;
+  const start = () => Promise.all([fillPicker(slug), load(slug)]);
+  if (P.signedIn()) start().catch(e => { state.msg = e.message; draw(); });
+  else {
+    state.msg = 'Sign in to see the team\'s listings.'; draw();
+    P.askSignIn('Sign in to open a listing\'s cheat sheet.').then(ok => { if (ok) start(); });
+  }
+});
+</script>
+<script src="../../assets/js/panel-collapse.js"></script>
+<script src="../../assets/js/field-labels.js"></script>
+</body>
+</html>

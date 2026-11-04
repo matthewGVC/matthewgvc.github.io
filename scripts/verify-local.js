@@ -42,6 +42,7 @@ const PAGES = [
   ['Office Screens',  '/tools/office-screens/'],
   ['Postcards',       '/tools/postcard/'],
   ['Signage',         '/tools/signage/'],
+  ['Cheat Sheet',     '/tools/cheat-sheet/'],
   ['Workspace',       '/workspace/'],
   ['Workspace jobs',  '/workspace/jobs/'],
   ['Workspace new dev', '/workspace/new-dev/'],

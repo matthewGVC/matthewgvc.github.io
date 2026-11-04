@@ -25,7 +25,7 @@ const engine = require('playwright')[ENGINE];
 
 const BASE = process.env.BASE || 'http://localhost:8080';   /* BASE=http://localhost:8092 to test another copy */
 const SAMPLE = path.resolve(__dirname, '../tools/showsheet/sample') + path.sep;
-const ALL = ['showsheet', 'seller-package', 'brochure', 'buyer-package', 'agent-info', 'destination-guide',
+const ALL = ['showsheet', 'cheat-sheet', 'seller-package', 'brochure', 'buyer-package', 'agent-info', 'destination-guide',
   'nj-footprint', 'calculator', 'floorplan', 'map-studio', 'watermark', 'office-screens', 'todo', 'postcard', 'signage'];
 const TOOLS = process.argv[2] ? process.argv[2].split(',') : ALL;
 

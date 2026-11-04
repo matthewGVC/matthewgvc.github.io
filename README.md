@@ -115,6 +115,12 @@ in GVC - Marketing > GVC - For Sale Sign) and the Open House arrow sign (24.4 x 
 Standalone the choices are kept in `localStorage`; opened from a job it makes the For Sale sign with the
 job's agents and listing QR and saves through the helper (Slice 6). Tests: `scripts/test-pdf-render.js`.
 
+## Listing Cheat Sheet tool
+`tools/cheat-sheet/?listing=<slug>`, opened from the Cheat sheet button on a job's Facts card: one Letter
+page for the agents (team only) with the listing's money, board and building rules, building, keys and
+management, drawn live from the job's facts (`assets/js/job-facts.js`, the `rules`, `money` and `building`
+groups; first filled from Ayuen's Notion on 11-04). Nothing is saved. Checked by `verify-local.js` and `interact-local.js`.
+
 ## Postcards tool
 
 `tools/postcard/` makes a two-sided 6 x 9 in Just Sold or For Sale postcard, at

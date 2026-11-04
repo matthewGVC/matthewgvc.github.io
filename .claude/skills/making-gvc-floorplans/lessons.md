@@ -8,6 +8,15 @@ scripts are not lessons: they live in the code and its tests.
 (Pruned 2026-10-30: lessons already moved into the other files, fixed in the scripts, or overruled by
 a later one were taken out.)
 
+## 2026-11-03: 806 Riverview Dr v5 (a fresh look at the branded sheets)
+
+- Look at every BRANDED sheet, not only the unbranded ones and the overlays. v3 passed the overlay check, but its
+  second-floor trellis ran up through the address in the header.
+- The cause: a floor's size on the sheet came from its walls, solids and areas only, so linework past the walls (a
+  trellis's rafters) was left out of the fit. plan.js levelPoints now counts lines too (test-floorplan-plan.js).
+- When a room is too small for its name and size at the sheet's text size, back the label with white rather than
+  squeeze it against a door swing or a counter.
+
 ## 2026-11-03: 806 Riverview Dr v3 (Matt: "100% accurate and LOOK good")
 - **Review the overlay in tiles at full size** (about 1,400 x 1,000 px each, every one), not a shrunk whole sheet.
   The scaled-down views hid a roof bar drawn hollow and a 5 px step in an edge.

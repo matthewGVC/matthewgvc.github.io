@@ -173,7 +173,7 @@ const typeIn = async (page, field, value) => {
   check('job mode: facts on the sheet', [s.address, s.unit, s.price, s.commonCharges, s.ownership, s.market, s.listingUrl, s.agentIds],
     ['100 Example St', '4A', '$4,500,000', '$2,200', 'condo', 'nyc', 'https://www.elliman.com/new-york-city/100-example-st/4a/9001', ['john-gasdaska']]);
   check('job mode: lists through the reader rules', [s.building.service, s.residence.exposures], ['Full-time doorman', 'South exposure']);
-  check('job mode: badges', [await text(p, '[data-jf="price"] .chip'), await text(p, '[data-jf="commonCharges"] .chip')], ['DE', 'Matt']);
+  check('job mode: badges', [await text(p, '[data-jf="price"] .chip'), await text(p, '[data-jf="commonCharges"] .chip')], ['DE', 'Team']);
   check('job mode: Matt vs DE warning', (await text(p, '[data-jf="commonCharges"] .jfw')) || '', 'DE says $2,100');
   check('job mode: photos from Drive, by name', s.photos.map(x => x.path), ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg']);
   check('job mode: front and back', [s.photos[s.heroIndex].path, s.photos[s.secondaryIndex].path], ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg']);
@@ -397,12 +397,9 @@ const typeIn = async (page, field, value) => {
   check('Print: nothing recorded, nothing asked', [t.pieces.length, t.asks.length], [0, 0]);
   await t.ctx.close();
 
-  // the team's shared account: Make PDF asks the helper, never saves the wording
+  // the team's shared account: making pieces is marketing's (Matt, 11-02), so no Make PDF and no Save sheet
   t = await open(browser, { members: [{ name: 'Team (shared)', initials: 'GVC', role: 'shared' }] });
-  check('shared: Make PDF, no Save sheet', [!!(await t.page.$('#btnSavePdf')), await t.page.$('#btnSaveSheet')], [true, null]);
-  await savePdf(t);
-  check('shared: asks the helper without saving anything', [t.asks.map(a => a.tool), t.saves.length, t.pieces.length], [['showsheet'], 0, 0]);
-  check('shared: the bar follows the request', (await text(t.page, '#jobBar')).includes('Waiting for the helper'), true);
+  check('shared: no Make PDF, no Save sheet (making is for marketing)', [await t.page.$('#btnSavePdf'), await t.page.$('#btnSaveSheet')], [null, null]);
   await t.ctx.close();
 
   // team role: read-only

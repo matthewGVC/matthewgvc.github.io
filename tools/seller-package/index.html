@@ -294,7 +294,7 @@ table.tbl th.num{text-align:right;}
    ============================================================ */
 /* Closing page — all of its furniture (the "Thank You" block, the agent
    cards, the contact columns and the licensed states) is shared; see the
-   CLOSING PAGE section of assets/css/pitch.css. Nothing deck-specific is
+   editorial closing-page rules in assets/css/pitch.css (Pitch.closingPage()). Nothing deck-specific is
    left here, which is the point: it can no longer drift from the Buyer
    Package's closing page. */
 
@@ -777,14 +777,11 @@ const PREP_NYC = [
    browser cannot read a local drive from an http page anyway. All the
    stills are committed in assets/videos/ at 1600x1067, cropped so the
    top-right stays light (the QR sits there) and the bottom third is floor
-   (the address band sits there). Note the Sea Bright file is named for its
-   town while its id is its address.
+   (the address band sits there).
 
    `url` is used rather than `qr` throughout: these strings were decoded
    from the team's own QR PNGs, so they scan to exactly the same place, but
-   drawn as vector they stay sharp at any print size. Three of the original
-   PNGs are committed alongside if you would rather use them — set `qr` and
-   clear `url`.
+   drawn as vector they stay sharp at any print size.
 
    All four are real films the team chose, which is why the page no longer
    carries a "swap these out" stamp. Add another by adding a row here: it
@@ -1678,7 +1675,7 @@ function renderThumbs(hostId, arr, onRemove) {
    shared P.segPick(), which hands back a repaint function so the buttons
    can be re-synced with state after a property is loaded rather than being
    left showing the last document's answer. */
-let paintRoster = () => {}, paintRec = () => {}, paintProp = () => {}, paintVersion = () => {};
+let paintRoster = () => {}, paintProp = () => {}, paintVersion = () => {};
 /* The market seg, and the two grouped tick lists. The tick lists are rebuilt
    rather than merely repainted when their groups change — the testimonial
    groups follow whichever agents are picked, so the subheads themselves move. */
@@ -1727,9 +1724,6 @@ document.addEventListener('DOMContentLoaded', () => {
     state.comps.push(P.blankComp());
     renderComps(); redraw();
   });
-  paintRec = P.segPick(document.getElementById('recPick'), 'rec',
-    () => state.recBand,
-    v => { state.recBand = v; redraw(); });
   paintProp = P.segPick(document.getElementById('propPick'), 'on',
     () => (state.showProperty ? '1' : '0'),
     v => { state.showProperty = v === '1'; redraw(); });
@@ -1936,7 +1930,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (doc) DOC_ONLY.forEach(k => { if (k in doc) state[k] = doc[k]; });
       uid = Math.max(uid, ...state.photos.map(p => p.id || 0), 0);
       document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
-      paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp(); paintVersion();
+      paintPhotos(); paintMap(); renderComps(); paintRoster(); paintProp(); paintVersion();
       paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw();
     }
   };
@@ -2001,7 +1995,7 @@ window.__piece = {
     Object.assign(state, base);
     uid = Math.max(uid, ...state.photos.map(p => p.id), 0);
     document.querySelectorAll('[data-f]').forEach(el => { el.value = state[el.dataset.f] || ''; });
-    paintPhotos(); paintMap(); renderComps(); paintRoster(); paintRec(); paintProp(); paintVersion();
+    paintPhotos(); paintMap(); renderComps(); paintRoster(); paintProp(); paintVersion();
     paintMarket(); paintVideoPick(); wireReviewPick(); paintPickModes(); redraw();
   },
   redraw, paintPhotos, paintMap, renderComps, checkAll,

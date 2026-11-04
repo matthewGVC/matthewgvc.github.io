@@ -40,8 +40,7 @@ body.look-guide .pg.rev .pg-foot .pg-n{color:rgba(229,229,229,.82);}
 body.look-guide .lede{font:400 15pt/1.34 var(--serif);letter-spacing:-.012em;color:var(--navy);max-width:5.8in;text-wrap:balance;}
 body.look-guide .copy,
 body.look-guide .pg-body p{font-weight:400;}
-body.look-guide .fifty-lede,
-body.look-guide .rf-lede{font:400 13pt/1.38 var(--serif);color:var(--guide-ink-soft);}
+body.look-guide .fifty-lede{font:400 13pt/1.38 var(--serif);color:var(--guide-ink-soft);}
 
 /* numbers and stats: large serif figures under a hard navy rule */
 body.look-guide .stat{border-top:1.5pt solid var(--navy);}

@@ -73,7 +73,7 @@ const FAKE_DRIVE = `(function () {
     state: function () { return cfg.stateThrows ? Promise.reject(new Error('Drive went away.')) : Promise.resolve(cfg.state || 'connected'); },
     connect: function () { cfg.state = 'connected'; return Promise.resolve(['GVC - New York']); },
     reconnect: function () { cfg.state = 'connected'; return Promise.resolve(true); },
-    list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
+    list: function () { return Promise.resolve([]); },
     tree: function () { log.tree++; return cfg.slowTree ? new Promise(function () {}) : Promise.resolve(JSON.parse(JSON.stringify(tree))); },
     listJob: function () { return Promise.resolve([]); },
     readJobFile: function (folder, path) {
@@ -243,7 +243,7 @@ const typeIn = async (page, field, value) => {
   check('Reconnect brings the photos in', (await st(t.page)).photos.length, 3);
   await t.ctx.close();
 
-  // no Drive folder saved in this browser at all, no helper here: Connect Drive (the picker), not Reconnect
+  // no Drive in this browser at all, no helper here: Connect Drive (the Google sign-in), not Reconnect
   t = await open(browser, { drive: { state: 'not-connected' }, helperDown: true });
   check('not connected: Connect Drive, not Reconnect', await text(t.page, '#jobReconnect'), 'Connect Drive');
   check('not connected: Make PDF still on (the helper reads Drive itself)', [await t.page.$eval('#btnSavePdf', e => e.disabled), await t.page.$('#jobPdfWhy')], [false, null]);

@@ -121,14 +121,15 @@
       d.style.cssText = 'border:1px solid var(--rule);border-radius:10px;padding:22px 24px;max-width:560px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)';
       d.innerHTML = '<h2 style="font-size:22px;margin:0 0 4px">' + (o.row.folder_state === 'broken' ? 'Relink the folder' : 'Link the Drive folder') + '</h2>' +
         '<p class="soft" style="margin:0 0 14px;font-size:13.5px" id="lkWhat"></p><div id="lkList"><p class="soft">Looking for the folder…</p></div>' +
+        '<form id="lkForm" style="display:flex;gap:8px;margin-top:12px"><input id="lkUrl" type="url" placeholder="Or paste the folder\'s Google Drive link" aria-label="The folder\'s Google Drive link" style="flex:1;min-width:0;font:inherit;font-size:13.5px;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink)"><button type="submit" class="b" id="lkUse">Use link</button></form>' +
         '<p id="lkMsg" role="alert" style="min-height:1.2em;color:var(--danger);font-size:13px;margin:10px 0 0"></p>' +
-        '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button type="button" class="b" id="lkBrowse">Browse…</button><button type="button" class="b" id="lkCancel">Cancel</button></div>';
+        '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button type="button" class="b" id="lkCancel">Cancel</button></div>';
       d.querySelector('#lkWhat').textContent = o.job.name + '. Nothing on Drive is moved or renamed; the job just remembers where its folder is.';
       var msg = d.querySelector('#lkMsg'), list = d.querySelector('#lkList');
       var opener = doc.activeElement, saved = false, busy = false;
       var done = function (ok) { d.close(); d.remove(); if (opener && opener.focus) opener.focus(); resolve(ok); };
       // while saving, Cancel and Escape wait: closing early would miss the save and leave the page on an old version
-      var lock = function (on) { d.querySelectorAll('#lkBrowse, #lkCancel, button[data-i]').forEach(function (b) { b.disabled = on; }); };
+      var lock = function (on) { d.querySelectorAll('#lkUrl, #lkUse, #lkCancel, button[data-i]').forEach(function (b) { b.disabled = on; }); };
       d.querySelector('#lkCancel').addEventListener('click', function () { done(saved); });
       d.addEventListener('cancel', function (e) { e.preventDefault(); if (!busy || saved) done(saved); });
       var pick = function (folder) {
@@ -141,20 +142,22 @@
           busy = false; lock(false);
         });
       };
-      d.querySelector('#lkBrowse').addEventListener('click', function () {
-        if (!D || !global.showDirectoryPicker) { msg.textContent = 'This browser can\'t open Drive folders. Use Chrome on the desktop.'; return; }
-        global.showDirectoryPicker({ id: 'gvc-drive', mode: 'read' }).then(function (h) { return D.relPathOf(h); }).then(function (rel) {
-          if (!rel) { msg.textContent = 'That folder isn\'t inside G:\\Shared drives. Pick one there.'; return; }
-          pick(rel);
-        }, function () { /* picker closed */ });
+      // the folder's own Drive link (Share → Copy link, or the address bar) → its path, then saved like a suggestion
+      d.querySelector('#lkForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (busy) return;
+        var url = d.querySelector('#lkUrl').value.trim();
+        if (!url) { msg.textContent = 'Paste the folder\'s Google Drive link first.'; return; }
+        msg.textContent = 'Finding the folder…';
+        D.pathOfLink(url).then(pick, function (er) { msg.textContent = er.message; });
       });
       doc.body.appendChild(d);
       d.showModal();
 
-      (D ? D.state() : Promise.resolve('unsupported')).then(function (s) {
+      (D ? D.state() : Promise.resolve('not-connected')).then(function (s) {
         if (s !== 'connected') {
           list.innerHTML = '<p class="soft">Connect Drive (top right) to look for this job\'s folder.</p>';
-          d.querySelector('#lkBrowse').disabled = true;
+          d.querySelector('#lkUrl').disabled = true; d.querySelector('#lkUse').disabled = true;
           return;
         }
         return suggest(D, A, o.table, o.row).then(function (paths) {
@@ -166,10 +169,10 @@
           list.innerHTML = paths.length ? '<p class="lbl" style="margin:0 0 8px">Suggestions</p>' + paths.map(function (p, i) {
             return '<button type="button" class="b" style="display:flex;flex-direction:column;align-items:flex-start;width:100%;margin-bottom:6px;white-space:normal;text-align:left" data-i="' + i + '">' + esc(p) +
               (note[p] ? '<span class="soft" style="font-size:12.5px;margin-top:2px">' + esc(note[p]) + '</span>' : '') + '</button>';
-          }).join('') : '<p class="soft">No folder with this address turned up. Use Browse to pick it.</p>';
+          }).join('') : '<p class="soft">No folder with this address turned up. Paste its Drive link below.</p>';
           list.querySelectorAll('button[data-i]').forEach(function (b) { b.addEventListener('click', function () { pick(paths[+b.dataset.i]); }); });
         });
-      }).catch(function () { list.innerHTML = '<p class="soft">Couldn\'t look through Drive just now. Use Browse to pick the folder.</p>'; });
+      }).catch(function () { list.innerHTML = '<p class="soft">Couldn\'t look through Drive just now. Paste the folder\'s Drive link below.</p>'; });
     });
   }
 

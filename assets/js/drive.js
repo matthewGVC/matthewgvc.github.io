@@ -1,21 +1,22 @@
 /* ============================================================
-   DRIVE — the workspace's window onto G:\Shared drives (plan D4, §9).
+   DRIVE — the workspace's window onto the team's shared drives (plan D4, §9).
 
-   Uses the browser's File System Access API (Chrome / Edge on a desktop).
-   Matt picks "G:\Shared drives" once; the folder handle is kept in
-   IndexedDB, so later visits need at most one click ("Reconnect Drive").
-   If Chrome won't take "Shared drives" itself as the root, each shared
-   drive (GVC - New York, GVC - New Jersey…) can be picked as its own root.
+   Read over the web through Google (overhaul 9, assets/js/drive-web.js, loaded
+   before this file): anyone signed in with Google on their GVC email reads
+   "Shared drives" read-only, on any computer or phone. Connecting is a Google
+   sign-in. The old way, picking this computer's G:\Shared drives folder, is
+   gone (Matt, 11-04); the desktop helper still reads G: on its own.
 
-     await GVC_DRIVE.state()      'connected' | 'needs-click' | 'not-connected' | 'unsupported' | 'error'
-     await GVC_DRIVE.connect()    folder picker → names of the roots now held
-     await GVC_DRIVE.reconnect()  call from a click; true when access is back
+     await GVC_DRIVE.state()      'connected' | 'needs-click' | 'not-connected' | 'error'
+     await GVC_DRIVE.connect()    signs in with Google, asking for Drive (the page changes)
+     await GVC_DRIVE.reconnect()  the same, from a click
      await GVC_DRIVE.list('GVC - New York/ACTIVE LISTINGS & DEALS')
                                   → [{name, kind: 'file' | 'directory'}]
      await GVC_DRIVE.readJobFile(jobFolder, 'Photos/Edited/a.jpg', {timeoutMs})
                                   → File, once its first byte arrives. Refused by GVC_DRIVE_RULES before any
                                     handle inside the job is opened.
-     await GVC_DRIVE.relPathOf(handle)  → 'GVC - New York/…' or null
+     await GVC_DRIVE.pathOfLink('https://drive.google.com/drive/folders/…')
+                                  → 'GVC - New York/…', the folder a pasted Drive link points at
      await GVC_DRIVE.tree(jobFolder, { depth: 3, timeoutMs })
                                   → the job folder as GVC_HEALTH's tree: readable folders to `depth` levels
                                     (files with size and modified), the details doc and other loose top
@@ -26,100 +27,31 @@
                                   → [{ name, kind, size, modified }] of one readable folder, by name;
                                     anything GVC_DRIVE_RULES.allowedInJob refuses is left out.
 
-   Paths are relative to G:\Shared drives\, with "/" or "\".
+   Paths are relative to Shared drives\, with "/" or "\".
    Needs assets/js/drive-rules.js loaded first.
-
-   Drive through Google (overhaul 9, assets/js/drive-web.js, loaded before
-   this file): for anyone signed in with Google the root is Google Drive itself, over the web,
-   and connecting is a Google sign-in; everything below works the same.
    ============================================================ */
 (function (global) {
   'use strict';
 
   var RULES = global.GVC_DRIVE_RULES;
-  var DB = 'gvc-drive', STORE = 'roots', TOP = 'Shared drives';
+  function WEB() { return global.GVC_DRIVE_WEB; }
 
-  /* ---------- IndexedDB: root handles survive reloads and restarts ---------- */
-  function db() {
-    return new Promise(function (res, rej) {
-      var r = indexedDB.open(DB, 1);
-      r.onupgradeneeded = function () { r.result.createObjectStore(STORE); };
-      r.onsuccess = function () { res(r.result); };
-      r.onerror = function () { rej(r.error); };
-    });
-  }
-  function tx(mode, fn) {
-    return db().then(function (d) {
-      return new Promise(function (res, rej) {
-        var t = d.transaction(STORE, mode), out = fn(t.objectStore(STORE));
-        t.oncomplete = function () { res(out && out.result); };
-        t.onerror = function () { rej(t.error); };
-      });
-    });
-  }
-  // anyone on Drive through Google gets the shared drives over the web as the one root
-  function web() { return global.GVC_DRIVE_WEB ? global.GVC_DRIVE_WEB.active() : Promise.resolve(false); }
-  function roots() {
-    return web().then(function (on) {
-      return on ? global.GVC_DRIVE_WEB.root().then(function (r) { var o = {}; o[TOP] = r; return o; }) : localRoots();
-    });
-  }
-  function localRoots() {
-    return db().then(function (d) {
-      return new Promise(function (res, rej) {
-        var all = {}, c = d.transaction(STORE).objectStore(STORE).openCursor();
-        c.onsuccess = function () {
-          var cur = c.result;
-          if (!cur) return res(all);
-          all[cur.key] = cur.value; cur.continue();
-        };
-        c.onerror = function () { rej(c.error); };
-      });
-    });
-  }
+  // the old G: folder picker kept its folder in this browser's storage: clear it once
+  try { if (global.indexedDB) global.indexedDB.deleteDatabase('gvc-drive'); } catch (e) { /* nothing kept */ }
 
-  // the local folder picker (this computer's G: drive); Drive through Google needs none (state() says)
-  function supported() { return typeof global.showDirectoryPicker === 'function'; }
+  function web() { return WEB() ? WEB().active() : Promise.resolve(false); }
 
-  /* 'error' when the browser won't open its storage (blocked site data, a
-     private window): the page says so instead of waiting forever. */
+  /* 'not-connected' when this person isn't signed in with Google on a GVC email
+     (the shared team password, or signed out): Connect Drive is that sign-in */
   function state() {
-    return web().then(function (on) { return on ? global.GVC_DRIVE_WEB.state() : localState(); });
+    return web().then(function (on) { return on ? WEB().state() : 'not-connected'; }, function () { return 'error'; });
   }
-  function localState() {
-    if (typeof global.showDirectoryPicker !== 'function') return Promise.resolve('unsupported');
-    return localRoots().then(function (all) {
-      var hs = Object.keys(all).map(function (k) { return all[k]; });
-      if (!hs.length) return 'not-connected';
-      return Promise.all(hs.map(function (h) { return h.queryPermission({ mode: 'read' }); }))
-        .then(function (ps) {
-          return ps.every(function (p) { return p === 'granted'; }) ? 'connected' : 'needs-click';
-        });
-    }).catch(function () { return 'error'; });
-  }
-
   function connect() {
-    return web().then(function (on) { return on ? global.GVC_DRIVE_WEB.connect() : localConnect(); });
+    if (!WEB()) return Promise.reject(new Error('Drive isn\'t available on this page.'));
+    return WEB().connect();
   }
-  function localConnect() {
-    if (typeof global.showDirectoryPicker !== 'function') return Promise.reject(new Error('This browser can\'t open Drive folders. Use Chrome or Edge on the desktop.'));
-    return global.showDirectoryPicker({ id: 'gvc-drive', mode: 'read' }).then(function (h) {
-      return tx('readwrite', function (s) { s.put(h, h.name); });
-    }).then(function () { return roots(); }).then(Object.keys);
-  }
-
-  /* true only when every root is back; a refused one is false, not an error */
   function reconnect() {
-    return web().then(function (on) {
-      return on ? global.GVC_DRIVE_WEB.connect().then(function () { return true; }, function () { return false; }) : localReconnect();
-    });
-  }
-  function localReconnect() {
-    return localRoots().then(function (all) {
-      return Promise.all(Object.keys(all).map(function (k) {
-        return all[k].requestPermission({ mode: 'read' }).catch(function () { return 'denied'; });
-      }));
-    }).then(function (ps) { return ps.length > 0 && ps.every(function (p) { return p === 'granted'; }); });
+    return connect().then(function () { return true; }, function () { return false; });
   }
 
   /* 'GVC - New York/Building Information' → [rootHandle, ['GVC - New York', 'Building Information']] */
@@ -127,10 +59,9 @@
     var r = RULES.rel(path);
     if (r === null) return Promise.reject(new Error('That path isn\'t allowed.'));
     var parts = r ? r.split('/') : [];
-    return roots().then(function (all) {
-      if (all[TOP]) return [all[TOP], parts];
-      if (parts.length && all[parts[0]]) return [all[parts[0]], parts.slice(1)];
-      throw new Error('Drive isn\'t connected for ' + (parts[0] || 'that folder') + '.');
+    return web().then(function (on) {
+      if (!on) throw new Error('Drive isn\'t connected. Sign in with Google to read it.');
+      return WEB().root().then(function (root) { return [root, parts]; });
     });
   }
 
@@ -277,25 +208,22 @@
     return locate(jobFolder).then(function (x) { return walk(x[0], x[1]); }).then(function (d) { return listOf(d, sub, opts); });
   }
 
-  function relPathOf(handle) {
-    if (handle && typeof handle._path === 'string') return Promise.resolve(handle._path || null);
-    return roots().then(function (all) {
-      var names = Object.keys(all);
-      return names.reduce(function (p, k) {
-        return p.then(function (found) {
-          if (found) return found;
-          return all[k].resolve(handle).then(function (segs) {
-            if (!segs) return null;
-            return (k === TOP ? segs : [k].concat(segs)).join('/');
-          });
-        });
-      }, Promise.resolve(null));
+  /* a pasted Drive folder link → its path under Shared drives, or a plain reason it can't be used */
+  function pathOfLink(link) {
+    var m = String(link || '').match(/\/folders\/([A-Za-z0-9_-]{10,})/) || String(link || '').match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+    if (!m) return Promise.reject(new Error('That isn\'t a Google Drive folder link.'));
+    return web().then(function (on) {
+      if (!on) throw new Error('Drive isn\'t connected. Sign in with Google to read it.');
+      return WEB().pathOf(m[1]);
+    }).then(function (p) {
+      if (RULES.rel(p) === null) throw new Error('That folder isn\'t one the workspace may link.');
+      return p;
     });
   }
 
   global.GVC_DRIVE = {
-    supported: supported, state: state, connect: connect, reconnect: reconnect,
-    list: list, readJobFile: readJobFile, relPathOf: relPathOf, tree: tree, listJob: listJob,
+    state: state, connect: connect, reconnect: reconnect,
+    list: list, readJobFile: readJobFile, pathOfLink: pathOfLink, tree: tree, listJob: listJob,
     _withTimeout: withTimeout, _treeOf: treeOf, _listOf: listOf   // for tests
   };
 })(window);

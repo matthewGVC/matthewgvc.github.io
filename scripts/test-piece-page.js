@@ -83,7 +83,7 @@ const FAKE_DRIVE = `(function () {
     state: function () { return Promise.resolve(cfg.state || 'connected'); },
     connect: function () { log.connect = (log.connect || 0) + 1; cfg.state = 'connected'; return Promise.resolve(['GVC - New Jersey']); },
     reconnect: function () { log.reconnect = (log.reconnect || 0) + 1; cfg.state = 'connected'; return Promise.resolve(true); },
-    list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
+    list: function () { return Promise.resolve([]); },
     tree: function (folder) { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(/Pitches/.test(folder) ? trees.pitch : trees.listing))); },
     listJob: function () { return Promise.resolve([]); },
     readJobFile: function (folder, path) {
@@ -293,13 +293,13 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
   check('brochure: a greyed Make PDF asks nothing', [o.asks.length, o.helper.filter(x => x.path === '/piece').length], [0, 0]);
   await o.ctx.close();
 
-  // Drive never connected in this browser and no helper here: Connect Drive opens the picker
+  // Drive never connected in this browser and no helper here: Connect Drive (the Google sign-in)
   o = await open(browser, { path: BRO, helperDown: true, drive: { state: 'not-connected' } });
   check('brochure: never connected → Connect Drive', await text(o.page, '#pieceReconnect'), 'Connect Drive');
   await o.page.click('#pieceReconnect');
   await o.page.waitForTimeout(500);
   check('brochure: Make PDF ready after Connect, no reason', [await o.page.$eval('#btnPiecePdf', e => e.disabled), await o.page.$('#piecePdfWhy')], [false, null]);
-  check('brochure: Connect Drive asks for the folder, then the photos come in', [await o.page.evaluate(() => [window.__driveLog.connect || 0, window.__driveLog.reconnect || 0]), (await pstate(o.page)).images.length], [[1, 0], 3]);
+  check('brochure: Connect Drive signs in, then the photos come in', [await o.page.evaluate(() => [window.__driveLog.connect || 0, window.__driveLog.reconnect || 0]), (await pstate(o.page)).images.length], [[1, 0], 3]);
   await o.ctx.close();
   o = await open(browser, { path: BRO, helperDown: true, drive: { state: 'needs-click' } });
   await o.page.click('#pieceReconnect');

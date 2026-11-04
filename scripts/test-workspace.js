@@ -181,7 +181,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   }
   check('waiting on others', (await text(p, '#wait')).includes('Real headshot for an agent'), true);
   check('sync card ok', [await p.$eval('#deCard', e => e.className), (await text(p, '#deTitle'))], ['card health', 'DE sync ran']);
-  check('no Drive: the header pill says so, no banner (overhaul 2)', [await visible(p, '.banner'), await text(p, '#wsDrive')], [false, 'Read-only here']);
+  check('no Google Drive: the header pill offers Connect Drive, no banner (overhaul 2)', [await visible(p, '.banner'), await text(p, '#wsDrive')], [false, 'Connect Drive']);
   check('avatar initials', await text(p, '#wsMe'), 'MB');
   check('nav: Overview, Resell, New Dev, Errors, Tools', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Resell', 'New Dev', 'Errors', 'Tools']);
   check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
@@ -603,11 +603,11 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     state: async () => 'connected',
     list: async p => ({ 'GVC - New York/Building Information': [{ name: '20 Sample Ave', kind: 'directory' }, { name: '21 Other St', kind: 'directory' }],
       'GVC - New York/Building Information/20 Sample Ave': [{ name: '7B', kind: 'directory' }, { name: '8C', kind: 'directory' }] })[p] || [],
-    relPathOf: async () => null };`;
+    pathOfLink: async u => u.includes('folders/good') ? 'GVC - New York/Building Information/20 Sample Ave/8C' : Promise.reject(new Error('Not a Drive link')) };`;
   t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b' });
   jp = t.page;
   await jp.click('#link');
-  check('link: needs Drive here', (await text(jp, 'dialog.gvc-link')).includes('Connect Drive'), true);
+  check('link: needs Drive here', [(await text(jp, 'dialog.gvc-link')).includes('Connect Drive'), await jp.$eval('#lkUse', b => b.disabled)], [true, true]);
   await jp.click('#lkCancel');
   await jp.evaluate(FAKE + 'window.GVC_DRIVE = window.__fakeDrive;');
   await jp.click('#link');
@@ -619,6 +619,20 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('link: saved with the version check', [/id=eq\.p2/.test(patch), /version=eq\.1/.test(patch), /"folder_state":"linked"/.test(patch)], [true, true, true]);
   check('link: logged in the change log', t.writes.some(w => /^POST changes .*"field":"drive_folder".*"source":"Matt"/.test(w)), true);
   check('link: dialog closed', await visible(jp, 'dialog.gvc-link'), false);
+  await t.ctx.close();
+
+  t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b' });
+  await t.page.evaluate(FAKE + 'window.GVC_DRIVE = window.__fakeDrive;');
+  await t.page.click('#link');
+  await t.page.waitForSelector('dialog.gvc-link button[data-i]');
+  await t.page.fill('#lkUrl', 'https://example.com/not-drive');
+  await t.page.click('#lkUse');
+  await t.page.waitForTimeout(200);
+  check('link: a pasted link that isn\'t Drive says so', [await text(t.page, '#lkMsg'), t.writes.some(w => /^PATCH properties/.test(w))], ['Not a Drive link', false]);
+  await t.page.fill('#lkUrl', 'https://drive.google.com/drive/folders/good123');
+  await t.page.click('#lkUse');
+  await t.page.waitForTimeout(400);
+  check('link: a pasted Drive folder link saves its path', /"drive_folder":"GVC - New York\/Building Information\/20 Sample Ave\/8C"/.test(t.writes.find(w => /^PATCH properties/.test(w)) || ''), true);
   await t.ctx.close();
 
   t = await open(browser, { path: '/workspace/job/?listing=20-sample-ave-7b', conflict: true });
@@ -653,7 +667,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('link: one save for a double click', t.writes.filter(w => /^PATCH properties/.test(w)).length, 1);
   const half = await text(t.page, '#lkMsg');
   check('link: half-saved says Linked, with the reason', [/^Linked/.test(half), /change log/.test(half), /Someone changed/.test(half)], [true, true, false]);
-  check('link: half-saved offers Close, not Browse', [await text(t.page, '#lkCancel'), await t.page.$eval('#lkBrowse', b => b.disabled)], ['Close', true]);
+  check('link: half-saved offers Close, not another link', [await text(t.page, '#lkCancel'), await t.page.$eval('#lkUse', b => b.disabled)], ['Close', true]);
   await t.page.click('#lkCancel');
   await t.page.waitForTimeout(300);
   check('link: Close after a half save reloads the job', [await visible(t.page, 'dialog.gvc-link'), t.errors], [false, []]);

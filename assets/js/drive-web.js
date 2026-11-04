@@ -2,7 +2,8 @@
    DRIVE THROUGH GOOGLE — the shared drives read over the web, no G: drive
    needed (overhaul step 9). On for everyone who signs in with Google on their
    GVC email (Matt, 11-04; a tester-only trial before that). The shared team
-   password has no Google account, so it keeps the local folder (drive.js).
+   password has no Google account, so it has no Drive (drive.js says
+   'not-connected'; Connect Drive is the Google sign-in).
 
    drive.js asks this file for its root when it is on, and gets folder and
    file objects that act like the browser's own folder handles, so every
@@ -10,17 +11,17 @@
    applies unchanged. The permission is read-only (drive.readonly): the
    workspace can't change anything in Drive this way.
 
-     await GVC_DRIVE_WEB.active()   → signed in with a GVC Google account (and hasn't turned it off)
+     await GVC_DRIVE_WEB.active()   → signed in with a GVC Google account
      await GVC_DRIVE_WEB.state()    → 'connected' | 'needs-click' | 'error'
      await GVC_DRIVE_WEB.connect()  → signs in with Google again, asking for Drive (a page change)
      await GVC_DRIVE_WEB.root()     → the "Shared drives" folder object
+     await GVC_DRIVE_WEB.pathOf(id) → a folder's path under Shared drives ('GVC - New York/…')
 
    Drive comes with the Google sign-in (9b, Matt 11-03): the sign-in asks for
    read-only Drive, the drive-token server function keeps Google's lasting
    permission (0022, no page can read it) and hands this file a fresh pass
    each hour, so nobody clicks again. The pass lives in this tab's
-   sessionStorage for its hour, never in a log. localStorage 'gvc.drive.local' = '1' turns it
-   off on one computer (the local folder again).
+   sessionStorage for its hour, never in a log.
 
    Each file and folder object also carries its real Drive link (url), so the
    job page opens a file or folder on drive.google.com, never a downloaded copy.
@@ -32,7 +33,6 @@
   var TOKEN_KEY = 'gvc.drive.web.token', FOLDER = 'application/vnd.google-apps.folder';
 
   function active() {
-    try { if (global.localStorage.getItem('gvc.drive.local') === '1') return Promise.resolve(false); } catch (e) { /* no storage */ }
     var P = global.GVC_PROPS;
     if (!P || !P.signedIn()) return Promise.resolve(false);
     return P.whoAmI().then(function (w) {
@@ -154,5 +154,24 @@
     return Promise.resolve(top);
   }
 
-  global.GVC_DRIVE_WEB = { active: active, state: state, connect: connect, root: root };
+  /* a folder id (from a pasted Drive link) → 'Shared drive name/Folder/Sub', walking up its parents */
+  function pathOf(id) {
+    var F = { fields: 'id,name,parents,driveId,mimeType', supportsAllDrives: 'true' };
+    return get('/files/' + encodeURIComponent(id), F).then(function (f) {
+      if (f.mimeType !== FOLDER) throw new Error('That link is a file, not a folder.');
+      if (!f.driveId) throw new Error('That folder isn\'t on one of the team\'s shared drives.');
+      var names = [];
+      function up(x, n) {
+        if (x.id === f.driveId) return Promise.resolve();   // the shared drive itself
+        names.unshift(x.name);
+        var parent = (x.parents || [])[0];
+        if (!parent || parent === f.driveId || n > 15) return Promise.resolve();
+        return get('/files/' + encodeURIComponent(parent), F).then(function (q) { return up(q, n + 1); });
+      }
+      return up(f, 0).then(function () { return get('/drives/' + encodeURIComponent(f.driveId), { fields: 'name' }); })
+        .then(function (d) { return [d.name].concat(names).join('/'); });
+    }, function (e) { throw /refused|answered 404/.test(e.message) ? new Error('Google Drive couldn\'t open that link. Check it\'s a folder you can see.') : e; });
+  }
+
+  global.GVC_DRIVE_WEB = { active: active, state: state, connect: connect, root: root, pathOf: pathOf };
 })(window);

@@ -121,7 +121,7 @@ const FAKE_DRIVE = `(function () {
     supported: function () { return true; },
     state: function () { return Promise.resolve(cfg.state || 'connected'); },
     connect: function () { return Promise.resolve([]); }, reconnect: function () { return Promise.resolve(true); },
-    list: function () { return Promise.resolve([]); }, relPathOf: function () { return Promise.resolve(null); },
+    list: function () { return Promise.resolve([]); },
     tree: function () { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(tree))); },
     listJob: function (folder, sub) {
       log.list.push(sub);

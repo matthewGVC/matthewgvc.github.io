@@ -1,6 +1,6 @@
 /* ============================================================
    Drive through Google (assets/js/drive-web.js, overhaul step 9): the
-   testers read the shared drives over the web, and drive.js's rules hold.
+   team reads the shared drives over the web, and drive.js's rules hold.
      BASE=http://localhost:8080 node scripts/test-drive-web.js
    Google is faked: nothing leaves this computer.
    ============================================================ */
@@ -21,6 +21,11 @@ const FILES = {   // folder id → its children
   f3: [{ id: 'p1', name: 'a.jpg', mimeType: 'image/jpeg', size: '3', modifiedTime: '2026-11-01T10:00:00.000Z' }],
   f4: [{ id: 'c1', name: 'contract.pdf', mimeType: 'application/pdf', size: '5' }]
 };
+const META = {   // files.get answers, for a pasted folder link (ids as long as Google's)
+  f2linkedfold: { id: 'f2linkedfold', name: '1 Test St', mimeType: F, parents: ['f1'], driveId: 'd1' },
+  f1: { id: 'f1', name: 'ACTIVE LISTINGS & DEALS', mimeType: F, parents: ['d1'], driveId: 'd1' },
+  f5abcdefghij: { id: 'f5abcdefghij', name: 'brochure.pdf', mimeType: 'application/pdf', parents: ['f1'], driveId: 'd1' }
+};
 
 // server: what the drive-token function answers for a fresh pass (409: no permission kept)
 async function page(browser, who, token, server) {
@@ -31,6 +36,10 @@ async function page(browser, who, token, server) {
     const u = new URL(r.request().url()); asked.push(u.pathname + (u.searchParams.get('q') ? ' ' + u.searchParams.get('q') : '') + (u.searchParams.get('alt') ? ' media' : ''));
     if (r.request().headers().authorization !== 'Bearer tok') return r.fulfill({ status: 401, body: '{}' });
     if (u.pathname.endsWith('/drives')) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ drives: [{ id: 'd1', name: 'GVC - New York' }] }) });
+    const one = u.pathname.match(/\/drives\/([^/]+)$/);
+    if (one) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ name: 'GVC - New York' }) });
+    const meta = u.pathname.match(/\/files\/([^/]+)$/);
+    if (meta && !u.searchParams.get('alt')) return r.fulfill(META[meta[1]] ? { status: 200, contentType: 'application/json', body: JSON.stringify(META[meta[1]]) } : { status: 404, body: '{}' });
     const media = u.pathname.match(/\/files\/([^/]+)$/);
     if (media) return r.fulfill({ status: 200, contentType: 'image/jpeg', body: 'abc' });
     const parent = (u.searchParams.get('q') || '').match(/'([^']+)' in parents/)[1];
@@ -93,9 +102,16 @@ async function page(browser, who, token, server) {
   t = await page(browser, { email: 'someone@gmail.com', role: null }, 'tok');
   check('a Google account outside GVC: the local folder', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
   await t.ctx.close();
+  t = await page(browser, { email: null, name: 'Team (shared)', role: 'shared' }, 'tok');
+  check('no Google account: Connect Drive, and nothing is read', [await t.p.evaluate(() => GVC_DRIVE.state()),
+    await t.p.evaluate(() => GVC_DRIVE.list('GVC - New York').then(() => 'read', e => e.message))], ['not-connected', 'Drive isn\'t connected. Sign in with Google to read it.']);
+  await t.ctx.close();
+
+  // a pasted folder link → its path, walking up to the shared drive
   t = await page(browser, MATT, 'tok');
-  await t.p.evaluate(() => localStorage.setItem('gvc.drive.local', '1'));
-  check('anyone can turn it off on one computer', await t.p.evaluate(() => GVC_DRIVE_WEB.active()), false);
+  check('a pasted Drive folder link → its path', await t.p.evaluate(() => GVC_DRIVE.pathOfLink('https://drive.google.com/drive/folders/f2linkedfold?usp=sharing')), 'GVC - New York/ACTIVE LISTINGS & DEALS/1 Test St');
+  check('a link that isn\'t Drive is refused before Google is asked', await t.p.evaluate(() => GVC_DRIVE.pathOfLink('https://example.com/x').then(() => 'ok', e => e.message)), 'That isn\'t a Google Drive folder link.');
+  check('a file link is not a folder', await t.p.evaluate(() => GVC_DRIVE.pathOfLink('https://drive.google.com/drive/folders/f5abcdefghij').then(() => 'ok', e => e.message)), 'That link is a file, not a folder.');
   await t.ctx.close();
 
   await browser.close();

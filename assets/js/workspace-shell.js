@@ -90,7 +90,7 @@
 
   var DRIVE_LABEL = {
     connected: ['Drive connected', ''], 'needs-click': ['Reconnect Drive', 'warn'], 'not-connected': ['Connect Drive', 'warn'],
-    unsupported: ['Read-only here', 'off'], error: ['Drive unavailable', 'warn']
+    error: ['Drive unavailable', 'warn']
   };
 
   function mount(opts) {
@@ -149,13 +149,13 @@
       }
       if (opts.onDrive) opts.onDrive(s);
     }
-    function refreshDrive() { return (D ? D.state() : Promise.resolve('unsupported')).then(function (s) { paintDrive(s); return s; }); }
+    function refreshDrive() { return (D ? D.state() : Promise.resolve('error')).then(function (s) { paintDrive(s); return s; }); }
     function driveClick() {
       if (!D) return;
       D.state().then(function (s) {
         if (s === 'needs-click') return D.reconnect();
         if (s === 'not-connected' || s === 'error') return D.connect();
-      }).catch(function () { /* picker closed */ }).then(refreshDrive);
+      }).catch(function () { /* sign-in not started */ }).then(refreshDrive);
     }
     pill.addEventListener('click', driveClick);
     // pages that never need Drive (Match, Status): no pill, no read-only banner
@@ -165,9 +165,10 @@
 
     /* ---------- sync now ---------- */
     var syncBtn = doc.getElementById('wsSync'), syncText = 'DE sync status loading', unpaired = false;
-    // no helper can run where Drive can't (phones, Safari): don't even ask
+    // the helper only runs on a desktop PC; a phone or Safari (no folder API) doesn't even ask, so no
+    // "local network" prompt there
     function checkHelper() {
-      return (D && D.supported() ? helper('GET', '/health') : Promise.reject(new Error('no helper here'))).then(function (h) {
+      return (typeof global.showDirectoryPicker === 'function' ? helper('GET', '/health') : Promise.reject(new Error('no helper here'))).then(function (h) {
         syncBtn.disabled = false;
         unpaired = !h.paired;
         syncBtn.title = unpaired ? 'Pair this browser with the helper: click, then type the code that node helper/pair.js prints on this PC.'

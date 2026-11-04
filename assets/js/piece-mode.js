@@ -156,7 +156,7 @@
   function pickDrive() {
     if (HB) { M.source = 'helper'; return Promise.resolve({ api: hbDrive(), state: 'connected' }); }
     var D = global.GVC_DRIVE, broke = null;
-    var mine = D ? D.state().then(null, function (e) { broke = e; return 'error'; }) : Promise.resolve('unsupported');
+    var mine = D ? D.state().then(null, function (e) { broke = e; return 'error'; }) : Promise.resolve('not-connected');
     return mine.then(function (st) {
       if (st === 'connected') { M.source = 'drive'; return { api: D, state: st }; }
       return helperHere().then(function (up) {
@@ -434,10 +434,10 @@
     var b = document.getElementById(ID.reconnect);
     if (b) b.onclick = function () {
       var D = global.GVC_DRIVE;
-      // the browser has never held Drive here: the folder picker; it held it once: one click back
+      // both are a Google sign-in that asks for Drive (the page comes back here)
       D.state().then(function (st) { return st === 'needs-click' ? D.reconnect() : D.connect(); })
         .then(function () { return readDrive(); }).then(drawAll, function (e) {
-          setPhotoHtml(e && e.name === 'AbortError' ? 'No folder was picked. Press Connect Drive to try again.' : esc((e && e.message) || 'Drive wasn\'t connected.'));
+          setPhotoHtml(esc((e && e.message) || 'Drive wasn\'t connected.'));
         });
     };
   }
@@ -462,7 +462,6 @@
     return pickDrive().then(function (pick) {
       var st = pick.state, D = pick.api;
       M.drive = st; M.api = D;
-      if (st === 'unsupported') { setPhotoHtml(esc('This browser can\'t read Drive, and the helper isn\'t on this computer. The helper still makes the PDF: press Make PDF.')); return; }
       if (st !== 'connected') {
         setPhotoHtml(esc('Drive isn\'t connected in this browser, and the helper isn\'t on this computer. The helper still makes the PDF.') +
           ' <button type="button" class="btn sm ghost" id="' + ID.reconnect + '">' + (st === 'needs-click' ? 'Reconnect Drive' : 'Connect Drive') + '</button>');

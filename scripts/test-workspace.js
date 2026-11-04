@@ -894,6 +894,13 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     check('tour: Show me around is in the account menu', await t.page.$$eval('#wsMenu button', b => b.map(x => x.textContent)), ['Show me around', 'Sign out']);
     await t.page.click('#wsMenu button');
     check('tour: …and starts it again', !!(await t.page.$('.walk')), true);
+    // offering it counts as seen at once: leaving mid-tour (open a job, reload) must not bring it back each visit
+    await t.page.keyboard.press('Escape');
+    await t.page.evaluate(() => localStorage.removeItem('gvc.walk.overview'));
+    check('tour: offered on a first visit', await t.page.evaluate(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); return GVC_WALK.offer('overview', { role: 'team' }); }), true);
+    check('tour: seen as soon as it shows, before Skip or Done', await t.page.evaluate(() => localStorage.getItem('gvc.walk.overview')), String(await t.page.evaluate(() => GVC_WALK.VERSION)));
+    await t.page.reload(); await t.page.waitForFunction(() => window.GVC_WALK);
+    check('tour: not again after leaving mid-tour', await t.page.evaluate(() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); return GVC_WALK.offer('overview', { role: 'team' }); }), false);
     await t.ctx.close();
     t = await open(browser, { members: [{ name: 'Karl Brisard', initials: 'KB', role: 'ops', market: 'FL' }] });
     check('ops home: their market, the whole team (not only theirs)', [await t.page.$eval('#mkt [aria-pressed="true"]', e => e.dataset.v), await t.page.$eval('#mine', e => e.checked)], ['FL', false]);

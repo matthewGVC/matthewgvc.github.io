@@ -47,13 +47,13 @@
     /* New York */
     {market:'NYC', id:'katie-cook',        name:'Katie Cook',        title:'Licensed Real Estate Salesperson',      phone:'516.319.9732', mobile:'',    email:'katie.cook@elliman.com', instagram:'', office:'', gvcEmail:'katie@gvcrealestateteam.com'},
     {market:'NYC', id:'nicole-sobol',      name:'Nicole Sobol',      title:'Licensed Real Estate Salesperson',      phone:'201.240.7544', mobile:'',    email:'nicole.sobol@elliman.com', instagram:'', office:'212.891.7000', gvcEmail:'nicole.sobol@gvcrealestateteam.com'},
-    {market:'NYC', id:'gary-kasparov',     name:'Gary Kasparov',     title:'Licensed Real Estate Salesperson',      phone:'718.980.8777', mobile:'',    email:'gary.kasparov@elliman.com', instagram:'', office:'', gvcEmail:''},
+    {market:'NYC', id:'gary-kasparov',     name:'Gary Kasparov',     title:'Licensed Real Estate Salesperson',      phone:'718.980.8777', mobile:'',    email:'gary.kasparov@elliman.com', instagram:'', office:'', gvcEmail:'gary@gvcrealestateteam.com'},
     /* Elyse's number is from the team's 2024 pitch template. */
     {market:'NYC', id:'elyse-gutman',      name:'Elyse B. Gutman',   title:'Licensed Associate Real Estate Broker', phone:'917.796.3144', mobile:'',    email:'elyse.gutman@elliman.com', instagram:'', office:'212.891.7000', gvcEmail:''},
     {market:'NYC', id:'ayuen-gai',         name:'Ayuen Gai',         title:'Licensed Real Estate Salesperson',      phone:'315.679.0088', mobile:'',    email:'ayuen.gai@elliman.com', instagram:'', office:'212.891.7000', gvcEmail:'ayuen@gvcrealestateteam.com'},
 
     /* New Jersey */
-    {market:'NJ', id:'marli-silver',      name:'Marli Silver',      title:'Licensed Real Estate Salesperson',      phone:'732.403.1174', mobile:'', email:'marli.silver@elliman.com', instagram:'@marlisilverrealestate', office:'732.387.3807', gvcEmail:''},
+    {market:'NJ', id:'marli-silver',      name:'Marli Silver',      title:'Licensed Real Estate Salesperson',      phone:'732.403.1174', mobile:'', email:'marli.silver@elliman.com', instagram:'@marlisilverrealestate', office:'732.387.3807', gvcEmail:'marli@gvcrealestateteam.com'},
     {market:'NJ', id:'george-putykewycz', name:'George Putykewycz', title:'Licensed Real Estate Salesperson',      phone:'732.546.7535', mobile:'',    email:'george.putykewycz@elliman.com', instagram:'', office:'732.387.3807', gvcEmail:'george@gvcrealestateteam.com'},
     {market:'NJ', id:'james-huber',       name:'James Huber',       title:'Licensed Real Estate Salesperson',      phone:'732.962.0683', mobile:'',    email:'james.huber@elliman.com', instagram:'', office:'732.387.3807', gvcEmail:'james@gvcrealestateteam.com'},
 

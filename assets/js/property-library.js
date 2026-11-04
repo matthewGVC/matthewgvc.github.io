@@ -794,7 +794,29 @@
     });
   }
 
+  /* Drive and Docs links open in the signed-in person's own Google account (Matt, 11-04: they opened as
+     info@, the browser's first Google account, which is where Google sends a plain link). Google reads
+     ?authuser=<email>. asMe(url) adds it for a teammate signed in on their GVC email (not the shared
+     account); a link that is copied or stored stays plain, so it works for whoever it is sent to. Every
+     <a> to drive.google.com or docs.google.com on a page gets it at the click; code that opens a tab
+     itself calls GVC_PROPS.asMe. Uses the answer whoAmI() already keeps; before that, the link is left. */
+  var GOOGLE_FILE = /^https:\/\/(drive|docs)\.google\.com\//i;
+  function asMe(url) {
+    var who = me;
+    if (!url || !GOOGLE_FILE.test(url) || !who || who.role === 'shared' || !/@gvcrealestateteam\.com$/i.test(who.email || '')) return url;
+    try { var u = new URL(url); u.searchParams.set('authuser', who.email); return u.toString(); } catch (e) { return url; }
+  }
+  if (global.document) {
+    var asMeOnClick = function (e) {
+      var a = e.target && e.target.closest && e.target.closest('a[href]');
+      if (a && GOOGLE_FILE.test(a.href)) { var to = asMe(a.href); if (to !== a.href) a.href = to; }
+    };
+    global.document.addEventListener('click', asMeOnClick, true);
+    global.document.addEventListener('auxclick', asMeOnClick, true);   // a middle click opens a tab too
+  }
+
   global.GVC_PROPS = {
+    asMe: asMe,
     TOOLS: TOOLS, STATUSES: STATUSES,
     signIn: signIn, signOut: signOut, signedIn: signedIn, whoAmI: whoAmI, askSignIn: askSignIn, googleSignIn: googleSignIn, takeGoogleReturn: takeGoogleReturn,
     drivePass: function () { return fresh().then(function (s) { return driveToken({ action: 'mint' }, s.access_token); }); },

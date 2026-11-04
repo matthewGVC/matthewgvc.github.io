@@ -2,8 +2,8 @@
    WALKTHROUGH — the first-day tour (overhaul step 8).
 
    Numbered steps with a pointer to the thing each one is about. It starts by
-   itself the first time someone opens a page (once per page, per VERSION),
-   and "Show me around" in the account menu brings it back.
+   itself the first time someone opens a page (once per page, per VERSION; it
+   counts as seen as soon as it shows, however it is left), and "Show me around" in the account menu brings it back.
 
      GVC_WALK.STEPS[page]        → [{ id, target, title, text, roles? }]
      GVC_WALK.start(page, who)   → shows the tour now; who = whoAmI() (roles filter steps)
@@ -114,10 +114,14 @@
     return true;
   }
 
-  // the first visit only, and never under a test browser (the page tests click through the page itself)
+  // the first visit only, and never under a test browser (the page tests click through the page itself).
+  // It counts as seen the moment it shows: someone who leaves mid-tour (opens a job, reloads, goes back)
+  // must not get it again on every visit. "Show me around" still brings it back.
   function offer(page, who) {
     if (seen(page) || (global.navigator && global.navigator.webdriver) || !who || !who.role) return false;
-    return start(page, who);
+    var started = start(page, who);
+    if (started) mark(page);
+    return started;
   }
 
   global.GVC_WALK = { VERSION: VERSION, STEPS: STEPS, start: start, offer: offer, missing: missing,

@@ -210,7 +210,7 @@ const noData = x => !/data:image/.test(JSON.stringify(x));
     ['100 Example St, Residence 4A', 'Testville', 'NJ', '07000', '4600000', '3', '1800', 'A made-up home.', ['john-gasdaska']]);
   check('brochure: features from the job\'s lists', s.features, 'South exposure\nWood floors\nDoorman');
   check('brochure: listing link from DE', s.listingUrl, 'https://www.elliman.com/new-jersey/100-example-st/9001');
-  check('brochure: price badge and DE\'s warning', [await text(o.page, '[data-jf="price"] .chip'), /DE says \$4,500,000/.test(await text(o.page, '[data-jf="price"]'))], ['Matt', true]);
+  check('brochure: price badge and DE\'s warning', [await text(o.page, '[data-jf="price"] .chip'), /DE says \$4,500,000/.test(await text(o.page, '[data-jf="price"]'))], ['Team', true]);
   check('brochure: photos from Drive, hero first, paperwork photo never read', [s.images.length, await o.page.evaluate(() => window.__driveLog.read.filter(p => /contract/i.test(p)).length)], [3, 0]);
   check('brochure: every level of the newest floorplan, branded', [s.floorplans.length, s.floorplans.map(f => f.name)], [2, ['Level 1 v2.jpg', 'Level 2 v2.jpg']]);
   check('brochure: a brochure file found in the folder', await text(o.page, '#pieceState'), 'Made before the workspace kept track');

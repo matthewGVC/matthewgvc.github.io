@@ -74,7 +74,10 @@ once) and the site served on :8080. Every check exits non-zero on a failure.
 ## Showsheet tool
 
 `tools/showsheet/` is a listing-showsheet generator (drop a `.docx`, photo, and
-floorplan → print-ready A5 or US Letter). The page is `index.html`; what it reads
+floorplan → print-ready A5 or US Letter). The page is `index.html` (markup) with
+`showsheet.css` and eight scripts loaded in order: `state.js`, `sheet.js` (draws both sides),
+`fit.js` (autofit and the size controls), `form.js`, `photos.js`, `panel.js`, `print.js` and
+`piece.js` (library, job mode, `__render`, test hooks); what it reads
 out of a listing — the Word document and the money fields — is `listing.js`, kept
 apart so `scripts/test-listing.js` can run it without a browser. Its editor panel
 uses the builders' shared `assets/css/builder.css`; photo and floorplan handling is

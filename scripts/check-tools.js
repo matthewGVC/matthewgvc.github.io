@@ -78,6 +78,12 @@ ${slug}  (archived, skipped)`); continue; }
   const scripts = [...body.matchAll(/<script([^>]*)>/g)].map(m => m[1]);
   const srcs = scripts.map(a => (a.match(/src="([^"]+)"/) || [, ''])[1]);
   const idx = name => srcs.findIndex(s => s.replace(/\?.*$/, '').endsWith('/' + name));
+  /* A tool's own files beside its page (tools/<slug>/x.js, x.css) count as
+     the page: a split tool is checked the same as one written inline. */
+  const own = h => !!h && !/^(https?:|\.\.\/|\/)/.test(h);
+  const ownFile = h => { const f = `tools/${slug}/${h.replace(/\?.*$/, '')}`; return fs.existsSync(path.join(ROOT, f)) ? read(f) : ''; };
+  const ownJs = srcs.filter(own).map(ownFile).join('\n');
+  const ownCss = [...head.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m => m[1]).filter(own).map(ownFile).join('\n');
   if (idx('chrome.js') < 0) fail.push('assets/js/chrome.js not loaded (masthead, footer)');
   if (!/<h1[\s>]/.test(html)) fail.push('no <h1> (builders use <h1 class="visually-hidden">)');
   if ((html.match(/<main[\s>]/g) || []).length > 1) warn.push('more than one <main>: the builder #stage should be a <div>');
@@ -96,7 +102,7 @@ ${slug}  (archived, skipped)`); continue; }
   const panel = has(/id="editor"/) ? 'builder' : has(/class="sidebar"/) ? 'map' : has(/class="controls"/) ? 'watermark' : null;
   if (panel) {
     const pc = idx('panel-collapse.js');
-    const lastInline = scripts.map((a, i) => (/src=/.test(a) ? -1 : i)).reduce((a, b) => Math.max(a, b), -1);
+    const lastInline = scripts.map((a, i) => (/src=/.test(a) && !own(srcs[i]) ? -1 : i)).reduce((a, b) => Math.max(a, b), -1);
     if (pc < 0) fail.push('side panel without assets/js/panel-collapse.js');
     else if (pc < lastInline) fail.push('panel-collapse.js must load after the tool script');
     if (!local.includes('panel-collapse.css')) fail.push('side panel without assets/css/panel-collapse.css');
@@ -104,14 +110,14 @@ ${slug}  (archived, skipped)`); continue; }
     if (panel !== 'watermark' && !/data-foot="none"/.test(bodyTag)) (panel === 'builder' ? fail : warn).push('full-height panel tool without <body data-foot="none"> (footer lands under the app)');
   }
   /* controls in markup, in template strings, or built with createElement */
-  const controls = /<(input|select|textarea)\b|createElement\(\s*['"](input|select|textarea)['"]/.test(body);
+  const controls = /<(input|select|textarea)\b|createElement\(\s*['"](input|select|textarea)['"]/.test(body + ownJs);
   if (controls && idx('field-labels.js') < 0)
     fail.push('form controls without assets/js/field-labels.js (captions not linked to controls)');
   if (/id="editor"/.test(html) && controls && idx('unsaved.js') < 0)
     warn.push('builder with typed fields but no unsaved.js (no "leave page?" warning)');
 
-  /* ---- colour: tokens, not hex, in the tool's own <style> ---- */
-  const style = (head.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join('')
+  /* ---- colour: tokens, not hex, in the tool's own <style> and stylesheet ---- */
+  const style = ((head.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join('') + ownCss)
     .replace(/<\/?style[^>]*>/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
   const hex = [...new Set(style.match(/#[0-9a-fA-F]{3,8}\b/g) || [])].filter(h => !/^#f{3}(f{3})?$/i.test(h)); /* white is fine */
   if (hex.length) warn.push(`hex colours in <style> (use tokens): ${hex.slice(0, 6).join(' ')}${hex.length > 6 ? ' …' : ''}`);

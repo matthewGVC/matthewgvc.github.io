@@ -11,7 +11,8 @@
          in-memory rows, already updated) and writes `match` where it changed,
          with `rows`' stageless ones as the library (M20) and the de_listings
          rows (M19: `deListings` when the run has them, else read once here),
-         the developments (M29: `devs`, else read once here),
+         the developments (M29: `devs`, else read once here), each given house_place_id: the
+         place of its house_listing_id row, so a repeat listing on the house's place is no M29,
          version-checked: a row someone changed meanwhile is skipped, and one
          row failing (a network blip) is noted while the rest are stored.
          skip: a Set of row ids that already conflicted in this run (left alone).
@@ -59,7 +60,8 @@ async function storeMatches(o) {
   const initials = o.initials || require('./roster.js').rosterInitials();
   const people = o.people || await latestPeople(client);
   const deListings = o.deListings || await deRows(client);
-  const devs = o.devs || await devRows(client);
+  const placeOf = new Map(rows.map(r => [r.id, r.place_id || null]));
+  const devs = (o.devs || await devRows(client)).map(d => Object.assign({}, d, { house_place_id: (d.house_listing_id && placeOf.get(d.house_listing_id)) || null }));
   const library = rows.filter(r => !r.stage);
   const out = { stored: 0, errors: [] };
   for (const p of rows) {

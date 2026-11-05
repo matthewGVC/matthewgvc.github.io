@@ -12,7 +12,10 @@
    names a job when its street matches the job's address (the tag itself, the tag less
    its last word, or less a trailing "6th Floor"); with more than one job on that street
    the tag must also carry the job's unit ("PHC", "#204", "18/19"). Only jobs with a
-   stage are looked at. A tag naming no job but a development (its name as whole words
+   stage are looked at, never our own purchase (side 'buy'). Several deals on one place
+   (a sale and a rental, a repeat listing) are one job here: the post goes to the
+   place's lead deal (GVC_PLACES.lead: a live one, a sale before a rental, the newest).
+   A tag naming no job but a development (its name as whole words
    in the tag) goes to the development; one naming neither is cached unlinked.
 
    Every post is cached in asana_tasks as kind 'post' (read-only, D77): name, section,
@@ -24,6 +27,7 @@
 
 const allow = require('./allow.js');
 const A = require('../../assets/js/address-aliases.js');
+const GP = require('../../assets/js/places.js');
 
 const ROUTINES = /tasks?\s*&\s*routines/i;
 
@@ -65,10 +69,17 @@ function jobFor(tag, props) {
   const forms = streetForms(tag);
   const unitOf = p => (p.core || {}).unit || (p.units || [])[0] || '';
   const fits = (p, f) => sameStreet((p.core || {}).address || p.label, f.street) && (!f.unit || !unitOf(p) || unitsAgree(f.unit, unitOf(p)));
-  const here = (props || []).filter(p => p.stage && forms.some(f => fits(p, f)));
-  if (here.length === 1) return here[0];
+  const here = (props || []).filter(p => p.stage && p.side !== 'buy' && forms.some(f => fits(p, f)));
   const byUnit = here.filter(p => forms.some(f => f.unit && fits(p, f) && unitOf(p)));
-  return byUnit.length === 1 ? byUnit[0] : null;
+  return onePlace(here) || onePlace(byUnit);
+}
+
+/* one deal, or several on one place: that place's lead deal */
+function onePlace(deals) {
+  if (deals.length === 1) return deals[0];
+  const place = deals.length && deals[0].place_id;
+  if (!place || !deals.every(p => p.place_id === place)) return null;
+  return GP.lead(deals.map(p => ({ row: p, kind: p.kind, stage: p.stage, createdAt: p.created_at }))).row;
 }
 
 const words = s => ' ' + String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
@@ -80,7 +91,7 @@ function devFor(tag, devs) {
 async function applyPosts(o) {
   const { client, posts } = o;
   const now = (o.now || new Date()).toISOString();
-  const props = await client.select('properties', {}, 'id,label,stage,units,core');
+  const props = await client.select('properties', {}, 'id,label,stage,units,core,side,kind,place_id,created_at');
   const devs = await client.select('dev_projects', {}, 'id,label');
   const cached = await client.select('asana_tasks', { kind: 'post' }, 'gid,project_gid');
   const unlinked = new Set();

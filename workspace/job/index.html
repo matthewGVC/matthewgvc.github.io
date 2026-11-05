@@ -321,7 +321,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         // the pieces asked of the helper (0017); unreadable (0017 not run yet) means none
         kind === 'listing' || kind === 'pitch' ? requestsOf(row) : Promise.resolve([]),
         // a development's own house listings: where it is and who sells it (overhaul 7a)
-        kind === 'dev' ? rest('/properties?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=slug,label,stage,core').catch(function () { return []; }) : Promise.resolve([]),
+        kind === 'dev' ? rest('/properties?dev_project_id=eq.' + encodeURIComponent(row.id) + '&select=slug,label,stage,side,core').catch(function () { return []; }) : Promise.resolve([]),
         // a development's units as Elliman lists them, at its street (overhaul 7b)
         kind === 'dev' && GVC_DEV_ADDRESSES.of(row.slug).length ? rest('/de_listings?gvc_listed=is.true&ignored=is.false&select=de_listing_id,raw').catch(function () { return []; }) : Promise.resolve([]),
         // a development that is one house (D141): the development's own log, posts and budget too

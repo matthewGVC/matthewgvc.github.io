@@ -88,7 +88,14 @@ exit ends it). Run it from the main repo folder.
   (`scripts/test-asana-write.js` checks it).
 - Asana reads: `node helper/asana-sync.js --plan` writes the first link plan,
   `exports/asana-link-plan-<date>.md`, for Matt to tick; `--apply-plan <that file>` makes the jobs;
-  `--write` is one sync after that. Needs `asanaToken` in the helper's config.
+  `--write` is one sync after that. Needs `asanaToken` in the helper's config. Each sync puts every deal it
+  makes on its place (`place-store.js`), and fills the place of a linked row that has none. Every
+  List-Side Lead appears as a deal at the Pitch stage (a lost one, Graveyard, archives; back in Asana,
+  it comes back); a Lead with no street number is listed as not linked on every run instead. A new
+  listing at an address whose deals are all Sold, Rented or Off market is a new deal on the same place,
+  with its folder and its blank place facts; a sale and a rental of one unit share one place. Our own
+  purchases (Buy Side at a development's place or beside a TJ New Dev listing) are deals with
+  `side 'buy'`; a client's buy side stays out.
 - Places (migration 0025): `place-store.js` finds the place a deal is on or makes it (the sync and the
   backfill share it). `node helper/places-backfill.js` writes the one-time plan,
   `exports/places-backfill-<date>.md` and `.json`, and changes nothing; `--apply <that .json>` applies it and

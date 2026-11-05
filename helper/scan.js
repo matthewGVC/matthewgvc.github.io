@@ -19,6 +19,9 @@
    each kit piece with their links, and the folder-health notes. Never a name
    from paperwork or Docs.
 
+   No folder is looked for (by the matching or the AI pass) on a Pitch deal (a Lead needs
+   none yet), our own purchase (side 'buy'), or a development unit with no Asana task
+   (Elliman-only: units have no folders of their own).
    A job at Prep or later with no linked folder: the scan looks for its
    folder with the Link folder suggestions' own matching (folder-link.js
    suggest, folder names only) and keeps the likely one as scan.candidate
@@ -47,6 +50,8 @@ const ADDR = require('../assets/js/address-aliases.js');
 const HEALTH = require('../assets/js/folder-health.js');
 const { driveLink } = require('./drive-link.js');
 const PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market'];   // match-check.js's, M18 (D88)
+// a deal that has no folder of its own to find: a Pitch deal, our own purchase, an Elliman-only unit
+const noFolder = r => r.stage === 'Pitch' || r.side === 'buy' || (!!r.dev_project_id && !r.asana_gid);
 const NYC_ROOT = 'GVC - New York/Building Information';
 const AI = require('./folder-ai.js');
 const AI_RETRY_DAYS = 7;
@@ -264,7 +269,7 @@ async function scanAll(o) {
     if (table !== 'properties') continue;
     // M18: a job with no folder linked, and the folder its address points to
     const D = driveLister(o.driveRoot);
-    for (const r of rows.filter(x => PREP_ON.indexOf(x.stage) !== -1 && (!x.drive_folder || x.folder_state === 'unlinked'))) {
+    for (const r of rows.filter(x => PREP_ON.indexOf(x.stage) !== -1 && !noFolder(x) && (!x.drive_folder || x.folder_state === 'unlinked'))) {
       let cand = null;
       try { cand = await candidateFor(D, r); } catch (e) { cand = null; }
       if (cand) out.candidates++;
@@ -281,7 +286,7 @@ async function scanAll(o) {
     // the AI pass: staged jobs the matching couldn't place (D123); read again, the loop above moved versions
     const fresh = await client.select(table);
     const taken = fresh.filter(x => x.drive_folder && x.folder_state !== 'unlinked').map(x => x.drive_folder);
-    const unplaced = fresh.filter(x => x.stage && x.stage !== 'Archived' && (!x.drive_folder || x.folder_state === 'unlinked') &&
+    const unplaced = fresh.filter(x => x.stage && x.stage !== 'Archived' && !noFolder(x) && (!x.drive_folder || x.folder_state === 'unlinked') &&
       !(x.scan && x.scan.candidate) && !(x.scan && Date.parse(x.scan.candidateAiAt) > now.getTime() - AI_RETRY_DAYS * 864e5));
     for (const r of unplaced) {
       const core = r.core || {};

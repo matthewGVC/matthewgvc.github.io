@@ -14,6 +14,7 @@
    Asana task names carry more than the street (D62): NYC "555 W59 - PHC"
    (a unit after " - "), NJ "619 Bradley Ave, Brielle - 1st" (a town after
    the comma, then a note), "207 Example Ct - Brick" (a town after " - "),
+   FL "200 E Boca Raton Rd - B" (a single capital letter is a unit),
    the 2025 long form "250 East 99th Street, Apt. 504", and two houses on
    one lot as "(House 1)" / "(House 2)".
      same(a, b)        one address: street, house number and unit must agree
@@ -111,10 +112,10 @@
     return have.indexOf(want + ' ') === 0;
   }
 
-  /* a unit after " - " has a digit in it or is a named one (PHC, TH, Garden);
-     anything else there is a town ("207 Example Ct - Brick") */
+  /* a unit after " - " has a digit in it, is one capital letter (Le Reve's B, C, E) or is a
+     named one (PHC, TH, Garden); anything else there is a town ("207 Example Ct - Brick") */
   function unitLike(t) {
-    return /\d/.test(t) || /^(PH[A-Z0-9]*|PENTHOUSE|TH|GARDEN)$/i.test(t);
+    return /\d/.test(t) || /^[A-Z]$/.test(t) || /^(PH[A-Z0-9]*|PENTHOUSE|TH|GARDEN)$/i.test(t);
   }
 
   function splitName(name) {

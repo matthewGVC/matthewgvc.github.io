@@ -134,6 +134,15 @@ const notGvc = async () => ({ gvcListed: false, line: 'Listing Courtesy of EXAMP
   check('matched by address: DE id, DE stage, Asana stage kept', [db.T.properties[0].de_listing_id, db.T.properties[0].de_stage, db.T.properties[0].stage, db.T.properties[0].stage_source],
     ['900002', 'Live', 'Live', 'Asana']);
 
+  /* ---------- places and deals: which deal at the address Elliman ties to ---------- */
+  const at = (id, extra) => Object.assign({ id, slug: id, kind: 'sale', core: { address: '100 Example St', unit: '4A' } }, extra);
+  const tied = async list => { const d = fakeDb({ properties: list }); await applyRun({ client: d, report: report([{ id: '900002', folder: null }]), now: NOW, courtesy: gvc, rows: [row('900002')] });
+    return d.T.properties.filter(p => p.de_listing_id === '900002').map(p => p.id); };
+  check('Elliman ties to the live deal, not an off-market one at that address', await tied([at('off', { stage: 'Off market' }), at('live', { stage: 'Live' })]), ['live']);
+  check('Elliman ties to an off-market deal when it is the only one', await tied([at('off', { stage: 'Off market' })]), ['off']);
+  check('Elliman doesn\'t tie to a Pitch deal', await tied([at('pitch', { stage: 'Pitch' })]), []);
+  check('Elliman doesn\'t tie to a purchase', await tied([at('buy', { stage: 'Live', side: 'buy' })]), []);
+
   /* ---------- D78: Matt's typed price holds while DE's own price hasn't moved ---------- */
   const mattFacts = { price: { value: 2250000, source: 'Matt', bySource: { DE: 2400000, Matt: 2250000 } } };
   db = fakeDb({ properties: [{ id: 'm1', slug: 'm1', stage: 'Live', de_listing_id: '900001', kind: 'sale', core: { address: '100 Example St', unit: '4A', price: 2250000, facts: mattFacts } }] });

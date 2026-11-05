@@ -65,6 +65,14 @@ check('jobFor: two jobs on the street, the tag\'s unit picks', [to('200 E 57th S
 check('jobFor: two jobs on the street and no unit: neither', to('200 E 57th St'), null);
 check('jobFor: a development name names no job', to('Le Reve'), null);
 check('jobFor: a job with no stage is never picked', to('9 Old St'), null);
+// a place with two deals: the post stays on the place's lead deal (GVC_PLACES.lead); a purchase is never picked
+const deal = (id, address, extra) => Object.assign(job(id, address, null), { kind: 'sale', place_id: 'pl-' + address, created_at: '2026-01-01T00:00:00Z' }, extra);
+const toIn = (tag, list) => { const j = P.jobFor(tag, list); return j ? j.id : null; };
+check('jobFor: a post stays linked at a place with a sale and a rental', toIn('40 Bay Rd', [deal('s', '40 Bay Rd'), deal('r', '40 Bay Rd', { kind: 'rental' })]), 's');
+check('jobFor: a repeat listing: the live deal', toIn('41 Bay Rd', [deal('old', '41 Bay Rd', { stage: 'Sold' }), deal('new', '41 Bay Rd', { created_at: '2026-10-01T00:00:00Z' })]), 'new');
+check('jobFor: a house with a purchase: the house', toIn('42 Bay Rd', [deal('buy', '42 Bay Rd', { side: 'buy', created_at: '2026-10-01T00:00:00Z' }), deal('house', '42 Bay Rd', { stage: 'Prep' })]), 'house');
+check('jobFor: a purchase alone is never picked', toIn('43 Bay Rd', [deal('buy', '43 Bay Rd', { side: 'buy' })]), null);
+check('jobFor: two deals on two places at the street stay unpicked', toIn('44 Bay Rd', [deal('a', '44 Bay Rd'), deal('b', '44 Bay Rd', { place_id: 'other' })]), null);
 const devs = [{ id: 'lr', label: 'Le Reve' }, { id: 'op', label: 'Opus' }, { id: 'ca', label: 'Casa Avenida' }];
 const toDev = tag => { const d = P.devFor(tag, devs); return d ? d.id : null; };
 check('devFor: the name, any case', [toDev('Le Reve'), toDev('casa avenida')], ['lr', 'ca']);

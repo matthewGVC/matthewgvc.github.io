@@ -141,12 +141,16 @@ function file(root, rel, date) {
       { id: 'n1', slug: 'n1', version: 1, stage: 'Live', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'n2', slug: 'n2', version: 1, stage: 'Live', market: 'NYC', core: { address: '100 Example St', unit: '9Z' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'j1', slug: 'j1', version: 1, stage: 'In contract', market: 'NJ', core: { address: '40 Chapel Ln', city: 'Wall' }, drive_folder: null, folder_state: 'unlinked' },
-      { id: 'd1', slug: 'd1', version: 1, stage: 'Prep', market: 'NJ', dev_project_id: 'dev1', core: { address: '610 Agnes Ave' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'd1', slug: 'd1', version: 1, stage: 'Prep', market: 'NJ', dev_project_id: 'dev1', asana_gid: 'g-d1', core: { address: '610 Agnes Ave' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'b1', slug: 'b1', version: 1, stage: 'Off market', market: 'NJ', dev_project_id: null, core: { address: '619 Bradley Ave', city: 'Brielle' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'w1', slug: 'w1', version: 1, stage: 'Live', market: 'NJ', core: { address: '12 Sample Rd', city: 'Westwood' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'y1', slug: 'y1', version: 1, stage: 'Live', market: 'NYC', core: { address: '12 Sample Rd' }, drive_folder: null, folder_state: 'unlinked' },
       { id: 'x1', slug: 'x1', version: 1, stage: null, market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
-      { id: 'o1', slug: 'o1', version: 1, stage: 'Off market', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' }
+      { id: 'o1', slug: 'o1', version: 1, stage: 'Off market', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
+      // no folder looked for: a Pitch deal (a Lead needs none yet), our own purchase, an Elliman-only unit
+      { id: 'q1', slug: 'q1', version: 1, stage: 'Pitch', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'u1', slug: 'u1', version: 1, stage: 'Live', side: 'buy', market: 'NYC', core: { address: '100 Example St', unit: '4A' }, drive_folder: null, folder_state: 'unlinked' },
+      { id: 'e1', slug: 'e1', version: 1, stage: 'Live', market: 'NJ', dev_project_id: 'dev1', asana_gid: null, core: { address: '610 Agnes Ave', unit: 'B' }, drive_folder: null, folder_state: 'unlinked' }
     ],
     pitches: [], changes: [], sync_runs: [], dev_projects: []
   };
@@ -181,6 +185,7 @@ function file(root, rel, date) {
       [NYB + '/3 Misfiled lane NJ']);
   }
   check('M18 scan: never for a row with no stage', T2.properties.find(p => p.id === 'x1').scan, undefined);
+  check('M18 scan: the folder guess skips a Pitch deal, a purchase and an Elliman-only unit', ['q1', 'u1', 'e1'].map(id => T2.properties.find(p => p.id === id).scan), [undefined, undefined, undefined]);
   check('M18 scan: an Off market job is looked for too (D88: prep happens while off market)', cand('o1'), NYB + '/100 Example St/4A');
   check('M18 scan: nothing linked by itself', T2.properties.map(p => [p.drive_folder, p.folder_state]).filter(x => x[0] || x[1] !== 'unlinked'), []);
   check('M18 scan: counted, and Drive left exactly as it was', [out2.candidates, JSON.stringify(tree(root2)) === JSON.stringify(before2)], [6, true]);
@@ -205,7 +210,10 @@ function file(root, rel, date) {
       nj('a5', { core: { address: '12 Elm St' } }),                                     // the address matching places it
       nj('a6', { core: { address: '1 Linked Rd' }, drive_folder: RS + '/Edison/Linked Job', folder_state: 'linked' }),
       nj('a7', { core: { address: '3 Madeup Rd' } }),                                   // the AI names a folder not on the list
-      nj('a8', { core: { address: '4 Broken Rd' } })                                    // the call fails
+      nj('a8', { core: { address: '4 Broken Rd' } }),                                   // the call fails
+      nj('a9', { core: { address: '5 Lead Rd' }, stage: 'Pitch' }),                     // a Pitch deal, a purchase, an Elliman-only unit: never asked
+      nj('a10', { core: { address: '6 Bought Rd' }, side: 'buy' }),
+      nj('a11', { core: { address: '7 Unit Rd', unit: 'B' }, dev_project_id: 'dev1', asana_gid: null })
     ], pitches: [], changes: [], sync_runs: [], dev_projects: [] };
     const dbA = {
       ready: () => true,

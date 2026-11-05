@@ -7,10 +7,14 @@
                                  one) town agree. sameStreet() finds the
                                  candidates, then the unit decides (D62).
      matchTask(task, { properties, pitches }, kind)
-         → { propertyId } | { pitchId } | { taken: id } | { tie: [ids] } | {}
+         → { propertyId } | { pitchId } | { taken: id } | { tie: [ids] } | { newDeal: placeId } | {}
          Order (D62): the stored asana_gid → Asana's Drive Link (core.driveLink)
-         → address + unit. `taken`: the address belongs to a job already linked
-         to another Asana task (never two jobs, never a guessed link).
+         → address + unit. `taken`: the address belongs to a live job already linked
+         to another Asana task (never two jobs, never a guessed link). `newDeal`:
+         every deal of this kind at the address is Sold, Rented or Off market, so
+         the task is a new deal on that place (a repeat listing; placeId may be
+         null on a row not placed yet). Our own purchases (side 'buy') are never
+         counted: a purchase never makes a listing "same address".
          Sale vs rental (plan §5): a job only matches when its kind agrees with
          the task's Sale/Rent. A sale and a rental of one unit are two listings.
          "For Sale or Rent", a blank Sale/Rent or a job with no kind match either.
@@ -44,6 +48,7 @@ const P = require('../../assets/js/property-library.js');
 const MAP = require('../../assets/js/asana-map.js');
 
 const ACTIVE = ['Prep', 'Live', 'Accepted offer', 'In contract'];
+const CLOSED = ['Sold', 'Rented', 'Off market'];
 const IMPORTED_BEFORE = '2026-01-01';
 const OFF_MARKET_DAYS = 120;
 
@@ -95,7 +100,7 @@ function matchTask(task, existing, kind) {
     const byDrive = props.filter(p => !p.asana_gid && p.core && p.core.driveLink === drive && kindAgrees(task, p));
     if (byDrive.length === 1) return { propertyId: byDrive[0].id };
   }
-  const at = props.filter(p => p.stage !== 'Archived' && kindAgrees(task, p) && sameAddress(task.name, p.core));
+  const at = props.filter(p => p.stage !== 'Archived' && p.side !== 'buy' && kindAgrees(task, p) && sameAddress(task.name, p.core));
   const free = at.filter(p => !p.asana_gid);
   if (kind === 'pitch') {
     const pf = pitches.filter(p => !p.asana_gid && p.outcome === 'open' && sameAddress(task.name, p.core));
@@ -105,7 +110,9 @@ function matchTask(task, existing, kind) {
   }
   if (free.length === 1) return { propertyId: free[0].id };
   if (free.length > 1) return { tie: free.map(p => p.id) };
-  if (at.length) return { taken: at[0].id };
+  const live = at.filter(p => CLOSED.indexOf(p.stage) === -1);
+  if (live.length) return { taken: live[0].id };
+  if (at.length) return { newDeal: (at.find(p => p.place_id) || {}).place_id || null };
   return {};
 }
 

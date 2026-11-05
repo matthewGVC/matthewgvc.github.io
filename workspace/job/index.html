@@ -71,6 +71,13 @@
 .fbtn{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .fmsg{font-size:13px;color:var(--danger);margin-top:6px;min-height:1.2em}
 .fmsg:empty{min-height:0;margin:0}
+/* a development's Finishes card (finishes.js): the sheet in Drive's viewer, and what is still to be confirmed */
+.fin-view{display:block;width:100%;height:640px;margin-top:12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper)}
+.fin-tbc{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--warn-rule);border-radius:8px;padding:10px 14px;margin-bottom:12px}
+.fin-tbc .t{font-weight:600;font-size:13px}
+.fin-tbc ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+.fin-none{font-size:14px}
+@media (max-width:640px){ .fin-view{height:420px} }
 details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 0 4px}
 /* agents */
 .agents{list-style:none;margin:0;padding:0}
@@ -218,6 +225,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/dev.js"></script>
 <script src="../../assets/js/job-page/units.js"></script>
 <script src="../../assets/js/job-page/devfiles.js"></script>
+<script src="../../assets/js/job-page/finishes.js"></script>
 <script src="../../assets/js/job-page/glance.js"></script>
 <script src="../../assets/js/walkthrough.js"></script>
 <script src="../../assets/js/dev-build.js"></script>
@@ -587,13 +595,14 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         '<div class="mt-sub" id="photosHost">' + JP.photos.html(c) + '</div>' + '<div class="mt-sub" id="postsHost">' + JP.posts.html(c) + '</div>' +
         (dv ? '<div class="mt-sub">' + JP.devFiles.html(dc, true) + '</div>' : '')) + '</div>' : '') +
       (kind === 'pitch' ? '<div id="piecesHost">' + JP.kit.piecesHtml(c) + '</div>' : '') +
-      (kind === 'dev' ? JP.glance.html(c) + JP.units.html(c) + JP.devFiles.html(c) + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') +
-      (dv ? JP.glance.html(dc) + '<div id="buildHost">' + JP.build.html(dc) + '</div>' : '') + steps() +
+      (kind === 'dev' ? JP.glance.html(c) + JP.units.html(c) + JP.devFiles.html(c) + '<div id="finHost">' + JP.finishes.html(c) + '</div>' + '<div id="buildHost">' + JP.build.html(c) + '</div>' : '') +
+      (dv ? JP.glance.html(dc) + '<div id="finHost">' + JP.finishes.html(dc) + '</div>' + '<div id="buildHost">' + JP.build.html(dc) + '</div>' : '') + steps() +
       '<div class="' + (right.length ? 'two' : 'one') + '"><div class="stack">' + left.join('') + '</div><div class="stack">' + right.join('') + '</div></div>');
     if (kind === 'listing' || kind === 'pitch') paintRebuild(JP.kit.judgeAll(c, (r.scan && r.scan.pieces) || {}, false));
     if ($('piecesHost')) JP.kit.wirePieces(c);
     if (kind === 'dev') { JP.dev.wire($('msHost'), c); JP.build.wire($('buildHost'), c); }
     if (dv) { JP.dev.wire($('msHost'), dc); JP.build.wire($('buildHost'), dc); }
+    if ($('finHost')) JP.finishes.wire($('finHost'), dv ? dc : c);
     if ($('factsHost')) JP.facts.wire($('factsHost'), c);
     if ($('agentsHost')) JP.agents.wire($('agentsHost'), c);
     JP.log.wire($('logHost'), c);

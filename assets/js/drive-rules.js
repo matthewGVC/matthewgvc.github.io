@@ -22,6 +22,9 @@
                                                             are never plans. Also GVC_SHEETJOB.planPlace.
      GVC_DRIVE_RULES.layout('sfh')                      → the standard folders of a job type (resale, rental,
                                                             sfh, newdev), with missingFolders(type, existing)
+     GVC_DRIVE_RULES.finishFile('0 - Approved Assets/Finishes/Le Reve Finish Schedule.pdf') → true: a PDF
+                                                            in a folder or with a name that says "finish",
+                                                            never paperwork (a development's Finishes card)
      GVC_DRIVE_RULES.isJunk('a.m4v.xmpses.xmp')         → true: a sidecar or system file (*.xmp,
                                                             *.xmpses, desktop.ini, Thumbs.db, .DS_Store,
                                                             ~$ Office temp files, ._ AppleDouble, any
@@ -92,6 +95,21 @@
       return /\.docx$/.test(name) && name.indexOf('details') !== -1 && !PAPER_WORDS.test(name);
     }
     return READABLE.indexOf(parts[0].toLowerCase()) !== -1;
+  }
+
+  /* a development's finish sheet: a PDF (finished and shareable; the builder's working sheets carry
+     allowances and prices, so they are never shown), with "finish" in its own name or in a folder
+     above it, and no paperwork anywhere in its path. Relative to the development's folder. */
+  function finishFile(path) {
+    var r = rel(path);
+    if (!r) return false;
+    var parts = r.split('/'), name = parts[parts.length - 1];
+    if (!/\.pdf$/i.test(name) || isJunk(name)) return false;
+    for (var i = 0; i < parts.length; i++) {
+      if (hasPaperworkWord(parts[i])) return false;
+      if (i < parts.length - 1 && isPaperworkFolder(parts[i])) return false;
+    }
+    return parts.some(function (x) { return /finish/i.test(x); });
   }
 
   /* sidecars and system files: Lightroom / Premiere .xmp and .xmpses (also after another
@@ -218,7 +236,7 @@
     return { missing: out, renames: renames };
   }
 
-  return { rel: rel, allowedInJob: allowedInJob, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
+  return { rel: rel, allowedInJob: allowedInJob, finishFile: finishFile, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
     isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace, isAlternate: isAlternate,
     layout: layout, missingFolders: missingFolders, TYPES: Object.keys(TYPES) };
 });

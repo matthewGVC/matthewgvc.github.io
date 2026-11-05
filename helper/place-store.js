@@ -4,7 +4,7 @@
      const cache = { places: await client.select('places'), buildings: await client.select('buildings') };
      keyOfCore(core, 'NYC')                         → 'NYC|401 east 89|1819E'
      await findOrMakePlace(client, cache, { core, market, devId })
-       → the place row (with its id), inserted when there was none
+       → the place row (with its id), inserted when there was none; null with no street
 
    `cache` is one run's two lists, read at its start; a place or building made here is pushed
    into it, so a second call in the same run finds it (two new tasks at one new address share
@@ -13,7 +13,9 @@
    Brielle and in Manasquan are two places). Its address is the clean street, its label the
    job's own label today, its slug the property slug ("-2", "-3" on a clash). For NYC the
    building is found by buildingKey, and building_id is set either way. devId, when given,
-   goes on a new place, or on a found one that has none.
+   goes on a new place, or on a found one that has none; a found place with no town takes the
+   core's city. A core with no street makes no place: it returns null, and the caller treats
+   the deal as a question (a junk place with an empty key would match every later streetless deal).
 
    Used by the one-time backfill (places-backfill.js) and by the sync.
    Writes through the helper's Supabase client (supabase.js); only the helper may write places.
@@ -35,9 +37,14 @@ function freeSlug(cache, base) {
 
 async function findOrMakePlace(client, cache, { core, market, devId }) {
   const split = P.unitOf(core), key = GP.placeKey(split, market);
+  if (!key) return null;
   const address = GP.cleanStreet(split.address), town = (core && core.city) || null;
   const found = cache.places.find(p => p.key === key && GP.samePlace(p, { address, town }));
   if (found) {
+    if (!found.town && town) {
+      await client.update('places', { id: found.id }, { town });
+      found.town = town;
+    }
     if (devId && !found.dev_project_id) {
       await client.update('places', { id: found.id }, { dev_project_id: devId });
       found.dev_project_id = devId;

@@ -100,6 +100,12 @@ check('keyOfCore reads a unit left in the address', keyOfCore({ address: '1 Insi
   const withDev = await findOrMakePlace(db, cache, { core: { address: '12 Elm St', city: 'Brielle' }, market: 'NJ', devId: 'dev-1' });
   check('a found place without a development takes the one given', [withDev.id, db.T.places.find(p => p.id === e1.id).dev_project_id], [e1.id, 'dev-1']);
 
+  const none = await findOrMakePlace(db, cache, { core: { address: '', city: 'Brielle' }, market: 'NJ' });
+  check('a core with no street makes no place', [none, db.T.places.length], [null, 4]);
+  const townless = await findOrMakePlace(db, cache, { core: { address: '9 Pine Rd' }, market: 'NJ' });
+  const townGiven = await findOrMakePlace(db, cache, { core: { address: '9 Pine Rd', city: 'Brielle' }, market: 'NJ' });
+  check("a found place with no town takes the core's", [townGiven.id === townless.id, db.T.places.find(p => p.id === townless.id).town], [true, 'Brielle']);
+
   /* ---------- applying the plan ---------- */
   const live = fakeDb({
     properties: [
@@ -133,6 +139,12 @@ check('keyOfCore reads a unit left in the address', keyOfCore({ address: '1 Insi
   const fresh = planBackfill(input());
   check('and a new plan from the new state has nothing left to link', [fresh.links.length, fresh.newDevs.length, fresh.pitchesToDeals.length], [0, 0, 0]);
 
+  // a job whose street was lost since the plan was made is a question, not a junk place
+  const lost = fakeDb({ properties: [{ id: 'z', slug: 'z', kind: 'sale', market: 'NJ', stage: 'Live', core: { address: '' } }] });
+  const lostRun = await applyPlan({ client: lost, plan: { newDevs: [], links: [{ propertyId: 'z' }], pitchesToDeals: [] } });
+  check('apply skips a job with no street and lists it', [lost.T.places.length, lost.T.properties[0].place_id || null, lostRun.questions.map(q => q.id)], [0, null, ['z']]);
+  const rp = reportOf(plan, '2026-11-05');
+  check('the report names each place and its jobs', [/places \(some may already exist\)/i.test(rp), /404 Park Ave S/.test(rp) && /`a`/.test(rp) && /`b`/.test(rp), /12 Elm St · Manasquan/.test(rp)], [true, true, true]);
   check('the report lists skipped rows and questions', [/Skipped/.test(reportOf(plan, '2026-11-05')), /Questions/.test(reportOf(odd, '2026-11-05'))], [true, true]);
 
   if (failures.length) {

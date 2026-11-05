@@ -17,7 +17,7 @@
 
      planBackfill({ properties, pitches, devs, tasks })
        → { buildings, places, links, newDevs, pitchesToDeals, skipped, questions }   pure
-     applyPlan({ client, plan }) → { linked, devs, pitches }
+     applyPlan({ client, plan }) → { linked, devs, pitches, questions }  (questions: jobs with no street, left unplaced)
      reportOf(plan, date) → the .md text
 
    What it does:
@@ -51,17 +51,18 @@ function planBackfill({ properties, pitches, devs, tasks }) {
   const devSlugs = new Set((devs || []).map(d => d.slug).filter(Boolean));
 
   /* the plan's place for this core, added when new; null when there is no street */
-  function placeOf(core, market) {
+  function placeOf(core, market, job) {
     const split = P.unitOf(core), key = GP.placeKey(split, market);
     if (!key) return null;
     const address = GP.cleanStreet(split.address), town = (core && core.city) || null;
     let hit = plan.places.find(p => p.key === key && GP.samePlace(p, { address, town }));
     if (!hit) {
-      hit = { key, address, town, label: P.labelOf(core), market };
+      hit = { key, address, town, label: P.labelOf(core), market, jobs: [] };
       plan.places.push(hit);
       const bKey = GP.buildingKey(split, market);
       if (bKey && !plan.buildings.some(b => b.key === bKey)) plan.buildings.push({ key: bKey, label: address, market });
     } else if (!hit.town && town) hit.town = town;
+    hit.jobs.push(job);
     return hit;
   }
 
@@ -71,7 +72,7 @@ function planBackfill({ properties, pitches, devs, tasks }) {
     if (p.stage === 'Archived' && !p.asana_gid) { plan.skipped.push(Object.assign(who, { why: 'archived, no Asana task (a merged copy)' })); return; }
     if (p.place_id) return;
     if (!p.market) { plan.questions.push(Object.assign(who, { why: 'no market' })); return; }
-    const place = placeOf(p.core, p.market);
+    const place = placeOf(p.core, p.market, { id: p.id, label: p.label || null, kind: p.kind });
     if (!place) { plan.questions.push(Object.assign(who, { why: 'no street address' })); return; }
 
     const house = (devs || []).find(d => d.house_listing_id === p.id);
@@ -90,7 +91,7 @@ function planBackfill({ properties, pitches, devs, tasks }) {
 
   (pitches || []).filter(q => q.outcome === 'open').forEach(q => {
     const who = { id: q.id, label: q.label || null };
-    const place = q.market ? placeOf(q.core, q.market) : null;
+    const place = q.market ? placeOf(q.core, q.market, { id: q.id, label: q.label || null, kind: 'pitch' }) : null;
     if (!place) { plan.questions.push(Object.assign(who, { why: q.market ? 'pitch with no street address' : 'pitch with no market' })); return; }
     let slug = q.slug;
     if (slugs.has(slug)) slug += '-pitch';
@@ -109,7 +110,7 @@ function logOf(owner, field, oldValue, newValue) {
 
 async function applyPlan({ client, plan }) {
   const cache = { places: await client.select('places'), buildings: await client.select('buildings') };
-  const done = { linked: 0, devs: 0, pitches: 0 };
+  const done = { linked: 0, devs: 0, pitches: 0, questions: [] };
   const devOfHouse = {};
 
   for (const d of plan.newDevs) {
@@ -127,6 +128,7 @@ async function applyPlan({ client, plan }) {
     if (!row || row.place_id) continue;
     const devId = devOfHouse[row.id] || l.devId || null;
     const place = await findOrMakePlace(client, cache, { core: row.core, market: row.market, devId });
+    if (!place) { done.questions.push({ id: row.id, label: row.label || null, why: 'no street address' }); continue; }
     const patch = { place_id: place.id };
     if (devId && !row.dev_project_id) patch.dev_project_id = devId;
     await client.update('properties', { id: row.id }, patch, { version: row.version });
@@ -141,6 +143,7 @@ async function applyPlan({ client, plan }) {
     let deal = (await client.select('properties', { from_pitch_id: pitch.id }))[0];
     if (!deal) {
       const place = await findOrMakePlace(client, cache, { core: pitch.core, market: pitch.market });
+      if (!place) { done.questions.push({ id: pitch.id, label: pitch.label || null, why: 'pitch with no street address' }); continue; }
       deal = (await client.insert('properties', {
         slug: d.slug, label: pitch.label, market: pitch.market, place_id: place.id, from_pitch_id: pitch.id, stage: 'Pitch', stage_source: 'Asana',
         kind: 'sale', asana_gid: pitch.asana_gid || null, core: pitch.core, drive_folder: pitch.drive_folder || null,
@@ -161,7 +164,7 @@ function reportOf(plan, date) {
   const L = ['# Places backfill, ' + date, '',
     'Nothing is written until this plan is applied. Every job with a stage and an address gets a place;',
     'a sale and a rental on one unit share it.', '',
-    '- Places: ' + plan.places.length + ' (' + plan.buildings.length + ' NYC buildings)',
+    '- Places (some may already exist): ' + plan.places.length + ' (' + plan.buildings.length + ' NYC buildings)',
     '- Jobs linked to a place: ' + plan.links.length,
     '- New developments: ' + plan.newDevs.length,
     '- Open pitches that become deals: ' + plan.pitchesToDeals.length,
@@ -173,6 +176,8 @@ function reportOf(plan, date) {
     rows.forEach(r => L.push('- ' + line(r)));
     L.push('');
   }
+  section('Places (some may already exist)', plan.places, p => [p.address, p.town, p.market].filter(Boolean).join(' · ') + ': ' +
+    p.jobs.map(j => (j.label || '(no name)') + ' ' + j.kind + ' `' + j.id + '`').join(', '));
   section('New developments', plan.newDevs, d => d.label + ' · ' + d.market + ' · the house `' + d.house_listing_id + '`');
   section('Pitches that become deals', plan.pitchesToDeals, d => [d.label, d.market, d.pitched_on].filter(Boolean).join(' · ') + ' `' + d.id + '`');
   section('Skipped, never placed', plan.skipped, s => [s.label || '(no name)', s.why].join(' · ') + ' `' + s.id + '`');
@@ -193,6 +198,7 @@ if (require.main === module) {
     if (applyFile) {
       const done = await applyPlan({ client, plan: JSON.parse(fs.readFileSync(applyFile, 'utf8')) });
       console.log('Applied: ' + done.linked + ' jobs linked, ' + done.devs + ' developments made, ' + done.pitches + ' pitches made into deals.');
+      done.questions.forEach(q => console.log('  Not placed (' + q.why + '): ' + (q.label || '(no name)') + ' ' + q.id));
       return;
     }
     const [properties, pitches, devs, tasks] = await Promise.all([

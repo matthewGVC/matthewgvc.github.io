@@ -136,6 +136,10 @@ facts, floor plans (two per page) and up to two agents. The property bar at the 
 the facts and the brochure, photos included, to the shared property library (signed in) and loads
 them back. Opened from a job (`?listing=<slug>`), `job-mode.js` fills it from the job instead.
 Print / Save PDF prints it.
+The page is `index.html` (markup), `brochure.css`, and seven scripts loaded in order: `state.js`,
+`gallery.js` (photo placement and gallery edits), `pages.js` (one renderer per page), `fit.js` (redraw
+and overflow), `photos.js`, `panel.js` (panel wiring, paper size) and `piece.js` (library, job, `__render`).
+`type-sample.html` is a type and colour specimen to design against, not linked from the site.
 
 ## Seller Package tool
 

@@ -278,7 +278,7 @@ table.tbl .meta{display:block;font-size:7.5pt;color:rgba(0,39,58,.55);margin-top
    centred cards the Seller Pitch & CMA still prints (those are the CLOSING
    PAGE section above; the two designs share no class names).
 
-   tools/brochure/index.html carries a copy of everything below, because it
+   tools/brochure/brochure.css carries a copy of everything below, because it
    cannot load this file — its own .stat/.ph/.band would collide. The two
    must stay in step. The brochure's copy adds the half-letter overrides,
    which are its paper size and nothing to do with these decks.

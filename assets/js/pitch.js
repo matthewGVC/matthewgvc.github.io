@@ -390,7 +390,7 @@
 
      It lives here so the two decks cannot drift apart. Its styles are the
      EDITORIAL CLOSING PAGE section of assets/css/pitch.css, mirrored in
-     tools/brochure/index.html because that deck cannot load pitch.css (its
+     tools/brochure/brochure.css because that deck cannot load pitch.css (its
      own .stat/.ph/.band would collide). Change one, change the other.
 
      The older centred-card close (agentCards / linkCols) was removed

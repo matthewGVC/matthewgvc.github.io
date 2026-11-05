@@ -1,0 +1,669 @@
+/* tools/brochure/brochure.css: the Brochure's own styles: the printed pages first,
+   then the editor panel's floor-plan rows and buttons (screen only). The @page
+   size is not here: it lives in index.html's style#pagesize, which panel.js
+   rewrites when the paper size changes. */
+/* ============================================================
+   BROCHURE — page styles
+   Type is set in pt so the design canvas matches real print
+   sizes. Page geometry lives in assets/css/builder.css.
+   ============================================================ */
+:root{
+  /* every value here is the Seller Package / Buyer Package value —
+     see assets/css/pitch.css. The brochure does not load pitch.css (it
+     would collide with this deck's own .stat/.ph/.ag-c), so the shared
+     tokens and furniture are mirrored here instead. */
+  --pad:.62in;             /* page margin */
+  --rule:rgba(0,39,58,.14);
+  --rule-rev:rgba(83,199,220,.35);
+  --mask-top:22%;          /* navy scrim down from the top edge */
+  --mask-bot:52%;          /* navy scrim up from the bottom edge — carries the address */
+  --bento-gap:.06in;       /* white gutter between bento cells */
+}
+
+/* shared bits ------------------------------------------------ */
+.ico{display:block;}
+.ico svg{width:100%;height:100%;display:block;stroke:currentColor;fill:none;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+/* ---------- SHARED PAGE HEADER + BODY ----------
+   Byte-for-byte the Seller Package's .pg-h / .pg-body, so a section
+   title reads identically across all three builders: 27pt Playfair over a
+   short sky rule, never a tracked-caps bar. `.rev` is the dark-page
+   variant, same suffix convention as the two packages. */
+.pg-h{flex:none;padding:.5in var(--pad) 0;}
+.pg-h h2{margin:0;font:700 27pt/1.06 var(--serif);color:var(--navy);text-wrap:balance;}
+.pg-h.rev h2{color:#fff;}
+.pg-h::after{content:'';display:block;height:1.4pt;background:var(--sky);width:.62in;margin-top:.16in;}
+.pg-body{flex:1;min-height:0;padding:.26in var(--pad) .44in;display:flex;flex-direction:column;overflow:hidden;}
+.empty-note{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font:800 8.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(229,229,229,.45);text-align:center;padding:0 .6in;line-height:1.7;}
+.empty-note.on-white{color:rgba(0,39,58,.32);}
+
+/* ---------- SHARED PAGE-NUMBER FOOTER ----------
+   Every page but the cover and the full-bleed gallery carries this: site
+   left, monogram dead-centre against the bar itself, page N/of M right.
+   Values match the Seller Package and Buyer Package's running footer
+   exactly, so the deck reads as one system rather than three. .rev is the
+   dark-page variant, same suffix convention as those two decks. */
+.pg-foot{flex:none;position:relative;padding:0 var(--pad) .34in;display:flex;
+  align-items:center;justify-content:space-between;gap:.3in;}
+.pg-foot .site{font:800 7.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:rgba(0,39,58,.5);}
+.pg-foot .pg-n{font:800 8pt var(--sans);letter-spacing:.1em;color:rgba(0,39,58,.42);font-variant-numeric:tabular-nums;}
+.pg-foot .pg-mono{position:absolute;left:50%;bottom:.34in;transform:translateX(-50%);height:.3in;width:auto;display:block;}
+.pg-foot.rev .site{color:rgba(229,229,229,.6);}
+.pg-foot.rev .pg-n{color:rgba(229,229,229,.5);}
+
+/* ---------- PAGE 1 — COVER ----------
+   A full-bleed photo with the type laid over it. The two packages used to
+   front the same way off assets/css/pitch.css, but they moved to the framed
+   cover (.fcv) and those .cv rules were deleted from that file — so this is
+   now the only copy of this design and nothing below is mirrored from
+   anywhere. The scrim stops stay in custom properties because the overflow
+   check reads --mask-bot to tell whether the address has climbed out of the
+   scrim. */
+.cv{position:absolute;inset:0;overflow:hidden;background:var(--navy);}
+.cv-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+/* Two scrims, each a clean 100% -> 0 opacity fade over its own band.
+   Stop order matters: a later stop with a smaller percentage gets clamped
+   up to the previous one, which turns the fade into a hard cut. */
+.cv-mask{position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(to bottom, rgba(0,39,58,1) 0%, rgba(0,39,58,0) var(--mask-top)),
+    linear-gradient(to top,    rgba(0,39,58,1) 0%, rgba(0,39,58,0) var(--mask-bot));}
+/* The brochure's kicker is a phrase introducing the document, not a label
+   naming it, so it is set large and white rather than as small tracked sky
+   caps.
+   Raleway at 19pt with .06em of tracking. Capitals set solid read as a block,
+   and the .3em a small tracked label would use is far too wide at this size. */
+.cv-kind{position:absolute;top:.7in;left:0;right:0;text-align:center;
+  font:400 19pt/1.15 var(--body);letter-spacing:.06em;
+  text-transform:uppercase;color:#fff;}
+.cv-head{position:absolute;left:var(--pad);right:var(--pad);bottom:1.5in;text-align:center;}
+.cv-ttl{font:700 33pt/1.07 var(--serif);color:#fff;text-wrap:balance;overflow-wrap:break-word;}
+.cv-sub{margin-top:.13in;font:800 10.5pt var(--sans);letter-spacing:.10em;text-transform:uppercase;color:var(--ow);}
+.cv-for{margin-top:.22in;font:300 10.5pt/1.5 var(--body);color:rgba(229,229,229,.82);}
+/* two agent blocks, one per side, monogram fixed dead-center against the
+   bar itself — not flexed between the side blocks, so it does not drift
+   if one side is empty or the two blocks are different lengths. */
+.cv-bar{position:absolute;left:0;right:0;bottom:0;height:1.02in;background:rgba(0,39,58,.92);
+  border-top:1pt solid var(--rule-rev);display:flex;align-items:center;justify-content:space-between;
+  gap:.24in;padding:0 var(--pad);}
+.cv-bar .cb-side{flex:1;min-width:0;}
+.cv-bar .cb-side.r{text-align:right;}
+.cv-bar .cb-nm{font:700 12pt var(--serif);color:#fff;line-height:1.2;}
+.cv-bar .cb-ct{font:300 8pt/1.45 var(--body);color:rgba(229,229,229,.8);}
+/* the lone-agent counterweight: licence title over brokerage, both in the
+   contact font so the block reads as a caption rather than a second agent */
+.cv-bar .cb-side.brok .cb-ct + .cb-ct{margin-top:.03in;color:rgba(229,229,229,.62);}
+.cv-bar .cb-mono{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  height:.46in;width:auto;display:block;flex:none;}
+
+
+/* ---------- GALLERY PAGES ----------
+   A gallery page is rows of cells, both sized in proportional fr units, so
+   whatever numbers the editor lands on the page is always exactly filled —
+   no holes, no overflow, nothing to tile by hand. A "big" photo is just a
+   row with one cell and a large height. */
+.gal{position:absolute;inset:0;display:flex;flex-direction:column;
+  gap:var(--bento-gap);background:#fff;overflow:hidden;}
+.gal-row{display:flex;gap:var(--bento-gap);min-height:0;min-width:0;}
+.gal-cell{position:relative;overflow:hidden;background:var(--navy);min-width:0;}
+.gal-cell img{width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(var(--z,1));transform-origin:center;}
+.gal-empty{position:absolute;inset:0;background:var(--navy);}
+
+/* Caption plate. Sits on the photo bottom-left over a soft scrim so it stays
+   legible on a light image; hidden entirely when the label is blank.
+
+   The plate is decoration and deliberately transparent to the pointer — it
+   covers the bottom third of the photo, and swallowing drags there would
+   make the crop feel broken. Only the text itself is clickable. */
+.gal-cap{position:absolute;left:0;right:0;bottom:0;padding:.30in .22in .13in;
+  font:800 7.5pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ow);
+  background:linear-gradient(to top,rgba(0,39,58,.72),rgba(0,39,58,0));
+  pointer-events:none;}
+.gal-cap-t{display:inline-block;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;}
+.gal-cell.no-cap .gal-cap{display:none;}
+
+@media screen{
+  .gal-cell{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .gal-cell img{-webkit-user-drag:none;pointer-events:none;}
+  .gal-cell.is-dragging{opacity:.4;}
+  .gal-cell.is-target::after{content:'';position:absolute;inset:0;
+    background:rgba(83,199,220,.28);box-shadow:inset 0 0 0 3px var(--sky);}
+  .gal-cell.is-sel{box-shadow:inset 0 0 0 3px var(--sky),0 0 0 1px var(--sky);}
+  /* the label is typed in place on screen, so the text — and only the text —
+     takes the pointer back */
+  .gal-cap-t{pointer-events:auto;cursor:text;min-width:.5in;}
+  .gal-cell.no-cap .gal-cap{display:block;}
+  .gal-cell.no-cap .gal-cap-t{opacity:0;}
+  .gal-cell.no-cap:hover .gal-cap-t{opacity:.5;}
+  .gal-cell.no-cap .gal-cap-t:focus{opacity:1;}
+  .gal-cap-t:focus{outline:2px solid var(--sky);outline-offset:2px;}
+  .gal-cap-t:empty::before{content:'Label';}
+
+  /* Grab strips between cells and between rows. They straddle the gap so
+     there is something to grab even when the gap is hairline. */
+  .gal-vdiv,.gal-hdiv{position:absolute;z-index:4;}
+  .gal-vdiv{top:0;bottom:0;width:14px;margin-left:-7px;cursor:col-resize;}
+  .gal-hdiv{left:0;right:0;height:14px;margin-top:-7px;cursor:row-resize;}
+  .gal-vdiv::after,.gal-hdiv::after{content:'';position:absolute;background:var(--sky);
+    opacity:0;transition:opacity .12s;}
+  .gal-vdiv::after{left:6px;width:2px;top:0;bottom:0;}
+  .gal-hdiv::after{top:6px;height:2px;left:0;right:0;}
+  .gal-vdiv:hover::after,.gal-hdiv:hover::after,.gal-div-live::after{opacity:1;}
+}
+@media print{ .gal-vdiv,.gal-hdiv{display:none;} }
+
+/* ---------- PAGE 3 — PROPERTY INFORMATION ----------
+   Stacked in bands down the page: a full-width photo banner, the price
+   band under it, then the navy text block carrying the blurb, the
+   features and the details side by side, and a full-width photo at the
+   foot. Every band spans edge to edge, so nothing has to wrap around a
+   floated photo any more. */
+/* --band is the banner's depth; the price band sits at it and the navy text
+   block starts one band-plus-price-band down, so the three move together and
+   only one number changes per paper size. --priceH is the band's own fixed
+   height (.13in padding top and bottom over a 22pt line). */
+.info{position:absolute;inset:0;overflow:hidden;background:#fff;--band:4.2in;--priceH:.57in;}
+/* the banner photo, full bleed across the top */
+.info-tr{position:absolute;top:0;left:0;right:0;height:var(--band);overflow:hidden;background:var(--navy);}
+.info-tr img{width:100%;height:100%;object-fit:cover;display:block;}
+/* the price band, full width, directly under the banner */
+/* The price band: grain over the brand gradient. Three layers, front to back —
+   the noise tile, the gradient, then --sky as the flat fallback, so a missing
+   image degrades to the plain band this used to be rather than to nothing. The
+   gradient's bright middle falls under the centred figure, which is what keeps
+   the navy readable across it. */
+.info-price{position:absolute;top:var(--band);left:0;right:0;
+  background:var(--grain) repeat 0 0 / .34in .34in,
+             var(--mesh) center/cover,
+             var(--sky);color:var(--navy);
+  padding:.13in .1in;font:700 22pt/1 var(--serif);text-align:center;white-space:nowrap;}
+.info-price .po{font:800 10pt var(--sans);letter-spacing:.14em;text-transform:uppercase;}
+/* the navy text block. Its top is the banner plus the price band; when
+   there is no price the band collapses and the block simply starts
+   higher — .info-block.no-price carries that case. */
+.info-block{position:absolute;top:calc(var(--band) + var(--priceH));left:0;right:0;bottom:0;background:var(--navy);color:var(--ow);
+  display:flex;flex-direction:column;overflow:hidden;}
+.info-block.no-price{top:var(--band);}
+.info-block .pg-h{padding:.34in var(--pad) 0;}
+.info-mid{flex:1;min-height:0;padding:.26in var(--pad) .34in;display:flex;gap:.42in;}
+.info-col{min-width:0;display:flex;flex-direction:column;}
+/* Two columns, not three. The Overview gets a full-height column of its own so
+   a long blurb has somewhere to go, and Features stacks over The Details on the
+   right. The blurb's type is auto-fitted by fitBlurb(), so it can no longer be
+   cut off mid-sentence.
+
+   Both right-hand blocks size to their own content and pack to the top, so The
+   Details sits just under Features and rides down as features are added — the
+   slack collects at the foot of the column instead of being wedged between the
+   two headings. Features keeps flex-shrink and min-height:0 so that when the
+   two together outgrow the column it is Features that gives, clipping its list
+   and raising the existing "Features clipped" warning rather than shunting The
+   Details off the bottom of the page. */
+.info-col.about{flex:1;}
+.info-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:.26in;}
+.info-col.features{flex:0 1 auto;min-height:0;}
+.info-col.stats{flex:none;}
+.info-lbl{font:800 8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sky);margin-bottom:.14in;}
+.info-blurb{font:300 10.5pt/16pt var(--body);color:var(--ow);flex:1;min-height:0;overflow:hidden;}
+.info-feats{list-style:none;margin:0;padding:0;flex:1;min-height:0;overflow:hidden;}
+.info-feats li{font:400 9.5pt/15pt var(--body);color:var(--ow);padding-left:.17in;position:relative;margin-bottom:.055in;}
+.info-feats li::before{content:'';position:absolute;left:0;top:.072in;width:.055in;height:.055in;background:var(--sky);}
+.info-stats{display:grid;grid-template-columns:1fr 1fr;gap:.26in .2in;}
+.stat{display:flex;gap:.12in;align-items:flex-start;}
+.stat .ico{flex:none;width:.21in;height:.21in;margin-top:.035in;color:var(--sky);}
+.stat .v{font:700 20pt/1 var(--serif);color:#fff;}
+.stat .k{font:800 7.5pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--sky);margin-top:.05in;}
+/* The listing QR sits at the foot of the details column, pushed down by
+   margin-top:auto so it lands on the same baseline whatever the columns
+   above it hold. It prints as vector SVG, and is left out entirely when no
+   listing link has been typed. */
+.info-qr{margin-top:auto;padding-top:.24in;display:flex;gap:.16in;align-items:center;}
+/* the white padding is the QR's quiet zone — a code with no clear margin
+   around it is unreliable to scan. .12in is a little over the four modules
+   the spec asks for at this size. */
+.info-qr .box{flex:none;width:1.15in;height:1.15in;background:#fff;padding:.12in;}
+.info-qr .box svg{width:100%;height:100%;display:block;}
+.info-qr .cap{min-width:0;}
+.info-qr .cap b{display:block;font:800 7.5pt/1.5 var(--sans);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--sky);}
+.info-qr .cap .url{display:block;font:300 8pt/1.4 var(--body);color:rgba(229,229,229,.72);
+  margin-top:.04in;word-break:break-all;}
+/* the running footer now sits inside the navy block, so it takes the dark
+   variant — same geometry and baseline as every other page. */
+.info .pg-foot{flex:none;}
+@media screen{
+  .cv.has-img,.info-tr.has-img{cursor:grab;touch-action:none;user-select:none;}
+  .cv.is-moving,.info-tr.is-moving{cursor:grabbing;}
+  .info-tr img{pointer-events:none;}
+}
+
+/* ---------- FLOOR PLANS ---------- */
+.fp{position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;}
+.fp-body{gap:.3in;}
+.fp-item{flex:1;min-height:0;display:flex;flex-direction:column;}
+/* At 100% the plan is letterboxed whole inside the frame. Above that it is
+   scaled about the frame's centre and clipped by it, and the translate
+   pans the enlarged plan around — that is the crop. The transform is
+   written inline by the renderer from the plan's own zoom/tx/ty. */
+.fp-frame{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;
+  /* white, not paper grey: a floor plan saved with a transparent background
+     used to show this panel through it, which read as a grey box sitting on a
+     white page. The hairline border stays — it frames the plan without the
+     interior separating from the sheet. */
+  background:#fff;border:.75pt solid var(--rule);overflow:hidden;}
+.fp-frame img{max-width:100%;max-height:100%;object-fit:contain;display:block;transform-origin:50% 50%;}
+@media screen{
+  .fp-frame.has-img{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .fp-frame.is-moving{cursor:grabbing;}
+  .fp-frame img{pointer-events:none;-webkit-user-drag:none;}
+}
+.fp-cap{flex:none;font:800 8.5pt var(--sans);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--navy);margin-top:.13in;display:flex;justify-content:space-between;gap:.2in;}
+.fp-cap .sub{font:300 8.5pt var(--body);letter-spacing:0;text-transform:none;color:var(--ui-ink-soft);}
+.fp-note{flex:none;padding:.16in 0 0;text-align:center;
+  font:400 7.5pt var(--ui-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ui-ink-soft);}
+
+
+/* ---------- AGENT / CLOSING PAGE ----------
+   The last page in the deck.
+
+   This block USED to be a verbatim mirror of the CLOSING PAGE section of
+   assets/css/pitch.css, shared with the Seller Package and the Buyer
+   Package. It is not any more, and that is deliberate: this deck's closing
+   page is now an editorial composition — asymmetric, with the cut-out
+   bleeding off the left trim — while those two keep the centred cards. So do
+   NOT sync changes here back to pitch.css, and do not assume a class named
+   the same in both files means the same thing. Everything below is `ag-`
+   prefixed for that reason; the old .ag-c / .ag-meta / .lcols / .cx-top
+   names are gone from this file entirely.
+
+   Still shared with the other decks, on purpose: pageFoot()'s .pg-foot,
+   GVC_LEGAL's .legal paragraph, and the mesh-masked state marks.
+
+   THE WINDOW ONTO A CUT-OUT — the one thing in this section to get right.
+
+   --ag-fig is the cut-out's size and the window is the WHOLE square: full
+   width, cut off at --ag-crop. Both pages work this way; the solo page only
+   changes the two numbers. --ag-rail is not the window, it is the grid
+   column the window is anchored to, and --ag-bleed is how far left of that
+   column the window is hung.
+
+   This section used to show a narrow band of the square instead — .75 of it
+   from x .13, cut at .52 — on the reasoning that the column should not
+   reserve empty air either side of the person. Both of those numbers were
+   wrong, and measuring the roster row by row rather than eyeballing one
+   photo is what showed it:
+
+   THE CROP. The thirteen cut-outs are not framed alike. Reading each one's
+   alpha for the neck (the narrowest row under the head) and the shoulder
+   line (where it first flares past the head's width) puts the neck anywhere
+   from .426 of the square (tj-verdiglione) to .592 (nicole-melveney), and
+   the shoulders from .483 to .698. So .74 is the FLOOR — below it the cut
+   takes somebody's shoulders off, and it went through the JAW of
+   gary-kasparov, nicole-sobol and nicole-melveney at .52.
+
+   It is not the number the page uses, because a cut a hair under the lowest
+   shoulder reads as a collar with nobody in it. .84 takes the figure to the
+   chest, which is where a two-up row wants to be cut, and it is about as
+   deep as the sheet allows: each row grows with the crop, and the page's one
+   flexible joint (the margin over the small print, see .ag .legal) closes up
+   to pay for it. The Seller Package is the binding case, its closing page
+   carrying the longer of the two legal paragraphs — there the joint is shut
+   at .84 and the page starts overflowing at about .90. So measure THAT deck,
+   with two agents, if you raise this. The solo page is separate: it shows the
+   whole figure and is capped by the details column instead.
+
+   THE WIDTH. Once the crop is that deep the square is the only band that
+   clears everybody. Over the top .80 the union of the thirteen silhouettes
+   runs x .063 to 1.000 — tj-verdiglione one side, nicole-sobol the other —
+   and every narrower band slices somebody: .96 of the square leaves a .02
+   sliver outside it, and .92 and .88 are progressively worse. The empty air
+   that costs is bought back with --ag-bleed instead, by hanging the window
+   left of its column rather than by narrowing it.
+
+   Re-measure both if the roster gains a headshot framed differently. The
+   figure keeps its size throughout — the crop trims air, never the person.
+   Its foot is cropped by the window's bottom edge, which is the horizontal
+   cut the composition wants. Change --ag-fig alone; the column, the window
+   and the row's height follow it. */
+.ag{position:absolute;inset:0;background:var(--navy);color:var(--ow);
+  display:flex;flex-direction:column;overflow:hidden;
+  --ag-padL:.58in; --ag-padR:.92in;
+  --ag-fig:2.45in;                             /* the cut-out */
+  --ag-crop:calc(var(--ag-fig) * .84);         /* how far down — chest, not collar */
+  --ag-bleed:0in;                              /* how far left of the margin the window sits */
+  --ag-rail:calc(var(--ag-fig) - var(--ag-bleed));   /* the grid column it is anchored to */
+  --ag-sill:.26in;                             /* the row's own slack under the window */
+  --ag-gut:.24in;        /* silhouette to details — tight, so they read as one */
+  --ag-rule:rgba(229,229,229,.26);
+  --ag-rule-soft:rgba(229,229,229,.14);}
+/* a whisper of brand light in the corner the portrait bleeds through */
+.ag::before{content:'';position:absolute;left:-1.7in;top:-1.7in;width:6.4in;height:6.4in;
+  background:radial-gradient(circle at 50% 50%,rgba(83,199,220,.17),rgba(83,199,220,0) 68%);}
+.ag-body{position:relative;flex:1;min-height:0;
+  padding:.5in var(--ag-padR) .42in var(--ag-padL);
+  display:flex;flex-direction:column;}
+
+/* ---------- header rule: micro-label far left, QR far right ---------- */
+/* The mark at the top left, the QR at the top right, and the sign-off on its
+   own line underneath. No rule here — the hero below carries it. */
+.ag-hdr{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:.4in;}
+/* the inlined lockup — sized by width, since its viewBox is cropped to the
+   artwork; currentColor makes it white against the navy */
+.ag-hdr .lk{display:block;flex:none;width:2.2in;height:auto;color:#fff;}
+.ag-qr{flex:none;width:.86in;}
+.ag-qr .qbox{width:.86in;height:.86in;background:#fff;padding:.05in;}
+.ag-qr .qbox svg{display:block;width:100%;height:100%;}
+.ag-qr .qcap{margin-top:.05in;font:800 6.2pt var(--sans);letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(229,229,229,.62);}
+
+/* ---------- the sign-off, hung in the right column ----------
+   One line, roman against a true Fraunces italic, with the sky accent on the
+   italic word so the colour break and the style break land together. 400
+   rather than a heavier weight: at this size that is what keeps it a piece of
+   typography rather than a headline.
+
+   The effect depends on the two words sitting side by side, so it is set
+   nowrap — which makes the size load-bearing, and --serif here is Playfair
+   Display (builder.css), a wider face than the proof was drawn in. Measured:
+   56pt puts 3.62in of ink in the 3.95in column, and the solo page, whose
+   wider rail leaves only 2.9in, takes 40pt for 2.59in. Both keep about a
+   third of an inch in hand for the way Playfair renders on another platform.
+   The italic needs the ital axis in the Google Fonts request at the top of
+   this file. Re-measure both cases if you touch the rail or the size. */
+/* The sign-off, on its own line under the mark. */
+.ag-hero{flex:none;padding:.3in 0 .16in;border-bottom:1pt solid var(--ag-rule);}
+.ag-hero .say{min-width:0;}
+.ag-hero .say h2{margin:0;font:400 56pt/.92 var(--serif);color:#fff;letter-spacing:-.022em;
+  text-wrap:nowrap;}
+.ag-hero .say h2 em{font-style:italic;font-weight:400;color:var(--sky);}
+/* ---------- agent rows: the cut-out bleeds off the left trim ---------- */
+/* The rows hug their content and the slack collects underneath them, rather
+   than the rows stretching: a stretched row is taller than the portrait's
+   window, which left the details stranded at the bottom of it with a hole
+   above. What is left over becomes breathing space above the contact
+   columns, which is also where the half-letter sheet's extra height goes. */
+/* flex:none, not flex:1. As a flexible child this block swallowed every spare
+   inch on the page and parked it under the last portrait, which held the
+   contact columns an inch below the cut-out for no reason. The slack now
+   collects above the small print instead — see .ag .legal — so the columns sit
+   just under the figure and the legal matter stays bottom-aligned where it
+   belongs. */
+.ag-people{flex:none;display:flex;flex-direction:column;}
+.ag-person{position:relative;flex:none;
+  display:grid;grid-template-columns:var(--ag-rail) 1fr;column-gap:var(--ag-gut);
+  align-items:start;border-top:1pt solid var(--ag-rule);padding-top:.16in;
+  min-height:calc(var(--ag-crop) + var(--ag-sill));}
+.ag-person + .ag-person{margin-top:.2in;}
+/* A stated height rather than bottom:0 — the window is the crop, so it must
+   not follow the row's height around. */
+.ag-shot{position:absolute;left:calc(var(--ag-bleed) * -1);top:.16in;
+  height:var(--ag-crop);width:var(--ag-fig);overflow:hidden;}
+/* Height is stated outright rather than left to top:0 + bottom:0 + a fixed
+   width on a replaced element: that combination is an ambiguous corner of the
+   spec that browsers resolve differently, which a page destined for a PDF
+   must not depend on. */
+/* Pulled left onto the head-and-shoulders band. NOT pulled up: the roster is
+   not framed consistently at the top either — karl-brisard's hair starts .024
+   from the top of his square and nicole-melveney's at .040, so even a .05
+   nudge upward takes the crown off both of them. The figures with more air
+   above the head simply sit a little lower in their window; a cropped head is
+   the worse of the two.
+
+   max-width:none matters: base.css sets img{max-width:100%} for the editor
+   chrome, and this is the one image on the site deliberately WIDER than the
+   box it shows through. Without it the cut-out is squeezed to the column,
+   object-fit:contain then shrinks the whole figure to fit that width and
+   anchors it to the bottom, and the row shows a sliver of scalp. */
+.ag-shot img{position:absolute;left:0;top:0;
+  width:var(--ag-fig);height:var(--ag-fig);max-width:none;max-height:none;
+  display:block;object-fit:contain;object-position:50% 100%;}
+/* Both figures stand on the same left edge. The inset that used to stagger
+   the second one across the rail only made sense while they bled off the
+   trim; inside the margin it just looked misaligned. */
+/* The details hang from the BOTTOM of the cut-out's window, not the top: the
+   block is shorter than the portrait beside it — much shorter on the solo
+   page — and aligned to the top it left a hole under itself.
+
+   The .14in is not a nudge. The window is absolutely positioned .16in into
+   the row's padding box, which is exactly where this block's box starts too,
+   so its bottom sits --ag-crop below both of them; the row is --ag-crop plus
+   .3in tall. The difference is what has to come off, and end-alignment means
+   a block that outgrows the window grows upward and keeps the two bottoms
+   together rather than sliding past. */
+.ag-who{grid-column:2;min-width:0;
+  align-self:end;margin-bottom:calc(var(--ag-sill) - .16in);}
+.ag-who .nm{font:700 21pt/1.03 var(--serif);color:#fff;letter-spacing:-.008em;}
+.ag-who .tt{margin-top:.11in;padding-top:.09in;border-top:.75pt solid var(--ag-rule-soft);
+  font:800 6.8pt/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--sky);}
+.ag-who .ct{margin-top:.14in;display:flex;flex-direction:column;gap:.055in;}
+.ag-who .ct > div{display:flex;align-items:baseline;gap:.13in;min-width:0;}
+.ag-who .ct .k{flex:none;width:.36in;font:800 6.2pt var(--sans);letter-spacing:.16em;
+  text-transform:uppercase;color:rgba(229,229,229,.45);}
+.ag-who .ct .v{min-width:0;font:400 10pt/1.35 var(--body);color:var(--bone);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ag-who .ct .v.num{font:700 10.5pt var(--serif);letter-spacing:.01em;}
+
+/* ---- one agent: the same window, bigger and cut lower ----
+   With one row there is a whole page of navy under the portrait, so the solo
+   page takes a bigger figure and crops it at the waist rather than just
+   under the shoulders.
+
+   .80 of the height rather than the two-up's .74, and not more, because karl-brisard is the one cut-out
+   whose figure does not run to the bottom of its own PNG — his ink stops at
+   .828 and every other one reaches 1.000. A deeper window would cut the
+   other twelve at the window's edge and leave HIM floating above it, which
+   reads as a mistake on his page only. Re-measure if the roster gains a
+   differently-trimmed cut-out.
+
+   The window is then 3.8in wide inside a 7in body, and most of its left-hand
+   side is empty air — the silhouette does not start until x .063. So it is
+   hung --ag-bleed to the left of the text margin, which buys the details
+   column back the width it would otherwise lose to transparent pixels. .45in
+   is as far as it can go: the leftmost ink then lands .37in inside the left
+   trim, and the column keeps 3.41in — enough for the roster's longest name
+   ("George Putykewycz", 3.36in at 27pt) on one line and its longest address
+   ("george.putykewycz@elliman.com", 2.37in at 11pt) without an ellipsis.
+   Grow the figure and both of those break, in that order. */
+/* --ag-sill is the only thing between the cut-out's foot and the contact
+   columns' rule, and the gap it makes is sill - .16in (the window's own top
+   offset) + .06in (the columns' margin). .5in put .4in of empty navy in a
+   band the full width of the page, directly under the figure. .22in closes
+   it to .12in — enough that the rule is not touching her jacket, not enough
+   to read as a gap. It also sets the room under the details block, via
+   .ag-who's end-alignment: keep it above .16in or that margin goes negative
+   and the email row hangs past the rule. */
+.ag.solo{--ag-fig:3.8in; --ag-bleed:.45in; --ag-crop:var(--ag-fig); --ag-sill:.22in;}
+/* The solo page shows the WHOLE cut-out: --ag-crop is the full figure and the
+   window drops its overflow:hidden, so nothing is cut off. The crop reasoning
+   above still governs the two-up rows, where two figures share the page and
+   the foot of each has to go somewhere.
+
+   Everything downstream is already expressed in --ag-crop — the row's height,
+   and the details block that hangs from the window's bottom edge — so both
+   follow the full figure without further arithmetic. What it costs is height:
+   the window grows .76in on Letter and .79in on the half sheet, which comes
+   off the air around the sign-off. */
+.ag.solo .ag-shot{overflow:visible;}
+/* The solo page's spare height is spent here, above and below the sign-off,
+   rather than at the .legal joint: air under Thank you. reads as composition,
+   the same air above the small print reads as a hole. What is left at the
+   joint is a quarter inch — enough to separate the small print from the
+   columns, not enough to look like a gap. */
+.ag.solo .ag-hero{padding:.3in 0 .78in;}
+.ag.solo .ag-who .nm{font-size:27pt;}
+.ag.solo .ag-who .tt{font-size:7.6pt;}
+.ag.solo .ag-who .ct{gap:.09in;}
+.ag.solo .ag-who .ct .v{font-size:11pt;}
+.ag.solo .ag-who .ct .v.num{font-size:12pt;}
+
+/* ---------- footer matter: three uneven columns ---------- */
+.ag-foot{flex:none;margin-top:.06in;padding-top:.16in;border-top:1pt solid var(--ag-rule);
+  display:grid;grid-template-columns:1.5fr 1.7fr 1.45in;column-gap:.4in;}
+.ag-col{min-width:0;}
+.ag-col-t{font:900 6.6pt var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--sky);
+  padding-bottom:.07in;margin-bottom:.09in;border-bottom:.75pt solid var(--ag-rule-soft);}
+.ag-lrow{display:block;margin-bottom:.06in;min-width:0;}
+.ag-lrow:last-child{margin-bottom:0;}
+.ag-lrow .lk{display:block;font:800 6.2pt var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(229,229,229,.45);}
+.ag-lrow .lv{display:block;font:300 9pt/1.35 var(--body);color:var(--bone);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Each state mark is cut out of the brand mesh gradient instead of printed as
+   flat white: the state's own SVG masks a gradient fill, so the silhouette is
+   a window onto the artwork. builder.css sets print-color-adjust:exact
+   globally, so the fill survives the PDF. */
+.ag-st{display:flex;align-items:center;gap:.13in;margin-bottom:.055in;}
+.ag-st:last-child{margin-bottom:0;}
+.ag-st i{flex:none;display:block;width:.6in;height:.33in;background:var(--mesh) center/cover;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain;}
+.ag-st svg.ag-stm{flex:none;display:block;width:.6in;height:.33in;}
+.ag-st span{font:800 6.6pt var(--sans);letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(229,229,229,.72);}
+
+/* The shared legal paragraph, on this page's own rule. margin-top:auto makes
+   this the page's one flexible joint: whatever height the sheet has spare
+   opens up here, above the small print, rather than under the portrait. */
+.ag .legal{flex:none;margin-top:auto;padding-top:.11in;
+  border-top:.75pt solid var(--ag-rule-soft);
+  font:300 6.5pt/1.46 var(--body);color:rgba(229,229,229,.55);text-align:justify;}
+
+
+/* ---------- GALLERY EDITOR PANEL (screen only) ---------- */
+.gal-pages{display:flex;flex-wrap:wrap;gap:6px;}
+.gal-tab{font:800 9.5px var(--sans);letter-spacing:.05em;padding:6px 10px;border-radius:6px;
+  border:1px solid var(--ui-rule);background:#fff;color:var(--navy);cursor:pointer;}
+.gal-tab.on{background:var(--navy);color:var(--ow);border-color:var(--navy);}
+.gal-row-btns{display:flex;gap:6px;margin-top:8px;}
+.gal-row-btns .btn{flex:1;}
+.gal-sub{font:800 8.5px var(--sans);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ui-ink-soft);margin:14px 0 7px;}
+.gal-presets{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.gal-pre{font:600 9.5px var(--sans);padding:6px 8px;border-radius:6px;border:1px solid var(--ui-rule);
+  background:#fff;color:var(--navy);cursor:pointer;text-align:left;}
+.gal-pre:hover{border-color:var(--sky);}
+.gal-check{display:flex;align-items:center;gap:7px;margin-top:12px;
+  font:400 10.5px var(--body);color:var(--navy);cursor:pointer;}
+.gal-ins-none{font:400 10px var(--body);color:var(--ui-ink-soft);}
+.gal-ins-nm{font:800 10px var(--sans);color:var(--navy);margin-bottom:8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gal-fld{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.gal-fld > span{flex:none;width:52px;font:400 9.5px var(--body);color:var(--ui-ink-soft);}
+.gal-fld input[type=text]{flex:1;min-width:0;}
+.gal-fld input[type=range]{flex:1;min-width:0;}
+.gal-step{display:flex;gap:4px;}
+.gal-step button{width:26px;height:24px;border-radius:5px;border:1px solid var(--ui-rule);
+  background:#fff;color:var(--navy);font:800 12px var(--sans);cursor:pointer;line-height:1;}
+.gal-step button:hover{border-color:var(--sky);}
+.gal-val{min-width:34px;text-align:center;font:600 9.5px var(--ui-mono);color:var(--navy);}
+.gal-ins-btns{display:flex;gap:6px;margin-top:9px;}
+.gal-ins-btns .btn{flex:1;}
+.gal-tip{font:400 9.5px/1.5 var(--body);color:var(--ui-ink-soft);margin-top:11px;}
+
+/* ---------- OVERFLOW WARNINGS (screen only) ---------- */
+@media screen{
+  .is-over{outline:2px solid var(--danger);outline-offset:2px;}
+  .over-flag{position:absolute;z-index:9;background:var(--danger);color:#fff;
+    font:800 7pt var(--sans);letter-spacing:.12em;text-transform:uppercase;
+    padding:3px 7px;border-radius:3px;pointer-events:none;white-space:nowrap;}
+}
+/* identical to the Seller Package and Buyer Package warning panel —
+   see assets/css/pitch.css. Shown/hidden with the `hidden` attribute, the
+   same convention those two use. */
+.warn{margin-top:10px;padding:9px 11px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-rule);
+  font:400 10.5px/1.6 var(--ui-mono);color:var(--warn-ink);}
+.warn b{font-weight:700;}
+
+/* ============================================================
+   PAPER SIZE — 8.5 x 11 (default) or half-letter 5.5 x 8.5
+
+   The design canvas is always 8.5in WIDE; its HEIGHT follows the chosen
+   paper's aspect, so the layout reflows to fill whichever sheet it prints on
+   (every page is a flex column with a flex:1 body). Keeping the width fixed
+   is deliberate: the page padding, banner heights and grid gaps are all set
+   in inches against an 8.5in measure, and nothing has to be re-tuned.
+
+     - Letter portrait (8.5 x 11in): canvas 8.5 x 11, printed 1:1.
+     - Half-letter portrait (5.5 x 8.5in): canvas 8.5 x 13.1364 (same 1 : 1.545
+       aspect), printed at scale .6470588 — so the sheet is 65% the linear size
+       and every point size and inch of geometry shrinks with it, which is what
+       keeps the small brochure a faithful reduction rather than a re-layout.
+
+   Set from state.paper by syncPaper(); the @page size lives in <style
+   id="pagesize"> and is rewritten there too. */
+body.paper-half{--ph:13.1364in;}
+@media print{ body.paper-half{--print-scale:.6470588;} }
+
+/* Where the taller sheet's extra 2.14in goes.
+
+   The cover photo, the gallery frames and the floor plans are all flex:1, so
+   they simply grow and the pages still read as composed. Two pages have to be
+   told, because their slack is pinned in one place by a margin-top:auto and
+   would otherwise open a single conspicuous void:
+
+     page 3   the navy photo band takes a bigger share of the page. A deeper
+              banner reads as a design choice; a taller white column under the
+              blurb reads as a mistake.
+     closing  a fixed share of the breather goes above the agent cards and
+              the rest below, so the cards lift clear of the top of 3in of
+              navy without drifting down into the contact columns and
+              competing with them for attention.
+
+   .info-tr's depth is a percentage rather than 4.2in for the same reason —
+   38.2% of 11in IS 4.2in, so Letter is unchanged. */
+body.paper-half .info{--band:5.9in;}   /* 45% of the taller sheet */
+/* The closing page again. All 2.14in used to land in one place; now it is
+   spread so nothing reads as a void: the sign-off gets air above and below
+   it, the footer gets a wider gap, and what is left goes to the agent rows,
+   whose cut-out grows a little to keep standing in its row rather than
+   floating in it. The figure stays under rail + padL (3.13in). */
+body.paper-half .ag{--ag-fig:3.2in;}
+/* The solo page's figure is capped by the details column, not by the sheet —
+   see the note on .ag.solo — so on the taller sheet it can only take a little
+   of the extra 2.14in. The rest goes where it went before: air around the
+   sign-off and a wider gap over the footer, in the proportions that keep the
+   navy under the portrait the same share of the page as on Letter. */
+body.paper-half .ag.solo{--ag-fig:3.95in; --ag-bleed:.6in;}
+body.paper-half .ag-hero{padding:.66in 0 .52in;}
+body.paper-half .ag.solo .ag-hero{padding:1.2in 0 1.9in;}
+/* the extra 2.14in lands in the .legal joint now, so the footer keeps its
+   own tight gap on both sheets */
+
+@media print{
+  .empty-note,.over-flag{display:none !important;}
+  .is-over{outline:none !important;}
+}
+
+/* editor chrome — screen only */
+/* The tray's rows, and the ✕, come from photo-dnd.css. .img-thumb stays here
+   because only the floor-plan rows use it now — a photo row has a grab handle
+   instead of a plain thumbnail. */
+.img-thumb{width:44px;height:34px;object-fit:cover;border-radius:4px;flex:none;background:var(--ui-paper-2);}
+.fp-label{flex:1;min-width:0;border:1px solid var(--ui-rule);border-radius:6px;background:#fff;
+  font:500 11px var(--body);color:var(--navy);padding:6px 8px;}
+.fp-label:focus{outline:2px solid var(--sky);outline-offset:1px;}
+/* a floor-plan row is two lines: name on top, crop control under it */
+.fp-row{flex-direction:column;align-items:stretch;gap:8px;}
+.fp-top{display:flex;align-items:center;gap:9px;}
+.fp-crop{display:flex;align-items:center;gap:8px;}
+.fp-crop-l{flex:none;font:800 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ui-ink-soft);}
+.fp-crop input[type=range]{flex:1;min-width:0;accent-color:var(--sky2);height:16px;}
+.fp-crop input[type=range]:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
+.fp-crop-v{flex:none;width:34px;text-align:right;font:400 10px var(--ui-mono);color:var(--ui-ink-soft);}
+
+/* the agent picker (.ag-chip) is shared — see builder.css */
+.shot-btn{flex:none;border:1px solid var(--ui-rule);background:#fff;border-radius:999px;
+  font:800 8.5px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-ink-soft);
+  padding:5px 10px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;}
+.shot-btn:hover{border-color:var(--navy);background:var(--navy);color:var(--ow);}
+.shot-btn:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
+.linkish{border:0;background:none;padding:0;margin-left:5px;cursor:pointer;
+  font:400 10px var(--ui-mono);color:var(--ui-ink-soft);text-decoration:underline;text-underline-offset:2px;}
+.linkish:hover{color:var(--navy);}
+.linkish:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}

@@ -109,7 +109,7 @@ const FAKE_DRIVE = `(function () {
   if (cfg.html) tree.children.filter(function (c) { return c.name === 'Video'; })[0].children.push(f('Video page - 100 Example St 4A.html', '12'));
   // Drive through Google: every file and folder carries its real Drive link
   if (cfg.web) (function link(n) { n.url = 'https://drive.google.com/' + (n.kind === 'directory' ? 'drive/folders/' : 'file/d/') + encodeURIComponent(n.name) + (n.kind === 'directory' ? '' : '/view'); (n.children || []).forEach(link); })(tree);
-  var log = window.__driveLog ={ tree: 0, list: [], read: [], inflight: 0, max: 0 };
+  var log = window.__driveLog ={ tree: 0, list: [], read: [], fin: [], inflight: 0, max: 0 };
   function find(path) {
     var node = tree;
     String(path).split('/').filter(Boolean).forEach(function (seg) {
@@ -122,6 +122,7 @@ const FAKE_DRIVE = `(function () {
     state: function () { return Promise.resolve(cfg.state || 'connected'); },
     connect: function () { return Promise.resolve([]); }, reconnect: function () { return Promise.resolve(true); },
     list: function () { return Promise.resolve([]); },
+    listFinishes: function (folder, sub) { log.fin.push(sub); return Promise.resolve(((cfg.finishes || {})[sub]) || []); },
     tree: function () { log.tree++; return Promise.resolve(JSON.parse(JSON.stringify(tree))); },
     listJob: function (folder, sub) {
       log.list.push(sub);
@@ -561,6 +562,25 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     ['1 for sale · 1 not listed yet. From its listings here; each opens its page.',
       ['House 1 | 4 bd / 3 + 1 half ba | 3,100 sq ft | $2,400,000 | For sale | Open', 'House 2 |  |  | $2,500,000 | Not listed yet | Open'],
       ['../job/?listing=619-example-ave-house-1', '../job/?listing=619-example-ave-house-2'], []]);
+  await t.ctx.close();
+  /* D142: a development's Finishes card, the finish sheet read live from its Drive folder */
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', drive: { finishes: {} } });
+  await t.page.waitForFunction(() => !/Reading Drive/.test((document.getElementById('finBody') || {}).textContent || 'x'));
+  check('finishes: no sheet says so, nothing made up', [await text(t.page, '#finCard h2'), (await text(t.page, '#finBody')).startsWith('No finish sheet yet.'),
+    await t.page.$('#finCard iframe'), await t.page.evaluate(() => window.__driveLog.fin), t.errors], ['Finishes', true, null, ['Finishes'], []]);
+  await t.ctx.close();
+  RU.dev_projects.filter(d => d.slug === 'le-reve')[0].drive_folder = 'GVC - Florida/New Development/3 - Le Reve';
+  t = await open(browser, { rows: RU, path: '/workspace/job/?dev=le-reve', drive: { finishes: { '0 - Approved Assets/Finishes': [
+    { name: 'Le Reve Finish Schedule.pdf', kind: 'file', modified: '2026-11-04T13:05:00Z', url: 'https://drive.google.com/file/d/fin1/view' }] } } });
+  await t.page.route('https://drive.google.com/**', r => r.abort());
+  await t.page.waitForSelector('#finCard iframe');
+  check('finishes: Le Reve shows its sheet in the Drive viewer, colours to be confirmed, no file name', [
+    await t.page.$eval('#finCard iframe', f => f.getAttribute('src')), (await text(t.page, '#finCard .fin-tbc')).startsWith('To be confirmed'),
+    /Le Reve Finish Schedule/.test(await text(t.page, '#finCard')), await t.page.$$eval('#finCard .kr a', as => as.map(a => a.textContent.trim())), t.errors],
+    ['https://drive.google.com/file/d/fin1/preview', true, false, ['Open'], []]);
+  await t.ctx.close();
+  t = await open(browser, { path: '/workspace/job/?dev=619-example-ave', drive: { state: 'not-connected' } });
+  check('finishes: without Drive, asks for the Google sign-in', [(await text(t.page, '#finBody')).includes('Sign in with Google'), t.errors], [true, []]);
   await t.ctx.close();
   /* overhaul 7b-1: a development's Marketing materials, from the nightly scan of its folder (0023) */
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });

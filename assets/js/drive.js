@@ -27,6 +27,11 @@
                                   → [{ name, kind, size, modified }] of one readable folder, by name;
                                     anything GVC_DRIVE_RULES.allowedInJob refuses is left out.
 
+     await GVC_DRIVE.listFinishes(devFolder, '0 - Approved Assets/Finishes', { timeoutMs })
+                                  → [{ name, kind, size, modified, url }]: the finish sheets at the top of
+                                    one folder of a development (GVC_DRIVE_RULES.finishFile: PDFs only).
+                                    A folder that isn't there → [].
+
    Paths are relative to Shared drives\, with "/" or "\".
    Needs assets/js/drive-rules.js loaded first.
    ============================================================ */
@@ -208,6 +213,21 @@
     return locate(jobFolder).then(function (x) { return walk(x[0], x[1]); }).then(function (d) { return listOf(d, sub, opts); });
   }
 
+  function listFinishes(devFolder, sub, opts) {
+    var ms = (opts && opts.timeoutMs) || 20000, r = RULES.rel(sub);
+    if (RULES.rel(devFolder) === null || r === null) return Promise.reject(new Error("That path isn't allowed."));
+    return locate(devFolder).then(function (x) { return walk(x[0], x[1].concat(r ? r.split('/') : [])); }).then(function (d) {
+      return entries(d, ms);
+    }).then(function (hs) {
+      return Promise.all(hs.map(function (h) {
+        return h.kind === 'file' && RULES.finishFile((r ? r + '/' : '') + h.name) ? fileNode(h, ms) : null;
+      }));
+    }, function (e) {
+      if (e && (e.name === 'NotFoundError' || e.name === 'TypeMismatchError')) return [];
+      throw e;
+    }).then(function (xs) { return xs.filter(Boolean).sort(byName); });
+  }
+
   /* a pasted Drive folder link → its path under Shared drives, or a plain reason it can't be used */
   function pathOfLink(link) {
     var m = String(link || '').match(/\/folders\/([A-Za-z0-9_-]{10,})/) || String(link || '').match(/[?&]id=([A-Za-z0-9_-]{10,})/);
@@ -223,7 +243,7 @@
 
   global.GVC_DRIVE = {
     state: state, connect: connect, reconnect: reconnect,
-    list: list, readJobFile: readJobFile, pathOfLink: pathOfLink, tree: tree, listJob: listJob,
+    list: list, readJobFile: readJobFile, pathOfLink: pathOfLink, tree: tree, listJob: listJob, listFinishes: listFinishes,
     _withTimeout: withTimeout, _treeOf: treeOf, _listOf: listOf   // for tests
   };
 })(window);

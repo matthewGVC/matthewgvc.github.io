@@ -17,7 +17,7 @@ uses it standalone. The Buyer Package does not use it.
 
 | Table | Holds | Since |
 |---|---|---|
-| `properties` | Listings: one row per address + unit. `core` (the facts the builders share, incl. `agentIds`), each fact's sources, stage, Drive folder, the Asana and DE snapshots, milestones, the Match result, the details doc last read. | 0001, grown by 0004–0007 |
+| `properties` | Deals (a sale, a rental, a pitch): one row per deal, on a place (`place_id`, 0025) and on our side or a buyer's (`side`). `core` (the facts the builders share, incl. `agentIds`), each fact's sources, stage, Drive folder, the Asana and DE snapshots, milestones, the Match result, the details doc last read. | 0001, grown by 0004–0007 |
 | `documents` | One saved piece per tool per listing or pitch (`tool` is any lower-case slug, 0009): its wording and settings (`state`), what it printed from the job (`built_from`) and the files it made (`output`, `outputs`). | 0001, 0009, 0010 |
 | `photos` | The property bar's photo shelf. The files live in the private `property-photos` bucket; pages render them through short-lived signed URLs. | 0001 |
 | `developments` | The archived New Development tool's documents (`data`, stored verbatim). | 0002 |
@@ -25,6 +25,8 @@ uses it standalone. The Buyer Package does not use it.
 | `members` | Who may sign in, and their role: `owner`, `admin`, `marketing`, `ops`, `team`, `helper`, `shared`; and their market. | 0004, 0011, 0020 |
 | `pitches` | Seller pitches, linked to their Asana task; the outcome follows Asana (D55). | 0005 |
 | `dev_projects` | Developments: milestones, the 🚧 Asana link and hints, the schedule (0015), `archived_at` (0018), the nightly folder `scan` (0023), `house_listing_id` for a development that is one house (0024). | 0005 |
+| `places` | An apartment or house: one row each, with its clean address, town, market, building and development. A deal is a `properties` row with `place_id`. Only the helper writes it (0025). | 0025 |
+| `buildings` | NYC buildings: the facts every unit in one shares. Only the helper writes it (0025). | 0025 |
 | `changes` | The change log: one row per change, with its source and who made it. | 0005 |
 | `floorplans` | Floorplan versions × layouts per listing. | 0005 |
 | `sync_runs` | Every run of the desktop helper (DE, Asana, People, budget, scan, backup). | 0005 |

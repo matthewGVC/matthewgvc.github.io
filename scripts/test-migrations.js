@@ -105,8 +105,8 @@ const USERS = {
 
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
-  check('tables', tables, ['asana_people', 'asana_tasks'].concat(UPTO >= '0021' ? ['asana_writes'] : [], ['changes', 'de_listings'], UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
-    .concat(UPTO >= '0022' ? ['google_tokens'] : [], UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches', 'properties', 'sync_runs', 'todos']));
+  check('tables', tables, ['asana_people', 'asana_tasks'].concat(UPTO >= '0021' ? ['asana_writes'] : [], UPTO >= '0025' ? ['buildings'] : [], ['changes', 'de_listings'], UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
+    .concat(UPTO >= '0022' ? ['google_tokens'] : [], UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches'], UPTO >= '0025' ? ['places'] : [], ['properties', 'sync_runs', 'todos']));
   if (UPTO >= '0023') check('0023: a development keeps its folder scan', (await db.query(`select data_type from information_schema.columns where table_name = 'dev_projects' and column_name = 'scan'`)).rows, [{ data_type: 'jsonb' }]);
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
@@ -702,6 +702,36 @@ const USERS = {
     check('0021: the helper marks it done; nobody else can', [await fails('karl', `update public.asana_writes set status = 'done'`),
       (await as('helper', `update public.asana_writes set status = 'done', done_at = now() where property_id = $1 returning status`, [ap.id])).rows.length], [false, 1]);
     check('0021: …and the team reads it', (await as('karl', 'select status from public.asana_writes where property_id = $1', [ap.id])).rows, [{ status: 'done' }]);
+  }
+
+  /* ---------- 0025: places and buildings; the helper writes them, members read them ---------- */
+  if (UPTO >= '0025') {
+    const bid = (await as('helper', `insert into public.buildings (key, label, market) values ('NYC|1050 fifth', '1050 Fifth Avenue', 'NYC') returning id`)).rows[0].id;
+    const plId = (await as('helper', `insert into public.places (slug, key, address, town, label, market, building_id) values ('1050-fifth-avenue-10c', 'NYC|1050 fifth|10C', '1050 Fifth Avenue', null, '1050 Fifth Avenue, 10C', 'NYC', $1) returning id`, [bid])).rows[0].id;
+    check('0025: a place has a building', (await db.query('select building_id from public.places where id = $1', [plId])).rows[0].building_id, bid);
+    check('0025: a building key is unique', await fails('helper', `insert into public.buildings (key) values ('NYC|1050 fifth')`), true);
+    check('0025: a place slug is unique', await fails('helper', `insert into public.places (slug, key, address) values ('1050-fifth-avenue-10c', 'k', 'a')`), true);
+    check('0025: a place needs an address', await fails('helper', `insert into public.places (slug, key) values ('no-address', 'k')`), true);
+    check('0025: the Pitch stage is allowed', await fails('matt', `update public.properties set stage = 'Pitch' where id = $1`, [liveId]), false);
+    check('0025: an unknown stage is still refused', await fails('matt', `update public.properties set stage = 'Lead' where id = $1`, [liveId]), true);
+    await db.query(`update public.properties set stage = 'Live' where id = $1`, [liveId]);
+    check('0025: a deal defaults to our side', (await db.query('select side from public.properties where id = $1', [liveId])).rows[0].side, 'list');
+    check('0025: a side is list or buy', [await fails('matt', `update public.properties set side = 'buy' where id = $1`, [liveId]), await fails('matt', `update public.properties set side = 'both' where id = $1`, [liveId])], [false, true]);
+    await db.query(`update public.properties set side = 'list' where id = $1`, [liveId]);
+    check('0025: a deal links to its place', await fails('matt', `update public.properties set place_id = $1 where id = $2`, [plId, liveId]), false);
+    for (const t of ['places', 'buildings']) {
+      check('0025: ' + t + ' are read by Matt, the helper and the shared login', [await as('matt', 'select count(*)::int n from public.' + t), await as('helper', 'select count(*)::int n from public.' + t),
+        await as('team', 'select count(*)::int n from public.' + t)].map(r => r.rows[0].n), [1, 1, 1]);
+      check('0025: ' + t + ' are hidden from a stranger and anon', [(await as('stranger', 'select count(*)::int n from public.' + t)).rows[0].n, (await as('anon', 'select count(*)::int n from public.' + t)).rows[0].n], [0, 0]);
+    }
+    const w = async (who, sql) => { try { return (await as(who, sql)).affectedRows || 0; } catch (e) { return 'refused'; } };
+    check("0025: the shared login can't write places", [await w('team', `insert into public.places (slug, key, address) values ('x', 'k', 'a')`),
+      await w('team', `update public.places set label = 'x'`), await w('team', 'delete from public.places')], ['refused', 0, 0]);
+    check("0025: the shared login can't write buildings", [await w('team', `insert into public.buildings (key) values ('x')`),
+      await w('team', `update public.buildings set label = 'x'`), await w('team', 'delete from public.buildings')], ['refused', 0, 0]);
+    check("0025: a stranger can't write places", await w('stranger', `insert into public.places (slug, key, address) values ('x', 'k', 'a')`), 'refused');
+    check('0025: the owner and the helper change a place', [await w('matt', `update public.places set label = 'Matt' where id = '${plId}'`), await w('helper', `update public.places set label = 'Helper' where id = '${plId}'`)], [1, 1]);
+    check('0025: a place can sit in a development', await w('helper', `update public.places set dev_project_id = (select id from public.dev_projects limit 1) where id = '${plId}'`), 1);
   }
 
   /* ---------- the switch: the shared account stops ---------- */

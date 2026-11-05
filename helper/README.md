@@ -89,6 +89,11 @@ exit ends it). Run it from the main repo folder.
 - Asana reads: `node helper/asana-sync.js --plan` writes the first link plan,
   `exports/asana-link-plan-<date>.md`, for Matt to tick; `--apply-plan <that file>` makes the jobs;
   `--write` is one sync after that. Needs `asanaToken` in the helper's config.
+- Places (migration 0025): `place-store.js` finds the place a deal is on or makes it (the sync and the
+  backfill share it). `node helper/places-backfill.js` writes the one-time plan,
+  `exports/places-backfill-<date>.md` and `.json`, and changes nothing; `--apply <that .json>` applies it and
+  skips what is already done. `--out <folder>` points the plan at the main checkout's `exports\`.
+  `node scripts/test-places-backfill.js` checks both.
 - Development budgets (read-only, D113): the helper reads each linked pro-forma sheet every hour as
   Matt. Sign in once with `node helper/budget/sign-in.js <client.json>` (the "GVC Helper budget read"
   Desktop app client from Google Cloud); it saves `%USERPROFILE%\.gvc-helper\google-auth.json`. Restart
@@ -106,5 +111,5 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 `node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`, `node scripts/test-de-apply.js`,
 `node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-budget.js`,
 `node scripts/test-asana-map.js`, `node scripts/test-asana-posts.js`, `node scripts/test-helper-db.js`,
-`node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`,
+`node scripts/test-places-backfill.js`, `node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`,
 `node scripts/test-piece-build.js` (with `BASE=http://localhost:8080` it also lays out and draws real pages).

@@ -37,7 +37,7 @@ developer.** Treat that as your default unless they tell you otherwise. That mea
 - ⚠️ **The live site is published straight from the `main` branch.** The moment a change lands on
   `main`, GitHub puts it on the real, public website within about a minute. This is why we are
   strict about git (§7). **`main` is production. Protect it.**
-- The most-used tool is the **Showsheet Generator** at `tools/showsheet/index.html` — a
+- The most-used tool is the **Showsheet Generator** at `tools/showsheet/` — a
   listing-sheet maker. If the teammate wants to "redesign the showsheet," that is
   almost always the file they mean. See §6.
 
@@ -239,8 +239,11 @@ questions to settle first, copy-exact templates, the wiring checklist, and
 `node scripts/check-tools.js <slug>`, which must pass before the tool ships.
 
 ### Redesigning the Showsheet — the most common request
-- The sheet's look — its layout, type and colours — is all in **`tools/showsheet/index.html`**
-  (HTML + CSS + JavaScript). That is the file to edit to restyle it. Beside it, `listing.js`
+- The sheet lives in **`tools/showsheet/`**: `index.html` is the markup, **`showsheet.css`** its
+  type, colours and layout (the file to edit to restyle it), and **`sheet.js`** draws the two sides.
+  The rest of its script is split by job: `state.js` (the sheet's fields), `fit.js` (type that
+  scales to fit, the Text & floorplan size controls), `form.js`, `photos.js`, `panel.js`,
+  `print.js` and `piece.js` (saving, job mode, `__render`). Beside them, `listing.js`
   reads the Word document and does the money math (tested by `node scripts/test-listing.js`);
   the editor panel's shared styles are `assets/css/builder.css`, and the logos are files in
   `assets/logos/sheet/`.
@@ -253,7 +256,7 @@ questions to settle first, copy-exact templates, the wiring checklist, and
   height, shrinks the agent headshots. The floorplan can also be **cropped on the sheet
   itself** — hover the plan to zoom, then drag to move it.
   Both are saved with the sheet.
-- Typical loop: edit `tools/showsheet/index.html` → refresh `localhost:8080/tools/showsheet/`
+- Typical loop: edit `tools/showsheet/showsheet.css` (or `sheet.js`) → refresh `localhost:8080/tools/showsheet/`
   → drop the three sample files onto "Listing files" (see above) → check it → repeat. Then
   follow §5 to commit and send for review.
 - The print layout is a fixed **11in-wide design canvas**; A5 prints it scaled down, Letter prints

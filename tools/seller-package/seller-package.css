@@ -1,0 +1,278 @@
+/* tools/seller-package/seller-package.css: the Seller Package's own page styles.
+   Loaded by index.html after the shared stylesheets (builder.css, pitch.css, panel-collapse.css). */
+/* ============================================================
+   SELLER PITCH & CMA — deck-specific page styles
+   Shared furniture lives in assets/css/pitch.css.
+   ============================================================ */
+
+/* ---- shared: the reference deck's three-up colour blocks ---- */
+.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.tri.two{grid-template-columns:repeat(2,1fr);}
+.tri .tb{padding:.2in .18in;min-width:0;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;text-align:center;}
+.tri .tb.c1{background:var(--navy);}
+.tri .tb.c2{background:var(--sky2);}
+.tri .tb.c3{background:var(--sky);}
+.tri .tb .ci{width:.22in;height:.22in;color:#fff;margin-bottom:.09in;}
+.tri .tb.c3 .ci{color:var(--navy);}
+.tri .tb h4{margin:0 0 .08in;font:800 9.5pt/1.25 var(--sans);color:#fff;}
+.tri .tb.c3 h4{color:var(--navy);}
+.tri .tb p{margin:0;font:300 8.3pt/12.5pt var(--body);color:rgba(255,255,255,.9);}
+.tri .tb.c3 p{color:rgba(0,39,58,.95);}
+/* a quieter variant for short one-line claims */
+.tri.flat .tb{text-align:center;padding:.24in .18in;}
+.tri.flat .tb.c0{background:var(--tile-light);}
+.tri.flat .tb h4{margin:0;font:400 11pt/1.4 var(--body);color:#fff;}
+.tri.flat .tb.c0 h4,.tri.flat .tb.c3 h4{color:var(--navy);}
+.tri.flat .tb b{font-weight:800;}
+
+/* the two company pages are fixed-length copy, so spread their sections down
+   the page rather than letting them bunch under the title */
+.pg[data-key="about"] .pg-body,
+.pg[data-key="studio"] .pg-body{justify-content:space-between;}
+
+/* section rule + display line, mirrors "PRESENT YOUR PROPERTY RIGHT" */
+.dline{text-align:center;margin:.26in 0 .18in;font:400 19pt/1.15 var(--serif);color:var(--navy);
+  letter-spacing:.01em;}
+.dline b{font-weight:700;}
+.dline.sm{font-size:15pt;margin:.22in 0 .14in;}
+
+/* p3 — about GVC: one wide founders photo, headline stat, copy, value blocks. */
+.duo{position:relative;height:3.15in;flex:none;margin-bottom:.24in;overflow:hidden;
+  background:linear-gradient(var(--mock-top),var(--mock-bottom));box-shadow:0 .1in .26in rgba(0,39,58,.22);}
+.duo img{width:100%;height:100%;display:block;object-fit:cover;}
+.duo .cap{position:absolute;left:0;right:0;bottom:0;padding:.12in .2in;
+  background:rgba(0,39,58,.82);text-align:center;
+  font:800 8pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#fff;}
+/* New Jersey: the agents presenting the listing, standing on a navy panel,
+   in place of the founders photo. */
+.duo.cut{background:var(--navy);}
+/* the team's own stone-and-glass doorway, out of focus and tinted navy, so the figures stand
+   in a place rather than on a flat colour */
+.duo.cut::before{content:'';position:absolute;inset:-.2in;
+  background:url(../../assets/team/founders-lifestyle.jpg) center 35%/cover;filter:blur(10px) saturate(.8);}
+.duo.cut::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,39,58,.62),rgba(0,39,58,.82)),radial-gradient(ellipse at 50% 100%,rgba(83,199,220,.22),transparent 62%);}
+.duo.cut .people{position:absolute;z-index:1;inset:0 0 .36in;display:flex;justify-content:center;align-items:flex-end;gap:0;}
+.duo.cut .people img{width:auto;height:96%;max-width:3.6in;object-fit:contain;object-position:50% 100%;
+  filter:drop-shadow(0 0 .12in rgba(0,20,32,.55));}
+.duo.cut .people img + img{margin-left:-.35in;}
+.duo.cut .cap{z-index:2;}
+.about-copy{font:300 9.3pt/14pt var(--body);color:var(--navy);text-align:center;margin-bottom:.22in;}
+.about-copy b{font-weight:700;}
+
+/* p4 — the marketing team as a flush 2x2 of members: each one is a square
+   photo paired with a coloured name panel, alternating so the colours
+   checkerboard across the block. Mirrors the reference deck. */
+.crew{display:grid;grid-template-columns:repeat(4,1fr);gap:0;flex:none;margin-bottom:.24in;}
+.crew .cell{position:relative;aspect-ratio:1/1;overflow:hidden;min-width:0;}
+.crew .cell.ph{background:rgba(0,39,58,.06);}
+.crew .cell.ph img{width:100%;height:100%;object-fit:cover;display:block;}
+.crew .cell.lab{display:flex;flex-direction:column;justify-content:center;padding:.14in .16in;}
+.crew .cell.lab.n1{background:var(--navy);}
+.crew .cell.lab.n2{background:var(--sky2);}
+.crew .cell.lab.n3{background:var(--sky);}
+.crew .cell.lab.n4{background:var(--tile-light);}
+.crew .cell.lab .nm{font:800 11pt/1.2 var(--sans);color:#fff;}
+.crew .cell.lab .tt{margin-top:.06in;font:400 8.5pt/1.35 var(--body);
+  text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.97);}
+.crew .cell.lab.n3 .nm,.crew .cell.lab.n4 .nm{color:var(--navy);}
+.crew .cell.lab.n3 .tt,.crew .cell.lab.n4 .tt{color:rgba(0,39,58,.75);}
+/* New Jersey's marketing page, led by a full-width mockup of the team's work (blueprint, brochure,
+   camera, a film on a phone). The panel takes the image's own proportions, so
+   none of it is ever cropped. */
+.showcase{flex:none;}
+.showcase .mock{aspect-ratio:2600 / 1491;overflow:hidden;background:var(--mock-screen);}
+.showcase .mock img{width:100%;height:100%;object-fit:contain;display:block;}
+/* the Made In-House line (2026-10-28) took room from the mock-up, which now crops to a band */
+.showcase .mock{aspect-ratio:auto;height:2.95in;}
+.showcase .mock img{object-fit:cover;}
+.about-copy.inhouse{margin-bottom:0;}
+/* this page carries four sections, so its headings sit tighter than the
+   other company pages' */
+.showcase ~ .dline.sm{margin:.14in 0 .1in;}
+.showcase ~ .tri .tb{padding:.14in .16in;}
+/* the bottom of the page: one room, as shot and as virtually staged */
+.staging{display:grid;grid-template-columns:1fr 1fr;gap:.06in;height:1.9in;flex:none;}
+.staging figure{position:relative;margin:0;overflow:hidden;min-width:0;}
+.staging img{width:100%;height:100%;object-fit:cover;object-position:50% 92%;display:block;}
+/* (anchored low: the after photo carries its "Virtually staged" mark bottom-left) */
+.staging figcaption{position:absolute;top:.12in;left:.12in;padding:.05in .11in;background:var(--navy);
+  font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:#fff;}
+.staging figure + figure figcaption{background:var(--sky);color:var(--navy);}
+/* Your Property, New Jersey: every digit the same height (lining figures),
+   so prices and sizes do not bob up and down in the serif. */
+.pg[data-market="nj"][data-key="property"],
+.pg[data-market="nj"][data-key="property"] *{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1,"tnum" 1;}
+/* right-hand members read outward, so their text hangs to the right */
+.crew .cell.lab.r{text-align:right;}
+
+/* p5 — property breakdown. The hero image takes whatever height the details
+   and features don't need, rather than sitting at a fixed height and leaving
+   dead space below a short list — min-height is the floor for a long one. */
+.pb-hero{flex:1;min-height:1.8in;margin-bottom:.26in;}
+.pb-grid{display:flex;gap:.42in;flex:none;}
+.pb-col{flex:1;min-width:0;display:flex;flex-direction:column;}
+.spec{display:flex;align-items:baseline;justify-content:space-between;gap:.16in;
+  padding:.1in 0;border-bottom:.75pt solid var(--rule);}
+.spec .k{font:800 7pt var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(0,39,58,.55);}
+.spec .k .hi{width:9pt;height:9pt;display:inline-block;vertical-align:-1.5pt;margin-right:.05in;color:rgba(0,39,58,.5);}
+.spec .v{font:600 10pt var(--body);color:var(--navy);text-align:right;font-variant-numeric:tabular-nums;}
+.feat{list-style:none;margin:0;padding:0;}
+.feat li{position:relative;padding:.055in 0 .055in .22in;font:300 9.5pt/14pt var(--body);color:var(--navy);}
+.feat li::before{content:'';position:absolute;left:0;top:.105in;width:.075in;height:.075in;background:var(--sky);}
+
+/* p7 — comps table, more breathing room + small glyphs in the numeric heads */
+#compTable th .hi{width:9pt;height:9pt;display:inline-block;vertical-align:-1.5pt;margin-right:.04in;color:rgba(0,39,58,.5);}
+#compTable td{padding-top:.16in;padding-bottom:.16in;}
+
+/* p8 — listing strategy. Each band carries the static strategy/risk pair
+   from the reference deck; only the three prices come from the panel. */
+.eval{text-align:center;font:700 10.5pt/15pt var(--body);color:var(--navy);
+  margin:0 0 .26in;padding:0 .3in;}
+.band{position:relative;}
+.band .bsr{margin-top:.14in;padding-top:.11in;border-top:.75pt solid var(--rule);text-align:center;}
+.band.mid .bsr{border-top-color:rgba(83,199,220,.4);}
+.band .bsr div{font:300 8.3pt/12.5pt var(--body);color:rgba(0,39,58,.75);}
+.band .bsr div + div{margin-top:.05in;}
+.band .bsr b{font:800 6.8pt var(--sans);letter-spacing:.13em;text-transform:uppercase;
+  color:rgba(0,39,58,.5);display:block;}
+.band.mid .bsr div{color:rgba(229,229,229,.85);}
+.band.mid .bsr b{color:var(--sky);}
+/* Contrast. The shared pitch.css sets small labels in --sky2 (3:1 on white) and the
+   running footer and stat captions at 42-60% ink, short of 4.5:1. Held to AA here
+   the way the Buyer's Guide holds it. */
+.pg:not(.rev){--sky2:var(--sky-text);}
+.pg:not(.rev) .stat .l,.pg:not(.rev) .quote .who{color:rgba(0,39,58,.72);}
+.pg-foot .site{color:rgba(0,39,58,.72);}
+.pg-foot .pg-n{color:rgba(0,39,58,.7);}
+.pg.rev .pg-foot .site{color:rgba(229,229,229,.82);}
+.pg.rev .pg-foot .pg-n{color:rgba(229,229,229,.78);}
+.pg.rev .ag-who .ct .k,.pg.rev .ag-lrow .lk{color:rgba(229,229,229,.8);}
+/* Comparable Sales: a short list leaves most of the page empty, so the rows
+   open up and a summary of the comps themselves sits under the table. */
+table.tbl.roomy td{padding-top:.17in;padding-bottom:.17in;}
+table.tbl th.num{text-align:right;}
+.comp-sum{margin-top:.42in;}
+.comp-sum .row{display:flex;gap:.3in;}
+.comp-sum .row + .row{margin-top:.3in;}
+.comp-sum h3{margin:0 0 .12in;font:800 7pt var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--navy);}
+.comp-sum .stat .v{font-size:19pt;white-space:nowrap;}
+.comp-sum .stat .l{font-size:7pt;}
+.comp-sum .note{margin:.2in 0 0;font:300 8.5pt/13pt var(--body);color:rgba(0,39,58,.78);}
+.strat-note{margin-top:.28in;padding-top:.22in;border-top:.75pt solid var(--rule);
+  font:300 9.5pt/14pt var(--body);color:rgba(0,39,58,.78);}
+/* the reference closes this page on a property shot — it takes whatever
+   height is left once the bands and the note are placed */
+.strat-ph{flex:1;min-height:1.6in;margin-top:.28in;}
+
+/* p9 — sales & marketing plan, three phases.
+   Each phase carries its own accent, darkest to lightest as the listing moves
+   from pre-launch through to on-going, so the three columns read as a sequence
+   rather than three unrelated lists. The bullets pick up the same colour. */
+.plan3{display:flex;gap:.3in;flex:1;min-height:0;}
+.plan3 .ph3{flex:1;min-width:0;display:flex;flex-direction:column;}
+.plan3 .ph3-h{flex:none;font:800 11pt var(--sans);letter-spacing:.03em;text-transform:uppercase;
+  color:var(--navy);padding-bottom:.1in;border-bottom:2pt solid var(--sky);margin-bottom:.16in;}
+.plan3 .ph3.p1 .ph3-h{border-bottom-color:var(--navy);}
+.plan3 .ph3.p2 .ph3-h{border-bottom-color:var(--sky2);}
+.plan3 .ph3.p3 .ph3-h{border-bottom-color:var(--sky);}
+.plan3 .grp{margin-bottom:.16in;}
+.plan3 .grp-t{font:800 7pt var(--sans);letter-spacing:.13em;text-transform:uppercase;color:rgba(0,39,58,.55);margin-bottom:.06in;}
+.plan3 ul{list-style:none;margin:0;padding:0;}
+.plan3 li{padding:.05in 0 .05in .16in;position:relative;font:300 8.8pt/13pt var(--body);color:var(--navy);}
+.plan3 li::before{content:'';position:absolute;left:0;top:.095in;width:.06in;height:.06in;background:var(--sky2);}
+.plan3 .ph3.p1 li::before{background:var(--navy);}
+.plan3 .ph3.p2 li::before{background:var(--sky2);}
+.plan3 .ph3.p3 li::before{background:var(--sky);}
+
+/* p9 footer — follow the plan, follow along: a small QR per channel */
+.plan-social{flex:none;margin-top:.22in;padding-top:.26in;border-top:.75pt solid var(--rule);
+  display:flex;justify-content:center;gap:.4in;}
+/* fixed, equal width regardless of label length, so the three QR squares
+   themselves stay evenly spaced and centered on the page */
+.plan-social .ps{flex:none;width:2in;text-align:center;}
+.plan-social .ps .qbox{width:1.7in;height:1.7in;margin:0 auto;background:#fff;
+  border:.75pt solid var(--rule);padding:.06in;}
+.plan-social .ps .qbox svg{width:100%;height:100%;display:block;}
+.plan-social .ps .pl{margin-top:.12in;font:800 7.6pt var(--sans);letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(0,39,58,.6);}
+.plan-social .ps .pv{margin-top:.03in;font:300 8.6pt var(--body);color:rgba(0,39,58,.5);}
+
+/* "Preparing Your Home" is the shared hand-ticked checklist — .chk in
+   assets/css/pitch.css, the same page furniture as the Buyer Package's
+   "Questions to Ask". Nothing deck-specific is left here. */
+
+/* testimonials, editorial block quotes. space-evenly, not
+   space-between: between pins the first and last quote hard against the top
+   and bottom edges of the text block. */
+/* The review-count badge sits on the title's own line, flush to the page's
+   right edge, with its foot landing on the sky rule under the title.
+
+   It is emitted inside .pg-body but positions against .pg, so `top` is
+   measured from the top of the page and the arithmetic below is just the
+   header's own height (mirrored from .pg-h in assets/css/pitch.css: .5in
+   of padding, one 27pt/1.06 line, a .16in gap, the 1.4pt rule) less the
+   badge's own height. Because .pg is the containing block and not
+   .pg-body, .pg-body's overflow:hidden does not clip it.
+
+   Laid out as a row: the QR square, then the count stacked beside it. */
+.rev-badge{--rb-h:.78in;
+  position:absolute;right:0;top:calc(.5in + 27pt*1.06 + .16in + 1.4pt - var(--rb-h));
+  height:var(--rb-h);display:flex;align-items:center;gap:.15in;
+  background:var(--navy);padding:.1in .24in .1in .1in;}
+.rev-badge .rb-qr{flex:none;height:100%;aspect-ratio:1;background:#fff;padding:.035in;}
+.rev-badge .rb-qr svg{width:100%;height:100%;display:block;}
+.rev-badge .rb-txt{display:flex;flex-direction:column;align-items:flex-start;gap:.035in;}
+.rev-badge .rb-stars{color:var(--sky);font-size:9pt;line-height:1;letter-spacing:.08em;}
+.rev-badge .rb-n{font:700 15pt/1 var(--serif);color:#fff;}
+.rev-badge .rb-l{font:800 7pt var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(229,229,229,.85);}
+
+/* The quote block itself — the marks, the indents, the italic — is shared
+   furniture in assets/css/pitch.css, so this page and the Buyer Package's
+   testimonial are one design. All that is page-specific is the column
+   filling the box. The badge used to sit in this box and the first quote
+   had to wrap clear of it; now that it is up on the title line, all four
+   quotes measure the same. */
+.quotes{justify-content:space-evenly;flex:1;min-height:0;}
+
+/* p12 — professional videos: copy column beside three listing films.
+   Named .vids, not .pv: p9's QR handles are .pv too (shared verbatim with
+   the Brochure's marketing page), and a bare .pv{display:flex} here turned
+   each of those handles into a flex container, which drops the inherited
+   text-align:center and left-aligned them under their QR codes. */
+.vids{display:flex;gap:.4in;flex:1;min-height:0;}
+/* The copy hugs its own height at the top of the column and is set ragged-right:
+   centred in the full column height it left a band of empty page above and below,
+   and justified in this narrow measure it opened wide gaps between words (James's
+   two "too much space" notes, 2026-10-21). */
+.vids .vids-copy{width:2.7in;flex:none;align-self:flex-start;display:flex;flex-direction:column;
+  border-top:1.2pt solid var(--sky);border-bottom:1.2pt solid var(--sky);padding:.24in 0;}
+.vids .vids-copy p{margin:0 0 .15in;font:300 9pt/13.5pt var(--body);color:var(--navy);text-align:left;}
+.vids .vids-copy p:last-child{margin-bottom:0;}
+.vids .vids-list{flex:1;min-width:0;display:flex;flex-direction:column;gap:.16in;}
+.vid{flex:1;min-height:0;position:relative;overflow:hidden;background:rgba(0,39,58,.06);}
+.vid img{width:100%;height:100%;object-fit:cover;display:block;}
+.vid .vt{position:absolute;left:0;right:0;bottom:0;padding:.11in .16in;
+  background:rgba(0,39,58,.82);font:800 9pt var(--sans);letter-spacing:.08em;
+  text-transform:uppercase;color:#fff;}
+.vid .vqr{position:absolute;top:.13in;right:.13in;width:.72in;height:.72in;
+  background:#fff;padding:.045in;}
+.vid .vqr svg,.vid .vqr img{width:100%;height:100%;display:block;object-fit:contain;}
+.vid .vqr.todo{display:flex;align-items:center;justify-content:center;text-align:center;
+  font:800 5.4pt/1.35 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(0,39,58,.55);}
+
+/* ============================================================
+   p13 — closing page
+   ============================================================ */
+/* Closing page — all of its furniture (the "Thank You" block, the agent
+   cards, the contact columns and the licensed states) is shared; see the
+   editorial closing-page rules in assets/css/pitch.css (Pitch.closingPage()). Nothing deck-specific is
+   left here, which is the point: it can no longer drift from the Buyer
+   Package's closing page. */
+
+/* Print contrast: the small grey labels were 3.2-4.3:1; held to the 4.5:1 floor (.72 ink). */
+.pg .rh-t{color:rgba(0,39,58,.72) !important;}
+.tri .tb.c2 p{color:#fff;}
+.pg:not(.rev) :is(.rh-t,.grp-t,.spec .k,table th,em,.ps .pl,.ps .pv,.band:not(.mid) .bl,.band:not(.mid) .bsr b){color:rgba(0,39,58,.72);}

@@ -146,6 +146,9 @@ same property bar as the Brochure. Opened from a job (`?listing=<slug>` or `?pit
 `job-mode.js` takes the subject, comps, agents and photos from the job. The Market panel's New Jersey / New
 York switch follows the property's State field and sets the market-specific Marketing Plan rows and
 the Videos page prose; it is usually right untouched. Print / Save PDF prints it.
+The page is `index.html` (markup), `seller-package.css`, and five scripts loaded in order:
+`content.js` (state and fixed copy), `photos.js`, `pages.js` (one builder per page), `panel.js`
+(drawing and the side panel) and `piece.js` (`window.__piece` and `__render`).
 
 ## Buyer Package tool
 

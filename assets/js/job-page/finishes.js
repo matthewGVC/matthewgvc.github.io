@@ -30,16 +30,20 @@
      more than one place (a development of several houses). Not listed: the standard 'Finishes'. */
   var PLACES = {
     'le-reve': [{ path: '0 - Approved Assets/Finishes' }],
-    'casa-avenida': [{ path: '0 - Approved Asset Collection' }],
+    // one finish now (Matt, 11-05): the single-finish collection, not the older Brisa / Noir schedule
+    'casa-avenida': [{ path: '0 - Approved Asset Collection/7 - Tear Sheets' }],
     '619-bradley': [{ path: 'Finish Schedule' }],
     '315-foreman-ave': [{ path: 'House 2/Finishes', label: 'House 2' }],
     '405-old-bridge-rd': [{ path: 'House 1/Finishes', label: 'House 1' }, { path: 'House 2/Finishes', label: 'House 2' }]
   };
   /* known gaps: what the sheet doesn't say yet */
   var TBC = {
-    'le-reve': ['Surface colours in each residence. The products are the same in all five, but the builder says the colours differ in every residence.'],
-    'casa-avenida': ['Which residences have the Brisa finishes and which have the Noir finishes.']
+    'le-reve': ['Surface colours in each residence. The products are the same in all five, but the builder says the colours differ in every residence.']
   };
+
+  /* not a new development, so no Finishes card (Matt, 11-05: Opus is a rental building we do
+     new-development-like work for) */
+  var SKIP = { 'opus': true };
 
   function placesOf(slug) { return PLACES[slug] || [{ path: 'Finishes' }]; }
 
@@ -77,7 +81,7 @@
   }
 
   function html(ctx) {
-    if (!ctx.row) return '';
+    if (!ctx.row || SKIP[ctx.row.slug]) return '';
     return '<div class="card" id="finCard"><div class="card-h"><div><h2>Finishes</h2><p>The finishes and specs that come with the homes, from the finish sheet on Drive.</p></div></div>' +
       tbcHtml(ctx) + '<div id="finBody"><p class="soft">' + (ctx.drive === 'connected' ? 'Reading Drive…' :
         'Sign in with Google on your GVC email to see the finish sheet.') + '</p></div></div>';
@@ -85,7 +89,7 @@
 
   function wire(host, ctx) {
     var b = host.querySelector('#finBody'), D = global.GVC_DRIVE, r = ctx.row;
-    if (!b || ctx.drive !== 'connected' || !D || !D.listFinishes) return;
+    if (!b || SKIP[r.slug] || ctx.drive !== 'connected' || !D || !D.listFinishes) return;
     if (!r.drive_folder) { b.innerHTML = body(ctx, []); return; }
     var places = placesOf(r.slug);
     Promise.all(places.map(function (p) {
@@ -95,5 +99,5 @@
     });
   }
 
-  JP.finishes = { html: html, wire: wire, placesOf: placesOf, body: body, PLACES: PLACES, TBC: TBC };
+  JP.finishes = { html: html, wire: wire, placesOf: placesOf, body: body, PLACES: PLACES, TBC: TBC, SKIP: SKIP };
 })(typeof window !== 'undefined' ? window : globalThis);

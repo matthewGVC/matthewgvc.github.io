@@ -60,8 +60,11 @@ check('house labels shown', /House 1 Â· Finish sheet/.test(newest) && /House 2 Â
 // known gaps, and Drive not connected
 const le = F.html(ctx('le-reve'));
 check('Le Reve colours to be confirmed', /To be confirmed/.test(le) && /colours differ in every residence/.test(le), true);
-check('no gaps listed when none known', /To be confirmed/.test(F.html(ctx('opus'))), false);
-check('not connected asks for Google', /Sign in with Google/.test(F.html(ctx('opus', 'not-connected'))), true);
+check('no gaps listed when none known', /To be confirmed/.test(F.html(ctx('366-north-3rd-street'))), false);
+check('Casa Avenida: one finish, no Brisa / Noir line', [/To be confirmed/.test(F.html(ctx('casa-avenida'))), F.placesOf('casa-avenida')[0].path], [false, '0 - Approved Asset Collection/7 - Tear Sheets']);
+check('Casa Avenida: the tear sheet beside it is not a finish sheet', R.finishFile('0 - Approved Asset Collection/7 - Tear Sheets/Tear Sheet.pdf'), false);
+check('Opus: not a new development, no Finishes card', F.html(ctx('opus')), '');
+check('not connected asks for Google', /Sign in with Google/.test(F.html(ctx('610-agnes', 'not-connected'))), true);
 
 if (failures.length) {
   console.log('FAIL ' + failures.length + ' of ' + (pass + failures.length) + '\n  ' + failures.join('\n  '));

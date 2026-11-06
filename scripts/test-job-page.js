@@ -542,7 +542,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await p.click('#dealsCard details summary');
   check('deals: a past deal opens to its dates and its page', [await p.$eval('#dealsCard details', d => d.open), await p.$eval('#dealsCard details .deal-row', e => e.textContent.replace(/\s+/g, ' ').trim()),
     await p.$eval('#dealsCard details a', a => a.getAttribute('href')), t.errors],
-    [true, '1 Mar 2019 · 15 Jun 2019 Open', '../job/?listing=100-example-st-4a-2019', []]);
+    [true, 'Listed 1 Mar 2019 · Closed 15 Jun 2019 Open', '../job/?listing=100-example-st-4a-2019', []]);
   await t.ctx.close();
   t = await open(browser, { rows: RD, path: '/workspace/job/?listing=20-sample-ave-7b' });
   check('deals: a one-deal job\'s page is unchanged', [await t.page.$('#dealsCard'), t.errors], [null, []]);

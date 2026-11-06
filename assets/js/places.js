@@ -174,7 +174,7 @@
     return group(all.filter(function (j) { return on[j.placeId || j.id]; }), allRows);
   }
 
-  var DEAL_WORD = { listing: 'Sale', rental: 'Rental' };
+  var DEAL_WORD = { listing: 'Sale', rental: 'Rental', purchase: 'Purchase' };
   function dealWord(d) { return DEAL_WORD[d.type] ? DEAL_WORD[d.type] + ' · ' + (d.phase || d.stage) : d.phase || d.stage; }
 
   function errors(row) {

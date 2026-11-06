@@ -647,5 +647,5 @@
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, matchByJob: matchByJob, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtDayYear: fmtDayYear, stageWord: stageWord, fmtWhen: fmtWhen, money: money, readable: readable,
-    changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf };
+    changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf, DATE_LABEL: DATE_LABEL };
 });

@@ -96,9 +96,13 @@ check('past deal\'s sold price comes from Elliman', D.rows([sale, deal({ id: 'a'
 check('past deals newest first', D.rows([sale, deal({ id: 'a', milestones: { closedOn: { on: '2019-06-01' } } }), deal({ id: 'b', slug: 'b', milestones: { listedOn: '2022-03-01' } }),
   deal({ id: 'c', slug: 'c', created_at: '2021-05-05T10:00:00Z' })], 's').past.map(p => [p.slug, p.year]), [['b', '2022'], ['c', '2021'], ['x', '2019']]);
 check('a past deal carries its dates', D.rows([sale, deal({ id: 'a', milestones: { closedOn: { on: '2019-06-01' }, listedOn: { on: '2019-01-10' }, contractOn: '2019-04-02', pitchedOn: {} } })], 's').past[0].dates,
-  ['2019-01-10', '2019-04-02', '2019-06-01']);
+  [{ word: 'Listed', day: '2019-01-10' }, { word: 'Contract signed', day: '2019-04-02' }, { word: 'Closed', day: '2019-06-01' }]);
+check('a planned-only milestone stays out of dates', D.rows([sale, deal({ id: 'a', milestones: { listedOn: { on: '2019-01-10' }, closedOn: { planned: '2019-06-01' } } })], 's').past[0].dates,
+  [{ word: 'Listed', day: '2019-01-10' }]);
+check('a pitch reads Pitch, like the Overview', D.rows([sale, deal({ id: 'a', slug: 'a', stage: 'Pitch' })], 's').live[1].word, 'Pitch');
 check('a purchase reads Purchase', D.rows([sale, deal({ id: 'a', side: 'buy' }), deal({ id: 'b', side: 'buy', stage: 'Live', slug: 'b' })], 's').past.map(p => p.type).concat(D.rows([sale, deal({ id: 'b', side: 'buy', stage: 'Live', slug: 'b' })], 's').live[1].word),
   ['Purchase', 'Purchase · Live']);
+check('dealWord: a purchase', P.dealWord({ type: 'purchase', stage: 'Live' }), 'Purchase · Live');
 check('a sold rental reads Rental, in lease words', D.rows([sale, deal({ id: 'a', kind: 'rental', stage: 'Rented' })], 's').past[0].type, 'Rental');
 
 // cleanStreet takes off the same comma unit the library's splitUnit does

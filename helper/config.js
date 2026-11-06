@@ -20,6 +20,10 @@ const DEFAULTS = {
   teamUrl: 'https://www.elliman.com/team/gvc-real-estate-team/226645',
   outputRoots: ['G:\\My Drive\\GVC Workspace Lab'],
   port: 47610,
+  /* the Asana name fix (asana-name-fix.js): off until Matt has read the dry run; nameFixSkip
+     holds the task gids he said no to */
+  asanaNameFix: false,
+  nameFixSkip: [],
   /* Asana: the gids aren't secret. The token (asanaToken) is the only private
      value and lives in the helper's own config.json. devPortfolios is filled
      in if the token can read them. */

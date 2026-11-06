@@ -10,6 +10,8 @@
    asana_field_of); the reading client (helper/asana/) stays GET-only.
 
      await writeWaiting({ db, cfg, fetch }) → { done, failed }
+     asanaCall({ token, fetch })  → (method, path, body) → data: the request, shared with
+                                    asana-name-fix.js (the only other file that changes Asana)
      valueFor(field, value)  → what Asana takes for that field, or throws (tested)
 
    The token is the helper's asanaToken; it goes in one header, never in a
@@ -43,11 +45,11 @@ function valueFor(field, value) {
   throw new Error('The workspace can\'t write Asana\'s ' + field.name + ' (a ' + t + ' field).');
 }
 
-async function writeWaiting(o) {
-  const db = o.db, doFetch = o.fetch || globalThis.fetch, token = o.cfg && o.cfg.asanaToken;
-  if (!token) return { done: 0, failed: 0 };
-  const now = () => new Date().toISOString();
-  const call = async (method, path, body) => {
+/* the one Asana request both writers make (this file and asana-name-fix.js), with plain errors:
+   asanaCall({ token, fetch }) → (method, path, body) → the answer's data */
+function asanaCall(o) {
+  const token = o.token, doFetch = o.fetch || globalThis.fetch;
+  return async (method, path, body) => {
     let r;
     try {
       r = await doFetch(BASE + path, { method, headers: { authorization: 'Bearer ' + token, accept: 'application/json', 'content-type': 'application/json' },
@@ -58,6 +60,13 @@ async function writeWaiting(o) {
     if (!r.ok) throw new Error('Asana answered ' + r.status);
     return (await r.json()).data;
   };
+}
+
+async function writeWaiting(o) {
+  const db = o.db, token = o.cfg && o.cfg.asanaToken;
+  if (!token) return { done: 0, failed: 0 };
+  const now = () => new Date().toISOString();
+  const call = asanaCall({ token, fetch: o.fetch });
   const rows = await db.select('asana_writes', { status: 'waiting' }, '*', { order: 'asked_at.asc', limit: BATCH });
   let done = 0, failed = 0;
   for (const w of rows) {
@@ -80,4 +89,4 @@ async function writeWaiting(o) {
   return { done, failed };
 }
 
-module.exports = { writeWaiting, valueFor, FIELDS };
+module.exports = { writeWaiting, asanaCall, valueFor, FIELDS };

@@ -6,7 +6,8 @@
      r.lastRuns()          → { de: { at, ok, error? }, … }  (for /health)
    Asana jobs (asana every 30 min, asanaFull 03:00, people 03:15, asanaWrite and
    asanaEvents each minute) exist only when the config holds a token; the full
-   read also counts as the plain one.
+   read also counts as the plain one. asanaWrite also runs the Asana name fix
+   (asana-name-fix.js) when the config says asanaNameFix: true.
    The budget job (hourly) exists only once Google sign-in is saved (budget/sign-in.js).
      r.start()             ticks every minute
 
@@ -78,7 +79,17 @@ function asanaJobs(cfg, client, syncNow, opts) {
   let first = true;
   const asanaWrite = async () => {
     if (first) { first = false; await client.update('asana_writes', { status: 'working' }, { status: 'waiting' }).catch(() => {}); }
-    return require('./asana-write.js').writeWaiting({ db: client, cfg });
+    let r = null, failed = null;
+    try { r = await require('./asana-write.js').writeWaiting({ db: client, cfg, fetch: opts && opts.fetch }); } catch (e) { failed = e; }
+    // the name fix (off unless asanaNameFix is true): its failure never fails or hides the edits' result
+    if (cfg.asanaNameFix === true) {
+      let names;
+      try { names = await require('./asana-name-fix.js').fixNames({ db: client, cfg, fetch: opts && opts.fetch }); }
+      catch (e) { names = { error: e.message }; }
+      if (r) r = Object.assign({}, r, { names });
+    }
+    if (failed) throw failed;
+    return r;
   };
   return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }), asanaWrite, asanaEvents };
 }

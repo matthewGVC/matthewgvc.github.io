@@ -158,6 +158,15 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
     check('client is GET-only (calls) #' + i, /\.(post|put|patch|delete)\(/i.test(src), false);
   });
   check('client has helper files to scan', files.length >= 3, true);
+  // the only helper files that change Asana: the team's edits and the name fix (stage 2), both beside
+  // helper/asana/, never in it. A file is a writer when it names Asana's address or its shared request.
+  const helperDir = path.join(__dirname, '..', 'helper');
+  const writers = fs.readdirSync(helperDir).filter(f => f.endsWith('.js')).filter(f => {
+    const src = fs.readFileSync(path.join(helperDir, f), 'utf8');
+    return /app\.asana\.com|asanaCall/.test(src) && writeVerb(src);
+  });
+  check('only asana-write.js and asana-name-fix.js write to Asana', writers, ['asana-name-fix.js', 'asana-write.js']);
+  check('the name fix is not in helper/asana/', fs.existsSync(path.join(helperDir, 'asana', 'asana-name-fix.js')), false);
 
   const mkRes = (body, status, headers) => ({ ok: !status || status < 400, status: status || 200, headers: { get: k => (headers || {})[k.toLowerCase()] || null }, json: async () => body });
   const cfg = { asanaToken: 'tok-secret-123' };

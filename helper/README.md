@@ -95,8 +95,16 @@ exit ends it). Run it from the main repo folder.
 - DE dry-run reports: `exports/de-dry-run-<date>.md` (gitignored).
 - Asana writes (D77 lifted 11-03, migration 0021): a fact changed on a job page is queued in
   `asana_writes`; `asana-write.js` writes it to the listing's Asana field each minute, only the
-  fields in its list, and marks it done or failed. Nothing else in the helper changes Asana
-  (`scripts/test-asana-write.js` checks it).
+  fields in its list, and marks it done or failed.
+- The Asana name fix (stage 2, decision 12; `asana-name-fix.js`): **off** until the config says
+  `"asanaNameFix": true`. When on, the same one-minute job renames up to 20 tasks a run to the
+  naming rule, fills an empty `📍 City/Hood` with the town the name carried, and adds one comment
+  saying so; each rename is a `changes` row (source Helper). A name the rule isn't sure of is never
+  touched (Errors M30); gids in `nameFixSkip` are ones Matt said no to. Read first:
+  `node helper/asana-name-fix.js --dry-run [--out <dir>]` writes `exports/asana-name-fix-<date>.md`
+  (renames, names left for Matt, what the workspace will show) and writes nothing else.
+  Nothing else in the helper changes Asana (`scripts/test-asana-allow.js` and
+  `scripts/test-asana-write.js` check it).
 - Asana reads: `node helper/asana-sync.js --plan` writes the first link plan,
   `exports/asana-link-plan-<date>.md`, for Matt to tick; `--apply-plan <that file>` makes the jobs;
   `--write` is one sync after that. Needs `asanaToken` in the helper's config. Each sync puts every deal it

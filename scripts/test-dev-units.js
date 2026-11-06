@@ -118,6 +118,12 @@ function run(db) { const logged = []; return syncDevUnits(db, { now: NOW, log: m
   check('Sold and Rented on Elliman archive: one changes row each', db.T.changes.map(c => [c.property_id, c.field, c.old_value, c.new_value, c.source]),
     [['p-b', 'stage', 'Live', 'Archived', 'DE'], ['p-c', 'stage', 'Live', 'Archived', 'DE']]);
 
+  db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7001', 'B', 'ActiveUnderContract', { property_id: 'p-b' }), unit('7002', 'C', 'ActiveUnderContract', { kind: 'rental', property_id: 'p-c' })],
+    properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', core: {} },
+      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', core: {} }] });
+  await run(db);
+  check('a move is logged in the stage\'s own words, never Elliman\'s code', db.T.changes.map(c => c.note), ['Elliman shows it In contract', 'Elliman shows it Lease signed']);
+
   /* ---------- left alone ---------- */
   db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7301', '1', 'Active', { raw: { street: '12 OTHER ST', unit: '1', status: 'Active', city: 'Boca Raton', state: 'FL' } })] });
   out = await run(db);

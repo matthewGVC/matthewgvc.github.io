@@ -16,8 +16,12 @@
      de_listings.property_id set. The next Elliman read fills its price and facts through
      the de_listing_id, as for any job (de/apply.js).
    - such a deal's stage follows Elliman (de/status.js mapStage; Sold and Rented become
-     Archived), one `changes` row each move, until an Asana task takes it over (asana_gid
-     set) or someone else set its stage (stage_source no longer 'DE').
+     Archived), one `changes` row each move, its note in the workspace's stage words
+     ("Elliman shows it In contract", workspace-data.js stageWord), until an Asana task takes it
+     over (asana_gid set) or someone else set its stage (stage_source no longer 'DE').
+   - every de_listings row is read, whatever its last_seen: a unit Elliman stopped listing keeps
+     its stage, and a unit Elliman shows Active again after Sold moves back from Archived to Live.
+     Both are left for stage 4's archive rules.
    - a status mapStage doesn't know is logged for that row, which is left alone; the rest run.
    This is the one exception to D54 ("jobs are never made from Elliman") and D50 ("Elliman
    never moves the stage"): de/apply.js keeps both rules. Nothing here touches Asana or Drive.
@@ -27,6 +31,7 @@
 const P = require('../assets/js/property-library.js');
 const A = require('../assets/js/address-aliases.js');
 const DA = require('../assets/js/dev-addresses.js');
+const W = require('../assets/js/workspace-data.js');
 const { mapStage } = require('./de/status.js');
 const { findOrMakePlace } = require('./place-store.js');
 
@@ -62,7 +67,7 @@ async function syncDevUnits(client, o) {
         const p = props.find(x => x.id === d.property_id);
         if (!p || !p.dev_project_id || p.asana_gid || p.stage_source !== 'DE' || p.stage === stage) continue;
         await client.update('properties', { id: p.id }, { stage, stage_source: 'DE' }, { version: p.version });
-        await client.insert('changes', [change(p.id, 'stage', p.stage, stage, 'Elliman shows it ' + raw.status)]);
+        await client.insert('changes', [change(p.id, 'stage', p.stage, stage, 'Elliman shows it ' + W.stageWord(mapped, p.kind))]);
         out.moved++;
         continue;
       }

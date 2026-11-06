@@ -13,8 +13,8 @@
    Brielle and in Manasquan are two places). Its address is the clean street, its label the
    job's own label today, its slug the property slug ("-2", "-3" on a clash). For NYC the
    building is found by buildingKey, and building_id is set either way. devId, when given,
-   goes on a new place, or on a found one that has none; a found place with no town takes the
-   core's city. A core with no street makes no place: it returns null, and the caller treats
+   goes on a new place, or on a found one that has none; a found place whose dev_project_id
+   differs from devId is left as it is. A found place with no town takes the core's city. A core with no street makes no place: it returns null, and the caller treats
    the deal as a question (a junk place with an empty key would match every later streetless deal).
 
    Used by the one-time backfill (places-backfill.js) and by the sync.

@@ -31,6 +31,15 @@ svg.i{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .top-sync .pill-ok{cursor:default;white-space:nowrap}
 .top-sync .pill-ok[hidden]{display:none}
 @media (max-width:1000px){ .top-sync{display:none} }
+/* 1001-1199px: the three badges, the nav and the buttons do not fit at full spacing, so the
+   bar tightens and the DE and Asana badges show only their dot (wording on hover and for screen
+   readers); the Drive badge keeps its words, it is a button (11-06) */
+@media (min-width:1001px) and (max-width:1199px){
+  .top{gap:18px;padding:0 24px}
+  .top-r{gap:8px}
+  .nav a{padding:8px 11px}
+  .top-sync .pill-ok{gap:0;padding:6px 7px;font-size:0;line-height:0}
+}
 
 /* ---------- page ---------- */
 .wrap{max-width:1440px;margin:0 auto;padding:36px 32px 0;width:100%}

@@ -1,5 +1,5 @@
 /* ============================================================
-   Tests for assets/js/match-check.js — the Match check, M1 to M29
+   Tests for assets/js/match-check.js — the Match check, M1 to M30
    (spec §5, plan §8b), the dismiss rule and roster drift (D71).
    Made-up jobs only.
 
@@ -536,10 +536,24 @@ check('a buy deal has no lines', M.check(job({ side: 'buy', asana: { gone: NOW }
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));
 check('no em dashes in any text', all.filter(m => /—/.test(m.text)).length, 0);
 
+/* ---------- M30: a name the helper can't fix ---------- */
+const named = (name, o) => job(Object.assign({ market: 'NYC', asana: { name } }, o || {}));
+const m30 = (j) => has(M.check(j, ctx()), 'M30');
+check('M30: a name the rule cannot read gets a line', m30(named('444 Spruce - C609')).map(m => [m.key, m.text, m.values, m.fixAt]),
+  [['M30', "Asana's name \"444 Spruce - C609\" doesn't follow the naming rule (the street has no street type at the end). Matt fixes it in Asana.", { name: '444 Spruce - C609' }, 'Matt']]);
+check('M30: a name the helper will fix gets none', m30(named('200 E 57 - 17A')).length, 0);
+check('M30: a rule name gets none', m30(named('400 E59 - 3H')).length, 0);
+check('M30: a Lead gets M30 too', m30(named('444 Spruce - C609', { stage: 'Pitch' })).length, 1);
+check('M30: our own purchase gets M30 too', m30(named('444 Spruce - C609', { side: 'buy' })).length, 1);
+check('M30: an archived deal gets none', m30(named('444 Spruce - C609', { stage: 'Archived' })).length, 0);
+check('M30: a job with no stage gets none', m30(named('444 Spruce - C609', { stage: null })).length, 0);
+check('M30: an Elliman-only unit gets none', m30(named('444 Spruce - C609', { dev_project_id: 'd1', asana: { gid: null, name: '444 Spruce - C609' } })).length, 0);
+check('M30: the line goes to Matt', m30(named('444 Spruce - C609')).map(m => m.fixAt), ['Matt']);
+
 /* ---------- the key the Match page shows ---------- */
 const keyCodes = Object.keys(M.KEY || {});
-const want = []; for (let n = 1; n <= 29; n++) want.push('M' + n);
-check('key: one plain line for every code M1 to M29', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 29]);
+const want = []; for (let n = 1; n <= 30; n++) want.push('M' + n);
+check('key: one plain line for every code M1 to M30', [want.every(c => typeof (M.KEY || {})[c] === 'string' && M.KEY[c].length > 10), keyCodes.length], [true, 30]);
 check('key: plain sentences, no em or en dashes', keyCodes.some(c => /[–—]/.test(M.KEY[c])), false);
 
 if (failures.length) {

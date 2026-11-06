@@ -18,6 +18,7 @@ check('a and an', W.plain('Not matched to a DE listing. A DE row.'), 'Not matche
 check('the emoji', W.plain('from the 🚧 Asana project'), 'from the Asana project');
 check('plain twice is the same', W.plain(W.plain('DE says')), 'Elliman says');
 check('a check by name', [W.check('M3'), W.check('M28'), W.check('roster')], ['Price', 'Closed, task open', 'roster']);
+check('M30 has a short name', W.check('M30'), 'Name rule');
 check('every check has a name', Array.from({ length: 28 }, (_, i) => 'M' + (i + 1)).filter(c => !W.CHECK[c]), []);
 check('markets', [MK.CODES, MK.byState('ny').code, MK.signage('NYC'), MK.signage('NJ'), MK.houses('FL'), MK.deck('FL'), MK.name('NJ'), MK.get('XX')],
   [['NYC', 'NJ', 'FL'], 'NYC', false, true, true, 'nj', 'New Jersey', null]);

@@ -5,10 +5,21 @@
    apartment or house itself, so a sale and a rental on the same unit, or a
    re-listing years later, are several deals on one place.
 
-     GVC_PLACES.placeKey({ address, unit }, 'NYC')  → 'NYC|401 east 89|1819E'
+     GVC_PLACES.splitTrailing('1050 Fifth Ave, Apt. 2E') → { street: '1050 Fifth Ave', unit: '2E' }
+     GVC_PLACES.cleanStreet(address)                → the street with a trailing unit or floor taken off
+     GVC_PLACES.streetKey(address)                  → '401 east 89': the street part of a key
+     GVC_PLACES.placeKey({ address, unit }, 'NYC')  → 'NYC|401 east 89|1819E' (a lot or house ends in '|')
      GVC_PLACES.buildingKey({ address }, 'NYC')     → 'NYC|401 east 89' (NYC only)
+     GVC_PLACES.sameTown(a, b)                      → false only when both name a town and they differ
+                                                      ("Wall" and "Wall Township" are one town)
      GVC_PLACES.samePlace(a, b)                     → confirms a key match
+     GVC_PLACES.placeFacts()                        → the facts that belong to the place, not the deal
      GVC_PLACES.inherit(prevCore, newCore)          → a new deal's core, place facts filled in
+     GVC_PLACES.ellimanOnly(row)                    → a development's unit made from Elliman with no Asana task
+                                                      (dev_project_id, no asana_gid: decision 72)
+     GVC_PLACES.lostPitch(row)                      → archived, pitched and never listed: a pitch we didn't win
+     GVC_PLACES.LIVE                                → the stages a deal is live at, Pitch to In contract
+     GVC_PLACES.lead(deals)                         → the deal a place's row opens
      GVC_PLACES.group(jobs, allRows)                → one row per place for the Overview and Resell
      GVC_PLACES.shown(all, passing, allRows)        → the rows to draw: each place a passing deal is on, with all its deals
      GVC_PLACES.dealWord(job)                       → a row's chip for another deal on it: 'Rental · Live'
@@ -22,7 +33,8 @@
 
    Uses GVC_ADDR (address-aliases.js) and, for placeFacts, GVC_FACTS
    (job-facts.js). Both are read only when a function needs them, so pages can
-   load this file without them and still use group, shown, lead and LIVE.
+   load this file without them and still use group, shown, lead, LIVE, sameTown,
+   ellimanOnly and lostPitch.
 
    Loads in the browser (window.GVC_PLACES) and in Node (require).
    ============================================================ */
@@ -74,9 +86,13 @@
     return market + '|' + street + '|' + addr().unitKey(unit);
   }
 
-  /* a town may be missing on one side: false only when both name one and differ */
+  /* a town may be missing on one side: false only when both name one and differ; the state and a
+     trailing Township, Twp, Borough, Boro or Village are left off ("Wall" is "Wall Township") */
   function sameTown(a, b) {
-    function key(t) { return String(t || '').toUpperCase().replace(/[.,]/g, ' ').replace(/\b(NJ|NY|FL)\b/g, ' ').replace(/\s+/g, ' ').trim(); }
+    function key(t) {
+      return String(t || '').toUpperCase().replace(/[.,]/g, ' ').replace(/\b(NJ|NY|FL)\b/g, ' ').replace(/\s+/g, ' ').trim()
+        .replace(/\s+(TOWNSHIP|TWP|BOROUGH|BORO|VILLAGE)$/, '');
+    }
     var x = key(a), y = key(b);
     return !x || !y || x === y;
   }
@@ -134,6 +150,19 @@
 
   function isLive(stage) { return LIVE.indexOf(stage) !== -1; }
 
+  /* a development's unit made from Elliman with no Asana task (helper/dev-units.js): it has no folder
+     of its own and nothing to check against Elliman (decisions 21 and 72) */
+  function ellimanOnly(row) { return !!(row && row.dev_project_id) && !row.asana_gid; }
+
+  /* archived, pitched and never listed: a pitch we didn't win ("Pitch lost"). Only the dates decide:
+     an old archived deal with no dates at all stays a past deal. Milestones are { key: { on, planned } };
+     an older row may keep a bare date */
+  function lostPitch(row) {
+    function reached(m) { return typeof m === 'string' ? !!m : !!(m && m.on && !m.planned); }
+    var ms = (row && row.milestones) || {};
+    return !!row && row.stage === 'Archived' && reached(ms.pitchedOn) && !reached(ms.listedOn);
+  }
+
   /* the deal a row opens: a live one, a sale before a rental, then the newest; with
      nothing live, the newest whatever its kind (Review Focus 5) */
   function lead(deals) {
@@ -145,7 +174,8 @@
   }
 
   /* jobs are Job objects (placeId); allRows are the database's rows (place_id), so a
-     filter on the jobs can't turn a live sale into a "past deal" */
+     filter on the jobs can't turn a live sale into a "past deal". A purchase and a lost
+     pitch are no past deal: neither was ever listed */
   function group(jobs, allRows) {
     var order = [], byPlace = {};
     jobs.forEach(function (j) {
@@ -160,7 +190,7 @@
         lead: head,
         live: deals.filter(function (d) { return isLive(d.stage); }),
         history: !placeId ? 0 : (allRows || []).filter(function (r) {
-          return r.place_id === placeId && !isLive(r.stage) && r.side !== 'buy' && r.id !== head.id;
+          return r.place_id === placeId && !isLive(r.stage) && r.side !== 'buy' && !lostPitch(r) && r.id !== head.id;
         }).length
       };
     });
@@ -183,6 +213,6 @@
   }
 
   return { splitTrailing: splitTrailing, cleanStreet: cleanStreet, streetKey: streetKey, placeKey: placeKey, samePlace: samePlace,
-    buildingKey: buildingKey, sameTown: sameTown, placeFacts: placeFacts, inherit: inherit, LIVE: LIVE, lead: lead, group: group,
-    shown: shown, dealWord: dealWord, errors: errors };
+    buildingKey: buildingKey, sameTown: sameTown, placeFacts: placeFacts, inherit: inherit, ellimanOnly: ellimanOnly, lostPitch: lostPitch,
+    LIVE: LIVE, lead: lead, group: group, shown: shown, dealWord: dealWord, errors: errors };
 });

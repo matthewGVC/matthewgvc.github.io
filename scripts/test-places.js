@@ -45,6 +45,12 @@ check('a street that is only its type', P.placeKey({ address: '205 Parkway' }, '
 check('St and Ave share a key but are not one place', P.samePlace({ address: '12 Elm St' }, { address: '12 Elm Ave' }), false);
 check('one place across spellings', P.samePlace({ address: '52 East 4th Street 10th Floor' }, { address: '52 E4' }), true);
 check('two towns are two places', P.samePlace({ address: '12 Elm St', town: 'Brielle' }, { address: '12 Elm St', town: 'Manasquan' }), false);
+check('a town and its township are one town', [P.sameTown('Wall', 'Wall Township'), P.sameTown('Wall Twp.', 'WALL, NJ'), P.sameTown('Rumson Borough', 'Rumson'),
+  P.sameTown('Fair Haven Boro', 'Fair Haven'), P.sameTown('Ridgewood Village', 'ridgewood'), P.sameTown('Wall Township', 'Brielle'), P.sameTown('', 'Wall')],
+  [true, true, true, true, true, false, true]);
+check('one place across a township spelling', P.samePlace({ address: '12 Elm St', town: 'Wall' }, { address: '12 Elm St', town: 'Wall Township' }), true);
+check('ellimanOnly: a development unit with no Asana task', [P.ellimanOnly({ dev_project_id: 'd', asana_gid: null }), P.ellimanOnly({ dev_project_id: 'd', asana_gid: 'g' }),
+  P.ellimanOnly({ asana_gid: null }), P.ellimanOnly(null)], [true, false, false, false]);
 check('NYC building ignores the unit',
   P.buildingKey({ address: '400 E59' }, 'NYC'), P.buildingKey({ address: '400 East 59th St' }, 'NYC'));
 check('no NJ building', P.buildingKey({ address: '401 Brown St' }, 'NJ'), '');
@@ -74,6 +80,13 @@ check('all archived opens on the newest', arch[0].lead.id, 'n');   // Review Foc
 const past = P.group([{ id: 's19', placeId: 'v', kind: 'sale', stage: 'Archived', createdAt: '2019-05-01' },
   { id: 'r23', placeId: 'v', kind: 'rental', stage: 'Archived', createdAt: '2023-05-01' }], []);
 check('nothing live: an archived 2023 rental beats an archived 2019 sale', past[0].lead.id, 'r23');
+const lost = { id: 'l', place_id: 'u', stage: 'Archived', stage_source: 'Asana', milestones: { pitchedOn: { on: '2026-03-01' } } };
+check('lostPitch: archived, pitched, never listed', [P.lostPitch(lost), P.lostPitch({ stage: 'Archived', stage_source: 'Asana', milestones: {} }),
+  P.lostPitch({ stage: 'Archived', stage_source: 'Matt', milestones: { pitchedOn: '2025-01-01', listedOn: { on: '2025-02-01' } } }),
+  P.lostPitch({ stage: 'Archived', stage_source: 'Matt', milestones: { listedOn: { on: '2027-01-01', planned: true } } }),
+  P.lostPitch({ stage: 'Sold', milestones: { pitchedOn: '2026-01-01' } })], [true, false, false, false, false]);
+const withLost = P.group([{ id: 'n', placeId: 'u', stage: 'Live', kind: 'sale' }], [{ id: 'n', place_id: 'u', stage: 'Live' }, lost, { id: 'o', place_id: 'u', stage: 'Sold' }]);
+check('a lost pitch is no past deal: it was never listed', withLost[0].history, 1);
 const lone = { id: 'n1', kind: 'sale', stage: 'Live' }, other = { id: 'z', placeId: 'q', kind: 'sale', stage: 'Live' };
 check('shown: a place shows when any of its deals passes, with all its deals',
   P.shown([s, r, other, lone], [r, lone], []).map(x => [x.lead.id, x.live.length]), [['s', 2], ['n1', 1]]);
@@ -103,6 +116,7 @@ check('a pitch reads Pitch, like the Overview', D.rows([sale, deal({ id: 'a', sl
 check('a purchase reads Purchase', D.rows([sale, deal({ id: 'a', side: 'buy' }), deal({ id: 'b', side: 'buy', stage: 'Live', slug: 'b' })], 's').past.map(p => p.type).concat(D.rows([sale, deal({ id: 'b', side: 'buy', stage: 'Live', slug: 'b' })], 's').live[1].word),
   ['Purchase', 'Purchase · Live']);
 check('dealWord: a purchase', P.dealWord({ type: 'purchase', stage: 'Live' }), 'Purchase · Live');
+check('a lost pitch reads Pitch on the Deals card', D.rows([sale, deal({ id: 'l', stage: 'Archived', stage_source: 'Asana', milestones: { pitchedOn: { on: '2026-03-01' } } })], 's').past[0].type, 'Pitch');
 check('a sold rental reads Rental, in lease words', D.rows([sale, deal({ id: 'a', kind: 'rental', stage: 'Rented' })], 's').past[0].type, 'Rental');
 
 // cleanStreet takes off the same comma unit the library's splitUnit does

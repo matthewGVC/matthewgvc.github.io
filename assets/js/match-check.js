@@ -114,11 +114,12 @@
           are left out. Key M29:<dev id>.
 
    Places and deals (0025): a deal at the Pitch stage (an Asana Lead), our own purchase
-   (side 'buy') and a development's unit made from Elliman with no Asana task (dev_project_id,
-   no asana_gid: helper/dev-units.js, decision 72) get no lines from checkListing;
+   (side 'buy') and a development's unit made from Elliman with no Asana task
+   (GVC_PLACES.ellimanOnly: helper/dev-units.js, decision 72) get no lines from checkListing;
    developments are checked as before.
 
-   Needs asana-map.js and job-facts.js (loaded first in the browser).
+   Needs asana-map.js and job-facts.js (loaded first in the browser), and address-aliases.js,
+   property-library.js, dev-addresses.js and places.js (read when a check runs).
    Loads in the browser (window.GVC_MATCH) and in Node (require).
    Tested by scripts/test-match-check.js.
    ============================================================ */
@@ -126,8 +127,10 @@
   'use strict';
   if (typeof module === 'object' && module.exports) {
     module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), require('./kit-track.js'), global,
-      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js') }; });
-  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES }; });
+      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js'), G: require('./places.js') }; });
+  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () {
+    return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES, G: global.GVC_PLACES };
+  });
 })(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, KIT, global, libs) {
   'use strict';
 
@@ -318,7 +321,7 @@
     out.waiting = {};
     // a Pitch deal (a Lead) and our own purchase (side 'buy') are checked for nothing yet; nor is a
     // development's unit made from Elliman with no Asana task: there is nothing to compare Elliman with (decision 72)
-    if (!stage || stage === 'Archived' || stage === 'Pitch' || job.side === 'buy' || (job.dev_project_id && !job.asana_gid)) return out;
+    if (!stage || stage === 'Archived' || stage === 'Pitch' || job.side === 'buy' || libs().G.ellimanOnly(job)) return out;
     // the day a mismatch was first found: the stored waiting day, else the stored line's since, else today
     var prev = ctx.prev || job.match || {};
     var firstFound = function (key) {

@@ -82,6 +82,7 @@
      fmtDay('2026-10-12') → '12 Oct'; money(4500000) → '$4,500,000'
 
    Pure: no fetch, no DOM. Loads in the browser (window.GVC_WS) and in Node.
+   buildJobs needs places.js (GVC_PLACES.ellimanOnly): loaded by the page, required in Node.
    ============================================================ */
 (function (global, factory) {
   'use strict';
@@ -239,6 +240,11 @@
     if (typeof module === 'object' && module.exports && typeof require === 'function') return require('./piece-stale.js');
     return null;
   }
+  /* which deals are one place (places.js: loaded by the page, required in Node) */
+  function placesApi() {
+    if (global && global.GVC_PLACES) return global.GVC_PLACES;
+    return require('./places.js');
+  }
   /* a development's build (dev-build.js: loaded by the page, required in Node) */
   function buildApi() {
     if (global && global.GVC_DEVBUILD) return global.GVC_DEVBUILD;
@@ -326,7 +332,7 @@
       var flags = [], atPitch = p.stage === 'Pitch', buy = p.side === 'buy';
       // a development's unit from Elliman with no Asana task has no folder of its own (decision 21);
       // nor does a Lead yet, and our own purchase is never one to link or match
-      if (p.folder_state === 'unlinked' && !(p.dev_project_id && !p.asana_gid) && !atPitch && !buy) flags.push({ t: 'Link folder', k: 'link' });
+      if (p.folder_state === 'unlinked' && !placesApi().ellimanOnly(p) && !atPitch && !buy) flags.push({ t: 'Link folder', k: 'link' });
       if (p.folder_state === 'broken') flags.push({ t: 'Relink folder', k: 'relink' });
       if (!p.de_listing_id && !buy && ['Live', 'In contract', 'Sold', 'Rented'].indexOf(p.stage) !== -1) flags.push({ t: 'Match DE', k: 'de' });
       // a Lead's pitch date: { on } from the Asana sync, a bare date from the one-time backfill

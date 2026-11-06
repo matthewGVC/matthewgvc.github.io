@@ -21,7 +21,7 @@
 
    No folder is looked for (by the matching or the AI pass) on a Pitch deal (a Lead needs
    none yet), our own purchase (side 'buy'), or a development unit with no Asana task
-   (Elliman-only: units have no folders of their own).
+   (GVC_PLACES.ellimanOnly: such units have no folders of their own).
    A job at Prep or later with no linked folder: the scan looks for its
    folder with the Link folder suggestions' own matching (folder-link.js
    suggest, folder names only) and keeps the likely one as scan.candidate
@@ -48,10 +48,11 @@ const RULES = require('../assets/js/drive-rules.js');
 const LINK = require('../assets/js/folder-link.js');
 const ADDR = require('../assets/js/address-aliases.js');
 const HEALTH = require('../assets/js/folder-health.js');
+const GP = require('../assets/js/places.js');
 const { driveLink } = require('./drive-link.js');
 const PREP_ON = ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market'];   // match-check.js's, M18 (D88)
 // a deal that has no folder of its own to find: a Pitch deal, our own purchase, an Elliman-only unit
-const noFolder = r => r.stage === 'Pitch' || r.side === 'buy' || (!!r.dev_project_id && !r.asana_gid);
+const noFolder = r => r.stage === 'Pitch' || r.side === 'buy' || GP.ellimanOnly(r);
 const NYC_ROOT = 'GVC - New York/Building Information';
 const AI = require('./folder-ai.js');
 const AI_RETRY_DAYS = 7;

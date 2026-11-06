@@ -14,7 +14,8 @@
    show the year, type, sold price and dates, and link to their page.
 
    A sold price is Elliman's (core.closePrice) and nothing else: never Asana's,
-   never the asking price. A purchase (side 'buy') reads "Purchase". Milestones
+   never the asking price. A purchase (side 'buy') reads "Purchase", and a lost pitch
+   (GVC_PLACES.lostPitch: archived, pitched, never listed) "Pitch", not "Sale". Milestones
    are { key: { on } }; an older row may keep a bare date, so both are read.
 
    Loads in the browser (GVC_JP.deals) and in Node (require, for its test).
@@ -31,7 +32,7 @@
   function W() { return inNode ? require('../workspace-data.js') : global.GVC_WS; }
   function places() { return inNode ? require('../places.js') : global.GVC_PLACES; }
 
-  function typeOf(d) { return d.side === 'buy' ? 'Purchase' : d.kind === 'rental' ? 'Rental' : 'Sale'; }
+  function typeOf(d) { return d.side === 'buy' ? 'Purchase' : places().lostPitch(d) ? 'Pitch' : d.kind === 'rental' ? 'Rental' : 'Sale'; }
   function dayOf(m) { return typeof m === 'string' ? m : m && m.on ? m.on : ''; }
   /* the dates it reached, in date order, each with the workspace's word for it ('Listed', 'Closed');
      a planned date with no day yet, and a key the workspace has no word for, stay out */

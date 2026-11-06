@@ -55,6 +55,7 @@ function rowsFor(over) {
       { id: 'c3', property_id: 'p1', at: iso(NOW - 2 * 864e5), field: 'price', old_value: 4750000, new_value: 4500000, source: 'DE' }
     ],
     sync_runs: [{ kind: 'de', started_at: iso(NOW - 3 * 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 3600e3), ok: true }],
+    sync_state: [{ kind: 'asana-events', checked_at: iso(NOW - 60e3), ok: true, detail: null }],
     asana_people: [{ gid: 'a1', name: 'Eve Newcomer', section: 'Partners', title: 'Licensed Salesperson', past: false, seen_at: iso(NOW - 3600e3) },
       { gid: 'a0', name: 'Old Person', section: 'Partners', title: 'Licensed Salesperson', past: false, seen_at: iso(NOW - 9 * 864e5) }],
     // 💬 Social Media posts (0012): two posted, one coming, one that didn't post, one with an unsafe link
@@ -98,8 +99,8 @@ async function open(browser, opts) {
     }
     if (m === 'POST' && table === 'changes' && opts.changeFails) { writes.push('POST changes (refused)'); return r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'connection lost' }) }); }
     if (m !== 'GET') { writes.push(m + ' ' + table + ' ' + (r.request().postData() || '')); return r.fulfill({ status: 201, contentType: 'application/json', body: '[]' }); }
-    if (eqs.length) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((T[table] || []).filter(hit)) });
     if (opts.missing && opts.missing.indexOf(table) !== -1) return r.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'relation "public.' + table + '" does not exist' }) });
+    if (eqs.length) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((T[table] || []).filter(hit)) });
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(T[table] || []) });
   });
   await page.route('**/auth/v1/user', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'u1', email: 'matt@example.com' }) }));
@@ -186,8 +187,8 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('nav: Overview, Resell, New Dev, Errors, Tools', await p.$$eval('.nav a', els => els.map(e => e.textContent)), ['Overview', 'Resell', 'New Dev', 'Errors', 'Tools']);
   check('footer: links to the rest of the site', await p.$$eval('.foot .foot-links a', els => els.map(e => [e.textContent, e.getAttribute('href')])),
     [['Listing rules', './../listing-rules/'], ['Tasks', './#tasks'], ['Ask Matt', 'mailto:matthew@gvcrealestateteam.com']]);
-  check('Asana card ok', [await p.$eval('#asCard', e => e.className), (await text(p, '#asText')).startsWith('Asana last synced')], ['card health', true]);
-  check('top bar: Asana pill beside DE, the time on hover', [await text(p, '#wsFootAsana'), (await p.$eval('#wsFootAsana', e => e.title)).startsWith('Asana last synced'), await p.$eval('#wsFootAsana', e => e.className)], ['Asana synced', true, 'pill-ok']);
+  check('Asana card ok', [await p.$eval('#asCard', e => e.className), await text(p, '#asTitle'), (await text(p, '#asText')).startsWith('Synced')], ['card health', 'Asana synced', true]);
+  check('the header says Synced N min ago (Overview)', [await text(p, '#wsFootAsana'), await p.$eval('#wsFootAsana', e => e.title), await p.$eval('#wsFootAsana', e => e.className)], ['Synced 1 min ago', 'Synced 1 min ago', 'pill-ok']);
   check('deal-date markers, planned hollow', [await p.$$eval('a.pj[href*="100-example"] .dmk', els => els.length), await p.$$eval('a.pj[href*="100-example"] .dmk.planned', els => els.length)], [2, 1]);
   check('mismatch count on the row', (await text(p, 'a.pj[href*="100-example"] .r')).includes('3 errors'), true);
   check('mismatch total in the header', [await text(p, '#mmTotal'), await p.$eval('#mmTotal', a => a.getAttribute('href'))], ['4 errors', 'match/']);
@@ -245,11 +246,23 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('never synced', await text(t.page, '#deTitle'), 'DE hasn\'t synced yet');
   await t.ctx.close();
 
-  t = await open(browser, { rows: rowsFor({ sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - (6 * 3600e3 + 60e3)), ok: true }] }) });
-  check('Asana 6 h 1 min: amber', [await t.page.$eval('#asCard', e => e.className), (await text(t.page, '#asText')).startsWith('Asana last synced')], ['card health amber', true]);
+  t = await open(browser, { rows: rowsFor({ sync_state: [{ kind: 'asana-events', checked_at: iso(NOW - 11 * 60e3), ok: true, detail: null }], sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 6 * 3600e3), ok: true }] }) });
+  check('the Overview Asana card goes amber after 10 minutes without a check', [await t.page.$eval('#asCard', e => e.className), await text(t.page, '#asTitle'), (await text(t.page, '#asText')).startsWith('Synced'), await t.page.$eval('#wsFootAsana', e => e.className)], ['card health amber', 'Asana sync is late', true, 'pill-ok warn']);
   await t.ctx.close();
-  t = await open(browser, { rows: rowsFor({ sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 3600e3), ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }] }) });
+  t = await open(browser, { rows: rowsFor({ sync_state: [{ kind: 'asana-events', checked_at: iso(NOW - 20 * 60e3), ok: true, detail: null }], sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 600e3), ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }] }) });
   check('Asana refused: red with the reason', [await t.page.$eval('#asCard', e => e.className), await text(t.page, '#asWhy')], ['card health red', 'Asana refused the token']);
+  await t.ctx.close();
+  t = await open(browser, { rows: rowsFor({ sync_state: [{ kind: 'asana-events', checked_at: iso(NOW - 3 * 60e3), ok: true, detail: null }], sync_runs: [{ kind: 'de', started_at: iso(NOW - 3600e3), ok: true }, { kind: 'asana', started_at: iso(NOW - 60e3), ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }] }) });
+  check('Asana refused (newest attempt): red with the reason', [await t.page.$eval('#asCard', e => e.className), await text(t.page, '#asWhy'), await text(t.page, '#asTitle')], ['card health red', 'Asana refused the token', 'Asana sync failed']);
+  await t.ctx.close();
+  t = await open(browser, { rows: rowsFor({ sync_state: [{ kind: 'asana-events', checked_at: iso(NOW - 60e3), ok: false, detail: 'Asana could not be reached' }] }) });
+  check('events check failed: red, pill red', [await t.page.$eval('#asCard', e => e.className), await text(t.page, '#asWhy'), await t.page.$eval('#wsFootAsana', e => e.className)], ['card health red', 'Asana could not be reached', 'pill-ok warn']);
+  await t.ctx.close();
+  t = await open(browser, { rows: rowsFor({ sync_state: [] }) });
+  check('no sync_state rows: the old pill', [await text(t.page, '#wsFootAsana'), (await t.page.$eval('#wsFootAsana', e => e.title)).startsWith('Asana last synced')], ['Asana synced', true]);
+  await t.ctx.close();
+  t = await open(browser, { rows: rowsFor(), missing: ['sync_state'] });
+  check('no sync_state table: the old pill', [await text(t.page, '#wsFootAsana'), (await t.page.$eval('#wsFootAsana', e => e.title)).startsWith('Asana last synced'), t.errors], ['Asana synced', true, []]);
   await t.ctx.close();
   t = await open(browser, { drive: true, syncResult: { ok: false, asana: { ok: false, error: 'No Asana token yet. Add asanaToken to the helper config.' }, de: { ok: true, changes: 2, created: 0, skipped: 0, aborted: null } } });
   let asked = null, answer = false;
@@ -306,6 +319,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
   check('jobs: rows (Resell: no developments)', await t.page.$$eval('#rows tr', els => els.length), 5);
   check('jobs: link to the job page', await t.page.$eval('#rows a[href*="100-example"]', a => a.getAttribute('href')), '../job/?listing=100-example-st-residence-4a');
   check('jobs: DE status in words', (await text(t.page, '#rows')).includes('Contract signed'), true);
+  check('the header says Synced N min ago (Resell)', await text(t.page, '#wsFootAsana'), 'Synced 1 min ago');
   const firstName = () => t.page.$eval('#rows tr:first-child td.nm a', a => a.textContent);
   const sortState = () => t.page.$$eval('thead th[aria-sort]', ths => ths.map(th => th.querySelector('button').dataset.sort + ':' + th.getAttribute('aria-sort')));
   check('jobs: every column has a sort button', await t.page.$$eval('thead th button[data-sort]', bs => bs.length), 8);

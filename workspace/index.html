@@ -200,11 +200,13 @@
       rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1'),
       mine.then(function (yes) { return yes ? rest('/todos?select=id,section,body,done,position&done=eq.false&order=position.asc') : []; }),
       rest('/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1'),
+      // the one-minute check's row (0026); unreadable before then, which keeps today's words
+      rest('/sync_state?select=kind,checked_at,ok,detail&kind=eq.asana-events&limit=1').then(function (rows) { return (rows || [])[0] || null; }, function () { return null; }),
       // the pieces' records, for the stale mark; unreadable (0009 not run yet) means no marks, never a broken board
       // a pitch's pieces since 0010 (Slice 5); before it the column isn't there, so ask without it
       rest('/documents?select=property_id,pitch_id,tool,built_from,output').catch(function () { return rest('/documents?select=property_id,tool,built_from,output'); }).catch(function () { return []; })
     ]).then(function (r) {
-      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null, personal: personal, documents: r[7] || [] };
+      data = { properties: r[0] || [], pitches: r[1] || [], devProjects: r[2] || [], changes: r[3] || [], lastDe: (r[4] || [])[0] || null, todos: r[5] || [], lastAsana: (r[6] || [])[0] || null, asanaState: r[7] || null, personal: personal, documents: r[8] || [] };
       try { home(); render(); tasks(); health(); } catch (e) { return gate('The overview couldn\'t load', e.message); }
       $('gate').hidden = true; $('board').hidden = false;
       if (window.GVC_WALK) setTimeout(function () { GVC_WALK.offer('overview', who); }, 400);
@@ -380,11 +382,11 @@
   }
 
   function health() {
-    var a = W.asanaHealth(data.lastAsana, new Date());
+    var a = W.asanaStatus(data.asanaState, data.lastAsana, new Date());
     shell.setAsana(a);
     var cls = a.state === 'amber' ? ' amber' : a.state === 'red' ? ' red' : '';
     $('asCard').className = 'card health' + cls; $('asIc').className = 'ic' + cls;
-    $('asTitle').textContent = a.state === 'red' ? 'Asana sync failed' : a.state === 'amber' ? 'Asana sync is late' : a.state === 'never' ? 'Asana hasn\'t synced yet' : 'Asana sync ran';
+    $('asTitle').textContent = a.state === 'red' ? 'Asana sync failed' : a.state === 'amber' ? 'Asana sync is late' : a.state === 'never' ? 'Asana hasn\'t synced yet' : a.synced ? 'Asana synced' : 'Asana sync ran';
     $('asText').textContent = a.text;
     $('asWhy').hidden = !a.why; $('asWhy').textContent = a.why || '';
     var h = W.syncHealth(data.lastDe, new Date());

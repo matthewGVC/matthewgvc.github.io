@@ -11,7 +11,7 @@
      shell.setSync(health)      health from GVC_WS.syncHealth(); updates the
                                 sync button's title and the DE pill (its hover
                                 says when it last synced)
-     shell.setAsana(health)     the same for GVC_WS.asanaHealth() (Asana pill)
+     shell.setAsana(health)     the same for GVC_WS.asanaStatus() (Asana pill: "Synced 4 min ago")
      GVC_SHELL.syncWords(r)     POST /sync's { ok, asana, de } in one plain line,
                                 each part read on its own (ok is false whenever
                                 Asana has no token, even when DE synced)
@@ -207,7 +207,7 @@
     function paintSync(el, src, h) {
       el.hidden = !h.text;
       var l = SYNC_LABEL[h.state] || SYNC_LABEL.never;
-      el.textContent = src + l[0];
+      el.textContent = h.synced ? h.text : src + l[0];   // "Synced 4 min ago", or today's short label
       el.className = 'pill-ok' + (l[1] ? ' ' + l[1] : '');
       el.title = h.text + (h.why ? '. ' + h.why : '');
     }
@@ -321,8 +321,11 @@
       P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.de&order=started_at.desc&limit=1')
         .then(function (rows) { shell.setSync(global.GVC_WS.syncHealth((rows || [])[0] || null, new Date())); },
           function () { shell.setSync({ state: 'never', text: 'DE sync status unknown' }); });
-      P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1')
-        .then(function (rows) { shell.setAsana(global.GVC_WS.asanaHealth((rows || [])[0] || null, new Date())); },
+      var asanaRun = P.call('/rest/v1/sync_runs?select=kind,started_at,ok,errors&kind=eq.asana&order=started_at.desc&limit=1');
+      // before migration 0026 there is no sync_state: that read fails or is empty, and the pill keeps today's words
+      var asanaState = P.call('/rest/v1/sync_state?select=kind,checked_at,ok,detail&kind=eq.asana-events&limit=1').then(function (rows) { return (rows || [])[0] || null; }, function () { return null; });
+      Promise.all([asanaRun, asanaState])
+        .then(function (r) { shell.setAsana(global.GVC_WS.asanaStatus(r[1], (r[0] || [])[0] || null, new Date())); },
           function () { shell.setAsana({ state: 'never', text: 'Asana sync status unknown' }); });
     } else { shell.setSync({ state: 'never', text: 'Sign in to see the DE sync' }); shell.setAsana({ state: 'never', text: '' }); }
     return shell;

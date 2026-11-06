@@ -272,6 +272,28 @@ check('asana: never', W.asanaHealth(null, now).text, 'Asana hasn\'t synced yet')
 check('asana: fresh', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).state, 'ok');
 check('asana: 6 h 1 min is late', W.asanaHealth({ started_at: '2026-10-20T03:59:00Z', ok: true }, now).state, 'amber');
 check('asana: says when', /^Asana last synced/.test(W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).text), true);
+/* ---------- "Synced N min ago" (the header, every page) ---------- */
+const evOk = at => ({ kind: 'asana-events', checked_at: at, ok: true, detail: null });
+const ago = (min) => new Date(now.getTime() - min * 60e3).toISOString();
+check('synced: just now', W.syncedAgo(evOk(ago(0.3)), null, now).text, 'Synced just now');
+const four = W.syncedAgo(evOk(ago(4)), null, now);
+check('synced: 4 min ago', [four.text, four.state], ['Synced 4 min ago', 'ok']);
+check('synced: hours', W.syncedAgo(evOk(ago(125)), { started_at: ago(130), ok: true }, now).text, 'Synced 2 h ago');
+check('synced: past a day names the day', /^Synced on [A-Z][a-z]{2} \d+ [A-Z][a-z]{2}$/.test(W.syncedAgo(null, { started_at: ago(3000), ok: true }, now).text), true);
+check('synced: the events check wins when it is newer', W.syncedAgo(evOk(ago(2)), { started_at: ago(30), ok: true }, now).text, 'Synced 2 min ago');
+check('synced: the 30-minute read wins when the events check is older', W.syncedAgo(evOk(ago(9)), { started_at: ago(3), ok: true }, now).text, 'Synced 3 min ago');
+const late = W.syncedAgo(evOk(ago(11)), { started_at: ago(400), ok: true }, now);
+check('synced: amber after 10 minutes', [late.state, late.text, /Is the PC on\?/.test(late.why)], ['amber', 'Synced 11 min ago', true]);
+check('synced: not amber at 10 minutes', W.syncedAgo(evOk(ago(10)), null, now).state, 'ok');
+const bad = W.syncedAgo({ kind: 'asana-events', checked_at: ago(1), ok: false, detail: 'Asana could not be reached' }, { started_at: ago(30), ok: true }, now);
+check('synced: red when the last check failed', [bad.state, bad.why], ['red', 'Asana could not be reached']);
+const badRun = W.syncedAgo(evOk(ago(20)), { started_at: ago(5), ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }, now);
+check('synced: red when the newest 30-minute read failed', [badRun.state, badRun.why], ['red', 'Asana refused the token']);
+check('synced: a failure older than the last good check is not red', W.syncedAgo(evOk(ago(1)), { started_at: ago(5), ok: false }, now).state, 'ok');
+check('synced: never', [W.syncedAgo(null, null, now).state, W.syncedAgo(null, null, now).text], ['never', 'Not synced yet']);
+check('synced: a failed check with nothing good before it is red', W.syncedAgo({ checked_at: ago(1), ok: false, detail: 'x' }, null, now).state, 'red');
+check('synced: no sync_state yet falls back to the old words', [W.asanaStatus(null, { started_at: '2026-10-20T06:00:00Z', ok: true }, now).synced, /^Asana last synced/.test(W.asanaStatus(null, { started_at: '2026-10-20T06:00:00Z', ok: true }, now).text)], [undefined, true]);
+check('synced: with sync_state, the new words', W.asanaStatus(evOk(ago(4)), null, now).synced, true);
 /* construction counts stored as text are numbers before they're drawn */
 const consJobs = W.buildJobs({ properties: [], pitches: [], devProjects: [{ id: 'dx', slug: 'x', label: 'X', market: 'NJ', milestones: {},
   next_milestone: { key: null, construction: { done: '3', total: '12' } } }], changes: [] }, TODAY, {});

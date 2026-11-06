@@ -578,6 +578,40 @@
     return health('Asana', run, now, 6 * 3600e3, function (w) { return 'Asana last synced ' + w + ', over 6 hours ago. Is the PC on?'; });
   }
 
+  /* "Synced N min ago" in every page header. state: the sync_state row 'asana-events' (the one-minute check) or null;
+     run: the newest 'asana' sync_runs row (the full read) or null. Green while a good check is recent, red when the
+     newest attempt failed, amber only after 10 minutes with no good check (the PC is probably off). */
+  function syncedAgo(state, run, now) {
+    now = now || new Date();
+    var stAt = state && state.checked_at ? new Date(state.checked_at) : null, runAt = run && run.started_at ? new Date(run.started_at) : null;
+    var good = null;
+    if (stAt && state.ok) good = stAt;
+    if (runAt && run.ok && (!good || runAt > good)) good = runAt;
+    var words = 'Not synced yet';
+    if (good) {
+      var min = Math.floor((now - good) / 60e3), h = Math.floor(min / 60);
+      words = min < 1 ? 'Synced just now' : min < 60 ? 'Synced ' + min + ' min ago' : h < 24 ? 'Synced ' + h + ' h ago'
+        : 'Synced on ' + DAY[good.getDay()] + ' ' + good.getDate() + ' ' + MON[good.getMonth()];
+    }
+    var failed = null;   // the newest failed attempt that came after the last good one
+    if (stAt && state.ok === false && (!good || stAt > good)) failed = { at: stAt, why: state.detail };
+    if (runAt && run.ok === false && (!good || runAt > good) && (!failed || runAt > failed.at)) {
+      var e = (run.errors && run.errors[0]) || {};
+      failed = { at: runAt, why: e.detail || e.what || 'No reason was recorded.' };
+    }
+    if (failed) return { state: 'red', text: good ? words : 'Sync failed', why: failed.why || 'No reason was recorded.' };
+    if (!good) return { state: 'never', text: words, why: null };
+    if (now - good > 10 * 60e3) return { state: 'amber', text: words, why: 'Nothing has checked Asana for over 10 minutes. Is the PC on?' };
+    return { state: 'ok', text: words, why: null };
+  }
+  /* the pill and the Overview's card: the new words once sync_state can be read, today's until then (before 0026) */
+  function asanaStatus(state, run, now) {
+    if (!state) return asanaHealth(run, now);
+    var h = syncedAgo(state, run, now);
+    h.synced = true;
+    return h;
+  }
+
   /* ---------- the Match page (S10) ---------- */
   var UNLINKED_WHY = {
     'same address': 'another task is linked to the job at this address',
@@ -658,7 +692,7 @@
 
   return { STAGES: STAGES, DEV: DEV, DEV_KEYS: DEV_KEYS, DEV_LABEL: DEV_LABEL, deLabel: deLabel, day: day, today: today, mondayOf: mondayOf, addMonths: addMonths,
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
-    recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, matchByJob: matchByJob, looseMatch: looseMatch,
+    recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, syncedAgo: syncedAgo, asanaStatus: asanaStatus, matchByJob: matchByJob, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtDayYear: fmtDayYear, stageWord: stageWord, fmtWhen: fmtWhen, money: money, readable: readable,
     changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf, DATE_LABEL: DATE_LABEL };
 });

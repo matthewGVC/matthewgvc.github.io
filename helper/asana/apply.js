@@ -12,8 +12,9 @@
        sync_runs.totals.unlinked ([{ gid, name, why, market }], always there on
        a good run (ok) that read listings, never on a failed one) is what the Match page lists as "Asana task not
        linked"; tasks cached as ignored are left out of it. It also lists, as 'no job yet', every
-       List-Side task at Prep to In contract that no job or pitch holds, and as 'no street number'
-       every List-Side Lead whose name has none, the cached ones an
+       List-Side task at Prep to In contract that no job or pitch holds, as 'no street number'
+       every List-Side Lead whose name has none, and a Lead that no job holds for what still
+       keeps it out ('same address', 'more than one job at this address'), the cached ones an
        incremental run didn't read again included. A task Matt links
        to a job there (properties.asana_gid, tune-up A) is found by that stored
        gid first on the next run, whatever its name says; one he ignores
@@ -25,12 +26,14 @@
    - places (migration 0025, helper/place-store.js): every deal made is put on its place (found
      by address, or made; two new tasks at one new address in one run share one), and a linked
      row with no place gets one. A new list-side deal on a place that already has one (a repeat
-     listing, a rental beside a sale, a listing after our purchase) takes the newest list-side
-     deal's folder (drive_folder, folder_state) and its blank place facts (GVC_PLACES.inherit,
-     with their records). Our own purchase (MAP.ownPurchase: Buy Side at a development's place,
-     or beside a TJ New Dev listing) is a deal with side 'buy': it inherits nothing, never
-     becomes a development's house and never makes a listing "same address". A client's
-     buy side stays out.
+     listing, a rental beside a sale, a listing after our purchase) takes its blank place facts
+     from the newest list-side deal there (GVC_PLACES.inherit, with their records), and its folder
+     (drive_folder, folder_state) from the newest list-side deal there that has one (a later lost
+     pitch may have none). Our own purchase (MAP.ownPurchase: Buy Side at a development's lot or
+     house not yet listed by us, or beside a TJ New Dev listing) is a deal with side 'buy': it
+     inherits nothing, never becomes a development's house and never makes a listing "same
+     address"; its joining a development at the same address is logged as our purchase. A
+     client's buy side stays out.
    - a linked listing: stage (stage_source 'Asana'; never over Archived; only
      from a task that has the Listing Status field, and never on a run that
      found the field missing from every task: a renamed field must not move
@@ -277,8 +280,9 @@ async function writeRun(o, sr, out, now) {
   const devAt = street => devs.find(d => !d.archived_at && DA.of(d.slug).concat(/^\d/.test(d.label || '') ? [d.label] : [])
     .some(s => A.sameStreet(s, street)));
 
-  // the place's newest list-side deal: the one a new deal there takes its folder and place facts from
-  const newestOn = placeId => props.filter(p => p.place_id === placeId && p.side !== 'buy')
+  // the place's newest list-side deal (that passes `has`): a new deal there takes its place facts from the
+  // newest, and its folder from the newest that has one
+  const newestOn = (placeId, has) => props.filter(p => p.place_id === placeId && p.side !== 'buy' && (!has || has(p)))
     .reduce((m, p) => (!m || String(p.created_at || '') >= String(m.created_at || '') ? p : m), null);
 
   /* opt.side 'buy' (our own purchase); opt.placeId the place matchTask named (a repeat deal) */
@@ -299,13 +303,14 @@ async function writeRun(o, sr, out, now) {
     const place = (opt && opt.placeId && places.places.find(x => x.id === opt.placeId)) ||
       await findOrMakePlace(client, places, { core, market: t.market || null, devId });
     const prev = !buy && place ? newestOn(place.id) : null;
+    const folderOf = !buy && place ? newestOn(place.id, p => !!p.drive_folder) : null;
     const fill = prev ? GP.inherit(prev.core, core) : core;
     const inherited = Object.keys(fill).filter(k => k !== 'facts' && !(k in core));
     core = fill;
     const row = { slug: slugFor('properties', core, t.gid), label: P.labelOf(core), core, kind, market: t.market || null, stage,
       stage_source: 'Asana', units: core.unit ? [core.unit] : [], asana_gid: t.gid, asana: snapshotOf(t), milestones: MAP.datesOf(t, t.history, now),
       folder_state: 'unlinked', dev_project_id: devId || (buy && place && place.dev_project_id) || null, place_id: place ? place.id : null, side };
-    if (prev) { row.drive_folder = prev.drive_folder || null; row.folder_state = prev.folder_state || 'unlinked'; }
+    if (folderOf) { row.drive_folder = folderOf.drive_folder; row.folder_state = folderOf.folder_state || 'unlinked'; }
     if (pitch) row.from_pitch_id = pitch.id;
     const made = (await client.insert('properties', row))[0];
     props.push(made);
@@ -315,8 +320,9 @@ async function writeRun(o, sr, out, now) {
       .concat(Object.keys(f0).map(k => log(own, k, null, core[k])))
       .concat(inherited.map(k => log(own, k, null, core[k], 'From the earlier deal at this place')));
     if (buy) changes.push(log(own, 'side', null, 'buy', 'Our own purchase'));
-    if (prev && row.drive_folder) changes.push(log(own, 'drive_folder', null, row.drive_folder, 'The folder of the earlier deal at this place'));
-    if (atDev) changes.push(log(own, 'dev_project_id', null, atDev.id, 'Joined the development ' + atDev.label + ' (the same address)'));
+    if (folderOf) changes.push(log(own, 'drive_folder', null, row.drive_folder, 'The folder of the earlier deal at this place'));
+    if (atDev) changes.push(log(own, 'dev_project_id', null, atDev.id, buy ? 'Our own purchase for the development ' + atDev.label
+      : 'Joined the development ' + atDev.label + ' (the same address)'));
     await client.insert('changes', changes);
     // a single-family new development (no house listing of its own yet) is this house: one job (D141);
     // never our purchase of its land, which doesn't keep a listing from becoming the house either
@@ -498,8 +504,8 @@ async function writeRun(o, sr, out, now) {
       if (st.stage === 'Pitch') return t.fields['🗓️ Pitch'] ? linkOrCreate(t, 'Pitch', 'pitch', pr.kind === 'pitch' ? pr.match : null, entry) : undefined;
       return linkOrCreate(t, st.stage, 'listing', pr.kind === 'listing' ? pr.match : null, entry);
     }
-    // our own purchase (Buy Side at a development's place, or beside a TJ New Dev listing): a buy deal
-    if (!(c && c.ignored) && MAP.ownPurchase(t, { places: places.places, tasks: listingTasks })) return createListing(t, st.stage, null, entry, { side: 'buy' });
+    // our own purchase (Buy Side at a development's lot or house we haven't listed, or beside a TJ New Dev listing): a buy deal
+    if (!(c && c.ignored) && MAP.ownPurchase(t, { places: places.places, tasks: listingTasks, deals: props })) return createListing(t, st.stage, null, entry, { side: 'buy' });
     if (!MAP.isGvcListing(t)) return;                   // not GVC-listed
     const off = st.stage === 'Off market' ? L.offMarketOf(t, now) : null;
     if (c && c.ignored) {                               // decided (by Matt, or as closed by the old rule)
@@ -535,8 +541,9 @@ async function writeRun(o, sr, out, now) {
     const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && p.side !== 'buy' && L.sameAddress(t.name, p.core));
     if (hit) out.unlinked.push({ gid: e.gid, name: t.name, why: 'same address', propertyId: hit.id });
   });
-  /* a List-Side task at Prep to In contract that no job or pitch holds: listed as "no job yet" (and a Lead
-     with no street number as "no street number", never made, decision 4), whether
+  /* a List-Side task at Prep to In contract that no job or pitch holds: listed as "no job yet" (a Lead
+     with no street number as "no street number", never made, decision 4, and one with a number as what
+     keeps it out: "same address" while a deal of its kind there is live, L.matchTask), whether
      or not this run read it again (an incremental run skips unchanged tasks, so a task unlinked by hand,
      or one not on the link plan, would otherwise sit unreported; 404 Park S - 6A, 2026-10-21).
      Reported only: nothing is linked or made here. A full read only lists the tasks it read. */
@@ -550,8 +557,11 @@ async function writeRun(o, sr, out, now) {
   known.forEach(({ e, t }) => {
     if (e.ignored || holds.has(e.gid) || out.unlinked.some(u => u.gid === e.gid) || !MAP.isGvcListing(t)) return;
     const stage = MAP.stageOf(t).stage;
-    const why = ACTIVE.indexOf(stage) !== -1 ? 'no job yet' : stage === 'Pitch' && !L.hasNumber(t.name) ? 'no street number' : null;
-    if (why) out.unlinked.push({ gid: e.gid, name: t.name, why, market: t.market || marketOf.get(t.projectGid || t.project_gid) || null });
+    const m = stage === 'Pitch' && L.hasNumber(t.name) ? L.matchTask(t, { properties: props, pitches }, 'listing') : {};
+    const why = ACTIVE.indexOf(stage) !== -1 ? 'no job yet' : stage !== 'Pitch' ? null : !L.hasNumber(t.name) ? 'no street number'
+      : m.taken ? 'same address' : m.tie ? 'more than one job at this address' : 'no job yet';
+    if (why) out.unlinked.push(Object.assign({ gid: e.gid, name: t.name, why, market: t.market || marketOf.get(t.projectGid || t.project_gid) || null },
+      m.taken ? { propertyId: m.taken } : {}));
   });
   // each unlinked task's market, so the Match page's "Link to a job" offers that market's jobs
   out.unlinked.forEach(u => { const t = fresh.get(u.gid); u.market = (t && t.market) || u.market || null; });

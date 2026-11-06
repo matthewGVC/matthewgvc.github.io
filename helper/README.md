@@ -104,9 +104,11 @@ exit ends it). Run it from the main repo folder.
   List-Side Lead appears as a deal at the Pitch stage (a lost one, Graveyard, archives; back in Asana,
   it comes back); a Lead with no street number is listed as not linked on every run instead. A new
   listing at an address whose deals are all Sold, Rented or Off market is a new deal on the same place,
-  with its folder and its blank place facts; a sale and a rental of one unit share one place. Our own
-  purchases (Buy Side at a development's place or beside a TJ New Dev listing) are deals with
-  `side 'buy'`; a client's buy side stays out.
+  with the newest earlier deal's blank place facts and the folder of the newest one that has a folder;
+  a sale and a rental of one unit share one place. Our own purchases (Buy Side at a development's lot
+  or house that we have not listed yet, or beside a TJ New Dev listing) are deals with `side 'buy'`;
+  a client's buy side, of a development's unit or of our listed house, stays out. A Lead refused as
+  "same address" stays listed as not linked on later runs that don't read it again.
 - Places (migration 0025): `place-store.js` finds the place a deal is on or makes it (the sync and the
   backfill share it). `node helper/places-backfill.js` writes the one-time plan,
   `exports/places-backfill-<date>.md` and `.json`, and changes nothing; `--apply <that .json>` applies it and

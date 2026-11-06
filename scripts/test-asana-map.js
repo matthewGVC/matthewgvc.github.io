@@ -67,6 +67,18 @@ check('fixture: no unknown stages', nyc.filter(t => M.stageOf(t).unknown).map(t 
   check('not gvc ' + v, M.isGvcListing(task({ fields: { 'Deal Side': v } })), false));
 check('not gvc: no field', M.isGvcListing(task({})), false);
 
+/* ---------- ownPurchase (decision 5): our own purchase of a lot or house, never a client's buy side ---------- */
+const buyTask = (name, status) => task({ name, fields: { 'Deal Side': 'Buy Side', 'Listing Status': status } });
+const LOT = { id: 'pl-lot', address: '30 Lot Rd', town: 'Rumson', key: 'NJ|30 lot|', dev_project_id: 'd-lot' };
+check('ownPurchase: a lot at a development', M.ownPurchase(buyTask('30 Lot Rd, Rumson', 'Active'), { places: [LOT] }), true);
+check('ownPurchase: a client\'s buy side of a development\'s unit', M.ownPurchase(buyTask('200 E Boca Raton Rd - D', 'In Contract'),
+  { places: [{ id: 'pl-d', address: '200 E Boca Raton Rd', key: 'FL|200 e boca raton|D', dev_project_id: 'd-lr' }] }), false);
+check('ownPurchase: a buyer of our listed house', M.ownPurchase(buyTask('30 Lot Rd, Rumson', 'Active'),
+  { places: [LOT], deals: [{ place_id: 'pl-lot', side: 'list', stage: 'Live' }] }), false);
+check('ownPurchase: a Lead on the lot is no listing yet', M.ownPurchase(buyTask('30 Lot Rd, Rumson', 'Active'),
+  { places: [LOT], deals: [{ place_id: 'pl-lot', side: 'list', stage: 'Pitch' }, { place_id: 'pl-lot', side: 'list', stage: 'Sold' }] }), true);
+check('ownPurchase: a borough spelling is the same town', M.ownPurchase(buyTask('30 Lot Rd, Rumson Borough', 'Active'), { places: [LOT] }), true);
+
 /* ---------- factsOf ---------- */
 const stats = M.factsOf(task({ fields: { 'ℹ️ Property Stats': ['🛏️ 3 Bedrooms', '🚿 2 Full Baths', '🧼 1 Half Bath'] } }));
 check('stats beds', stats.beds, 3);

@@ -23,7 +23,7 @@ const NOW = Date.now();
 function rowsFor(over) {
   const T = {
     properties: [
-      { id: 'p1', slug: '100-example-st-residence-4a', label: 'x', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE', version: 3,
+      { id: 'p1', slug: '100-example-st-residence-4a', label: '100 Example St 4A', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE', version: 3,
         core: { address: '100 EXAMPLE ST', unit: '4A', neighborhood: 'Testville' }, de: { status: 'ActiveUnderContract', price: 4500000, beds: 4, baths: 4 },
         de_listing_id: '9001', drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
         scan: { weeks: { [iso(NOW - 20 * 864e5).slice(0, 10)]: 12 }, found: { floorplan: iso(NOW - 30 * 864e5).slice(0, 10) } },
@@ -729,7 +729,7 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
 
   // D88: an off-market listing on the overview, the Jobs list and its job page
   const ROM = rowsFor();
-  ROM.properties.push({ id: 'pom', slug: '619-sample-ave-brielle', label: 'om', kind: 'sale', market: 'NJ', stage: 'Off market', stage_source: 'Asana', version: 1,
+  ROM.properties.push({ id: 'pom', slug: '619-sample-ave-brielle', label: '619 Sample Ave', kind: 'sale', market: 'NJ', stage: 'Off market', stage_source: 'Asana', version: 1,
     core: { address: '619 Sample Ave', city: 'Brielle', price: 1250000 }, folder_state: 'linked', drive_folder: 'GVC - New Jersey/619 Sample Ave',
     asana_gid: '1301', asana: { gid: '1301', permalink: 'https://app.asana.com/0/1/1301', status: 'Graveyard', section: 'Graveyard', stageFromStatus: 'Off market', stageFromSection: 'Off market', checklist: [] },
     milestones: { listedOn: { on: iso(NOW - 120 * 864e5).slice(0, 10), planned: false }, offMarketOn: { on: iso(NOW - 10 * 864e5).slice(0, 10), planned: false } }, match: { list: [], dismissed: {} } });

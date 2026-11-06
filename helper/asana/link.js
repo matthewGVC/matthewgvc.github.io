@@ -18,7 +18,8 @@
          Sale vs rental (plan §5): a job only matches when its kind agrees with
          the task's Sale/Rent. A sale and a rental of one unit are two listings.
          "For Sale or Rent", a blank Sale/Rent or a job with no kind match either.
-     saleRentOf(task)          → 'sale' | 'rental' | null (both or unknown)
+     saleRentOf(task)          → 'sale' | 'rental' | null (both or unknown); a name ending
+                                 "(Rental)" is a rental, whatever Sale/Rent says
      makePlan(run, existing)   → { rows: [{ gid, name, kind, stage, market, tick,
                                    match, why }] }                     S5, D54
          existing = { properties, pitches, devs }
@@ -46,6 +47,7 @@ const fs = require('fs'), path = require('path');
 const A = require('../../assets/js/address-aliases.js');
 const P = require('../../assets/js/property-library.js');
 const MAP = require('../../assets/js/asana-map.js');
+const N = require('../../assets/js/naming.js');
 
 const ACTIVE = ['Prep', 'Live', 'Accepted offer', 'In contract'];
 const CLOSED = ['Sold', 'Rented', 'Off market'];
@@ -79,7 +81,9 @@ function sameAddress(name, core) {
   return !ta || !tb || ta === tb;
 }
 
+/* a name ending "(Rental)" is a rental, whatever Sale/Rent says (decision 12) */
 function saleRentOf(task) {
+  if (N.isRental(task && task.name)) return 'rental';
   const k = String((task && task.fields && task.fields['Sale/Rent']) || '').toLowerCase();
   const sale = /sale/.test(k), rent = /rent/.test(k);
   return sale && !rent ? 'sale' : rent && !sale ? 'rental' : null;

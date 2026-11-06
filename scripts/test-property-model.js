@@ -159,6 +159,17 @@ check('key order is not a change',
   P.changesAgainst({ comps: [{ a: 1, b: 2 }] }, { comps: [{ b: 2, a: 1 }] }),
   []);
 
+/* ------------------------------------------------------------
+   8. A builder save never renames a deal whose name is owned elsewhere: an
+   Asana task's (asana_gid) or a development's Elliman unit (dev_project_id).
+   ------------------------------------------------------------ */
+const MERGED = { address: '400 E59', unit: '3H' };
+check("a builder save leaves a linked deal's name alone",
+  [P.saveLabel({ asana_gid: '12', core: {} }, MERGED) === undefined, P.saveLabel({ dev_project_id: 'd-1', core: {} }, MERGED) === undefined], [true, true]);
+check('a builder save still names a library row',
+  [P.saveLabel({ core: {} }, MERGED), P.saveLabel({ core: {} }, Object.assign({ displayLabel: 'My name' }, MERGED))],
+  ['400 E59, Residence 3H', 'My name']);
+
 /* ------------------------------------------------------------ */
 if (failures.length) {
   console.error('\n  ' + failures.length + ' failed, ' + pass + ' passed\n');

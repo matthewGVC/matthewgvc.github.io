@@ -964,6 +964,59 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   await pdApply(dPD, twice);
   check('PD run twice, nothing new', counts(dPD), firstPD);
 
+  /* ---------- NF. Asana's name is the workspace's name (stage 2): the label follows the task, a renamed unit moves
+     the deal's place, a respelling moves nothing ---------- */
+  const NYCP = (id, core, extra) => placeRow(id, core, 'NYC', extra);
+  const nyDeal = (id, gid, core, extra) => deal(id, gid, core, Object.assign({ market: 'NYC' }, extra));
+  const E57 = { address: '200 East 57th Street', unit: '17A' };
+
+  let dNF = pdDb({ places: [NYCP('pl-nf1', E57)], properties: [nyDeal('p-nf1', 'g-nf1', Object.assign({}, E57), { label: '200 East 57th Street, Residence 17A', place_id: 'pl-nf1' })] });
+  await pdApply(dNF, [pdTask('g-nf1', '200 E57 - 17A', 'Active', NYCX)]);
+  check('NF a linked task\'s name becomes the label', [pdJob(dNF, 'g-nf1').label, asanaNotes(dNF, 'p-nf1').filter(c => c.field === 'label').map(c => [c.old_value, c.new_value])],
+    ['200 E57 - 17A', [['200 East 57th Street, Residence 17A', '200 E57 - 17A']]]);
+  check('NF a respelling keeps the long address for print', [pdJob(dNF, 'g-nf1').core.address, pdJob(dNF, 'g-nf1').core.unit], ['200 East 57th Street', '17A']);
+
+  dNF = pdDb();
+  await pdApply(dNF, [pdTask('g-nf2', '402 E59 - 6A (Rental)', 'Active', NYCX)]);
+  check('NF a new deal\'s label is the task name', [pdJob(dNF, 'g-nf2').label, pdJob(dNF, 'g-nf2').slug, pdJob(dNF, 'g-nf2').kind], ['402 E59 - 6A', '402-e59-residence-6a', 'rental']);
+
+  dNF = pdDb({ places: [NYCP('pl-nf3', E57)], properties: [nyDeal('p-nf3', 'g-nf3', Object.assign({}, E57), { label: '200 E57 - 17A', place_id: 'pl-nf3' })] });
+  const snapPlaces = () => JSON.stringify(dNF.T.places.map(p => { const x = Object.assign({}, p); delete x.version; return x; }));
+  const before3 = snapPlaces();
+  await pdApply(dNF, [pdTask('g-nf3', '200 E57 - 17A', 'Active', NYCX)]);   // the stored address is the long form
+  check('NF a respelling moves nothing', [snapPlaces() === before3, pdJob(dNF, 'g-nf3').place_id, pdJob(dNF, 'g-nf3').core.unit,
+    asanaNotes(dNF, 'p-nf3').filter(c => ['unit', 'address', 'place_id'].indexOf(c.field) !== -1).length], [true, 'pl-nf3', '17A', 0]);
+
+  const H4 = { address: '400 E59', unit: '4H' }, H3 = { address: '400 E59', unit: '3H' };
+  dNF = pdDb({ places: [NYCP('pl-nf4', H4)], properties: [nyDeal('p-nf4', 'g-nf4', Object.assign({}, H4), { label: '400 E59 - 4H', place_id: 'pl-nf4' })] });
+  const renamed4 = [pdTask('g-nf4', '400 E59 - 3H', 'Active', NYCX)];
+  await pdApply(dNF, renamed4);
+  const pl4 = dNF.T.places[0] || {};
+  check('NF a renamed unit moves the deal\'s place', [dNF.T.places.length, pl4.id, pl4.key, pl4.label, pdJob(dNF, 'g-nf4').place_id, pdJob(dNF, 'g-nf4').core.unit],
+    [1, 'pl-nf4', keyOfCore(H3, 'NYC'), '400 E59 - 3H', 'pl-nf4', '3H']);
+  check('NF a renamed unit is logged as renamed in Asana', asanaNotes(dNF, 'p-nf4').filter(c => c.field === 'unit').map(c => [c.old_value, c.new_value, c.note]),
+    [['4H', '3H', 'Renamed in Asana']]);
+  const nf4 = counts(dNF);
+  await pdApply(dNF, renamed4);
+  check('NF run twice, nothing new', counts(dNF), nf4);
+
+  dNF = pdDb({ places: [NYCP('pl-nf5a', H4), NYCP('pl-nf5b', H3)],
+    properties: [nyDeal('p-nf5old', 'g-nf5old', Object.assign({}, H3), { label: '400 E59 - 3H', stage: 'Sold', place_id: 'pl-nf5b', created_at: '2020-01-01T00:00:00Z' }),
+      nyDeal('p-nf5', 'g-nf5', Object.assign({}, H4), { label: '400 E59 - 4H', place_id: 'pl-nf5a', created_at: '2026-06-01T00:00:00Z' })] });
+  await pdApply(dNF, [pdTask('g-nf5', '400 E59 - 3H', 'Active', NYCX)]);
+  check('NF a rename onto a known place joins it', [pdJob(dNF, 'g-nf5').place_id, dNF.T.places.map(p => p.id), dNF.T.properties.filter(p => p.place_id === 'pl-nf5a').length,
+    asanaNotes(dNF, 'p-nf5').filter(c => c.field === 'place_id').map(c => [c.old_value, c.new_value])],
+    ['pl-nf5b', ['pl-nf5a', 'pl-nf5b'], 0, [['pl-nf5a', 'pl-nf5b']]]);
+
+  const OAK6 = { address: '6 Oak Ln', city: 'Rumson' };
+  dNF = pdDb({ places: [placeRow('pl-nf6', OAK6, 'NJ', { label: '6 Oak Ln, Rumson' })],
+    properties: [deal('p-nf6old', 'g-nf6old', Object.assign({}, OAK6), { label: '6 Oak Ln, Rumson', stage: 'Sold', place_id: 'pl-nf6', created_at: '2020-01-01T00:00:00Z' }),
+      deal('p-nf6', 'g-nf6', Object.assign({}, OAK6), { label: '6 Oak Ln, Rumson', place_id: 'pl-nf6', created_at: '2026-06-01T00:00:00Z' })] });
+  await pdApply(dNF, [pdTask('g-nf6old', '6 Oak Lane', 'Complete')]);
+  check('NF an older deal\'s new name leaves the place\'s label', [pdJob(dNF, 'g-nf6old').label, dNF.T.places[0].label], ['6 Oak Lane', '6 Oak Ln, Rumson']);
+  await pdApply(dNF, [pdTask('g-nf6', '6 Oak Ln', 'Active')]);
+  check('NF the place\'s label follows its newest deal', [pdJob(dNF, 'g-nf6').label, dNF.T.places[0].label, pdJob(dNF, 'g-nf6').place_id], ['6 Oak Ln', '6 Oak Ln', 'pl-nf6']);
+
   // the job page's Units card: a purchase is never one of the development's houses
   require('../assets/js/job-page/units.js');
   check('PD units.houses leaves a purchase out', globalThis.GVC_JP.units.houses([{ slug: 'h', stage: 'Prep', core: BROWN }, { slug: 'b', stage: 'Live', side: 'buy', core: BROWN }])

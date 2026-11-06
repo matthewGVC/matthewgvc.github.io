@@ -81,11 +81,14 @@ function run(db) { const logged = []; return syncDevUnits(db, { now: NOW, log: m
   await run(db);
   const byDe = id => db.T.properties.find(p => p.de_listing_id === id);
   check('unit E keeps its unit', [byDe('7003').slug, byDe('7003').label],
-    ['200-e-boca-raton-rd-residence-e', '200 E Boca Raton Rd, Residence E, Boca Raton, FL']);
+    ['200-e-boca-raton-rd-residence-e', '200 E Boca Raton Rd - E']);
   check('unit E keeps its unit: unit B differs', [byDe('7001').slug, byDe('7001').label],
-    ['200-e-boca-raton-rd-residence-b', '200 E Boca Raton Rd, Residence B, Boca Raton, FL']);
+    ['200-e-boca-raton-rd-residence-b', '200 E Boca Raton Rd - B']);
+  check('an Elliman unit is named by the rule', byDe('7001').label, '200 E Boca Raton Rd - B');
   check('unit E keeps its unit: a place each', db.T.places.length, 2);
-  check('unit E keeps its unit: stored labels aren\'t rewritten', [byDe('7004').slug, byDe('7004').label], ['old-slug', 'Old label']);
+  check('an older unit is renamed on the next run', [byDe('7004').slug, byDe('7004').label,
+    db.T.changes.filter(c => c.property_id === 'p-old').map(c => [c.field, c.old_value, c.new_value, c.note, c.source])],
+    ['old-slug', '200 E Boca Raton Rd - C', [['label', 'Old label', '200 E Boca Raton Rd - C', 'Named by the naming rule', 'DE']]]);
 
   /* a slug someone already has gets the Elliman id on the end */
   db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7123456', 'B', 'Active')],
@@ -111,16 +114,16 @@ function run(db) { const logged = []; return syncDevUnits(db, { now: NOW, log: m
   check('an unknown status is logged, once a row', [out.logged.length, out.logged.every(l => /^dev units: .*Withdrawn/.test(l))], [2, true]);
 
   db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7001', 'B', 'Sold', { property_id: 'p-b' }), unit('7002', 'C', 'Rented', { kind: 'rental', property_id: 'p-c' })],
-    properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', core: {} },
-      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', core: {} }] });
+    properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', label: '200 E Boca Raton Rd - B', core: { address: '200 E Boca Raton Rd', unit: 'B' } },
+      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', label: '200 E Boca Raton Rd - C (Rental)', core: { address: '200 E Boca Raton Rd', unit: 'C' } }] });
   out = await run(db);
   check('Sold and Rented on Elliman archive', [out.moved, byDe('7001').stage, byDe('7002').stage, byDe('7001').stage_source], [2, 'Archived', 'Archived', 'DE']);
   check('Sold and Rented on Elliman archive: one changes row each', db.T.changes.map(c => [c.property_id, c.field, c.old_value, c.new_value, c.source]),
     [['p-b', 'stage', 'Live', 'Archived', 'DE'], ['p-c', 'stage', 'Live', 'Archived', 'DE']]);
 
   db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7001', 'B', 'ActiveUnderContract', { property_id: 'p-b' }), unit('7002', 'C', 'ActiveUnderContract', { kind: 'rental', property_id: 'p-c' })],
-    properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', core: {} },
-      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', core: {} }] });
+    properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', label: '200 E Boca Raton Rd - B', core: { address: '200 E Boca Raton Rd', unit: 'B' } },
+      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', label: '200 E Boca Raton Rd - C (Rental)', core: { address: '200 E Boca Raton Rd', unit: 'C' } }] });
   await run(db);
   check('a move is logged in the stage\'s own words, never Elliman\'s code', db.T.changes.map(c => c.note), ['Elliman shows it In contract', 'Elliman shows it Lease signed']);
 

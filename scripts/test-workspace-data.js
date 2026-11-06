@@ -19,7 +19,7 @@ function check(name, got, want) {
 
 const TODAY = '2026-10-20';
 const props = [
-  { id: 'p1', slug: '100-example-st-residence-4a', label: '100 EXAMPLE ST, Residence 4A', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE',
+  { id: 'p1', slug: '100-example-st-residence-4a', label: '100 Example St 4A', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE',
     de: { status: 'ActiveUnderContract', price: 4500000, beds: 4, baths: 4 },
     de_listing_id: '9001', drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
     scan: { weeks: { '2026-09-07': 58, '2026-09-14': 9 }, found: { floorplan: '2026-09-15', showsheet: '2026-09-14' } },
@@ -33,7 +33,7 @@ const props = [
       dismissed: { 'M17:price': { values: { matt: 4400000, de: 4500000 }, reason: 'Agent texted the new price', by: 'MB', at: '2026-10-16' },
         'M5:closedOn': { values: { asana: '2026-12-10', de: '2026-12-01' }, reason: 'old', by: 'MB', at: '2026-10-01' } } },
     core: { address: '100 EXAMPLE ST', unit: '4A', neighborhood: 'Carnegie Hill', price: 4500000, beds: 4, baths: 4, agentIds: ['elyse-gutman'] } },
-  { id: 'p2', slug: '20-sample-ave-7b', label: '20 Sample Ave, 7B', kind: 'rental', market: 'NYC', stage: 'Live', stage_source: 'DE',
+  { id: 'p2', slug: '20-sample-ave-7b', label: '20 Sample Ave 7B', kind: 'rental', market: 'NYC', stage: 'Live', stage_source: 'DE',
     core: { address: '20 Sample Ave', unit: '7B', price: 5000, suggestedAgentIds: ['sam-agent'] }, de_listing_id: '9002', drive_folder: null, folder_state: 'unlinked',
     asana_gid: '1202', asana: { gid: '1202', projectGid: '55', permalink: 'javascript:alert(1)' } },
   { id: 'p3', slug: '12-sample-lane', label: '12 Sample Lane', kind: 'sale', market: 'NJ', stage: 'Live', stage_source: 'seed',
@@ -73,6 +73,11 @@ check('archived development on request, staged Archived', W.buildJobs({ properti
   .map(j => [j.id, j.stage, j.archived]), [['da', 'Archived', true]]);
 check('won pitch folds into its listing', jobs.some(j => j.id === 'q2'), false);
 check('types', ['p1', 'p2', 'q1', 'd1'].map(id => J(id).type), ['listing', 'rental', 'pitch', 'development']);
+// stage 2: Asana's task name is the name (its label); an Elliman-only unit's label is the rule's too
+const nameOf = p => (W.buildJobs({ properties: [Object.assign({ id: 'n', slug: 'n', stage: 'Live', kind: 'sale' }, p)] }, TODAY)[0] || {}).name;
+check("a linked deal's name is its label", [nameOf({ label: '400 E59 - 3H', asana_gid: 'g-1', core: { address: '400 East 59th Street', unit: '3H' } }),
+  nameOf({ label: '200 E Boca Raton Rd - B', dev_project_id: 'd-lr', core: { address: '200 E Boca Raton Rd', unit: 'B' } })], ['400 E59 - 3H', '200 E Boca Raton Rd - B']);
+check('a row with no Asana task keeps the address form', nameOf({ label: 'Whatever, Residence 3H', core: { address: '400 EAST 59TH STREET', unit: '3H' } }), '400 East 59th Street 3H');
 
 /* ---------- the stage list (S6) ---------- */
 check('listing stages are the new list', W.STAGES, ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market', 'Archived']);

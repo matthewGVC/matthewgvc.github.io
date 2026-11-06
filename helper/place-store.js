@@ -5,6 +5,10 @@
      keyOfCore(core, 'NYC')                         → 'NYC|401 east 89|1819E'
      await findOrMakePlace(client, cache, { core, market, devId })
        → the place row (with its id), inserted when there was none; null with no street
+     await followRename(client, cache, { deal, core, market, devId, others })
+       → the place id for a deal whose address just changed (its Asana task renamed): its own place,
+         updated, when it is alone there and no place has the new address; else the place at the new
+         address, found or made. Never a merge, never a delete.
 
    `cache` is one run's two lists, read at its start; a place or building made here is pushed
    into it, so a second call in the same run finds it (two new tasks at one new address share
@@ -35,6 +39,18 @@ function freeSlug(cache, base) {
   return base + '-' + n;
 }
 
+/* the NYC building at this street, found or made; null outside NYC */
+async function buildingFor(client, cache, split, market, address) {
+  const bKey = GP.buildingKey(split, market);
+  if (!bKey) return null;
+  let building = cache.buildings.find(b => b.key === bKey);
+  if (!building) {
+    building = (await client.insert('buildings', { key: bKey, label: address, market }))[0];
+    cache.buildings.push(building);
+  }
+  return building;
+}
+
 async function findOrMakePlace(client, cache, { core, market, devId }) {
   const split = P.unitOf(core), key = GP.placeKey(split, market);
   if (!key) return null;
@@ -52,15 +68,7 @@ async function findOrMakePlace(client, cache, { core, market, devId }) {
     return found;
   }
 
-  let building = null;
-  const bKey = GP.buildingKey(split, market);
-  if (bKey) {
-    building = cache.buildings.find(b => b.key === bKey);
-    if (!building) {
-      building = (await client.insert('buildings', { key: bKey, label: address, market }))[0];
-      cache.buildings.push(building);
-    }
-  }
+  const building = await buildingFor(client, cache, split, market, address);
   const place = (await client.insert('places', {
     slug: freeSlug(cache, P.slugOfCore(core)), key, address, town, label: P.labelOf(core), market,
     building_id: building ? building.id : null, dev_project_id: devId || null
@@ -69,4 +77,27 @@ async function findOrMakePlace(client, cache, { core, market, devId }) {
   return place;
 }
 
-module.exports = { keyOfCore, findOrMakePlace };
+/* a deal whose address just changed (its Asana task renamed: helper/name-flow.js). Alone on its
+   place, with no place in the run's cache at the new address, the place itself follows; otherwise
+   the deal moves to the place at its new address, found or made. Places are never merged or deleted:
+   a place a deal moved off stays, empty (stage 4 archives places). */
+async function followRename(client, cache, { deal, core, market, devId, others }) {
+  const split = P.unitOf(core), key = GP.placeKey(split, market);
+  if (!key) return deal.place_id || null;
+  const address = GP.cleanStreet(split.address), town = (core && core.city) || null;
+  const own = cache.places.find(p => p.id === deal.place_id);
+  const known = cache.places.find(p => p.id !== deal.place_id && p.key === key && GP.samePlace(p, { address, town }));
+  if (own && !(others || []).length && !known) {
+    if (own.key === key) return own.id;
+    const patch = { key, address, label: P.labelOf(core) };
+    const building = await buildingFor(client, cache, split, market, address);
+    if (building) patch.building_id = building.id;
+    await client.update('places', { id: own.id }, patch);
+    Object.assign(own, patch);
+    return own.id;
+  }
+  const place = await findOrMakePlace(client, cache, { core, market, devId });
+  return place ? place.id : deal.place_id || null;
+}
+
+module.exports = { keyOfCore, findOrMakePlace, followRename };

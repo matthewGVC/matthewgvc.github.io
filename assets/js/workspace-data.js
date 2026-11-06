@@ -159,6 +159,13 @@
     }).join(' ');
   }
 
+  /* a job's name: its Asana task's name (the label the sync keeps, decision 12) when it has a task,
+     an Elliman-only unit's rule name; else the address as it reads */
+  function nameOf(p, au) {
+    if (p.label && (p.asana_gid || placesApi().ellimanOnly(p))) return p.label;
+    return au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing');
+  }
+
   /* the unit, also when an old library row keeps it inside the address line */
   function addrUnit(core) {
     core = core || {};
@@ -346,7 +353,7 @@
         id: p.id, slug: p.slug, type: atPitch ? 'pitch' : p.kind === 'rental' ? 'rental' : 'listing', fromDeal: atPitch, kind: p.kind, market: p.market || '', devProjectId: p.dev_project_id || null,
         placeId: p.place_id || null, side: p.side || 'list', createdAt: p.created_at || null,
         phase: p.kind === 'rental' && RENT_WORD[p.stage] ? RENT_WORD[p.stage] : null,
-        name: au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing'), stage: p.stage, stageSource: p.stage_source || null,
+        name: nameOf(p, au), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
         rooms: [beds != null ? beds + ' bd' : '', baths != null ? baths + ' ba' : ''].filter(Boolean).join(' · '),   // whatever is known
         place: core.neighborhood || core.city || '',

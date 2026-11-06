@@ -28,7 +28,7 @@ const ymd = d => { const x = new Date(d); return x.getFullYear() + '-' + String(
 function rowsFor() {
   return {
     properties: [
-      { id: 'p1', slug: '100-example-st-4a', label: 'x', kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Asana', version: 7,
+      { id: 'p1', slug: '100-example-st-4a', label: '100 Example St 4A', kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Asana', version: 7,
         core: { address: '100 Example St', unit: '4A', neighborhood: 'Testville', propertyType: 'Co-op', price: 2400000, beds: 4, sqft: 1500,
           suggestedAgentIds: ['john-gasdaska', 'katie-cook'],
           facts: {
@@ -49,7 +49,7 @@ function rowsFor() {
           health: { notes: [{ code: 'pieceAtTop', text: 'A brochure file sits loose at the top of the folder. The standard keeps it in its own folder.' }],
             counts: { photos: { edited: 6, staged: 1, print: 0, web: 0, raw: 2 }, looseTop: 1 } },
           detailsDoc: { name: '100 Example St 4A details.docx', size: 1234, modified: '2026-10-10T10:00:00.000Z' } } },
-      { id: 'p2', slug: '20-sample-ave-7b', label: 'y', kind: 'sale', market: 'NYC', stage: 'Archived', stage_source: 'Matt', version: 2,
+      { id: 'p2', slug: '20-sample-ave-7b', label: '20 Sample Ave 7B', kind: 'sale', market: 'NYC', stage: 'Archived', stage_source: 'Matt', version: 2,
         core: { address: '20 Sample Ave', unit: '7B', agentIds: ['katie-cook', 'gone-agent'], agentsConfirmed: { from: ['katie-cook'], on: '2026-09-01', by: 'Matt Bloomfield' } },
         folder_state: 'unlinked', asana_gid: '1202', asana: { gid: '1202', stageFromStatus: 'Live', pointPerson: 'KC' } },
       { id: 'p3', slug: 'evil', label: 'e', kind: 'sale', market: 'FL', stage: 'Prep', stage_source: 'seed', version: 1,
@@ -774,7 +774,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await p2.click('#fpMake');
   const dd = d => { const x = new Date(d), q = n => String(n).padStart(2, '0'); return x.getFullYear() + '-' + q(x.getMonth() + 1) + '-' + q(x.getDate()); };
   check('prompt: the textarea holds the exact text', await p2.$eval('#fpText', e => e.value), [
-    'Make the floorplan for x (NYC, sale, 4 bed).', '',
+    'Make the floorplan for 100 Example St 4A (NYC, sale, 4 bed).', '',
     'Address: 100 Example St, 4A', 'Facts: {"beds":4}',
     'Floorplan folder: G:\\Shared drives\\GVC - New York\\Building Information\\100 Example St\\4A\\Floorplan',
     'References in Design\\:',
@@ -782,7 +782,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     'Save as version v4.', '', 'Use the making-gvc-floorplans skill.'].join('\n'));
   await p2.click('#fpCopy');
   await p2.waitForFunction(() => document.querySelector('#fpCopy').textContent === 'Copied', null, { timeout: 3000 }).catch(() => {});
-  check('prompt: Copy reads Copied and the clipboard has the text', [await text(p2, '#fpCopy'), (await p2.evaluate(() => navigator.clipboard.readText())).startsWith('Make the floorplan for x')], ['Copied', true]);
+  check('prompt: Copy reads Copied and the clipboard has the text', [await text(p2, '#fpCopy'), (await p2.evaluate(() => navigator.clipboard.readText())).startsWith('Make the floorplan for 100 Example St 4A')], ['Copied', true]);
   await t2.ctx.close();
   /* photos */
   await p.$eval('#photosCard', e => e.scrollIntoView());

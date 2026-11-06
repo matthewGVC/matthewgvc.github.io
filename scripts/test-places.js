@@ -83,6 +83,24 @@ check('dealWord: the chip for a place\'s other deal', [P.dealWord({ type: 'renta
 const e1 = { id: 'e1', stage: 'Live', mismatches: 1 }, e2 = { id: 'e2', stage: 'Live', mismatches: 2 }, e3 = { id: 'e3', stage: 'Archived', mismatches: 4 };
 check('errors: summed over the row\'s live deals, the lead included', [P.errors({ lead: e1, live: [e1, e2] }), P.errors({ lead: e3, live: [e2] }), P.errors({ lead: e3, live: [] })], [3, 6, 4]);
 
+/* the Deals card's rows (assets/js/job-page/deals.js) */
+const D = require('../assets/js/job-page/deals.js');
+const deal = (o) => Object.assign({ id: 'x', slug: 'x', kind: 'sale', side: 'list', stage: 'Sold', core: {}, milestones: {}, created_at: '2020-01-01T00:00:00Z' }, o);
+const sale = deal({ id: 's', slug: 'sale', stage: 'Live' }), rent = deal({ id: 'r', slug: 'rent', kind: 'rental', stage: 'Live' });
+check('one deal, no card', D.html({ deals: [sale], row: sale, esc: String, I: () => '' }), '');
+check('sale and rental: each links to the other', [D.rows([sale, rent], 's').live, D.rows([sale, rent], 'r').live],
+  [[{ slug: 'sale', word: 'Sale · Live', kind: 'Sale', here: true }, { slug: 'rent', word: 'Rental · Live', kind: 'Rental', here: false }],
+   [{ slug: 'sale', word: 'Sale · Live', kind: 'Sale', here: false }, { slug: 'rent', word: 'Rental · Live', kind: 'Rental', here: true }]]);
+check('past deal\'s sold price comes from Elliman', D.rows([sale, deal({ id: 'a', core: { closePrice: 1200000, price: 1300000 } }), deal({ id: 'b', core: { price: 1300000 } })], 's').past.map(p => p.soldPrice),
+  ['$1,200,000', '']);
+check('past deals newest first', D.rows([sale, deal({ id: 'a', milestones: { closedOn: { on: '2019-06-01' } } }), deal({ id: 'b', slug: 'b', milestones: { listedOn: '2022-03-01' } }),
+  deal({ id: 'c', slug: 'c', created_at: '2021-05-05T10:00:00Z' })], 's').past.map(p => [p.slug, p.year]), [['b', '2022'], ['c', '2021'], ['x', '2019']]);
+check('a past deal carries its dates', D.rows([sale, deal({ id: 'a', milestones: { closedOn: { on: '2019-06-01' }, listedOn: { on: '2019-01-10' }, contractOn: '2019-04-02', pitchedOn: {} } })], 's').past[0].dates,
+  ['2019-01-10', '2019-04-02', '2019-06-01']);
+check('a purchase reads Purchase', D.rows([sale, deal({ id: 'a', side: 'buy' }), deal({ id: 'b', side: 'buy', stage: 'Live', slug: 'b' })], 's').past.map(p => p.type).concat(D.rows([sale, deal({ id: 'b', side: 'buy', stage: 'Live', slug: 'b' })], 's').live[1].word),
+  ['Purchase', 'Purchase · Live']);
+check('a sold rental reads Rental, in lease words', D.rows([sale, deal({ id: 'a', kind: 'rental', stage: 'Rented' })], 's').past[0].type, 'Rental');
+
 // cleanStreet takes off the same comma unit the library's splitUnit does
 ['1050 Fifth Avenue, Apt. 2E', '12 Oak St, Residence 12E', '9 Pine Rd, Unit 4', '3 Bay Ave, Brielle'].forEach(a =>
   check('agrees with splitUnit: ' + a, P.cleanStreet(a), L.splitUnit(a).address));

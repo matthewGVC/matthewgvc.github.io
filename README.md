@@ -43,6 +43,11 @@ Our own purchases (`properties.side` 'buy') stay off the lists and the weekly em
 Link folder, DE match or archive task (only Relink folder, when its folder link breaks). The Live and
 In contract counts and the folder-activity chart still count deals; a row's error count adds up its live deals'. Tests: `scripts/test-workspace-data.js`, `test-workspace.js`.
 
+**Deals card:** a job's page shows a Deals card under its facts when its place has more than one deal
+(`assets/js/job-page/deals.js`): live deals as links (a sale's rental is one click away), past deals as
+rows that open to year, type, sold price and dates. A sold price is Elliman's `core.closePrice`, never
+Asana's. Tests: `scripts/test-places.js`, `test-job-page.js`.
+
 **Development addresses:** `assets/js/dev-addresses.js` lists the street each development's
 units are listed at on DE, so the Errors page treats those DE listings as the development's units
 (add a development there when its units go on DE). After each good DE read the helper makes each

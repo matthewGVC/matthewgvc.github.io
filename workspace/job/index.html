@@ -79,6 +79,8 @@
 .fin-none{font-size:14px}
 @media (max-width:640px){ .fin-view{height:420px} }
 details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 0 4px}
+/* the Deals card (deals.js): one line per deal */
+.deal-row{font-size:14px;padding:6px 0}
 /* agents */
 .agents{list-style:none;margin:0;padding:0}
 /* the header's Link buttons: green and "Relink" once linked */
@@ -208,6 +210,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/property-library.js"></script>
 <script src="../../assets/js/roster.js"></script>
 <script src="../../assets/js/dev-addresses.js"></script>
+<script src="../../assets/js/places.js"></script>
 <script src="../../assets/js/address-aliases.js"></script>
 <script src="../../assets/js/drive-rules.js"></script>
 <script src="../../assets/js/drive-web.js"></script>
@@ -224,6 +227,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 <script src="../../assets/js/job-page/log.js"></script>
 <script src="../../assets/js/job-page/dev.js"></script>
 <script src="../../assets/js/job-page/units.js"></script>
+<script src="../../assets/js/job-page/deals.js"></script>
 <script src="../../assets/js/job-page/devfiles.js"></script>
 <script src="../../assets/js/job-page/finishes.js"></script>
 <script src="../../assets/js/job-page/glance.js"></script>
@@ -327,7 +331,9 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         // a development that is one house (D141): the development's own log, posts and budget too
         dv ? rest('/changes?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&select=*&order=at.desc&limit=500').catch(function () { return []; }) : Promise.resolve([]),
         dv ? rest('/asana_tasks?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&kind=eq.post&select=gid,name,due_on,completed_at,fields').catch(function () { return []; }) : Promise.resolve([]),
-        dv ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([])
+        dv ? rest('/dev_budgets?dev_project_id=eq.' + encodeURIComponent(dv.id) + '&select=*').catch(function () { return []; }) : Promise.resolve([]),
+        // the place's other deals (a sale's rental, an earlier listing); unreadable means none
+        kind === 'listing' && row.place_id ? rest('/properties?place_id=eq.' + encodeURIComponent(row.place_id) + '&select=id,slug,kind,side,stage,core,milestones,created_at').catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (r) {
         state.row = row;
         state.changes = (r[0] || []).concat(r[10] || []).sort(function (a, b) { return a.at > b.at ? -1 : a.at < b.at ? 1 : 0; });
@@ -338,6 +344,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
         state.doc = state.docs.filter(function (d) { return d && d.tool === 'showsheet'; })[0] || null;
         state.requests = r[7] || [];
         state.houses = r[8] || [];
+        state.deals = r[13] || [];
         state.units = JP.units.of(r[9], row.slug);
         // an Elliman unit that is a deal here (helper/dev-units.js, decision 71) opens that deal
         state.units.forEach(function (u) {
@@ -375,7 +382,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
 
   function ctx() {
     return { kind: kind, table: TABLE, row: state.row, job: state.job, changes: state.changes, me: state.me, canEdit: JP.canEdit, canAsk: JP.canAsk, drive: state.drive, W: W, I: I, esc: esc,
-      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, unitsFrom: state.unitsFrom, canFacts: JP.canFacts, onSheet: paintRebuild };
+      doc: state.doc, docs: state.docs, posts: state.posts, budget: state.budget, requests: state.requests, units: state.units, unitsFrom: state.unitsFrom, deals: state.deals, canFacts: JP.canFacts, onSheet: paintRebuild };
   }
   // the development's own cards on a development that is one house (D141); sfh: the cards draw the
   // single-house cut (the sale milestones, one Asana and one budget link, no payments table)
@@ -593,7 +600,7 @@ details.fx summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 
       // the folder's path itself isn't shown (Open folder and the Drive links reach it); only a problem with it is
       (!r.drive_folder ? '<div class="path" style="margin-top:8px">No Drive folder linked yet</div>' : r.folder_state === 'broken' ? '<div class="path" style="margin-top:8px"><span class="chip stale">Drive folder moved or renamed</span></div>' : '') +
       '<p class="soft" id="actMsg" role="status" style="font-size:13px;margin-top:6px"></p></div>' + acts + '</div>' +
-      '<div id="topHost">' + tiles() + '</div>' +
+      '<div id="topHost">' + tiles() + '</div>' + (kind === 'listing' ? JP.deals.html(c) : '') +
       // one Marketing materials card near the top, under the facts: every piece, its status and its files (Matt, 11-03);
       // a development that is one house adds what else its own folder holds
       (kind === 'listing' ? '<div id="kitHost">' + JP.kit.html(c, '<div class="mt-sub" id="fpHost">' + JP.floorplans.html(c) + '</div>' +

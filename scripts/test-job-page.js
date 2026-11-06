@@ -523,6 +523,35 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   await t.page.waitForURL(/[?]dev=619-example-ave/);
   check('one house: the listing address opens the development', [new URL(t.page.url()).search, t.errors], ['?dev=619-example-ave', []]);
   await t.ctx.close();
+  /* places and deals: a place's other deals, on its page (made-up rows) */
+  const RD = rowsFor();
+  RD.properties[0].place_id = 'pl1';
+  RD.properties.push(
+    { id: 'p4', slug: '100-example-st-4a-rental', label: 'r', kind: 'rental', market: 'NYC', stage: 'Live', place_id: 'pl1', core: { address: '100 Example St', unit: '4A' } },
+    { id: 'p5', slug: '100-example-st-4a-2019', label: 'o', kind: 'sale', market: 'NYC', stage: 'Sold', place_id: 'pl1', created_at: '2019-02-01T00:00:00Z',
+      core: { address: '100 Example St', unit: '4A', price: 2000000, closePrice: 1900000 }, milestones: { listedOn: { on: '2019-03-01' }, closedOn: { on: '2019-06-15' } } },
+    { id: 'p6', slug: '100-example-st-4a-2015', label: 'o', kind: 'sale', market: 'NYC', stage: 'Archived', place_id: 'pl1', created_at: '2015-02-01T00:00:00Z',
+      core: { address: '100 Example St', unit: '4A', price: 1700000 } });
+  t = await open(browser, { rows: RD, path: LISTING });
+  p = t.page;
+  check('deals: the card sits under the facts', await p.evaluate(() => { const f = document.querySelector('.facts'), d = document.getElementById('dealsCard');
+    return !!(f && d && (f.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING)); }), true);
+  check('deals: the rental is a link, this page is marked, past deals are rows, newest first', [await p.$$eval('#dealsCard [data-deal-live]', e => e.map(x => (x.textContent.replace(/\s+/g, ' ').trim() + ' ' + [...x.querySelectorAll('a')].map(a => a.getAttribute('href'))).trim())),
+    await p.$$eval('#dealsCard details', e => e.map(x => x.querySelector('summary').textContent))],
+    [['Sale · Live This page', 'Rental · Live ../job/?listing=100-example-st-4a-rental'], ['2019 · Sale · $1,900,000 · Sold', '2015 · Sale · Archived']]);
+  await p.click('#dealsCard details summary');
+  check('deals: a past deal opens to its dates and its page', [await p.$eval('#dealsCard details', d => d.open), await p.$eval('#dealsCard details .deal-row', e => e.textContent.replace(/\s+/g, ' ').trim()),
+    await p.$eval('#dealsCard details a', a => a.getAttribute('href')), t.errors],
+    [true, '1 Mar 2019 · 15 Jun 2019 Open', '../job/?listing=100-example-st-4a-2019', []]);
+  await t.ctx.close();
+  t = await open(browser, { rows: RD, path: '/workspace/job/?listing=20-sample-ave-7b' });
+  check('deals: a one-deal job\'s page is unchanged', [await t.page.$('#dealsCard'), t.errors], [null, []]);
+  await t.ctx.close();
+  RD.dev_projects[0].house_listing_id = 'p1';
+  RD.properties[0].dev_project_id = 'd1';
+  t = await open(browser, { rows: RD, path: '/workspace/job/?dev=619-example-ave' });
+  check('deals: a single-house development\'s page shows the card', [await t.page.$$eval('#dealsCard [data-deal-live]', e => e.length), await t.page.$$eval('#dealsCard details', e => e.length), t.errors], [2, 2, []]);
+  await t.ctx.close();
   /* overhaul 8: every step of the listing page's tour is on the page, for an editor and for the shared sign-in */
   t = await open(browser, { path: LISTING });
   check('tour: every job-page step is on the page (owner)', await t.page.evaluate(() => GVC_WALK.missing('job', { role: 'owner' })), []);

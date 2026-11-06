@@ -975,6 +975,8 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('NF a linked task\'s name becomes the label', [pdJob(dNF, 'g-nf1').label, asanaNotes(dNF, 'p-nf1').filter(c => c.field === 'label').map(c => [c.old_value, c.new_value])],
     ['200 E57 - 17A', [['200 East 57th Street, Residence 17A', '200 E57 - 17A']]]);
   check('NF a respelling keeps the long address for print', [pdJob(dNF, 'g-nf1').core.address, pdJob(dNF, 'g-nf1').core.unit], ['200 East 57th Street', '17A']);
+  check("NF a respelling keeps the deal's place, its key and its address", [pdJob(dNF, 'g-nf1').place_id, dNF.T.places.length, dNF.T.places[0].key, dNF.T.places[0].address],
+    ['pl-nf1', 1, keyOfCore(E57, 'NYC'), '200 East 57th Street']);
 
   dNF = pdDb();
   await pdApply(dNF, [pdTask('g-nf2', '402 E59 - 6A (Rental)', 'Active', NYCX)]);
@@ -1007,6 +1009,14 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   check('NF a rename onto a known place joins it', [pdJob(dNF, 'g-nf5').place_id, dNF.T.places.map(p => p.id), dNF.T.properties.filter(p => p.place_id === 'pl-nf5a').length,
     asanaNotes(dNF, 'p-nf5').filter(c => c.field === 'place_id').map(c => [c.old_value, c.new_value])],
     ['pl-nf5b', ['pl-nf5a', 'pl-nf5b'], 0, [['pl-nf5a', 'pl-nf5b']]]);
+
+  dNF = pdDb({ properties: [nyDeal('p-nf7', 'g-nf7', { address: '400 E59', unit: '4H' }, { label: '400 E59 - 4H' })] });
+  await pdApply(dNF, [pdTask('g-nf7', '400 E59 - 3H', 'Active', NYCX)]);
+  check('NF a placeless deal renamed to a new unit is placed at the new unit', [dNF.T.places.map(p => p.key), pdJob(dNF, 'g-nf7').place_id === (dNF.T.places[0] || {}).id,
+    pdJob(dNF, 'g-nf7').core.unit], [[keyOfCore({ address: '400 E59', unit: '3H' }, 'NYC')], true, '3H']);
+  const nf7 = counts(dNF);
+  await pdApply(dNF, [pdTask('g-nf7', '400 E59 - 3H', 'Active', NYCX)]);
+  check('NF a placeless deal renamed: run twice, nothing new', counts(dNF), nf7);
 
   const OAK6 = { address: '6 Oak Ln', city: 'Rumson' };
   dNF = pdDb({ places: [placeRow('pl-nf6', OAK6, 'NJ', { label: '6 Oak Ln, Rumson' })],

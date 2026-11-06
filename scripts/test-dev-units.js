@@ -115,7 +115,7 @@ function run(db) { const logged = []; return syncDevUnits(db, { now: NOW, log: m
 
   db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7001', 'B', 'Sold', { property_id: 'p-b' }), unit('7002', 'C', 'Rented', { kind: 'rental', property_id: 'p-c' })],
     properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', label: '200 E Boca Raton Rd - B', core: { address: '200 E Boca Raton Rd', unit: 'B' } },
-      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', label: '200 E Boca Raton Rd - C (Rental)', core: { address: '200 E Boca Raton Rd', unit: 'C' } }] });
+      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', label: '200 E Boca Raton Rd - C', core: { address: '200 E Boca Raton Rd', unit: 'C' } }] });
   out = await run(db);
   check('Sold and Rented on Elliman archive', [out.moved, byDe('7001').stage, byDe('7002').stage, byDe('7001').stage_source], [2, 'Archived', 'Archived', 'DE']);
   check('Sold and Rented on Elliman archive: one changes row each', db.T.changes.map(c => [c.property_id, c.field, c.old_value, c.new_value, c.source]),
@@ -123,7 +123,7 @@ function run(db) { const logged = []; return syncDevUnits(db, { now: NOW, log: m
 
   db = fakeDb({ dev_projects: [LE_REVE], de_listings: [unit('7001', 'B', 'ActiveUnderContract', { property_id: 'p-b' }), unit('7002', 'C', 'ActiveUnderContract', { kind: 'rental', property_id: 'p-c' })],
     properties: [{ id: 'p-b', slug: 'b', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7001', kind: 'sale', label: '200 E Boca Raton Rd - B', core: { address: '200 E Boca Raton Rd', unit: 'B' } },
-      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', label: '200 E Boca Raton Rd - C (Rental)', core: { address: '200 E Boca Raton Rd', unit: 'C' } }] });
+      { id: 'p-c', slug: 'c', stage: 'Live', stage_source: 'DE', dev_project_id: 'd-lr', asana_gid: null, de_listing_id: '7002', kind: 'rental', label: '200 E Boca Raton Rd - C', core: { address: '200 E Boca Raton Rd', unit: 'C' } }] });
   await run(db);
   check('a move is logged in the stage\'s own words, never Elliman\'s code', db.T.changes.map(c => c.note), ['Elliman shows it In contract', 'Elliman shows it Lease signed']);
 

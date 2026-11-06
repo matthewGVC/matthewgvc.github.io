@@ -365,11 +365,6 @@ async function writeRun(o, sr, out, now) {
     // old library rows were saved without a market; Asana's project says which one it is
     if (!p.market && t.market) { patch.market = t.market; changes.push(log(own, 'market', null, t.market)); }
     if (fromPitch && p.from_pitch_id !== fromPitch.id) { patch.from_pitch_id = fromPitch.id; changes.push(log(own, 'from_pitch_id', p.from_pitch_id || null, fromPitch.id)); }
-    // a row from before places, or one linked by hand: its place, found or made
-    if (!p.place_id) {
-      const place = await findOrMakePlace(client, places, { core: p.core || {}, market: p.market || t.market || null, devId: p.dev_project_id || devOfListing[t.gid] || null });
-      if (place) { patch.place_id = place.id; changes.push(log(own, 'place_id', null, place.id)); }
-    }
     // a lost pitch archives, and comes back when Asana takes it up again (decision 27); a deal
     // Matt archived (stage_source 'Matt') stays archived: Asana itself never maps to Archived
     if (p.stage === 'Pitch' && stage === 'Off market') {
@@ -407,7 +402,11 @@ async function writeRun(o, sr, out, now) {
     core = nf.core;
     nf.changes.forEach(c => changes.push(log(own, c.field, c.old, c.new, c.note)));
     if (nf.label !== p.label) { patch.label = nf.label; changes.push(log(own, 'label', p.label || null, nf.label)); }
-    if (nf.moved && p.place_id) {
+    // a row from before places, or one linked by hand: its place, found or made, at the address its name gives now
+    if (!p.place_id) {
+      const place = await findOrMakePlace(client, places, { core: nf.moved ? core : (p.core || {}), market: p.market || t.market || null, devId: p.dev_project_id || devOfListing[t.gid] || null });
+      if (place) { patch.place_id = place.id; changes.push(log(own, 'place_id', null, place.id)); }
+    } else if (nf.moved) {
       const placeId = await followRename(client, places, { deal: p, core, market: p.market || t.market || null, devId: p.dev_project_id || null,
         others: props.filter(x => x.place_id === p.place_id && x.id !== p.id) });
       if (placeId && placeId !== p.place_id) { patch.place_id = placeId; changes.push(log(own, 'place_id', p.place_id, placeId)); }

@@ -17,7 +17,7 @@ uses it standalone. The Buyer Package does not use it.
 
 | Table | Holds | Since |
 |---|---|---|
-| `properties` | Deals (a sale, a rental, a pitch): one row per deal, on a place (`place_id`, 0025) and on our side or a buyer's (`side`). `core` (the facts the builders share, incl. `agentIds`), each fact's sources, stage, Drive folder, the Asana and DE snapshots, milestones, the Match result, the details doc last read. | 0001, grown by 0004–0007 |
+| `properties` | Deals (a sale, a rental, a pitch): one row per deal, on a place (`place_id`, 0025) and on our side or a buyer's (`side`, 'list' or 'buy'); a lead is a deal at stage `Pitch` (0025). `core` (the facts the builders share, incl. `agentIds`), each fact's sources, stage, Drive folder, the Asana and DE snapshots, milestones, the Match result, the details doc last read. | 0001, grown by 0004–0007 |
 | `documents` | One saved piece per tool per listing or pitch (`tool` is any lower-case slug, 0009): its wording and settings (`state`), what it printed from the job (`built_from`) and the files it made (`output`, `outputs`). | 0001, 0009, 0010 |
 | `photos` | The property bar's photo shelf. The files live in the private `property-photos` bucket; pages render them through short-lived signed URLs. | 0001 |
 | `developments` | The archived New Development tool's documents (`data`, stored verbatim). | 0002 |

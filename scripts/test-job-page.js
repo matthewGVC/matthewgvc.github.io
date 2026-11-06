@@ -223,6 +223,10 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('facts: badges', [await text(p, 'tr[data-fact="price"] .chip'), await text(p, 'tr[data-fact="sqft"] .chip')], ['Team', 'Asana']);
   check('facts: the tile shows the job\'s price with its warning', [(await text(p, '.facts')).includes('$2,400,000'), (await text(p, '.facts')).includes('DE says $2,250,000')], [true, true]);
   check('facts: extras closed with a count', [await p.$eval('details.fx', d => d.open), (await text(p, 'details.fx summary'))], [false, 'Extras · 0 filled']);
+  check('facts: address and unit cannot be edited on a linked deal', [await p.$$eval('[data-edit="address"], [data-edit="unit"]', e => e.length),
+    await p.$$eval('tr[data-fact="address"] a, tr[data-fact="unit"] a', as => as.map(x => [x.textContent.trim(), x.getAttribute('href'), x.target, x.rel]))],
+    [0, [['Change it in Asana', 'https://app.asana.com/0/1/1201', '_blank', 'noopener'], ['Change it in Asana', 'https://app.asana.com/0/1/1201', '_blank', 'noopener']]]);
+  check('facts: other facts still edit', await p.$$eval('tr[data-fact="price"] [data-edit]', e => e.length), 1);
   await p.click('tr[data-fact="price"] [data-edit]');
   check('facts: DE-held field says so', (await text(p, '.fed')).includes('DE has this. Yours holds until DE\'s own value changes'), true);
   await p.fill('#fIn', 'lots');
@@ -1318,6 +1322,7 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
 
   t = await open(browser, { path: '/workspace/job/?listing=evil' });
   p = t.page;
+  check('a deal with no Asana task can still edit its address', [await p.$$eval('[data-edit="address"], [data-edit="unit"]', e => e.length), await p.$$eval('tr[data-fact="address"] a', e => e.length)], [2, 0]);
   await p.click('details.fx summary');
   check('hostile row stays inert', [await p.evaluate(() => window.__xss || null), (await text(p, '#factsCard')).includes('<script>'), (await text(p, '#agentsCard')).includes('Unknown agent (<img'), t.errors], [null, true, true, []]);
   await t.ctx.close();

@@ -13,7 +13,7 @@ top of `helper/routes.js`.
 DE sync 7:00, Drive folder scan 2:00 (listings, and each linked development's folder into
 `dev_projects.scan`, 0023), Supabase backup 2:30 (all tables, to `exports/supabase-nightly-<date>/`,
 newest 14 kept). With `asanaToken`: the Asana read every 30 minutes, a full read at 3:00, People at
-3:15, and the team's fact edits written to Asana each minute (below). With the Google sign-in: the
+3:15, the team's fact edits written to Asana each minute (below), and the one-minute sync (below). With the Google sign-in: the
 development budgets every hour. With the Gmail sign-in: the Sunday email at 18:00. A slot missed while the PC was off runs when the helper starts. They and the piece
 requests run only once the helper account (`helperEmail`, `helperPassword`) is in the config;
 until then the log says "No helper account yet".
@@ -109,6 +109,14 @@ exit ends it). Run it from the main repo folder.
   or house that we have not listed yet, or beside a TJ New Dev listing) are deals with `side 'buy'`;
   a client's buy side, of a development's unit or of our listed house, stays out. A Lead refused as
   "same address" stays listed as not linked on later runs that don't read it again.
+- The one-minute sync (migration 0026, `asana-events.js`): each minute the helper asks Asana's events
+  feed what changed in each listing project and re-reads just those tasks (a ticked subtask or a
+  comment counts for its listing), as a `sync_runs` row of kind `events`. It only updates deals the
+  workspace already has: a task no deal holds, a first check (no token yet) or a token Asana says is
+  too old (about a day) runs the ordinary read since the last good run instead. Tokens are kept in
+  `%USERPROFILE%\.gvc-helper\asana-events.json`, saved only once the reads they led to worked. Every
+  check writes `sync_state` ('asana-events': when, whether it worked, a plain line), which the header
+  reads. The 30-minute read and the 3:00 full read stay as they were.
 - Places (migration 0025): `place-store.js` finds the place a deal is on or makes it (the sync and the
   backfill share it). `node helper/places-backfill.js` writes the one-time plan,
   `exports/places-backfill-<date>.md` and `.json`, and changes nothing; `--apply <that .json>` applies it and
@@ -130,7 +138,7 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 
 `node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`, `node scripts/test-de-apply.js`,
 `node scripts/test-dev-units.js`,
-`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-budget.js`,
+`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-asana-events.js`, `node scripts/test-budget.js`,
 `node scripts/test-asana-map.js`, `node scripts/test-asana-posts.js`, `node scripts/test-helper-db.js`,
 `node scripts/test-places-backfill.js`, `node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`,
 `node scripts/test-piece-build.js` (with `BASE=http://localhost:8080` it also lays out and draws real pages).

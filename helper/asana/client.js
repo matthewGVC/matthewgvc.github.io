@@ -12,6 +12,11 @@
      await asana.get('/projects/1/tasks', { opt_fields: '...' })
                                          → every row, all pages, 100 at a time
      await asana.whoami()                → { name }
+     await asana.events(resource, sync)  → { sync, events, more, expired }
+                                         one page of Asana's events feed for a project
+                                         (GET /events, no paging: call again while more).
+                                         A missing or too old token (412) is no error:
+                                         { expired: true, sync: <a new token>, events: [] }.
 
    Errors carry .status (when Asana answered) and a plain .message. A page
    sequence that repeats a row throws "Asana sent a task twice". A 429 waits
@@ -32,7 +37,9 @@ function createAsana(cfg, opts) {
 
   function ready() { return !!(cfg && cfg.asanaToken); }
 
-  async function page(url) {
+  // 412 on the events feed: the token is missing or too old, and the answer carries a new one
+  const EXPIRED = Symbol('expired');
+  async function page(url, take412) {
     for (let tries = 0; ; tries++) {
       let r;
       try {
@@ -48,6 +55,12 @@ function createAsana(cfg, opts) {
         const wait = said === '' ? NaN : Number(said);
         await sleep(Math.min(Number.isFinite(wait) && wait >= 0 ? wait : 5, 60) * 1000);
         continue;
+      }
+      if (take412 && r.status === 412) {
+        let body;
+        try { body = await r.json(); }
+        catch (err) { throw plain('Asana sent an answer the helper can\'t read', 412); }
+        return { [EXPIRED]: body || {} };
       }
       if (r.ok) {
         try { return await r.json(); }
@@ -87,7 +100,19 @@ function createAsana(cfg, opts) {
     return { name: me[0] && me[0].name };
   }
 
-  return { ready, get, whoami };
+  async function events(resource, sync) {
+    if (!ready()) throw new Error(NO_TOKEN);
+    const q = new URLSearchParams({ resource: String(resource) });
+    if (sync) q.set('sync', sync);
+    const j = await page(BASE + '/events?' + q.toString(), true);
+    if (j && j[EXPIRED]) {
+      if (!j[EXPIRED].sync) throw plain('Asana sent no new events token', 412);
+      return { sync: j[EXPIRED].sync, events: [], more: false, expired: true };
+    }
+    return { sync: (j && j.sync) || sync || null, events: Array.isArray(j && j.data) ? j.data : [], more: !!(j && j.has_more), expired: false };
+  }
+
+  return { ready, get, whoami, events };
 }
 
 module.exports = { createAsana, NO_TOKEN, BASE };

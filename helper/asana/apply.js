@@ -95,6 +95,8 @@
      linked development, from its 🚧 tasks) is stored in `match` where it
      changed (helper/match-store.js), found / cleared logged as source 'match'.
    - People (run.kind 'people'): asana_people rows upserted, seen_at = now.
+   - An events run (run.kind 'events', asana-events.js): the tasks the feed named, written as a plain
+     run's are; its sync_runs row is kind 'events' and has no totals.unlinked.
    Never: a job deleted, a folder touched, anything written to Asana.
    A row someone changed meanwhile (version check) is skipped and logged,
    never overwritten. An aborted run writes only its sync_runs row; so does a
@@ -128,7 +130,9 @@ const clone = x => (x === undefined || x === null ? x : JSON.parse(JSON.stringif
 async function applyRun(o) {
   const { client, run } = o;
   const now = (o.now || new Date()).toISOString();
-  const kind = run.kind === 'people' ? 'people' : 'asana';
+  // an events run (asana-events.js) is written as a plain one, logged as 'events': never the plain
+  // read's starting point, never the Errors page's list (totals.unlinked is on 'asana' runs only)
+  const kind = run.kind === 'people' ? 'people' : run.kind === 'events' ? 'events' : 'asana';
   const sr = (await client.insert('sync_runs', { kind, started_at: now, rows_read: run.rowsRead || null, totals: run.totals || null,
     helper_version: o.helperVersion || null }))[0];
   const out = { runId: sr.id, ok: false, changes: 0, created: 0, errors: [], unlinked: [] };

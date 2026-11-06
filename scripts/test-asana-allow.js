@@ -146,7 +146,7 @@ const field = (name, v) => Object.assign({ name, display_value: null, number_val
 
   /* ---------- client ---------- */
   const files = fs.readdirSync(path.join(__dirname, '..', 'helper', 'asana')).map(f => fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana', f), 'utf8'))
-    .concat([fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana-sync.js'), 'utf8')]);
+    .concat([fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana-sync.js'), 'utf8'), fs.readFileSync(path.join(__dirname, '..', 'helper', 'asana-events.js'), 'utf8')]);
   // C3: no write verb anywhere in these files, as a whole word in capitals (a comment saying so counts too)
   const writeVerb = src => /\b(POST|PUT|PATCH|DELETE)\b/.test(src);
   check('the write-verb check catches a verb kept in a variable', writeVerb("const verb = 'POST'; fetch(u, { method: verb })"), true);

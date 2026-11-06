@@ -28,7 +28,9 @@
    --fixtures    answers from made-up files instead of Asana (helper/asana/replay.js);
                  refused for anything that would write the real database
 
-     syncNow({ cfg, client, fetch?, fixturesDir?, full?, plan?, kind?, now? })
+     syncNow({ cfg, client, fetch?, fixturesDir?, full?, plan?, kind?, gids?, now? })
+       kind 'people' (👋 People), 'events' with gids { [taskGid]: market } (just those tasks,
+       the one-minute sync, helper/asana-events.js), anything else the plain read
        → applyRun's result + { report, posts }   one sync at a time; a second call
                                              joins the one running. posts: the 💬 Social
                                              Media project counted per job (asana/posts.js),
@@ -160,6 +162,8 @@ async function syncOnce(o) {
   const now = o.now || new Date();
   let run;
   if (o.kind === 'people') run = await readRun({ asana, cfg, only: 'people' });
+  // the one-minute sync: just the tasks Asana's events feed named (asana-events.js); no posts
+  else if (o.kind === 'events') run = await readRun({ asana, cfg, gids: o.gids || {} });
   else {
     // only the newest good runs: the last one (for since) and the last few full reads (their open counts)
     const newest = n => ({ order: 'started_at.desc', limit: n });
@@ -176,7 +180,7 @@ async function syncOnce(o) {
   }
   const res = await applyRun({ client, run, now, plan: o.plan, helperVersion: require('./package.json').version });
   // social posts per job: read whole every run (a few pages); a failure here never fails the sync
-  if (o.kind !== 'people' && run.ok !== false && cfg.asana && cfg.asana.posts) {
+  if (o.kind !== 'people' && o.kind !== 'events' && run.ok !== false && cfg.asana && cfg.asana.posts) {
     try {
       const p = await applyPosts({ client, posts: await readPosts(asana, cfg.asana.posts), now });
       res.posts = { linked: p.linked, unlinked: p.unlinked.length };

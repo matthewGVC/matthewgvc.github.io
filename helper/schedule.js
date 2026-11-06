@@ -4,8 +4,9 @@
      due(now, last, opts) → the job names that should run now
        last = { de, scan, backup, asana, asanaFull, people: Date } (latest start of each)
        opts.asana = true adds the three Asana jobs, and asanaWrite each minute
-       (the team's edits going to Asana, overhaul step 5); without a token the
-       runner leaves it off, so they are never due.
+       (the team's edits going to Asana, overhaul step 5), and asanaEvents each
+       minute (the one-minute sync, Asana's events feed, helper/asana-events.js);
+       without a token the runner leaves them off, so they are never due.
        opts.budget = true adds the hourly budget read (D113); without a
        Google sign-in the runner leaves it off.
        opts.weekly = true adds the Sunday email (Sundays 18:00, overhaul step
@@ -23,6 +24,7 @@ const ASANA_TIMES = { asanaFull: [3, 0], people: [3, 15] };   // nightly full re
 const ASANA_EVERY_MS = 30 * 60 * 1000;                        // the plain read, all day
 const BUDGET_EVERY_MS = 60 * 60 * 1000;                       // the pro-forma sheets, all day
 const ASANA_WRITE_EVERY_MS = 55 * 1000;                       // the team's edits to Asana, each minute
+const ASANA_EVENTS_EVERY_MS = 55 * 1000;                      // what changed in Asana, each minute
 const WEEKLY_TIME = [0, 18, 0];                               // the Sunday email: Sunday 18:00
 
 function lastSlot(now, h, m) {
@@ -49,6 +51,8 @@ function due(now, last, opts) {
   if (withAsana && (!(last && last.asana) || now - new Date(last.asana) >= ASANA_EVERY_MS)) out.push('asana');
   // the team's edits to Asana: every minute (a tick is a minute; the slack keeps a slow tick from skipping one)
   if (withAsana && (!(last && last.asanaWrite) || now - new Date(last.asanaWrite) >= ASANA_WRITE_EVERY_MS)) out.push('asanaWrite');
+  // what changed in Asana: every minute, the same way
+  if (withAsana && (!(last && last.asanaEvents) || now - new Date(last.asanaEvents) >= ASANA_EVENTS_EVERY_MS)) out.push('asanaEvents');
   if (opts && opts.budget && (!(last && last.budget) || now - new Date(last.budget) >= BUDGET_EVERY_MS)) out.push('budget');
   // a week's email only on its own Sunday: a PC that was off all Sunday skips it rather than sending it on Wednesday
   if (opts && opts.weekly) {
@@ -58,4 +62,4 @@ function due(now, last, opts) {
   return out;
 }
 
-module.exports = { due, lastWeekly, TIMES, ASANA_TIMES, ASANA_EVERY_MS, ASANA_WRITE_EVERY_MS, BUDGET_EVERY_MS, WEEKLY_TIME };
+module.exports = { due, lastWeekly, TIMES, ASANA_TIMES, ASANA_EVERY_MS, ASANA_WRITE_EVERY_MS, ASANA_EVENTS_EVERY_MS, BUDGET_EVERY_MS, WEEKLY_TIME };

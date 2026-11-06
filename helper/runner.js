@@ -4,8 +4,9 @@
      const r = createRunner({ jobs: { de, scan, backup }, last })
      await r.tick(now)     runs every due job, one at a time
      r.lastRuns()          → { de: { at, ok, error? }, … }  (for /health)
-   Asana jobs (asana every 30 min, asanaFull 03:00, people 03:15) exist only
-   when the config holds a token; the full read also counts as the plain one.
+   Asana jobs (asana every 30 min, asanaFull 03:00, people 03:15, asanaWrite and
+   asanaEvents each minute) exist only when the config holds a token; the full
+   read also counts as the plain one.
    The budget job (hourly) exists only once Google sign-in is saved (budget/sign-in.js).
      r.start()             ticks every minute
 
@@ -30,7 +31,7 @@ function createRunner(o) {
     busy = true;
     try {
       const at = now || new Date();
-      const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people || o.jobs.asanaWrite);
+      const withAsana = !!(o.jobs.asana || o.jobs.asanaFull || o.jobs.people || o.jobs.asanaWrite || o.jobs.asanaEvents);
       for (const k of due(at, last, { asana: withAsana, budget: !!o.jobs.budget, weekly: !!o.jobs.weekly })) {
         if (!o.jobs[k]) continue;
         // the nightly full read already covers the plain read that is due beside it
@@ -58,18 +59,28 @@ function createRunner(o) {
 
 const NIGHTLY_KEEP = 14;
 
-/* the Asana jobs, only when the config holds a token; all share one in-flight run */
-function asanaJobs(cfg, client, syncNow) {
+/* the Asana jobs, only when the config holds a token; all share one in-flight run
+   (opts.fetch: a stand-in for Asana, for tests) */
+function asanaJobs(cfg, client, syncNow, opts) {
   if (!cfg.asanaToken) return {};
   const sync = syncNow || (o => require('./asana-sync.js').syncNow(o));
   const go = (kind, extra) => () => require('./inflight.js').runAsana(kind, () => sync(Object.assign({ cfg, client }, extra)));
+  // the one-minute sync (Asana's events feed): its reads call sync directly, never through runAsana
+  // again (a plain read would wait for ever on the events run that asked for it)
+  const asanaEvents = () => require('./inflight.js').runAsana('events', async () => {
+    const { createAsana } = require('./asana/client.js');
+    const home = cfg.home || require('./config.js').home();
+    const r = await require('./asana-events.js').checkEvents({ cfg, client, asana: createAsana(cfg, { fetch: opts && opts.fetch }),
+      sync: o => sync(Object.assign({ cfg, client }, o)), stateFile: path.join(home, 'asana-events.json') });
+    return r.ok ? r : Object.assign({}, r, { aborted: r.detail });
+  });
   // the team's edits to Asana (0021): a write left half-done when the helper stopped is tried again
   let first = true;
   const asanaWrite = async () => {
     if (first) { first = false; await client.update('asana_writes', { status: 'working' }, { status: 'waiting' }).catch(() => {}); }
     return require('./asana-write.js').writeWaiting({ db: client, cfg });
   };
-  return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }), asanaWrite };
+  return { asana: go('plain', {}), asanaFull: go('full', { full: true }), people: go('people', { kind: 'people' }), asanaWrite, asanaEvents };
 }
 
 /* the budget job, only once the helper holds a Google sign-in (D113) */

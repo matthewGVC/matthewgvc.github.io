@@ -9,7 +9,10 @@
      GVC_PLACES.buildingKey({ address }, 'NYC')     → 'NYC|401 east 89' (NYC only)
      GVC_PLACES.samePlace(a, b)                     → confirms a key match
      GVC_PLACES.inherit(prevCore, newCore)          → a new deal's core, place facts filled in
-     GVC_PLACES.group(jobs, allRows)                → one row per place for the Overview
+     GVC_PLACES.group(jobs, allRows)                → one row per place for the Overview and Resell
+     GVC_PLACES.shown(all, passing, allRows)        → the rows to draw: each place a passing deal is on, with all its deals
+     GVC_PLACES.dealWord(job)                       → a row's chip for another deal on it: 'Rental · Live'
+     GVC_PLACES.errors(row)                         → the row's errors: its live deals' and its lead's
 
    The key finds candidates and samePlace confirms ("12 Elm St" and "12 Elm
    Ave" share a key, but are two places). The address and unit are passed
@@ -19,7 +22,7 @@
 
    Uses GVC_ADDR (address-aliases.js) and, for placeFacts, GVC_FACTS
    (job-facts.js). Both are read only when a function needs them, so pages can
-   load this file without them and still use group, lead and LIVE.
+   load this file without them and still use group, shown, lead and LIVE.
 
    Loads in the browser (window.GVC_PLACES) and in Node (require).
    ============================================================ */
@@ -131,9 +134,10 @@
 
   function isLive(stage) { return LIVE.indexOf(stage) !== -1; }
 
-  /* the deal a row opens: a live one, a sale before a rental, then the newest */
+  /* the deal a row opens: a live one, a sale before a rental, then the newest; with
+     nothing live, the newest whatever its kind (Review Focus 5) */
   function lead(deals) {
-    function rank(d) { return (isLive(d.stage) ? 0 : 4) + (d.kind === 'sale' ? 0 : d.kind === 'rental' ? 1 : 2); }
+    function rank(d) { return !isLive(d.stage) ? 4 : d.kind === 'sale' ? 0 : d.kind === 'rental' ? 1 : 2; }
     function made(d) { return String(d.createdAt || ''); }
     return deals.slice().sort(function (a, b) {
       return rank(a) - rank(b) || (made(a) < made(b) ? 1 : made(a) > made(b) ? -1 : 0);
@@ -162,6 +166,23 @@
     });
   }
 
+  /* a place shows when any of its deals passes the page's filters, and its row has all its
+     deals (all: the page's deals before the filters), so an agent on the rental still sees the place */
+  function shown(all, passing, allRows) {
+    var on = {};
+    passing.forEach(function (j) { on[j.placeId || j.id] = true; });
+    return group(all.filter(function (j) { return on[j.placeId || j.id]; }), allRows);
+  }
+
+  var DEAL_WORD = { listing: 'Sale', rental: 'Rental' };
+  function dealWord(d) { return DEAL_WORD[d.type] ? DEAL_WORD[d.type] + ' · ' + (d.phase || d.stage) : d.phase || d.stage; }
+
+  function errors(row) {
+    var deals = row.live.indexOf(row.lead) === -1 ? [row.lead].concat(row.live) : row.live;
+    return deals.reduce(function (n, d) { return n + (d.mismatches || 0); }, 0);
+  }
+
   return { splitTrailing: splitTrailing, cleanStreet: cleanStreet, streetKey: streetKey, placeKey: placeKey, samePlace: samePlace,
-    buildingKey: buildingKey, sameTown: sameTown, placeFacts: placeFacts, inherit: inherit, LIVE: LIVE, lead: lead, group: group };
+    buildingKey: buildingKey, sameTown: sameTown, placeFacts: placeFacts, inherit: inherit, LIVE: LIVE, lead: lead, group: group,
+    shown: shown, dealWord: dealWord, errors: errors };
 });

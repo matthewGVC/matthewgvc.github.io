@@ -331,7 +331,7 @@
       if (!p.de_listing_id && !buy && ['Live', 'In contract', 'Sold', 'Rented'].indexOf(p.stage) !== -1) flags.push({ t: 'Match DE', k: 'de' });
       // a Lead's pitch date: { on } from the Asana sync, a bare date from the one-time backfill
       var pm = (p.milestones || {}).pitchedOn, pmOn = typeof pm === 'string' ? pm : pm && pm.on;
-      var pitchedOn = pitch ? pitch.pitched_on : pmOn ? day(pmOn) : null;
+      var pitchedOn = (pitch && pitch.pitched_on) || (pmOn ? day(pmOn) : null);
       if (atPitch && pitchedOn) done.Pitch = pitchedOn;
       var price = de.price != null ? de.price : core.price, beds = de.beds != null ? de.beds : core.beds, baths = de.baths != null ? de.baths : core.baths;
       var steps = stepsOf(p.kind, p.stage, p.milestones, done), match = activeMatch(p.match);

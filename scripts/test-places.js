@@ -71,6 +71,17 @@ const sold = P.group([{ id: 'o', placeId: 'y', stage: 'Sold' }], [{ id: 'o', pla
 check('a sold-only place is a row led by that deal', [sold[0].lead.id, sold[0].live.length, sold[0].history], ['o', 0, 0]);
 const arch = P.group([{ id: 'n', placeId: 'z', stage: 'Archived', createdAt: '2026' }, { id: 'm', placeId: 'z', stage: 'Archived', createdAt: '2024' }], []);
 check('all archived opens on the newest', arch[0].lead.id, 'n');   // Review Focus 5
+const past = P.group([{ id: 's19', placeId: 'v', kind: 'sale', stage: 'Archived', createdAt: '2019-05-01' },
+  { id: 'r23', placeId: 'v', kind: 'rental', stage: 'Archived', createdAt: '2023-05-01' }], []);
+check('nothing live: an archived 2023 rental beats an archived 2019 sale', past[0].lead.id, 'r23');
+const lone = { id: 'n1', kind: 'sale', stage: 'Live' }, other = { id: 'z', placeId: 'q', kind: 'sale', stage: 'Live' };
+check('shown: a place shows when any of its deals passes, with all its deals',
+  P.shown([s, r, other, lone], [r, lone], []).map(x => [x.lead.id, x.live.length]), [['s', 2], ['n1', 1]]);
+check('dealWord: the chip for a place\'s other deal', [P.dealWord({ type: 'rental', stage: 'Live' }), P.dealWord({ type: 'listing', stage: 'In contract' }),
+  P.dealWord({ type: 'rental', stage: 'In contract', phase: 'Lease signed' }), P.dealWord({ type: 'pitch', stage: 'Pitch' })],
+  ['Rental · Live', 'Sale · In contract', 'Rental · Lease signed', 'Pitch']);
+const e1 = { id: 'e1', stage: 'Live', mismatches: 1 }, e2 = { id: 'e2', stage: 'Live', mismatches: 2 }, e3 = { id: 'e3', stage: 'Archived', mismatches: 4 };
+check('errors: summed over the row\'s live deals, the lead included', [P.errors({ lead: e1, live: [e1, e2] }), P.errors({ lead: e3, live: [e2] }), P.errors({ lead: e3, live: [] })], [3, 6, 4]);
 
 // cleanStreet takes off the same comma unit the library's splitUnit does
 ['1050 Fifth Avenue, Apt. 2E', '12 Oak St, Residence 12E', '9 Pine Rd, Unit 4', '3 Bay Ave, Brielle'].forEach(a =>

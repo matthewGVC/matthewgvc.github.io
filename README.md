@@ -39,8 +39,9 @@ count until "Show archived" is ticked.
 sale, and the meta line counts its past deals. A place shows when any of its deals passes the filters
 (so "Only my jobs" keeps it for an agent on the rental); a place whose deals are all archived shows
 only with "Show archived", on its newest deal. A Lead is a deal at stage Pitch and lists as a pitch.
-Our own purchases (`properties.side` 'buy') stay off the lists, the tasks and the weekly email.
-The Live and In contract counts still count deals. Tests: `scripts/test-workspace-data.js`, `test-workspace.js`.
+Our own purchases (`properties.side` 'buy') stay off the lists and the weekly email, and raise no
+Link folder, DE match or archive task (only Relink folder, when its folder link breaks). The Live and
+In contract counts and the folder-activity chart still count deals; a row's error count adds up its live deals'. Tests: `scripts/test-workspace-data.js`, `test-workspace.js`.
 
 **Development addresses:** `assets/js/dev-addresses.js` lists the street each development's
 units are listed at on DE, so the Errors page treats those DE listings as the development's units

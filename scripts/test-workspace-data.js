@@ -494,7 +494,11 @@ check('a house with no mark stays its own job', W.buildJobs({ properties: [{ id:
   check('placeId, side and createdAt reach the job', [j.placeId, j.side, j.createdAt], ['pl1', 'list', '2026-09-01T12:00:00Z']);
   const lead = one({ stage: 'Pitch', milestones: { pitchedOn: { on: '2026-10-02', planned: false } } });
   check('a Pitch deal is type pitch and opens by listing', [lead.type, lead.fromDeal, lead.href], ['pitch', true, 'job/?listing=7-place-st']);
-  check('a Lead\'s pitch date comes from its milestones', [lead.pitchedOn, one({ stage: 'Pitch' }).pitchedOn], ['2026-10-02', null]);
+  check('a Lead\'s pitch date comes from its milestones', [lead.pitchedOn, one({ stage: 'Pitch' }).pitchedOn, one({ stage: 'Pitch', milestones: { pitchedOn: '2026-07-28' } }).pitchedOn],
+    ['2026-10-02', null, '2026-07-28']);
+  const undated = W.buildJobs({ properties: [deal({ milestones: { pitchedOn: { on: '2026-06-01' } } })],
+    pitches: [{ id: 'q8', slug: 'q8', label: 'Q8', outcome: 'won', won_property_id: 'x1', pitched_on: null }], devProjects: [], changes: [] }, TODAY)[0];
+  check('a won pitch with no date leaves the deal\'s own pitch date', undated.pitchedOn, '2026-06-01');
   check('a Pitch deal has steps and no Link folder flag', [lead.steps[0], lead.stageIdx, lead.flags, lead.chip], ['Pitch', 0, [], 'pre']);
   const withErr = one({ stage: 'Pitch', match: { list: [{ code: 'M6', key: 'M6', text: 'No folder.' }], dismissed: {} } });
   const oldPitch = W.buildJobs({ properties: [], pitches: [{ id: 'q9', slug: 'q9', label: 'Q9', market: 'NJ', outcome: 'open' }], devProjects: [], changes: [] }, TODAY)[0];

@@ -147,7 +147,7 @@ async function applyPlan({ client, plan }) {
       deal = (await client.insert('properties', {
         slug: d.slug, label: pitch.label, market: pitch.market, place_id: place.id, from_pitch_id: pitch.id, stage: 'Pitch', stage_source: 'Asana',
         kind: 'sale', asana_gid: pitch.asana_gid || null, core: pitch.core, drive_folder: pitch.drive_folder || null,
-        folder_state: pitch.folder_state || 'unlinked', milestones: { pitchedOn: pitch.pitched_on || null }
+        folder_state: pitch.folder_state || 'unlinked', milestones: pitch.pitched_on ? { pitchedOn: { on: pitch.pitched_on } } : {}
       }))[0];
       await client.insert('changes', logOf({ property_id: deal.id }, 'stage', null, 'Pitch'));
     }

@@ -899,20 +899,24 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
       folder_state: 'linked', drive_folder: 'f/' + id, side: 'list', created_at: '2026-01-01T12:00:00Z' }, over);
     const PL = () => rowsFor({ properties: rowsFor().properties.concat([
       deal('404-sale', { place_id: 'pl404', stage: 'In contract', de_listing_id: '9404', core: { address: '404 Place Ave', unit: '5C', agentIds: ['elyse-gutman'] }, created_at: '2026-03-01T12:00:00Z' }),
-      deal('404-rental', { place_id: 'pl404', kind: 'rental', de_listing_id: '9405', core: { address: '404 Place Ave', unit: '5C', agentIds: ['katie-cook'] }, created_at: '2026-09-01T12:00:00Z' }),
+      deal('404-rental', { place_id: 'pl404', kind: 'rental', de_listing_id: '9405', core: { address: '404 Place Ave', unit: '5C', agentIds: ['katie-cook'] }, created_at: '2026-09-01T12:00:00Z',
+        scan: { weeks: { [iso(NOW - 60 * 864e5).slice(0, 10)]: 7 } }, match: { list: [{ code: 'M3', key: 'M3', text: 'x' }, { code: 'M4', key: 'M4', text: 'y' }], dismissed: {} } }),
       deal('404-2019', { place_id: 'pl404', stage: 'Archived', core: { address: '404 Place Ave', unit: '5C' }, created_at: '2019-05-01T12:00:00Z' }),
       deal('90-lead', { place_id: 'pl90', stage: 'Pitch', market: 'NJ', folder_state: 'unlinked', drive_folder: null, core: { address: '90 Lead St' } }),
-      deal('806-buy', { place_id: 'plb', side: 'buy', market: 'NJ', folder_state: 'unlinked', drive_folder: null, core: { address: '806 Buy Dr' } }),
+      deal('806-buy', { place_id: 'plb', side: 'buy', stage: 'Off market', market: 'NJ', folder_state: 'unlinked', drive_folder: null, core: { address: '806 Buy Dr' } }),
       deal('77-old', { place_id: 'pl77', stage: 'Archived', market: 'NJ', core: { address: '77 Gone Rd' }, created_at: '2019-01-01T12:00:00Z' }),
       deal('77-new', { place_id: 'pl77', stage: 'Archived', market: 'NJ', core: { address: '77 Gone Rd' }, created_at: '2023-01-01T12:00:00Z' })]) });
     const rowsNamed = (page, name) => page.$$eval('.pj', (els, n) => els.filter(e => e.querySelector('h3').childNodes[0].textContent.trim() === n).map(e => ({
       href: e.getAttribute('href'), chips: [...e.querySelectorAll('h3 .chip:not(.stale)')].map(c => c.textContent), sub: e.querySelector('.sub').textContent,
-      note: e.querySelector('.prog span').textContent })), name);
+      note: e.querySelector('.prog span').textContent, right: e.querySelector('.pj-h > .r').textContent.trim() })), name);
     t = await open(browser, { rows: PL() });
     const r404 = await rowsNamed(t.page, '404 Place Ave 5C');
     check('one row for a sale and a rental, with both chips', [r404.length, r404[0] && r404[0].chips], [1, ['In contract', 'Rental · Live']]);
     check('the row says 1 past deal', /· 1 past deal$/.test(r404[0] ? r404[0].sub : ''), true);
     check('the row opens the sale', r404[0] && r404[0].href, 'job/?listing=404-sale');
+    check('the row\'s errors count every live deal on it', r404[0] && r404[0].right, '2 errors');
+    check('the chart counts the rental\'s folder too', await t.page.$$eval('#chart title', ts => ts.some(x => / 7 files$/.test(x.textContent))), true);
+    check('no stage that only a purchase has', await t.page.$$eval('#stg option', os => os.map(o => o.textContent).includes('Off market')), false);
     check('a Lead with no date reads Lead, no pitch date yet', (await rowsNamed(t.page, '90 Lead St')).map(r => [r.chips, r.note, r.href]),
       [[['Pitch'], 'Lead, no pitch date yet.', 'job/?listing=90-lead']]);
     const buyRows = [(await rowsNamed(t.page, '806 Buy Dr')).length];

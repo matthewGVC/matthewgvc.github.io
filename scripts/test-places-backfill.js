@@ -126,7 +126,7 @@ check('keyOfCore reads a unit left in the address', keyOfCore({ address: '1 Insi
   check('the house and its place carry the development', [prop('e').dev_project_id, live.T.places.find(p => p.id === prop('e').place_id).dev_project_id], [dev.id, dev.id]);
   const pitchDeal = live.T.properties.find(p => p.from_pitch_id === 'q');
   check('the open pitch is a deal', [pitchDeal.stage, pitchDeal.stage_source, pitchDeal.kind, pitchDeal.asana_gid, pitchDeal.milestones, pitchDeal.drive_folder, !!pitchDeal.place_id],
-    ['Pitch', 'Asana', 'sale', 't2', { pitchedOn: '2026-07-28' }, 'pf', true]);
+    ['Pitch', 'Asana', 'sale', 't2', { pitchedOn: { on: '2026-07-28' } }, 'pf', true]);
   check('the pitch is marked won, pointing at it', [live.T.pitches[0].outcome, live.T.pitches[0].won_property_id], ['won', pitchDeal.id]);
   check('every change says who and why', live.T.changes.length > 0 && live.T.changes.every(c => c.source === 'Helper' && c.note === 'Places backfill (11-05)'), true);
   check('each change has exactly one owner', live.T.changes.every(c => [c.property_id, c.pitch_id, c.dev_project_id].filter(Boolean).length === 1), true);

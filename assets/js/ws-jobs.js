@@ -1,11 +1,11 @@
 /* ============================================================
    WORKSPACE JOB LISTS: the Resell tab (listings, rentals, pitches) and the
    New Dev tab (developments). <body data-nav="resell"> or "newdev".
-   Resell is one row per place (GVC_PLACES.group): the row opens its lead deal,
+   Resell is one row per place (GVC_PLACES.shown): the row opens its lead deal,
    with a chip for each other live deal and its past deals counted. A place
    shows when any of its deals passes the filters. Our own purchases stay off.
-   Needs: property-library.js, roster.js, workspace-data.js, workspace-shell.js,
-   and places.js on Resell.
+   New Dev's developments have no place, so each is its own row.
+   Needs: property-library.js, roster.js, workspace-data.js, places.js, workspace-shell.js.
    ============================================================ */
 (function () {
   'use strict';
@@ -86,14 +86,7 @@
     if (!p || (!p.posted.length && !p.coming.length)) return '<span class="soft">0</span>';
     return esc(p.posted.length) + (p.coming.length ? '<small>' + esc(p.coming.length) + ' coming</small>' : '');
   }
-  /* Resell: one row per place; New Dev: one per development */
-  function rows(js) { return DEV ? js.map(function (j) { return { lead: j, live: [j], history: 0 }; }) : GVC_PLACES.group(js, data.properties); }
-  function placesOf(all, js) {
-    var on = {}; js.forEach(function (j) { on[j.placeId || j.id] = true; });
-    return rows(all.filter(function (j) { return on[j.placeId || j.id]; }));
-  }
-  // a place's other live deal, beside the row's own chip: "Rental · Live"
-  function also(d) { return d.type === 'pitch' ? d.stage : (d.type === 'rental' ? 'Rental' : 'Sale') + ' · ' + (d.phase || d.stage); }
+  function rows(all, js) { return GVC_PLACES.shown(all, js, data.properties); }
   function pass(j) {
     var hay = (j.name + ' ' + (j.place || '') + ' ' + (agentsOf[j.id] || []).join(' ')).toLowerCase();
     return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')) && (!f.q || hay.indexOf(f.q) !== -1);
@@ -105,10 +98,10 @@
     TYPES.forEach(function (t, i) {
       var b = $('typ').children[i];
       b.setAttribute('aria-pressed', f.type === t[0]);
-      b.querySelector('.n').textContent = rows(all.filter(function (j) { return !t[0] || j.type === t[0] || (t[0] === 'listing' && j.type === 'rental'); })).length;
+      b.querySelector('.n').textContent = rows(all, all.filter(function (j) { return !t[0] || j.type === t[0] || (t[0] === 'listing' && j.type === 'rental'); })).length;
     });
     var byLast = function (a, b) { return (b.last || '') > (a.last || '') ? 1 : (b.last || '') < (a.last || '') ? -1 : 0; };
-    var rs = placesOf(all, all.filter(pass)).sort(function (g, h) {
+    var rs = rows(all, all.filter(pass)).sort(function (g, h) {
       var a = g.lead, b = h.lead;
       if (!sort.key) return byLast(a, b);
       var x = SORT_BY[sort.key](a), y = SORT_BY[sort.key](b);
@@ -119,7 +112,7 @@
     });
     $('rows').innerHTML = rs.length ? rs.map(function (g) {
       var j = g.lead, past = g.history ? ' · ' + g.history + ' past deal' + (g.history === 1 ? '' : 's') : '';
-      var more = g.live.filter(function (d) { return d !== j; }).map(function (d) { return ' <span class="chip ' + d.chip + '">' + esc(also(d)) + '</span>'; }).join('');
+      var more = g.live.filter(function (d) { return d !== j; }).map(function (d) { return ' <span class="chip ' + d.chip + '">' + esc(GVC_PLACES.dealWord(d)) + '</span>'; }).join('');
       var pctv = j.steps.length ? Math.max(0, (j.stageIdx + 1) / j.steps.length * 100) : 0;
       var ag = agentsOf[j.id] || [];
       return '<tr><td class="nm"><a href="../' + esc(j.href) + '">' + esc(j.name) + '</a><small>' + esc((j.place || (j.folder ? j.folder.split('/').slice(-2).join(' / ') : 'no folder linked')) + past) + '</small><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></td>' +
@@ -129,7 +122,7 @@
         '<td class="r posts">' + (j.type === 'pitch' ? '' : postsCell(postsBy[j.id])) + '</td>' +
         '<td class="r">' + (W.deLabel(j.deStatus) || (j.type !== 'pitch' && j.type !== 'development') ? '<span class="chip">' + esc(W.deLabel(j.deStatus) || 'not on DE') + '</span>' : '') + '</td></tr>';
     }).join('') : '<tr><td colspan="' + COLS.length + '" class="empty">' + (all.length ? 'Nothing matches these filters.' : (DEV ? 'No developments yet.' : 'No jobs yet.')) + '</td></tr>';
-    $('count').textContent = rs.length + ' of ' + rows(all).length + ' jobs';
+    $('count').textContent = rs.length + ' of ' + rows(all, all).length + ' jobs';
     var tl = W.taskFlags(all).filter(function (t) { return t.kind !== 'archive'; });
     $('n2').innerHTML = tl.length ? tl.map(function (t) { return '<li><a href="../' + esc(t.href) + '">' + esc(t.job) + '</a><span>' + esc(t.text) + '</span></li>'; }).join('') : '<li class="soft">Everything is linked.</li>';
     var ps = all.filter(function (j) { return j.type === 'pitch'; });

@@ -91,6 +91,7 @@ function fakeFetch(o) {
     }
     let m;
     if ((m = p.match(/^\/tasks\/([\w-]+)$/))) {
+      if (o.taskStatus && o.taskStatus[m[1]]) return res({ errors: [{ message: 'no' }] }, o.taskStatus[m[1]]);
       const t = (o.tasks || {})[m[1]];
       return t ? res({ data: t }) : res({ errors: [{ message: 'Not found' }] }, 404);
     }
@@ -107,7 +108,8 @@ let dir = fs.mkdtempSync(path.join(process.env.GVC_HELPER_HOME, 'state-'));
 let k = 0;
 const stateAt = tokens => { const f = path.join(dir, 'asana-events-' + (++k) + '.json'); if (tokens) fs.writeFileSync(f, JSON.stringify(tokens)); return f; };
 const tokensIn = f => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
-const LINKED = [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }, { gid: 'g2', project_gid: NJ, kind: 'listing', pitch_id: 'pi2' },
+const LINKED = [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }, { gid: 'g2', project_gid: NJ, kind: 'listing', property_id: 'p2' },
+  { gid: 'g7', project_gid: NJ, kind: 'listing', pitch_id: 'pi7' }, { gid: 'g8', project_gid: NYC, kind: 'listing', ignored: true },
   { gid: 'g9', project_gid: NYC, kind: 'listing', property_id: null, pitch_id: null }];
 const fakeSync = (answer) => {
   const calls = [];
@@ -191,6 +193,34 @@ async function check1(o) {
 
   t = await check1({ events: { [NYC]: [{ data: [ev('s9')], sync: 'tN2' }] } });
   check('a deleted subtask doesn\'t stop the feed', [t.r.ok, t.r.gap, t.sync.calls, t.state.ok, tokensIn(t.stateFile)[NYC]], [true, false, [], true, 'tN2']);
+
+  /* fix round 1 */
+  t = await check1({ events: { [NYC]: [{ data: [ev('s5'), ev('g1')], sync: 'tN2' }] }, taskStatus: { s5: 403 } });
+  check('a task that answers 403 on its parent lookup is a gap, not a failure', [t.r.ok, t.r.gap, t.sync.calls, tokensIn(t.stateFile)[NYC], t.state.ok],
+    [true, true, [{ kind: 'plain' }, { kind: 'events', gids: { g1: 'NYC' } }], 'tN2', true]);
+  t = await check1({ events: { [NYC]: [{ data: [ev('s5')], sync: 'tN2' }] }, taskStatus: { s5: 401 } });
+  check('a refused token on the parent lookup still fails the check', [t.r.ok, t.state.ok, t.state.detail, tokensIn(t.stateFile)[NYC]], [false, false, 'Asana refused the token', 'tN']);
+  t = await check1({ events: { [NJ]: [{ data: [ev('g7')], sync: 'tJ2' }] }, tasks: { g7: { gid: 'g7', parent: null } } });
+  check('a task linked only by a pitch goes to the plain read', [t.r.gap, t.sync.calls.map(c => c.kind)], [true, ['plain']]);
+  t = await check1({ events: { [NYC]: [{ data: [ev('g8'), ev('st8', 'story', 'g8')], sync: 'tN2' }] } });
+  check('an ignored task\'s edit runs no read', [t.r.ok, t.r.gap, t.sync.calls, t.fetch.calls.some(c => /^\/tasks\//.test(c)), tokensIn(t.stateFile)[NYC]], [true, false, [], false, 'tN2']);
+  {
+    const P1 = { id: 'p1', slug: '3-sample-ave-4c', label: '3 Sample Ave - 4C', kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Asana', asana_gid: 'g1',
+      core: { address: '3 Sample Ave', unit: '4C' }, place_id: 'pl1' };
+    const db = fakeDb({ properties: [P1], places: [{ id: 'pl1', slug: 'pl1', key: 'k', address: '3 Sample Ave', label: '3 Sample Ave - 4C', market: 'NYC' }],
+      asana_tasks: [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }] });
+    const g1 = { gid: 'g1', name: '3 Sample Ave - 4C', completed: false, modified_at: '2026-11-06T14:00:00.000Z', parent: null,
+      memberships: [{ project: { gid: NYC }, section: { name: 'Accepted Offer/Attorney Review' } }],
+      custom_fields: [{ name: 'Listing Status', enum_value: { name: 'Accepted Offer/Attorney Review' }, display_value: 'Accepted Offer/Attorney Review' }] };
+    const fetch = fakeFetch({ tasks: { g1 }, taskStatus: { g6: 500 } });
+    const r = await syncNow({ cfg, client: db, fetch, kind: 'events', gids: { g6: 'NYC', g1: 'NYC' }, now: NOW });
+    check('a task that answers 500 in the events read is skipped with a warning; the others still apply',
+      [r.ok, r.report.ok, r.report.listings, r.report.warnings.some(w => /g6/.test(w)), db.T.properties[0].stage, db.T.sync_runs.map(x => [x.kind, x.ok])],
+      [true, true, 1, true, 'Accepted offer', [['events', true]]]);
+    const db2 = fakeDb({ asana_tasks: [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }] });
+    const r2 = await syncNow({ cfg, client: db2, fetch: async () => res({}, 401), kind: 'events', gids: { g1: 'NYC' }, now: NOW });
+    check('an aborted events read writes no sync_runs row', [r2.ok, r2.report.ok, r2.report.aborted, db2.T.sync_runs.length], [false, false, 'Asana refused the token', 0]);
+  }
 
   t = await check1({});
   check('nothing changed: no sync, but checked_at moves', [t.sync.calls, t.state.ok, t.state.checked_at, t.r.gap], [[], true, NOW.toISOString(), false]);

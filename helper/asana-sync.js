@@ -148,6 +148,7 @@ function summary(run) {
 }
 
 let running = null;
+// joins any running sync whatever its kind: an events call must only reach it inside runAsana (inflight.js)
 function syncNow(opts) {
   if (!running) running = syncOnce(opts || {}).finally(() => { running = null; });
   return running;
@@ -163,7 +164,11 @@ async function syncOnce(o) {
   let run;
   if (o.kind === 'people') run = await readRun({ asana, cfg, only: 'people' });
   // the one-minute sync: just the tasks Asana's events feed named (asana-events.js); no posts
-  else if (o.kind === 'events') run = await readRun({ asana, cfg, gids: o.gids || {} });
+  else if (o.kind === 'events') {
+    run = await readRun({ asana, cfg, gids: o.gids || {} });
+    // an aborted events read writes no sync_runs row (one a minute would pile up); the caller sees report.ok false
+    if (run.ok === false) return { ok: false, changes: 0, created: 0, errors: [{ what: 'aborted', detail: run.aborted }], unlinked: [], report: summary(run) };
+  }
   else {
     // only the newest good runs: the last one (for since) and the last few full reads (their open counts)
     const newest = n => ({ order: 'started_at.desc', limit: n });

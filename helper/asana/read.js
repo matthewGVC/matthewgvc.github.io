@@ -15,8 +15,10 @@
        only        'people' → read just 👋 People (the 3:15 job)
        gids        { [taskGid]: market } → the events run (asana-events.js): just these tasks,
                    each read alone (GET /tasks/<gid>); a subtask is replaced by its parent (up
-                   to three levels), a 404 or a task in no listing project is skipped, and each
-                   is detailed (checklist and history). kind 'events', full false, no devs,
+                   to three levels), a 404 or a task in no listing project is skipped, a task
+                   that fails to read otherwise (a 403, a 500) is skipped with a warning (the
+                   rest still apply; a refused token still stops the run), and each is
+                   detailed (checklist and history). kind 'events', full false, no devs,
                    loose or people, totals { events: true }, rowsRead { events: n }.
      → { ok, aborted?, full, since, listings, devs, loose, people, warnings,
          missing, readProjects, totals, rowsRead }
@@ -120,10 +122,16 @@ async function readRun(o) {
       out.totals = { events: true };
       const marketOf = {};
       Object.keys(a.listings || {}).forEach(m => { marketOf[a.listings[m]] = m; });
-      // one task, or null when Asana no longer has it (deleted)
+      // one task, or null when Asana no longer has it (deleted) or it failed to read (a warning:
+      // one bad task never holds up the rest, nor the feed)
       const one = async gid => {
         try { return (await asana.get('/tasks/' + gid, { opt_fields: allow.TASK_FIELDS, limit: null }))[0] || null; }
-        catch (e) { if (e && e.status === 404) return null; throw e; }
+        catch (e) {
+          if (e && e.status === 404) return null;
+          if (stopFor(e)) throw e;
+          out.warnings.push('a task could not be read (' + gid + '): ' + e.message + '; it is read again by the next plain or full read');
+          return null;
+        }
       };
       const seen = new Set();
       for (const gid of Object.keys(o.gids)) {
@@ -260,4 +268,4 @@ async function readRun(o) {
   }
 }
 
-module.exports = { readRun, looseNeedles, namesOne };
+module.exports = { readRun, looseNeedles, namesOne, stopFor };

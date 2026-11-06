@@ -15,11 +15,14 @@
 
    For each listing project it reads the feed from the saved token until Asana
    says there's no more, collecting the tasks named: a 'task' event's own gid, or
-   a 'story' (a comment, a field change) whose parent is a task. A gid that no
-   deal or pitch is linked to (asana_tasks.property_id / pitch_id, read once) is
-   looked up for its parent (up to three levels), so a ticked subtask counts as
-   its listing; a 404 there (a deleted task or checklist item) drops the gid,
-   neither a failure nor a gap.
+   a 'story' (a comment, a field change) whose parent is a task. A task cached as
+   ignored (asana_tasks.ignored) is dropped: no read for it. A gid no deal is
+   linked to (asana_tasks.property_id, read once; a pitch alone doesn't count:
+   the dormant pitch-won path would make a deal with no development) is looked
+   up for its parent (up to three levels), so a ticked subtask counts as its
+   listing; a 404 there (a deleted task or checklist item) drops the gid, neither
+   a failure nor a gap, and any other failure of that lookup but a refused token
+   (a 403, a 500) makes it a gap, so one bad task never holds up the feed.
 
    An events run only updates deals it already has: it carries no development
    projects, so a new house couldn't join its development. So a gid still not
@@ -40,6 +43,7 @@
 'use strict';
 
 const fs = require('fs'), path = require('path');
+const { stopFor } = require('./asana/read.js');
 
 const KIND = 'asana-events';
 const MAX_PAGES = 50;          // 5,000 events in one check: read the rest as a gap
@@ -98,18 +102,23 @@ async function checkEvents(o) {
 
     /* which of them a deal already has; a subtask counts as its listing */
     if (found.size) {
-      const links = await client.select('asana_tasks', null, 'gid,property_id,pitch_id');
-      const linked = new Set((links || []).filter(c => c.property_id || c.pitch_id).map(c => String(c.gid)));
+      const links = await client.select('asana_tasks', null, 'gid,property_id,ignored');
+      const linked = new Set((links || []).filter(c => c.property_id && !c.ignored).map(c => String(c.gid)));
+      const ignored = new Set((links || []).filter(c => c.ignored).map(c => String(c.gid)));
       for (const [gid, market] of found) {
         let g = gid;
-        for (let depth = 0; g && !linked.has(g) && depth < 3; depth++) {
+        for (let depth = 0; g && !linked.has(g) && !ignored.has(g) && depth < 3; depth++) {
           let row;
           try { row = (await asana.get('/tasks/' + g, { opt_fields: 'parent.gid', limit: null }))[0] || {}; }
-          catch (e) { if (e && e.status === 404) { g = null; break; } throw e; }
+          catch (e) {
+            if (e && e.status === 404) { g = null; break; }
+            if (stopFor(e)) throw e;
+            g = ''; break;                                     // can't tell: the plain read covers it
+          }
           g = row.parent && row.parent.gid ? String(row.parent.gid) : '';
           if (!g) break;
         }
-        if (g === null) continue;                              // gone from Asana: nothing to read
+        if (g === null || ignored.has(g)) continue;            // gone from Asana, or set aside: nothing to read
         if (g && linked.has(g)) out.gids[g] = out.gids[g] || market;
         else out.gap = true;                                    // no deal yet: the plain read makes it
       }

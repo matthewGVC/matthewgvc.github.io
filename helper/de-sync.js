@@ -14,7 +14,8 @@
 
    A run aborts, changing nothing, when a feed's total ≠ rows read, DE uses an
    unknown status, or live listings fell by more than a quarter since the last
-   good report (plan §8).
+   good report (plan §8). --write and Sync now also make a development's units
+   on DE its deals after a good run (dev-units.js, decision 72).
    ============================================================ */
 'use strict';
 
@@ -243,7 +244,9 @@ async function courtesyFor(ids, opts) {
 
 /* Same reading and checks as the dry run, then helper/de/apply.js writes the
    result. A run the checks abort writes only its sync_runs row. The GVC-listed
-   check opens a listing page only for a DE listing it has never seen. */
+   check opens a listing page only for a DE listing it has never seen. After a
+   good run, helper/dev-units.js makes and moves the developments' units, so the
+   7:00 read, Sync now and --write all do it, one at a time. */
 /* One sync at a time: "Sync now" during the 7:00 run joins the run in progress. */
 let running = null;
 function syncNow(opts) {
@@ -280,8 +283,12 @@ async function syncOnce(opts) {
   });
   if ('deAddsNew' in cfg) console.log('deAddsNew is retired (D54): DE never adds jobs now, so the setting is ignored.');
   try {
-    return Object.assign(await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy, pageFacts,
-      helperVersion: require('./package.json').version }), { report });
+    const out = await require('./de/apply.js').applyRun({ client, report, rows: report.rows || [], courtesy, pageFacts,
+      helperVersion: require('./package.json').version });
+    // a development's units on Elliman become its deals (dev-units.js); never after an aborted read,
+    // and a failure there is logged, never the read's
+    if (report.ok) await require('./dev-units.js').syncDevUnits(client).catch(e => console.error('dev units: ' + e.message));
+    return Object.assign(out, { report });
   } finally {
     if (browser) await browser.close();
   }

@@ -18,6 +18,17 @@ development budgets every hour. With the Gmail sign-in: the Sunday email at 18:0
 requests run only once the helper account (`helperEmail`, `helperPassword`) is in the config;
 until then the log says "No helper account yet".
 
+## The Elliman read (`de-sync.js`, `de/`)
+
+The 7:00 read, Sync now and `node helper/de-sync.js --write` all run `syncNow`: read Elliman, check
+the totals, then `de/apply.js` writes prices and facts onto the jobs already linked or at the same
+address. Two rules hold there: jobs are never made from Elliman (D54), and Elliman never moves a
+job's stage (D50). After a good read (never an aborted one), `dev-units.js` makes the one exception
+(decision 72): a development's units that Elliman lists at its street (Le Reve's B, C and E, Casa
+Avenida's 2 and 8; `assets/js/dev-addresses.js`) and that have no Asana task become deals in that
+development, and their stage follows Elliman (Sold and Rented archive them) until an Asana task
+takes one over. A failure there is logged and never fails the read.
+
 ## The AI folder guess (D123, `folder-ai.js`)
 
 Off unless the config holds `anthropicKey`. After the nightly scan's address matching, each job
@@ -116,6 +127,7 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 ## Tests
 
 `node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`, `node scripts/test-de-apply.js`,
+`node scripts/test-dev-units.js`,
 `node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-budget.js`,
 `node scripts/test-asana-map.js`, `node scripts/test-asana-posts.js`, `node scripts/test-helper-db.js`,
 `node scripts/test-places-backfill.js`, `node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`,

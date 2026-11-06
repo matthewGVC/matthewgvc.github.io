@@ -113,8 +113,10 @@
           A House 1 / House 2 listing is a unit, never a line; archived jobs and developments
           are left out. Key M29:<dev id>.
 
-   Places and deals (0025): a deal at the Pitch stage (an Asana Lead) and our own purchase
-   (side 'buy') get no lines from checkListing; developments are checked as before.
+   Places and deals (0025): a deal at the Pitch stage (an Asana Lead), our own purchase
+   (side 'buy') and a development's unit made from Elliman with no Asana task (dev_project_id,
+   no asana_gid: helper/dev-units.js, decision 72) get no lines from checkListing;
+   developments are checked as before.
 
    Needs asana-map.js and job-facts.js (loaded first in the browser).
    Loads in the browser (window.GVC_MATCH) and in Node (require).
@@ -314,8 +316,9 @@
     var core = job.core || {}, ms = job.milestones || {}, stage = job.stage;
     var now = today(ctx.now), out = [];
     out.waiting = {};
-    // a Pitch deal (a Lead) and our own purchase (side 'buy') are checked for nothing yet
-    if (!stage || stage === 'Archived' || stage === 'Pitch' || job.side === 'buy') return out;
+    // a Pitch deal (a Lead) and our own purchase (side 'buy') are checked for nothing yet; nor is a
+    // development's unit made from Elliman with no Asana task: there is nothing to compare Elliman with (decision 72)
+    if (!stage || stage === 'Archived' || stage === 'Pitch' || job.side === 'buy' || (job.dev_project_id && !job.asana_gid)) return out;
     // the day a mismatch was first found: the stored waiting day, else the stored line's since, else today
     var prev = ctx.prev || job.match || {};
     var firstFound = function (key) {

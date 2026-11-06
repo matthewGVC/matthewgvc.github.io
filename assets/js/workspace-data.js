@@ -319,7 +319,8 @@
       var dates = ch.map(function (c) { return day(c.at); }).concat(ticks.map(function (t) { return t.d; }))
         .filter(function (d) { return d && d <= today; }).sort();
       var flags = [];
-      if (p.folder_state === 'unlinked') flags.push({ t: 'Link folder', k: 'link' });
+      // a development's unit from Elliman with no Asana task has no folder of its own (decision 21)
+      if (p.folder_state === 'unlinked' && !(p.dev_project_id && !p.asana_gid)) flags.push({ t: 'Link folder', k: 'link' });
       if (p.folder_state === 'broken') flags.push({ t: 'Relink folder', k: 'relink' });
       if (!p.de_listing_id && ['Live', 'In contract', 'Sold', 'Rented'].indexOf(p.stage) !== -1) flags.push({ t: 'Match DE', k: 'de' });
       var price = de.price != null ? de.price : core.price, beds = de.beds != null ? de.beds : core.beds, baths = de.baths != null ? de.baths : core.baths;

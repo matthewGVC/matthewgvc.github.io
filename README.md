@@ -36,7 +36,9 @@ count until "Show archived" is ticked.
 
 **Development addresses:** `assets/js/dev-addresses.js` lists the street each development's
 units are listed at on DE, so the Errors page treats those DE listings as the development's units
-(add a development there when its units go on DE).
+(add a development there when its units go on DE). After each good DE read the helper makes each
+such unit with no Asana task a deal in its development (`helper/dev-units.js`), and the
+development's Units card opens it.
 
 **The team roster:** Asana's 👋 People project is the master. `assets/js/roster.js` and
 `assets/js/bios.js` follow it (the helper's `asana-sync.js --people` copies it into `asana_people`).

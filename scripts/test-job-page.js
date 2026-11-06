@@ -546,6 +546,16 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     (await text(t.page, '.hd .sub')).includes('200 E Boca Raton Rd, Boca Raton'), t.errors],
     ['2 for sale · 1 in contract. As listed on Elliman, read each morning.', ['B $4,799,000 For sale', 'E $5,550,000 For sale', 'C $4,499,000 In contract'], true, []]);
   await t.ctx.close();
+  // decision 71: a development opens onto its units; a unit with a deal (helper/dev-units.js) opens that deal
+  RU.properties.push({ id: 'u3', slug: '200-e-boca-raton-rd-residence-b', label: '200 E Boca Raton Rd, Residence B, Boca Raton, FL', stage: 'Live', stage_source: 'DE',
+    kind: 'sale', market: 'FL', dev_project_id: 'd2', de_listing_id: '3', asana_gid: null, core: { address: '200 E Boca Raton Rd', unit: 'B' } });
+  t = await open(browser, { rows: RU, path: '/workspace/job/?dev=le-reve' });
+  check('a Le Reve unit with a deal shows Open', [await t.page.$$eval('#unitsCard tbody tr', rs => rs.map(r => r.cells[0].textContent + ' ' + r.cells[5].textContent.trim() + ' ' +
+    (r.cells[5].querySelector('a') || { getAttribute: () => '' }).getAttribute('href'))), t.errors],
+    [['B Open ../job/?listing=200-e-boca-raton-rd-residence-b', 'E Elliman https://www.elliman.com/listing/x/1', 'C Elliman https://www.elliman.com/listing/x/2'], []]);
+  check('a Le Reve unit with a deal shows Open: the page asks for each house\'s Elliman id', await t.page.evaluate(() => performance.getEntriesByType('resource')
+    .some(e => /\/properties\?dev_project_id=eq\.d2&select=[^&]*de_listing_id/.test(decodeURIComponent(e.name)))), true);
+  await t.ctx.close();
   t = await open(browser, { path: '/workspace/job/?dev=619-example-ave' });
   check('units: a development with no known street and no houses has no Units card', await t.page.$('#unitsCard'), null);
   await t.ctx.close();

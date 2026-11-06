@@ -13,7 +13,8 @@
 
    What it does:
    - a listing linked to a DE id (or an open job at the same address + unit,
-     which then gets the DE id): DE's price, beds, baths, half baths and square
+     which then gets the DE id: a deal at Prep to In contract first, else one Off market;
+     never a Pitch deal or our own purchase, side 'buy'): DE's price, beds, baths, half baths and square
      feet go through GVC_FACTS at DE's rank (D79): DE wins, except that a value
      Matt typed holds while DE's own value hasn't changed since (D78); the
      moment DE's value changes, DE takes over (logged). DE's 0 sq ft or
@@ -56,7 +57,7 @@ const { needsPage, PAGE_FACTS } = require('./page-facts.js');
 
 const DE_FACTS = ['price', 'beds', 'baths', 'halfBaths', 'sqft'];
 const FILL_FACTS = ['city', 'state', 'zip', 'neighborhood'];
-const CLOSED = ['Sold', 'Rented', 'Archived'];
+const OPEN = ['Prep', 'Live', 'Accepted offer', 'In contract'];
 
 function snapshot(r) {
   const s = { status: r.status, price: r.price, closePrice: r.closePrice, beds: r.beds, baths: r.baths, halfBaths: r.halfBaths,
@@ -121,10 +122,12 @@ async function writeRows(o, run, out, now) {
     let p = byDe.get(r.id);
 
     if (r.feed === 'featured' && !p) {
-      // an open job for this address that hasn't been tied to DE yet (never an old sold or archived one)
-      p = props.find(x => !x.de_listing_id && x.kind === r.kind && CLOSED.indexOf(x.stage) === -1 && (() => {
+      // a deal at this address that hasn't been tied to DE yet: a live one, else one off market
+      // (never an old sold or archived one, a Pitch deal or our own purchase)
+      const here = props.filter(x => !x.de_listing_id && x.kind === r.kind && x.side !== 'buy' && (() => {
         const u = P.unitOf(x.core); return A.same(u.address, r.street) && A.unitKey(u.unit) === A.unitKey(r.unit);
       })());
+      p = here.find(x => OPEN.indexOf(x.stage) !== -1) || here.find(x => x.stage === 'Off market');
     }
 
     if (p) {

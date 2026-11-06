@@ -34,9 +34,25 @@ only; the first click asks "Confirm archive?"). A listing archives by its stage;
 `dev_projects.archived_at` (migration 0018). Archived jobs leave the overview, the lists and the error
 count until "Show archived" is ticked.
 
+**One row per place:** the Overview and Resell show one row per place (`assets/js/places.js`
+`group`), not per deal: a sale and a rental on one unit are one row with a chip for each, opening the
+sale, and the meta line counts its past deals (a lost pitch, never listed, is none). A place shows when any of its deals passes the filters
+(so "Only my jobs" keeps it for an agent on the rental); a place whose deals are all archived shows
+only with "Show archived", on its newest deal. A Lead is a deal at stage Pitch and lists as a pitch.
+Our own purchases (`properties.side` 'buy') stay off the lists and the weekly email, and raise no
+Link folder, DE match or archive task (only Relink folder, when its folder link breaks). The Live and
+In contract counts and the folder-activity chart still count deals; a row's error count adds up its live deals'. Tests: `scripts/test-workspace-data.js`, `test-workspace.js`.
+
+**Deals card:** a job's page shows a Deals card under its facts when its place has more than one deal
+(`assets/js/job-page/deals.js`): live deals as links (a sale's rental is one click away), past deals as
+rows that open to year, type, sold price and dates (a lost pitch reads Pitch). A sold price is
+Elliman's `core.closePrice`, never Asana's. Tests: `scripts/test-places.js`, `test-job-page.js`.
+
 **Development addresses:** `assets/js/dev-addresses.js` lists the street each development's
 units are listed at on DE, so the Errors page treats those DE listings as the development's units
-(add a development there when its units go on DE).
+(add a development there when its units go on DE). After each good DE read the helper makes each
+such unit with no Asana task a deal in its development (`helper/dev-units.js`), and the
+development's Units card opens it.
 
 **The team roster:** Asana's 👋 People project is the master. `assets/js/roster.js` and
 `assets/js/bios.js` follow it (the helper's `asana-sync.js --people` copies it into `asana_people`).

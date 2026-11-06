@@ -523,6 +523,14 @@ check('M29: an archived listing: nothing', has(M.check(house29({ stage: 'Archive
 check('M29: a named development, its street from dev-addresses.js', has(M.check(house29({ core: { address: '298 Westwood Ave' } }),
   ctx({ devs: [{ id: 'd3', slug: 'westwood', label: 'Westwood' }] })), 'M29').length, 1);
 check('M29: no developments passed: nothing', has(M.check(house29(), ctx()), 'M29').length, 0);
+check('M29: a repeat listing on the house\'s place: nothing', has(M.check(house29({ id: 'h2', place_id: 'pl1' }),
+  ctx({ devs: [Object.assign({}, DEV, { house_listing_id: 'h1', house_place_id: 'pl1' })] })), 'M29').length, 0);
+check('M29: another place at the street still says so', has(M.check(house29({ id: 'h2', place_id: 'pl2' }),
+  ctx({ devs: [Object.assign({}, DEV, { house_listing_id: 'h1', house_place_id: 'pl1' })] })), 'M29').length, 1);
+
+/* ---------- places and deals: a Pitch deal and a buy deal (our own purchase) have no lines ---------- */
+check('a Pitch deal has no lines', [M.check(job({ stage: 'Pitch', asana: { gone: NOW } }), ctx()).length, M.check(job({ asana: { gone: NOW } }), ctx()).length > 0], [0, true]);
+check('a buy deal has no lines', M.check(job({ side: 'buy', asana: { gone: NOW } }), ctx()).length, 0);
 
 /* ---------- text: plain sentences, no em dashes ---------- */
 const all = [].concat(M.check(job({ de_stage: 'In contract', asana: { gone: NOW, pointPerson: 'PX', status: 'TOTM', section: '🪦 Graveyard' } }), ctx()));

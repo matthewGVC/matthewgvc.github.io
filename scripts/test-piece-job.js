@@ -34,6 +34,8 @@ check('tools (Slice 5)', J.TOOLS.slice(0, 5), ['brochure', 'postcard-listed', 'p
 check('labels (Slice 5)', J.TOOLS.slice(0, 5).map(J.label), ['Brochure', 'Just Listed postcard', 'Just Sold postcard', 'Seller Package', 'Map']);
 check('joinUnit', [J.joinUnit('100 Example St', '4A'), J.joinUnit('12 Sample Ln', ''), J.joinUnit('1 Main St', 'Penthouse North')],
   ['100 Example St, Residence 4A', '12 Sample Ln', '1 Main St, Penthouse North']);
+check("the piece's address keeps unit E", [J.joinUnit('200 E Boca Raton Rd', 'E'), J.joinUnit('1050 Fifth Avenue, Apt. 2E', '2E')],
+  ['200 E Boca Raton Rd, Residence E', '1050 Fifth Avenue, Apt. 2E']);
 check('mapAddresses: subject then comps, blanks dropped', J.mapAddresses(pitch({ core: { comps: [{ address: '14 Sample Ln' }, { address: ' ' }, { price: '1' }, { address: '9 Other Rd' }] } })),
   ['12 Sample Ln', '14 Sample Ln', '9 Other Rd']);
 check('mapAddresses: no comps', J.mapAddresses(job()), ['100 Example St, Residence 4A']);

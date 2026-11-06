@@ -10,6 +10,11 @@
          (dev_projects.house_listing_id, D141) is one job: its house listing
          folds into it, bringing its errors (each still the listing's own,
          owner { id, table }), agents and price.
+         A listing row also has placeId, side ('list', or 'buy' for our own
+         purchase) and createdAt. A Lead is a listing row at stage Pitch: it is
+         type 'pitch' with fromDeal true, opens by ?listing=, and its pitchedOn
+         is milestones.pitchedOn. A purchase gets no flags, no archive task and
+         no DE badge; the lists leave it out.
          Every job also has:
            dates      [{ key, label, on, planned }]  deal dates from
                       properties.milestones, date order; planned = after today (S7)
@@ -77,6 +82,7 @@
      fmtDay('2026-10-12') → '12 Oct'; money(4500000) → '$4,500,000'
 
    Pure: no fetch, no DOM. Loads in the browser (window.GVC_WS) and in Node.
+   buildJobs needs places.js (GVC_PLACES.ellimanOnly): loaded by the page, required in Node.
    ============================================================ */
 (function (global, factory) {
   'use strict';
@@ -166,7 +172,7 @@
     return { address: a, unit: u };
   }
 
-  var BAR = { Prep: 'won', Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'off' };
+  var BAR = { Pitch: 'pitch', Prep: 'won', Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'off' };
   var CHIP = { Live: 'live', 'Accepted offer': 'contract', 'In contract': 'contract', Sold: 'sold', Rented: 'sold', 'Off market': 'off' };
   function chipOf(stage) { return CHIP[stage] || 'pre'; }
 
@@ -233,6 +239,11 @@
     if (global && global.GVC_STALE) return global.GVC_STALE;
     if (typeof module === 'object' && module.exports && typeof require === 'function') return require('./piece-stale.js');
     return null;
+  }
+  /* which deals are one place (places.js: loaded by the page, required in Node) */
+  function placesApi() {
+    if (global && global.GVC_PLACES) return global.GVC_PLACES;
+    return require('./places.js');
   }
   /* a development's build (dev-build.js: loaded by the page, required in Node) */
   function buildApi() {
@@ -318,22 +329,29 @@
 
       var dates = ch.map(function (c) { return day(c.at); }).concat(ticks.map(function (t) { return t.d; }))
         .filter(function (d) { return d && d <= today; }).sort();
-      var flags = [];
-      if (p.folder_state === 'unlinked') flags.push({ t: 'Link folder', k: 'link' });
+      var flags = [], atPitch = p.stage === 'Pitch', buy = p.side === 'buy';
+      // a development's unit from Elliman with no Asana task has no folder of its own (decision 21);
+      // nor does a Lead yet, and our own purchase is never one to link or match
+      if (p.folder_state === 'unlinked' && !placesApi().ellimanOnly(p) && !atPitch && !buy) flags.push({ t: 'Link folder', k: 'link' });
       if (p.folder_state === 'broken') flags.push({ t: 'Relink folder', k: 'relink' });
-      if (!p.de_listing_id && ['Live', 'In contract', 'Sold', 'Rented'].indexOf(p.stage) !== -1) flags.push({ t: 'Match DE', k: 'de' });
+      if (!p.de_listing_id && !buy && ['Live', 'In contract', 'Sold', 'Rented'].indexOf(p.stage) !== -1) flags.push({ t: 'Match DE', k: 'de' });
+      // a Lead's pitch date: { on } from the Asana sync, a bare date from the one-time backfill
+      var pm = (p.milestones || {}).pitchedOn, pmOn = typeof pm === 'string' ? pm : pm && pm.on;
+      var pitchedOn = (pitch && pitch.pitched_on) || (pmOn ? day(pmOn) : null);
+      if (atPitch && pitchedOn) done.Pitch = pitchedOn;
       var price = de.price != null ? de.price : core.price, beds = de.beds != null ? de.beds : core.beds, baths = de.baths != null ? de.baths : core.baths;
       var steps = stepsOf(p.kind, p.stage, p.milestones, done), match = activeMatch(p.match);
 
       jobs.push({
-        id: p.id, slug: p.slug, type: p.kind === 'rental' ? 'rental' : 'listing', kind: p.kind, market: p.market || '', devProjectId: p.dev_project_id || null,
+        id: p.id, slug: p.slug, type: atPitch ? 'pitch' : p.kind === 'rental' ? 'rental' : 'listing', fromDeal: atPitch, kind: p.kind, market: p.market || '', devProjectId: p.dev_project_id || null,
+        placeId: p.place_id || null, side: p.side || 'list', createdAt: p.created_at || null,
         phase: p.kind === 'rental' && RENT_WORD[p.stage] ? RENT_WORD[p.stage] : null,
         name: au.address ? readable(au.address) + (au.unit ? ' ' + au.unit : '') : (p.label || 'Untitled listing'), stage: p.stage, stageSource: p.stage_source || null,
         chip: CHIP[p.stage] || 'pre', price: price != null ? money(price) + (p.kind === 'rental' ? '/mo' : '') : '',
         rooms: [beds != null ? beds + ' bd' : '', baths != null ? baths + ' ba' : ''].filter(Boolean).join(' · '),   // whatever is known
         place: core.neighborhood || core.city || '',
         deStatus: p.de_status || de.status || null, deId: p.de_listing_id || null, listingUrl: core.listingUrl || de.listingUrl || null,
-        folder: p.drive_folder || null, folderState: p.folder_state, pitchedOn: pitch ? pitch.pitched_on : null,
+        folder: p.drive_folder || null, folderState: p.folder_state, pitchedOn: pitchedOn,
         steps: steps, stageIdx: steps.indexOf(p.stage === 'Rented' && steps.indexOf('Rented') === -1 ? 'Sold' : p.stage), done: done, bars: bars, ticks: ticks,
         dates: datesOf(p.milestones, today), match: match, mismatches: match.length, asanaUrl: asanaUrlOf(p), asanaGone: !!(p.asana && p.asana.gone), agents: namesOf(core), agentIds: (core.agentIds || []).slice(), stale: staleOf(p, sheets).stale, stalePieces: staleOf(p, sheets).stalePieces,
         activity: (p.scan && p.scan.weeks) || {}, flags: flags, last: dates.length ? dates[dates.length - 1] : null,
@@ -419,8 +437,8 @@
     return [
       { src: 'Asana', ok: !!j.asanaUrl && !j.asanaGone, why: !j.asanaUrl ? 'No Asana task linked' : j.asanaGone ? 'The Asana task is gone' : 'Linked to its Asana task' },
       { src: 'Drive', ok: j.folderState === 'linked', why: j.folderState === 'linked' ? 'Drive folder linked' : j.folderState === 'broken' ? 'The Drive folder moved or was renamed' : 'No Drive folder linked' },
-      { src: 'DE', ok: !listing ? null : j.deId ? true : PRE_DE.indexOf(j.stage) !== -1 ? null : false,
-        why: !listing ? 'Not on DE' : j.deId ? 'Matched to its DE listing' : PRE_DE.indexOf(j.stage) !== -1 ? 'Not on DE yet' : 'Not matched to a DE listing' }
+      { src: 'DE', ok: !listing || j.side === 'buy' ? null : j.deId ? true : PRE_DE.indexOf(j.stage) !== -1 ? null : false,
+        why: !listing || j.side === 'buy' ? 'Not on DE' : j.deId ? 'Matched to its DE listing' : PRE_DE.indexOf(j.stage) !== -1 ? 'Not on DE yet' : 'Not matched to a DE listing' }
     ];
   }
 
@@ -439,7 +457,7 @@
     var out = [];
     jobs.forEach(function (j) {
       j.flags.forEach(function (f) { out.push({ job: j.name, href: j.href, text: TASK[f.k], market: j.market, kind: f.k }); });
-      if ((j.stage === 'Sold' || j.stage === 'Rented') && (j.stageSource === 'DE' || j.stageSource === 'Asana')) {
+      if ((j.stage === 'Sold' || j.stage === 'Rented') && (j.stageSource === 'DE' || j.stageSource === 'Asana') && j.side !== 'buy') {
         out.push({ job: j.name, href: j.href, text: j.stage + (j.stageSource === 'DE' ? ' on DE' : ' in Asana') + '. Archive the job?', market: j.market, kind: 'archive' });
       }
     });
@@ -594,7 +612,7 @@
     jobs.forEach(function (j) {
       var items = (j.match || []).map(function (m) {
         // a folded house's line stays the house listing's own (D141): it is dismissed there
-        return { job: j.name, href: j.href, id: m.owner ? m.owner.id : j.id, table: m.owner ? m.owner.table : j.type === 'development' ? 'dev_projects' : j.type === 'pitch' ? 'pitches' : 'properties',
+        return { job: j.name, href: j.href, id: m.owner ? m.owner.id : j.id, table: m.owner ? m.owner.table : j.type === 'development' ? 'dev_projects' : j.type === 'pitch' && !j.fromDeal ? 'pitches' : 'properties',
           code: m.code, key: m.key || m.code, text: m.text, since: m.since || null, asanaUrl: j.asanaUrl || null,
           paste: m.values && typeof m.values.paste === 'string' ? m.values.paste : null,
           fixAt: FIX.indexOf(m.fixAt) === -1 ? 'Matt' : m.fixAt, who: (m.who || []).slice() };
@@ -635,5 +653,5 @@
     buildJobs: buildJobs, syncOf: syncOf, overviewStats: overviewStats, taskFlags: taskFlags, activeMatch: activeMatch,
     recentChanges: recentChanges, syncHealth: syncHealth, asanaHealth: asanaHealth, matchByJob: matchByJob, looseMatch: looseMatch,
     chipOf: chipOf, fmtDay: fmtDay, fmtDayYear: fmtDayYear, stageWord: stageWord, fmtWhen: fmtWhen, money: money, readable: readable,
-    changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf };
+    changeTitle: changeTitle, fieldLabel: fieldLabel, postsOf: postsOf, DATE_LABEL: DATE_LABEL };
 });

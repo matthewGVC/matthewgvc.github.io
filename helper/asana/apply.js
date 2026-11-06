@@ -12,7 +12,9 @@
        sync_runs.totals.unlinked ([{ gid, name, why, market }], always there on
        a good run (ok) that read listings, never on a failed one) is what the Match page lists as "Asana task not
        linked"; tasks cached as ignored are left out of it. It also lists, as 'no job yet', every
-       List-Side task at Prep to In contract that no job or pitch holds, the cached ones an
+       List-Side task at Prep to In contract that no job or pitch holds, as 'no street number'
+       every List-Side Lead whose name has none, and a Lead that no job holds for what still
+       keeps it out ('same address', 'more than one job at this address'), the cached ones an
        incremental run didn't read again included. A task Matt links
        to a job there (properties.asana_gid, tune-up A) is found by that stored
        gid first on the next run, whatever its name says; one he ignores
@@ -21,10 +23,24 @@
    What it writes:
    - asana_tasks: every task read (listing, dev, loose), allowlisted fields and
      kept history only, with its link to a listing / pitch / development.
+   - places (migration 0025, helper/place-store.js): every deal made is put on its place (found
+     by address, or made; two new tasks at one new address in one run share one), and a linked
+     row with no place gets one. A new list-side deal on a place that already has one (a repeat
+     listing, a rental beside a sale, a listing after our purchase) takes its blank place facts
+     from the newest list-side deal there (GVC_PLACES.inherit, with their records), and its folder
+     (drive_folder, folder_state) from the newest list-side deal there that has one (a later lost
+     pitch may have none). Our own purchase (MAP.ownPurchase: Buy Side at a development's lot or
+     house not yet listed by us, or beside a TJ New Dev listing) is a deal with side 'buy': it
+     inherits nothing, never becomes a development's house and never makes a listing "same
+     address"; its joining a development at the same address is logged as our purchase. A
+     client's buy side stays out.
    - a linked listing: stage (stage_source 'Asana'; never over Archived; only
      from a task that has the Listing Status field, and never on a run that
      found the field missing from every task: a renamed field must not move
-     stages by section alone), the
+     stages by section alone; never back to Pitch. A deal at Pitch that Asana puts off
+     market is archived, note "Pitch lost"; a deal archived that way (Archived, stage_source
+     'Asana') that Asana moves to Prep or later comes back, note "Pitch back in Asana"; a
+     deal Matt archived stays archived), the
      `asana` snapshot (status, section, the stage each implies, kept fields,
      checklist names and ticks), `milestones` (deal dates, planned flagged),
      facts at Asana's rank through GVC_FACTS (a fact DE or Matt holds stays
@@ -38,9 +54,12 @@
      Every changed value is one `changes` row, source 'Asana'.
    - which tasks become rows: on the plan run, the ticked rows (unticked ones
      are cached as ignored and never come back by themselves); after that, an
-     unlinked List-Side task at Pitch (with a pitch date) → In contract, checked
-     again every run (a Lead gains its pitch date later), and only with a
-     street number (else it is listed as unlinked, "no street number"). A task first met as a
+     unlinked List-Side task at Pitch (every Lead, with or without a pitch date: a
+     deal at the Pitch stage, never a pitches row) → In contract, and our own
+     purchase at Prep → In contract, checked again every run, and only with a
+     street number (else it is listed as unlinked, "no street number"). Several deals
+     at one address: a task is refused as "same address" only while a deal of its
+     kind there is live (L.matchTask). A task first met as a
      candidate already Sold / Rented is cached as ignored: that decision is kept
      and it never becomes a job (D54).
      Off market (D88, Matt 2026-10-22: "that's when a lot of the prep occurs"):
@@ -55,7 +74,8 @@
    - facts: a value changed in core outside the helper (a builder's save) is
      adopted first as Matt's (GVC_FACTS.adoptEdit), so Asana repeating its old
      value never undoes it.
-   - pitches (D55): a pitch whose task reaches Prep or later is won and its
+   - pitches (D55, dormant: new Leads are Pitch deals; a pitches row won by the places
+     backfill shares its task's gid with its deal, which is updated like any job): a pitch whose task reaches Prep or later is won and its
      listing made (from_pitch_id); Off market while a pitch → not won. When a
      job already holds the task's gid as well, an open pitch on it is won with
      won_property_id = that job (logged), never left open (tune-up A3).
@@ -85,6 +105,8 @@ const GM = require('../../assets/js/match-check.js');
 const { matchUpdate, storeMatches } = require('../match-store.js');
 const { looseNeedles, namesOne } = require('./read.js');
 const DA = require('../../assets/js/dev-addresses.js');
+const GP = require('../../assets/js/places.js');
+const { findOrMakePlace } = require('../place-store.js');
 
 const ACTIVE = L.ACTIVE;
 const WON = ACTIVE.concat(['Sold', 'Rented']);
@@ -156,6 +178,8 @@ async function writeRun(o, sr, out, now) {
   const cacheRows = await client.select('asana_tasks');
   if (!o.plan && !cacheRows.length) { out.stopped = true; out.errors.push({ what: 'no plan', detail: NO_PLAN }); return; }
 
+  // one run's places and buildings (place-store.js): a place made here is pushed into it
+  const places = { places: await client.select('places'), buildings: await client.select('buildings') };
   const cache = new Map(cacheRows.map(r => [r.gid, r]));
   const planBy = o.plan ? new Map(o.plan.rows.map(r => [r.gid, r])) : null;
   const roster = o.roster || require('../roster.js').roster();
@@ -247,6 +271,7 @@ async function writeRun(o, sr, out, now) {
     await save('dev_projects', dev, patch, changes);
   }
   (run.loose || []).forEach(l => entries.push(cacheEntry(Object.assign({}, l, { fields: {} }), 'loose', { dev_project_id: devOfLoose[l.gid] || null })));
+  const listingTasks = Array.from(allListing.values());   // MAP.ownPurchase's TJ New Dev listings
 
   /* ---------- listings ---------- */
   const factsOf = t => { const f = MAP.factsOf(t); delete f.kind; return f; };
@@ -255,10 +280,17 @@ async function writeRun(o, sr, out, now) {
   const devAt = street => devs.find(d => !d.archived_at && DA.of(d.slug).concat(/^\d/.test(d.label || '') ? [d.label] : [])
     .some(s => A.sameStreet(s, street)));
 
-  async function createListing(t, stage, pitch, entry) {
+  // the place's newest list-side deal (that passes `has`): a new deal there takes its place facts from the
+  // newest, and its folder from the newest that has one
+  const newestOn = (placeId, has) => props.filter(p => p.place_id === placeId && p.side !== 'buy' && (!has || has(p)))
+    .reduce((m, p) => (!m || String(p.created_at || '') >= String(m.created_at || '') ? p : m), null);
+
+  /* opt.side 'buy' (our own purchase); opt.placeId the place matchTask named (a repeat deal) */
+  async function createListing(t, stage, pitch, entry, opt) {
+    const side = (opt && opt.side) || 'list', buy = side === 'buy';
     const a = L.addrOf(t.name);
     const atDev = !devOfListing[t.gid] && !A.unitKey(a.unit) && a.street ? devAt(a.street) : null;
-    const core = { address: a.street, unit: a.unit || '' };
+    let core = { address: a.street, unit: a.unit || '' };
     let facts = {};
     const f0 = factsOf(t);
     Object.keys(f0).forEach(k => { facts = F.applyFact(facts, k, 'Asana', f0[k]).facts; core[k] = facts[k].value; });
@@ -267,20 +299,34 @@ async function writeRun(o, sr, out, now) {
     const agents = MAP.agentsOf(t, initials, roster);
     if (agents.ids.length) core.suggestedAgentIds = agents.ids;
     const kind = MAP.factsOf(t).kind || 'sale';
+    const devId = devOfListing[t.gid] || (atDev && atDev.id) || null;
+    const place = (opt && opt.placeId && places.places.find(x => x.id === opt.placeId)) ||
+      await findOrMakePlace(client, places, { core, market: t.market || null, devId });
+    const prev = !buy && place ? newestOn(place.id) : null;
+    const folderOf = !buy && place ? newestOn(place.id, p => !!p.drive_folder) : null;
+    const fill = prev ? GP.inherit(prev.core, core) : core;
+    const inherited = Object.keys(fill).filter(k => k !== 'facts' && !(k in core));
+    core = fill;
     const row = { slug: slugFor('properties', core, t.gid), label: P.labelOf(core), core, kind, market: t.market || null, stage,
       stage_source: 'Asana', units: core.unit ? [core.unit] : [], asana_gid: t.gid, asana: snapshotOf(t), milestones: MAP.datesOf(t, t.history, now),
-      folder_state: 'unlinked', dev_project_id: devOfListing[t.gid] || (atDev && atDev.id) || null };
+      folder_state: 'unlinked', dev_project_id: devId || (buy && place && place.dev_project_id) || null, place_id: place ? place.id : null, side };
+    if (folderOf) { row.drive_folder = folderOf.drive_folder; row.folder_state = folderOf.folder_state || 'unlinked'; }
     if (pitch) row.from_pitch_id = pitch.id;
     const made = (await client.insert('properties', row))[0];
     props.push(made);
     entry.property_id = made.id;
     const own = { property_id: made.id };
     const changes = [log(own, null, null, null, pitch ? 'Pitch won in Asana' : 'Found in Asana'), log(own, 'stage', null, stage), log(own, 'kind', null, kind)]
-      .concat(Object.keys(f0).map(k => log(own, k, null, core[k])));
-    if (atDev) changes.push(log(own, 'dev_project_id', null, atDev.id, 'Joined the development ' + atDev.label + ' (the same address)'));
+      .concat(Object.keys(f0).map(k => log(own, k, null, core[k])))
+      .concat(inherited.map(k => log(own, k, null, core[k], 'From the earlier deal at this place')));
+    if (buy) changes.push(log(own, 'side', null, 'buy', 'Our own purchase'));
+    if (folderOf) changes.push(log(own, 'drive_folder', null, row.drive_folder, 'The folder of the earlier deal at this place'));
+    if (atDev) changes.push(log(own, 'dev_project_id', null, atDev.id, buy ? 'Our own purchase for the development ' + atDev.label
+      : 'Joined the development ' + atDev.label + ' (the same address)'));
     await client.insert('changes', changes);
-    // a single-family new development (no house listing of its own yet) is this house: one job (D141)
-    if (atDev && !atDev.house_listing_id && !props.some(p => p.id !== made.id && p.dev_project_id === atDev.id && p.stage !== 'Archived')) {
+    // a single-family new development (no house listing of its own yet) is this house: one job (D141);
+    // never our purchase of its land, which doesn't keep a listing from becoming the house either
+    if (!buy && atDev && !atDev.house_listing_id && !props.some(p => p.id !== made.id && p.dev_project_id === atDev.id && p.stage !== 'Archived' && p.side !== 'buy')) {
       await save('dev_projects', atDev, { house_listing_id: made.id },
         [log({ dev_project_id: atDev.id }, 'house_listing_id', null, made.id, 'Made one job: this development is the single-family house ' + (made.label || a.street))]);
     }
@@ -310,7 +356,20 @@ async function writeRun(o, sr, out, now) {
     // old library rows were saved without a market; Asana's project says which one it is
     if (!p.market && t.market) { patch.market = t.market; changes.push(log(own, 'market', null, t.market)); }
     if (fromPitch && p.from_pitch_id !== fromPitch.id) { patch.from_pitch_id = fromPitch.id; changes.push(log(own, 'from_pitch_id', p.from_pitch_id || null, fromPitch.id)); }
-    if (stage && stage !== 'Pitch' && p.stage !== 'Archived' && p.stage !== stage) {
+    // a row from before places, or one linked by hand: its place, found or made
+    if (!p.place_id) {
+      const place = await findOrMakePlace(client, places, { core: p.core || {}, market: p.market || t.market || null, devId: p.dev_project_id || devOfListing[t.gid] || null });
+      if (place) { patch.place_id = place.id; changes.push(log(own, 'place_id', null, place.id)); }
+    }
+    // a lost pitch archives, and comes back when Asana takes it up again (decision 27); a deal
+    // Matt archived (stage_source 'Matt') stays archived: Asana itself never maps to Archived
+    if (p.stage === 'Pitch' && stage === 'Off market') {
+      patch.stage = 'Archived'; patch.stage_source = 'Asana';
+      changes.push(log(own, 'stage', 'Pitch', 'Archived', 'Pitch lost'));
+    } else if (p.stage === 'Archived' && p.stage_source === 'Asana' && ACTIVE.indexOf(stage) !== -1) {
+      patch.stage = stage;
+      changes.push(log(own, 'stage', 'Archived', stage, 'Pitch back in Asana'));
+    } else if (stage && stage !== 'Pitch' && p.stage !== 'Archived' && p.stage !== stage) {
       patch.stage = stage; patch.stage_source = 'Asana';
       changes.push(log(own, 'stage', p.stage || null, stage));
     } else if (link && p.stage === stage && p.stage_source !== 'Asana') patch.stage_source = 'Asana';
@@ -376,7 +435,7 @@ async function writeRun(o, sr, out, now) {
     if (target) { entry.property_id = target.id; return updateListing(target, t, stage, true); }
     if (live.taken) { out.unlinked.push({ gid: t.gid, name: t.name, why: 'same address', propertyId: live.taken }); return; }
     if (live.tie) { out.unlinked.push({ gid: t.gid, name: t.name, why: 'more than one job at this address' }); return; }
-    return createListing(t, stage, null, entry);
+    return createListing(t, stage, null, entry, { placeId: live.newDeal });
   }
 
   /* D88: was this ignore the old automatic rule's? Only a task that was off market before the day of the
@@ -425,7 +484,7 @@ async function writeRun(o, sr, out, now) {
         }
         let made = live.propertyId && props.find(x => x.id === live.propertyId && !x.asana_gid);
         if (made) { entry.property_id = made.id; await updateListing(made, t, st.stage, true, pitch); }
-        else made = await createListing(t, st.stage, pitch, entry);
+        else made = await createListing(t, st.stage, pitch, entry, { placeId: live.newDeal });
         await save('pitches', pitch, { outcome: 'won', won_property_id: made.id },
           [log({ pitch_id: pitch.id }, 'outcome', pitch.outcome, 'won', 'Asana: ' + (t.fields['Listing Status'] || t.section))]);
       } else if (st.stage === 'Off market' && pitch.outcome === 'open') {
@@ -445,18 +504,19 @@ async function writeRun(o, sr, out, now) {
       if (st.stage === 'Pitch') return t.fields['🗓️ Pitch'] ? linkOrCreate(t, 'Pitch', 'pitch', pr.kind === 'pitch' ? pr.match : null, entry) : undefined;
       return linkOrCreate(t, st.stage, 'listing', pr.kind === 'listing' ? pr.match : null, entry);
     }
+    // our own purchase (Buy Side at a development's lot or house we haven't listed, or beside a TJ New Dev listing): a buy deal
+    if (!(c && c.ignored) && MAP.ownPurchase(t, { places: places.places, tasks: listingTasks, deals: props })) return createListing(t, st.stage, null, entry, { side: 'buy' });
     if (!MAP.isGvcListing(t)) return;                   // not GVC-listed
     const off = st.stage === 'Off market' ? L.offMarketOf(t, now) : null;
     if (c && c.ignored) {                               // decided (by Matt, or as closed by the old rule)
       if (!(off && off.recent && await setAsideBySync(t, off))) return;
       entry.ignored = false;                            // the old rule's call, looked at again (D88)
     }
-    if (st.stage === 'Pitch' && !t.fields['🗓️ Pitch']) return;
     if (st.stage === 'Off market') { if (!off.recent) return; }   // older: left out, not remembered (D88)
     else if (st.stage !== 'Pitch' && ACTIVE.indexOf(st.stage) === -1) { entry.ignored = true; return; }   // first met Sold / Rented: never a job, remembered
     // never guessed from a name with no street number (as on the plan): listed for Matt instead
     if (!L.hasNumber(t.name)) { out.unlinked.push({ gid: t.gid, name: t.name, why: 'no street number' }); return; }
-    if (st.stage === 'Pitch') return linkOrCreate(t, 'Pitch', 'pitch', null, entry);
+    // every Lead is a deal at the Pitch stage, with or without a pitch date (decision 4)
     return linkOrCreate(t, st.stage, 'listing', null, entry);
   }
 
@@ -478,10 +538,12 @@ async function writeRun(o, sr, out, now) {
     const t = fresh.get(e.gid);
     if (!t || !MAP.isGvcListing(t) || out.unlinked.some(u => u.gid === e.gid)) return;
     if (MAP.stageOf(t).stage === 'Off market' && !L.offMarketOf(t, now).recent) return;   // never a job: not Matt's to link (D88)
-    const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && L.sameAddress(t.name, p.core));
+    const hit = props.find(p => p.asana_gid && p.asana_gid !== e.gid && p.side !== 'buy' && L.sameAddress(t.name, p.core));
     if (hit) out.unlinked.push({ gid: e.gid, name: t.name, why: 'same address', propertyId: hit.id });
   });
-  /* a List-Side task at Prep to In contract that no job or pitch holds: listed as "no job yet", whether
+  /* a List-Side task at Prep to In contract that no job or pitch holds: listed as "no job yet" (a Lead
+     with no street number as "no street number", never made, decision 4, and one with a number as what
+     keeps it out: "same address" while a deal of its kind there is live, L.matchTask), whether
      or not this run read it again (an incremental run skips unchanged tasks, so a task unlinked by hand,
      or one not on the link plan, would otherwise sit unreported; 404 Park S - 6A, 2026-10-21).
      Reported only: nothing is linked or made here. A full read only lists the tasks it read. */
@@ -494,8 +556,12 @@ async function writeRun(o, sr, out, now) {
     .concat(run.full ? [] : cacheRows.filter(c => c.kind === 'listing' && !fresh.has(c.gid)).map(c => ({ e: c, t: c })));
   known.forEach(({ e, t }) => {
     if (e.ignored || holds.has(e.gid) || out.unlinked.some(u => u.gid === e.gid) || !MAP.isGvcListing(t)) return;
-    if (ACTIVE.indexOf(MAP.stageOf(t).stage) === -1) return;
-    out.unlinked.push({ gid: e.gid, name: t.name, why: 'no job yet', market: t.market || marketOf.get(t.projectGid || t.project_gid) || null });
+    const stage = MAP.stageOf(t).stage;
+    const m = stage === 'Pitch' && L.hasNumber(t.name) ? L.matchTask(t, { properties: props, pitches }, 'listing') : {};
+    const why = ACTIVE.indexOf(stage) !== -1 ? 'no job yet' : stage !== 'Pitch' ? null : !L.hasNumber(t.name) ? 'no street number'
+      : m.taken ? 'same address' : m.tie ? 'more than one job at this address' : 'no job yet';
+    if (why) out.unlinked.push(Object.assign({ gid: e.gid, name: t.name, why, market: t.market || marketOf.get(t.projectGid || t.project_gid) || null },
+      m.taken ? { propertyId: m.taken } : {}));
   });
   // each unlinked task's market, so the Match page's "Link to a job" offers that market's jobs
   out.unlinked.forEach(u => { const t = fresh.get(u.gid); u.market = (t && t.market) || u.market || null; });

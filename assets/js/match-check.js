@@ -108,10 +108,18 @@
           held until the team confirms each deal is finished, but listed meanwhile).
      M29  Listed twice (Matt, 11-03, D141): a listing with no unit at a development's
           street (its name, or GVC_DEV_ADDRESSES), unless the development is that one
-          house (dev_projects.house_listing_id, 0024). A House 1 / House 2 listing is a
-          unit, never a line; archived jobs and developments are left out. Key M29:<dev id>.
+          house (dev_projects.house_listing_id, 0024), or the job is another deal on that
+          house's place (a repeat listing: d.house_place_id, filled by helper/match-store.js).
+          A House 1 / House 2 listing is a unit, never a line; archived jobs and developments
+          are left out. Key M29:<dev id>.
 
-   Needs asana-map.js and job-facts.js (loaded first in the browser).
+   Places and deals (0025): a deal at the Pitch stage (an Asana Lead), our own purchase
+   (side 'buy') and a development's unit made from Elliman with no Asana task
+   (GVC_PLACES.ellimanOnly: helper/dev-units.js, decision 72) get no lines from checkListing;
+   developments are checked as before.
+
+   Needs asana-map.js and job-facts.js (loaded first in the browser), and address-aliases.js,
+   property-library.js, dev-addresses.js and places.js (read when a check runs).
    Loads in the browser (window.GVC_MATCH) and in Node (require).
    Tested by scripts/test-match-check.js.
    ============================================================ */
@@ -119,8 +127,10 @@
   'use strict';
   if (typeof module === 'object' && module.exports) {
     module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), require('./kit-track.js'), global,
-      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js') }; });
-  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () { return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES }; });
+      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js'), G: require('./places.js') }; });
+  } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () {
+    return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES, G: global.GVC_PLACES };
+  });
 })(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, KIT, global, libs) {
   'use strict';
 
@@ -295,7 +305,8 @@
     var mine = addrOf(P, job.core);
     if (!mine.address || A.unitKey(mine.unit)) return [];
     return devs.filter(function (d) {
-      if (!d || d.archived_at || d.house_listing_id === job.id) return false;
+      // the house itself, or another deal on the house's place (a repeat listing), is the same job
+      if (!d || d.archived_at || d.house_listing_id === job.id || (d.house_place_id && d.house_place_id === job.place_id)) return false;
       var streets = (D && D.of ? D.of(d.slug) : []).concat(/^\d/.test(d.label || '') ? [d.label] : []);
       return streets.some(function (s) { return A.sameStreet(s, mine.address); });
     });
@@ -308,7 +319,9 @@
     var core = job.core || {}, ms = job.milestones || {}, stage = job.stage;
     var now = today(ctx.now), out = [];
     out.waiting = {};
-    if (!stage || stage === 'Archived') return out;
+    // a Pitch deal (a Lead) and our own purchase (side 'buy') are checked for nothing yet; nor is a
+    // development's unit made from Elliman with no Asana task: there is nothing to compare Elliman with (decision 72)
+    if (!stage || stage === 'Archived' || stage === 'Pitch' || job.side === 'buy' || libs().G.ellimanOnly(job)) return out;
     // the day a mismatch was first found: the stored waiting day, else the stored line's since, else today
     var prev = ctx.prev || job.match || {};
     var firstFound = function (key) {

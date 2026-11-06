@@ -29,7 +29,7 @@ function check(name, got, want) {
 }
 
 /* ---------- an in-memory database with the helper client's shape ---------- */
-const TABLES = ['properties', 'pitches', 'dev_projects', 'changes', 'sync_runs', 'asana_tasks', 'asana_people', 'de_listings'];
+const TABLES = ['properties', 'pitches', 'dev_projects', 'changes', 'sync_runs', 'asana_tasks', 'asana_people', 'de_listings', 'places', 'buildings'];
 function fakeDb(seed) {
   const T = {};
   TABLES.forEach(t => { T[t] = []; });
@@ -316,7 +316,12 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   await applyRun({ client: db3, run: await read(world()), now: NOW });
   const hints = db3.T.dev_projects[0].milestone_hints || [];
   check('land row: Land closed suggested with its Closing date', hints.filter(h => h.key === 'landClosed').map(h => [h.date, h.rule, h.asanaGid]), [['2026-06-30', 'land', '9000000000211']]);
-  check('land row: never a job', db3.T.properties.some(p => /30 Lot/.test(p.core.address)), false);
+  // the lot's List Side Lead is a deal at Pitch, and its Active Buy Side our own purchase (a buy deal), on one place
+  const lot = gid => db3.T.properties.find(p => p.asana_gid === gid) || {};
+  check('30 Lot Rd: the List Side Lead is a Pitch deal, the Active Buy Side a buy deal, on one place',
+    [lot('9000000000221').stage, lot('9000000000221').side, lot('9000000000211').stage, lot('9000000000211').side, lot('9000000000211').dev_project_id,
+      !!lot('9000000000211').place_id && lot('9000000000211').place_id === lot('9000000000221').place_id, db3.T.places.filter(p => /30 Lot/.test(p.address)).length],
+    ['Pitch', 'list', 'Live', 'buy', 'dev1', true, 1]);
   check('land row: the dev\'s next milestone stored', 'next_milestone' in db3.T.dev_projects[0], true);
   check('land row: the dev Match result stored', Array.isArray((db3.T.dev_projects[0].match || {}).list), true);
 
@@ -448,7 +453,8 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   setField(lead, '🗓️ Pitch', { date_value: { date: '2026-10-15' } });
   lead.modified_at = LATER;
   await applyRun({ client: db, run: await read(w, { full: false, since: '2026-10-20T12:30:00.000Z' }), now: NOW });
-  check('a cached Lead later given a pitch date becomes a pitch', db.T.pitches.some(p => p.asana_gid === '9000000000163'), true);
+  check('a cached Lead later given a pitch date stays one deal at the Pitch stage',
+    [db.T.properties.filter(p => p.asana_gid === '9000000000163').map(p => p.stage), db.T.pitches.some(p => p.asana_gid === '9000000000163')], [['Pitch'], false]);
   check('a task first seen closed is remembered as decided', cache('9000000000904').ignored, true);
 
   // 3. an edit made in a tool (core changed, the facts record not) is Matt's and Asana leaves it
@@ -769,6 +775,199 @@ const DEVROW = { id: 'dev1', slug: '30-lot-rd', label: '30 Lot Rd', market: 'NJ'
   await omApply(dOM4, [omTask('g-om4', '44 Moving Rd, Rumson', 'Active', omH(['2026-09-01T15:00:00.000Z', null, 'Active']))]);
   await omApply(dOM4, [omTask('g-om4', '44 Moving Rd, Rumson', 'TOTM', omH(['2026-09-01T15:00:00.000Z', null, 'Active'], ['2026-10-20T15:00:00.000Z', 'Active', 'TOTM']))]);
   check('OM4 a linked job that goes off market moves to Off market', [omJob(dOM4, 'g-om4').stage, dOM4.T.properties.length], ['Off market', 1]);
+
+  /* ---------- PD. Places and deals (stage 1): the sync fills places, every Lead appears at Pitch, and repeat
+     listings, a sale beside a rental and our own purchases sit on one place ---------- */
+  const { keyOfCore } = require('../helper/place-store.js');
+  const pdDb = seed => fakeDb(Object.assign({}, seed || {}, { asana_tasks: [MARK].concat((seed && seed.asana_tasks) || []) }));
+  const pdTask = (gid, name, status, extra) => omTask(gid, name, status, [], extra);
+  const pdApply = (db, listings, extra) => applyRun({ client: db, run: Object.assign(omRun(listings), extra || {}), now: OM_NOW, roster: [], initials: { AB: 'agent-b' } });
+  const pdJob = (d, gid) => omJob(d, gid) || { core: {} };
+  const NYCX = { projectGid: NYC, market: 'NYC' };
+  const BUY = { fields: { 'Deal Side': 'Buy Side' } };
+  const RENT = { fields: { 'Sale/Rent': 'For Rent', '💵 Current Price': 9500 } };
+  const placeRow = (id, core, market, extra) => Object.assign({ id, slug: id, key: keyOfCore(core, market), address: core.address, town: core.city || null,
+    label: core.address, market, building_id: null, dev_project_id: null }, extra);
+  const deal = (id, gid, core, extra) => Object.assign({ id, slug: id, kind: 'sale', market: 'NJ', stage: 'Live', stage_source: 'Asana', asana_gid: gid,
+    side: 'list', core, folder_state: 'unlinked' }, extra);
+  const asanaNotes = (d, id) => d.T.changes.filter(c => c.property_id === id && c.source === 'Asana');
+
+  let dPD = pdDb();
+  await pdApply(dPD, [pdTask('g-pd1', '12 Elm St, Brielle', 'Active')]);
+  check('PD a new listing gets a place', [dPD.T.places.length, pdJob(dPD, 'g-pd1').place_id === (dPD.T.places[0] || {}).id, pdJob(dPD, 'g-pd1').side,
+    (dPD.T.places[0] || {}).address, (dPD.T.places[0] || {}).town], [1, true, 'list', '12 Elm St', 'Brielle']);
+
+  dPD = pdDb();
+  await pdApply(dPD, [pdTask('g-pd2a', '401 E89 - 2A', 'Active', NYCX)]);
+  await pdApply(dPD, [pdTask('g-pd2b', '401 E89 - 3B', 'Active', NYCX)]);
+  check('PD a second unit in a known building shares it', [dPD.T.places.length, dPD.T.buildings.length,
+    dPD.T.places.every(p => !!p.building_id && p.building_id === (dPD.T.buildings[0] || {}).id)], [2, 1, true]);
+
+  dPD = pdDb();
+  await pdApply(dPD, [pdTask('g-pd3', '331 Florence Rd, Rumson', 'Lead')]);
+  check('PD a Lead with no Pitch date appears at the Pitch stage', [dPD.T.properties.map(p => [p.asana_gid, p.stage, p.stage_source, p.side]), dPD.T.pitches.length],
+    [[['g-pd3', 'Pitch', 'Asana', 'list']], 0]);
+
+  dPD = pdDb();
+  const oPD4 = await pdApply(dPD, [pdTask('g-pd4', 'Spring St, Red Bank', 'Lead')]);
+  const oPD4b = await pdApply(dPD, [], { full: false });
+  check('PD a Lead with no street number is listed, never made, on the first run and on a later run that did not read it',
+    [dPD.T.properties.length, oPD4.unlinked.filter(u => u.gid === 'g-pd4').map(u => u.why), oPD4b.unlinked.filter(u => u.gid === 'g-pd4').map(u => u.why),
+      (dPD.T.sync_runs.slice(-1)[0].totals.unlinked || []).filter(u => u.gid === 'g-pd4').map(u => [u.why, u.market])],
+    [0, ['no street number'], ['no street number'], [['no street number', 'NJ']]]);
+
+  dPD = pdDb({ asana_tasks: [{ gid: 'g-pd6', project_gid: NJ, kind: 'listing', name: '6 Oak Ln, Rumson', ignored: true }] });
+  await pdApply(dPD, [pdTask('g-pd6', '6 Oak Ln, Rumson', 'Lead')]);
+  check('PD a Lead Matt ignored stays ignored', [dPD.T.properties.length, omCache(dPD, 'g-pd6').ignored], [0, true]);
+
+  dPD = pdDb();
+  await pdApply(dPD, [pdTask('g-pd7', '7 Oak Ln, Rumson', 'Lead')]);
+  const idPD7 = pdJob(dPD, 'g-pd7').id;
+  await pdApply(dPD, [pdTask('g-pd7', '7 Oak Ln, Rumson', 'In Prep to List')]);
+  check('PD Lead to Prep moves the stage', [dPD.T.properties.length, pdJob(dPD, 'g-pd7').id === idPD7, pdJob(dPD, 'g-pd7').stage], [1, true, 'Prep']);
+
+  dPD = pdDb();
+  await pdApply(dPD, [pdTask('g-pd8', "19 Colt's Gait Lane, Holmdel", 'Lead')]);
+  const idPD8 = pdJob(dPD, 'g-pd8').id;
+  await pdApply(dPD, [pdTask('g-pd8', "19 Colt's Gait Lane, Holmdel", 'Graveyard')]);
+  check('PD Lead to Graveyard archives: Pitch lost, never Off market', [pdJob(dPD, 'g-pd8').stage, pdJob(dPD, 'g-pd8').stage_source,
+    asanaNotes(dPD, idPD8).filter(c => c.field === 'stage').map(c => [c.old_value, c.new_value, c.note])],
+    ['Archived', 'Asana', [[null, 'Pitch', null], ['Pitch', 'Archived', 'Pitch lost']]]);
+  await pdApply(dPD, [pdTask('g-pd8', "19 Colt's Gait Lane, Holmdel", 'Graveyard')]);
+  check('PD a lost pitch stays archived while Asana keeps it in the Graveyard', pdJob(dPD, 'g-pd8').stage, 'Archived');
+  await pdApply(dPD, [pdTask('g-pd8', "19 Colt's Gait Lane, Holmdel", 'In Prep to List')]);
+  check('PD a lost pitch that Asana moves to Prep comes back at Prep', [dPD.T.properties.length, pdJob(dPD, 'g-pd8').id === idPD8, pdJob(dPD, 'g-pd8').stage,
+    pdJob(dPD, 'g-pd8').stage_source, asanaNotes(dPD, idPD8).filter(c => c.field === 'stage').slice(-1).map(c => [c.old_value, c.new_value, c.note])],
+    [1, true, 'Prep', 'Asana', [['Archived', 'Prep', 'Pitch back in Asana']]]);
+  dPD = pdDb({ properties: [deal('p-pd9', 'g-pd9', { address: '9 Oak Ln', city: 'Rumson' }, { stage: 'Archived', stage_source: 'Matt' })] });
+  await pdApply(dPD, [pdTask('g-pd9', '9 Oak Ln, Rumson', 'In Prep to List')]);
+  check('PD a deal Matt archived stays archived at Prep in Asana', [pdJob(dPD, 'g-pd9').stage, pdJob(dPD, 'g-pd9').stage_source], ['Archived', 'Matt']);
+
+  dPD = pdDb({ pitches: [{ id: 'q-pd10', slug: 'q-pd10', label: '10 Bay Rd', market: 'NJ', outcome: 'won', asana_gid: 'g-pd10', won_property_id: 'p-pd10' }],
+    properties: [deal('p-pd10', 'g-pd10', { address: '10 Bay Rd', city: 'Rumson' }, { stage: 'Pitch', from_pitch_id: 'q-pd10' })] });
+  await pdApply(dPD, [pdTask('g-pd10', '10 Bay Rd, Rumson', 'Lead', { fields: { '🗓️ Pitch': '2026-10-01' } })]);
+  check('PD a won pitch row and its deal are one job', [dPD.T.properties.length, dPD.T.pitches.length, dPD.T.pitches[0].outcome, pdJob(dPD, 'g-pd10').id,
+    (pdJob(dPD, 'g-pd10').asana || {}).gid, !!pdJob(dPD, 'g-pd10').place_id], [1, 1, 'won', 'p-pd10', 'g-pd10', true]);
+
+  const PAS = 'GVC - New York/Building Information/404 PAS/6A';
+  dPD = pdDb({ properties: [deal('p-pd11', 'g-pd11s', { address: '404 Park Ave S', unit: '6A', beds: 2 }, { market: 'NYC', drive_folder: PAS, folder_state: 'linked' })] });
+  await pdApply(dPD, [pdTask('g-pd11s', '404 Park S - 6A', 'Active', NYCX), pdTask('g-pd11r', '404 Park S - 6A', 'Active', Object.assign({}, NYCX, RENT))]);
+  const sale11 = pdJob(dPD, 'g-pd11s'), rent11 = pdJob(dPD, 'g-pd11r') || {};
+  check('PD sale and rental share a place, and the rental has the sale\'s folder', [dPD.T.properties.length, dPD.T.places.length, !!sale11.place_id && sale11.place_id === rent11.place_id,
+    rent11.kind, rent11.drive_folder, rent11.folder_state, (rent11.core || {}).beds], [2, 1, true, 'rental', PAS, 'linked', 2]);
+  check('PD an existing row with no place gets one', [sale11.id, sale11.place_id === (dPD.T.places[0] || {}).id, asanaNotes(dPD, 'p-pd11').filter(c => c.field === 'place_id').length], ['p-pd11', true, 1]);
+
+  const ELM = { address: '12 Elm St', city: 'Brielle' };
+  const oldFacts = { beds: { value: 4, source: 'DE', bySource: { DE: 4 } }, sqft: { value: 2600, source: 'DE', bySource: { DE: 2600 } } };
+  const oldElm = extra => deal('p-pd13', 'g-pd13old', Object.assign({ beds: 4, sqft: 2600, price: 1100000, facts: oldFacts }, ELM),
+    Object.assign({ stage: 'Sold', place_id: 'pl-13', drive_folder: 'GVC - New Jersey/Resale/Brielle/12 Elm St', folder_state: 'linked' }, extra));
+  dPD = pdDb({ places: [placeRow('pl-13', ELM, 'NJ')], properties: [oldElm()] });
+  const oPD13 = await pdApply(dPD, [pdTask('g-pd13', '12 Elm St, Brielle', 'Active')]);
+  const new13 = pdJob(dPD, 'g-pd13');
+  check('PD a repeat listing after a sale is a second deal on the place', [dPD.T.properties.length, dPD.T.places.length, new13.place_id, oPD13.unlinked.length], [2, 1, 'pl-13', 0]);
+  check('PD the repeat listing takes the folder and the blank place facts, with their records', [new13.drive_folder, new13.folder_state, new13.core.beds, new13.core.sqft,
+    (new13.core.facts || {}).beds, new13.core.price, ((new13.core.facts || {}).price || {}).source], ['GVC - New Jersey/Resale/Brielle/12 Elm St', 'linked', 4, 2600, oldFacts.beds, 1250000, 'Asana']);
+  check('PD the old deal is left as it was', [pdJob(dPD, 'g-pd13old').stage, pdJob(dPD, 'g-pd13old').core.price, asanaNotes(dPD, 'p-pd13').length], ['Sold', 1100000, 0]);
+
+  dPD = pdDb({ places: [placeRow('pl-13', ELM, 'NJ')], properties: [oldElm(), deal('p-pd14', 'g-pd14old', Object.assign({}, ELM), { stage: 'Off market', place_id: 'pl-13' })] });
+  await pdApply(dPD, [pdTask('g-pd14', '12 Elm St, Brielle', 'In Prep to List')]);
+  check('PD a third listing after two old deals is a new deal', [dPD.T.properties.length, (pdJob(dPD, 'g-pd14') || {}).place_id, (pdJob(dPD, 'g-pd14') || {}).stage], [3, 'pl-13', 'Prep']);
+
+  dPD = pdDb({ properties: [deal('p-pd15', 'g-pd15a', { address: '15 Elm St', city: 'Brielle' })] });
+  const oPD15 = await pdApply(dPD, [pdTask('g-pd15b', '15 Elm St, Brielle', 'Active')]);
+  check('PD two live tasks of one kind stay refused', [dPD.T.properties.length, oPD15.unlinked.filter(u => u.gid === 'g-pd15b').map(u => [u.why, u.propertyId])],
+    [1, [['same address', 'p-pd15']]]);
+
+  const BROWN = { address: '401 Brown St', city: 'Brielle' };
+  const brownDev = extra => Object.assign({ id: 'dev-brown', slug: '401-brown-st', label: '401 Brown St', market: 'NJ', milestones: {} }, extra);
+  // the house's own List-Side task sits in the TJ New Dev section, as 401 Brown St's does: that is how the purchase beside it is ours
+  dPD = pdDb({ dev_projects: [brownDev({ house_listing_id: 'p-pd16' })], places: [placeRow('pl-16', BROWN, 'NJ', { dev_project_id: 'dev-brown' })],
+    properties: [deal('p-pd16', 'g-pd16l', Object.assign({ beds: 5 }, BROWN), { stage: 'Prep', place_id: 'pl-16', dev_project_id: 'dev-brown', drive_folder: 'GVC - New Jersey/New Development/401 Brown St', folder_state: 'linked' })],
+    asana_tasks: [{ gid: 'g-pd16l', project_gid: NJ, kind: 'listing', name: '401 Brown St, Brielle', section: 'TJ New Dev', fields: { 'Deal Side': 'List Side' }, property_id: 'p-pd16' }] });
+  const oPD16 = await pdApply(dPD, [pdTask('g-pd16b', '401 Brown st, Brielle', 'Active', BUY)], { full: false });
+  const buy16 = pdJob(dPD, 'g-pd16b') || { core: {} };
+  check('PD our own purchase is a buy deal on the place', [dPD.T.properties.length, buy16.side, buy16.stage, buy16.place_id, buy16.dev_project_id, oPD16.unlinked.length],
+    [2, 'buy', 'Live', 'pl-16', 'dev-brown', 0]);
+  check('PD a purchase inherits nothing', [buy16.drive_folder || null, buy16.folder_state, buy16.core.beds === undefined], [null, 'unlinked', true]);
+  check('PD the list-side deal is untouched, and stays the development\'s house', [asanaNotes(dPD, 'p-pd16').length, pdJob(dPD, 'g-pd16l').stage, dPD.T.dev_projects[0].house_listing_id],
+    [0, 'Prep', 'p-pd16']);
+
+  dPD = pdDb({ dev_projects: [brownDev()] });
+  const oPD17 = await pdApply(dPD, [pdTask('g-pd17b', '401 Brown st, Brielle', 'Active', BUY), pdTask('g-pd17l', '401 Brown St, Brielle', 'TJ New Dev')]);
+  const buy17 = pdJob(dPD, 'g-pd17b') || {}, list17 = pdJob(dPD, 'g-pd17l') || {};
+  check('PD a listing arriving after the purchase is created, not refused, and becomes the development\'s house',
+    [buy17.side, list17.side, list17.stage, !!buy17.place_id && buy17.place_id === list17.place_id, dPD.T.dev_projects[0].house_listing_id === list17.id, oPD17.unlinked.length],
+    ['buy', 'list', 'Prep', true, true, 0]);
+
+  dPD = pdDb({ dev_projects: [brownDev()], places: [placeRow('pl-18', BROWN, 'NJ', { dev_project_id: 'dev-brown' })] });
+  await pdApply(dPD, [pdTask('g-pd18', '401 Brown St, Brielle', 'Accepted Offer', BUY)]);
+  check('PD a purchase never becomes the development\'s house', [(pdJob(dPD, 'g-pd18') || {}).side, (pdJob(dPD, 'g-pd18') || {}).dev_project_id, dPD.T.dev_projects[0].house_listing_id || null],
+    ['buy', 'dev-brown', null]);
+  check('PD a purchase at a development\'s street is logged as ours, not as joining it', asanaNotes(dPD, pdJob(dPD, 'g-pd18').id).filter(c => c.field === 'dev_project_id').map(c => c.note),
+    ['Our own purchase for the development 401 Brown St']);
+
+  dPD = pdDb({ dev_projects: [brownDev()], places: [placeRow('pl-19', BROWN, 'NJ', { dev_project_id: 'dev-brown' })] });
+  const oPD19 = await pdApply(dPD, [pdTask('g-pd19', '401 Brown St, Brielle', 'Complete', BUY)]);
+  check('PD a closed Buy Side task stays out', [dPD.T.properties.length, oPD19.unlinked.length], [0, 0]);
+
+  dPD = pdDb();
+  const oPD20 = await pdApply(dPD, [pdTask('g-pd20', '77 Client Rd, Rumson', 'Active', BUY)]);
+  check('PD a client\'s buy side stays out', [dPD.T.properties.length, oPD20.unlinked.length], [0, 0]);
+
+  // a client's buy side at one of our developments stays out too (decision 5): a Le Reve unit, and a buyer of our listed house
+  dPD = pdDb({ places: [placeRow('pl-26', { address: '200 E Boca Raton Rd', unit: 'D', city: 'Boca Raton' }, 'FL', { dev_project_id: 'dev-lr' })] });
+  const oPD26 = await pdApply(dPD, [pdTask('g-pd26', '200 E Boca Raton Rd - D', 'In Contract', BUY)]);
+  check('PD a client\'s buy side of a Le Reve unit stays out', [dPD.T.properties.length, oPD26.unlinked.length], [0, 0]);
+  dPD = pdDb({ dev_projects: [brownDev({ house_listing_id: 'p-pd27' })], places: [placeRow('pl-27', BROWN, 'NJ', { dev_project_id: 'dev-brown' })],
+    properties: [deal('p-pd27', 'g-pd27l', Object.assign({}, BROWN), { stage: 'Live', place_id: 'pl-27', dev_project_id: 'dev-brown' })] });
+  const oPD27 = await pdApply(dPD, [pdTask('g-pd27b', '401 Brown St, Brielle', 'In Contract', BUY)]);
+  check('PD a buyer of our listed house stays out', [dPD.T.properties.length, oPD27.unlinked.length], [1, 0]);
+
+  // a Lead refused as "same address" stays listed on a later run that did not read it again
+  dPD = pdDb({ properties: [deal('p-pd28', 'g-pd28a', { address: '28 Elm St', city: 'Brielle' })] });
+  const oPD28 = await pdApply(dPD, [pdTask('g-pd28b', '28 Elm St, Brielle', 'Lead')]);
+  const oPD28b = await pdApply(dPD, [], { full: false });
+  const why28 = o => o.unlinked.filter(u => u.gid === 'g-pd28b').map(u => [u.why, u.propertyId]);
+  check('PD a Lead refused as same address is listed on the next run that did not read it', [dPD.T.properties.length, why28(oPD28), why28(oPD28b)],
+    [1, [['same address', 'p-pd28']], [['same address', 'p-pd28']]]);
+  dPD.T.asana_tasks.find(r => r.gid === 'g-pd28b').ignored = true;
+  check('PD ... unless Matt ignored it', why28(await pdApply(dPD, [], { full: false })), []);
+
+  // a repeat listing takes its folder from the newest earlier deal that has one (a later lost pitch had none), its facts from the newest
+  dPD = pdDb({ places: [placeRow('pl-13', ELM, 'NJ')], properties: [oldElm({ created_at: '2020-01-01T00:00:00Z' }),
+    deal('p-pd29', 'g-pd29lost', Object.assign({ beds: 5 }, ELM), { stage: 'Archived', place_id: 'pl-13', created_at: '2025-06-01T00:00:00Z', milestones: { pitchedOn: { on: '2025-05-01' } } })] });
+  await pdApply(dPD, [pdTask('g-pd29', '12 Elm St, Brielle', 'Active')]);
+  const new29 = pdJob(dPD, 'g-pd29');
+  check('PD a repeat listing takes the folder of the newest deal that has one, the facts of the newest', [new29.drive_folder, new29.folder_state, new29.core.beds,
+    asanaNotes(dPD, new29.id).filter(c => c.field === 'drive_folder').map(c => c.new_value)],
+    ['GVC - New Jersey/Resale/Brielle/12 Elm St', 'linked', 5, ['GVC - New Jersey/Resale/Brielle/12 Elm St']]);
+
+  // M29 skips a job on the house's place: a repeat listing at a single-house development is no "listed twice"
+  const OAK = { address: '25 Oak Ln', city: 'Rumson' };
+  dPD = pdDb({ dev_projects: [{ id: 'dev-oak', slug: '25-oak-ln', label: '25 Oak Ln', market: 'NJ', milestones: {}, house_listing_id: 'p-pd25' }],
+    places: [placeRow('pl-25', OAK, 'NJ', { dev_project_id: 'dev-oak' })],
+    properties: [deal('p-pd25', 'g-pd25old', Object.assign({}, OAK), { stage: 'Sold', place_id: 'pl-25', dev_project_id: 'dev-oak' })] });
+  await pdApply(dPD, [pdTask('g-pd25', '25 Oak Ln, Rumson', 'Active')]);
+  const new25 = pdJob(dPD, 'g-pd25') || {};
+  check('PD a repeat listing at a single-house development has no Listed twice line', [new25.place_id, new25.dev_project_id, Array.isArray((new25.match || {}).list),
+    ((new25.match || {}).list || []).some(m => m.code === 'M29')], ['pl-25', 'dev-oak', true, false]);
+
+  // run twice, nothing new; two new tasks at one new address share a place in one run
+  dPD = pdDb({ dev_projects: [brownDev()] });
+  const twice = [pdTask('g-pd22s', '88 New Rd - 1A', 'Active', NYCX), pdTask('g-pd22r', '88 New Rd - 1A', 'Active', Object.assign({}, NYCX, RENT)),
+    pdTask('g-pd22p', '90 New Rd, Rumson', 'Lead'), pdTask('g-pd22b', '401 Brown st, Brielle', 'Active', BUY), pdTask('g-pd22l', '401 Brown St, Brielle', 'TJ New Dev')];
+  await pdApply(dPD, twice);
+  check('PD two new tasks at one new address share a place in one run', [dPD.T.properties.length, dPD.T.places.length,
+    pdJob(dPD, 'g-pd22s').place_id === pdJob(dPD, 'g-pd22r').place_id, dPD.T.buildings.length], [5, 3, true, 1]);
+  const counts = d => [d.T.places.length, d.T.buildings.length, d.T.properties.length, d.T.changes.length];
+  const firstPD = counts(dPD);
+  await pdApply(dPD, twice);
+  check('PD run twice, nothing new', counts(dPD), firstPD);
+
+  // the job page's Units card: a purchase is never one of the development's houses
+  require('../assets/js/job-page/units.js');
+  check('PD units.houses leaves a purchase out', globalThis.GVC_JP.units.houses([{ slug: 'h', stage: 'Prep', core: BROWN }, { slug: 'b', stage: 'Live', side: 'buy', core: BROWN }])
+    .map(u => u.jobUrl), ['../job/?listing=h']);
 
   if (failures.length) {
     console.log(pass + ' passed, ' + failures.length + ' failed\n');

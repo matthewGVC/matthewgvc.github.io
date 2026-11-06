@@ -328,8 +328,9 @@
   function joinUnit(address, unit) {
     var a = String(address || '').trim();
     var u = String(unit || '').trim();
-    // the address may already name the unit ("1050 Fifth Avenue, Apt. 2E"): don't add it twice
-    if (u && new RegExp('(^|[^A-Za-z0-9])' + u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^A-Za-z0-9])', 'i').test(a)) return a;
+    // the address may already end with the unit ("1050 Fifth Avenue, Apt. 2E"): don't add it twice.
+    // Only at the end: the E in "200 E Boca Raton Rd" is not Le Reve's unit E
+    if (u && new RegExp('(^|[^A-Za-z0-9])' + u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i').test(a)) return a;
     return [a, u && unitDisplay(u)].filter(Boolean).join(', ');
   }
 

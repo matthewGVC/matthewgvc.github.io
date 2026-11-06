@@ -146,6 +146,7 @@
 <script src="../assets/js/piece-stale.js"></script>
 <script src="../assets/js/dev-build.js"></script>
 <script src="../assets/js/workspace-data.js"></script>
+<script src="../assets/js/places.js"></script>
 <script src="../assets/js/workspace-shell.js"></script>
 <script src="../assets/js/walkthrough.js"></script>
 <script defer src="../assets/js/ws-collapse.js"></script>
@@ -192,7 +193,7 @@
     var personal = false;
     var mine = P.whoAmI().then(function (w) { who = w; personal = !!(w && w.role === 'owner'); return personal; }, function () { return false; });
     return Promise.all([
-      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,dev_project_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version&stage=not.is.null'),
+      rest('/properties?select=id,slug,label,core,kind,market,stage,stage_source,de,de_status,de_stage,de_listing_id,dev_project_id,drive_folder,folder_state,scan,asana_gid,asana,milestones,match,version,place_id,side,created_at&stage=not.is.null'),
       rest('/pitches?select=*'),
       rest('/dev_projects?select=*'),
       rest('/changes?select=id,property_id,pitch_id,dev_project_id,at,field,old_value,new_value,note,source&order=at.desc&limit=2000'),
@@ -228,14 +229,16 @@
     }
   }
 
-  // a development's own house listing shows on its development, as on Resell and New Dev (overhaul 1f)
+  // our own purchases never show; a development's own house listing shows on its development,
+  // as on Resell and New Dev (overhaul 1f)
+  function keep(j) { return j.side !== 'buy' && !(j.devProjectId && f.type !== 'listing'); }
   function pass(j) {
-    if (j.devProjectId && f.type !== 'listing') return false;
+    if (!keep(j)) return false;
     if (f.mine && f.myId && (j.agentIds || []).indexOf(f.myId) === -1) return false;
     return (!f.market || j.market === f.market) && (!f.type || j.type === f.type || (f.type === 'listing' && j.type === 'rental')) &&
       (!f.stage || j.stage === f.stage) && (!f.q || (j.name + ' ' + (j.place || '')).toLowerCase().indexOf(f.q) !== -1);
   }
-  function jobsNow() { return W.buildJobs(data, today, { archived: f.archived }).filter(pass); }
+  function jobsNow() { return W.buildJobs(data, today, { archived: f.archived }).filter(keep); }
 
   function stats(js) {
     var s = W.overviewStats(js), n = Math.max(1, s.total);
@@ -255,7 +258,7 @@
     if (j.flags.some(function (x) { return x.k === 'relink'; })) return 'The linked folder moved or was renamed. Relink it.';
     if (j.flags.some(function (x) { return x.k === 'link'; })) return 'No Drive folder linked yet.';
     if (j.flags.some(function (x) { return x.k === 'de'; })) return 'Not matched to a DE listing yet.';
-    if (j.type === 'pitch') return 'Pitched ' + W.fmtDay(j.pitchedOn) + '.';
+    if (j.type === 'pitch') return j.pitchedOn ? 'Pitched ' + W.fmtDay(j.pitchedOn) + '.' : 'Lead, no pitch date yet.';
     if (j.stage === 'Off market') {
       var om = (j.dates || []).filter(function (d) { return d.key === 'offMarketOn'; })[0];
       return om ? 'Off market since ' + W.fmtDay(om.on) + '.' : 'Off market.';
@@ -268,15 +271,18 @@
     return j.last ? 'Last activity ' + W.fmtDay(j.last) + '.' : 'No activity recorded yet.';
   }
 
-  function list(js) {
-    if (!js.length) return '<div class="empty"><b>No jobs here</b>' + (data.properties.length + data.pitches.length + data.devProjects.length
+  function list(rs) {
+    if (!rs.length) return '<div class="empty"><b>No jobs here</b>' + (data.properties.length + data.pitches.length + data.devProjects.length
       ? 'Nothing matches these filters.' : 'The database is ready but empty. Jobs arrive from the seed and the first DE sync.') + '</div>';
-    return '<div class="pipe">' + js.map(function (j) {
-      var right = j.mismatches ? '<span class="r warn">' + I('alert') + esc(j.mismatches + ' error' + (j.mismatches === 1 ? '' : 's')) + '</span>'
+    return '<div class="pipe">' + rs.map(function (g) {
+      var j = g.lead, errs = GVC_PLACES.errors(g);
+      var right = errs ? '<span class="r warn">' + I('alert') + esc(errs + ' error' + (errs === 1 ? '' : 's')) + '</span>'
         : '<span class="r">' + I('clock') + (j.last ? 'Last ' + esc(W.fmtDay(j.last)) : 'No dates') + '</span>';
       var meta = [j.market];
       if (j.type === 'rental') meta.push('Rental'); if (j.type === 'pitch') meta.push('Pitch'); if (j.type === 'development') meta.push('Development');
       if (j.price) meta.push(j.price); if (j.rooms) meta.push(j.rooms); if (j.place) meta.push(j.place);
+      if (g.history) meta.push(g.history + ' past deal' + (g.history === 1 ? '' : 's'));
+      var more = g.live.filter(function (d) { return d !== j; }).map(function (d) { return ' <span class="chip ' + d.chip + '">' + esc(GVC_PLACES.dealWord(d)) + '</span>'; }).join('');
       var segs = j.steps.map(function (s, i) {
         var done = j.type === 'development' ? i <= j.stageIdx : (j.done[s] || i < j.stageIdx);
         return '<i class="' + (i === j.stageIdx ? 'c' : done ? 'd' : '') + '" title="' + esc(W.stageWord(s, j.kind)) + (j.done[s] ? ' · ' + esc(W.fmtDay(j.done[s])) : '') + '"></i>';
@@ -289,7 +295,7 @@
         if (j.construction) dev += '<div class="prog" style="margin-top:10px"><span>Construction</span><span>' + j.construction.done + ' of ' + j.construction.total + '</span></div><div class="cons"><i style="width:' + (j.construction.done / j.construction.total * 100) + '%"></i></div>';
       }
       var stale = (j.stale || []).length ? ' <span class="chip stale stalemark" title="' + esc((j.stalePieces || []).map(function (x) { return x.label + ' stale: ' + x.words.join(', '); }).join('; ')) + '">stale</span>' : '';
-      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '"' + (j.phaseNow ? ' title="Now: ' + esc(j.phaseNow) + '"' : '') + '>' + esc(j.phase || j.stage) + '</span>' + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
+      return '<a class="pj" href="' + esc(j.href) + '"><div class="pj-h"><div><h3>' + esc(j.name) + ' <span class="chip ' + j.chip + '"' + (j.phaseNow ? ' title="Now: ' + esc(j.phaseNow) + '"' : '') + '>' + esc(j.phase || j.stage) + '</span>' + more + stale + '</h3><div class="sub">' + esc(meta.filter(Boolean).join(' · ')) + '</div><div class="pj-sync">' + window.GVC_SYNCB(j.sync) + '</div></div>' + right + '</div>' +
         '<div class="prog"><span>' + esc(note(j)) + '</span><span>' + Math.max(0, j.stageIdx + 1) + ' of ' + j.steps.length + '</span></div><div class="track">' + segs + '</div>' + dates + dev + '</a>';
     }).join('') + '</div>';
   }
@@ -338,7 +344,7 @@
   };
   // the stage list offers only the stages the board has (Archived has its own tick box)
   function stageOptions() {
-    var have = {}; W.buildJobs(data, today, { archived: f.archived }).forEach(function (j) { have[j.stage] = 1; });
+    var have = {}; jobsNow().forEach(function (j) { have[j.stage] = 1; });
     var list = W.STAGES.filter(function (s) { return have[s] && s !== 'Archived'; })
       .concat(Object.keys(have).filter(function (s) { return W.STAGES.indexOf(s) === -1; }).sort());
     if (f.stage && list.indexOf(f.stage) === -1) list.push(f.stage);
@@ -346,9 +352,11 @@
   }
   function render() {
     stageOptions();
-    var js = jobsNow().sort(SORTS[f.sort] || byLast);
+    // the numbers and the chart count deals; the list and timeline are one row per place (GVC_PLACES.shown), on its lead deal
+    var deals = jobsNow(), js = deals.filter(pass), by = SORTS[f.sort] || byLast;
+    var rs = GVC_PLACES.shown(deals, js, data.properties).sort(function (a, b) { return by(a.lead, b.lead); }), leads = rs.map(function (g) { return g.lead; });
     stats(js); chart(js);
-    $('jobs').innerHTML = f.view === 'list' ? list(js) : timeline(js);
+    $('jobs').innerHTML = f.view === 'list' ? list(rs) : timeline(leads);
   }
 
   function tasks() {

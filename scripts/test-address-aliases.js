@@ -78,6 +78,8 @@ check('combined units with slash', A.unitKey('18/19E'), '1819E');
 check('split NYC name', A.splitName('555 W59 - PHC'), { street: '555 W59', unit: 'PHC', town: '', house: '' });
 check('split NJ name', A.splitName('619 Bradley Ave, Brielle - 1st'), { street: '619 Bradley Ave', unit: '', town: 'Brielle', house: '' });
 check('split NJ " - town" name', A.splitName('207 Example Ct - Brick'), { street: '207 Example Ct', unit: '', town: 'Brick', house: '' });
+check('a lettered unit reads as a unit (Le Reve B, C, E)', A.splitName('200 E Boca Raton Rd - B'), { street: '200 E Boca Raton Rd', unit: 'B', town: '', house: '' });
+check('a town after " - " is still a town', A.splitName('207 McKinley Ct - Brick'), { street: '207 McKinley Ct', unit: '', town: 'Brick', house: '' });
 check('split long form', A.splitName('250 East 99th Street, Apt. 504'), { street: '250 East 99th Street', unit: '504', town: '', house: '' });
 check('split house', A.splitName('405 Old Bridge Rd (House 2)'), { street: '405 Old Bridge Rd', unit: '', town: '', house: '2' });
 check('split combined unit', A.splitName('401 E89 - 18/19E'), { street: '401 E89', unit: '18/19E', town: '', house: '' });

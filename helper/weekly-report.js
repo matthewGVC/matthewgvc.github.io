@@ -21,7 +21,8 @@
      For Monday (the agenda, by rules), Deal dates (the next two weeks),
      New developments, What changed this week, Marketing.
    A deal date is in one place only, Deal dates: the agenda doesn't repeat it.
-   Bosses get every market; an ops manager's edition is one market. No budget
+   Bosses get every market; an ops manager's edition is one market. Our own
+   purchases (side 'buy') stay out, and a Lead (a deal at Pitch) is not a listing. No budget
    figures, and no client names (D2): job names are addresses, and notes are
    the team's own change-log lines.
    ============================================================ */
@@ -51,7 +52,8 @@ function build(rows, opts) {
   const today = opts.today, market = opts.market || '', weekAgo = addDays(today, -7), soon = addDays(today, 14);
   const all = W.buildJobs({ properties: rows.properties || [], pitches: rows.pitches || [], devProjects: rows.devProjects || [],
     changes: rows.changes || [], documents: rows.documents || [] }, today);
-  const jobs = all.filter(j => !j.archived && j.stage !== 'Archived' && (!market || j.market === market));
+  // our own purchases (side 'buy') are never a listing of ours
+  const jobs = all.filter(j => !j.archived && j.stage !== 'Archived' && j.side !== 'buy' && (!market || j.market === market));
   const listings = jobs.filter(j => j.type === 'listing' || j.type === 'rental');
   const devs = jobs.filter(j => j.type === 'development');
   const devRow = {}; (rows.devProjects || []).forEach(d => { devRow[d.id] = d; });

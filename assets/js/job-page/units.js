@@ -4,7 +4,8 @@
      GVC_JP.units.of(deRows, slug)  → the development's units: Elliman listings at its
                                       street (GVC_DEV_ADDRESSES), for sale first, then by unit
      GVC_JP.units.houses(rows)      → (7b-2) the development's own house listings as units: the
-                                      properties with its dev_project_id, archived ones left out
+                                      properties with its dev_project_id, archived ones and our own
+                                      purchase of the land (side 'buy') left out
      GVC_JP.units.html(ctx)         → the Units card ('' when there are none); ctx.unitsFrom says
                                       where they came from ('elliman' or 'workspace')
 
@@ -37,7 +38,7 @@
       .sort(sortUnits);
   }
   function houses(rows) {
-    return (rows || []).filter(function (r) { return r && r.slug && r.stage !== 'Archived'; }).map(function (r) {
+    return (rows || []).filter(function (r) { return r && r.slug && r.stage !== 'Archived' && r.side !== 'buy'; }).map(function (r) {
       var c = r.core || {};
       return { unit: c.unit || c.address || r.label, beds: c.beds, baths: c.baths, halfBaths: c.halfBaths, sqft: c.sqft,
         price: c.price, closePrice: c.closePrice, word: STAGE[r.stage] || r.stage || '', jobUrl: '../job/?listing=' + encodeURIComponent(r.slug) };

@@ -18,7 +18,8 @@
 const fs = require('fs'), path = require('path');
 
 const TABLES = ['properties', 'documents', 'photos', 'developments', 'todos', 'members', 'pitches',
-  'dev_projects', 'dev_budgets', 'changes', 'floorplans', 'sync_runs', 'de_listings', 'asana_tasks', 'asana_people'];
+  'dev_projects', 'dev_budgets', 'changes', 'floorplans', 'sync_runs', 'de_listings', 'asana_tasks', 'asana_people',
+  'places', 'buildings'];
 const BUCKET = 'property-photos';
 
 const README = [

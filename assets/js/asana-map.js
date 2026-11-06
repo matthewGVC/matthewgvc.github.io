@@ -13,6 +13,17 @@
          keeps those in pitches, and only with a 🗓️ Pitch date, D54). A sold
          status on a rental → 'Rented'. Anything not in the table → { unknown }.
      isGvcListing(task)     → bool   Deal Side is List Side, List (Direct), Direct or Landlord (D51)
+     ownPurchase(task, { places, tasks, deals }) → bool   our own purchase (places and deals, decision 5):
+         Deal Side is Buy Side, the stage is Prep to In contract, and the street (and town, when
+         both name one: GVC_PLACES.sameTown) is that of
+           - a place with a dev_project_id that is a lot or house (no unit: its key ends in '|')
+             with no list-side deal in `deals` at Prep to In contract (our purchase comes before
+             our listing: a Buy Side task beside our listing is its buyer), or
+           - a List-Side task in `tasks` in the TJ New Dev section ("401 Brown st, Brielle"
+             beside "401 Brown St, Brielle").
+         A client's buy side (of a development's unit, or of our listed house) and a closed
+         purchase are false. Uses GVC_ADDR (address-aliases.js) and GVC_PLACES (places.js),
+         read only when called.
      factsOf(task, opts?)   → D52's facts, absent keys left out. opts.areas: the
          names that count as NYC neighbourhoods for City/Hood (default: the list
          below plus window.GVC_NYC_AREAS when the page loaded nyc-areas.js;
@@ -147,6 +158,28 @@
   function isGvcListing(t) {
     var v = field(t, 'Deal Side');
     return !!v && LIST_SIDES.indexOf(String(v).trim().toLowerCase()) !== -1;
+  }
+
+  /* ---------- our own purchase (decision 5): a client's buy side stays out ---------- */
+  var inNode = typeof module === 'object' && module.exports && typeof require === 'function';
+  function addr() { return inNode ? require('./address-aliases.js') : global.GVC_ADDR; }
+  function places() { return inNode ? require('./places.js') : global.GVC_PLACES; }
+  var OWN_STAGES = ['Prep', 'Live', 'Accepted offer', 'In contract'];
+  function ownPurchase(t, ctx) {
+    var side = field(t, 'Deal Side');
+    if (!side || String(side).trim().toLowerCase() !== 'buy side') return false;
+    if (OWN_STAGES.indexOf(stageOf(t).stage) === -1) return false;
+    var A = addr(), town = A.splitName(t.name).town, c = ctx || {};
+    var at = function (street, otherTown) { return A.sameStreet(t.name, street) && places().sameTown(town, otherTown); };
+    var listed = function (p) {
+      return (c.deals || []).some(function (d) { return d && d.place_id === p.id && d.side !== 'buy' && OWN_STAGES.indexOf(d.stage) !== -1; });
+    };
+    return (c.places || []).some(function (p) {
+      return p && p.dev_project_id && /\|$/.test(p.key || '') && !listed(p) && at(p.address, p.town);
+    }) ||
+      (c.tasks || []).some(function (o) {
+        return o && o.gid !== t.gid && isGvcListing(o) && norm(o.section) === 'tj new dev' && at(o.name, A.splitName(o.name).town);
+      });
   }
 
   /* ---------- facts (D52) ---------- */
@@ -518,7 +551,7 @@
       construction: { done: done, total: build.length } };
   }
 
-  return { stageOf: stageOf, isGvcListing: isGvcListing, factsOf: factsOf, datesOf: datesOf, agentsOf: agentsOf,
+  return { stageOf: stageOf, isGvcListing: isGvcListing, ownPurchase: ownPurchase, factsOf: factsOf, datesOf: datesOf, agentsOf: agentsOf,
     checklistOf: checklistOf, devHints: devHints, batchDays: batchDays, milestoneOf: milestoneOf, familyOf: familyOf,
     localDay: localDay, offMarketMove: offMarketMove, MILESTONES: MILESTONES, FAMILY_RULES: FAMILY_RULES };
 });

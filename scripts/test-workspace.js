@@ -893,6 +893,56 @@ const visible = (page, sel) => page.isVisible(sel).catch(() => false);
     await t.ctx.close();
   }
 
+  /* places and deals: one row per place, a Lead at Pitch, our own purchases off the lists */
+  {
+    const deal = (id, over) => Object.assign({ id, slug: id, label: id, kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Asana', version: 1,
+      folder_state: 'linked', drive_folder: 'f/' + id, side: 'list', created_at: '2026-01-01T12:00:00Z' }, over);
+    const PL = () => rowsFor({ properties: rowsFor().properties.concat([
+      deal('404-sale', { place_id: 'pl404', stage: 'In contract', de_listing_id: '9404', core: { address: '404 Place Ave', unit: '5C', agentIds: ['elyse-gutman'] }, created_at: '2026-03-01T12:00:00Z' }),
+      deal('404-rental', { place_id: 'pl404', kind: 'rental', de_listing_id: '9405', core: { address: '404 Place Ave', unit: '5C', agentIds: ['katie-cook'] }, created_at: '2026-09-01T12:00:00Z' }),
+      deal('404-2019', { place_id: 'pl404', stage: 'Archived', core: { address: '404 Place Ave', unit: '5C' }, created_at: '2019-05-01T12:00:00Z' }),
+      deal('90-lead', { place_id: 'pl90', stage: 'Pitch', market: 'NJ', folder_state: 'unlinked', drive_folder: null, core: { address: '90 Lead St' } }),
+      deal('806-buy', { place_id: 'plb', side: 'buy', market: 'NJ', folder_state: 'unlinked', drive_folder: null, core: { address: '806 Buy Dr' } }),
+      deal('77-old', { place_id: 'pl77', stage: 'Archived', market: 'NJ', core: { address: '77 Gone Rd' }, created_at: '2019-01-01T12:00:00Z' }),
+      deal('77-new', { place_id: 'pl77', stage: 'Archived', market: 'NJ', core: { address: '77 Gone Rd' }, created_at: '2023-01-01T12:00:00Z' })]) });
+    const rowsNamed = (page, name) => page.$$eval('.pj', (els, n) => els.filter(e => e.querySelector('h3').childNodes[0].textContent.trim() === n).map(e => ({
+      href: e.getAttribute('href'), chips: [...e.querySelectorAll('h3 .chip:not(.stale)')].map(c => c.textContent), sub: e.querySelector('.sub').textContent,
+      note: e.querySelector('.prog span').textContent })), name);
+    t = await open(browser, { rows: PL() });
+    const r404 = await rowsNamed(t.page, '404 Place Ave 5C');
+    check('one row for a sale and a rental, with both chips', [r404.length, r404[0] && r404[0].chips], [1, ['In contract', 'Rental · Live']]);
+    check('the row says 1 past deal', /· 1 past deal$/.test(r404[0] ? r404[0].sub : ''), true);
+    check('the row opens the sale', r404[0] && r404[0].href, 'job/?listing=404-sale');
+    check('a Lead with no date reads Lead, no pitch date yet', (await rowsNamed(t.page, '90 Lead St')).map(r => [r.chips, r.note, r.href]),
+      [[['Pitch'], 'Lead, no pitch date yet.', 'job/?listing=90-lead']]);
+    const buyRows = [(await rowsNamed(t.page, '806 Buy Dr')).length];
+    await t.page.click('#typ [data-v="listing"]');
+    buyRows.push((await rowsNamed(t.page, '806 Buy Dr')).length, (await rowsNamed(t.page, '404 Place Ave 5C')).length);
+    check('a purchase is no row, even with the Listings filter on', buyRows, [0, 0, 1]);
+    check('a purchase is no task either', await t.page.$$eval('#tlist a', els => els.filter(a => /806/.test(a.textContent)).length), 0);
+    await t.page.click('#typ [data-v=""]');
+    check('all archived: hidden', (await rowsNamed(t.page, '77 Gone Rd')).length, 0);
+    await t.page.check('#arch');
+    check('all archived: hidden, then shown on its newest deal with Show archived', (await rowsNamed(t.page, '77 Gone Rd')).map(r => r.href), ['job/?listing=77-new']);
+    check('places: no page errors', t.errors, []);
+    await t.ctx.close();
+
+    t = await open(browser, { rows: PL(), members: [{ name: 'Katie Cook', initials: 'KC', role: 'team', market: 'NYC' }] });
+    const mineRow = await rowsNamed(t.page, '404 Place Ave 5C');
+    check('only my jobs keeps the row when my deal is the rental', [await t.page.$eval('#mine', e => e.checked), mineRow.length, mineRow[0] && mineRow[0].chips], [true, 1, ['In contract', 'Rental · Live']]);
+    await t.ctx.close();
+
+    t = await open(browser, { rows: PL(), path: '/workspace/jobs/' });
+    const resell = await t.page.$$eval('#rows tr', trs => trs.map(tr => [tr.querySelector('.nm a').textContent, tr.querySelector('.nm a').getAttribute('href'),
+      [...tr.querySelectorAll('.stg .chip')].map(c => c.textContent), tr.querySelector('.nm small').textContent]));
+    const r4 = resell.filter(r => r[0] === '404 Place Ave 5C');
+    check('resell: one row for the place, opening the sale, both chips, the past deal', r4.map(r => [r[1], r[2], /1 past deal/.test(r[3])]),
+      [['../job/?listing=404-sale', ['In contract', 'Rental · Live'], true]]);
+    check('resell: no purchase, the Lead in the pitches list', [resell.some(r => r[0] === '806 Buy Dr'), await t.page.$$eval('#n3 a', els => els.map(a => a.textContent).includes('90 Lead St'))], [false, true]);
+    check('resell: places, no page errors', t.errors, []);
+    await t.ctx.close();
+  }
+
   /* overhaul 8: each person's home, and the first-day tour */
   {
     const RH = rowsFor(); RH.properties[0].core.agentIds = ['katie-cook'];

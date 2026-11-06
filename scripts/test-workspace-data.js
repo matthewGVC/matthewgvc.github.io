@@ -485,6 +485,29 @@ check('one house: its error line stays on the listing row', W.matchByJob(oneHous
 check('a house with no mark stays its own job', W.buildJobs({ properties: [{ id: 'h2', slug: 'x', label: 'X', kind: 'sale', market: 'NJ', stage: 'Prep', dev_project_id: 'd2', core: { address: '610 Agnes Ave' } }],
   pitches: [], devProjects: [{ id: 'd2', slug: '610-agnes', label: '610 Agnes', market: 'NJ', milestones: {} }], changes: [] }, TODAY).length, 2);
 
+/* places and deals: a deal knows its place, a Lead is a deal at Pitch, and our own purchases stay off the lists */
+{
+  const deal = (over) => Object.assign({ id: 'x1', slug: '7-place-st', label: '7 Place St', kind: 'sale', market: 'NJ', stage: 'Live', core: { address: '7 Place St' },
+    folder_state: 'unlinked', place_id: 'pl1', side: 'list', created_at: '2026-09-01T12:00:00Z' }, over || {});
+  const one = (over) => W.buildJobs({ properties: [deal(over)], pitches: [], devProjects: [], changes: [] }, TODAY)[0];
+  const j = one();
+  check('placeId, side and createdAt reach the job', [j.placeId, j.side, j.createdAt], ['pl1', 'list', '2026-09-01T12:00:00Z']);
+  const lead = one({ stage: 'Pitch', milestones: { pitchedOn: { on: '2026-10-02', planned: false } } });
+  check('a Pitch deal is type pitch and opens by listing', [lead.type, lead.fromDeal, lead.href], ['pitch', true, 'job/?listing=7-place-st']);
+  check('a Lead\'s pitch date comes from its milestones', [lead.pitchedOn, one({ stage: 'Pitch' }).pitchedOn], ['2026-10-02', null]);
+  check('a Pitch deal has steps and no Link folder flag', [lead.steps[0], lead.stageIdx, lead.flags, lead.chip], ['Pitch', 0, [], 'pre']);
+  const withErr = one({ stage: 'Pitch', match: { list: [{ code: 'M6', key: 'M6', text: 'No folder.' }], dismissed: {} } });
+  const oldPitch = W.buildJobs({ properties: [], pitches: [{ id: 'q9', slug: 'q9', label: 'Q9', market: 'NJ', outcome: 'open' }], devProjects: [], changes: [] }, TODAY)[0];
+  oldPitch.match = [{ code: 'M6', key: 'M6', text: 'x' }];
+  check('a pitch deal\'s Errors row points at properties', W.matchByJob([withErr, oldPitch], []).map(g => [g.id, g.table]), [['x1', 'properties'], ['q9', 'pitches']]);
+  const buy = one({ side: 'buy', stage: 'Sold', stage_source: 'Asana' });
+  check('a purchase has no flags, no archive task and no Elliman badge',
+    [buy.flags, W.taskFlags([buy]), buy.sync.filter(s => s.src === 'DE')[0].ok], [[], [], null]);
+  const R = require('../helper/weekly-report.js');
+  const rows = [deal({ id: 'y1', slug: 'y1' }), deal({ id: 'y2', slug: 'y2', side: 'buy', place_id: 'pl2' })];
+  check('the weekly email doesn\'t count a purchase as a listing', R.build({ properties: rows }, { today: TODAY }).counts.live, 1);
+}
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

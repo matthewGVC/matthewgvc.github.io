@@ -34,6 +34,14 @@ only; the first click asks "Confirm archive?"). A listing archives by its stage;
 `dev_projects.archived_at` (migration 0018). Archived jobs leave the overview, the lists and the error
 count until "Show archived" is ticked.
 
+**One row per place:** the Overview and Resell show one row per place (`assets/js/places.js`
+`group`), not per deal: a sale and a rental on one unit are one row with a chip for each, opening the
+sale, and the meta line counts its past deals. A place shows when any of its deals passes the filters
+(so "Only my jobs" keeps it for an agent on the rental); a place whose deals are all archived shows
+only with "Show archived", on its newest deal. A Lead is a deal at stage Pitch and lists as a pitch.
+Our own purchases (`properties.side` 'buy') stay off the lists, the tasks and the weekly email.
+The Live and In contract counts still count deals. Tests: `scripts/test-workspace-data.js`, `test-workspace.js`.
+
 **Development addresses:** `assets/js/dev-addresses.js` lists the street each development's
 units are listed at on DE, so the Errors page treats those DE listings as the development's units
 (add a development there when its units go on DE). After each good DE read the helper makes each

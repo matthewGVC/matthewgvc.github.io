@@ -121,14 +121,14 @@ exit ends it). Run it from the main repo folder.
 - Asana's name is the workspace's name (`name-flow.js`, the rule in `assets/js/naming.js`): when a read sees
   a task's name changed, the deal's label, unit and place follow it, and a rename that only respells
   leaves the printed address alone.
-- The one-minute sync (migration 0026, `asana-events.js`, every 55 seconds): each minute the helper asks Asana's events
+- The one-minute sync (migration 0026, `asana-events.js`): once a minute (the runner ticks every 60 s; the job is due after 55 s) the helper asks Asana's events
   feed what changed in each listing project and re-reads just those tasks (a ticked subtask or a
-  comment counts for its listing), as a `sync_runs` row of kind `events`. It only updates deals the
+  comment counts for its listing). A `sync_runs` row of kind `events` is written only when a linked deal's task changed (never for an aborted read). A renamed street, not only the unit, flows into the facts and place when it is a different street. It only updates deals the
   workspace already has: a task no deal holds, a first check (no token yet) or a token Asana says is
   too old (about a day) runs the ordinary read since the last good run instead. Tokens are kept in
   `%USERPROFILE%\.gvc-helper\asana-events.json`, saved only once the reads they led to worked. Every
   check writes `sync_state` ('asana-events': when, whether it worked, a plain line), which the header
-  reads. The 30-minute read and the 3:00 full read stay as they were.
+  reads. After 3 failed checks in a row (the same task failing, or migration 0026 not applied) it checks at most once in 10 minutes until one succeeds; a skipped minute writes nothing new (the header's red or amber already says so). The 30-minute read and the 3:00 full read stay as they were.
 - Places (migration 0025): `place-store.js` finds the place a deal is on or makes it (the sync and the
   backfill share it). `node helper/places-backfill.js` writes the one-time plan,
   `exports/places-backfill-<date>.md` and `.json`, and changes nothing; `--apply <that .json>` applies it and

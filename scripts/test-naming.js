@@ -126,6 +126,8 @@ sureCases.forEach(c => {
   const out = R(c.name, c.market, c.cityHood, c.rental);
   check('every sure answer is the same address: ' + c.name, A.same(c.name, out.name), true);
   check('every sure answer is the same place: ' + c.name, placeOf(c.name, c.market), placeOf(out.name, c.market));
+  const again = R(out.name, c.market, c.cityHood, c.rental);
+  check('a sure answer is stable: ' + c.name, [again.sure, again.name], [true, out.name]);
 });
 
 // Every real Asana name (kept off GitHub): GVC_NAMES_DIR holds asana-names-2026-11-06.json
@@ -143,6 +145,10 @@ if (snap && fs.existsSync(snap)) {
       nSure++;
       if (!A.same(row.name, out.name)) failures.push('snapshot: not the same address: ' + JSON.stringify(row.name) + ' -> ' + JSON.stringify(out.name));
       else if (placeOf(row.name, row.market) !== placeOf(out.name, row.market)) failures.push('snapshot: not the same place: ' + JSON.stringify(row.name) + ' -> ' + JSON.stringify(out.name));
+      else pass++;
+      let again = null;
+      try { again = N.ruleName(out.name, { market: row.market, cityHood: row.cityHood, rental: !!row.rental, devHouse: !!row.devHouse }); } catch (e) { again = { sure: false, name: e.message }; }
+      if (!again.sure || again.name !== out.name) failures.push('snapshot: not stable: ' + JSON.stringify(row.name) + ' -> ' + JSON.stringify(out.name) + ' -> ' + JSON.stringify(again.name));
       else pass++;
       lines.push('- ' + JSON.stringify(row.name) + ' -> ' + JSON.stringify(out.name));
     } else {

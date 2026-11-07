@@ -10,7 +10,9 @@
        asana      createAsana(...) (GET only; events() and get())
        sync       asana-sync.js syncNow itself, never through runAsana again
                   (runner.js asanaEvents: a plain read would wait on this run for ever)
-       stateFile  <helper home>/asana-events.json, { [projectGid]: token }
+       stateFile  <helper home>/asana-events.json, { [projectGid]: token, failures?, firstFailedAt?, lastFailedAt? }
+                  after 3 failed checks in a row, at most one check in 10 minutes until one succeeds
+                  (a skipped minute returns { skipped: true } and writes nothing)
      → { ok, gids, gap, detail }
 
    For each listing project it reads the feed from the saved token until Asana
@@ -48,6 +50,8 @@ const { stopFor } = require('./asana/read.js');
 const KIND = 'asana-events';
 const MAX_PAGES = 50;          // 5,000 events in one check: read the rest as a gap
 const GAP = 'caught up from the last full read';
+const SLOW_AFTER = 3;           // failed checks in a row before the back-off
+const SLOW_EVERY = 10 * 60000;  // then at most one check in 10 minutes
 
 function readTokens(file) {
   try { const j = JSON.parse(fs.readFileSync(file, 'utf8')); return j && typeof j === 'object' && !Array.isArray(j) ? j : {}; }
@@ -82,6 +86,11 @@ async function checkEvents(o) {
   const listings = (cfg && cfg.asana && cfg.asana.listings) || {};
   const saved = readTokens(stateFile), next = Object.assign({}, saved);
   const out = { ok: true, gids: {}, gap: false, detail: '' };
+  const failures = Number(saved.failures) || 0;
+  const lastTry = Date.parse(saved.lastFailedAt);
+  if (failures >= SLOW_AFTER && lastTry && now.getTime() - lastTry < SLOW_EVERY) {
+    return { ok: false, skipped: true, gids: {}, gap: false, detail: 'waiting: the last ' + failures + ' checks failed' };
+  }
 
   try {
     /* what changed, per listing project */
@@ -131,11 +140,20 @@ async function checkEvents(o) {
       await run({ kind: 'plain' });
       if (n) await run({ kind: 'events', gids: out.gids });
     } else if (n) await run({ kind: 'events', gids: out.gids });
+    delete next.failures; delete next.firstFailedAt; delete next.lastFailedAt;
     saveTokens(stateFile, next);
     out.detail = out.gap ? GAP : n + (n === 1 ? ' task changed' : ' tasks changed');
   } catch (e) {
     out.ok = false;
     out.detail = (e && e.message) || String(e);
+  }
+
+  /* a check that fails the same way every time shouldn't re-read the same window each minute */
+  if (!out.ok) {
+    try {
+      saveTokens(stateFile, Object.assign({}, saved, { failures: failures + 1,
+        firstFailedAt: failures ? saved.firstFailedAt || now.toISOString() : now.toISOString(), lastFailedAt: now.toISOString() }));
+    } catch (e) { out.stateError = e.message; }
   }
 
   try { await client.upsert('sync_state', [{ kind: KIND, checked_at: now.toISOString(), ok: out.ok, detail: out.detail }], 'kind'); }

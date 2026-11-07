@@ -107,7 +107,8 @@ const NOW = new Date('2026-11-06T15:00:00Z');
 let dir = fs.mkdtempSync(path.join(process.env.GVC_HELPER_HOME, 'state-'));
 let k = 0;
 const stateAt = tokens => { const f = path.join(dir, 'asana-events-' + (++k) + '.json'); if (tokens) fs.writeFileSync(f, JSON.stringify(tokens)); return f; };
-const tokensIn = f => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
+const stateIn = f => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
+const tokensIn = f => { const j = stateIn(f); if (j) { delete j.failures; delete j.firstFailedAt; delete j.lastFailedAt; } return j; };
 const LINKED = [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }, { gid: 'g2', project_gid: NJ, kind: 'listing', property_id: 'p2' },
   { gid: 'g7', project_gid: NJ, kind: 'listing', pitch_id: 'pi7' }, { gid: 'g8', project_gid: NYC, kind: 'listing', ignored: true },
   { gid: 'g9', project_gid: NYC, kind: 'listing', property_id: null, pitch_id: null }];
@@ -122,7 +123,7 @@ async function check1(o) {
   const fetch = fakeFetch(o);
   const sync = o.sync || fakeSync();
   const stateFile = o.stateFile || stateAt(o.tokens === undefined ? { [NYC]: 'tN', [NJ]: 'tJ' } : o.tokens);
-  const r = await checkEvents({ cfg, client: db, asana: createAsana(cfg, { fetch, sleep: async () => {} }), sync, stateFile, now: NOW });
+  const r = await checkEvents({ cfg, client: db, asana: createAsana(cfg, { fetch, sleep: async () => {} }), sync, stateFile, now: o.now || NOW });
   return { r, db, fetch, sync, stateFile, state: db.T.sync_state.find(s => s.kind === 'asana-events') || null };
 }
 
@@ -301,6 +302,29 @@ async function check1(o) {
     const good = db.T.sync_runs.filter(r => r.kind === 'asana' && r.ok).sort((a, b) => (a.started_at < b.started_at ? 1 : -1))[0];
     check('an events run leaves the plain read\'s starting point alone', good.id, 'r0');
     check('an events run doesn\'t touch the Errors page\'s list', 'unlinked' in (row.totals || {}), false);
+  }
+
+  /* ================= back-off ================= */
+  {
+    const bad = () => fakeSync(() => { throw new Error('one task keeps failing'); });
+    const mk = () => ({ events: { [NYC]: [{ data: [ev('g1')], sync: 'tN2' }] } });
+    const at = min => new Date(NOW.getTime() + min * 60000);
+    const sf = stateAt({ [NYC]: 'tN', [NJ]: 'tJ' });
+    for (let i = 0; i < 3; i++) await check1(Object.assign({ stateFile: sf, sync: bad(), now: at(i) }, mk()));
+    check('three failures in a row slow the check to once in 10 minutes: count kept', [stateIn(sf).failures, stateIn(sf).firstFailedAt, stateIn(sf)[NYC]], [3, at(0).toISOString(), 'tN']);
+    const s9 = fakeSync();
+    t = await check1(Object.assign({ stateFile: sf, sync: s9, now: at(5) }, mk()));
+    check('a skipped minute calls no Asana and no sync', [t.r.skipped, t.fetch.calls, s9.calls, t.db.T.sync_state || []], [true, [], [], []]);
+    t = await check1(Object.assign({ stateFile: sf, sync: bad(), now: at(12) }, mk()));
+    check('three failures in a row slow the check to once in 10 minutes: the 10th minute runs', [t.r.skipped, t.fetch.calls.length > 0, t.state.ok, stateIn(sf).failures], [undefined, true, false, 4]);
+    t = await check1(Object.assign({ stateFile: sf, sync: bad(), now: at(15) }, mk()));
+    check('three failures in a row slow the check to once in 10 minutes: still waiting after a failed try', [t.r.skipped, t.fetch.calls], [true, []]);
+    t = await check1(Object.assign({ stateFile: sf, sync: fakeSync(), now: at(25) }, mk()));
+    check('a success resets the count', [t.r.ok, stateIn(sf).failures, stateIn(sf).firstFailedAt, stateIn(sf)[NYC]], [true, undefined, undefined, 'tN2']);
+    const sf2 = stateAt({ [NYC]: 'tN', [NJ]: 'tJ' });
+    for (let i = 0; i < 2; i++) await check1(Object.assign({ stateFile: sf2, sync: bad(), now: at(i) }, mk()));
+    t = await check1(Object.assign({ stateFile: sf2, sync: fakeSync(), now: at(2) }, mk()));
+    check('two failures do not slow the check', [t.r.ok, t.r.skipped], [true, undefined]);
   }
 
   /* ================= one Asana run at a time ================= */

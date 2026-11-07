@@ -95,7 +95,7 @@ once) and the site served on :8080. Every check exits non-zero on a failure.
 
 A listing's name in Asana is its name here. `assets/js/naming.js` is the one naming rule (`200 E57 - 17A`);
 a name it isn't sure of is never changed and shows on the Errors page as the check "Name rule" (M30).
-The address on a job's Facts card is read-only (it is changed in Asana). The header says "Synced N min ago",
+The address and unit on a job's Facts card are read-only for a deal with an Asana task (they are changed in Asana); an Elliman-only unit or a library row still edits. The header says "Synced N min ago",
 from the helper's one-minute check of Asana (migration 0026). `helper/asana-name-fix.js` can tidy names in
 Asana itself; it is off until Matt turns it on (see `helper/README.md`).
 Tests: `scripts/test-naming.js`, `test-name-flow.js`, `test-asana-events.js`, `test-asana-name-fix.js`, `test-job-page.js`.

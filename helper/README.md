@@ -88,7 +88,7 @@ exit ends it). Run it from the main repo folder.
 
 ## Where its files live
 
-- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`, `anthropicKey`), pairing code, caches:
+- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`, `anthropicKey`, `asanaNameFix`, `nameFixSkip`), pairing code, caches:
   `%USERPROFILE%\.gvc-helper\` (never in this repo). Not under
   AppData: Windows gives the Claude desktop app its own private copy of AppData.
 - Log: `%USERPROFILE%\.gvc-helper\helper.log`.
@@ -100,7 +100,8 @@ exit ends it). Run it from the main repo folder.
   `"asanaNameFix": true`. When on, the same one-minute job renames up to 20 tasks a run to the
   naming rule, fills an empty `📍 City/Hood` with the town the name carried, and adds one comment
   saying so; each rename is a `changes` row (source Helper). A name the rule isn't sure of is never
-  touched (Errors M30); gids in `nameFixSkip` are ones Matt said no to. Read first:
+  touched (Errors M30); gids in `nameFixSkip` are ones Matt said no to. It stays off by default:
+  Matt turns it on only after reading the dry run below. Read first:
   `node helper/asana-name-fix.js --dry-run [--out <dir>]` writes `exports/asana-name-fix-<date>.md`
   (renames, names left for Matt, what the workspace will show) and writes nothing else.
   Nothing else in the helper changes Asana (`scripts/test-asana-allow.js` and
@@ -117,7 +118,10 @@ exit ends it). Run it from the main repo folder.
   or house that we have not listed yet, or beside a TJ New Dev listing) are deals with `side 'buy'`;
   a client's buy side, of a development's unit or of our listed house, stays out. A Lead refused as
   "same address" stays listed as not linked on later runs that don't read it again.
-- The one-minute sync (migration 0026, `asana-events.js`): each minute the helper asks Asana's events
+- Asana's name is the workspace's name (`name-flow.js`, the rule in `assets/js/naming.js`): when a read sees
+  a task's name changed, the deal's label, unit and place follow it, and a rename that only respells
+  leaves the printed address alone.
+- The one-minute sync (migration 0026, `asana-events.js`, every 55 seconds): each minute the helper asks Asana's events
   feed what changed in each listing project and re-reads just those tasks (a ticked subtask or a
   comment counts for its listing), as a `sync_runs` row of kind `events`. It only updates deals the
   workspace already has: a task no deal holds, a first check (no token yet) or a token Asana says is
@@ -148,5 +152,6 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 `node scripts/test-dev-units.js`,
 `node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-asana-events.js`, `node scripts/test-budget.js`,
 `node scripts/test-asana-map.js`, `node scripts/test-asana-posts.js`, `node scripts/test-helper-db.js`,
+`node scripts/test-name-flow.js`, `node scripts/test-asana-name-fix.js`, `node scripts/test-asana-write.js`,
 `node scripts/test-places-backfill.js`, `node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`,
 `node scripts/test-piece-build.js` (with `BASE=http://localhost:8080` it also lays out and draws real pages).

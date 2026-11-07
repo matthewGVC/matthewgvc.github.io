@@ -30,7 +30,7 @@ uses it standalone. The Buyer Package does not use it.
 | `changes` | The change log: one row per change, with its source and who made it. | 0005 |
 | `floorplans` | Floorplan versions × layouts per listing. | 0005 |
 | `sync_runs` | Every run of the desktop helper (DE, Asana, People, budget, scan, backup, and `events`: the one-minute sync's re-read of the tasks Asana's events feed named, 0026). | 0005 |
-| `sync_state` | The helper's last check of each kind (`asana-events`: the one-minute sync): when, whether it worked, a plain line. Only the helper writes it; members read it (0026). | 0026 |
+| `sync_state` | The helper's last check of each kind (`asana-events`: the one-minute sync, every 55 seconds): when, whether it worked, a plain line. The header's "Synced N min ago" reads it. Only the helper writes it; members read it (0026). | 0026 |
 | `de_listings` | What the DE sync knows about each DE listing, incl. the GVC-listed check. | 0005 |
 | `asana_tasks` | The helper's read-only cache of Asana tasks (allowlisted fields only, D49). | 0006 |
 | `asana_people` | The allowlisted 👋 People fields (D71): roster drift and M16. | 0006 |

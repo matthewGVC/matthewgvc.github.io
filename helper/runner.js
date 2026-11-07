@@ -85,7 +85,7 @@ function asanaJobs(cfg, client, syncNow, opts) {
     if (cfg.asanaNameFix === true) {
       let names;
       try { names = await require('./asana-name-fix.js').fixNames({ db: client, cfg, fetch: opts && opts.fetch }); }
-      catch (e) { names = { error: e.message }; }
+      catch (e) { names = { error: e.message }; console.error('name fix: ' + e.message); }
       if (r) r = Object.assign({}, r, { names });
     }
     if (failed) throw failed;

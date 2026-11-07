@@ -98,7 +98,7 @@ const NOW = new Date('2026-11-06T15:00:00Z');
 
   p = NF.planFixes([deal('444 Spruce - C609', { gid: 'a4' })]);
   check('planFixes: an unsure name is left for Matt', p, { fixes: [], left: [{ gid: 'a4', propertyId: 'p-a4', name: '444 Spruce - C609', why: 'the street has no street type at the end' }] });
-  check('planFixes: a price is left for Matt', NF.planFixes([deal('182 Rumson rd, rumson $3.5', { gid: 'a4b', row: { market: 'NJ' } })]).left.map(l => l.why), ['it has a price in it']);
+  check('planFixes: a price is left for Matt', NF.planFixes([deal('91 Juniper rd, juniper $2.1', { gid: 'a4b', row: { market: 'NJ' } })]).left.map(l => l.why), ['it has a price in it']);
 
   p = NF.planFixes([deal('200 E 57 - 17A', { gid: 'a5' }), deal('444 Spruce - C609', { gid: 'a5b' }), deal('300 E 57 - 2A', { gid: 'a5c' })], { skip: ['a5', 'a5b'] });
   check('planFixes: Matt\'s no holds', [p.fixes.map(f => f.gid), p.left.map(l => l.gid)], [['a5c'], []]);
@@ -236,10 +236,43 @@ const NOW = new Date('2026-11-06T15:00:00Z');
     check('fixNames: at most 20 a run', [r.done, fa.calls.filter(c => c.method === 'PUT').length], [20, 20]);
   }
   {
-    const fa = fakeAsana({ k1: task('1150 Fifth - Legato') });
-    const db = fakeDb({ properties: [deal('1150 Fifth - Legato', { gid: 'k1' })] });
+    const fa = fakeAsana({ k1: task('2250 Fifth - Aurora') });
+    const db = fakeDb({ properties: [deal('2250 Fifth - Aurora', { gid: 'k1' })] });
     const r = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
     check('fixNames: a name it can\'t parse is never touched', [r, fa.calls.length, db.writes], [{ done: 0, failed: 0, skipped: 0 }, 0, []]);
+  }
+
+  {
+    // a skip is remembered for the day, unless the snapshot's name changes
+    const fa = fakeAsana({ s1: task('200 E 57 - 17B') });
+    const db = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 's1' })] });
+    const r1 = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    const n = fa.calls.length;
+    const r2 = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: new Date('2026-11-06T16:00:00Z') });
+    check("fixNames: a skipped task isn't fetched again the same day", [r1.skipped, r2, fa.calls.length - n], [1, { done: 0, failed: 0, skipped: 0 }, 0]);
+    db.T.properties[0].asana.name = '200 E 57 - 17B';
+    const r3 = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: new Date('2026-11-06T17:00:00Z') });
+    check('fixNames: a new snapshot name is tried again that day', [r3.done, fa.calls.filter(c => c.method === 'PUT').map(c => c.body.data.name)], [1, ['200 E57 - 17B']]);
+    const r4 = await NF.fixNames({ db: fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 's1' })] }), cfg: ON, fetch: fakeAsana({ s1: task('200 E 57 - 17C') }).fetch, now: new Date('2026-11-08T15:00:00Z') });
+    check('fixNames: a skipped task is asked again the next day', r4.skipped, 1);
+  }
+  {
+    const tasks = {}, rows = [];
+    for (let i = 1; i <= 21; i++) { tasks['q' + i] = task(i + '0 E 58 - ' + (i === 21 ? '1A' : '9Z')); rows.push(deal(i + '0 E 58 - 1A', { gid: 'q' + i })); }
+    const fa = fakeAsana(tasks);
+    const db = fakeDb({ properties: rows });
+    const first = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    const n = fa.calls.length;
+    const second = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: new Date('2026-11-06T16:00:00Z') });
+    check("fixNames: 20 remembered skips don't starve a 21st fix", [first.skipped, second, fa.calls.slice(n).map(c => c.method + ' ' + c.path.split('?')[0])],
+      [20, { done: 1, failed: 0, skipped: 0 }, ['GET /tasks/q21', 'PUT /tasks/q21', 'POST /tasks/q21/stories']]);
+  }
+  {
+    const fa = fakeAsana({ t1: task('512 Laurel Rd, Oakton') });
+    const db = fakeDb({ properties: [deal('512 Laurel Rd, Oakton', { gid: 't1', hood: 'Oakton', row: { market: 'NJ' } })] });
+    const r = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    check("fixNames: City/Hood cleared since the snapshot is filled with the name's town", [r.done, fa.calls.filter(c => c.method !== 'GET').map(c => c.body.data)],
+      [1, [{ name: '512 Laurel Rd', custom_fields: { cfHood: 'Oakton' } }, { text: 'Renamed to "512 Laurel Rd" to match the GVC naming rule; Oakton moved to City/Hood.' }]]);
   }
 
   /* ---------- the dry run ---------- */

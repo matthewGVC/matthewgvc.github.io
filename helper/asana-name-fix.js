@@ -92,6 +92,10 @@ function planFixes(props, opts) {
 
 /* gids that failed, and the day they did: not tried again until the next day */
 const failedOn = new Map();
+/* gids skipped (already the rule, or renamed since the snapshot), with the day and the snapshot's
+   name: not asked again that day unless the snapshot changes, so a task the sync no longer reads
+   isn't fetched every minute and can't crowd out the fixes behind it */
+const skippedOn = new Map();
 const dayOf = d => { const x = new Date(d); return x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate(); };
 
 async function fixNames(o) {
@@ -100,8 +104,12 @@ async function fixNames(o) {
   if (cfg.asanaNameFix !== true || !cfg.asanaToken) return out;
   const now = o.now ? new Date(o.now) : new Date(), today = dayOf(now);
   const call = asanaCall({ token: cfg.asanaToken, fetch: o.fetch });
-  const plan = planFixes(await db.select('properties', null, COLS), { skip: cfg.nameFixSkip });
-  const due = plan.fixes.filter(f => failedOn.get(f.gid) !== today).slice(0, PER_RUN);
+  const props = await db.select('properties', null, COLS);
+  const rowOf = new Map(props.filter(p => p && p.asana_gid).map(p => [String(p.asana_gid), p]));
+  const plan = planFixes(props, { skip: cfg.nameFixSkip });
+  const held = f => { const s = skippedOn.get(f.gid); return s && s.day === today && s.from === norm(f.from); };
+  const due = plan.fixes.filter(f => failedOn.get(f.gid) !== today && !held(f)).slice(0, PER_RUN);
+  const skip = f => { skippedOn.set(f.gid, { day: today, from: norm(f.from) }); out.skipped++; };
   const log = (f, newValue, note) => db.insert('changes', [{ property_id: f.propertyId, field: 'asana name', old_value: f.from,
     new_value: newValue, note, source: 'Helper', at: now.toISOString() }]).catch(() => {});
 
@@ -111,14 +119,20 @@ async function fixNames(o) {
       const task = await call('GET', at + '?opt_fields=' + encodeURIComponent(TASK_FIELDS));
       const live = norm(task.name);
       // already the rule (made on an earlier tick, not yet read by the sync), or renamed since: leave it
-      if (live === norm(f.to) || live !== norm(f.from)) { out.skipped++; continue; }
+      if (live === norm(f.to) || live !== norm(f.from)) { skip(f); continue; }
       const data = { name: f.to };
       let town = null;
+      const field = (task.custom_fields || []).find(x => fieldKey(x.name) === fieldKey(HOOD));
       if (f.town) {
-        const field = (task.custom_fields || []).find(x => fieldKey(x.name) === fieldKey(HOOD));
         if (!field) throw new Error('The Asana task has no ' + HOOD + ' field for ' + f.town + '.');
         if (blank(field.display_value)) { data.custom_fields = { [field.gid]: valueFor(field, f.town) }; town = f.town; }
-        else if (fieldKey(field.display_value) !== fieldKey(f.town)) { out.skipped++; continue; }   // filled since with another town
+        else if (fieldKey(field.display_value) !== fieldKey(f.town)) { skip(f); continue; }   // filled since with another town
+      } else {
+        // the name carried a town the snapshot's City/Hood already held: if it was cleared since, fill it too
+        const row = rowOf.get(f.gid), own = row ? answerOf(row) : null;
+        if (own && own.sure && own.town && field && blank(field.display_value)) {
+          data.custom_fields = { [field.gid]: valueFor(field, own.town) }; town = own.town;
+        }
       }
       await call('PUT', at, { data });
       out.done++;

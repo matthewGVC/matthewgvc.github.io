@@ -110,7 +110,7 @@ const stateAt = tokens => { const f = path.join(dir, 'asana-events-' + (++k) + '
 const stateIn = f => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
 const tokensIn = f => { const j = stateIn(f); if (j) { delete j.failures; delete j.firstFailedAt; delete j.lastFailedAt; } return j; };
 const LINKED = [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }, { gid: 'g2', project_gid: NJ, kind: 'listing', property_id: 'p2' },
-  { gid: 'g7', project_gid: NJ, kind: 'listing', pitch_id: 'pi7' }, { gid: 'g8', project_gid: NYC, kind: 'listing', ignored: true },
+  { gid: 'g7', project_gid: NJ, kind: 'listing', pitch_id: 'pi7' }, { gid: 'g8', project_gid: NYC, kind: 'listing', ignored: true }, { gid: 'g6', project_gid: NYC, kind: 'listing', property_id: 'p6', ignored: true },
   { gid: 'g9', project_gid: NYC, kind: 'listing', property_id: null, pitch_id: null }];
 const fakeSync = (answer) => {
   const calls = [];
@@ -204,6 +204,8 @@ async function check1(o) {
   t = await check1({ events: { [NJ]: [{ data: [ev('g7')], sync: 'tJ2' }] }, tasks: { g7: { gid: 'g7', parent: null } } });
   check('a task linked only by a pitch goes to the plain read', [t.r.gap, t.sync.calls.map(c => c.kind)], [true, ['plain']]);
   t = await check1({ events: { [NYC]: [{ data: [ev('g8'), ev('st8', 'story', 'g8')], sync: 'tN2' }] } });
+  { const t6 = await check1({ events: { [NYC]: [{ data: [ev('g6')], sync: 'tN2' }] } });
+    check('a linked task once cached as ignored is still read', [t6.r.ok, t6.r.gap, t6.sync.calls], [true, false, [{ kind: 'events', gids: { g6: 'NYC' } }]]); }
   check('an ignored task\'s edit runs no read', [t.r.ok, t.r.gap, t.sync.calls, t.fetch.calls.some(c => /^\/tasks\//.test(c)), tokensIn(t.stateFile)[NYC]], [true, false, [], false, 'tN2']);
   {
     const P1 = { id: 'p1', slug: '3-sample-ave-4c', label: '3 Sample Ave - 4C', kind: 'sale', market: 'NYC', stage: 'Live', stage_source: 'Asana', asana_gid: 'g1',

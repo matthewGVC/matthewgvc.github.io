@@ -148,8 +148,8 @@ function req(method, p, headers, body) {
   const at = s => new Date(s);
   const quiet = { de: at('2026-10-20T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
     asanaFull: at('2026-10-20T03:00:05'), people: at('2026-10-20T03:15:05') };
-  // the every-minute Asana write (overhaul step 5) is checked on its own below
-  const dueA = (now, last) => due(at(now), last, { asana: true }).filter(k => k !== 'asanaWrite');
+  // the every-minute Asana write (overhaul step 5) and events check (stage 2) are checked on their own below
+  const dueA = (now, last) => due(at(now), last, { asana: true }).filter(k => k !== 'asanaWrite' && k !== 'asanaEvents');
   check('asana: 29 minutes since the last read is not due', dueA('2026-10-20T10:29:00', Object.assign({ asana: at('2026-10-20T10:00:00') }, quiet)), []);
   check('asana: 30 minutes is due', dueA('2026-10-20T10:30:00', Object.assign({ asana: at('2026-10-20T10:00:00') }, quiet)), ['asana']);
   const off = dueA('2026-10-20T08:00:00', { de: at('2026-10-19T07:00:05'), scan: at('2026-10-20T02:00:05'), backup: at('2026-10-20T02:30:05'),
@@ -235,11 +235,34 @@ function req(method, p, headers, body) {
     ['2026-10-20T10:00:00.000Z', '2026-10-19T03:00:00.000Z', '2026-10-20T03:15:00.000Z', '2026-10-20T07:00:00.000Z', '2026-10-20T06:00:00.000Z']);
   check('startup reads: every one newest first, limit 1, never the totals', runCalls.length > 0 && runCalls.every(c => c.t === 'sync_runs' && c.o && c.o.order === 'started_at.desc' && c.o.limit === 1 && !/totals/.test(c.cols || '*') && (c.cols || '*') !== '*'), true);
   check('no token: no Asana jobs', Object.keys(asanaJobs({}, {})), []);
-  check('token: asana, asanaFull, people jobs, and the edits to Asana', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaFull', 'asanaWrite', 'people']);
+  check('token: asana, asanaFull, people jobs, the edits to Asana and the events check', Object.keys(asanaJobs({ asanaToken: 'x' }, {})).sort(), ['asana', 'asanaEvents', 'asanaFull', 'asanaWrite', 'people']);
+  const minute = { asana: at('2026-10-20T10:00:00'), asanaWrite: at('2026-10-20T10:00:00'), asanaEvents: at('2026-10-20T10:00:00') };
   check('the edits to Asana: each minute, never without a token', [
-    due(at('2026-10-20T10:01:00'), Object.assign({ asana: at('2026-10-20T10:00:00'), asanaWrite: at('2026-10-20T10:00:00') }, quiet), { asana: true }),
-    due(at('2026-10-20T10:00:30'), Object.assign({ asana: at('2026-10-20T10:00:00'), asanaWrite: at('2026-10-20T10:00:00') }, quiet), { asana: true }),
+    due(at('2026-10-20T10:01:00'), Object.assign({}, minute, quiet), { asana: true }).filter(k => k !== 'asanaEvents'),
+    due(at('2026-10-20T10:00:30'), Object.assign({}, minute, quiet), { asana: true }),
     due(at('2026-10-20T10:01:00'), Object.assign({}, quiet), {}).includes('asanaWrite')], [['asanaWrite'], [], false]);
+  check('asanaEvents is due each minute with a token, never without', [
+    due(at('2026-10-20T10:01:00'), Object.assign({}, minute, quiet), { asana: true }),
+    due(at('2026-10-20T10:00:30'), Object.assign({}, minute, quiet), { asana: true }),
+    due(at('2026-10-20T10:01:00'), Object.assign({ asana: at('2026-10-20T10:00:00'), asanaWrite: at('2026-10-20T10:00:00') }, quiet), { asana: true }).includes('asanaEvents'),
+    due(at('2026-10-20T10:01:00'), Object.assign({}, quiet), {}).includes('asanaEvents')], [['asanaWrite', 'asanaEvents'], [], true, false]);
+  {
+    // the events check runs checkEvents through runAsana('events'), with sync = the plain syncNow itself (never runAsana again)
+    const seenE = [];
+    const syncE = async o => { seenE.push(o.kind); return { ok: true, report: { ok: true } }; };
+    const fs2 = require('fs'), path2 = require('path');
+    const homeE = fs2.mkdtempSync(path2.join(process.env.GVC_HELPER_HOME, 'events-'));
+    const cE = { asanaToken: 'x', home: homeE, asana: { listings: { NYC: 'pN' } } };
+    const okE = { select: async () => [], upsert: async (t, rows) => { seenE.push(t + ':' + rows[0].kind + ':' + rows[0].ok); return rows; } };
+    const fetchE = async () => ({ ok: false, status: 412, headers: { get: () => null }, json: async () => ({ errors: [], sync: 'tok1' }) });
+    const rE = await asanaJobs(cE, okE, syncE, { fetch: fetchE }).asanaEvents();
+    check('the events job: a first check catches up through the plain sync', [rE.ok, seenE], [true, ['plain', 'sync_state:asana-events:true']]);
+    check('the events job keeps its tokens in the helper home', JSON.parse(fs2.readFileSync(path2.join(homeE, 'asana-events.json'), 'utf8')), { pN: 'tok1' });
+    const fetchBad = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ data: [{ resource: { gid: 'g', resource_type: 'task' } }], sync: 'tok2', has_more: false }) });
+    const okLinked = Object.assign({}, okE, { select: async () => [{ gid: 'g', property_id: 'p1' }] });
+    const badE = await asanaJobs(cE, okLinked, async () => { throw new Error('boom'); }, { fetch: fetchBad }).asanaEvents();
+    check('a failed events check says why on /health', [badE.ok, badE.aborted], [false, 'boom']);
+  }
   const seen = [];
   const jobs = asanaJobs({ asanaToken: 'x' }, { c: 1 }, async o => { seen.push([!!o.full, o.kind || null, o.client.c]); return { report: { ok: true } }; });
   await jobs.asana(); await jobs.asanaFull(); await jobs.people();

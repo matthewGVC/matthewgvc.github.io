@@ -106,7 +106,7 @@ const USERS = {
   /* ---------- structure ---------- */
   const tables = (await db.query(`select table_name from information_schema.tables where table_schema = 'public' order by 1`)).rows.map(r => r.table_name);
   check('tables', tables, ['asana_people', 'asana_tasks'].concat(UPTO >= '0021' ? ['asana_writes'] : [], UPTO >= '0025' ? ['buildings'] : [], ['changes', 'de_listings'], UPTO >= '0015' ? ['dev_budgets'] : [], ['dev_projects', 'developments', 'documents', 'floorplans'])
-    .concat(UPTO >= '0022' ? ['google_tokens'] : [], UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches'], UPTO >= '0025' ? ['places'] : [], ['properties', 'sync_runs', 'todos']));
+    .concat(UPTO >= '0022' ? ['google_tokens'] : [], UPTO >= '0020' ? ['invites'] : [], UPTO >= '0011' ? ['match_claims'] : [], ['members', 'photos'], UPTO >= '0017' ? ['piece_requests'] : [], ['pitches'], UPTO >= '0025' ? ['places'] : [], ['properties', 'sync_runs'], UPTO >= '0026' ? ['sync_state'] : [], ['todos']));
   if (UPTO >= '0023') check('0023: a development keeps its folder scan', (await db.query(`select data_type from information_schema.columns where table_name = 'dev_projects' and column_name = 'scan'`)).rows, [{ data_type: 'jsonb' }]);
   const cols = (await db.query(`select column_name from information_schema.columns where table_name = 'properties' order by 1`)).rows.map(r => r.column_name);
   check('properties columns', ['kind', 'market', 'stage', 'stage_source', 'units', 'extras', 'de_listing_id', 'de_status', 'de', 'mls_id',
@@ -732,6 +732,21 @@ const USERS = {
     check("0025: a stranger can't write places", await w('stranger', `insert into public.places (slug, key, address) values ('x', 'k', 'a')`), 'refused');
     check('0025: the owner and the helper change a place', [await w('matt', `update public.places set label = 'Matt' where id = '${plId}'`), await w('helper', `update public.places set label = 'Helper' where id = '${plId}'`)], [1, 1]);
     check('0025: a place can sit in a development', await w('helper', `update public.places set dev_project_id = (select id from public.dev_projects limit 1) where id = '${plId}'`), 1);
+  }
+
+  /* ---------- 0026: the one-minute sync: events runs and the check's state ---------- */
+  if (UPTO >= '0026') {
+    check("0026: 'events' accepted by sync_runs", await fails('helper', `insert into public.sync_runs (kind) values ('events')`), false);
+    check('0026: an unknown run kind is still refused', await fails('helper', `insert into public.sync_runs (kind) values ('social')`), true);
+    check('0026: the helper writes the check', await fails('helper', `insert into public.sync_state (kind, checked_at, ok, detail) values ('asana-events', now(), true, '3 tasks changed')`), false);
+    check('0026: the helper updates it', (await as('helper', `update public.sync_state set ok = false, detail = 'x' where kind = 'asana-events'`)).affectedRows, 1);
+    check('0026: checked_at and ok are needed', [await fails('helper', `insert into public.sync_state (kind, ok) values ('a', true)`), await fails('helper', `insert into public.sync_state (kind, checked_at) values ('b', now())`)], [true, true]);
+    check('0026: Matt and the shared login read it', [(await as('matt', 'select count(*)::int n from public.sync_state')).rows[0].n, (await as('team', 'select count(*)::int n from public.sync_state')).rows[0].n], [1, 1]);
+    check('0026: a stranger and anon read nothing', [(await as('stranger', 'select count(*)::int n from public.sync_state')).rows[0].n, (await as('anon', 'select count(*)::int n from public.sync_state')).rows[0].n], [0, 0]);
+    const w2 = async (who, sql) => { try { return (await as(who, sql)).affectedRows || 0; } catch (e) { return 'refused'; } };
+    check("0026: the shared login can't write sync_state", [await fails('team', `insert into public.sync_state (kind, checked_at, ok) values ('t', now(), true)`),
+      await w2('team', `update public.sync_state set ok = true`), await w2('team', 'delete from public.sync_state')], [true, 0, 0]);
+    check("0026: a stranger can't write sync_state", await fails('stranger', `insert into public.sync_state (kind, checked_at, ok) values ('s', now(), true)`), true);
   }
 
   /* ---------- the switch: the shared account stops ---------- */

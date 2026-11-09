@@ -46,6 +46,12 @@
      facts at Asana's rank through GVC_FACTS (a fact DE or Matt holds stays
      theirs; every key asana-map.js factsOf gives, State as its two-letter
      code included, so an existing job gains it on the next sync), core.suggestedAgentIds, dev_project_id for a TJ New Dev house.
+   - the name (stage 2, decision 12): a deal's label is always its task's name as the workspace shows it
+     (GVC_NAME.baseName), on create and on every sync (logged, field label); a new deal's slug is still its
+     address's, so URLs never change. A rename to a new unit or street moves the deal (helper/name-flow.js:
+     Asana's value replaces the team's, note "Renamed in Asana"), and its place (place-store followRename:
+     the place itself when the deal is alone there, else the place at the new address); a respelling changes
+     the label only. When the deal is its place's newest list-side deal, places.label takes its label.
    - a new listing with no unit at a development's street (its name, or dev-addresses.js) joins
      that development rather than standing beside it (D141); when the development has no house
      yet it is a single-family new development and the house becomes it (house_listing_id): one
@@ -89,6 +95,8 @@
      linked development, from its 🚧 tasks) is stored in `match` where it
      changed (helper/match-store.js), found / cleared logged as source 'match'.
    - People (run.kind 'people'): asana_people rows upserted, seen_at = now.
+   - An events run (run.kind 'events', asana-events.js): the tasks the feed named, written as a plain
+     run's are; its sync_runs row is kind 'events' and has no totals.unlinked.
    Never: a job deleted, a folder touched, anything written to Asana.
    A row someone changed meanwhile (version check) is skipped and logged,
    never overwritten. An aborted run writes only its sync_runs row; so does a
@@ -106,7 +114,9 @@ const { matchUpdate, storeMatches } = require('../match-store.js');
 const { looseNeedles, namesOne } = require('./read.js');
 const DA = require('../../assets/js/dev-addresses.js');
 const GP = require('../../assets/js/places.js');
-const { findOrMakePlace } = require('../place-store.js');
+const { findOrMakePlace, followRename } = require('../place-store.js');
+const N = require('../../assets/js/naming.js');
+const { nameFlow } = require('../name-flow.js');
 
 const ACTIVE = L.ACTIVE;
 const WON = ACTIVE.concat(['Sold', 'Rented']);
@@ -120,7 +130,9 @@ const clone = x => (x === undefined || x === null ? x : JSON.parse(JSON.stringif
 async function applyRun(o) {
   const { client, run } = o;
   const now = (o.now || new Date()).toISOString();
-  const kind = run.kind === 'people' ? 'people' : 'asana';
+  // an events run (asana-events.js) is written as a plain one, logged as 'events': never the plain
+  // read's starting point, never the Errors page's list (totals.unlinked is on 'asana' runs only)
+  const kind = run.kind === 'people' ? 'people' : run.kind === 'events' ? 'events' : 'asana';
   const sr = (await client.insert('sync_runs', { kind, started_at: now, rows_read: run.rowsRead || null, totals: run.totals || null,
     helper_version: o.helperVersion || null }))[0];
   const out = { runId: sr.id, ok: false, changes: 0, created: 0, errors: [], unlinked: [] };
@@ -307,7 +319,7 @@ async function writeRun(o, sr, out, now) {
     const fill = prev ? GP.inherit(prev.core, core) : core;
     const inherited = Object.keys(fill).filter(k => k !== 'facts' && !(k in core));
     core = fill;
-    const row = { slug: slugFor('properties', core, t.gid), label: P.labelOf(core), core, kind, market: t.market || null, stage,
+    const row = { slug: slugFor('properties', core, t.gid), label: N.baseName(t.name) || P.labelOf(core), core, kind, market: t.market || null, stage,
       stage_source: 'Asana', units: core.unit ? [core.unit] : [], asana_gid: t.gid, asana: snapshotOf(t), milestones: MAP.datesOf(t, t.history, now),
       folder_state: 'unlinked', dev_project_id: devId || (buy && place && place.dev_project_id) || null, place_id: place ? place.id : null, side };
     if (folderOf) { row.drive_folder = folderOf.drive_folder; row.folder_state = folderOf.folder_state || 'unlinked'; }
@@ -351,16 +363,12 @@ async function writeRun(o, sr, out, now) {
 
   async function updateListing(p, t, stage, link, fromPitch) {
     const own = { property_id: p.id };
-    const core = clone(p.core) || {}, patch = {}, changes = [];
+    let core = clone(p.core) || {};
+    const patch = {}, changes = [];
     if (link) { patch.asana_gid = t.gid; changes.push(log(own, 'asana_gid', null, t.gid, fromPitch ? 'Pitch won in Asana' : 'Linked to Asana')); }
     // old library rows were saved without a market; Asana's project says which one it is
     if (!p.market && t.market) { patch.market = t.market; changes.push(log(own, 'market', null, t.market)); }
     if (fromPitch && p.from_pitch_id !== fromPitch.id) { patch.from_pitch_id = fromPitch.id; changes.push(log(own, 'from_pitch_id', p.from_pitch_id || null, fromPitch.id)); }
-    // a row from before places, or one linked by hand: its place, found or made
-    if (!p.place_id) {
-      const place = await findOrMakePlace(client, places, { core: p.core || {}, market: p.market || t.market || null, devId: p.dev_project_id || devOfListing[t.gid] || null });
-      if (place) { patch.place_id = place.id; changes.push(log(own, 'place_id', null, place.id)); }
-    }
     // a lost pitch archives, and comes back when Asana takes it up again (decision 27); a deal
     // Matt archived (stage_source 'Matt') stays archived: Asana itself never maps to Archived
     if (p.stage === 'Pitch' && stage === 'Off market') {
@@ -393,6 +401,20 @@ async function writeRun(o, sr, out, now) {
       changes.push(log(own, 'suggestedAgentIds', core.suggestedAgentIds || [], agents));
       if (agents.length) core.suggestedAgentIds = agents; else delete core.suggestedAgentIds;
     }
+    // the task's name is the deal's name; a rename to a new unit or street moves the deal, and its place (stage 2)
+    const nf = nameFlow(Object.assign({}, p, { core }), t.name);
+    core = nf.core;
+    nf.changes.forEach(c => changes.push(log(own, c.field, c.old, c.new, c.note)));
+    if (nf.label !== p.label) { patch.label = nf.label; changes.push(log(own, 'label', p.label || null, nf.label)); }
+    // a row from before places, or one linked by hand: its place, found or made, at the address its name gives now
+    if (!p.place_id) {
+      const place = await findOrMakePlace(client, places, { core: nf.moved ? core : (p.core || {}), market: p.market || t.market || null, devId: p.dev_project_id || devOfListing[t.gid] || null });
+      if (place) { patch.place_id = place.id; changes.push(log(own, 'place_id', null, place.id)); }
+    } else if (nf.moved) {
+      const placeId = await followRename(client, places, { deal: p, core, market: p.market || t.market || null, devId: p.dev_project_id || null,
+        others: props.filter(x => x.place_id === p.place_id && x.id !== p.id) });
+      if (placeId && placeId !== p.place_id) { patch.place_id = placeId; changes.push(log(own, 'place_id', p.place_id, placeId)); }
+    }
     if (!eq(core, p.core)) patch.core = core;
 
     const snap = snapshotOf(t, p.asana);
@@ -410,7 +432,15 @@ async function writeRun(o, sr, out, now) {
       patch.dev_project_id = devOfListing[t.gid];
       changes.push(log(own, 'dev_project_id', p.dev_project_id || null, devOfListing[t.gid]));
     }
-    await save('properties', p, patch, changes);
+    const saved = await save('properties', p, patch, changes);
+    // the place's name is its newest list-side deal's
+    if (saved && 'label' in patch && p.place_id && newestOn(p.place_id) === p) {
+      const pl = places.places.find(x => x.id === p.place_id);
+      if (!pl || pl.label !== nf.label) {
+        await client.update('places', { id: p.place_id }, { label: nf.label });
+        if (pl) pl.label = nf.label;
+      }
+    }
   }
 
   async function updatePitch(pitch, t, link) {

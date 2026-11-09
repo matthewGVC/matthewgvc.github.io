@@ -10,11 +10,14 @@
    de-sync.js after every good Elliman read (never an aborted one):
    - a GVC-listed de_listings row that isn't set aside, at a street of a development that
      isn't archived (GVC_DEV_ADDRESSES), with no property_id, becomes a deal in that
-     development: slug and label as an Asana-made deal's (the Elliman id's last six on a
-     clashing slug), the development's own spelling of the street and its market, stage
-     source 'DE', no Asana task, no folder (decision 21), its place (place-store.js), and
+     development: slug as an Asana-made deal's (the Elliman id's last six on a clashing slug),
+     label by the naming rule (GVC_NAME.nameOf: "200 E Boca Raton Rd - B", never " (Rental)", as an
+     Asana-linked deal's label), the development's own spelling of the street and its market, stage source 'DE',
+     no Asana task, no folder (decision 21), its place (place-store.js), and
      de_listings.property_id set. The next Elliman read fills its price and facts through
      the de_listing_id, as for any job (de/apply.js).
+   - such a deal made before the naming rule takes its rule label on its next run (one `changes`
+     row, field label, note "Named by the naming rule").
    - such a deal's stage follows Elliman (de/status.js mapStage; Sold and Rented become
      Archived), one `changes` row each move, its note in the workspace's stage words
      ("Elliman shows it In contract", workspace-data.js stageWord), until an Asana task takes it
@@ -32,10 +35,19 @@ const P = require('../assets/js/property-library.js');
 const A = require('../assets/js/address-aliases.js');
 const DA = require('../assets/js/dev-addresses.js');
 const W = require('../assets/js/workspace-data.js');
+const N = require('../assets/js/naming.js');
 const { mapStage } = require('./de/status.js');
 const { findOrMakePlace } = require('./place-store.js');
 
 const ARCHIVES = { Sold: 'Archived', Rented: 'Archived' };
+
+/* an Elliman-only unit's name, by the naming rule (it has no Asana task to name it), without " (Rental)"
+   as an Asana-linked deal's label; '' with no street */
+function ruleLabel(core, market) {
+  core = core || {};
+  if (!String(core.address || '').trim()) return '';
+  return N.nameOf({ street: core.address, unit: core.unit }, market, {});
+}
 
 /* the development whose street this is, and that street as the workspace spells it */
 function devStreet(street) {
@@ -65,10 +77,17 @@ async function syncDevUnits(client, o) {
       const raw = d.raw, mapped = mapStage(raw), stage = ARCHIVES[mapped] || mapped;
       if (d.property_id) {
         const p = props.find(x => x.id === d.property_id);
-        if (!p || !p.dev_project_id || p.asana_gid || p.stage_source !== 'DE' || p.stage === stage) continue;
-        await client.update('properties', { id: p.id }, { stage, stage_source: 'DE' }, { version: p.version });
-        await client.insert('changes', [change(p.id, 'stage', p.stage, stage, 'Elliman shows it ' + W.stageWord(mapped, p.kind))]);
-        out.moved++;
+        if (!p || !p.dev_project_id || p.asana_gid) continue;
+        const patch = {}, rows = [];
+        // a unit made before the naming rule takes its rule name on its next run
+        const label = ruleLabel(p.core, p.market);
+        if (label && label !== p.label) { patch.label = label; rows.push(change(p.id, 'label', p.label || null, label, 'Named by the naming rule')); }
+        const moves = p.stage_source === 'DE' && p.stage !== stage;
+        if (moves) { patch.stage = stage; patch.stage_source = 'DE'; rows.push(change(p.id, 'stage', p.stage, stage, 'Elliman shows it ' + W.stageWord(mapped, p.kind))); }
+        if (!rows.length) continue;
+        await client.update('properties', { id: p.id }, patch, { version: p.version });
+        await client.insert('changes', rows);
+        if (moves) out.moved++;
         continue;
       }
       const dev = devs.find(x => x.slug === at.slug && !x.archived_at);
@@ -78,11 +97,11 @@ async function syncDevUnits(client, o) {
       if (had) { await client.update('de_listings', { de_listing_id: d.de_listing_id }, { property_id: had.id }); continue; }
       const core = { address: at.street, unit: raw.unit || '', city: raw.city || null, state: raw.state || null };
       const place = await findOrMakePlace(client, cache, { core, market: dev.market || null, devId: dev.id });
+      const kind = d.kind || 'sale';
       let slug = P.slugOfCore(core);
       if (slugs.has(slug)) slug = slug + '-' + String(d.de_listing_id).slice(-6);
       slugs.add(slug);
-      const kind = d.kind || 'sale';
-      const made = (await client.insert('properties', { slug, label: P.labelOf(core), core, kind, market: dev.market || null, stage,
+      const made = (await client.insert('properties', { slug, label: ruleLabel(core, dev.market || null) || P.labelOf(core), core, kind, market: dev.market || null, stage,
         stage_source: 'DE', units: core.unit ? [core.unit] : [], asana_gid: null, de_listing_id: d.de_listing_id, folder_state: 'unlinked',
         dev_project_id: dev.id, place_id: place ? place.id : null }))[0];
       props.push(made);

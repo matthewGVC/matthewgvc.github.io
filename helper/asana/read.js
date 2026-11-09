@@ -13,6 +13,13 @@
                    tasks (Creative Requests etc.) naming none of them are dropped
                    before anything is kept (D65). Empty → loose projects not read.
        only        'people' → read just 👋 People (the 3:15 job)
+       gids        { [taskGid]: market } → the events run (asana-events.js): just these tasks,
+                   each read alone (GET /tasks/<gid>); a subtask is replaced by its parent (up
+                   to three levels), a 404 or a task in no listing project is skipped, a task
+                   that fails to read otherwise (a 403, a 500) is skipped with a warning (the
+                   rest still apply; a refused token still stops the run), and each is
+                   detailed (checklist and history). kind 'events', full false, no devs,
+                   loose or people, totals { events: true }, rowsRead { events: n }.
      → { ok, aborted?, full, since, listings, devs, loose, people, warnings,
          missing, readProjects, totals, rowsRead }
 
@@ -109,6 +116,39 @@ async function readRun(o) {
   }
 
   try {
+    if (o.gids) {
+      out.kind = 'events';
+      out.full = false;
+      out.totals = { events: true };
+      const marketOf = {};
+      Object.keys(a.listings || {}).forEach(m => { marketOf[a.listings[m]] = m; });
+      // one task, or null when Asana no longer has it (deleted) or it failed to read (a warning:
+      // one bad task never holds up the rest, nor the feed)
+      const one = async gid => {
+        try { return (await asana.get('/tasks/' + gid, { opt_fields: allow.TASK_FIELDS, limit: null }))[0] || null; }
+        catch (e) {
+          if (e && e.status === 404) return null;
+          if (stopFor(e)) throw e;
+          out.warnings.push('a task could not be read (' + gid + '): ' + e.message + '; it is read again by the next plain or full read');
+          return null;
+        }
+      };
+      const seen = new Set();
+      for (const gid of Object.keys(o.gids)) {
+        let raw = await one(gid);
+        // project events bubble up subtask changes: the listing is the subtask's parent
+        for (let depth = 0; raw && raw.parent && raw.parent.gid && depth < 3; depth++) raw = await one(raw.parent.gid);
+        if (!raw || (raw.parent && raw.parent.gid) || seen.has(raw.gid)) continue;
+        const m = (raw.memberships || []).find(x => x && x.project && marketOf[x.project.gid]);
+        if (!m) continue;                                  // moved out of the listing projects
+        seen.add(raw.gid);
+        const t = Object.assign(allow.keepTask(raw, m.project.gid), { market: marketOf[m.project.gid] });
+        await detail(t, true);
+        out.listings.push(t);
+      }
+      out.rowsRead.events = out.listings.length;
+      return out;
+    }
     if (o.only === 'people') {
       out.kind = 'people';
       const raw = await asana.get('/projects/' + a.people + '/tasks', { opt_fields: PEOPLE_FIELDS });
@@ -228,4 +268,4 @@ async function readRun(o) {
   }
 }
 
-module.exports = { readRun, looseNeedles, namesOne };
+module.exports = { readRun, looseNeedles, namesOne, stopFor };

@@ -52,14 +52,14 @@
   var WORDS = {
     N: 'NORTH', S: 'SOUTH', E: 'EAST', W: 'WEST',
     AVE: 'AVENUE', AV: 'AVENUE', BLVD: 'BOULEVARD', DR: 'DRIVE', LN: 'LANE',
-    RD: 'ROAD', PL: 'PLACE', PLZ: 'PLAZA', CT: 'COURT', TER: 'TERRACE', PKWY: 'PARKWAY',
+    RD: 'ROAD', PL: 'PLACE', SQ: 'SQUARE', CIR: 'CIRCLE', TRL: 'TRAIL', LEX: 'LEXINGTON', PLZ: 'PLAZA', CT: 'COURT', TER: 'TERRACE', PKWY: 'PARKWAY',
     FIRST: '1', SECOND: '2', THIRD: '3', FOURTH: '4', FIFTH: '5',
     SIXTH: '6', SEVENTH: '7', EIGHTH: '8', NINTH: '9', TENTH: '10'
   };
 
   /* street types: a trailing one may be missing on one side ("176 E71",
      "1050 Park"), but two different types never match (St ≠ Ave) */
-  var TYPES = { STREET: 1, AVENUE: 1, BOULEVARD: 1, DRIVE: 1, LANE: 1, ROAD: 1, PLACE: 1, COURT: 1, TERRACE: 1, PARKWAY: 1 };
+  var TYPES = { STREET: 1, AVENUE: 1, BOULEVARD: 1, DRIVE: 1, LANE: 1, ROAD: 1, PLACE: 1, COURT: 1, TERRACE: 1, PARKWAY: 1, SQUARE: 1, CIRCLE: 1, TRAIL: 1 };
 
   function tokens(s) {
     var out = [];
@@ -115,7 +115,7 @@
   /* a unit after " - " has a digit in it, is one capital letter (Le Reve's B, C, E) or is a
      named one (PHC, TH, Garden); anything else there is a town ("207 Example Ct - Brick") */
   function unitLike(t) {
-    return /\d/.test(t) || /^[A-Z]$/.test(t) || /^(PH[A-Z0-9]*|PENTHOUSE|TH|GARDEN)$/i.test(t);
+    return /\d/.test(t) || /^[A-Z]$/.test(t) || /^(PH\d{0,2}[A-Z]?|PENTHOUSE|TH|GARDEN)$/i.test(t);
   }
 
   function splitName(name) {
@@ -132,8 +132,9 @@
       if (unitLike(tail)) out.unit = tail; else out.town = tail;
     }
     segs.forEach(function (seg) {
-      var u = /^(?:APT|APARTMENT|UNIT|#)\.?\s*(.+)$/i.exec(seg);
+      var u = /^(?:APT|APARTMENT|UNIT|SUITE|#)\.?\s*(.+)$/i.exec(seg);
       if (u && !out.unit) { out.unit = u[1].split(/\s+-\s+/)[0].trim(); return; }
+      if (!out.unit && !/\s/.test(seg) && unitLike(seg)) { out.unit = seg; return; }   // "235 East 80th Street, PHB"
       if (!out.town && seg) out.town = seg.split(/\s+-\s+/)[0].trim();
     });
     return out;

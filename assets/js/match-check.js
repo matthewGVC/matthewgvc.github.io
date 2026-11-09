@@ -25,10 +25,10 @@
                       doesn't, so the page never makes M19 itself)
              library  the workspace rows with no stage (M20; the helper's)
              devs     dev_projects rows (M29; the helper's)
-       code    'M1' … 'M29'
+       code    'M1' … 'M30'
        key     what a dismissal is stored under: the code, or code:part where
                one job can have several (M5:closedOn, M7:drive, M8:showsheet,
-               M12:<task gid>, M13:<task gid>, M17:price, M19:<DE id>, M20:<row id>, M29:<dev id>)
+               M12:<task gid>, M13:<task gid>, M17:price, M19:<DE id>, M20:<row id>, M29:<dev id>, M30)
        text    one plain sentence
        values  the sources' values: a dismissal holds while these stay the same
        fixAt   'Asana' | 'DE' | 'Drive' | 'Matt'
@@ -112,6 +112,10 @@
           house's place (a repeat listing: d.house_place_id, filled by helper/match-store.js).
           A House 1 / House 2 listing is a unit, never a line; archived jobs and developments
           are left out. Key M29:<dev id>.
+     M30  A name the helper can't fix (stage 2, decision 38): Asana's task name, read by
+          GVC_NAME.ruleName, isn't one the rule is sure of (the reason is in the line). Runs for
+          a Pitch deal and our own purchase too; not for no stage, Archived or an Elliman-only
+          unit. A name the rule can fix gives no line: the helper's name fix does that. fixAt Matt.
 
    Places and deals (0025): a deal at the Pitch stage (an Asana Lead), our own purchase
    (side 'buy') and a development's unit made from Elliman with no Asana task
@@ -127,9 +131,9 @@
   'use strict';
   if (typeof module === 'object' && module.exports) {
     module.exports = factory(require('./asana-map.js'), require('./job-facts.js'), require('./kit-track.js'), global,
-      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js'), G: require('./places.js') }; });
+      function () { return { A: require('./address-aliases.js'), P: require('./property-library.js'), D: require('./dev-addresses.js'), G: require('./places.js'), N: require('./naming.js') }; });
   } else global.GVC_MATCH = factory(global.GVC_ASANA, global.GVC_FACTS, global.GVC_KIT, global, function () {
-    return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES, G: global.GVC_PLACES };
+    return { A: global.GVC_ADDR, P: global.GVC_PROPS, D: global.GVC_DEV_ADDRESSES, G: global.GVC_PLACES, N: global.GVC_NAME };
   });
 })(typeof window !== 'undefined' ? window : globalThis, function (MAP, F, KIT, global, libs) {
   'use strict';
@@ -319,6 +323,15 @@
     var core = job.core || {}, ms = job.milestones || {}, stage = job.stage;
     var now = today(ctx.now), out = [];
     out.waiting = {};
+    // M30 first: a name the rule can't read is checked for every deal with a stage, Pitch and purchases included,
+    // except an Elliman-only unit (no Asana task, so no name)
+    if (stage && stage !== 'Archived' && a && !libs().G.ellimanOnly(job)) {
+      var NM = libs().N;
+      var rn = NM && NM.ruleName(a.name, { market: job.market, cityHood: (a.fields || {})['📍 City/Hood'], rental: job.kind === 'rental', devHouse: !!job.dev_project_id });
+      if (rn && !rn.sure) out.push({ code: 'M30', key: 'M30', values: { name: a.name }, fixAt: 'Matt', since: null,
+        who: peopleOf(a, ctx).names.slice(),
+        text: "Asana's name \"" + a.name + "\" doesn't follow the naming rule (" + rn.why + "). Matt fixes it in Asana." });
+    }
     // a Pitch deal (a Lead) and our own purchase (side 'buy') are checked for nothing yet; nor is a
     // development's unit made from Elliman with no Asana task: there is nothing to compare Elliman with (decision 72)
     if (!stage || stage === 'Archived' || stage === 'Pitch' || job.side === 'buy' || libs().G.ellimanOnly(job)) return out;
@@ -764,6 +777,7 @@
     M26: 'Asana\'s zip code disagrees with DE\'s.',
     M27: 'The exclusive ends within two weeks. Extend it in Asana if the listing carries on.',
     M28: 'The listing is Sold or Rented but its Asana task is still open. Tick it done once the team confirms the deal is finished.',
+    M30: "Asana's task name isn't one the naming rule is sure how to write. The reason is in the line; Matt fixes the name in Asana. A name the rule can fix is fixed for you.",
     M29: 'A listing and a development are at the same address, so one job shows twice. A single-family new development is one job: Matt makes them one (the development keeps the house). Only a development of several houses (House 1, House 2) has its houses as units.'
   };
 

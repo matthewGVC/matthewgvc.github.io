@@ -86,6 +86,19 @@ once) and the site served on :8080. Every check exits non-zero on a failure.
 - `job-folders.js` — check or build a job's Drive folder against the standard in `assets/js/drive-rules.js`
 - `make-png.js` / `check-svgs.js` — regenerate and render-check the monogram favicons and lockup SVGs
 - `sync_todo.py` — the SQL that mirrors `docs/todo.md` onto the live To-do page
+- `test-naming.js` — the naming rule (`assets/js/naming.js`) against a snapshot of the real Asana names; set
+  `GVC_NAMES_DIR` to the folder holding the snapshot (the main checkout's `exports` folder), or it prints `skipped`
+- `test-name-flow.js`, `test-asana-events.js`, `test-asana-name-fix.js` — Asana's name reaching the workspace,
+  the one-minute events sync, and the name fix (see `helper/README.md`)
+
+## Names and sync
+
+A listing's name in Asana is its name here. `assets/js/naming.js` is the one naming rule (`200 E57 - 17A`);
+a name it isn't sure of is never changed and shows on the Errors page as the check "Name rule" (M30).
+The address and unit on a job's Facts card are read-only for a deal with an Asana task (they are changed in Asana); an Elliman-only unit or a library row still edits. The header says "Synced N min ago",
+from the helper's one-minute check of Asana (migration 0026). `helper/asana-name-fix.js` can tidy names in
+Asana itself; it is off until Matt turns it on (see `helper/README.md`).
+Tests: `scripts/test-naming.js`, `test-name-flow.js`, `test-asana-events.js`, `test-asana-name-fix.js`, `test-job-page.js`.
 
 ## Showsheet tool
 

@@ -462,14 +462,28 @@
     return merged;
   }
 
+  /* The label a builder's save writes, or undefined when the row's name is owned elsewhere: an
+     Asana task's (asana_gid: the sync writes its name) or a development's Elliman unit
+     (dev_project_id: the naming rule's). Without this a builder's property bar would flip a
+     deal's name back to the long address until its task is next read. */
+  function saveLabel(row, merged) {
+    row = row || {};
+    if (row.asana_gid || row.dev_project_id) return undefined;
+    merged = merged || {};
+    return merged.displayLabel || labelOf(merged);
+  }
+
   function saveCore(id, core) {
     core = core || {};
-    return rest('/properties?id=eq.' + id + '&select=core').then(function (rows) {
-      var merged = mergeCore((rows[0] && rows[0].core) || {}, core);
+    return rest('/properties?id=eq.' + id + '&select=core,asana_gid,dev_project_id').then(function (rows) {
+      var row = rows[0] || {};
+      var merged = mergeCore(row.core || {}, core);
+      var body = { core: merged }, label = saveLabel(row, merged);
+      if (label !== undefined) body.label = label;
       return rest('/properties?id=eq.' + id, {
         method: 'PATCH',
         prefer: 'return=representation',
-        body: JSON.stringify({ core: merged, label: merged.displayLabel || labelOf(merged) })
+        body: JSON.stringify(body)
       }).then(function (out) { return out[0]; });
     });
   }
@@ -822,7 +836,7 @@
     signIn: signIn, signOut: signOut, signedIn: signedIn, whoAmI: whoAmI, askSignIn: askSignIn, googleSignIn: googleSignIn, takeGoogleReturn: takeGoogleReturn,
     drivePass: function () { return fresh().then(function (s) { return driveToken({ action: 'mint' }, s.access_token); }); },
     list: list, load: load, create: create, findByAddress: findByAddress,
-    saveCore: saveCore, mergeCore: mergeCore, saveDoc: saveDoc, saveDocument: saveDocument,
+    saveCore: saveCore, saveLabel: saveLabel, mergeCore: mergeCore, saveDoc: saveDoc, saveDocument: saveDocument,
     hydrate: hydrate, retokenize: retokenize, docSavedAt: docSavedAt,
     setStatus: setStatus, rename: rename, changesAgainst: changesAgainst,
     putPhoto: putPhoto, photoUrls: photoUrls, removePhoto: removePhoto,

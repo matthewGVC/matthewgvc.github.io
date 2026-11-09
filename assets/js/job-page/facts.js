@@ -44,7 +44,13 @@
       if (f.warn && o.source === f.warn.source) return;
       lines += '<div class="fo">' + esc(o.badge + ' says ' + words(f.kind, o.value, W)) + '</div>';
     });
-    var cell = ctx.canFacts && !editing
+    // a deal with an Asana task takes its address and unit from the task, so nobody edits them here
+    var locked = ctx.row.asana_gid && (f.name === 'address' || f.name === 'unit');
+    if (locked) {
+      var link = ((ctx.row.asana || {}).permalink) || '';
+      lines += '<div class="fw" role="note">' + (link ? '<a target="_blank" rel="noopener" href="' + esc(link) + '">Change it in Asana</a>' : 'Change it in Asana') + '</div>';
+    }
+    var cell = ctx.canFacts && !editing && !locked
       ? '<button class="fe" type="button" data-edit="' + esc(f.name) + '" aria-label="Edit ' + esc(f.label) + '">' + shown + '</button>' + badge
       : shown + badge;
     var ed = '';

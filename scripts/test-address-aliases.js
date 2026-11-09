@@ -85,6 +85,16 @@ check('split house', A.splitName('405 Old Bridge Rd (House 2)'), { street: '405 
 check('split combined unit', A.splitName('401 E89 - 18/19E'), { street: '401 E89', unit: '18/19E', town: '', house: '' });
 check('split trims whitespace', A.splitName('  12 Dup Street - 4A\n'), { street: '12 Dup Street', unit: '4A', town: '', house: '' });
 
+check('a bare unit after a comma is the unit', [A.splitName('235 East 80th Street, PHB').unit, A.splitName('148 Jonas Place, 12').unit], ['PHB', '12']);
+check('Suite is a unit', A.splitName('58 Southwest 6th Avenue, Suite 4').unit, '4');
+check('a town after a comma is still a town', [A.splitName('441 Hartley Rd, Keyport').town, A.splitName('9 Perry St, Rumson 07760').unit], ['Keyport', '']);
+check('a town that starts with PH is still a town', A.splitName('12 Oak St, Phillipsburg'), { street: '12 Oak St', unit: '', town: 'Phillipsburg', house: '' });
+check('Lex is Lexington Avenue', A.same('200 Lex - 9C', '200 Lexington Avenue - 9C'), true);
+check('Sq is Square', A.same('1 Gracie Sq', '1 Gracie Square'), true);
+check('Cir is Circle', A.same('12 Oak Cir', '12 Oak Circle'), true);
+check('Trl is Trail', A.same('5 Pine Trl', '5 Pine Trail'), true);
+check('Gracie Sq is not Gracie Pl', A.same('1 Gracie Sq', '1 Gracie Pl'), false);
+
 if (failures.length) {
   console.log(pass + ' passed, ' + failures.length + ' failed\n');
   failures.forEach(f => console.log('  FAIL ' + f));

@@ -133,10 +133,16 @@
     'listing removed': 'Off market', 'totm': 'Off market', 'graveyard': 'Off market'
   };
 
-  /* "For Sale or Rent" is a rental when its price is a monthly rent: no sale is under $100,000
-     (52 E4 10FL, $17,000, read as a sale; overhaul 1f) */
+  /* a name ending "(Rental)" is a rental, whatever Sale/Rent says (decision 12: the name gives the
+     deal type). "For Sale or Rent" is a rental when its price is a monthly rent: no sale is under
+     $100,000 (52 E4 10FL, $17,000, read as a sale; overhaul 1f) */
   var RENT_UNDER = 100000;
+  function naming() {
+    return typeof module === 'object' && module.exports && typeof require === 'function' ? require('./naming.js') : global.GVC_NAME;
+  }
+  function namedRental(t) { var N = naming(); return !!(N && t && N.isRental(t.name)); }
   function isRental(t) {
+    if (namedRental(t)) return true;
     var k = norm(field(t, 'Sale/Rent'));
     if (!/rent/.test(k)) return false;
     if (!/sale/.test(k)) return true;
@@ -233,7 +239,7 @@
     put('price', cur !== null ? cur : orig);
     put('originalPrice', orig);
     var sr = field(t, 'Sale/Rent');
-    if (sr) put('kind', isRental(t) ? 'rental' : 'sale');
+    if (sr || namedRental(t)) put('kind', isRental(t) ? 'rental' : 'sale');
     var st = field(t, 'ℹ️ Property Stats');
     if (st) {
       var p = parseStats(st);

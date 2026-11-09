@@ -13,7 +13,7 @@ top of `helper/routes.js`.
 DE sync 7:00, Drive folder scan 2:00 (listings, and each linked development's folder into
 `dev_projects.scan`, 0023), Supabase backup 2:30 (all tables, to `exports/supabase-nightly-<date>/`,
 newest 14 kept). With `asanaToken`: the Asana read every 30 minutes, a full read at 3:00, People at
-3:15, and the team's fact edits written to Asana each minute (below). With the Google sign-in: the
+3:15, the team's fact edits written to Asana each minute (below), and the one-minute sync (below). With the Google sign-in: the
 development budgets every hour. With the Gmail sign-in: the Sunday email at 18:00. A slot missed while the PC was off runs when the helper starts. They and the piece
 requests run only once the helper account (`helperEmail`, `helperPassword`) is in the config;
 until then the log says "No helper account yet".
@@ -88,15 +88,24 @@ exit ends it). Run it from the main repo folder.
 
 ## Where its files live
 
-- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`, `anthropicKey`), pairing code, caches:
+- Settings (`config.json`: `asanaToken`, `helperEmail`, `helperPassword`, `anthropicKey`, `asanaNameFix`, `nameFixSkip`), pairing code, caches:
   `%USERPROFILE%\.gvc-helper\` (never in this repo). Not under
   AppData: Windows gives the Claude desktop app its own private copy of AppData.
 - Log: `%USERPROFILE%\.gvc-helper\helper.log`.
 - DE dry-run reports: `exports/de-dry-run-<date>.md` (gitignored).
 - Asana writes (D77 lifted 11-03, migration 0021): a fact changed on a job page is queued in
   `asana_writes`; `asana-write.js` writes it to the listing's Asana field each minute, only the
-  fields in its list, and marks it done or failed. Nothing else in the helper changes Asana
-  (`scripts/test-asana-write.js` checks it).
+  fields in its list, and marks it done or failed.
+- The Asana name fix (stage 2, decision 12; `asana-name-fix.js`): **off** until the config says
+  `"asanaNameFix": true`. When on, the same one-minute job renames up to 20 tasks a run to the
+  naming rule, fills an empty `📍 City/Hood` with the town the name carried, and adds one comment
+  saying so; each rename is a `changes` row (source Helper). A name the rule isn't sure of is never
+  touched (Errors M30); gids in `nameFixSkip` are ones Matt said no to. It stays off by default:
+  Matt turns it on only after reading the dry run below. Read first:
+  `node helper/asana-name-fix.js --dry-run [--out <dir>]` writes `exports/asana-name-fix-<date>.md`
+  (renames, names left for Matt, what the workspace will show) and writes nothing else.
+  Nothing else in the helper changes Asana (`scripts/test-asana-allow.js` and
+  `scripts/test-asana-write.js` check it).
 - Asana reads: `node helper/asana-sync.js --plan` writes the first link plan,
   `exports/asana-link-plan-<date>.md`, for Matt to tick; `--apply-plan <that file>` makes the jobs;
   `--write` is one sync after that. Needs `asanaToken` in the helper's config. Each sync puts every deal it
@@ -109,6 +118,17 @@ exit ends it). Run it from the main repo folder.
   or house that we have not listed yet, or beside a TJ New Dev listing) are deals with `side 'buy'`;
   a client's buy side, of a development's unit or of our listed house, stays out. A Lead refused as
   "same address" stays listed as not linked on later runs that don't read it again.
+- Asana's name is the workspace's name (`name-flow.js`, the rule in `assets/js/naming.js`): when a read sees
+  a task's name changed, the deal's label, unit and place follow it, and a rename that only respells
+  leaves the printed address alone.
+- The one-minute sync (migration 0026, `asana-events.js`): once a minute (the runner ticks every 60 s; the job is due after 55 s) the helper asks Asana's events
+  feed what changed in each listing project and re-reads just those tasks (a ticked subtask or a
+  comment counts for its listing). A `sync_runs` row of kind `events` is written only when a linked deal's task changed (never for an aborted read). A renamed street, not only the unit, flows into the facts and place when it is a different street. It only updates deals the
+  workspace already has: a task no deal holds, a first check (no token yet) or a token Asana says is
+  too old (about a day) runs the ordinary read since the last good run instead. Tokens are kept in
+  `%USERPROFILE%\.gvc-helper\asana-events.json`, saved only once the reads they led to worked. Every
+  check writes `sync_state` ('asana-events': when, whether it worked, a plain line), which the header
+  reads. After 3 failed checks in a row (the same task failing, or migration 0026 not applied) it checks at most once in 10 minutes until one succeeds; a skipped minute writes nothing new (the header's red or amber already says so). The 30-minute read and the 3:00 full read stay as they were.
 - Places (migration 0025): `place-store.js` finds the place a deal is on or makes it (the sync and the
   backfill share it). `node helper/places-backfill.js` writes the one-time plan,
   `exports/places-backfill-<date>.md` and `.json`, and changes nothing; `--apply <that .json>` applies it and
@@ -130,7 +150,8 @@ next log on). Remove: `powershell -ExecutionPolicy Bypass -File install-task.ps1
 
 `node scripts/test-helper-server.js`, `node scripts/test-de-sync.js`, `node scripts/test-pdf-name.js`, `node scripts/test-de-apply.js`,
 `node scripts/test-dev-units.js`,
-`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-budget.js`,
+`node scripts/test-asana-allow.js`, `node scripts/test-asana-sync.js`, `node scripts/test-asana-events.js`, `node scripts/test-budget.js`,
 `node scripts/test-asana-map.js`, `node scripts/test-asana-posts.js`, `node scripts/test-helper-db.js`,
+`node scripts/test-name-flow.js`, `node scripts/test-asana-name-fix.js`, `node scripts/test-asana-write.js`,
 `node scripts/test-places-backfill.js`, `node scripts/test-pdf-render.js`, `node scripts/test-scan.js`, `node scripts/test-seed.js`,
 `node scripts/test-piece-build.js` (with `BASE=http://localhost:8080` it also lays out and draws real pages).

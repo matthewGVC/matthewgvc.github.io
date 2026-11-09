@@ -19,7 +19,7 @@ function check(name, got, want) {
 
 const TODAY = '2026-10-20';
 const props = [
-  { id: 'p1', slug: '100-example-st-residence-4a', label: '100 EXAMPLE ST, Residence 4A', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE',
+  { id: 'p1', slug: '100-example-st-residence-4a', label: '100 Example St 4A', kind: 'sale', market: 'NYC', stage: 'In contract', stage_source: 'DE',
     de: { status: 'ActiveUnderContract', price: 4500000, beds: 4, baths: 4 },
     de_listing_id: '9001', drive_folder: 'GVC - New York/Building Information/100 Example St/4A', folder_state: 'linked',
     scan: { weeks: { '2026-09-07': 58, '2026-09-14': 9 }, found: { floorplan: '2026-09-15', showsheet: '2026-09-14' } },
@@ -33,7 +33,7 @@ const props = [
       dismissed: { 'M17:price': { values: { matt: 4400000, de: 4500000 }, reason: 'Agent texted the new price', by: 'MB', at: '2026-10-16' },
         'M5:closedOn': { values: { asana: '2026-12-10', de: '2026-12-01' }, reason: 'old', by: 'MB', at: '2026-10-01' } } },
     core: { address: '100 EXAMPLE ST', unit: '4A', neighborhood: 'Carnegie Hill', price: 4500000, beds: 4, baths: 4, agentIds: ['elyse-gutman'] } },
-  { id: 'p2', slug: '20-sample-ave-7b', label: '20 Sample Ave, 7B', kind: 'rental', market: 'NYC', stage: 'Live', stage_source: 'DE',
+  { id: 'p2', slug: '20-sample-ave-7b', label: '20 Sample Ave 7B', kind: 'rental', market: 'NYC', stage: 'Live', stage_source: 'DE',
     core: { address: '20 Sample Ave', unit: '7B', price: 5000, suggestedAgentIds: ['sam-agent'] }, de_listing_id: '9002', drive_folder: null, folder_state: 'unlinked',
     asana_gid: '1202', asana: { gid: '1202', projectGid: '55', permalink: 'javascript:alert(1)' } },
   { id: 'p3', slug: '12-sample-lane', label: '12 Sample Lane', kind: 'sale', market: 'NJ', stage: 'Live', stage_source: 'seed',
@@ -73,6 +73,11 @@ check('archived development on request, staged Archived', W.buildJobs({ properti
   .map(j => [j.id, j.stage, j.archived]), [['da', 'Archived', true]]);
 check('won pitch folds into its listing', jobs.some(j => j.id === 'q2'), false);
 check('types', ['p1', 'p2', 'q1', 'd1'].map(id => J(id).type), ['listing', 'rental', 'pitch', 'development']);
+// stage 2: Asana's task name is the name (its label); an Elliman-only unit's label is the rule's too
+const nameOf = p => (W.buildJobs({ properties: [Object.assign({ id: 'n', slug: 'n', stage: 'Live', kind: 'sale' }, p)] }, TODAY)[0] || {}).name;
+check("a linked deal's name is its label", [nameOf({ label: '400 E59 - 3H', asana_gid: 'g-1', core: { address: '400 East 59th Street', unit: '3H' } }),
+  nameOf({ label: '200 E Boca Raton Rd - B', dev_project_id: 'd-lr', core: { address: '200 E Boca Raton Rd', unit: 'B' } })], ['400 E59 - 3H', '200 E Boca Raton Rd - B']);
+check('a row with no Asana task keeps the address form', nameOf({ label: 'Whatever, Residence 3H', core: { address: '400 EAST 59TH STREET', unit: '3H' } }), '400 East 59th Street 3H');
 
 /* ---------- the stage list (S6) ---------- */
 check('listing stages are the new list', W.STAGES, ['Prep', 'Live', 'Accepted offer', 'In contract', 'Sold', 'Rented', 'Off market', 'Archived']);
@@ -267,6 +272,28 @@ check('asana: never', W.asanaHealth(null, now).text, 'Asana hasn\'t synced yet')
 check('asana: fresh', W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).state, 'ok');
 check('asana: 6 h 1 min is late', W.asanaHealth({ started_at: '2026-10-20T03:59:00Z', ok: true }, now).state, 'amber');
 check('asana: says when', /^Asana last synced/.test(W.asanaHealth({ started_at: '2026-10-20T06:00:00Z', ok: true }, now).text), true);
+/* ---------- "Synced N min ago" (the header, every page) ---------- */
+const evOk = at => ({ kind: 'asana-events', checked_at: at, ok: true, detail: null });
+const ago = (min) => new Date(now.getTime() - min * 60e3).toISOString();
+check('synced: just now', W.syncedAgo(evOk(ago(0.3)), null, now).text, 'Synced just now');
+const four = W.syncedAgo(evOk(ago(4)), null, now);
+check('synced: 4 min ago', [four.text, four.state], ['Synced 4 min ago', 'ok']);
+check('synced: hours', W.syncedAgo(evOk(ago(125)), { started_at: ago(130), ok: true }, now).text, 'Synced 2 h ago');
+check('synced: past a day names the day', /^Synced on [A-Z][a-z]{2} \d+ [A-Z][a-z]{2}$/.test(W.syncedAgo(null, { started_at: ago(3000), ok: true }, now).text), true);
+check('synced: the events check wins when it is newer', W.syncedAgo(evOk(ago(2)), { started_at: ago(30), ok: true }, now).text, 'Synced 2 min ago');
+check('synced: the 30-minute read wins when the events check is older', W.syncedAgo(evOk(ago(9)), { started_at: ago(3), ok: true }, now).text, 'Synced 3 min ago');
+const late = W.syncedAgo(evOk(ago(11)), { started_at: ago(400), ok: true }, now);
+check('synced: amber after 10 minutes', [late.state, late.text, /Is the PC on\?/.test(late.why)], ['amber', 'Synced 11 min ago', true]);
+check('synced: not amber at 10 minutes', W.syncedAgo(evOk(ago(10)), null, now).state, 'ok');
+const bad = W.syncedAgo({ kind: 'asana-events', checked_at: ago(1), ok: false, detail: 'Asana could not be reached' }, { started_at: ago(30), ok: true }, now);
+check('synced: red when the last check failed', [bad.state, bad.why], ['red', 'Asana could not be reached']);
+const badRun = W.syncedAgo(evOk(ago(20)), { started_at: ago(5), ok: false, errors: [{ what: 'token', detail: 'Asana refused the token' }] }, now);
+check('synced: red when the newest 30-minute read failed', [badRun.state, badRun.why], ['red', 'Asana refused the token']);
+check('synced: a failure older than the last good check is not red', W.syncedAgo(evOk(ago(1)), { started_at: ago(5), ok: false }, now).state, 'ok');
+check('synced: never', [W.syncedAgo(null, null, now).state, W.syncedAgo(null, null, now).text], ['never', 'Not synced yet']);
+check('synced: a failed check with nothing good before it is red', W.syncedAgo({ checked_at: ago(1), ok: false, detail: 'x' }, null, now).state, 'red');
+check('synced: no sync_state yet falls back to the old words', [W.asanaStatus(null, { started_at: '2026-10-20T06:00:00Z', ok: true }, now).synced, /^Asana last synced/.test(W.asanaStatus(null, { started_at: '2026-10-20T06:00:00Z', ok: true }, now).text)], [undefined, true]);
+check('synced: with sync_state, the new words', W.asanaStatus(evOk(ago(4)), null, now).synced, true);
 /* construction counts stored as text are numbers before they're drawn */
 const consJobs = W.buildJobs({ properties: [], pitches: [], devProjects: [{ id: 'dx', slug: 'x', label: 'X', market: 'NJ', milestones: {},
   next_milestone: { key: null, construction: { done: '3', total: '12' } } }], changes: [] }, TODAY, {});

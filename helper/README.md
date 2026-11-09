@@ -98,7 +98,8 @@ exit ends it). Run it from the main repo folder.
   fields in its list, and marks it done or failed.
 - The Asana name fix (stage 2, decision 12; `asana-name-fix.js`): **off** until the config says
   `"asanaNameFix": true`. When on, the same one-minute job renames up to 20 tasks a run to the
-  naming rule, fills an empty `📍 City/Hood` with the town the name carried, and adds one comment
+  naming rule, fills an empty `📍 City/Hood` (the name's town, else the job's hood or town) and an empty `📍 Zip`
+  (from the job) as part of a rename only, never over a filled field, and adds one comment
   saying so; each rename is a `changes` row (source Helper). A name the rule isn't sure of is never
   touched (Errors M30); gids in `nameFixSkip` are ones Matt said no to. It stays off by default:
   Matt turns it on only after reading the dry run below. Read first:

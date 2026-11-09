@@ -18,7 +18,7 @@
    For each listing project it reads the feed from the saved token until Asana
    says there's no more, collecting the tasks named: a 'task' event's own gid, or
    a 'story' (a comment, a field change) whose parent is a task. A task cached as
-   ignored (asana_tasks.ignored) is dropped: no read for it. A gid no deal is
+   ignored (asana_tasks.ignored) with no deal is dropped: no read for it (one linked to a deal is read). A gid no deal is
    linked to (asana_tasks.property_id, read once; a pitch alone doesn't count:
    the dormant pitch-won path would make a deal with no development) is looked
    up for its parent (up to three levels), so a ticked subtask counts as its
@@ -112,8 +112,10 @@ async function checkEvents(o) {
     /* which of them a deal already has; a subtask counts as its listing */
     if (found.size) {
       const links = await client.select('asana_tasks', null, 'gid,property_id,ignored');
-      const linked = new Set((links || []).filter(c => c.property_id && !c.ignored).map(c => String(c.gid)));
-      const ignored = new Set((links || []).filter(c => c.ignored).map(c => String(c.gid)));
+      // a task linked to a deal always counts, even when it was once cached as ignored (a closed task first
+      // met that way, later linked by hand): only an ignored task with no deal is dropped
+      const linked = new Set((links || []).filter(c => c.property_id).map(c => String(c.gid)));
+      const ignored = new Set((links || []).filter(c => c.ignored && !c.property_id).map(c => String(c.gid)));
       for (const [gid, market] of found) {
         let g = gid;
         for (let depth = 0; g && !linked.has(g) && !ignored.has(g) && depth < 3; depth++) {

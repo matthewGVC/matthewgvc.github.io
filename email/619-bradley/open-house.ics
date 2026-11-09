@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//GVC//619 Bradley//EN
+BEGIN:VEVENT
+UID:619-bradley-open-house-20261121@gvcrealestateteam.com
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/New_York:20261121T120000
+DTEND;TZID=America/New_York:20261121T140000
+SUMMARY:Open House & Hard Hat Tour: 619 Bradley Ave, Brielle
+LOCATION:619 Bradley Ave\, Brielle\, NJ 08730
+DESCRIPTION:Public open house\, hard hat tour and meet the developer. Travelin' Tom's Coffee Truck on site. Closed-toed shoes required\; no dresses or skirts.
+END:VEVENT
+END:VCALENDAR

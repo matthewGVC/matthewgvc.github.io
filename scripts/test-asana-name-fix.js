@@ -77,15 +77,22 @@ function fakeAsana(tasks, fail) {
   };
   return { fetch, calls };
 }
-const task = (name, hood) => ({ name, custom_fields: [{ gid: 'cfHood', name: HOOD, resource_subtype: 'text', display_value: hood || null },
-  { gid: 'cfPrice', name: '💵 Current Price', resource_subtype: 'number', display_value: '1' }] });
+const task = (name, hood, o) => {
+  o = o || {};
+  const t = { name, custom_fields: [{ gid: 'cfHood', name: HOOD, resource_subtype: 'text', display_value: hood || null },
+    { gid: 'cfPrice', name: '💵 Current Price', resource_subtype: 'number', display_value: '1' }] };
+  if (!o.noZip) t.custom_fields.push(o.zipEnum ? { gid: 'cfZip', name: '📍 Zip', resource_subtype: 'enum', display_value: null, enum_options: [{ gid: 'z1', name: '10001', enabled: true }] }
+    : { gid: 'cfZip', name: '📍 Zip', resource_subtype: 'text', display_value: o.zip || null });
+  if (o.noHood) t.custom_fields = t.custom_fields.filter(x => x.gid !== 'cfHood');
+  return t;
+};
 const ON = { asanaToken: 'tok', asanaNameFix: true };
 const NOW = new Date('2026-11-06T15:00:00Z');
 
 (async () => {
   /* ---------- planFixes ---------- */
   let p = NF.planFixes([deal('200 E 57 - 17A', { gid: 'a1' })]);
-  check('planFixes: a sure fix', p, { fixes: [{ gid: 'a1', propertyId: 'p-a1', from: '200 E 57 - 17A', to: '200 E57 - 17A', town: null, why: null }], left: [] });
+  check('planFixes: a sure fix', p, { fixes: [{ gid: 'a1', propertyId: 'p-a1', from: '200 E 57 - 17A', to: '200 E57 - 17A', town: null, fill: { hood: null, zip: null }, why: null }], left: [] });
 
   p = NF.planFixes([deal('512 Laurel Rd, Oakton', { gid: 'a2', row: { market: 'NJ' } })]);
   check('planFixes: an empty City/Hood is filled', p.fixes.map(f => [f.to, f.town]), [['512 Laurel Rd', 'Oakton']]);
@@ -197,10 +204,10 @@ const NOW = new Date('2026-11-06T15:00:00Z');
       deal('106 CPS - 8A', { gid: 'g3', row: { kind: 'rental' } }), deal('10 Elm Street - 2, Oakton', { gid: 'g4', row: { market: 'NJ' } })] });
     await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
     const writes = fa.calls.filter(c => c.method !== 'GET');
-    check('fixNames: only name, City/Hood and one comment are ever sent', [
+    check('fixNames: only name, City/Hood, Zip and one comment are ever sent', [
       writes.every(c => (c.method === 'PUT' && /^\/tasks\/g\d$/.test(c.path)) || (c.method === 'POST' && /^\/tasks\/g\d\/stories$/.test(c.path))),
       writes.filter(c => c.method === 'PUT').every(c => Object.keys(c.body.data).every(k => k === 'name' || k === 'custom_fields')
-        && Object.keys(c.body.data.custom_fields || {}).every(g => g === 'cfHood')),
+        && Object.keys(c.body.data.custom_fields || {}).every(g => g === 'cfHood' || g === 'cfZip')),
       writes.filter(c => c.method === 'POST').every(c => Object.keys(c.body.data).join() === 'text'),
       ['g1', 'g2', 'g3', 'g4'].map(g => writes.filter(c => c.method === 'POST' && c.path.indexOf('/' + g + '/') !== -1).length)],
       [true, true, true, [1, 1, 1, 1]]);
@@ -275,11 +282,75 @@ const NOW = new Date('2026-11-06T15:00:00Z');
       [1, [{ name: '512 Laurel Rd', custom_fields: { cfHood: 'Oakton' } }, { text: 'Renamed to "512 Laurel Rd" to match the GVC naming rule; Oakton moved to City/Hood.' }]]);
   }
 
+  /* ---------- fills from the job ---------- */
+  {
+    const fa = fakeAsana({ n1: task('200 E 57 - 17A') });
+    const db = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 'n1', row: { core: { neighborhood: 'Lenox Hill', zip: '10021' } } })] });
+    const plan = NF.planFixes(db.T.properties);
+    const r = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    check("an NYC rename fills an empty City/Hood from the job's neighbourhood", [plan.fixes[0].fill, r.done, fa.calls.filter(c => c.method !== 'GET').map(c => c.body.data)],
+      [{ hood: 'Lenox Hill', zip: '10021' }, 1, [{ name: '200 E57 - 17A', custom_fields: { cfHood: 'Lenox Hill', cfZip: '10021' } },
+        { text: 'Renamed to "200 E57 - 17A" to match the GVC naming rule; City/Hood set to Lenox Hill; Zip set to 10021.' }]]);
+  }
+  {
+    const fa = fakeAsana({ n2: task('200 E 57 - 17A') });
+    const db = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 'n2', row: { core: { city: 'Elsewhere', neighborhood: 'Yorkville' } } })] });
+    await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    check('an NYC rename uses the neighbourhood, not the city', fa.calls.find(c => c.method === 'PUT').body.data.custom_fields, { cfHood: 'Yorkville' });
+  }
+  {
+    const fa = fakeAsana({ n3: task('91 Juniper rd') });
+    const db = fakeDb({ properties: [deal('91 Juniper rd', { gid: 'n3', row: { market: 'NJ', core: { city: 'Oakton', neighborhood: 'Ignored' } } })] });
+    const r = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    check("an NJ rename fills an empty City/Hood from the job's town", [r.done, fa.calls.find(c => c.method === 'PUT').body.data, fa.calls.find(c => c.method === 'POST').body.data.text],
+      [1, { name: '91 Juniper Rd', custom_fields: { cfHood: 'Oakton' } }, 'Renamed to "91 Juniper Rd" to match the GVC naming rule; City/Hood set to Oakton.']);
+  }
+  {
+    const fa = fakeAsana({ n4: task('200 E 57 - 17A'), n5: task('200 E 57 - 18A'), n6: task('200 E 57 - 19A') });
+    const db = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 'n4', row: { core: { zip: '10022' } } }),
+      deal('200 E 57 - 18A', { gid: 'n5', row: { core: { zip: '1002' } } }), deal('200 E 57 - 19A', { gid: 'n6', row: { core: { zip: '10022-1234' } } })] });
+    await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    const put = g => fa.calls.find(c => c.method === 'PUT' && c.path === '/tasks/' + g).body.data;
+    check('a rename fills an empty Zip from the job', [put('n4'), put('n5').custom_fields, put('n6').custom_fields], [{ name: '200 E57 - 17A', custom_fields: { cfZip: '10022' } }, undefined, undefined]);
+  }
+  {
+    const fa = fakeAsana({ n7: task('200 E 57 - 17A', 'Midtown', { zip: '10019' }) });
+    const db = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 'n7', row: { core: { neighborhood: 'Lenox Hill', zip: '10021' } } })] });
+    db.T.properties[0].asana.fields = { [HOOD]: 'Midtown', '📍 Zip': '10019' };
+    const plan = NF.planFixes(db.T.properties);
+    await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    check('a filled City/Hood or Zip is never overwritten', [plan.fixes[0].fill, fa.calls.find(c => c.method === 'PUT').body.data], [{ hood: null, zip: null }, { name: '200 E57 - 17A' }]);
+    // filled on the live task since the snapshot: still left alone
+    const fb = fakeAsana({ n8: task('200 E 57 - 17A', 'Midtown', { zip: '10019' }) });
+    const db2 = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 'n8', row: { core: { neighborhood: 'Lenox Hill', zip: '10021' } } })] });
+    await NF.fixNames({ db: db2, cfg: ON, fetch: fb.fetch, now: NOW });
+    check('a field filled since the snapshot is never overwritten', [fb.calls.find(c => c.method === 'PUT').body.data, fb.calls.find(c => c.method === 'POST').body.data.text],
+      [{ name: '200 E57 - 17A' }, 'Renamed to "200 E57 - 17A" to match the GVC naming rule.']);
+  }
+  {
+    const fa = fakeAsana({ n9: task('200 E 57 - 17A', null, { noZip: true, noHood: true }), n10: task('200 E 57 - 18A', null, { zipEnum: true }) });
+    const db = fakeDb({ properties: [deal('200 E 57 - 17A', { gid: 'n9', row: { core: { neighborhood: 'Lenox Hill', zip: '10021' } } }),
+      deal('200 E 57 - 18A', { gid: 'n10', row: { core: { zip: '10021' } } })] });
+    const r = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    const put = g => fa.calls.find(c => c.method === 'PUT' && c.path === '/tasks/' + g).body.data;
+    const note = g => db.T.changes.find(c => c.property_id === 'p-' + g).note;
+    check('a field the task lacks, or a value Asana refuses, never blocks the rename',
+      [r, put('n9'), put('n10'), note('n9').indexOf('left out: City/Hood (the task has no such field), Zip (the task has no such field)') !== -1, note('n10').indexOf('left out: Zip (Asana') !== -1 && note('n10').indexOf('has no choice "10021"') !== -1],
+      [{ done: 2, failed: 0, skipped: 0 }, { name: '200 E57 - 17A' }, { name: '200 E57 - 18A' }, true, true]);
+  }
+  {
+    const fa = fakeAsana({ n11: task('200 E57 - 17A') });
+    const db = fakeDb({ properties: [deal('200 E57 - 17A', { gid: 'n11', row: { core: { neighborhood: 'Lenox Hill', zip: '10021' } } })] });
+    const plan = NF.planFixes(db.T.properties);
+    const r = await NF.fixNames({ db, cfg: ON, fetch: fa.fetch, now: NOW });
+    check('no rename, no field writes', [plan, r.done, fa.calls.filter(c => c.method !== 'GET').length], [{ fixes: [], left: [] }, 0, 0]);
+  }
+
   /* ---------- the dry run ---------- */
   {
     const fa = fakeAsana({});
     const rows = [
-      deal('200 E 57 - 17A', { gid: 'r1', row: { label: '200 E 57 - 17A', core: { address: '200 E 57th', unit: '17A' } } }),
+      deal('200 E 57 - 17A', { gid: 'r1', row: { label: '200 E 57 - 17A', core: { address: '200 E 57th', unit: '17A', neighborhood: 'Lenox Hill', zip: '10021' } } }),
       deal('512 Laurel Rd, Oakton', { gid: 'r2', row: { market: 'NJ', label: '512 Laurel Rd, Oakton', core: { address: '512 Laurel Road' } } }),
       deal('444 Spruce - C609', { gid: 'r3' }),
       deal('225 E79 - PHA', { gid: 'r4', row: { label: '225 E79 - Penthouse', core: { address: '225 East 79th Street', unit: 'Penthouse',
@@ -291,6 +362,7 @@ const NOW = new Date('2026-11-06T15:00:00Z');
     check('the dry run report lands in the out folder', path.basename(r.reportFile), 'asana-name-fix-2026-11-06.md');
     const md = fs.readFileSync(r.reportFile, 'utf8');
     check('the report has the three sections', ['## Renames', '## Left for Matt', '## What the workspace will show after the merge'].map(s => md.includes(s)), [true, true, true]);
+    check('the report shows what would be filled', md.includes('(City/Hood: Lenox Hill, Zip: 10021)'), true);
     check('the report lists the renames', [md.includes('200 E 57 - 17A → 200 E57 - 17A'), md.includes('512 Laurel Rd, Oakton → 512 Laurel Rd'), md.includes('City/Hood: Oakton')], [true, true, true]);
     check('the report lists what is left, with why', md.includes('444 Spruce - C609') && md.includes('the street has no street type at the end'), true);
     check('the report shows the label and a team value Asana replaces', [md.includes('200 E 57 - 17A → 200 E57 - 17A'), /unit: Penthouse → PHA.*team/.test(md)], [true, true]);

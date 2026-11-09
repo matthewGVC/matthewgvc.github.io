@@ -3,13 +3,16 @@
    (decision 12, stage 2). OFF unless the helper's config says
    "asanaNameFix": true, which Matt sets after reading the dry run.
 
-   What it may write, and nothing else: the task's name; its 📍 City/Hood only
-   when that field is empty (the town the name carried); one comment (a story)
-   saying what changed, holding only the new name and the town. Never a price,
-   commission, contract field or client name. A name ruleName isn't sure of is
+   What it may write, and nothing else: the task's name; its 📍 City/Hood and
+   📍 Zip, each only when that field is empty on the live task and only as part
+   of a rename (City/Hood from the town the name carried, else the job's hood or
+   town; Zip from the job); one comment (a story) saying what changed, holding
+   only the new name, the town and the zip. A field the task lacks, or a value
+   Asana refuses, is left out (logged) and never blocks the rename. Never a
+   price, commission, contract field or client name. A name ruleName isn't sure of is
    never touched: it is left for Matt (Errors M30).
 
-     planFixes(props, { skip }) → { fixes: [{ gid, propertyId, from, to, town, why }], left: [{ gid, propertyId, name, why }] }
+     planFixes(props, { skip }) → { fixes: [{ gid, propertyId, from, to, town, fill: { hood, zip }, why }], left: [{ gid, propertyId, name, why }] }
          pure. Rows with an Asana task and a stage; skip holds the gids Matt said no to (cfg.nameFixSkip).
          The newest deal wins (decision 13): deals on one place take the base name of the place's
          newest list-side deal, plus " (Rental)" for a rental, when that answer is sure and every
@@ -35,12 +38,12 @@ const A = require('../assets/js/address-aliases.js');
 const GP = require('../assets/js/places.js');
 const { asanaCall, valueFor } = require('./asana-write.js');
 
-const HOOD = '📍 City/Hood';
+const HOOD = '📍 City/Hood', ZIP = '📍 Zip';
 const PER_RUN = 20;
 const NOTE = 'Renamed in Asana by the helper (naming rule)';
 const TASK_FIELDS = 'name,custom_fields.name,custom_fields.type,custom_fields.resource_subtype,custom_fields.enum_options.name,'
   + 'custom_fields.enum_options.enabled,custom_fields.display_value';
-const COLS = 'id,asana_gid,dev_project_id,asana,market,kind,side,stage,place_id,created_at';
+const COLS = 'id,asana_gid,dev_project_id,asana,market,kind,side,stage,place_id,created_at,core';
 
 const norm = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 const blank = v => v === undefined || v === null || norm(v) === '';
@@ -53,6 +56,20 @@ function placeOf(name, market) {
 }
 
 function hoodOf(p) { const f = (p.asana && p.asana.fields) || {}; return f[HOOD]; }
+
+function zipOf(p) { const f = (p.asana && p.asana.fields) || {}; return f[ZIP]; }
+
+/* what the job itself knows to fill in when a rename happens: its hood (NYC) or town (NJ, FL), and its zip.
+   null for a value the snapshot's field already holds, one the job doesn't know, or the name's own text. */
+function fillOf(p, own) {
+  const core = p.core || {};
+  const place = p.market === 'NYC' ? core.neighborhood : core.city;
+  const h = norm(place);
+  const leftover = h && fieldKey(h) === fieldKey(N.baseName(p.asana.name));
+  const hood = !own.town && blank(hoodOf(p)) && h && !leftover ? h : null;
+  const z = norm(core.zip);
+  return { hood, zip: blank(zipOf(p)) && /^\d{5}$/.test(z) ? z : null };
+}
 
 function answerOf(p) {
   return N.ruleName(p.asana.name, { market: p.market, cityHood: hoodOf(p), rental: p.kind === 'rental', devHouse: !!p.dev_project_id });
@@ -85,7 +102,7 @@ function planFixes(props, opts) {
     if (!own.sure) { left.push({ gid, propertyId: p.id, name: p.asana.name, why: own.why }); return; }
     const to = placeBase.has(p) ? placeBase.get(p) + (p.kind === 'rental' ? ' (Rental)' : '') : own.name;
     if (norm(p.asana.name) === norm(to)) return;
-    fixes.push({ gid, propertyId: p.id, from: p.asana.name, to, town: own.town && blank(hoodOf(p)) ? own.town : null, why: null });
+    fixes.push({ gid, propertyId: p.id, from: p.asana.name, to, town: own.town && blank(hoodOf(p)) ? own.town : null, fill: fillOf(p, own), why: null });
   });
   return { fixes, left };
 }
@@ -122,6 +139,7 @@ async function fixNames(o) {
       if (live === norm(f.to) || live !== norm(f.from)) { skip(f); continue; }
       const data = { name: f.to };
       let town = null;
+      const said = [], left = [];
       const field = (task.custom_fields || []).find(x => fieldKey(x.name) === fieldKey(HOOD));
       if (f.town) {
         if (!field) throw new Error('The Asana task has no ' + HOOD + ' field for ' + f.town + '.');
@@ -134,11 +152,25 @@ async function fixNames(o) {
           data.custom_fields = { [field.gid]: valueFor(field, own.town) }; town = own.town;
         }
       }
+      // what the job knows, only when the live field is empty; never blocks the rename
+      const extra = (label, want, key, f) => {
+        if (!want) return;
+        if (!f) { left.push(label + ' (the task has no such field)'); return; }
+        if (!blank(f.display_value)) return;
+        try { data.custom_fields = Object.assign({}, data.custom_fields, { [f.gid]: valueFor(f, want) }); said.push(key + ' set to ' + want); }
+        catch (e) { left.push(label + ' (' + String(e.message).slice(0, 120) + ')'); }
+      };
+      const fields = task.custom_fields || [];
+      const zipField = fields.find(x => fieldKey(x.name) === fieldKey(ZIP));
+      if (!town && f.fill && f.fill.hood) extra('City/Hood', f.fill.hood, 'City/Hood', field);
+      if (f.fill && f.fill.zip) extra('Zip', f.fill.zip, 'Zip', zipField);
       await call('PUT', at, { data });
       out.done++;
       let note = NOTE;
+      if (left.length) note += '; left out: ' + left.join(', ');
+      const say = (town ? [town + ' moved to City/Hood'] : []).concat(said);
       try {
-        await call('POST', at + '/stories', { data: { text: 'Renamed to "' + f.to + '" to match the GVC naming rule' + (town ? '; ' + town + ' moved to City/Hood' : '') + '.' } });
+        await call('POST', at + '/stories', { data: { text: 'Renamed to "' + f.to + '" to match the GVC naming rule' + say.map(s => '; ' + s).join('') + '.' } });
       } catch (e) { note += '; the comment could not be added: ' + e.message; }
       await log(f, f.to, note);
     } catch (e) {
@@ -158,7 +190,7 @@ async function dryRun(o) {
   const cfg = o.cfg || {}, db = o.db;
   const date = o.date || new Date().toISOString().slice(0, 10);
   const outDir = o.outDir || path.join(__dirname, '..', 'exports');
-  const props = await db.select('properties', null, COLS + ',label,core');
+  const props = await db.select('properties', null, COLS + ',label');
   const plan = planFixes(props, { skip: cfg.nameFixSkip });
   const fixOf = new Map(plan.fixes.map(f => [f.gid, f]));
   const { nameFlow } = require('./name-flow.js');
@@ -168,7 +200,8 @@ async function dryRun(o) {
       + ((cfg.nameFixSkip || []).length ? ', ' + cfg.nameFixSkip.length + ' Matt said no to.' : '.'), '',
     '## Renames', ''];
   if (!plan.fixes.length) lines.push('None.');
-  plan.fixes.forEach(f => lines.push('- ' + norm(f.from) + ' → ' + f.to + (f.town ? ' (City/Hood: ' + f.town + ')' : '') + ' [' + f.gid + ']'));
+  plan.fixes.forEach(f => lines.push('- ' + norm(f.from) + ' → ' + f.to + (f.town ? ' (City/Hood: ' + f.town + ')' : '')
+      + (f.fill && (f.fill.hood || f.fill.zip) ? ' (' + [f.fill.hood ? 'City/Hood: ' + f.fill.hood : '', f.fill.zip ? 'Zip: ' + f.fill.zip : ''].filter(Boolean).join(', ') + ')' : '') + ' [' + f.gid + ']'));
   lines.push('', '## Left for Matt', '');
   if (!plan.left.length) lines.push('None.');
   plan.left.forEach(l => lines.push('- ' + norm(l.name) + ': ' + l.why + ' [' + l.gid + ']'));

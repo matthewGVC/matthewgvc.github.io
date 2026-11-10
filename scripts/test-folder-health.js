@@ -121,10 +121,17 @@ check('broken flag', codes(H.health({ broken: true }, NYC)), ['broken']);
 /* pieces found under old and new names */
 tree = d('x', [
   d('Floor Plans', [f('old.pdf')]), d('Photos', [d('Matt Edits', [f('m.jpg')])]),
-  d('Marketing', [d('Brochure', [f('b.pdf')]), d('Postcard', [f('pc.pdf')]), d('Signage', [f('sg.pdf')]), d('Video', [f('v.mp4')]), d('Show Sheet', [f('s.pdf')])])
+  d('Marketing', [d('Brochure', [f('b.pdf')]), d('Postcard', [f('pc.pdf')]), d('Signage', [f('sg.pdf')]), d('Video', [f('v.mp4')]), d('Show Sheet', [f('s.pdf')]), d('Open House', [d('Trifold', [f('oh.pdf')])])])
 ]);
 r = H.health(tree, NYC);
-check('old and new names', Object.keys(r.pieces).map((k) => r.pieces[k].length), [1, 1, 1, 1, 1, 1, 1]);
+check('old and new names', Object.keys(r.pieces).map((k) => r.pieces[k].length), [1, 1, 1, 1, 1, 1, 1, 1]);
+
+/* an open house folder: only PDFs in a piece's own folder count, never loose reference PDFs or a (small) email copy; its Archive is archived (Matt, 11-10) */
+r = H.health(d('619 Example Ave', [d('Marketing', [d('Open House', [f('buydown-report.pdf'), f('email thread.pdf'),
+  d('E-invite draft', [f('email.html'), f('HANDOFF.md'), f('compliance.pdf', '2026-11-06T10:00:00Z'), d('images', [f('hero.jpg')])]),
+  d('Trifold', [f('trifold v11.pdf', '2026-11-10T10:00:00Z'), f('trifold (small) v11.pdf', '2026-11-10T10:01:00Z'), f('preview.png'), d('Archive', [f('trifold v7.pdf')]), d('Source', [f('trifold.html')])])])])]), NYC);
+check('open house: PDFs only', r.pieces.openhouse.map((p) => [p.path, p.archived]).sort(), [['Marketing/Open House/E-invite draft/compliance.pdf', false], ['Marketing/Open House/Trifold/Archive/trifold v7.pdf', true], ['Marketing/Open House/Trifold/trifold v11.pdf', false]]);
+check('open house: no notes of its own', codes(r).filter((c) => c === 'twoCurrent' || c === 'twoFolders'), []);
 
 /* finished photos in Photos\Finals, or loose in Photos\ when there is no edited-photo folder (Matt, 10-30) */
 r = H.health(d('2 Example St 5B', [d('Photos', [d('Raws', [f('r.jpg')]), d('PS Files', [f('a.psd')]), d('Finals', [f('a.jpg', '2026-09-03T10:00:00Z')])])]), NYC);

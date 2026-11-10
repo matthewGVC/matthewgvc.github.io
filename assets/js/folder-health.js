@@ -32,9 +32,9 @@
   'use strict';
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
+  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video', 'openhouse'];
   var LABEL = { floorplan: 'floorplan', photos: 'edited photo', showsheet: 'showsheet', brochure: 'brochure',
-    postcard: 'postcard', signage: 'signage', video: 'video' };
+    postcard: 'postcard', signage: 'signage', video: 'video', openhouse: 'open house' };
 
   /* piece folder names, old and new (plan §9), tested on the lower-cased name */
   var FOLDER = {
@@ -44,7 +44,8 @@
     brochure: /^(brochure|brochures)$/,
     postcard: /^(postcard|postcards)$/,
     signage: /^(signage|signs)$/,
-    video: /^(video|film)$/
+    video: /^(video|film)$/,
+    openhouse: /^(open house|open houses|openhouse)$/   // Marketing\Open House: the e-invite, trifold, flyer (Matt, 11-10)
   };
   /* a piece file loose at the top starts with its piece's name */
   var TOP_NAME = {
@@ -74,6 +75,15 @@
     var n = low(name).trim();
     for (var i = 0; i < KEYS.length; i++) if (FOLDER[KEYS[i]].test(n)) return KEYS[i];
     return null;
+  }
+  /* an open house folder holds each piece in its own folder (Open House\Trifold, \E-invite draft, \Flyer) beside
+     working files: notes, the e-invite's HTML and images, reference PDFs loose in Open House\ itself. A piece is
+     a PDF one folder or more below the open house folder, never a "(small)" copy made for email (Matt, 11-10). */
+  function openHousePiece(path) {
+    var at = -1;
+    for (var i = 0; i < path.length - 1; i++) if (FOLDER.openhouse.test(low(path[i]).trim())) { at = i; break; }
+    var name = path[path.length - 1];
+    return at !== -1 && path.length - at >= 3 && /\.pdf$/i.test(name) && !/\(small\)/i.test(name);
   }
   function topPieceKey(name) {
     if (RULES.isPaperworkFolder(name) || RULES.hasPaperworkWord(name)) return null;
@@ -121,7 +131,7 @@
           if (!piece && !archived && segs.length === 1 && PHOTOS_TOP.test(low(segs[0])) && IMAGE.test(c.name)) {
             loosePhotos.push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: false }, c));
           }
-          if (piece) out.pieces[piece].push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived }, c));
+          if (piece && (piece !== 'openhouse' || openHousePiece(path))) out.pieces[piece].push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived }, c));
         }
       });
     }

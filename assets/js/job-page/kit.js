@@ -37,7 +37,7 @@
     done: ['Done', 'made dot'], fileOpen: ['File, Asana open', 'stale'], tickedNoFile: ['Ticked, no file', 'stale'],
     notStarted: ['Not started', ''], notUsed: ['Not used here', ''], tracked: ['Tracked only', '']
   };
-  var ICON = { floorplan: 'file', photos: 'photo', showsheet: 'file', brochure: 'file', postcard: 'file', signage: 'file', video: 'file' };
+  var ICON = { floorplan: 'file', photos: 'photo', showsheet: 'file', brochure: 'file', postcard: 'file', signage: 'file', video: 'file', openhouse: 'file' };
   var NO_STEP = ['brochure', 'signage'];
   // the track's keys whose rows are pieces made from the job (their status is the piece's)
   var PIECE_KEYS = ['showsheet', 'brochure', 'postcard', 'signage'];
@@ -384,6 +384,10 @@
       var counted = ((((ctx.row.scan || {}).health || {}).counts || {}).photos || {}).edited;
       var n = !live && +counted ? +counted : global.GVC_KIT.realFiles(pieces.photos, 'photos').filter(function (f) { return !f.archived && IMG.test(f.name || ''); }).length;
       file = esc([when(x.file), n ? plural(n, 'photo') : ''].filter(Boolean).join(' · '));
+    } else if (x.key === 'openhouse' && x.file) {
+      // the open house folder holds several pieces (e-invite, trifold, flyer): its current PDFs, not "older versions"
+      var nOh = global.GVC_KIT.realFiles(pieces.openhouse, 'openhouse').filter(function (f) { return !f.archived; }).length || 1;
+      file = esc([when(x.file), plural(nOh, 'PDF')].join(' · '));
     } else file = x.file ? esc([when(x.file), olderWords(x.older)].filter(Boolean).join(' · ')) : x.older ? 'No current file · ' + esc(olderWords(x.older)) : 'No file found';
     var levels = x.key === 'floorplan' && cur ? planLevels(pieces.floorplan) : [], lv = '';
     if (levels.length === 1) {   // one plan: Open is that plan (its branded render), not the newest file
@@ -427,6 +431,7 @@
     t.rows.forEach(function (x) {
       var cur = newest(pieces[x.key], x.key);
       if (cur) current[x.key] = cur;
+      if (x.key === 'openhouse' && !x.file && !x.older) return;   // only on a job that has had an open house (Matt, 11-10)
       if (PIECE_KEYS.indexOf(x.key) === -1) { add(trackRow(ctx, x, cur, pieces, live), x.state !== 'notUsed' && x.state !== 'tracked'); return; }
       var tools = pieceTools(ctx, x.key);
       if (tools) add(pieceRow(ctx, x.key, x.label, tools, pieces, live, x), true);

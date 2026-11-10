@@ -33,9 +33,9 @@
   'use strict';
   var MK = typeof module === 'object' && module.exports && typeof require === 'function' ? require('./markets.js') : (typeof window !== 'undefined' ? window : globalThis).GVC_MARKETS;   // what differs by market (markets.js)
 
-  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
+  var KEYS = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video', 'openhouse'];
   var LABELS = { floorplan: 'Floorplan', photos: 'Photos', showsheet: 'Showsheet', brochure: 'Brochure',
-    postcard: 'Postcard', signage: 'Signage', video: 'Video' };
+    postcard: 'Postcard', signage: 'Signage', video: 'Video', openhouse: 'Open house' };
 
   var STEPS = {
     pieces: [

@@ -105,6 +105,9 @@ const FAKE_DRIVE = `(function () {
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
   if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
+  if (cfg.openHouse) tree.children.filter(function (c) { return c.name === 'Marketing'; })[0].children.push(d('Open House', [f('notes.md', '14'), f('buydown-report.pdf', '15'),
+    d('Trifold', [f('Trifold v2.pdf', '14'), f('Trifold (small) v2.pdf', '16'), f('preview.png', '14'), d('Archive', [f('Trifold v1.pdf', '13')])]),
+    d('E-invite draft', [f('email.html', '15'), f('E-invite for compliance.pdf', '12')])]));
   if (cfg.design) tree.children.filter(function (c) { return c.name === 'Floorplan'; })[0].children.push(d('Design', [f('cubicasa.png', '20'), f('architect.pdf', '22'), f('Signed contract plan.pdf', '22')]));
   if (cfg.html) tree.children.filter(function (c) { return c.name === 'Video'; })[0].children.push(f('Video page - 100 Example St 4A.html', '12'));
   // Drive through Google: every file and folder carries its real Drive link
@@ -772,6 +775,15 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('prompt: button present', await p.$$eval('#fpMake', e => e.length), 1);
   await p.click('#fpMake');
   check('prompt: no Design files shows the reason', await text(p, '#fpReason'), 'There is nothing in Floorplan\\Design yet. Drop the reference (Cubicasa file, screenshot, architect\'s PDF or DWG) there.');
+  /* an open house: its own row, only on a job that has had one, its PDFs counted (Matt, 11-10) */
+  const toh = await open(browser, { path: LISTING, drive: { openHouse: true } });
+  await toh.page.waitForSelector('#kitCard [data-kit="openhouse"] [data-open]');
+  const ohRow = (await text(toh.page, '#kitCard [data-kit="openhouse"]')) || '';
+  check('kit: open house row: Done, its two current PDFs, Open and Copy, no file name', [ohRow.includes('Open house'), ohRow.includes('Done'), ohRow.includes('2 PDFs'),
+    await toh.page.$$eval('#kitCard [data-kit="openhouse"] [data-copy]', e => e.length), /\.(pdf|png|html|md)/i.test(ohRow)], [true, true, true, 1, false]);
+  check('kit: the open house row comes after video', await toh.page.$$eval('#kitCard .kr', e => e.map(x => x.dataset.kit).slice(-2)), ['video', 'openhouse']);
+  await toh.ctx.close();
+
   const t2 = await open(browser, { path: LISTING, drive: { design: true } });
   const p2 = t2.page;
   await p2.waitForSelector('#fpCard .ver');

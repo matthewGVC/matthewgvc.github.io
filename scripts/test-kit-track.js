@@ -28,15 +28,15 @@ check('loose top showsheet ranks after the one in its folder', row(top1, 'showsh
 const top2 = K.track({ kind: 'sale', market: 'NYC', checklist: [], pieces: { showsheet: [{ name: 'Showsheet old.docx', modified: '2026-08-10T00:00:00Z', top: true }, { name: 'S.pdf', modified: '2026-06-12T00:00:00Z' }] } });
 check('the scan top flag does the same', row(top2, 'showsheet').file.name, 'S.pdf');
 
-const ORDER = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video'];
+const ORDER = ['floorplan', 'photos', 'showsheet', 'brochure', 'postcard', 'signage', 'video', 'openhouse'];
 
 /* NYC sale: Global order, signage not used */
 let res = K.track({ kind: 'sale', market: 'NYC', pieces: {}, checklist: [], match: null });
 check('order', res.rows.map((r) => r.key), ORDER);
-check('labels', res.rows.map((r) => r.label), ['Floorplan', 'Photos', 'Showsheet', 'Brochure', 'Postcard', 'Signage', 'Video']);
+check('labels', res.rows.map((r) => r.label), ['Floorplan', 'Photos', 'Showsheet', 'Brochure', 'Postcard', 'Signage', 'Video', 'Open house']);
 check('NYC signage notUsed', row(res, 'signage').state, 'notUsed');
 check('video tracked', row(res, 'video').state, 'tracked');
-check('nothing yet', res.rows.filter((r) => ['notUsed', 'tracked'].indexOf(r.state) === -1).map((r) => r.state), ['notStarted', 'notStarted', 'notStarted', 'notStarted', 'notStarted']);
+check('nothing yet', res.rows.filter((r) => ['notUsed', 'tracked'].indexOf(r.state) === -1).map((r) => r.state), ['notStarted', 'notStarted', 'notStarted', 'notStarted', 'notStarted', 'notStarted']);   // the open house row too (the job page hides it with no file)
 check('no checklist only', res.checklistOnly, []);
 
 /* NJ signage is a normal row */
@@ -117,6 +117,14 @@ res = K.track({ kind: 'sale', market: 'NYC', pieces: { floorplan: [
 check('the current plan shows before a newer alternate (225 E79 PHA)', [row(res, 'floorplan').file.name, row(res, 'floorplan').older], ['225E79 PHA_FP v2.jpg', 1]);
 res = K.track({ kind: 'sale', market: 'NJ', pieces: { floorplan: [{ path: 'Floorplans/Design/plans.pdf', name: 'plans.pdf', modified: '2026-10-01T00:00:00Z' }, { path: 'Floorplans/Unbranded/x v1.svg', name: 'x v1.svg', modified: '2026-10-02T00:00:00Z' }] }, checklist: [] });
 check('the Unbranded plan is the floorplan', [row(res, 'floorplan').file.name, row(res, 'floorplan').state], ['x v1.svg', 'done']);
+
+/* open house: the newest current PDF, the others counted; no Asana step (Matt, 11-10) */
+res = K.track({ kind: 'sale', market: 'NJ', pieces: { openhouse: [
+  { path: 'Marketing/Open House/E-invite draft/compliance.pdf', name: 'compliance.pdf', modified: '2026-11-06T10:00:00Z' },
+  { path: 'Marketing/Open House/Trifold/trifold v11.pdf', name: 'trifold v11.pdf', modified: '2026-11-10T10:00:00Z' },
+  { path: 'Marketing/Open House/Trifold/Archive/trifold v7.pdf', name: 'trifold v7.pdf', modified: '2026-11-10T09:00:00Z', archived: true }] }, checklist: [] });
+check('open house row', [row(res, 'openhouse').label, row(res, 'openhouse').state, row(res, 'openhouse').file.name, row(res, 'openhouse').older, row(res, 'openhouse').step], ['Open house', 'done', 'trifold v11.pdf', 2, null]);
+check('no open house files: not started', row(K.track({ kind: 'sale', market: 'NJ', pieces: {}, checklist: [] }), 'openhouse').state, 'notStarted');
 
 /* STEPS match match-check's patterns */
 check('STEPS pieces', K.STEPS.pieces.map((p) => p[0]), ['showsheet', 'floorplan', 'photos', 'postcard']);

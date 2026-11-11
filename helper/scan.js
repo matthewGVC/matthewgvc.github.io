@@ -200,6 +200,45 @@ const FINISHED = /\.(pdf|jpe?g|png|gif|webp|mp4|mov)$/i;
    report): a name with a money word is skipped like paperwork; the budget has its own card (owner, admin, ops) */
 const DEV_MONEY = /(^|[^a-z])(wires?|invoices?|budgets?|payments?|draws?|loans?|banks?|financ\w*|pro ?formas?|escrows?|deposits?|proposals?)([^a-z]|$)/i;
 const DEV_FILES_MAX = 3000;   // a 3D-assets folder can hold thousands of textures: count up to here
+/* An events folder ("8 - Events", "Events"): each event in it, each piece folder in the event, and the piece's newest
+   finished file (Source and Archive subfolders are working copies, never shown). Names of folders only. */
+const EVENTS_DIR = /^(\d+\s*[-.)]\s*)?events?$/i;
+const WORKING_DIR = /^(source|archive|archived|old|previous)$/i;
+function devEvents(top, read, skip) {
+  const newestIn = (dir, left) => {
+    let best = null;
+    read(dir).forEach(c => {
+      if (skip(c)) return;
+      const p = path.join(dir, c.name);
+      if (c.isDirectory()) {
+        if (left > 1 && !WORKING_DIR.test(c.name)) { const f = newestIn(p, left - 1); if (f && (!best || String(f.modified) > String(best.modified))) best = f; }
+        return;
+      }
+      if (!c.isFile() || !FINISHED.test(c.name)) return;
+      let modified = null;
+      try { modified = fs.statSync(p).mtime.toISOString(); } catch (err) { /* no date */ }
+      if (!best || String(modified) > String(best.modified)) best = { abs: p, modified };
+    });
+    return best;
+  };
+  const out = [];
+  (function find(dir, left) {
+    read(dir).forEach(c => {
+      if (!c.isDirectory() || skip(c) || WORKING_DIR.test(c.name)) return;
+      const p = path.join(dir, c.name);
+      if (!EVENTS_DIR.test(c.name)) { if (left > 1) find(p, left - 1); return; }
+      read(p).filter(ev => ev.isDirectory() && !skip(ev) && !WORKING_DIR.test(ev.name)).forEach(ev => {
+        const evp = path.join(p, ev.name);
+        const pieces = read(evp).filter(pc => pc.isDirectory() && !skip(pc) && !WORKING_DIR.test(pc.name)).map(pc => {
+          const f = newestIn(path.join(evp, pc.name), 3);
+          return f ? { name: pc.name, modified: f.modified, url: driveLink(f.abs, false) } : null;
+        }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+        if (pieces.length) out.push({ name: ev.name, url: driveLink(evp, true), pieces });
+      });
+    });
+  })(top, 3);
+  return out;
+}
 function devScan(abs) {
   const read = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; } };
   // "6 - Documents": a development numbers its folders, so the paperwork rule reads past the number
@@ -224,7 +263,10 @@ function devScan(abs) {
     const newest = files.reduce((m, f) => (f.modified && f.modified > m ? f.modified : m), '');
     const shown = files.filter(f => FINISHED.test(f.name)).sort((a, b) => String(b.modified).localeCompare(String(a.modified))).slice(0, 5)
       .map(f => ({ name: f.name, modified: f.modified, url: driveLink(f.abs, false) }));
-    groups.push({ name: e.name, url: driveLink(top, true), count: files.length, newest: newest || null, files: shown });
+    const g = { name: e.name, url: driveLink(top, true), count: files.length, newest: newest || null, files: shown };
+    const events = devEvents(top, read, skip);
+    if (events.length) g.events = events;
+    groups.push(g);
   });
   groups.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   return { folderUrl: driveLink(abs, true), groups, looseTop };

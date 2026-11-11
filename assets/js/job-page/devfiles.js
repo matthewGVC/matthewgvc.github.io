@@ -11,6 +11,8 @@
    newest finished file (PDF, picture, video). Never a file's own name (Matt,
    11-03): the date says which. Development folders
    don't follow the listing layout, so the folders are shown as they are named.
+   An events folder lists each event's pieces (Trifold, Screen loop...), each with Open for the
+   piece's newest finished file (Source and Archive left out).
    Paperwork and money files are never in the scan. Making pieces for a
    development comes later (docs/overhaul-plan.md, 7b-1); this only shows them.
    ============================================================ */
@@ -37,8 +39,16 @@
       var top = (g.files || []).filter(function (f) { return DRIVE_URL.test(f.url || ''); })[0];
       var open = (top ? '<a class="b sm ghost" data-dev-newest href="' + esc(top.url) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open newest</a>' : '') +
         (DRIVE_URL.test(g.url || '') ? '<a class="b sm ghost" href="' + esc(g.url) + '" target="_blank" rel="noopener">' + I('folder') + 'Open folder</a>' : '');
+      var evs = (g.events || []).map(function (ev) {
+        return (ev.pieces || []).map(function (pc) {
+          if (!DRIVE_URL.test(pc.url || '')) return '';
+          return '<div class="kr" data-dev-piece="' + esc(ev.name + ' | ' + pc.name) + '"><span class="ic">' + I('file') + '</span><div><div class="t">' + esc(pc.name) + '</div>' +
+            '<div class="d">' + esc(ev.name + (pc.modified ? ' · ' + day(pc.modified) : '')) + '</div></div><div class="a">' +
+            '<a class="b sm ghost" href="' + esc(pc.url) + '" target="_blank" rel="noopener">' + I('arrow') + 'Open</a></div></div>';
+        }).join('');
+      }).join('');
       return '<div class="kr" data-dev-folder="' + esc(g.name) + '"><span class="ic">' + I('folder') + '</span><div><div class="t">' + esc(g.name) + '</div>' +
-        '<div class="d">' + esc(line) + '</div></div><div class="a">' + open + '</div></div>';
+        '<div class="d">' + esc(line) + '</div></div><div class="a">' + open + '</div></div>' + evs;
     }).join('');
     return '<div class="card" id="devFilesCard"><div class="card-h"><div><h2>' + (inside ? 'More in the Drive folder' : 'Marketing materials') + '</h2><p>What is in its Drive folder, read each night (' + esc(day(s.scannedAt)) + ').</p></div></div>' +
       (rows ? '<div class="kit">' + rows + '</div>' : '<p class="soft">The folder has nothing in it yet.</p>') + '</div>';

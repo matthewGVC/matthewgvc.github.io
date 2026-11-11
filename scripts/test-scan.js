@@ -91,6 +91,12 @@ function file(root, rel, date) {
   file(root, 'NJ/Dev/6 - Documents/scope.pdf', '2026-10-02');
   file(root, 'NJ/Dev/Floorplan/Project Proposal.pdf', '2026-10-09');
   file(root, 'NJ/Old/Renders/a.jpg', '2026-10-02');
+  file(root, 'NJ/Dev/2 - Assets/8 - Events/Gala 2026-12-07/Trifold/tri.pdf', '2026-11-01');
+  file(root, 'NJ/Dev/2 - Assets/8 - Events/Gala 2026-12-07/Trifold/Archive/old.pdf', '2026-11-09');
+  file(root, 'NJ/Dev/2 - Assets/8 - Events/Gala 2026-12-07/Trifold/Source/src.png', '2026-11-09');
+  file(root, 'NJ/Dev/2 - Assets/8 - Events/Gala 2026-12-07/Screen loop/loop.mp4', '2026-11-05');
+  file(root, 'NJ/Dev/2 - Assets/8 - Events/Gala 2026-12-07/Notes/n.docx', '2026-11-05');
+  file(root, 'NJ/Dev/2 - Assets/8 - Events/Gala 2026-12-07/Budget/b.pdf', '2026-11-05');
   const db = {
     ready: () => true,
     select: async t => JSON.parse(JSON.stringify(T[t])),
@@ -100,10 +106,13 @@ function file(root, rel, date) {
   const out = await scanAll({ client: db, driveRoot: root, now: new Date('2026-10-20T02:00:00Z') });
   check('scanned the linked ones and the development', out.scanned, 4);
   const ds = T.dev_projects[0].scan;
-  check('development: its own top folders, paperwork and money never listed', ds.groups.map(g => g.name), ['FINAL RENDERS', 'Floorplan', 'Reporting']);
+  check('development: its own top folders, paperwork and money never listed', ds.groups.map(g => g.name), ['2 - Assets', 'FINAL RENDERS', 'Floorplan', 'Reporting']);
   check('development: counts every file, lists finished ones only', ds.groups.map(g => [g.count, g.files.map(f => f.name)]),
-    [[2, ['front.jpg']], [1, ['1ST.pdf']], [1, ['p1.jpg']]]);
-  check('development: newest date and loose top files', [ds.groups[0].newest.slice(0, 10), ds.looseTop, !!ds.scannedAt], ['2026-10-04', 1, true]);
+    [[3, ['loop.mp4', 'tri.pdf']], [2, ['front.jpg']], [1, ['1ST.pdf']], [1, ['p1.jpg']]]);
+  check('development: newest date and loose top files', [ds.groups[1].newest.slice(0, 10), ds.looseTop, !!ds.scannedAt], ['2026-10-04', 1, true]);
+  check('development: each event piece with its newest finished file, Source/Archive/paperwork left out',
+    ds.groups[0].events.map(e => [e.name, e.pieces.map(p => p.name)]), [['Gala 2026-12-07', ['Screen loop', 'Trifold']]]);
+  check('development: a piece links to its own file, not an archived one', ds.groups[0].events[0].pieces.map(p => p.modified.slice(0, 10)), ['2026-11-05', '2026-11-01']);
   check('an archived development is not scanned', T.dev_projects[1].scan, undefined);
   check('devScan reads names only', JSON.stringify(devScan(path.join(root, 'NJ', 'Dev'))).indexOf('Wire'), -1);
   check('scan stored', Object.keys(T.properties[0].scan.weeks), ['2026-09-28']);

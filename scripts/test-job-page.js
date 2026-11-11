@@ -636,14 +636,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   RF.dev_projects[0].scan = { scannedAt: '2026-11-03T07:00:00Z', folderUrl: 'https://drive.google.com/drive/folders/root1', looseTop: 2, groups: [
     { name: 'FINAL RENDERS', url: 'https://drive.google.com/drive/folders/f1', count: 29, newest: '2026-10-19T12:00:00Z',
       files: [{ name: 'Left_Front.jpg', modified: '2026-10-19T12:00:00Z', url: 'https://drive.google.com/file/d/a1/view' }, { name: 'odd.png', modified: '2026-10-18T12:00:00Z', url: 'javascript:alert(1)' }] },
+    { name: '2 - Marketing Assets', url: 'https://drive.google.com/drive/folders/m1', count: 9, newest: '2026-11-05T12:00:00Z', files: [], events: [{ name: 'Gala 2026-12-07', url: 'https://drive.google.com/drive/folders/e1',
+      pieces: [{ name: 'Trifold', modified: '2026-11-01T12:00:00Z', url: 'https://drive.google.com/file/d/t1/view' }, { name: 'Bad', modified: '2026-11-01T12:00:00Z', url: 'javascript:alert(1)' }] }] },
     { name: 'Site Plan', url: null, count: 1, newest: '2026-05-15T12:00:00Z', files: [] }] };
   t = await open(browser, { rows: RF, path: '/workspace/job/?dev=619-example-ave', members: [{ name: 'Karl Brisard', initials: 'KB', role: 'ops' }] });
   check('dev files: each folder, its count and newest files; a teammate opens, never makes', [await text(t.page, '#devFilesCard p'),
     await t.page.$$eval('#devFilesCard [data-dev-folder]', rs => rs.map(r => r.dataset.devFolder + ' | ' + r.querySelector('.d').textContent + ' | ' + r.querySelectorAll('a').length)),
+    await t.page.$$eval('#devFilesCard [data-dev-piece]', rs => rs.map(r => r.dataset.devPiece + ' | ' + r.querySelector('.t').textContent + ' | ' + r.querySelector('.d').textContent)),
     await t.page.$$eval('#devFilesCard a', as => as.map(a => a.getAttribute('href'))),
     /Make|Rebuild/.test(await text(t.page, '#devFilesCard')), t.errors],
-    ['What is in its Drive folder, read each night (3 Nov).', ['FINAL RENDERS | 29 files · newest 19 Oct | 2', 'Site Plan | 1 file · newest 15 May | 0'],
-      ['https://drive.google.com/file/d/a1/view', 'https://drive.google.com/drive/folders/f1'], false, []]);
+    ['What is in its Drive folder, read each night (3 Nov).', ['FINAL RENDERS | 29 files · newest 19 Oct | 2', '2 - Marketing Assets | 9 files · newest 5 Nov | 1', 'Site Plan | 1 file · newest 15 May | 0'],
+      ['Gala 2026-12-07 | Trifold | Trifold | Gala 2026-12-07 · 1 Nov'],
+      ['https://drive.google.com/file/d/a1/view', 'https://drive.google.com/drive/folders/f1', 'https://drive.google.com/drive/folders/m1', 'https://drive.google.com/file/d/t1/view'], false, []]);
   await t.ctx.close();
   /* overhaul 7b-4: TJ's phone view, at the top: next up, past target, the outlook, units left */
   t = await open(browser, { phone: true, rows: RHU, path: '/workspace/job/?dev=619-example-ave' });

@@ -1,0 +1,89 @@
+{
+  "month": "2026-11",
+  "subject": "Gratitude, Sunshine & Coastal Gatherings",
+  "preheader": "Turkey Trot, world-class tennis and the 100-foot tree: what's ahead in Delray Beach.",
+  "headline": "Gratitude Feels Different by the Ocean",
+  "body": [
+    "As November settles in, Delray Beach shows its softer side. The days are warm and breezy, the ocean takes on a golden late-autumn light, and downtown fills with reasons to get together: a Thanksgiving-week 5K along the beach, international tennis at the Delray Beach Tennis Center, and Small Business Saturday on the Avenue.",
+    "Discover <a href=\"https://casaavenidadelray.com/\" target=\"_blank\" style=\"color: #01A0C4; font-weight: bold; text-decoration: underline;\">Casa Avenida</a>, a boutique collection of eight luxury townhome-style residences near Atlantic Avenue, and imagine making this season in Delray part of your everyday."
+  ],
+  "header": {
+    "src": "",
+    "placeholder": true,
+    "link": "https://www.elliman.com/corporate-resources/market-reports/florida/5"
+  },
+  "hero": {
+    "src": "G:/Shared drives/GVC - Marketing/02 - Assets/Emails/Delray Drip Campaign/Delray Photos/Delray Photos- Horizontal/Delray Beach Coast.png",
+    "alt": "Delray Beach coastline from above"
+  },
+  "thisMonth": {
+    "emoji": "🦃",
+    "events": [
+      {
+        "title": "40th Annual Delray Beach Turkey Trot 5K",
+        "start": "2026-11-21",
+        "desc": "A Thanksgiving-week 5K run or walk along the oceanfront, 6:30–9 AM, starting at Anchor Park.",
+        "url": "https://downtowndelraybeach.com/do/40th-annual-delray-beach-turkey-trot",
+        "image": "https://img.ctykit.com/cdn/fl-delray-beach/images/tr:w-1200/hcp-7483-2048x1365.jpg",
+        "checked": "2026-11-12"
+      },
+      {
+        "title": "Billie Jean King Cup: USA vs. Hungary",
+        "start": "2026-11-21",
+        "end": "2026-11-22",
+        "desc": "Two days of international women’s tennis at the Delray Beach Tennis Center. Gates open at noon, first match at 1:30 PM.",
+        "url": "https://downtowndelraybeach.com/do/billie-jean-king-cup",
+        "image": "https://img.ctykit.com/cdn/fl-delray-beach/images/tr:w-1200/usta1414060-20230415-mda08295.jpg",
+        "checked": "2026-11-12"
+      },
+      {
+        "title": "Shop Small Sidewalk Sale",
+        "start": "2026-11-28",
+        "desc": "Small Business Saturday downtown, 11 AM–6 PM, with sidewalk deals at independent shops and the launch of the Holiday Rewards Pass.",
+        "url": "https://downtowndelraybeach.com/do/shop-small-holiday-rewards-pass",
+        "image": "https://img.ctykit.com/cdn/fl-delray-beach/images/tr:w-1200/dsc-8288-copy.jpg",
+        "checked": "2026-11-12"
+      }
+    ]
+  },
+  "nextMonth": {
+    "emoji": "🎄",
+    "events": [
+      {
+        "title": "100-Foot Christmas Tree Lighting & Yuletide Festival",
+        "start": "2026-12-01",
+        "desc": "Old School Square, 6–9 PM. The tree is lit at 7 PM, followed by a holiday street festival on Atlantic Avenue.",
+        "url": "https://downtowndelraybeach.com/do/delrays-100-ft-christmas-tree-lighting",
+        "image": "https://img.ctykit.com/cdn/fl-delray-beach/images/tr:w-1200/treelighting-lit-v4.jpg",
+        "checked": "2026-11-12"
+      },
+      {
+        "title": "26th Annual Downtown Delray Beach Art Festival",
+        "start": "2026-12-05",
+        "end": "2026-12-06",
+        "desc": "A free, juried outdoor show with more than 100 artists on NE 4th Avenue, 10 AM–5 PM both days.",
+        "url": "https://downtowndelraybeach.com/do/26th-annual-downtown-delray-beach-art-festival",
+        "image": "https://img.ctykit.com/cdn/fl-delray-beach/images/tr:w-1200/583915091-1252773816897417-5850096631536718945-n-v7.jpg",
+        "checked": "2026-11-12"
+      },
+      {
+        "title": "Holiday Boat Parade",
+        "start": "2026-12-11",
+        "desc": "Decorated boats travel the Intracoastal from Lantana south to Delray Beach, 6–9 PM, reaching the Atlantic Avenue bridge around 8 PM.",
+        "url": "https://downtowndelraybeach.com/do/holiday-boat-parade",
+        "image": "https://img.ctykit.com/cdn/fl-delray-beach/images/tr:w-1200/boat-parade2.jpg",
+        "checked": "2026-11-12"
+      }
+    ]
+  },
+  "spot": {
+    "name": "Deck 84",
+    "url": "https://deck84.com/",
+    "image": "G:/Shared drives/GVC - Marketing/02 - Assets/Emails/Delray Drip Campaign/Delray Photos/Delray Photos- Horizontal/Atlantic AVe Draw Bridge Intercoastal.png",
+    "desc": "A waterfront classic beside the Atlantic Avenue bridge, where locals gather year-round and especially in November. Fresh seafood, a relaxed deck on the Intracoastal and dock space for those arriving by boat."
+  },
+  "cta": {
+    "text": "Celebrate connection, community and coastal living. Explore your Delray home today.",
+    "url": "https://www.elliman.com/sales/team-id=226645"
+  }
+}

@@ -189,6 +189,10 @@ def main():
     left = re.findall(r"\{\{[A-Z_]+\}\}", live)
     if left:
         stop("template slots left empty: %s" % sorted(set(left)))
+    for tag in ("table", "tr", "td", "a", "p"):
+        opened, closed = len(re.findall(r"<%s[\s>]" % tag, live)), live.count("</%s>" % tag)
+        if opened != closed:
+            stop("the HTML is unbalanced: %d <%s> opened, %d closed. Fix the template." % (opened, tag, closed))
     for must in ("{$unsubscribe}", "{$name}", "{$url}"):
         if must not in live:
             stop("the email lost its %s tag" % must)

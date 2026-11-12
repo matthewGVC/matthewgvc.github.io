@@ -52,11 +52,15 @@ doc's event lists are often wrong, and a wrong date in 290 inboxes cannot be tak
 7. **Publish the images.** The email's pictures are served from the live site, so the month's
    folder must be on `main` before the draft is any use. Follow CLAUDE.md §5 (Matt's own changes
    go straight to `main` once checked). Then run the build again with `--check-links`: every link
-   must be OK.
+   must be OK (the site takes a minute or two to show new files).
 8. **MailerLite draft.** `create_campaign`: name `Delray Drip <Month>`, type `regular`, the
    sender and groups above, and `content` = the whole of `email.html`, unchanged. To change a
    draft later use `update_campaign` with the new `content`. Do not pass `editor: "simple"`.
-   Open the draft's preview and compare it with `preview.html`.
+   The call returns the stored `content`: MailerLite adds link ids and tidies spacing, nothing
+   else should differ, so check the six event titles and dates are in it.
+   **When the header arrives after the draft exists:** set `header.src` to Matt's file, remove
+   `placeholder`, build with `--refresh-images`, publish. The file is still `header.png`, so the
+   draft picks it up by itself; do not load the content again.
 9. **Show Matt, then schedule.** Give him the preview link and the six events with their dates.
    Only on his OK: `schedule_campaign`, delivery `scheduled`, the send date, hours `14`,
    minutes `00`. Never `instant`.

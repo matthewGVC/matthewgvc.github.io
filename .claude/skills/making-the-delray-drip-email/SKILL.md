@@ -6,8 +6,8 @@ description: Use when asked to make, build, draft or schedule the monthly Delray
 # Making the Delray Drip email
 
 One email a month to the Delray list: a market banner, a short note, three events left this month,
-three next month, a featured local spot. Matt makes **only the header** (the "How's the Market?"
-banner). Everything else is yours: find the events, write the copy, pick the pictures, build the
+three next month, a featured local spot. Matt supplies **only the header** (the "How's the Market?"
+banner, or just its three figures). Everything else is yours: find the events, write the copy, pick the pictures, build the
 email, load it into MailerLite as a draft, and schedule it once Matt has seen it.
 
 **The one rule that matters: every event's date comes from its own page, read today.** The planning
@@ -29,8 +29,13 @@ doc's event lists are often wrong, and a wrong date in 290 inboxes cannot be tak
 
 1. **Send date.** The 15th at 14:00 account time. When the 15th is a Saturday or Sunday, the Friday
    before. `build.py` prints it.
-2. **Header.** Look in the month's Drive folder. If it is empty, do everything else with
-   `"header": {"placeholder": true}`, tell Matt the header is missing, and **do not schedule**.
+2. **Header.** If Matt's banner is in the month's Drive folder, use it. If he gives the figures
+   instead (Karl sends them: sold & closed, average days on market, interest rate), draw it:
+   `python .claude/skills/making-the-delray-drip-email/header.py assets/email/delray-drip/<yyyy-mm>/header-source.png --sold N --sold-prev N --days N --days-prev N --rate N --rate-prev N --compared "<last month> <year>"`
+   and set `header.src` to that file. Last month's figures are the big numbers on last month's
+   banner (`header.png` in last month's folder). Read the three figures back to Matt before
+   building. With neither a banner nor figures, do everything else with
+   `"header": {"placeholder": true}`, say the header is missing, and **do not schedule**.
 3. **Theme.** Read that month's section of the planning doc for the headline, subject ideas, the
    featured spot and the closing line. Use its ideas, never its event dates. Check the last two
    sent "Delray Drip" campaigns (`list_campaigns`, status sent) so the subject, hero photo and

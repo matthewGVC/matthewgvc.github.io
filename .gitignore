@@ -11,3 +11,6 @@ exports/
 helper/fixtures/recorded/
 helper/node_modules/
 tmp/
+
+# Delray Drip email: the local-only preview copy
+assets/email/**/preview.html

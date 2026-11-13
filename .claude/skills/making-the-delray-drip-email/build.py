@@ -31,11 +31,8 @@ def stop(msg):
 
 
 def send_date(year, month):
-    """The 15th, or the Friday before when the 15th is a weekend."""
-    d = datetime.date(year, month, 15)
-    while d.weekday() > 4:
-        d -= datetime.timedelta(days=1)
-    return d
+    """Always the 15th, at 10:00 AM Eastern, whatever day of the week it is (Matt, 2026-11-13)."""
+    return datetime.date(year, month, 15)
 
 
 def ordinal(n):

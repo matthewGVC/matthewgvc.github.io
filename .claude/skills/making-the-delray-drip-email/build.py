@@ -168,6 +168,11 @@ def main():
          "line-height: 165%; margin-top: 0; margin-bottom: 10px;\">")
     gap = ' <td class="col" width="30" height="30" style="line-height: 30px;"></td> '
 
+    def feature_slots(block):
+        """The one-off block goes after the next-month events, or above the events when position is "top"."""
+        top = bool(feature) and feature.get("position") == "top"
+        return {"FEATURE_TOP": block if top else "", "FEATURE": "" if top else block}
+
     def build(base):
         ev = lambda e, label: {"URL": esc(e["url"]), "IMG": base + e["_file"], "TITLE": esc(e["title"]),
                                "DATE": label, "DESC": esc(e["desc"])}
@@ -186,11 +191,11 @@ def main():
             "NEXT_MONTH": MONTHS[nxt.month - 1],
             "NEXT_EMOJI": data["nextMonth"].get("emoji", ""),
             "NEXT_ROWS": "\n".join(fill(row, ev(e, date_label(e["start"], e.get("end")))) for e in coming),
-            "FEATURE": fill(feature_tpl, {
+            **feature_slots(fill(feature_tpl, {
                 "HEADING": esc(feature["heading"]), "URL": esc(feature["url"]), "IMG": base + feature["_file"],
                 "ALT": esc(feature.get("alt", feature["heading"])), "BUTTON": esc(feature.get("button", "RSVP")),
                 # trusted HTML, like the body paragraphs
-                "TEXT": " ".join(P + p + "</p>" for p in feature["text"])}) if feature else "",
+                "TEXT": " ".join(P + p + "</p>" for p in feature["text"])}) if feature else ""),
             "SPOT_URL": esc(data["spot"]["url"]),
             "SPOT_SRC": base + files["spot"],
             "SPOT_NAME": esc(data["spot"]["name"]),

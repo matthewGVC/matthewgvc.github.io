@@ -74,7 +74,9 @@ doc's event lists are often wrong, and a wrong date in 290 inboxes cannot be tak
 
 When Matt wants something extra in one edition (an event invitation, a launch), add a `feature`
 to that month's `email.json`: `heading`, `image`, `alt`, `url`, `button`, and `text` (a list of
-paragraphs). It appears after the next-month events, between two rules. Leave it out and the
+paragraphs). It appears after the next-month events, between two rules; add `"position": "top"`
+to put it above the events instead. For a designed image, make a version with no QR code and
+large type (a button carries the link, and print-size text is unreadable at 540px wide). Leave it out and the
 email is the usual one. Take the facts from the job's own folder (its HANDOFF note), not memory.
 
 ## What goes wrong

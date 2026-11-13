@@ -99,13 +99,14 @@
   },
   "feature": {
     "heading": "🎨 You’re Invited: Art Basel Comes to Boca",
-    "image": "G:/Shared drives/GVC - Florida/New Development/3 - Le Reve/2 - Marketing Assets/8 - Events/Art Basel 2026-12-07/Deliverables/Postcard/Postcard Horizontal.png",
-    "alt": "Art Basel Comes to Boca. Monday, December 7th, 2:00 to 7:00 PM, Le Rêve Residences, 200 East Boca Raton Road, Boca Raton. Curated by Galerie Perahia and Galerie Duret. RSVP required.",
-    "url": "https://pp.events/bgA7EkNr",
-    "button": "RSVP",
+    "image": "G:/Shared drives/GVC - Florida/New Development/3 - Le Reve/2 - Marketing Assets/8 - Events/Art Basel 2026-12-07/Deliverables/Postcard/Postcard Email.png",
+    "alt": "Art Basel Comes to Boca. Monday, December 7th, 2:00 to 7:00 PM, Le Rêve Residences, 200 East Boca Raton Road, Boca Raton. Curated by Galerie Perahia and Galerie Duret.",
+    "url": "https://www.lerevebocaraton.com/artbasel",
+    "button": "Details & RSVP",
     "text": [
-      "A short drive south of Delray, we’re bringing Art Basel week to Boca Raton. Join us on <strong>Monday, December 7th, from 2:00 to 7:00 PM</strong> for an afternoon of contemporary art curated by Galerie Perahia and Galerie Duret of Paris, shown inside <a href=\"https://www.lerevebocaraton.com/\" target=\"_blank\" style=\"color: #01A0C4; font-weight: bold; text-decoration: underline;\">Le Rêve Residences</a>, a new collection of luxury townhomes at 200 East Boca Raton Road.",
+      "A short drive south of Delray, we’re bringing Art Basel week to Boca Raton. Join us on <strong>Monday, December 7th, from 2:00 to 7:00 PM</strong> for an afternoon of contemporary art curated by Galerie Perahia and Galerie Duret of Paris, shown inside <a href=\"https://www.lerevebocaraton.com/artbasel\" target=\"_blank\" style=\"color: #01A0C4; font-weight: bold; text-decoration: underline;\">Le Rêve Residences</a>, a new collection of luxury townhomes at 200 East Boca Raton Road.",
       "View the works, tour the residences and meet the team. Space is limited and an RSVP is required."
-    ]
+    ],
+    "position": "top"
   }
 }

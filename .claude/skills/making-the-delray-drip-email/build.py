@@ -230,7 +230,7 @@ def main():
         print("*** HEADER IS A STAND-IN (October 2026's market banner). DO NOT SCHEDULE. ***")
     print("built %s  (%d KB)" % (os.path.join(folder, "email.html"), len(live.encode("utf-8")) // 1024))
     print("campaign name: Delray Drip %s" % MONTHS[month - 1])
-    print("send date:     %s at 14:00, account time zone (the same slot as every month before)" % send.strftime("%A %B %d, %Y"))
+    print("send date:     %s at 10:00 AM Eastern (timezone_id 152)" % send.strftime("%A %B %d, %Y"))
 
 
 if __name__ == "__main__":

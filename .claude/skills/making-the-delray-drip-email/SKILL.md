@@ -27,7 +27,7 @@ doc's event lists are often wrong, and a wrong date in 290 inboxes cannot be tak
 
 ## Steps
 
-1. **Send date.** The 15th at 14:00 account time. When the 15th is a Saturday or Sunday, the Friday
+1. **Send date.** The 15th at 10:00 AM Eastern (MailerLite shows it back in UTC: 14:00 in summer, 15:00 in winter). When the 15th is a Saturday or Sunday, the Friday
    before. `build.py` prints it.
 2. **Header.** If Matt's banner is in the month's Drive folder, use it. If he gives the figures
    instead (Karl sends them: sold & closed, average days on market, interest rate), draw it:
@@ -67,8 +67,8 @@ doc's event lists are often wrong, and a wrong date in 290 inboxes cannot be tak
    `placeholder`, build with `--refresh-images`, publish. The file is still `header.png`, so the
    draft picks it up by itself; do not load the content again.
 9. **Show Matt, then schedule.** Give him the preview link and the six events with their dates.
-   Only on his OK: `schedule_campaign`, delivery `scheduled`, the send date, hours `14`,
-   minutes `00`. Never `instant`.
+   Only on his OK: `schedule_campaign`, delivery `scheduled`, the send date, hours `10`,
+   minutes `00`, `timezone_id` 152 (America/New_York). Ask Matt which day when the 15th is a weekend. Never `instant`.
 
 ## A one-off block
 

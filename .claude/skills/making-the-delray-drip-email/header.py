@@ -93,9 +93,9 @@ def main():
         if abs(pct) < 0.005:
             d.line([((x - 20) * S, 345 * S), ((x + 20) * S, 345 * S)], fill=GREY, width=6 * S)
         else:
-            arrow(d, x, 345, pct > 0, GREEN if (pct > 0) == rise_is_good else RED)
+            arrow(d, x, 345 if pct > 0 else 332, pct > 0, GREEN if (pct > 0) == rise_is_good else RED)
         prev_text = fmt(prev, places).replace(",", "") if places == 0 else fmt(prev, places)
-        centred(d, x, 393, "prev. %s (%s)" % (prev_text, pct_text), text(27))
+        centred(d, x, 393, "prev. %s (%s)" % (prev_text, "no change" if abs(pct) < 0.005 else pct_text), text(27))
     centred(d, 600, 300, a.area, text(17), tracking=0.8)
     centred(d, 600, 433, "Compared to " + a.compared, text(27))
     # the short rules between the figures, midway in each gap

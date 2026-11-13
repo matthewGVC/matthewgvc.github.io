@@ -8,9 +8,20 @@
     "Discover <a href=\"https://casaavenidadelray.com/\" target=\"_blank\" style=\"color: #01A0C4; font-weight: bold; text-decoration: underline;\">Casa Avenida</a>, a boutique collection of eight luxury townhome-style residences near Atlantic Avenue, and imagine making this season in Delray part of your everyday."
   ],
   "header": {
-    "src": "",
-    "placeholder": true,
-    "link": "https://www.elliman.com/corporate-resources/market-reports/florida/5"
+    "src": "assets/email/delray-drip/2026-11/header-source.png",
+    "link": "https://www.elliman.com/corporate-resources/market-reports/florida/5",
+    "figures": {
+      "month": "October 2026",
+      "sold": 961,
+      "days": 56,
+      "rate": 7.27,
+      "prev": {
+        "month": "September 2026",
+        "sold": 1015,
+        "days": 60,
+        "rate": 7.6
+      }
+    }
   },
   "hero": {
     "src": "G:/Shared drives/GVC - Marketing/02 - Assets/Emails/Delray Drip Campaign/Delray Photos/Delray Photos- Horizontal/Delray Beach Coast.png",

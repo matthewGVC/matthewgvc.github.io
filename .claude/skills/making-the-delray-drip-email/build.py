@@ -23,7 +23,7 @@ UA = {"User-Agent": "Mozilla/5.0 (email build check)"}
 # name in the email -> (width, height) in pixels, twice the size it is shown at.
 # None for height keeps the picture's own shape.
 SIZES = {"header": (1080, None), "hero": (1080, 720), "this": (480, 290),
-         "next": (500, 330), "spot": (960, 520)}
+         "next": (500, 330), "spot": (960, 520), "feature": (1080, None)}
 
 
 def stop(msg):
@@ -64,6 +64,8 @@ def make_image(folder, name, kind, src, refresh):
     """Crop to the slot's shape, size it, save it in the month folder. Returns the file name."""
     w, h = SIZES[kind]
     ext = "png" if kind == "header" else "jpg"
+    if kind == "feature":
+        ext = "jpg"
     out = os.path.join(folder, "%s.%s" % (name, ext))
     if os.path.exists(out) and not refresh:
         return os.path.basename(out)
@@ -71,7 +73,10 @@ def make_image(folder, name, kind, src, refresh):
     if h is None:
         if im.width > w:
             im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
-        im.save(out, optimize=True)
+        if ext == "jpg":
+            im.convert("RGB").save(out, quality=86, optimize=True, progressive=True)
+        else:
+            im.save(out, optimize=True)
     else:
         if im.width < w * 0.6:
             print("  note: %s is small (%dpx wide), it may look soft" % (name, im.width))
@@ -147,6 +152,9 @@ def main():
     files = {"header": make_image(folder, "header", "header", data["header"]["src"], refresh),
              "hero": make_image(folder, "hero", "hero", data["hero"]["src"], refresh),
              "spot": make_image(folder, "spot", "spot", data["spot"]["image"], refresh)}
+    feature = data.get("feature")   # optional one-off block, e.g. an event invitation
+    if feature:
+        feature["_file"] = make_image(folder, "feature", "feature", feature["image"], refresh)
     for i, e in enumerate(this, 1):
         e["_file"] = make_image(folder, "this-%d" % i, "this", e["image"], refresh)
     for i, e in enumerate(coming, 1):
@@ -155,6 +163,7 @@ def main():
     # ---- fill the template -----------------------------------------------------
     read = lambda n: io.open(os.path.join(HERE, n), encoding="utf-8").read()
     tpl, col, row = read("template.html"), read("template-this-month-column.html"), read("template-next-month-row.html")
+    feature_tpl = read("template-feature.html")
     P = ("<p style=\"font-family: 'Poppins', sans-serif; color: #515856; font-size: 16px; "
          "line-height: 165%; margin-top: 0; margin-bottom: 10px;\">")
     gap = ' <td class="col" width="30" height="30" style="line-height: 30px;"></td> '
@@ -177,6 +186,11 @@ def main():
             "NEXT_MONTH": MONTHS[nxt.month - 1],
             "NEXT_EMOJI": data["nextMonth"].get("emoji", ""),
             "NEXT_ROWS": "\n".join(fill(row, ev(e, date_label(e["start"], e.get("end")))) for e in coming),
+            "FEATURE": fill(feature_tpl, {
+                "HEADING": esc(feature["heading"]), "URL": esc(feature["url"]), "IMG": base + feature["_file"],
+                "ALT": esc(feature.get("alt", feature["heading"])), "BUTTON": esc(feature.get("button", "RSVP")),
+                # trusted HTML, like the body paragraphs
+                "TEXT": " ".join(P + p + "</p>" for p in feature["text"])}) if feature else "",
             "SPOT_URL": esc(data["spot"]["url"]),
             "SPOT_SRC": base + files["spot"],
             "SPOT_NAME": esc(data["spot"]["name"]),

@@ -29,7 +29,7 @@
 
    A gid already in asana_tasks (any kind) with no property_id, no pitch_id and not ignored is
    known (a task linked only by a pitch keeps the at-once plain read above): no parent lookup
-   (it's a top task the plain read already met), and it no longer makes the check a gap. It sets
+   (it's a top task the plain read already met); a subtask whose parent climb reaches a known task waits too, and it no longer makes the check a gap. It sets
    plainWaiting (the time the first one was seen) instead. A gid not in asana_tasks goes through
    the parent lookup as before and, if still not linked, is a gap (a new Lead or listing appears
    within a minute). The plain read runs when the check is a gap, or when plainWaiting is set and
@@ -133,7 +133,7 @@ async function checkEvents(o) {
       for (const [gid, market] of found) {
         if (known.has(gid)) { deferred++; waitingSince = waitingSince || now.toISOString(); continue; }   // read in 15 minutes
         let g = gid;
-        for (let depth = 0; g && !linked.has(g) && !ignored.has(g) && depth < 3; depth++) {
+        for (let depth = 0; g && !linked.has(g) && !ignored.has(g) && !known.has(g) && depth < 3; depth++) {
           let row;
           try { row = (await asana.get('/tasks/' + g, { opt_fields: 'parent.gid', limit: null }))[0] || {}; }
           catch (e) {
@@ -145,6 +145,7 @@ async function checkEvents(o) {
           if (!g) break;
         }
         if (g === null || ignored.has(g)) continue;            // gone from Asana, or set aside: nothing to read
+        if (g && known.has(g)) { deferred++; waitingSince = waitingSince || now.toISOString(); continue; }   // a subtask of a known no-deal task waits too
         if (g && linked.has(g)) out.gids[g] = out.gids[g] || market;
         else out.gap = true;                                    // no deal yet: the plain read makes it
       }

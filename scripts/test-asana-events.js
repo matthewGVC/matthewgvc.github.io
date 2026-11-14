@@ -277,6 +277,16 @@ async function check1(o) {
       }
       check('200 known edits in a row cost one plain read: zero in ten minutes', [plains, gets], [0, 0]);
     }
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', lastPlainAt: ago(1) }, events: { [NYC]: [{ data: [ev('sub1')], sync: 'tN2' }] }, tasks: { sub1: { gid: 'sub1', parent: { gid: 'k1' } } } });
+    check('a subtask of a known no-deal task waits too', [t.r.gap, t.sync.calls, !!stateIn(t.stateFile).plainWaiting, stateIn(t.stateFile).lastPlainAt], [false, [], true, ago(1)]);
+    {
+      const sf = stateAt({ [NYC]: 'tN', [NJ]: 'tJ' });
+      let mid = null;
+      const sync = fakeSync(o => { if (o.kind === 'events') mid = tokensIn(sf); return { ok: true, report: { ok: true } }; });
+      t = await check1({ db: kdb(), stateFile: sf, sync, events: { [NYC]: [{ data: [ev('k1'), ev('g1')], sync: 'tN2' }] } });
+      check('a deferred plain read with a linked task: plain then events, tokens saved after both', [t.sync.calls, mid, tokensIn(sf)],
+        [[{ kind: 'plain' }, { kind: 'events', gids: { g1: 'NYC' } }], { [NYC]: 'tN', [NJ]: 'tJ' }, { [NYC]: 'tN2', [NJ]: 'tJ' }]);
+    }
     t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', plainWaiting: ago(20), lastPlainAt: ago(16) }, sync: fakeSync({ ok: false, report: { ok: false, aborted: 'Asana is down' } }) });
     const s4 = stateIn(t.stateFile);
     check('a failed plain read keeps plainWaiting', [t.r.ok, !!s4.plainWaiting, s4.lastPlainAt], [false, true, ago(16)]);

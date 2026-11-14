@@ -168,5 +168,11 @@ check('loose photos: usable counts them', r.counts.photos.usable, 2);
 r = H.health(d('5 Example St', [d('Photos', [d('Edited', [12, 2, 10, 1, 11, 3].map((n) => f('Photo-' + n + '.jpg')))])]), NYC);
 check('name order as before: -1, -10, -11, -12, -2, -3', r.pieces.photos.map((p) => p.name), ['Photo-1.jpg', 'Photo-10.jpg', 'Photo-11.jpg', 'Photo-12.jpg', 'Photo-2.jpg', 'Photo-3.jpg']);
 
+/* a photo set's name outside Photos (Video\Final) is no photo (final review A1) */
+r = H.health(d('5 Example St', [d('Photos', [d('Edited', Array.from({ length: 30 }, (_, n) => f('e' + n + '.jpg')))]), d('Video', [d('Final', [f('clip.mp4')])])]), NYC);
+check('Video/Final is not counted: usable 30, edited 30, finals 0', [r.counts.photos.usable, r.counts.photos.edited, r.counts.photos.finals], [30, 30, 0]);
+r = H.health(d('5 Example St', [d('Marketing', [d('Photos', [d('Raw', [f('r.jpg')]), d('Finals', [f('a.jpg')])])]), d('Film', [d('Raw', [f('x.mov')])])]), NYC);
+check('Marketing/Photos sets count, Film/Raw does not', [r.counts.photos.raw, r.counts.photos.finals, r.counts.photos.usable], [1, 1, 1]);
+
 console.log((failures.length ? failures.join('\n') + '\n' : '') + pass + ' passed, ' + failures.length + ' failed');
 process.exit(failures.length ? 1 : 0);

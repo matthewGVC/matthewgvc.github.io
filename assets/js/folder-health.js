@@ -18,7 +18,8 @@
    Selects' photos first when it has any, then Finals' (or, when Finals has
    none, Edits'), each set in name order, a file name already listed not listed
    again. Selects alone is not the piece. counts.photos counts every set by its
-   key (edited = the edits set), whatever the folder is called; usable is
+   key (edited = the edits set), whatever the folder is called, but only a set
+   inside a Photos folder or the walk's own photo set (never Video\Final); usable is
    selects + (finals, else edited): the photos the pieces use (a scan made
    before it has no usable: read edited then).
 
@@ -145,7 +146,14 @@
           walk(c, path, archived || isArchive, key, set || (!piece && key === 'photos' ? RULES.photoSet(c.name) : null));
         } else {
           var counted = {};
-          path.slice(0, -1).forEach(function (g) { var k = COUNT_KEY[RULES.photoSet(g)]; if (k && !counted[k]) { counted[k] = 1; photoCounts[k]++; } });
+          /* a set counts only inside the photos: a folder directly in a Photos folder, or the walk's own photo set
+             (Video\Final\clip.mp4 is no finished photo) */
+          var dirs = path.slice(0, -1);
+          dirs.forEach(function (g, i) {
+            if (!i || !PHOTOS_TOP.test(low(dirs[i - 1]).trim())) return;
+            var k = COUNT_KEY[RULES.photoSet(g)]; if (k && !counted[k]) { counted[k] = 1; photoCounts[k]++; }
+          });
+          if (piece === 'photos' && set && COUNT_KEY[set] && !counted[COUNT_KEY[set]]) { counted[COUNT_KEY[set]] = 1; photoCounts[COUNT_KEY[set]]++; }
           if (!piece && !archived && segs.length === 1 && PHOTOS_TOP.test(low(segs[0])) && IMAGE.test(c.name)) {
             loosePhotos.push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: false }, c));
           }

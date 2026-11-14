@@ -15,7 +15,7 @@ const { createAsana } = require('../helper/asana/client.js');
 const { readRun } = require('../helper/asana/read.js');
 const { applyRun } = require('../helper/asana/apply.js');
 const { replayFetch } = require('../helper/asana/replay.js');
-const { checkEvents } = require('../helper/asana-events.js');
+const { checkEvents, PLAIN_EVERY } = require('../helper/asana-events.js');
 const { syncNow } = require('../helper/asana-sync.js');
 const { runAsana } = require('../helper/inflight.js');
 
@@ -43,6 +43,7 @@ function fakeDb(seed) {
     select: async (t, m, cols, o) => {
       db.calls.push({ t, m, cols, o });
       let rows = T[t].filter(r => matches(r, m));
+      if (cols) { const want = String(cols).split(','); rows = rows.map(r => want.reduce((x, c) => { if (c in r) x[c] = r[c]; return x; }, {})); }
       if (o && o.order) {
         const [f, dir] = o.order.split('.');
         rows = rows.slice().sort((a, b) => (a[f] < b[f] ? -1 : a[f] > b[f] ? 1 : 0) * (dir === 'desc' ? -1 : 1));
@@ -108,7 +109,7 @@ let dir = fs.mkdtempSync(path.join(process.env.GVC_HELPER_HOME, 'state-'));
 let k = 0;
 const stateAt = tokens => { const f = path.join(dir, 'asana-events-' + (++k) + '.json'); if (tokens) fs.writeFileSync(f, JSON.stringify(tokens)); return f; };
 const stateIn = f => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
-const tokensIn = f => { const j = stateIn(f); if (j) { delete j.failures; delete j.firstFailedAt; delete j.lastFailedAt; } return j; };
+const tokensIn = f => { const j = stateIn(f); if (j) { delete j.failures; delete j.firstFailedAt; delete j.lastFailedAt; delete j.plainWaiting; delete j.lastPlainAt; } return j; };
 const LINKED = [{ gid: 'g1', project_gid: NYC, kind: 'listing', property_id: 'p1' }, { gid: 'g2', project_gid: NJ, kind: 'listing', property_id: 'p2' },
   { gid: 'g7', project_gid: NJ, kind: 'listing', pitch_id: 'pi7' }, { gid: 'g8', project_gid: NYC, kind: 'listing', ignored: true }, { gid: 'g6', project_gid: NYC, kind: 'listing', property_id: 'p6', ignored: true },
   { gid: 'g9', project_gid: NYC, kind: 'listing', property_id: null, pitch_id: null }];
@@ -159,8 +160,12 @@ async function check1(o) {
   check('a changed task is read alone', [t.r.gap, t.sync.calls], [false, [{ kind: 'events', gids: { g1: 'NYC' } }]]);
   check('a changed task: tokens saved, 1 task changed', [tokensIn(t.stateFile), t.state.ok, t.state.detail], [{ [NYC]: 'tN2', [NJ]: 'tJ' }, true, '1 task changed']);
 
-  t = await check1({ events: { [NYC]: [{ data: [ev('g9')], sync: 'tN2' }] }, tasks: { g9: { gid: 'g9', parent: null } } });
-  check('a task with no deal goes to the plain read', [t.r.gap, t.sync.calls.map(c => c.kind)], [true, ['plain']]);
+  const ago = min => new Date(NOW.getTime() - min * 60000).toISOString();
+  t = await check1({ tokens: { [NYC]: 'tN', [NJ]: 'tJ', lastPlainAt: ago(1) }, events: { [NYC]: [{ data: [ev('g9')], sync: 'tN2' }] }, tasks: { g9: { gid: 'g9', parent: null } } });
+  check('a known task with no deal waits for the 15-minute read', [t.r.gap, t.sync.calls.map(c => c.kind), !!stateIn(t.stateFile).plainWaiting], [false, [], true]);
+  t = await check1({ db: fakeDb({ asana_tasks: LINKED.filter(c => c.gid !== 'g9') }), tokens: { [NYC]: 'tN', [NJ]: 'tJ', lastPlainAt: ago(1) },
+    events: { [NYC]: [{ data: [ev('g9')], sync: 'tN2' }] }, tasks: { g9: { gid: 'g9', parent: null } } });
+  check('a task with no deal that is not known goes to the plain read', [t.r.gap, t.sync.calls.map(c => c.kind)], [true, ['plain']]);
 
   t = await check1({ events: { [NJ]: [{ data: [ev('st1', 'story', 'g2')], sync: 'tJ2' }] } });
   check('a comment counts for its task', t.sync.calls, [{ kind: 'events', gids: { g2: 'NJ' } }]);
@@ -176,7 +181,7 @@ async function check1(o) {
     let mid = null;
     const sf = stateAt({ [NYC]: 'tN', [NJ]: 'tJ' });
     const sync = fakeSync(o => { if (o.kind === 'plain') mid = tokensIn(sf); return { ok: true, report: { ok: true } }; });
-    t = await check1({ stateFile: sf, sync, events: { [NYC]: [{ data: [ev('g9'), ev('s1')], sync: 'tN2' }] },
+    t = await check1({ stateFile: sf, sync, db: fakeDb({ asana_tasks: LINKED.filter(c => c.gid !== 'g9') }), events: { [NYC]: [{ data: [ev('g9'), ev('s1')], sync: 'tN2' }] },
       tasks: { g9: { gid: 'g9', parent: null }, s1: { gid: 's1', parent: { gid: 'g1' } } } });
     check('a gap still re-reads a ticked subtask\'s listing', t.sync.calls, [{ kind: 'plain' }, { kind: 'events', gids: { g1: 'NYC' } }]);
     check('a gap: tokens saved after both, not between', [mid, tokensIn(sf)], [{ [NYC]: 'tN', [NJ]: 'tJ' }, { [NYC]: 'tN2', [NJ]: 'tJ' }]);
@@ -239,6 +244,43 @@ async function check1(o) {
     const db = fakeDb({ asana_tasks: LINKED });
     t = await check1({ db, events: { [NYC]: [{ data: [ev('g1')], sync: 'tN2' }] } });
     check('the links are read once per check', db.calls.filter(c => c.t === 'asana_tasks').length, 1);
+  }
+
+  /* known tasks with no deal: one plain read in 15 minutes, not one per edit */
+  {
+    const KNOWN = LINKED.concat([{ gid: 'k1', project_gid: NYC, kind: 'listing', property_id: null, ignored: false }]);
+    const kdb = () => fakeDb({ asana_tasks: KNOWN });
+    const kev = (...g) => ({ [NYC]: [{ data: g.map(x => ev(x)), sync: 'tN2' }] });
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ' }, events: kev('k1') });
+    const s1 = stateIn(t.stateFile);
+    check('a known task with no deal waits: the first read runs once', [t.r.gap, t.sync.calls, s1.lastPlainAt, s1.plainWaiting], [false, [{ kind: 'plain' }], NOW.toISOString(), undefined]);
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', lastPlainAt: ago(5) }, events: kev('k1') });
+    const s2 = stateIn(t.stateFile);
+    check('a second known edit inside 15 minutes waits', [t.sync.calls, t.fetch.calls.some(c => /^\/tasks\//.test(c)), !!s2.plainWaiting, s2.lastPlainAt, t.r.gap, t.r.ok, / \(1 waiting for the 15-minute read\)$/.test(t.r.detail)],
+      [[], false, true, ago(5), false, true, true]);
+    check('a known task read waits: sync_state says so', / \(1 waiting for the 15-minute read\)$/.test(t.state.detail), true);
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', plainWaiting: ago(20), lastPlainAt: ago(16) } });
+    const s3 = stateIn(t.stateFile);
+    check('the waiting read runs on a quiet minute', [t.sync.calls, s3.plainWaiting, s3.lastPlainAt], [[{ kind: 'plain' }], undefined, NOW.toISOString()]);
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', plainWaiting: ago(10), lastPlainAt: ago(5) } });
+    check('a quiet minute inside 15 minutes keeps waiting', [t.sync.calls, !!stateIn(t.stateFile).plainWaiting], [[], true]);
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', lastPlainAt: ago(1) }, events: { [NYC]: [{ data: [ev('n1')], sync: 'tN2' }] }, tasks: { n1: { gid: 'n1', parent: null } } });
+    check('an unknown task is still read at once', [t.r.gap, t.sync.calls.map(c => c.kind)], [true, ['plain']]);
+    {
+      const sf = stateAt({ [NYC]: 'tN', [NJ]: 'tJ', lastPlainAt: ago(1) });
+      const kdb2 = fakeDb({ asana_tasks: Array.from({ length: 200 }, (_, i) => ({ gid: 'x' + i, project_gid: NYC, kind: 'listing', property_id: null, ignored: false })) });
+      const gids = Array.from({ length: 200 }, (_, i) => 'x' + i);
+      let plains = 0, gets = 0;
+      for (let i = 0; i < 10; i++) {
+        const r = await check1({ db: kdb2, stateFile: sf, now: new Date(NOW.getTime() + i * 60000), events: kev.apply(null, gids) });
+        plains += r.sync.calls.length; gets += r.fetch.calls.filter(c => /^\/tasks\//.test(c)).length;
+      }
+      check('200 known edits in a row cost one plain read: zero in ten minutes', [plains, gets], [0, 0]);
+    }
+    t = await check1({ db: kdb(), tokens: { [NYC]: 'tN', [NJ]: 'tJ', plainWaiting: ago(20), lastPlainAt: ago(16) }, sync: fakeSync({ ok: false, report: { ok: false, aborted: 'Asana is down' } }) });
+    const s4 = stateIn(t.stateFile);
+    check('a failed plain read keeps plainWaiting', [t.r.ok, !!s4.plainWaiting, s4.lastPlainAt], [false, true, ago(16)]);
+    check('PLAIN_EVERY is 15 minutes', PLAIN_EVERY, 15 * 60000);
   }
 
   /* a new house still joins its development, through that plain read (the real sync) */

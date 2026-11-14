@@ -10,7 +10,8 @@
        asana      createAsana(...) (GET only; events() and get())
        sync       asana-sync.js syncNow itself, never through runAsana again
                   (runner.js asanaEvents: a plain read would wait on this run for ever)
-       stateFile  <helper home>/asana-events.json, { [projectGid]: token, failures?, firstFailedAt?, lastFailedAt? }
+       stateFile  <helper home>/asana-events.json, { [projectGid]: token, failures?, firstFailedAt?, lastFailedAt?,
+                  plainWaiting?, lastPlainAt? }
                   after 3 failed checks in a row, at most one check in 10 minutes until one succeeds
                   (a skipped minute returns { skipped: true } and writes nothing)
      → { ok, gids, gap, detail }
@@ -25,6 +26,16 @@
    listing; a 404 there (a deleted task or checklist item) drops the gid, neither
    a failure nor a gap, and any other failure of that lookup but a refused token
    (a 403, a 500) makes it a gap, so one bad task never holds up the feed.
+
+   A gid already in asana_tasks (any kind) with no property_id, no pitch_id and not ignored is
+   known (a task linked only by a pitch keeps the at-once plain read above): no parent lookup
+   (it's a top task the plain read already met), and it no longer makes the check a gap. It sets
+   plainWaiting (the time the first one was seen) instead. A gid not in asana_tasks goes through
+   the parent lookup as before and, if still not linked, is a gap (a new Lead or listing appears
+   within a minute). The plain read runs when the check is a gap, or when plainWaiting is set and
+   lastPlainAt is missing or at least PLAIN_EVERY (15 minutes) old, which also fires on a minute
+   with no events at all. After a successful plain read plainWaiting is cleared and lastPlainAt
+   set. A deferred read shows in detail as '... (N waiting for the 15-minute read)'.
 
    An events run only updates deals it already has: it carries no development
    projects, so a new house couldn't join its development. So a gid still not
@@ -52,6 +63,7 @@ const MAX_PAGES = 50;          // 5,000 events in one check: read the rest as a 
 const GAP = 'caught up from the last full read';
 const SLOW_AFTER = 3;           // failed checks in a row before the back-off
 const SLOW_EVERY = 10 * 60000;  // then at most one check in 10 minutes
+const PLAIN_EVERY = 15 * 60000; // a plain read for edits to known tasks with no deal waits this long
 
 function readTokens(file) {
   try { const j = JSON.parse(fs.readFileSync(file, 'utf8')); return j && typeof j === 'object' && !Array.isArray(j) ? j : {}; }
@@ -86,6 +98,7 @@ async function checkEvents(o) {
   const listings = (cfg && cfg.asana && cfg.asana.listings) || {};
   const saved = readTokens(stateFile), next = Object.assign({}, saved);
   const out = { ok: true, gids: {}, gap: false, detail: '' };
+  let deferred = 0, waitingSince = saved.plainWaiting || null;
   const failures = Number(saved.failures) || 0;
   const lastTry = Date.parse(saved.lastFailedAt);
   if (failures >= SLOW_AFTER && lastTry && now.getTime() - lastTry < SLOW_EVERY) {
@@ -111,12 +124,14 @@ async function checkEvents(o) {
 
     /* which of them a deal already has; a subtask counts as its listing */
     if (found.size) {
-      const links = await client.select('asana_tasks', null, 'gid,property_id,ignored');
+      const links = await client.select('asana_tasks', null, 'gid,property_id,pitch_id,ignored');
       // a task linked to a deal always counts, even when it was once cached as ignored (a closed task first
       // met that way, later linked by hand): only an ignored task with no deal is dropped
       const linked = new Set((links || []).filter(c => c.property_id).map(c => String(c.gid)));
       const ignored = new Set((links || []).filter(c => c.ignored && !c.property_id).map(c => String(c.gid)));
+      const known = new Set((links || []).filter(c => !c.property_id && !c.pitch_id && !c.ignored).map(c => String(c.gid)));
       for (const [gid, market] of found) {
+        if (known.has(gid)) { deferred++; waitingSince = waitingSince || now.toISOString(); continue; }   // read in 15 minutes
         let g = gid;
         for (let depth = 0; g && !linked.has(g) && !ignored.has(g) && depth < 3; depth++) {
           let row;
@@ -138,13 +153,15 @@ async function checkEvents(o) {
     /* read them */
     const n = Object.keys(out.gids).length;
     const run = async opts => { const why = failure(await sync(opts)); if (why) throw new Error(why); };
-    if (out.gap) {
-      await run({ kind: 'plain' });
-      if (n) await run({ kind: 'events', gids: out.gids });
-    } else if (n) await run({ kind: 'events', gids: out.gids });
+    const lastPlain = Date.parse(saved.lastPlainAt);
+    const plain = out.gap || (!!waitingSince && (!lastPlain || now.getTime() - lastPlain >= PLAIN_EVERY));
+    if (plain) await run({ kind: 'plain' });
+    if (n) await run({ kind: 'events', gids: out.gids });
     delete next.failures; delete next.firstFailedAt; delete next.lastFailedAt;
+    if (plain) { delete next.plainWaiting; next.lastPlainAt = now.toISOString(); }
+    else if (waitingSince) next.plainWaiting = waitingSince;
     saveTokens(stateFile, next);
-    out.detail = out.gap ? GAP : n + (n === 1 ? ' task changed' : ' tasks changed');
+    out.detail = plain ? GAP : n + (n === 1 ? ' task changed' : ' tasks changed') + (deferred ? ' (' + deferred + ' waiting for the 15-minute read)' : '');
   } catch (e) {
     out.ok = false;
     out.detail = (e && e.message) || String(e);
@@ -153,7 +170,7 @@ async function checkEvents(o) {
   /* a check that fails the same way every time shouldn't re-read the same window each minute */
   if (!out.ok) {
     try {
-      saveTokens(stateFile, Object.assign({}, saved, { failures: failures + 1,
+      saveTokens(stateFile, Object.assign({}, saved, waitingSince ? { plainWaiting: waitingSince } : {}, { failures: failures + 1,
         firstFailedAt: failures ? saved.firstFailedAt || now.toISOString() : now.toISOString(), lastFailedAt: now.toISOString() }));
     } catch (e) { out.stateError = e.message; }
   }
@@ -163,4 +180,4 @@ async function checkEvents(o) {
   return out;
 }
 
-module.exports = { checkEvents, taskOf };
+module.exports = { checkEvents, taskOf, PLAIN_EVERY };

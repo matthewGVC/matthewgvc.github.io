@@ -257,7 +257,7 @@ function req(method, p, headers, body) {
     const fetchE = async () => ({ ok: false, status: 412, headers: { get: () => null }, json: async () => ({ errors: [], sync: 'tok1' }) });
     const rE = await asanaJobs(cE, okE, syncE, { fetch: fetchE }).asanaEvents();
     check('the events job: a first check catches up through the plain sync', [rE.ok, seenE], [true, ['plain', 'sync_state:asana-events:true']]);
-    check('the events job keeps its tokens in the helper home', JSON.parse(fs2.readFileSync(path2.join(homeE, 'asana-events.json'), 'utf8')), { pN: 'tok1' });
+    check('the events job keeps its tokens in the helper home', (({ lastPlainAt, ...tokens }) => [tokens, typeof lastPlainAt])(JSON.parse(fs2.readFileSync(path2.join(homeE, 'asana-events.json'), 'utf8'))), [{ pN: 'tok1' }, 'string']);
     const fetchBad = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ data: [{ resource: { gid: 'g', resource_type: 'task' } }], sync: 'tok2', has_more: false }) });
     const okLinked = Object.assign({}, okE, { select: async () => [{ gid: 'g', property_id: 'p1' }] });
     const badE = await asanaJobs(cE, okLinked, async () => { throw new Error('boom'); }, { fetch: fetchBad }).asanaEvents();

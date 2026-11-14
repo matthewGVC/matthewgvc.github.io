@@ -21,7 +21,22 @@
                                                             'branded', any case; else null. Design/ files
                                                             are never plans. Also GVC_SHEETJOB.planPlace.
      GVC_DRIVE_RULES.layout('sfh')                      → the standard folders of a job type (resale, rental,
-                                                            sfh, newdev), with missingFolders(type, existing)
+                                                            sfh, newdev): flat and numbered, each made only when
+                                                            first needed. missingFolders(type, existing) →
+                                                            { missing: [] always (a missing empty folder is never
+                                                            flagged), renames: [{ from, to }] }
+     GVC_DRIVE_RULES.standardName('Pictures/Edited')    → 'Photos/2 Edits': a folder's standard path, every
+                                                            parent too; a folder in Marketing moves up
+                                                            ('Marketing/Show Sheets' → 'Showsheet'); null when
+                                                            already standard, not in the table, or paperwork.
+                                                            ownChange(path): its own name changes, or it moves up
+     GVC_DRIVE_RULES.photoSet('Matt Edits')             → 'edits' (raw, edits, ps, staged, finals, selects,
+                                                            print, web; old or new name; else null)
+     GVC_DRIVE_RULES.usablePhotos({ finals: 3, edits: 9 }) → { list: ['finals'], first: 'finals' }: Selects
+                                                            first when it has photos, then Finals, else Edits
+     GVC_DRIVE_RULES.STARTER                            → ['Photos', 'Photos/1 Raw', 'Floorplan']: a new place
+     GVC_DRIVE_RULES.DEAL_FOLDER                        → a deal's year folder inside a place ('2026 Sale',
+                                                            '2016 Purchase', '2025 - Rental'): see-through
      GVC_DRIVE_RULES.finishFile('0 - Approved Assets/Finishes/Le Reve Finish Schedule.pdf') → true: a PDF
                                                             in a folder or with a name that says "finish",
                                                             never paperwork (a development's Finishes card)
@@ -44,9 +59,9 @@
 
   /* First folder inside a job that may be read: the standard names plus the
      names today's folders already use for the same things. Lower case. */
-  var READABLE = ['floorplan', 'floorplans', 'floor plan', 'floor plans', 'photos', 'marketing',
-    'showsheet', 'showsheets', 'show sheet', 'brochure', 'copy', 'video',
-    'open house', 'postcard', 'postcards', 'signage', 'signs'];
+  var READABLE = ['floorplan', 'floorplans', 'floor plan', 'floor plans', 'photos', 'photo', 'pictures', 'marketing',
+    'showsheet', 'showsheets', 'show sheet', 'show sheets', 'brochure', 'brochures', 'copy', 'video', 'videos', 'film',
+    'open house', 'open houses', 'postcard', 'postcards', 'signage', 'signs', 'pitch', 'pitches'];
 
   /* a paperwork folder: its name starts with one of these whole words ("Docs", "Offers 2024",
      "Deal Sheet"); "Dock photos" and "Offering plan" are not paperwork */
@@ -69,10 +84,11 @@
   var PAPER_ANYWHERE = /\b(offers?|contracts?|exclusives?|commissions?|closings?|deals?|leases?|agreements?|signed)\b/i;
   function hasPaperworkWord(name) { return PAPER_ANYWHERE.test(String(name == null ? '' : name)); }
 
-  /* "2026 - Sale": a folder a sale's own pieces and paperwork sit in. It is see-through: the pieces inside
-     (Floorplan, Photos, Showsheet...) count as if they were at the top, and everything else in it is
-     refused like any other top file, so its paperwork is still never listed or opened */
-  var SALE_WRAPPER = /^(19|20)\d{2}\s*[-–]\s*sales?$/i;
+  /* "2026 Sale", "2016 Purchase", "2025 - Rental": a deal's year folder inside a place, holding that deal's
+     own pieces and paperwork. It is see-through: the pieces inside (Floorplan, Photos, Showsheet...) count
+     as if they were at the top, and everything else in it is refused like any other top file, so its
+     paperwork is still never listed or opened */
+  var DEAL_FOLDER = /^(19|20)\d{2}\s*[-–]?\s*(sale|rental|purchase)s?$/i;
 
   function allowedInJob(path) {
     var r = rel(path);
@@ -85,7 +101,7 @@
       if (hasPaperworkWord(parts[i])) return false;
       if (i < parts.length - 1 && isPaperworkFolder(parts[i])) return false;
     }
-    if (SALE_WRAPPER.test(parts[0])) {
+    if (DEAL_FOLDER.test(parts[0])) {
       if (parts.length === 1) return true;
       parts = parts.slice(1);
     }
@@ -182,61 +198,144 @@
     return out;
   }
 
-  /* ---------- THE FOLDER STANDARD (docs/folder-standard.md) ----------
-     One layout per job type, one name per folder. Every type shares the core; the two new-development
-     types add the build folders and a project also gets Branding. Archive\ is never listed here: the
-     helper makes it inside a piece folder the first time it moves a file there. The workspace reads
-     only Floorplan, Photos and Marketing (READABLE); Docs is never opened. */
-  var CORE = [
+  /* ---------- THE FOLDER STANDARD (decisions 19-23, 26, 75) ----------
+     Flat and numbered: a place's pieces sit at its top (no Marketing folder), and a folder is made only
+     when first needed, so a missing empty folder is never flagged. A new place gets only STARTER. Archive
+     is never listed here: the helper makes it inside a piece folder the first time it moves a file there.
+     Docs is never opened. A development (newdev) is the FL template; its units have no folders. */
+  var LISTING = [
+    ['Photos', ['1 Raw', '2 Edits', '3 PS', '4 Virtual Staged', '5 Finals', '6 Selects', 'Print', 'Web']],
     ['Floorplan', ['Design', 'Unbranded', 'Branded']],
-    ['Photos', ['Raw', 'Edited', 'Staged', 'Print', 'Web']],
-    ['Marketing', ['Pitch', 'Showsheet', 'Brochure', 'Open House', 'Postcard', 'Signage', 'Video']],
-    ['Docs', []]
+    ['Video', []], ['Showsheet', []], ['Brochure', []], ['Open House', []], ['Postcard', []], ['Signage', []],
+    ['Pitch', []], ['Docs', []]
   ];
-  var BUILD = [['Architecturals & Site Plan', ['Old']], ['Finishes', []], ['Final Renders', []],
+  var BUILD = [['Architecturals & Site Plan', []], ['Finishes', []], ['Final Renders', []],
     ['3D File Assets and Archive - For Matt and Ilin', []]];
+  var DEVELOPMENT = ['0 - Approved Assets', '1 - Branding', '2 - Marketing - Working Files', '3 - Assets from Developer',
+    '4 - MLS & Listing Info', '5 - Reporting, Pricing & Comps', '6 - Documents', '7 - Construction Schedule']
+    .map(function (n) { return [n, []]; });
   var TYPES = {
-    resale: CORE,
-    rental: CORE,
-    sfh: CORE.concat(BUILD),
-    newdev: CORE.concat(BUILD, [['Branding', []]])
+    resale: LISTING,
+    rental: LISTING,
+    sfh: LISTING.concat(BUILD),
+    newdev: DEVELOPMENT
   };
-  /* the older names for a top folder, lower case → the standard name (they stay readable, the folder
-     check says to rename them) */
-  var RENAMED = { 'floorplans': 'Floorplan', 'floor plan': 'Floorplan', 'floor plans': 'Floorplan' };
+  var STARTER = ['Photos', 'Photos/1 Raw', 'Floorplan'];
+
+  /* old → new names, on the lower-cased, trimmed name. TOP: a folder at the place's top, or directly in
+     its Marketing (which it then leaves). The standard names are in TOP too, so "Marketing/Showsheet" is
+     known and moves up; only the old names (TOP_OLD) are renamed where they stand. */
+  var TOP = { 'floorplan': 'Floorplan', 'floorplans': 'Floorplan', 'floor plan': 'Floorplan', 'floor plans': 'Floorplan',
+    'photos': 'Photos', 'photo': 'Photos', 'pictures': 'Photos',
+    'showsheet': 'Showsheet', 'showsheets': 'Showsheet', 'show sheet': 'Showsheet', 'show sheets': 'Showsheet',
+    'brochure': 'Brochure', 'brochures': 'Brochure', 'postcard': 'Postcard', 'postcards': 'Postcard',
+    'signage': 'Signage', 'signs': 'Signage', 'video': 'Video', 'videos': 'Video', 'film': 'Video',
+    'open house': 'Open House', 'open houses': 'Open House', 'pitch': 'Pitch', 'pitches': 'Pitch' };
+  var TOP_OLD = { 'floorplans': 1, 'floor plan': 1, 'floor plans': 1, 'photo': 1, 'pictures': 1, 'showsheets': 1,
+    'show sheet': 1, 'show sheets': 1, 'brochures': 1, 'postcards': 1, 'signs': 1, 'videos': 1, 'film': 1,
+    'open houses': 1, 'pitches': 1 };
+  /* inside Photos: set key → [standard name, every name it goes by, lower case] */
+  var SETS = {
+    raw: ['1 Raw', ['raw', 'raws', '1 raw']],
+    edits: ['2 Edits', ['edited', 'edits', 'edited photos', 'matt edits', 'matt-edits', '2 edits']],
+    ps: ['3 PS', ['ps', '3 ps']],
+    staged: ['4 Virtual Staged', ['staged', 'virtual staged', 'virtually staged', '4 virtual staged']],
+    finals: ['5 Finals', ['final', 'finals', 'final photos', '5 finals']],
+    selects: ['6 Selects', ['selects', '6 selects']],
+    print: ['Print', ['print']],
+    web: ['Web', ['web']]
+  };
+  var PHOTO_NAME = {};
+  Object.keys(SETS).forEach(function (k) { SETS[k][1].forEach(function (n) { PHOTO_NAME[n] = k; }); });
+  var PLAN_NAME = { 'design': 'Design', 'unbranded': 'Unbranded', 'branded': 'Branded' };
+
+  function low(name) { return String(name == null ? '' : name).trim().toLowerCase(); }
+
+  /* photoSet('Matt Edits') → 'edits': which photo set a folder directly inside Photos is */
+  function photoSet(name) { return PHOTO_NAME[low(name)] || null; }
+  /* Print and Web keep their names; every other set takes its numbered one */
+  function photoName(name) {
+    var k = photoSet(name);
+    if (!k || k === 'print' || k === 'web') return name;
+    return SETS[k][0];
+  }
+
+  /* usablePhotos({ finals: 3, edits: 9, selects: 0 }) → { list: ['finals'], first: 'finals' } (75):
+     Selects first when it has photos; Finals when it has photos, else Edits. Raw, PS, Staged: never. */
+  function usablePhotos(sets) {
+    sets = sets || {};
+    var list = [];
+    if (+sets.selects > 0) list.push('selects');
+    if (+sets.finals > 0) list.push('finals');
+    else if (+sets.edits > 0) list.push('edits');
+    return { list: list, first: list.length ? list[0] : null };
+  }
+
+  /* a path split into a leading deal folder (kept as it is) and the rest; null when the path is bad */
+  function split(relPath) {
+    var r = rel(relPath);
+    if (!r) return null;
+    var parts = r.split('/');
+    var deal = DEAL_FOLDER.test(parts[0]) ? [parts.shift()] : [];
+    return { deal: deal, parts: parts };
+  }
+
+  /* the rest of the path, standardised segment by segment; moved: it left Marketing */
+  function standardParts(parts) {
+    var out = parts.slice(), moved = false;
+    if (out.length > 1 && low(out[0]) === 'marketing' && TOP[low(out[1])]) { out.shift(); moved = true; }
+    var top = low(out[0]);
+    if (TOP_OLD[top] || (moved && TOP[top])) out[0] = TOP[top];
+    var parent = TOP[low(out[0])];
+    if (out.length > 1 && parent === 'Photos') out[1] = photoName(out[1]);
+    if (out.length > 1 && parent === 'Floorplan' && PLAN_NAME[low(out[1])]) out[1] = PLAN_NAME[low(out[1])];
+    return { parts: out, moved: moved };
+  }
+
+  /* standardName('Floorplans/Unbranded') → 'Floorplan/Unbranded'; a leading deal folder is kept; null
+     when the whole path is already standard, not in the table, or paperwork (never renamed or moved) */
+  function standardName(relPath) {
+    var sp = split(relPath);
+    if (!sp || !sp.parts.length) return null;
+    if (sp.deal.concat(sp.parts).some(isPaperwork)) return null;
+    var now = sp.deal.concat(standardParts(sp.parts).parts).join('/');
+    return now === sp.deal.concat(sp.parts).join('/') ? null : now;
+  }
+
+  /* ownChange('Floorplans/Design') → false (only a parent changes); ('Photos/Edited') → true;
+     ('Marketing/Showsheet') → true: it moves up out of Marketing */
+  function ownChange(relPath) {
+    if (standardName(relPath) == null) return false;
+    var sp = split(relPath), st = standardParts(sp.parts);
+    if (st.moved && sp.parts.length === 2) return true;
+    return st.parts[st.parts.length - 1] !== sp.parts[sp.parts.length - 1];
+  }
 
   /* layout('sfh') → [{ name, children: [name] }] in creation order; null for an unknown type */
   function layout(type) {
     var t = TYPES[String(type || '').toLowerCase()];
     return t ? t.map(function (x) { return { name: x[0], children: x[1].slice() }; }) : null;
   }
-  /* missingFolders('sfh', ['Floorplans', 'Floorplans/Design', 'Finishes']) → what the standard has
-     that the job lacks, as 'Floorplan', 'Floorplan/Unbranded' paths, and the renames to suggest.
-     existing: the job's folder paths, relative, any case. Nothing here touches a drive. */
+  /* missingFolders('resale', ['Photos/Edited', 'Floorplans']) → { missing: [], renames: [{ from:
+     'Photos/Edited', to: 'Photos/2 Edits' }, { from: 'Floorplans', to: 'Floorplan' }] }. missing is always
+     empty (23: a folder is made when first needed, so an empty one is never flagged); renames list each
+     folder whose own name changes. existing: the job's folder paths, relative, any case. Nothing here
+     touches a drive. */
   function missingFolders(type, existing) {
-    var L = layout(type);
-    if (!L) return null;
-    var have = {}, renames = [];
+    if (!layout(type)) return null;
+    var seen = {}, renames = [];
     (existing || []).forEach(function (p) {
-      var parts = String(p).split(/[\/]+/).filter(Boolean);
-      var top = parts[0].toLowerCase();
-      if (RENAMED[top]) {
-        renames.push({ from: parts[0], to: RENAMED[top] });
-        parts[0] = RENAMED[top];
-      }
-      have[parts.join('/').toLowerCase()] = true;
+      var from = rel(p);
+      if (!from || seen[from] || !ownChange(from)) return;
+      seen[from] = true;
+      renames.push({ from: from, to: standardName(from) });
     });
-    var out = [];
-    L.forEach(function (f) {
-      if (!have[f.name.toLowerCase()]) out.push(f.name);
-      f.children.forEach(function (c) { if (!have[(f.name + '/' + c).toLowerCase()]) out.push(f.name + '/' + c); });
-    });
-    var seen = {};
-    renames = renames.filter(function (r) { return !seen[r.from] && (seen[r.from] = true); });
-    return { missing: out, renames: renames };
+    return { missing: [], renames: renames };
   }
 
   return { rel: rel, allowedInJob: allowedInJob, finishFile: finishFile, isPaperworkFolder: isPaperworkFolder, hasPaperworkWord: hasPaperworkWord,
     isPaperwork: isPaperwork, isJunk: isJunk, jobTree: jobTree, planPlace: planPlace, isAlternate: isAlternate,
-    layout: layout, missingFolders: missingFolders, TYPES: Object.keys(TYPES) };
+    layout: layout, missingFolders: missingFolders, TYPES: Object.keys(TYPES),
+    standardName: standardName, ownChange: ownChange, photoSet: photoSet, usablePhotos: usablePhotos,
+    STARTER: STARTER.slice(), DEAL_FOLDER: DEAL_FOLDER };
 });

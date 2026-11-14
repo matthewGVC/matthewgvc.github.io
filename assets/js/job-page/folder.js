@@ -162,7 +162,7 @@
     var r = ctx.row, s = r.scan || {}, h = s.health || {}, c = h.counts || {}, ph = c.photos || {}, out = '';
     out += notesHtml(h.notes, ctx);
     if (s.scannedAt) {
-      out += '<div class="hl"><span class="x">' + ctx.I('photo') + 'Photos\\</span><span class="k">edited ' + (+ph.edited || 0) + (ph.raw ? ' · raws ' + ph.raw : '') + '</span></div>';
+      out += '<div class="hl"><span class="x">' + ctx.I('photo') + 'Photos\\</span><span class="k">edited ' + (ph.usable != null ? +ph.usable || 0 : +ph.edited || 0) + (ph.raw ? ' · raws ' + ph.raw : '') + '</span></div>';
       if (s.detailsDoc) out += '<div class="hl"><span class="x">' + ctx.I('file') + 'Details doc</span><span class="k">found</span></div>';
       if (c.looseTop) out += '<div class="hl"><span class="x">Loose files at the top</span><span class="k">' + c.looseTop + ', not read</span></div>';
     }

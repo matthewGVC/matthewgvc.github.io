@@ -380,8 +380,10 @@
     var when = function (f) { return f && f.modified ? 'Updated ' + D.day(f.modified) : 'On Drive'; };
     var file;
     if (x.key === 'photos' && x.file) {
-      // last night's scan keeps only the newest few photos: its own count of the edited ones says how many
-      var counted = ((((ctx.row.scan || {}).health || {}).counts || {}).photos || {}).edited;
+      // last night's scan keeps only the newest few photos: its own count of the usable ones says how many
+      // (Selects + Finals or Edits, GVC_HEALTH; a scan made before it has only edited)
+      var sc = ((((ctx.row.scan || {}).health || {}).counts || {}).photos || {});
+      var counted = sc.usable != null ? sc.usable : sc.edited;
       var n = !live && +counted ? +counted : global.GVC_KIT.realFiles(pieces.photos, 'photos').filter(function (f) { return !f.archived && IMG.test(f.name || ''); }).length;
       file = esc([when(x.file), n ? plural(n, 'photo') : ''].filter(Boolean).join(' · '));
     } else if (x.key === 'openhouse' && x.file) {

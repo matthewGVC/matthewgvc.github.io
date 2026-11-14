@@ -105,6 +105,9 @@ check('photosOf: at most 12', S.photosOf(job({}), Array.from({ length: 15 }, (x,
   const fl = n => ({ name: n, kind: 'file' }), dr = (n, c) => ({ name: n, kind: 'directory', children: c });
   const h = H.health(dr('x', [dr('Photos', [dr('6 Selects', [fl('s2.jpg'), fl('s1.jpg')]), dr('5 Finals', [fl('f1.jpg'), fl('f2.jpg'), fl('f3.jpg')]),
     dr('2 Edits', [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => fl('e' + n + '.jpg')))])]), { market: 'NYC' });
+  const h12 = H.health(dr('x', [dr('Photos', [dr('Edited', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => fl('Photo-' + n + '.jpg')))])]), { market: 'NYC' });
+  const t12 = S.photosOf(job({}), h12.pieces.photos.map(f => f.path));
+  check('photosOf: -1 to -12, nothing picked: the order as before (front -1, back -10)', [t12.front, t12.back], ['Photos/Edited/Photo-1.jpg', 'Photos/Edited/Photo-10.jpg']);
   check('photosOf: Selects then Finals, no Edits', S.photosOf(job({}), h.pieces.photos.map(f => f.path)).tray,
     ['Photos/6 Selects/s1.jpg', 'Photos/6 Selects/s2.jpg', 'Photos/5 Finals/f1.jpg', 'Photos/5 Finals/f2.jpg', 'Photos/5 Finals/f3.jpg']);
 }

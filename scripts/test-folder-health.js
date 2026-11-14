@@ -31,7 +31,7 @@ let tree = d('1 Example St 4A', [
 ]);
 let r = H.health(tree, NYC);
 check('healthy: no notes', r.notes, []);
-check('photo counts', r.counts.photos, { edited: 2, staged: 1, print: 1, web: 2, raw: 3, finals: 0, selects: 0, ps: 0 });
+check('photo counts', r.counts.photos, { edited: 2, staged: 1, print: 1, web: 2, raw: 3, finals: 0, selects: 0, ps: 0, usable: 2 });
 check('details doc', r.detailsDoc && r.detailsDoc.name, 'Details 1 Example St.docx');
 check('showsheet found under new name', r.pieces.showsheet.map((p) => p.path), ['Marketing/Showsheet/Showsheet - 1 Example St.pdf']);
 check('floorplan found', r.pieces.floorplan.length, 1);
@@ -153,13 +153,20 @@ r = H.health(d('5 Example St', [d('Photos', [d('1 Raw', [f('r.jpg'), f('r2.jpg')
   d('5 Finals', [f('c.jpg'), f('a.jpg'), f('s1.jpg')]), d('2 Edits', [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => f('e' + n + '.jpg')))])]), NYC);
 check('Selects first, then Finals; no Edits; a name listed once', r.pieces.photos.map((p) => p.path),
   ['Photos/6 Selects/s1.jpg', 'Photos/6 Selects/s2.jpg', 'Photos/5 Finals/a.jpg', 'Photos/5 Finals/c.jpg']);
-check('every numbered set is counted', r.counts.photos, { edited: 9, staged: 1, print: 0, web: 0, raw: 2, finals: 3, selects: 2, ps: 1 });
+check('every numbered set is counted', r.counts.photos, { edited: 9, staged: 1, print: 0, web: 0, raw: 2, finals: 3, selects: 2, ps: 1, usable: 5 });
 r = H.health(d('5 Example St', [d('Photos', [d('6 Selects', [f('s1.jpg'), f('s2.jpg')])])]), NYC);
 check('Selects alone: no photos piece', [r.pieces.photos.length, codes(r).includes('noEdited')], [0, true]);
 r = H.health(d('5 Example St', [d('Photos', [f('loose.jpg'), d('6 Selects', [f('s1.jpg')])])]), NYC);
 check('Selects alone: loose photos still count', r.pieces.photos.map((p) => p.path), ['Photos/loose.jpg']);
 r = H.health(d('5 Example St', [d('Photos', [d('5 Finals', []), d('2 Edits', [f('d.jpg'), f('c.jpg'), f('b.jpg'), f('a.jpg')])])]), NYC);
 check('Finals empty: the Edits', r.pieces.photos.map((p) => p.name), ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']);
+check('Finals empty: usable is the Edits', r.counts.photos.usable, 4);
+r = H.health(d('5 Example St', [d('Photos', [d('Finals', [f('a.jpg'), f('b.jpg'), f('c.jpg')])])]), NYC);
+check('only an old Photos/Finals: usable counts it, edited does not', [r.counts.photos.usable, r.counts.photos.edited], [3, 0]);
+r = H.health(d('5 Example St', [d('Photos', [f('a.jpg'), f('b.jpg')])]), NYC);
+check('loose photos: usable counts them', r.counts.photos.usable, 2);
+r = H.health(d('5 Example St', [d('Photos', [d('Edited', [12, 2, 10, 1, 11, 3].map((n) => f('Photo-' + n + '.jpg')))])]), NYC);
+check('name order as before: -1, -10, -11, -12, -2, -3', r.pieces.photos.map((p) => p.name), ['Photo-1.jpg', 'Photo-10.jpg', 'Photo-11.jpg', 'Photo-12.jpg', 'Photo-2.jpg', 'Photo-3.jpg']);
 
 console.log((failures.length ? failures.join('\n') + '\n' : '') + pass + ' passed, ' + failures.length + ' failed');
 process.exit(failures.length ? 1 : 0);

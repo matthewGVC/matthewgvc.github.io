@@ -40,9 +40,10 @@ function readJobFile(jobAbs, rel) {
   if (!inside.length || inside.some(s => /^[.\s]+$/.test(s) || /[:"<>|*?\x00-\x1f]/.test(s))) throw fail(400, 'That isn\'t a path the helper reads.');
   // only a piece's pictures: Floorplan (or "Floor plans", as folder-health.js names it), Photos, the old
   // Marketing, or a flat piece folder (Pitch, Showsheet, Brochure, Postcard, Signage, Open House), any case,
-  // after an optional deal folder ("2026 Sale", drive-rules.js DEAL_FOLDER)
+  // or an old pitch folder pieceDir may write a map into (pieces.js: Pitches, Seller Pitch), after an optional
+  // deal folder ("2026 Sale", drive-rules.js DEAL_FOLDER)
   const top = (inside.length > 1 && RULES.DEAL_FOLDER.test(inside[0]) ? inside[1] : inside[0]) || '';
-  const pictureFolder = /^(floor ?plans?|photos|marketing|pitch|showsheet|brochure|postcard|signage|open house)$/i.test(top);
+  const pictureFolder = /^(floor ?plans?|photos|marketing|pitch|showsheet|brochure|postcard|signage|open house)$/i.test(top) || PIECES['pitch-map'].folder.test(top.trim());
   if (!pictureFolder || !RULES.allowedInJob(inside.join('/')) || inside.some(s => RULES.isPaperwork(s)) || RULES.isJunk(name)) throw fail(403, 'The workspace doesn\'t read that file.');
   if (!ext || !TYPES[ext.toLowerCase()]) throw fail(403, 'The helper only reads pictures for a piece.');
   const abs = path.resolve(jobAbs, ...inside);

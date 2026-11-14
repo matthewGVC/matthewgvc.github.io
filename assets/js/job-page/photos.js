@@ -171,8 +171,7 @@
     if (m === 'live' || m === 'checking') body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     else if (m === 'scan') {
       var c = ((((ctx.row.scan || {}).health || {}).counts || {}).photos) || {};
-      // the usable photos (75): Selects, then Finals when it has photos, else Edits (a name in two sets counts twice here)
-      var n = (+c.selects || 0) + ((+c.finals || 0) > 0 ? +c.finals : (+c.edited || 0));
+      var n = c.usable != null ? +c.usable || 0 : +c.edited || 0;   // the usable photos (GVC_HEALTH); an older scan: edited
       body = (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + n + ' finished photos in the folder.</p>' : '');
     } else body = '<p class="soft">Link the job\'s Drive folder to see its photos.</p>';
     // Watermark folds into the photo step (D16): staged photos are marked there, then saved back to the folder

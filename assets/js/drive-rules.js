@@ -61,7 +61,8 @@
      names today's folders already use for the same things. Lower case. */
   var READABLE = ['floorplan', 'floorplans', 'floor plan', 'floor plans', 'photos', 'photo', 'pictures', 'marketing',
     'showsheet', 'showsheets', 'show sheet', 'show sheets', 'brochure', 'brochures', 'copy', 'video', 'videos', 'film',
-    'open house', 'open houses', 'postcard', 'postcards', 'signage', 'signs', 'pitch', 'pitches'];
+    'open house', 'open houses', 'postcard', 'postcards', 'signage', 'signs', 'pitch', 'pitches',
+    'seller pitch', 'seller pitches'];   // the old pitch folders the helper still finds (helper/pieces.js)
 
   /* a paperwork folder: its name starts with one of these whole words ("Docs", "Offers 2024",
      "Deal Sheet"); "Dock photos" and "Offering plan" are not paperwork */

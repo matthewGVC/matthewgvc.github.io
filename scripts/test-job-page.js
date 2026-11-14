@@ -970,6 +970,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('scan: picks as names', [await text(p, '#phPicks .phh'), await p.$$eval('#phPicks [data-pk]', els => els.length)], ['Hero: Edits photo', 2]);
   check('scan: doc card says when it was last read', (await text(p, '#docRec')).startsWith('Last read 11 Oct from the details doc'), true);
   check('scan: Drive never touched', await p.evaluate(() => [window.__driveLog.tree, window.__driveLog.read.length]), [0, 0]);
+  {
+    /* a scan of a job with only an old Photos/Finals: the usable count (GVC_HEALTH), not the empty edits set */
+    const RF3 = rowsFor(), sc = RF3.properties[0].scan;
+    sc.health.counts.photos = { edited: 0, staged: 0, print: 0, web: 0, raw: 0, finals: 3, selects: 0, ps: 0, usable: 3 };
+    sc.pieces.photos = [{ name: 'a.jpg', modified: '2026-10-08T10:00:00.000Z', archived: false, url: 'https://drive.google.com/file/d/PH1/view' }];
+    const tf = await open(browser, { rows: RF3, path: LISTING, drive: { state: 'not-connected' } });
+    await tf.page.waitForSelector('#kitCard [data-kit="photos"]');
+    check('scan: only Finals, the usable count on the folder, photos and kit cards', [(await text(tf.page, '#folderBody')).includes('edited 3'),
+      (await text(tf.page, '#phBody')).includes('3 finished photos'), (await text(tf.page, '#kitCard [data-kit="photos"]')).includes('3 photos')], [true, true, true]);
+    check('scan: only Finals, no page errors', tf.errors, []);
+    await tf.ctx.close();
+  }
   links.length = 0;
   await p.route('http://localhost:47610/drive-link', r => r.abort());
   await p.click('#kitCard [data-kit="showsheet"] [data-copy]');

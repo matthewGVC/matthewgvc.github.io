@@ -7,7 +7,7 @@
      GVC_HEALTH.health(tree, { market: 'NYC'|'NJ'|'FL', driveRoot: 'GVC - New York',
                                isNew: false })
        → { notes: [{ code, text }],
-           counts: { photos: { edited, staged, print, web, raw, finals, selects, ps }, looseTop },
+           counts: { photos: { edited, staged, print, web, raw, finals, selects, ps, usable }, looseTop },
            pieces: { <kit key>: [{ path, name, modified, archived }] },
            detailsDoc: { name, size, modified } | null }
 
@@ -18,7 +18,9 @@
    Selects' photos first when it has any, then Finals' (or, when Finals has
    none, Edits'), each set in name order, a file name already listed not listed
    again. Selects alone is not the piece. counts.photos counts every set by its
-   key (edited = the edits set), whatever the folder is called.
+   key (edited = the edits set), whatever the folder is called; usable is
+   selects + (finals, else edited): the photos the pieces use (a scan made
+   before it has no usable: read edited then).
 
    tree: the job folder as { name, kind: 'file'|'directory', size?, modified?,
    children? }. Paperwork folders arrive as { skipped: true } and loose
@@ -59,7 +61,9 @@
   var USABLE = { selects: 1, finals: 1, edits: 1 };
   /* counts.photos key of each photo set (photoSet) */
   var COUNT_KEY = { edits: 'edited', staged: 'staged', print: 'print', web: 'web', raw: 'raw', finals: 'finals', selects: 'selects', ps: 'ps' };
-  function byName(a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }); }
+  /* name order as the pieces have always had it (sheet-job.js before 75): lower-cased name, plain <, so
+     "-10.jpg" comes before "-2.jpg" and no piece reads as out of date because the order moved */
+  function byName(a, b) { a = low(a.name); b = low(b.name); return a < b ? -1 : a > b ? 1 : 0; }
   /* a piece file loose at the top starts with its piece's name */
   var TOP_NAME = {
     floorplan: /^(floorplans?|floor plans?)\b/i,
@@ -109,7 +113,7 @@
     opts = opts || {};
     var out = {
       notes: [],
-      counts: { photos: { edited: 0, staged: 0, print: 0, web: 0, raw: 0, finals: 0, selects: 0, ps: 0 }, looseTop: 0 },
+      counts: { photos: { edited: 0, staged: 0, print: 0, web: 0, raw: 0, finals: 0, selects: 0, ps: 0, usable: 0 }, looseTop: 0 },
       pieces: {},
       detailsDoc: null
     };
@@ -184,6 +188,7 @@
       out.pieces.photos = loosePhotos;
       photoCounts.edited = loosePhotos.length;
     }
+    photoCounts.usable = photoCounts.selects + (photoCounts.finals > 0 ? photoCounts.finals : photoCounts.edited);
     out.counts.looseTop = loose;
 
     /* ---- notes ---- */

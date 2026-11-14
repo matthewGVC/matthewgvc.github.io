@@ -203,6 +203,8 @@ function fakeDb(T, o) {
   check('read: the numbered photo folders and every flat piece folder, any case',
     ['Photos/5 Finals/a.jpg', 'showsheet/a.jpg', 'Brochure/a.jpg', 'POSTCARD/a.jpg', 'Signage/a.jpg', 'Open House/a.jpg', '2026 - Rental/Pitch/a.jpg'].map(r => (put(flat, r), rdF(r)[0])),
     ['image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg']);
+  check('read: the old pitch folders a map may be written into', ['Pitches/Map.png', 'Seller Pitch/Map.png', 'seller pitches/Map.png', '2026 Sale/Seller Pitch/Map.png'].map(r => (put(flat, r), rdF(r)[0])),
+    ['image/png', 'image/png', 'image/png', 'image/png']);
   check('read: a deal folder then paperwork refused', (put(flat, '2026 Sale/Docs/a.jpg'), rdF('2026 Sale/Docs/a.jpg'))[0], 403);
   fs.rmSync(flat, { recursive: true, force: true });
   check('read: a missing file is said', rd('Photos/Edited/09.jpg'), [404, 'Drive hasn\'t got 09.jpg on this computer.']);

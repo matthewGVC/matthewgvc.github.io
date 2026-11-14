@@ -7,9 +7,18 @@
      GVC_HEALTH.health(tree, { market: 'NYC'|'NJ'|'FL', driveRoot: 'GVC - New York',
                                isNew: false })
        → { notes: [{ code, text }],
-           counts: { photos: { edited, staged, print, web, raw }, looseTop },
+           counts: { photos: { edited, staged, print, web, raw, finals, selects, ps }, looseTop },
            pieces: { <kit key>: [{ path, name, modified, archived }] },
            detailsDoc: { name, size, modified } | null }
+
+   The photos piece (decision 75): found only from Finals or Edits, old or new
+   name (GVC_DRIVE_RULES.photoSet: "5 Finals", "Final", "2 Edits", "Edited"...),
+   or, when the job has neither, from photos loose in Photos\ (Matt, 10-30).
+   pieces.photos holds only the usable sets (GVC_DRIVE_RULES.usablePhotos):
+   Selects' photos first when it has any, then Finals' (or, when Finals has
+   none, Edits'), each set in name order, a file name already listed not listed
+   again. Selects alone is not the piece. counts.photos counts every set by its
+   key (edited = the edits set), whatever the folder is called.
 
    tree: the job folder as { name, kind: 'file'|'directory', size?, modified?,
    children? }. Paperwork folders arrive as { skipped: true } and loose
@@ -39,7 +48,6 @@
   /* piece folder names, old and new (plan §9), tested on the lower-cased name */
   var FOLDER = {
     floorplan: /^(floorplan|floorplans|floor plan|floor plans)$/,
-    photos: /^(edited|edits|edited photos|matt[- ]edits|finals?|final photos|selects)$/,
     showsheet: /^(showsheet|showsheets|show sheet)$/,
     brochure: /^(brochure|brochures)$/,
     postcard: /^(postcard|postcards)$/,
@@ -47,6 +55,11 @@
     video: /^(video|film)$/,
     openhouse: /^(open house|open houses|openhouse)$/   // Marketing\Open House: the e-invite, trifold, flyer (Matt, 11-10)
   };
+  /* the photo sets that make the photos piece (75): Selects is listed first but never the piece alone */
+  var USABLE = { selects: 1, finals: 1, edits: 1 };
+  /* counts.photos key of each photo set (photoSet) */
+  var COUNT_KEY = { edits: 'edited', staged: 'staged', print: 'print', web: 'web', raw: 'raw', finals: 'finals', selects: 'selects', ps: 'ps' };
+  function byName(a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }); }
   /* a piece file loose at the top starts with its piece's name */
   var TOP_NAME = {
     floorplan: /^(floorplans?|floor plans?)\b/i,
@@ -73,7 +86,8 @@
   function fmt(v) { var d = new Date(ms(v)); return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }
   function folderKey(name) {
     var n = low(name).trim();
-    for (var i = 0; i < KEYS.length; i++) if (FOLDER[KEYS[i]].test(n)) return KEYS[i];
+    if (USABLE[RULES.photoSet(n)]) return 'photos';
+    for (var i = 0; i < KEYS.length; i++) if (FOLDER[KEYS[i]] && FOLDER[KEYS[i]].test(n)) return KEYS[i];
     return null;
   }
   /* an open house folder holds each piece in its own folder (Open House\Trifold, \E-invite draft, \Flyer) beside
@@ -95,7 +109,7 @@
     opts = opts || {};
     var out = {
       notes: [],
-      counts: { photos: { edited: 0, staged: 0, print: 0, web: 0, raw: 0 }, looseTop: 0 },
+      counts: { photos: { edited: 0, staged: 0, print: 0, web: 0, raw: 0, finals: 0, selects: 0, ps: 0 }, looseTop: 0 },
       pieces: {},
       detailsDoc: null
     };
@@ -112,8 +126,9 @@
     var hasVersionDir = false;
     var photoCounts = out.counts.photos;
     var loosePhotos = [];      // images straight inside Photos\, used only when no edited-photo folder exists
+    var photoSets = { selects: [], finals: [], edits: [] };   // the usable sets' files, before they make pieces.photos
 
-    function walk(node, segs, archived, piece) {
+    function walk(node, segs, archived, piece, set) {
       (node.children || []).forEach(function (c) {
         if (c.skipped) return;
         var path = segs.concat(c.name);
@@ -123,15 +138,15 @@
           var key = piece || (isArchive ? null : folderKey(c.name));
           if (!piece && key && !archived) (dirsByPiece[key] = dirsByPiece[key] || []).push(path.join('\\'));
           if (piece === 'floorplan' && /^v\d+$/i.test(c.name)) hasVersionDir = true;
-          walk(c, path, archived || isArchive, key);
+          walk(c, path, archived || isArchive, key, set || (!piece && key === 'photos' ? RULES.photoSet(c.name) : null));
         } else {
-          var folders = path.slice(0, -1).map(low);
-          ['staged', 'print', 'web', 'raw'].forEach(function (f) { if (folders.indexOf(f) !== -1) photoCounts[f]++; });
-          if (piece === 'photos') photoCounts.edited++;
+          var counted = {};
+          path.slice(0, -1).forEach(function (g) { var k = COUNT_KEY[RULES.photoSet(g)]; if (k && !counted[k]) { counted[k] = 1; photoCounts[k]++; } });
           if (!piece && !archived && segs.length === 1 && PHOTOS_TOP.test(low(segs[0])) && IMAGE.test(c.name)) {
             loosePhotos.push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: false }, c));
           }
-          if (piece && (piece !== 'openhouse' || openHousePiece(path))) out.pieces[piece].push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived }, c));
+          if (piece === 'photos') photoSets[set].push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived }, c));
+          else if (piece && (piece !== 'openhouse' || openHousePiece(path))) out.pieces[piece].push(withUrl({ path: path.join('/'), name: c.name, modified: c.modified || null, archived: archived }, c));
         }
       });
     }
@@ -150,7 +165,21 @@
         note('pieceAtTop', 'A ' + LABEL[key] + ' file sits loose at the top of the folder. The standard keeps it in its own folder.');
       } else loose++;
     });
-    walk(tree, [], false, null);
+    walk(tree, [], false, null, null);
+    /* the usable photos (75): which sets, by their current (not archived) photos; each in name order,
+       its current files before its archived ones; a name already listed is not listed again */
+    var current = {};
+    Object.keys(photoSets).forEach(function (k) { current[k] = photoSets[k].filter(function (p) { return !p.archived; }).length; });
+    var use = RULES.usablePhotos(current).list, named = {};
+    if (use.some(function (k) { return k !== 'selects'; })) use.forEach(function (k) {
+      var list = photoSets[k];
+      list.filter(function (p) { return !p.archived; }).sort(byName).concat(list.filter(function (p) { return p.archived; }).sort(byName)).forEach(function (p) {
+        var n = low(p.name);
+        if (named[n]) return;
+        named[n] = 1;
+        out.pieces.photos.push(p);
+      });
+    });
     if (!out.pieces.photos.length && loosePhotos.length) {
       out.pieces.photos = loosePhotos;
       photoCounts.edited = loosePhotos.length;

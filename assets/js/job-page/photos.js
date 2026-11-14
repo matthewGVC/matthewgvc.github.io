@@ -3,9 +3,12 @@
 
      GVC_JP.photos.html(ctx) / wire(host, ctx)
 
-   Sets from what Photos\ holds, with counts: Edited (default; old names
-   edits / matt-edits too), Staged, Print, Web, and Raws (a count only, never
-   opened). Thumbnails only from JPG / PNG / WebP, read four at a time as
+   Sets from what Photos\ holds, with counts, each matched by
+   GVC_DRIVE_RULES.photoSet (old or new name: "2 Edits" or "Edited"): Selects,
+   Finals, Edits, Virtual Staged, PS, Print, Web, and Raw (a count only, never
+   opened). The set shown first is the first usable one (usablePhotos:
+   Selects when it has photos, then Finals, else Edits), else the first set
+   with photos. Thumbnails only from JPG / PNG / WebP, read four at a time as
    they scroll into view, shrunk to 400 px and kept for this page visit. A
    file Drive won't serve within the time limit says "Drive hasn't
    downloaded this yet." on its own tile.
@@ -13,22 +16,27 @@
    Picks: a hero (star) plus an ordered list (Pick, then ↑ ↓ ×), stored as
    paths inside the job folder ("Photos/Edited/03.jpg") in photo_hero and
    photo_order; Save picks writes both and one change-log line (owner
-   only). Nothing picked = every edited photo in name order. A pick whose
+   only). Nothing picked = the usable photos (Selects, then Finals or
+   Edits) in name order. A pick is compared as stored, so one in an
+   old-named folder still shows. A pick whose
    file is gone shows "Missing on Drive" and stays until removed. A photo is
    never shown by its file name (Matt, 11-03): "Photo 3" is its place in its
    folder in name order (the order the pieces use), with its thumbnail;
-   without Drive here, "Edited photo".
+   without Drive here, its set's name ("Edits photo").
    ============================================================ */
 (function (global) {
   'use strict';
   var JP = global.GVC_JP = global.GVC_JP || {};
   var IMG = /\.(jpe?g|png|webp)$/i;
-  var SETS = [['edited', 'Edited', /^(edited|edits|matt[- ]edits)$/i], ['staged', 'Staged', /^staged$/i], ['print', 'Print', /^print$/i],
-    ['web', 'Web', /^web$/i], ['raw', 'Raws', /^raws?$/i]];
+  /* the photo sets in the order shown, by GVC_DRIVE_RULES.photoSet key */
+  var SETS = [['selects', 'Selects'], ['finals', 'Finals'], ['edits', 'Edits'], ['staged', 'Virtual Staged'], ['ps', 'PS'],
+    ['print', 'Print'], ['web', 'Web'], ['raw', 'Raw']];
+  var SET_LABEL = {};
+  SETS.forEach(function (s) { SET_LABEL[s[0]] = s[1]; });
   var LIMIT = 4, WIDTH = 400;
 
   var draft = null;      // { hero, order, msg } unsaved picks, kept across a redraw
-  var setKey = 'edited';
+  var setKey = null;     // the set shown; null until the folder is read (then the first usable set)
   var thumbs = {};       // path → { url } | { fail }
   var queue = [], queued = {}, inflight = 0;
   var lists = {};        // folder/dir → Promise<entries>
@@ -37,10 +45,13 @@
   var nums = {};         // path → its place in its folder, in name order ("Photo 3")
 
   function base(p) { return String(p || '').split('/').pop(); }
-  /* a photo in plain words: its place in its folder once read, else the folder it is in */
+  /* a photo in plain words: its place in its folder once read, else its set's name ("Edits photo"),
+     else the folder it is in */
   function label(path) {
     if (nums[path]) return 'Photo ' + nums[path];
     var dir = String(path || '').split('/').slice(-2, -1)[0];
+    var set = dir && SET_LABEL[global.GVC_DRIVE_RULES.photoSet(dir)];
+    if (set) return set + ' photo';
     return dir && !/^photos$/i.test(dir) ? dir.charAt(0).toUpperCase() + dir.slice(1).toLowerCase() + ' photo' : 'Photo';
   }
   function number(dir, entries) {
@@ -121,7 +132,7 @@
     if (!ph) return null;
     var out = [];
     SETS.forEach(function (s) {
-      var d = (ph.children || []).filter(function (c) { return c.kind === 'directory' && s[2].test(c.name); })[0];
+      var d = (ph.children || []).filter(function (c) { return c.kind === 'directory' && global.GVC_DRIVE_RULES.photoSet(c.name) === s[0]; })[0];
       if (!d) return;
       var files = (d.children || []).filter(function (c) { return c.kind === 'file'; });
       out.push({ key: s[0], label: s[1], path: ph.name + '/' + d.name, count: s[0] === 'raw' ? files.length : files.filter(function (f) { return IMG.test(f.name); }).length });
@@ -141,7 +152,7 @@
     var esc = ctx.esc, r = ctx.row, p = picks(r), out = '';
     var miss = function (path) { return missing[path] ? ' <span class="chip stale">Missing on Drive</span>' : ''; };
     out += '<p class="phh">' + (p.hero ? 'Hero: ' + thumbHtml(p.hero, esc) + esc(label(p.hero)) + miss(p.hero) : 'No hero picked.') + '</p>';
-    if (!p.order.length) out += '<p class="soft" style="font-size:13px">Nothing picked: every piece uses every edited photo in name order.</p>';
+    if (!p.order.length) out += '<p class="soft" style="font-size:13px">Nothing picked: every piece uses the finished photos (Selects, then Finals or Edits) in name order.</p>';
     else out += '<ol class="picks">' + p.order.map(function (path, i) {
       return '<li data-pk="' + esc(path) + '">' + thumbHtml(path, esc) + '<span class="pn">' + esc(label(path)) + '</span>' + (p.hero === path ? ' <span class="chip made">Hero</span>' : '') + miss(path) +
         (ctx.canEdit ? '<span class="pa"><button class="b sm" type="button" data-up="' + i + '" aria-label="Move ' + esc(label(path)) + ' up"' + (i ? '' : ' disabled') + '>↑</button>' +
@@ -160,7 +171,9 @@
     if (m === 'live' || m === 'checking') body = '<p class="soft" data-reading>' + (m === 'checking' ? 'Checking Drive…' : 'Reading the folder…') + '</p>';
     else if (m === 'scan') {
       var c = ((((ctx.row.scan || {}).health || {}).counts || {}).photos) || {};
-      body = (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + (+c.edited || 0) + ' edited photos in the folder.</p>' : '');
+      // the usable photos (75): Selects, then Finals when it has photos, else Edits (a name in two sets counts twice here)
+      var n = (+c.selects || 0) + ((+c.finals || 0) > 0 ? +c.finals : (+c.edited || 0));
+      body = (ctx.row.scan && ctx.row.scan.scannedAt ? '<p class="soft" style="font-size:13px">' + n + ' finished photos in the folder.</p>' : '');
     } else body = '<p class="soft">Link the job\'s Drive folder to see its photos.</p>';
     // Watermark folds into the photo step (D16): staged photos are marked there, then saved back to the folder
     return '<div class="card" id="photosCard"><div class="card-h"><div><h2>Photos</h2></div>' +
@@ -236,19 +249,24 @@
   function grid(host, ctx, sets) {
     var body = host.querySelector('#phBody'), esc = ctx.esc;
     if (!sets) { body.innerHTML = '<p class="soft">No Photos folder found.</p>'; return; }
-    if (!sets.length) { body.innerHTML = '<p class="soft">The Photos folder has no Edited, Staged, Print or Web folder yet.</p>'; return; }
-    if (!sets.some(function (s) { return s.key === setKey; })) setKey = sets.filter(function (s) { return s.key !== 'raw'; }).concat(sets)[0].key;
+    if (!sets.length) { body.innerHTML = '<p class="soft">The Photos folder has no Edits, Finals or Selects folder yet.</p>'; return; }
+    if (!sets.some(function (s) { return s.key === setKey; })) {
+      var counts = {};
+      sets.forEach(function (s) { counts[s.key] = s.count; });
+      var withPhotos = sets.filter(function (s) { return s.key !== 'raw' && s.count > 0; });
+      setKey = global.GVC_DRIVE_RULES.usablePhotos(counts).first || (withPhotos[0] || sets.filter(function (s) { return s.key !== 'raw'; }).concat(sets)[0]).key;
+    }
     var seg = '<div class="phs seg" role="group" aria-label="Photo set">' + sets.map(function (s) {
-      return s.key === 'raw' ? '<span class="phraw">Raws<span class="n">' + s.count + '</span></span>'
+      return s.key === 'raw' ? '<span class="phraw">Raw<span class="n">' + s.count + '</span></span>'
         : '<button type="button" data-set="' + s.key + '" aria-pressed="' + (s.key === setKey) + '">' + esc(s.label) + '<span class="n">' + s.count + '</span></button>';
     }).join('') + '</div>';
     var cur = sets.filter(function (s) { return s.key === setKey; })[0];
-    if (cur.key === 'raw') { body.innerHTML = seg + '<p class="soft">Raws are counted, never opened.</p>'; return; }
+    if (cur.key === 'raw') { body.innerHTML = seg + '<p class="soft">Raw photos are counted, never opened.</p>'; return; }
     body.innerHTML = seg + '<div class="phg" id="phGrid"><p class="soft" data-reading>Reading the photos…</p></div>';
     body.querySelectorAll('[data-set]').forEach(function (b) {
       b.addEventListener('click', function () { setKey = b.dataset.set; grid(host, ctx, sets); });
     });
-    var edited = sets.filter(function (s) { return s.key === 'edited'; })[0];
+    var edited = sets.filter(function (s) { return s.key === 'edits'; })[0];   // a staged photo's original
     Promise.all([listing(ctx, cur.path), cur.key === 'staged' && edited ? listing(ctx, edited.path).catch(function () { return []; }) : Promise.resolve([])]).then(function (xs) {
       var g = host.querySelector('#phGrid');
       if (!g) return;

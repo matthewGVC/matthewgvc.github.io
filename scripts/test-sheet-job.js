@@ -97,8 +97,17 @@ check('no list on the job: saved section stays', S.fill(saved, job({}), {}).stat
 check('photosOf: hero and order', S.photosOf(job({ row: { photo_hero: 'Photos/Edited/03.jpg', photo_order: ['Photos/Edited/01.jpg', 'Photos/Edited/03.jpg', 'Photos/Edited/02.jpg'] } }), null),
   { front: 'Photos/Edited/03.jpg', back: 'Photos/Edited/01.jpg', tray: ['Photos/Edited/01.jpg', 'Photos/Edited/03.jpg', 'Photos/Edited/02.jpg'] });
 check('photosOf: order only', S.photosOf(job({ row: { photo_order: ['P/2.jpg', 'P/1.jpg'] } }), null), { front: 'P/2.jpg', back: 'P/1.jpg', tray: ['P/2.jpg', 'P/1.jpg'] });
-check('photosOf: nothing picked, edited by name', S.photosOf(job({}), ['Photos/Edited/b.jpg', 'Photos/Edited/a.jpg']),
-  { front: 'Photos/Edited/a.jpg', back: 'Photos/Edited/b.jpg', tray: ['Photos/Edited/a.jpg', 'Photos/Edited/b.jpg'] });
+check('photosOf: nothing picked, the usable photos in the order given', S.photosOf(job({}), ['Photos/Edited/b.jpg', 'Photos/Edited/a.jpg']),
+  { front: 'Photos/Edited/b.jpg', back: 'Photos/Edited/a.jpg', tray: ['Photos/Edited/b.jpg', 'Photos/Edited/a.jpg'] });
+check('photosOf: at most 12', S.photosOf(job({}), Array.from({ length: 15 }, (x, i) => 'P/' + i + '.jpg')).tray.length, 12);
+{
+  const H = require('../assets/js/folder-health.js');
+  const fl = n => ({ name: n, kind: 'file' }), dr = (n, c) => ({ name: n, kind: 'directory', children: c });
+  const h = H.health(dr('x', [dr('Photos', [dr('6 Selects', [fl('s2.jpg'), fl('s1.jpg')]), dr('5 Finals', [fl('f1.jpg'), fl('f2.jpg'), fl('f3.jpg')]),
+    dr('2 Edits', [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => fl('e' + n + '.jpg')))])]), { market: 'NYC' });
+  check('photosOf: Selects then Finals, no Edits', S.photosOf(job({}), h.pieces.photos.map(f => f.path)).tray,
+    ['Photos/6 Selects/s1.jpg', 'Photos/6 Selects/s2.jpg', 'Photos/5 Finals/f1.jpg', 'Photos/5 Finals/f2.jpg', 'Photos/5 Finals/f3.jpg']);
+}
 check('photosOf: nothing picked, Drive unknown', S.photosOf(job({}), null), null);
 check('photosOf: hero alone joins the tray', S.photosOf(job({ row: { photo_hero: 'P/9.jpg' } }), ['P/1.jpg']), { front: 'P/9.jpg', back: 'P/1.jpg', tray: ['P/9.jpg', 'P/1.jpg'] });
 check('photosOf: one photo, no back', S.photosOf(job({}), ['P/1.jpg']), { front: 'P/1.jpg', back: null, tray: ['P/1.jpg'] });

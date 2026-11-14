@@ -60,6 +60,15 @@ function file(root, rel, date) {
   const job3 = path.join(path.dirname(job), 'finals-job');
   file(job3, 'Photos/Finals/a.jpg', '2026-09-06');
   check('Photos/Finals counts', scanFolder(job3, {}).found, { photos: '2026-09-06' });
+  // the numbered folders (75): 2 Edits and 5 Finals make the photos piece; Selects alone doesn't
+  const job4 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-scan4-'));
+  file(job4, 'Photos/2 Edits/a.jpg', '2026-09-07');
+  check('Photos/2 Edits counts', scanFolder(job4, {}).found, { photos: '2026-09-07' });
+  const job5 = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-scan5-'));
+  file(job5, 'Photos/6 Selects/a.jpg', '2026-09-07');
+  file(job5, 'Photos/1 Raw/r.jpg', '2026-09-02');
+  check('Photos/6 Selects alone does not', scanFolder(job5, {}).found, {});
+  [job4, job5].forEach(j => fs.rmSync(j, { recursive: true, force: true }));
 
 
   /* ---------- scanAll writes the scan and breaks missing links; the stage is Asana's (D50, S8) ---------- */
@@ -303,6 +312,13 @@ function file(root, rel, date) {
   check('tree: nothing from paperwork anywhere', JSON.stringify(tr).includes('Jane Client'), false);
   const raw = tr.children.find(c => c.name === 'Photos').children.find(c => c.name === 'Raw').children[0];
   check('tree: raw photos are counted by name, not statted', raw, { name: 'r1.cr2', kind: 'file' });
+  file(root3, JF + '/Photos/1 Raw/r2.cr2', '2026-10-05');
+  file(root3, JF + '/Photos/4 Virtual Staged/s.jpg', '2026-10-05');
+  file(root3, JF + '/Photos/3 PS/p.psd', '2026-10-05');
+  const trN = treeOf(path.join(root3, ...JF.split('/')), 4), phN = trN.children.find(c => c.name === 'Photos').children;
+  check('tree: 1 Raw, 4 Virtual Staged and 3 PS are counted by name, not statted', ['1 Raw', '4 Virtual Staged', '3 PS'].map(n => phN.find(c => c.name === n).children[0].modified === undefined), [true, true, true]);
+  ['Photos/1 Raw/r2.cr2', 'Photos/4 Virtual Staged/s.jpg', 'Photos/3 PS/p.psd'].forEach(r => fs.unlinkSync(path.join(root3, ...JF.split('/'), ...r.split('/'))));
+  ['Photos/1 Raw', 'Photos/4 Virtual Staged', 'Photos/3 PS'].forEach(r => fs.rmdirSync(path.join(root3, ...JF.split('/'), ...r.split('/'))));
   /* final review 1: a paperwork folder below the top is never listed nor opened */
   file(root3, JF + '/Marketing/Docs/Seller ID.pdf', '2026-10-03');
   file(root3, JF + '/Photos/Dock photos/d1.jpg', '2026-10-03');

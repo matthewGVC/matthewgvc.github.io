@@ -363,18 +363,33 @@ function req(method, p, headers, body) {
   check('piece: an existing Show Sheet at the top is used', [out.path, out.folderMade, out.pages, out.size], ['Show Sheet/Showsheet - 2 Example St - 2026-10-22.pdf', false, 2, 1024]);
   check('piece: Drive link retried until it appears', [out.url, linkTries], ['https://drive.google.com/file/d/FILEID1234567/view', 3]);
   out = await piece({ propertyId: 'p3', tool: 'showsheet', state: S('3 Example St') }, cfgP);
-  check('piece: Marketing first, any case', out.path, 'marketing/SHOWSHEETS/Showsheet - 3 Example St - 2026-10-22.pdf');
+  check('piece: the top folder first, any case', out.path, 'Show Sheet/Showsheet - 3 Example St - 2026-10-22.pdf');
   out = await piece({ propertyId: 'p5', tool: 'showsheet', state: S('5 Example St') }, cfgP);
-  check('piece: none → Marketing\Showsheet made', [out.path, out.folderMade, out.archived], ['Marketing/Showsheet/Showsheet - 5 Example St - 2026-10-22.pdf', true, null]);
+  check('piece: none → Showsheet made', [out.path, out.folderMade, out.archived], ['Showsheet/Showsheet - 5 Example St - 2026-10-22.pdf', true, null]);
 
+  {
+    /* pieceDir: the job's top first, then the old Marketing\; none → made flat at the top */
+    const { pieceDir } = require('../helper/pdf/piece-folder.js');
+    const SPEC = require('../helper/pieces.js').PIECES.showsheet;
+    const pd = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-piecedir-'));
+    const at = n => { const j = path.join(pd, n); fs.mkdirSync(j, { recursive: true }); return j; };
+    const empty = at('empty'), oldJob = at('old'), both = at('both');
+    fs.mkdirSync(path.join(oldJob, 'Marketing', 'Show Sheet'), { recursive: true });
+    fs.mkdirSync(path.join(both, 'Showsheet')); fs.mkdirSync(path.join(both, 'Marketing', 'Showsheet'), { recursive: true });
+    const rel = (j, x) => [path.relative(j, x.dir).split(path.sep).join('/'), x.made];
+    check('pieceDir: an empty job gets Showsheet at its top', rel(empty, pieceDir(empty, SPEC)), ['Showsheet', true]);
+    check('pieceDir: an old Marketing\Show Sheet is used', rel(oldJob, pieceDir(oldJob, SPEC)), ['Marketing/Show Sheet', false]);
+    check('pieceDir: a top Showsheet wins over Marketing\Showsheet', rel(both, pieceDir(both, SPEC)), ['Showsheet', false]);
+    fs.rmSync(pd, { recursive: true, force: true });
+  }
   const first = await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP);
-  check('piece: first build', [first.path, first.archived], ['Marketing/Showsheet/Showsheet - 1 Example St 4A - 2026-10-22.pdf', null]);
+  check('piece: first build', [first.path, first.archived], ['Showsheet/Showsheet - 1 Example St 4A - 2026-10-22.pdf', null]);
   const rec = x => ({ path: x.path, name: x.name, size: x.size, modified: x.modified, via: 'helper' });
   DOCS.p1 = { output: rec(first), outputs: [rec(first)] };
   let before = countFiles(job('1 Example St'));
   const second = await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP);
   check('piece: second build same day gets (2)', second.name, 'Showsheet - 1 Example St 4A - 2026-10-22 (2).pdf');
-  check('archive moved', second.archived, { from: first.path, to: 'Marketing/Showsheet/Archive/Showsheet - 1 Example St 4A - 2026-10-22.pdf' });
+  check('archive moved', second.archived, { from: first.path, to: 'Showsheet/Archive/Showsheet - 1 Example St 4A - 2026-10-22.pdf' });
   check('archive: the old file is in Archive, nothing deleted', [fs.existsSync(path.join(job('1 Example St'), ...second.archived.to.split('/'))), countFiles(job('1 Example St'))], [true, before + 1]);
 
   DOCS.p1 = { output: rec(second), outputs: [rec(second), rec(first)] };
@@ -384,9 +399,9 @@ function req(method, p, headers, body) {
   check('archive left when size moved', third.archived, { left: second.path, why: 'older showsheet left in place: it changed after the workspace made it' });
   check('archive left: the new PDF is still written', [fs.existsSync(path.join(job('1 Example St'), ...third.path.split('/'))), countFiles(job('1 Example St'))], [true, before + 1]);
 
-  DOCS.p1 = { output: Object.assign(rec(third), { path: 'Marketing/Showsheet/Gone.pdf' }), outputs: [Object.assign(rec(third), { path: 'Marketing/Showsheet/Gone.pdf' })] };
+  DOCS.p1 = { output: Object.assign(rec(third), { path: 'Showsheet/Gone.pdf' }), outputs: [Object.assign(rec(third), { path: 'Showsheet/Gone.pdf' })] };
   check('archive left when gone', (await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP)).archived,
-    { left: 'Marketing/Showsheet/Gone.pdf', why: 'older showsheet left in place: it isn\'t where the workspace left it' });
+    { left: 'Showsheet/Gone.pdf', why: 'older showsheet left in place: it isn\'t where the workspace left it' });
   DOCS.p1 = { output: rec(third), outputs: [] };
   check('archive: a file not in outputs is left', (await piece({ propertyId: 'p1', tool: 'showsheet', state: S('1 Example St', '4A') }, cfgP)).archived.why,
     'older showsheet left in place: the workspace has no record of making it');
@@ -397,13 +412,13 @@ function req(method, p, headers, body) {
   check('archive: paperwork untouched', fs.existsSync(path.join(job('1 Example St'), 'Exclusive - Jane Client.pdf')), true);
 
   /* Archive clash → (2), never overwritten */
-  const sheetDir = path.join(job('1 Example St'), 'Marketing', 'Showsheet');
+  const sheetDir = path.join(job('1 Example St'), 'Showsheet');
   fs.writeFileSync(path.join(sheetDir, 'Old.pdf'), 'old one');
   const oldSt = fs.statSync(path.join(sheetDir, 'Old.pdf'));
-  const oldRec = { path: 'Marketing/Showsheet/Old.pdf', size: oldSt.size, modified: oldSt.mtime.toISOString(), via: 'helper' };
+  const oldRec = { path: 'Showsheet/Old.pdf', size: oldSt.size, modified: oldSt.mtime.toISOString(), via: 'helper' };
   fs.writeFileSync(path.join(sheetDir, 'Archive', 'Old.pdf'), 'already archived');
   check('archive clash gets (2)', archivePrevious({ jobAbs: job('1 Example St'), dir: sheetDir, prev: oldRec, outputs: [oldRec] }),
-    { from: 'Marketing/Showsheet/Old.pdf', to: 'Marketing/Showsheet/Archive/Old (2).pdf' });
+    { from: 'Showsheet/Old.pdf', to: 'Showsheet/Archive/Old (2).pdf' });
   check('archive clash: the first one is untouched', fs.readFileSync(path.join(sheetDir, 'Archive', 'Old.pdf'), 'utf8'), 'already archived');
 
   /* only the current version stays at the folder's top (Matt 11-02, 225 E79 PHA) */
@@ -426,7 +441,7 @@ function req(method, p, headers, body) {
   check('guard: in its Archive', insideJobPiece(path.join(sheetDir, 'Archive', 'a.pdf'), jA, sheetDir), true);
   check('guard: case does not matter', insideJobPiece(path.join(sheetDir.toUpperCase(), 'a.pdf'), jA, sheetDir), true);
   check('guard: ..\\..\\x.pdf refused', insideJobPiece(path.join(sheetDir, '..', '..', 'x.pdf'), jA, sheetDir), false);
-  check('guard: look-alike Showsheet2 refused', insideJobPiece(path.join(jA, 'Marketing', 'Showsheet2', 'a.pdf'), jA, sheetDir), false);
+  check('guard: look-alike Showsheet2 refused', insideJobPiece(path.join(jA, 'Showsheet2', 'a.pdf'), jA, sheetDir), false);
   check('guard: deeper than Archive refused', insideJobPiece(path.join(sheetDir, 'Archive', 'x', 'a.pdf'), jA, sheetDir), false);
   check('guard: a folder outside the job refused', insideJobPiece(path.join(pRoot, 'a.pdf'), jA, pRoot), false);
   check('guard: relative paths refused', insideJobPiece('a.pdf', jA, sheetDir), false);
@@ -487,32 +502,32 @@ function req(method, p, headers, body) {
     const PNG = 'data:image/png;base64,' + Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40, 1)]).toString('base64');
 
     let o5 = await p5({ propertyId: 'l10', tool: 'brochure', state: { paper: 'half' } }, cfgP);
-    check('brochure: Marketing\\Brochure made', [o5.path, o5.folderMade, o5.pages], ['Marketing/Brochure/Brochure - 10 Example St - 2026-10-22.pdf', true, 5]);
+    check('brochure: Brochure made', [o5.path, o5.folderMade, o5.pages], ['Brochure/Brochure - 10 Example St - 2026-10-22.pdf', true, 5]);
     check('brochure: drawn with no paper forced', drawn[0], ['brochure', null]);
     o5 = await p5({ propertyId: 'l11', tool: 'postcard-listed', state: {} }, cfgP);
     check('postcard listed: an existing Postcards folder', o5.path, 'Marketing/Postcards/Just Listed Postcard - 11 Example St - 2026-10-22.pdf');
     o5 = await p5({ propertyId: 'l11', tool: 'postcard-sold', state: {} }, cfgP);
     check('postcard sold: beside it', o5.path, 'Marketing/Postcards/Just Sold Postcard - 11 Example St - 2026-10-22.pdf');
     o5 = await p5({ propertyId: 'l14', tool: 'seller', state: {} }, cfgP);
-    check('seller on a listing: Marketing\\Pitch made', [o5.path, o5.folderMade], ['Marketing/Pitch/Seller Package - 14 Example St - 2026-10-22.pdf', true]);
+    check('seller on a listing: Pitch made', [o5.path, o5.folderMade], ['Pitch/Seller Package - 14 Example St - 2026-10-22.pdf', true]);
     const s1 = await p5({ pitchId: 'q12', tool: 'seller', state: {} }, cfgP);
-    check('seller on a pitch: Marketing/Pitch made in the pitch folder', [s1.path, s1.folderMade, asked.indexOf('pitches') !== -1], ['Marketing/Pitch/Seller Package - 12 Sample Ln - 2026-10-22.pdf', true, true]);
+    check('seller on a pitch: Pitch made in the pitch folder', [s1.path, s1.folderMade, asked.indexOf('pitches') !== -1], ['Pitch/Seller Package - 12 Sample Ln - 2026-10-22.pdf', true, true]);
     D5['q12|seller'] = { output: { path: s1.path, size: s1.size, modified: s1.modified, via: 'helper' }, outputs: [{ path: s1.path }] };
     const s2 = await p5({ pitchId: 'q12', tool: 'seller', state: {} }, cfgP);
-    check('seller on a pitch: the older one into Marketing/Pitch/Archive', [s2.name, s2.archived],
-      ['Seller Package - 12 Sample Ln - 2026-10-22 (2).pdf', { from: s1.path, to: 'Marketing/Pitch/Archive/' + s1.name }]);
+    check('seller on a pitch: the older one into Pitch/Archive', [s2.name, s2.archived],
+      ['Seller Package - 12 Sample Ln - 2026-10-22 (2).pdf', { from: s1.path, to: 'Pitch/Archive/' + s1.name }]);
     check('the pitch\'s own files untouched', fs.readFileSync(path.join(j5('2026-10-01 12 Sample Ln'), '12 Sample Ln.pdf'), 'utf8'), 'their own pitch');
 
     const m1 = await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP);
-    check('map: written as sent, a .png, nothing drawn', [m1.path, m1.size, drawn.filter(d => d[0] === 'pitch-map').length], ['Marketing/Pitch/Map - 12 Sample Ln - 2026-10-22.png', 48, 0]);
+    check('map: written as sent, a .png, nothing drawn', [m1.path, m1.size, drawn.filter(d => d[0] === 'pitch-map').length], ['Pitch/Map - 12 Sample Ln - 2026-10-22.png', 48, 0]);
     D5['q12|pitch-map'] = { output: { path: m1.path, size: m1.size, modified: m1.modified, via: 'helper' }, outputs: [{ path: m1.path }] };
     const m2 = await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP);
-    check('map: the older map archived', m2.archived, { from: m1.path, to: 'Marketing/Pitch/Archive/' + m1.name });
+    check('map: the older map archived', m2.archived, { from: m1.path, to: 'Pitch/Archive/' + m1.name });
     D5['q12|pitch-map'] = { output: { path: m2.path, size: 1, modified: m2.modified, via: 'helper' }, outputs: [{ path: m2.path }] };
     check('map: a changed older map is left, named as a map', (await p5({ pitchId: 'q12', tool: 'pitch-map', image: PNG }, cfgP)).archived.why,
       'older map left in place: it changed after the workspace made it');
     o5 = await p5({ propertyId: 'l14', tool: 'pitch-map', image: PNG }, cfgP);
-    check('map on a listing: beside its seller pitch', o5.path, 'Marketing/Pitch/Map - 14 Example St - 2026-10-22.png');
+    check('map on a listing: beside its seller pitch', o5.path, 'Pitch/Map - 14 Example St - 2026-10-22.png');
 
     check('map: not a PNG refused', await e5({ pitchId: 'q12', tool: 'pitch-map', image: 'data:image/png;base64,' + Buffer.from('<svg onload=x>').toString('base64') }), [400, 'The map has to come as a PNG picture.']);
     check('map: a JPEG data URL refused', (await e5({ pitchId: 'q12', tool: 'pitch-map', image: 'data:image/jpeg;base64,AAAA' }))[0], 400);
@@ -539,7 +554,7 @@ function req(method, p, headers, body) {
     }
     /* Slice 6: the For Sale sign; the Open House flyer is gone */
     o5 = await p5({ propertyId: 'l11', tool: 'signage', state: {} }, cfgP);
-    check('signage: Marketing\\Signage made', [o5.path, o5.folderMade], ['Marketing/Signage/For Sale Sign - 11 Example St - 2026-10-22.pdf', true]);
+    check('signage: Signage made', [o5.path, o5.folderMade], ['Signage/For Sale Sign - 11 Example St - 2026-10-22.pdf', true]);
     fs.mkdirSync(path.join(j5('14 Example St'), 'Signs'), { recursive: true });
     o5 = await p5({ propertyId: 'l14', tool: 'signage', state: {} }, cfgP);
     check('signage: an old Signs folder at the top is used', o5.path, 'Signs/For Sale Sign - 14 Example St - 2026-10-22.pdf');

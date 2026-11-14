@@ -4,7 +4,9 @@
      scanFolder(absPath, { since })  → { weeks, found, missing }
        weeks   files modified per week: { "<Monday YYYY-MM-DD>": count }
        found   first date a file appeared in each piece folder, old and new
-               names alike: { floorplan, showsheet, photos (edited), brochure }
+               names alike: { floorplan, showsheet, photos, brochure }; photos
+               only from Finals or Edits, old or new name (75: Selects alone is
+               not done), else from photos loose in Photos\ (Matt, 10-30)
        missing the folder isn't there any more
      await scanAll({ client, driveRoot, now })
        scans every linked listing and pitch, stores `scan` and marks a
@@ -87,7 +89,7 @@ async function candidateFor(D, row) {
 const PIECES = [
   ['floorplan', /^floor ?plans?$/i],
   ['showsheet', /^show ?sheets?$/i],
-  ['photos', /^(edited|edits|edited photos|matt[- ]edits|finals?|final photos|selects)$/i],
+  ['photos', { test: seg => ['finals', 'edits'].indexOf(RULES.photoSet(seg)) !== -1 }],   // "5 Finals", "Edited"... (drive-rules.js)
   ['brochure', /^brochures?$/i]
 ];
 
@@ -136,14 +138,14 @@ function scanFolder(abs, opts) {
    and other loose top files are only counted, and a loose top file named like a piece (a showsheet at the
    top) is passed by name so the health check can flag it. A paperwork folder deeper down ("Marketing/Docs")
    is dropped before it is read. Stats only; no file is ever opened. */
-const NO_STAT = ['raw', 'raws', 'staged', 'print', 'web'];   // photo sets: counted by name
+const NO_STAT = ['raw', 'staged', 'ps', 'print', 'web'];   // photo sets (drive-rules.js photoSet, old or new name: "1 Raw", "Raws"): counted by name
 function treeOf(abs, depth) {
   const top = { name: path.basename(abs), kind: 'directory', children: [], looseCount: 0, otherCount: 0 };
   const read = dir => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; } };
   const skip = (n, e) => n.startsWith('.') || (!e.isDirectory() && RULES.isJunk(n));   // sidecars and system files (drive-rules.js)
   function fileNode(p, name, segs) {
     const f = { name, kind: 'file' };
-    if (segs.some(g => NO_STAT.indexOf(g.toLowerCase()) !== -1)) return f;
+    if (segs.some(g => NO_STAT.indexOf(RULES.photoSet(g)) !== -1)) return f;
     try { const st = fs.statSync(p); f.size = st.size; f.modified = st.mtime.toISOString(); } catch (e) { /* no date */ }
     return f;
   }

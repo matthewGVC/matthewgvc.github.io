@@ -85,6 +85,8 @@ check('jobTree: input untouched', raw.children.length, 9);
 check('jobTree: a broken link passes through', R.jobTree({ name: 'x', kind: 'directory', broken: true }), { name: 'x', kind: 'directory', broken: true });
 
 check('rel', R.rel('\\Photos\\Edited\\'), 'Photos/Edited');
+check('the new standard names are readable', ['Pitch/Seller pitch.pdf', 'Photos/2 Edits/a.jpg', 'Photos/5 Finals/a.jpg', 'Video/a.mp4', 'Showsheet/a.pdf', 'Open House/a.pdf'].map(R.allowedInJob), [true, true, true, true, true, true]);
+check('every old top name is readable before the run', ['Pitches', 'Photo', 'Pictures', 'Videos', 'Film', 'Brochures', 'Open Houses', 'Show Sheets'].map(n => R.allowedInJob(n + '/a.pdf')), Array(8).fill(true));
 
 /* sidecar and system files are never a piece, a photo or a count (slice3 tune-up 3) */
 check('isJunk: sidecars and system files',
@@ -102,7 +104,10 @@ check('rel dotdot', R.rel('Photos/../Docs'), null);
 /* a "2026 - Sale" folder is see-through: the pieces in it count, its paperwork and loose files never do */
 check('year-Sale: the folder and the pieces inside it are readable', ['2026 - Sale', '2026 - Sale/Showsheet/a.pdf', '2025 – Sale/Photos/Edited/x.jpg', '2026 - Sale/Floorplan/Unbranded/p.png'].map(R.allowedInJob), [true, true, true, true]);
 check('year-Sale: paperwork, loose files and Docs stay refused', ['2026 - Sale/Tax Bill.pdf', '2026 - Sale/Exclusive Sales Agreement.pdf', '2026 - Sale/Docs/x.pdf', '2026 - Sale/Showsheet.pdf', '2026 - Sale/Offer/Photos/x.jpg'].map(R.allowedInJob), [false, false, false, false, false]);
-check('year-Sale: only that exact shape is see-through', ['2026 Sale', 'Sale', '2026 - Sale/2025 - Sale/Photos', '2026 - Rental/Photos'].map(R.allowedInJob), [false, false, false, false]);
+check('a year plus Sale, Rental or Purchase is see-through', ['2026 Sale', 'Sale', '2026 - Sale/2025 - Sale/Photos', '2026 - Rental/Photos'].map(R.allowedInJob), [true, false, false, true]);
+check('deal folders: the pieces inside any of them are readable', ['2026 Sale/Photos/a.jpg', '2016 Purchase/Floorplan/x.pdf', '2025 - Rental/Photos/a.jpg'].map(R.allowedInJob), [true, true, true]);
+check('deal folders: their Docs stay refused', R.allowedInJob('2026 Sale/Docs/x.pdf'), false);
+check('deal folders: a year plus another word is not one', R.allowedInJob('2026 Plans/Photos/a.jpg'), false);
 const sale = R.jobTree({ name: 'x', kind: 'directory', children: [{ name: '2026 - Sale', kind: 'directory', children: [
   { name: 'Exclusive Sales Agreement.pdf', kind: 'file' }, { name: 'Tax Bill.pdf', kind: 'file' },
   { name: 'Showsheet', kind: 'directory', children: [{ name: 'S.pdf', kind: 'file' }] }, { name: 'Docs', kind: 'directory', children: [{ name: 'a.pdf', kind: 'file' }] }] }] });

@@ -31,7 +31,7 @@ let tree = d('1 Example St 4A', [
 ]);
 let r = H.health(tree, NYC);
 check('healthy: no notes', r.notes, []);
-check('photo counts', r.counts.photos, { edited: 2, staged: 1, print: 1, web: 2, raw: 3 });
+check('photo counts', r.counts.photos, { edited: 2, staged: 1, print: 1, web: 2, raw: 3, finals: 0, selects: 0, ps: 0, usable: 2 });
 check('details doc', r.detailsDoc && r.detailsDoc.name, 'Details 1 Example St.docx');
 check('showsheet found under new name', r.pieces.showsheet.map((p) => p.path), ['Marketing/Showsheet/Showsheet - 1 Example St.pdf']);
 check('floorplan found', r.pieces.floorplan.length, 1);
@@ -140,6 +140,39 @@ r = H.health(d('3 Example St 6C', [d('Photos', [f('Photo-1.jpg', '2026-09-03T10:
 check('photos loose in Photos\ count when nothing else does', [r.pieces.photos.map((p) => p.path), codes(r).includes('noEdited')], [['Photos/Photo-1.jpg'], false]);
 r = H.health(d('4 Example St 7D', [d('Photos', [f('dump.jpg'), d('Edited', [f('e.jpg')])])]), NYC);
 check('an Edited folder wins over loose photos', r.pieces.photos.map((p) => p.path), ['Photos/Edited/e.jpg']);
+
+/* the numbered photo folders (75): Finals or Edits make the photos piece, old or new name; Selects come first, never alone */
+r = H.health(d('5 Example St', [d('Photos', [d('5 Finals', [f('a.jpg')])])]), NYC);
+check('5 Finals is the photos piece', r.pieces.photos.map((p) => p.path), ['Photos/5 Finals/a.jpg']);
+check('5 Finals is counted', r.counts.photos.finals, 1);
+r = H.health(d('5 Example St', [d('Photos', [d('2 Edits', [f('a.jpg'), f('b.jpg')])])]), NYC);
+check('2 Edits is the photos piece, counted as edited', [r.pieces.photos.length, r.counts.photos.edited], [2, 2]);
+r = H.health(d('5 Example St', [d('Photos', [d('Edited', [f('a.jpg')])])]), NYC);
+check('the old Edited still is', r.pieces.photos.map((p) => p.path), ['Photos/Edited/a.jpg']);
+r = H.health(d('5 Example St', [d('Photos', [d('1 Raw', [f('r.jpg'), f('r2.jpg')]), d('3 PS', [f('p.psd')]), d('4 Virtual Staged', [f('s.jpg')]), d('6 Selects', [f('s1.jpg'), f('s2.jpg')]),
+  d('5 Finals', [f('c.jpg'), f('a.jpg'), f('s1.jpg')]), d('2 Edits', [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => f('e' + n + '.jpg')))])]), NYC);
+check('Selects first, then Finals; no Edits; a name listed once', r.pieces.photos.map((p) => p.path),
+  ['Photos/6 Selects/s1.jpg', 'Photos/6 Selects/s2.jpg', 'Photos/5 Finals/a.jpg', 'Photos/5 Finals/c.jpg']);
+check('every numbered set is counted', r.counts.photos, { edited: 9, staged: 1, print: 0, web: 0, raw: 2, finals: 3, selects: 2, ps: 1, usable: 5 });
+r = H.health(d('5 Example St', [d('Photos', [d('6 Selects', [f('s1.jpg'), f('s2.jpg')])])]), NYC);
+check('Selects alone: no photos piece', [r.pieces.photos.length, codes(r).includes('noEdited')], [0, true]);
+r = H.health(d('5 Example St', [d('Photos', [f('loose.jpg'), d('6 Selects', [f('s1.jpg')])])]), NYC);
+check('Selects alone: loose photos still count', r.pieces.photos.map((p) => p.path), ['Photos/loose.jpg']);
+r = H.health(d('5 Example St', [d('Photos', [d('5 Finals', []), d('2 Edits', [f('d.jpg'), f('c.jpg'), f('b.jpg'), f('a.jpg')])])]), NYC);
+check('Finals empty: the Edits', r.pieces.photos.map((p) => p.name), ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']);
+check('Finals empty: usable is the Edits', r.counts.photos.usable, 4);
+r = H.health(d('5 Example St', [d('Photos', [d('Finals', [f('a.jpg'), f('b.jpg'), f('c.jpg')])])]), NYC);
+check('only an old Photos/Finals: usable counts it, edited does not', [r.counts.photos.usable, r.counts.photos.edited], [3, 0]);
+r = H.health(d('5 Example St', [d('Photos', [f('a.jpg'), f('b.jpg')])]), NYC);
+check('loose photos: usable counts them', r.counts.photos.usable, 2);
+r = H.health(d('5 Example St', [d('Photos', [d('Edited', [12, 2, 10, 1, 11, 3].map((n) => f('Photo-' + n + '.jpg')))])]), NYC);
+check('name order as before: -1, -10, -11, -12, -2, -3', r.pieces.photos.map((p) => p.name), ['Photo-1.jpg', 'Photo-10.jpg', 'Photo-11.jpg', 'Photo-12.jpg', 'Photo-2.jpg', 'Photo-3.jpg']);
+
+/* a photo set's name outside Photos (Video\Final) is no photo (final review A1) */
+r = H.health(d('5 Example St', [d('Photos', [d('Edited', Array.from({ length: 30 }, (_, n) => f('e' + n + '.jpg')))]), d('Video', [d('Final', [f('clip.mp4')])])]), NYC);
+check('Video/Final is not counted: usable 30, edited 30, finals 0', [r.counts.photos.usable, r.counts.photos.edited, r.counts.photos.finals], [30, 30, 0]);
+r = H.health(d('5 Example St', [d('Marketing', [d('Photos', [d('Raw', [f('r.jpg')]), d('Finals', [f('a.jpg')])])]), d('Film', [d('Raw', [f('x.mov')])])]), NYC);
+check('Marketing/Photos sets count, Film/Raw does not', [r.counts.photos.raw, r.counts.photos.finals, r.counts.photos.usable], [1, 1, 1]);
 
 console.log((failures.length ? failures.join('\n') + '\n' : '') + pass + ' passed, ' + failures.length + ' failed');
 process.exit(failures.length ? 1 : 0);

@@ -8,7 +8,7 @@
    (today's tool always looks near Manhattan). Framing and export are the
    tool's own. "Save map to the job" (the owner) sends the picture to the
    helper, which writes Map - <Address Unit> - <date>.png beside the seller
-   pitch (Marketing\Pitch\), and the job records it (save_piece_of, tool
+   pitch (Pitch\), and the job records it (save_piece_of, tool
    'pitch-map', built_from = the addresses mapped). Without the helper the
    picture downloads as today. The Mapbox token is remembered on this
    computer only, and only in job mode.
@@ -119,7 +119,7 @@
     }, function (e) {
       if (e && e.status) { say(e.message); return; }   // the helper answered and refused
       download(canvas);
-      say('The helper isn\'t running here, so the map downloaded. Put it in the ' + kind + ' folder\'s Marketing\\Pitch, or drop it on the Seller Package.');
+      say('The helper isn\'t running here, so the map downloaded. Put it in the ' + kind + ' folder\'s Pitch folder, or drop it on the Seller Package.');
     }).catch(function (e) { say((e && e.message) || 'The map was not saved.'); });   // never a half-done export with nothing said
   };
 

@@ -104,6 +104,8 @@ const FAKE_DRIVE = `(function () {
     d('Photos', [d('Edited', ['01', '02', '03', '04', '05', '06'].map(function (n) { return f(n + '.jpg', '08'); }).concat([f('Signed contract Jane Client.jpg', '08'), f('Thumbs.db', '12'), f('._01.jpg', '12'), f('03.jpg.xmp', '12')])),
       d('Staged', [f('03.jpg', '09')]), d('Raw', [f('IMG_1.CR3', '07'), f('IMG_2.CR3', '07')])])
   ]);
+  if (cfg.numbered) tree.children.filter(function (c) { return c.name === 'Photos'; })[0].children = [d('2 Edits', ['01', '02', '03', '04', '05'].map(function (n) { return f(n + '.jpg', '08'); })),
+    d('6 Selects', [f('s1.jpg', '09'), f('s2.jpg', '09')]), d('1 Raw', [f('IMG_9.CR3', '07')])];
   if (cfg.noSheet) tree.children = tree.children.filter(function (c) { return c.name !== 'Marketing'; });
   if (cfg.openHouse) tree.children.filter(function (c) { return c.name === 'Marketing'; })[0].children.push(d('Open House', [f('notes.md', '14'), f('buydown-report.pdf', '15'),
     d('Trifold', [f('Trifold v2.pdf', '14'), f('Trifold (small) v2.pdf', '16'), f('preview.png', '14'), d('Archive', [f('Trifold v1.pdf', '13')])]),
@@ -807,7 +809,8 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   /* photos */
   await p.$eval('#photosCard', e => e.scrollIntoView());
   await p.waitForFunction(() => document.querySelectorAll('#phGrid img').length >= 5 && /downloaded/.test(document.querySelector('#phGrid').textContent), null, { timeout: 5000 }).catch(() => {});
-  check('photos: sets with counts, raws a count only', await p.$$eval('#photosCard .phs > *', els => els.map(e => e.textContent.trim())), ['Edited6', 'Staged1', 'Raws2']);
+  check('photos: sets with counts, raws a count only', await p.$$eval('#photosCard .phs > *', els => els.map(e => e.textContent.trim())), ['Edits6', 'Virtual Staged1', 'Raw2']);
+  check('photos: only Edited opens on Edits', await p.$$eval('#photosCard .phs [aria-pressed="true"]', els => els.map(e => e.dataset.set)), ['edits']);
   check('photos: the edited grid', await p.$$eval('#phGrid [data-ph]', els => els.map(e => e.dataset.ph.split('/').pop())), ['01.jpg', '02.jpg', '03.jpg', '04.jpg', '05.jpg', '06.jpg']);
   check('photos: thumbnails four at a time', await p.evaluate(() => [window.__driveLog.max <= 4, window.__driveLog.max >= 2]), [true, true]);
   check('slow file times out on its own tile', [await text(p, '#phGrid [data-ph="Photos/Edited/05.jpg"] .pi'), await p.$$eval('#phGrid img', e => e.length)],
@@ -839,6 +842,18 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('doc: change rows only for what now shows', (s.p_changes || []).map(c => c.field), ['maintenance']);
   check('no paperwork name on the page', /Jane Client|Offer from/.test(await allText(p)), false);
   check('drive cards: no page errors', t.errors, []);
+  await t.ctx.close();
+
+  /* the numbered photo folders (75): Selects, when it has photos, is the set shown first */
+  t = await open(browser, { path: LISTING, drive: { numbered: true } });
+  p = t.page;
+  await p.$eval('#photosCard', e => e.scrollIntoView());
+  await p.waitForSelector('#photosCard .phs [data-set]');
+  check('photos: Selects and Edits, Selects first and shown', [await p.$$eval('#photosCard .phs > *', els => els.map(e => e.textContent.trim())),
+    await p.$$eval('#photosCard .phs [aria-pressed="true"]', els => els.map(e => e.dataset.set))], [['Selects2', 'Edits5', 'Raw1'], ['selects']]);
+  await p.waitForSelector('#phGrid [data-ph]');
+  check('photos: the Selects grid', await p.$$eval('#phGrid [data-ph]', els => els.map(e => e.dataset.ph)), ['Photos/6 Selects/s1.jpg', 'Photos/6 Selects/s2.jpg']);
+  check('numbered photos: no page errors', t.errors, []);
   await t.ctx.close();
 
   /* Drive through Google (Matt 11-03): Open goes to the file's own Drive page, never a blob; the Photos
@@ -952,9 +967,21 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
     ['Not tracked', 'https://drive.google.com/file/d/SS1/view']);
   check('scan: health notes and counts', [(await text(p, '#folderBody')).includes('brochure file sits loose'), (await text(p, '#folderBody')).includes('edited 6 · raws 2')], [true, true]);
   check('scan: floorplans from the stored names', await p.$$eval('#fpCard .ver', els => els.map(e => e.dataset.ver)), ['3', '2']);
-  check('scan: picks as names', [await text(p, '#phPicks .phh'), await p.$$eval('#phPicks [data-pk]', els => els.length)], ['Hero: Edited photo', 2]);
+  check('scan: picks as names', [await text(p, '#phPicks .phh'), await p.$$eval('#phPicks [data-pk]', els => els.length)], ['Hero: Edits photo', 2]);
   check('scan: doc card says when it was last read', (await text(p, '#docRec')).startsWith('Last read 11 Oct from the details doc'), true);
   check('scan: Drive never touched', await p.evaluate(() => [window.__driveLog.tree, window.__driveLog.read.length]), [0, 0]);
+  {
+    /* a scan of a job with only an old Photos/Finals: the usable count (GVC_HEALTH), not the empty edits set */
+    const RF3 = rowsFor(), sc = RF3.properties[0].scan;
+    sc.health.counts.photos = { edited: 0, staged: 0, print: 0, web: 0, raw: 0, finals: 3, selects: 0, ps: 0, usable: 3 };
+    sc.pieces.photos = [{ name: 'a.jpg', modified: '2026-10-08T10:00:00.000Z', archived: false, url: 'https://drive.google.com/file/d/PH1/view' }];
+    const tf = await open(browser, { rows: RF3, path: LISTING, drive: { state: 'not-connected' } });
+    await tf.page.waitForSelector('#kitCard [data-kit="photos"]');
+    check('scan: only Finals, the usable count on the folder, photos and kit cards', [(await text(tf.page, '#folderBody')).includes('edited 3'),
+      (await text(tf.page, '#phBody')).includes('3 finished photos'), (await text(tf.page, '#kitCard [data-kit="photos"]')).includes('3 photos')], [true, true, true]);
+    check('scan: only Finals, no page errors', tf.errors, []);
+    await tf.ctx.close();
+  }
   links.length = 0;
   await p.route('http://localhost:47610/drive-link', r => r.abort());
   await p.click('#kitCard [data-kit="showsheet"] [data-copy]');
@@ -993,6 +1020,15 @@ const LISTING = '/workspace/job/?listing=100-example-st-4a';
   check('walker: Dock photos kept', ph.children.map(c => c.name), ['Dock photos', 'Edited', 'Raw', 'Raws']);
   check('walker: raw photos counted by name, never read', [ph.children.find(c => c.name === 'Raw').children, ph.children.find(c => c.name === 'Raws').children],
     [[{ name: 'IMG_1.CR3', kind: 'file' }, { name: 'IMG_2.CR3', kind: 'file' }], [{ name: 'IMG_3.CR3', kind: 'file' }]]);
+  const walked2 = await t.page.evaluate(async () => {
+    const opened = [];
+    const file = name => ({ kind: 'file', name, getFile: async () => { opened.push(name); return { size: 10, lastModified: Date.parse('2026-10-08T10:00:00Z') }; } });
+    const dir = (name, kids) => ({ kind: 'directory', name, values: () => (async function* () { yield* kids; })() });
+    const root = dir('5B', [dir('Photos', [dir('1 Raw', [file('IMG_4.CR3')]), dir('2 Edits', [file('e2.jpg')])])]);
+    const tree = await GVC_DRIVE._treeOf(root, { depth: 4 });
+    return { opened, raw: tree.children[0].children.find(c => c.name === '1 Raw').children };
+  });
+  check('walker: Photos/1 Raw counted by name, never read', [walked2.raw, walked2.opened], [[{ name: 'IMG_4.CR3', kind: 'file' }], ['e2.jpg']]);
   check('walker: tree shape', [walked.tree.looseCount, walked.tree.otherCount, walked.tree.children.map(c => c.name + (c.skipped ? ' (skipped)' : ''))],
     [1, 1, ['4A details.docx', 'Brochure draft.pdf', 'Marketing', 'Paperwork (skipped)', 'Photos']]);
   check('walker: nested paperwork dropped, dates kept', walked.tree.children.find(c => c.name === 'Marketing').children[0].children, [{ name: 'Showsheet 1.pdf', kind: 'file', size: 10, modified: '2026-10-12T10:00:00.000Z' }]);

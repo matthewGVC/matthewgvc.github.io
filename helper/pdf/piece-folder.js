@@ -3,11 +3,12 @@
 
      pieceDir(jobAbs, spec) → { dir, made }     (Slice 5, any piece in pieces.js)
 
-   A folder named Showsheet, Showsheets or Show Sheet (any case) inside the
-   job's Marketing\ first, then at the job folder's top. None → the helper
-   makes Marketing\Showsheet\ (made: true). Nothing is renamed or moved.
+   A folder named Showsheet, Showsheets or Show Sheet (any case) at the job
+   folder's top first, then inside the old Marketing\. None → the helper
+   makes <job>\Showsheet\ at the top (made: true): the flat standard
+   (drive-rules.js layout). Nothing is renamed or moved.
    Other pieces the same way with their own folder names; a pitch's folder
-   is treated like a job's (its seller pitch and map go in Marketing\Pitch\).
+   is treated like a job's (its seller pitch and map go in Pitch\).
    ============================================================ */
 'use strict';
 
@@ -30,9 +31,9 @@ function pieceDir(jobAbs, spec) {
   if (marketing && real(marketing).indexOf(real(jobAbs) + path.sep) !== 0) {
     throw Object.assign(new Error('The job\'s ' + spec.words + ' folder points outside the job folder.'), { status: 403 });
   }
-  const found = (marketing && childDir(marketing, spec.folder)) || childDir(jobAbs, spec.folder);
+  const found = childDir(jobAbs, spec.folder) || (marketing && childDir(marketing, spec.folder));
   if (found) return { dir: found, made: false };
-  const dir = path.join(marketing || path.join(jobAbs, 'Marketing'), spec.make);
+  const dir = path.join(jobAbs, spec.make);
   fs.mkdirSync(dir, { recursive: true });
   return { dir, made: true };
 }

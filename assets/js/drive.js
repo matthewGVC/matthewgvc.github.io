@@ -139,8 +139,9 @@
     }, function () { return { name: h.name, kind: 'file' }; });
   }
 
-  /* raw photo sets are counted by name, never read (like the helper's scan) */
-  var NO_READ = ['raw', 'raws'];
+  /* raw photo sets ("1 Raw", "Raw", "Raws": GVC_DRIVE_RULES.photoSet) are counted by name, never read
+     (like the helper's scan) */
+  function noRead(g) { return RULES.photoSet(g) === 'raw'; }
 
   /* the walk under a job folder's handle; every name passes the rules before
      its handle is opened, and a paperwork folder at any depth is never listed
@@ -165,7 +166,7 @@
             }
           } else if (!RULES.allowedInJob(path.join('/'))) return null;
           if (h.kind !== 'directory') {
-            if (segs.some(function (g) { return NO_READ.indexOf(g.toLowerCase()) !== -1; })) return { name: h.name, kind: 'file' };
+            if (segs.some(noRead)) return { name: h.name, kind: 'file' };
             return fileNode(h, ms);
           }
           if (RULES.isPaperwork(h.name)) return null;            // "Marketing/Docs": never listed, never opened

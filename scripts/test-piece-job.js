@@ -135,7 +135,7 @@ check('photosFor: unknown', J.photosFor('brochure', job(), null), null);
 const picked = job({ row: { photo_hero: 'Photos/Edited/03.jpg', photo_order: ['Photos/Edited/01.jpg', 'Photos/Edited/02.jpg', 'Photos/Edited/03.jpg'] } });
 check('photosFor brochure: hero first, then picks', J.photosFor('brochure', picked, null), ['Photos/Edited/03.jpg', 'Photos/Edited/01.jpg', 'Photos/Edited/02.jpg']);
 check('photosFor postcard: two', J.photosFor('postcard-listed', picked, null), ['Photos/Edited/03.jpg', 'Photos/Edited/01.jpg']);
-check('photosFor: edited by name when nothing picked', J.photosFor('brochure', job(), ['Photos/Edited/b.jpg', 'Photos/Edited/a.jpg']), ['Photos/Edited/a.jpg', 'Photos/Edited/b.jpg']);
+check('photosFor: the usable photos in the order given when nothing picked', J.photosFor('brochure', job(), ['Photos/Edited/b.jpg', 'Photos/Edited/a.jpg']), ['Photos/Edited/b.jpg', 'Photos/Edited/a.jpg']);
 const plans = [
   { path: 'Floorplan/v1/Unit v1.jpg', modified: '2026-01-01' },
   { path: 'Floorplan/v2/Level 1 v2.jpg', modified: '2026-02-01' },

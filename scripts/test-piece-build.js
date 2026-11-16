@@ -114,18 +114,18 @@ function fakeDb(T, o) {
   const names = JSON.stringify(lay.tree);
   check('lay: the tree has the photos and plans, never paperwork', [/01\.jpg/.test(names), /Plan v2\.jpg/.test(names), /Jane Client/.test(names)], [true, true, false]);
   check('render: what the page laid out, on its paper', renders[0], { tool: 'showsheet', state: { address: '100 Example St', drawn: 'showsheet' }, paper: 'a5', siteBase: 'http://localhost:9' });
-  check('write: into Marketing\\Showsheet\\, made for it', fs.existsSync(path.join(jobAbs, 'Marketing', 'Showsheet', 'Showsheet - 100 Example St 4A - 2026-10-29.pdf')), true);
+  check('write: into Showsheet\\ at the top, made for it', fs.existsSync(path.join(jobAbs, 'Showsheet', 'Showsheet - 100 Example St 4A - 2026-10-29.pdf')), true);
   const [rpcName, args] = db.calls.rpc[0] || [];
   check('record: save_piece_build with the request, the version read and what the page keeps', [rpcName, args.p_request, args.p_version, args.p_state, args.p_built_from.via],
     ['save_piece_build', 'r1', 4, { kept: true }, 'helper']);
   check('record: the file as written', [args.p_output.path, args.p_output.name, args.p_output.url, args.p_output.paper, args.p_output.via, args.p_output.madeAt, args.p_archived],
-    ['Marketing/Showsheet/Showsheet - 100 Example St 4A - 2026-10-29.pdf', 'Showsheet - 100 Example St 4A - 2026-10-29.pdf', 'https://drive.google.com/file/d/MADE/view', 'a5', 'helper', NOW.toISOString(), null]);
+    ['Showsheet/Showsheet - 100 Example St 4A - 2026-10-29.pdf', 'Showsheet - 100 Example St 4A - 2026-10-29.pdf', 'https://drive.google.com/file/d/MADE/view', 'a5', 'helper', NOW.toISOString(), null]);
   check('record: the request is done', T.piece_requests.find(r => r.id === 'r1').status, 'done');
 
   const rest = await b.runAll();
   check('queue: the rest in order', rest.map(r => r.done || r.failed), ['r2', 'r3', 'r4', 'r5']);
   const msg = id => T.piece_requests.find(r => r.id === id);
-  check('the page refuses: failed with its sentence, nothing drawn or written', [msg('r2').status, msg('r2').message, renders.length, fs.existsSync(path.join(jobAbs, 'Marketing', 'Brochure'))],
+  check('the page refuses: failed with its sentence, nothing drawn or written', [msg('r2').status, msg('r2').message, renders.length, fs.existsSync(path.join(jobAbs, 'Brochure'))],
     ['failed', 'Drive hasn\'t downloaded 03.jpg on Matt\'s desktop yet.', 1, false]);
   check('no folder linked: failed before anything is laid out', [msg('r3').status, msg('r3').message, lays.length], ['failed', 'This job has no Drive folder linked.', 2]);
   check('a paperwork folder: refused', [msg('r4').status, msg('r4').message], ['failed', 'The workspace doesn\'t write into that folder.']);
@@ -134,15 +134,15 @@ function fakeDb(T, o) {
   check('nothing left waiting', await b.runOne(), null);
 
   // a rebuild the same day: never overwrites; the record's own older file goes to Archive
-  T.documents[0].output = Object.assign({}, args.p_output, { size: fs.statSync(path.join(jobAbs, 'Marketing', 'Showsheet', args.p_output.name)).size,
-    modified: fs.statSync(path.join(jobAbs, 'Marketing', 'Showsheet', args.p_output.name)).mtime.toISOString() });
+  T.documents[0].output = Object.assign({}, args.p_output, { size: fs.statSync(path.join(jobAbs, 'Showsheet', args.p_output.name)).size,
+    modified: fs.statSync(path.join(jobAbs, 'Showsheet', args.p_output.name)).mtime.toISOString() });
   T.documents[0].outputs = [T.documents[0].output];
   T.documents[0].version = 5;
   T.piece_requests.push({ id: 'r6', property_id: 'p1', tool: 'showsheet', status: 'waiting', asked_at: '2026-10-29T11:00:00Z' });
   const again = await b.runOne();
   const a2 = db.calls.rpc[db.calls.rpc.length - 1][1];
   check('rebuild: a new file, the older one moved into Archive', [again.name, a2.p_version, a2.p_archived && a2.p_archived.to],
-    ['Showsheet - 100 Example St 4A - 2026-10-29 (2).pdf', 5, 'Marketing/Showsheet/Archive/Showsheet - 100 Example St 4A - 2026-10-29.pdf']);
+    ['Showsheet - 100 Example St 4A - 2026-10-29 (2).pdf', 5, 'Showsheet/Archive/Showsheet - 100 Example St 4A - 2026-10-29.pdf']);
 
   // the piece saved elsewhere while the helper made it: the file is said, the request failed
   const T2 = JSON.parse(JSON.stringify(T)); T2.piece_requests = [{ id: 'c1', property_id: 'p1', tool: 'showsheet', status: 'waiting', asked_at: '2026-10-29T11:00:00Z' }];
@@ -194,6 +194,19 @@ function fakeDb(T, o) {
   check('read: never paperwork', rd('Docs/Exclusive - Jane Client.pdf')[0], 403);
   check('read: never out of the job', rd('../4B/Photos/x.jpg')[0], 400);
   check('read: never a non-picture, even allowed', (put(jobAbs, 'Marketing/notes.txt', Buffer.from('x')), rd('Marketing/notes.txt'))[0], 403);
+  /* the flat piece folders and deal folders, in a job of their own (a photo in 5 Finals would change the e2e job's photos) */
+  const flat = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-flat-'));
+  const rdF = rel => { try { const f = readJobFile(flat, rel); return [f.type, f.buf.length > 0]; } catch (e) { return [e.status, e.message]; } };
+  check('read: a picture in Pitch', (put(flat, 'Pitch/Map.png'), rdF('Pitch/Map.png')), ['image/png', true]);
+  check('read: a picture in Docs refused', (put(flat, 'Docs/x.png'), rdF('Docs/x.png'))[0], 403);
+  check('read: a photo in a deal folder', (put(flat, '2026 Sale/Photos/a.jpg'), rdF('2026 Sale/Photos/a.jpg')), ['image/jpeg', true]);
+  check('read: the numbered photo folders and every flat piece folder, any case',
+    ['Photos/5 Finals/a.jpg', 'showsheet/a.jpg', 'Brochure/a.jpg', 'POSTCARD/a.jpg', 'Signage/a.jpg', 'Open House/a.jpg', '2026 - Rental/Pitch/a.jpg'].map(r => (put(flat, r), rdF(r)[0])),
+    ['image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg', 'image/jpeg']);
+  check('read: the old pitch folders a map may be written into', ['Pitches/Map.png', 'Seller Pitch/Map.png', 'seller pitches/Map.png', '2026 Sale/Seller Pitch/Map.png'].map(r => (put(flat, r), rdF(r)[0])),
+    ['image/png', 'image/png', 'image/png', 'image/png']);
+  check('read: a deal folder then paperwork refused', (put(flat, '2026 Sale/Docs/a.jpg'), rdF('2026 Sale/Docs/a.jpg'))[0], 403);
+  fs.rmSync(flat, { recursive: true, force: true });
   check('read: a missing file is said', rd('Photos/Edited/09.jpg'), [404, 'Drive hasn\'t got 09.jpg on this computer.']);
   check('read: a paperwork word in a photo name', (put(jobAbs, 'Photos/Edited/Signed contract.jpg'), rd('Photos/Edited/Signed contract.jpg'))[0], 403);
   check('page addresses', [pageUrl('postcard-sold', 'listing', 'a b', 'http://x/'), pageUrl('seller', 'pitch', 'q', 'http://x')],

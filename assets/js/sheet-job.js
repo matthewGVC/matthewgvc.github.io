@@ -253,10 +253,11 @@
 
   /* ---------- photos and floorplan (S7) ---------- */
 
-  function byName(a, b) { a = a.split('/').pop().toLowerCase(); b = b.split('/').pop().toLowerCase(); return a < b ? -1 : a > b ? 1 : 0; }
+  /* editedPaths: the usable photos in the order GVC_HEALTH gives them (Selects, then Finals or Edits,
+     each in name order), kept as given */
   function photosOf(row, editedPaths) {
     var hero = (row && row.photo_hero) || null, order = ((row && row.photo_order) || []).slice();
-    var tray = order.length ? order : (editedPaths ? editedPaths.slice().sort(byName).slice(0, 12) : null);
+    var tray = order.length ? order : (editedPaths ? editedPaths.slice(0, 12) : null);
     if (!tray) { if (!hero) return null; tray = []; }
     if (hero && tray.indexOf(hero) === -1) tray.unshift(hero);
     var front = hero || tray[0] || null;

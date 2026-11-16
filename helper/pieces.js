@@ -4,14 +4,15 @@
      PIECES[tool] = {
        prefix   the file name's first words ("Showsheet - <Address Unit> - <date>.pdf")
        words    how the piece is named in a sentence ("older brochure left in place: …")
-       folder   the folder it goes in, looked for in Marketing\ first, then the job's top
-                (exactly the folder names folder-health.js counts as that piece's folder, so
-                a file the helper writes is always one the scan and the Kit find)
-       make     the folder made under Marketing\ when there is none
+       folder   the folder it goes in, looked for at the job's top first, then in the old
+                Marketing\ (only read: nothing new is made there) (exactly the folder names
+                folder-health.js counts as that piece's folder, so a file the helper writes
+                is always one the scan and the Kit find)
+       make     the folder made at the job's top when there is none (the flat standard)
        ext      'pdf' (drawn by the page) or 'png' (the map, sent ready-made)
        owners   'properties' (a listing) and/or 'pitches'; a pitch's folder is treated like a
-                job's: its seller pitch and map go in its Marketing\Pitch\ (the browser may
-                read Marketing\ back, never a folder's loose top-level files)
+                job's: its seller pitch and map go in its Pitch\ (the browser may read Pitch\
+                and the old Marketing\ back, never a folder's loose top-level files)
        page     (0017) the piece's own page, which the helper opens to make it from the job
                 (piece-build.js); the map has none: Map Studio makes it with a person
        card     the extra address words that page needs (the Just Sold postcard)

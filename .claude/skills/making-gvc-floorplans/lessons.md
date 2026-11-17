@@ -9,6 +9,19 @@ scripts are not lessons: they live in the code and its tests.
 overruled by a later one were taken out. Since 11-03 the maker counts `lines` in a floor's size, so linework
 past the walls no longer needs a `floor` area under it.)
 
+## 2026-11-17: 806 Riverview Dr v6 (Matt: a text audit of every label, all-floors sheet too)
+
+- **A fresh model reading every full-size tile finds what the maker's own checks miss.** An Opus pass over the four PNGs found 34 label
+  problems: text over a sofa line or door swing, white backings cutting arcs, labels off-centre, and tiny text on the all-floors sheet.
+- **A white backing is a last resort.** Where a label sat over linework, v3 backed it; the backing then hid door arcs and vanity corners.
+  Prefer a clear spot beside the object; where the room is too narrow for the name (a powder room), set it beside the room.
+- **The all-floors sheet's hand-set `allScale` multiplies the sheet's `textScale`** (0.5 x 0.45 is about 5 px, 1.6 pt in print). Keep
+  `allScale` at 0.7 or more; use 0.6 only for a name in a closet-sized room.
+- **Floor sheets never shrink text** (no scale field), so fix a crowded label there by moving it; the all-floors sheet may set it smaller.
+- **`allAt` is copied from `at` for the hand-set names**, so moving a label on the floor sheet moves it on the all-floors sheet too; set `allAt` after.
+- **Where a void's crossed lines end in a closet corner**, a small label in that closet still touches a line at the all-floors scale.
+  Left as is; the way out would be a leader or a bigger closet, which is Matt's call.
+
 ## 2026-11-03: 806 Riverview Dr v5 (a fresh look at the branded sheets)
 
 - Look at every BRANDED sheet, not only the unbranded ones and the overlays. v3 passed the overlay check, but its

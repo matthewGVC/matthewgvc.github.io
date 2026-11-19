@@ -1,4 +1,4 @@
-# The helper makes pieces from a job (design note, 2026-10-29; checked against the code 2026-11-04)
+# The helper makes pieces from a job (design note, 2026-10-29; checked against the code 2026-11-04; folders updated 2026-11-19)
 
 Overturns D89 (the open sheet is filled in the browser and one press there saves it) and D91 (the
 helper writes the showsheet PDF into the linked folder; without the helper the print dialog still marks it made).
@@ -7,10 +7,12 @@ helper writes the showsheet PDF into the linked folder; without the helper the p
 - Works through a queue of piece requests (table `piece_requests`, migration 0017), oldest first:
   every 15 seconds, and at once when the workspace on the same desktop pokes it.
 - For each request it reads the job, the piece's saved wording, crops and layout, and the job folder
-  on G:\ itself (Photos, Floorplan, Marketing; paperwork is never opened).
+  on G:\ itself (Photos, Floorplan and the piece folders; paperwork is never opened).
 - It opens the piece's own page in its hidden browser, which lays the piece exactly as it does when
   opened from the job, then prints it with the existing drawing code, so the PDF is unchanged.
-- It saves the PDF into the job folder under the existing rules (never overwriting; its own older
+- It saves the PDF into the job folder under the existing rules: the piece's own folder at the job's top
+  (`Showsheet\`, made when first needed), or `Marketing\<piece>\` where only that old folder exists
+  (flat standard, 11-16, `docs/folder-standard.md`); never overwriting; its own older
   file and every other older file at that folder's top to Archive, D124), records the piece as made, logs "<piece> made · Helper, asked by <name>", and
   marks the request done, or failed with a plain reason.
 - Pieces: Showsheet, Brochure, both Postcards, Seller Package, Signage. The map stays in Map Studio.
